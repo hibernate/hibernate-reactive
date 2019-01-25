@@ -13,7 +13,17 @@ plugins {
 
 dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
-    implementation 'org.hibernate:hibernate-core:5.4.1.Final'
+    implementation('org.hibernate:hibernate-core:5.4.1.Final') {
+        exclude group: 'org.javassist', module: 'javassist'
+        exclude group: 'net.bytebuddy', module: 'byte-buddy'
+        exclude group: 'antlr', module: 'antlr'
+        exclude group: 'org.dom4j', module: 'dom4j'
+        exclude group: 'javax.activation', module: 'javax.activation-api'
+        exclude group: 'org.glassfish.jaxb', module: 'jaxb-runtime'
+        exclude group: 'javax.xml.bind', module: 'jaxb-api'
+        exclude group: 'org.hibernate.common', module: 'hibernate-commons-annotations'
+        exclude group: 'org.jboss.spec.javax.transaction', module: 'jboss-transaction-api_1.2_spec'
+    }
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
