@@ -4,6 +4,9 @@
 # Gradle work directory
 .gradle
 
+# Gradle cache
+.gradletasknamecache
+
 # Build output directories
 /target
 */target
