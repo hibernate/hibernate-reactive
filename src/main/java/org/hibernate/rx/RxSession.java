@@ -7,9 +7,15 @@ import java.util.concurrent.CompletableFuture;
  * interface of the project.
  */
 public interface RxSession {
+
 	<T> CompletableFuture<T> load(Class<T> entityClass, Object id);
 
 	CompletableFuture<Void> persist(Object entity);
 
 	CompletableFuture<Void> remove(Object entity);
+
+	<R> RxQuery<R> createQuery(Class<R> resultType, String jpql);
+
+	StateControl sessionState();
+
 }

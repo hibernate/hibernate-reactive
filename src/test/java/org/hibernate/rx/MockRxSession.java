@@ -61,4 +61,15 @@ public class MockRxSession implements RxSession {
 		public CompletableFuture<Void> remove(Object entity) {
 			return CompletableFuture.runAsync( () -> removeFunction.accept( entity ) );
 		}
+
+	@Override
+	public <R> RxQuery<R> createQuery(Class<R> resultType, String jpql) {
+		throw new UnsupportedOperationException( "not implemented" );
 	}
+
+	@Override
+	public StateControl sessionState() {
+		throw new UnsupportedOperationException( "not implemented" );
+	}
+
+}
