@@ -1,6 +1,8 @@
 package org.hibernate.rx;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -26,7 +28,7 @@ public class MockRxSession implements RxSession {
 		public static class Builder<T> {
 			MockRxSession session = new MockRxSession();
 
-			public Builder load( BiFunction<Class<T>, ?, T> load ) {
+			public Builder find(BiFunction<Class<T>, ?, T> load ) {
 				session.loadFunction = load;
 				return this;
 			}
@@ -46,21 +48,21 @@ public class MockRxSession implements RxSession {
 			}
 		}
 
-		@Override
-		public <T> CompletableFuture<T> load(Class<T> entityClass, final Object id) {
-			Supplier<T> supplier = () -> (T) loadFunction.apply( entityClass, id );
-			return CompletableFuture.supplyAsync( supplier );
-		}
+	@Override
+	public <T> CompletionStage<Optional<T>> find(Class<T> entityClass, final Object id) {
+		Supplier<Optional<T>> supplier = () -> Optional.of( (T) loadFunction.apply( entityClass, id ) );
+		return CompletableFuture.supplyAsync( supplier );
+	}
 
-		@Override
-		public CompletableFuture<Void> persist(Object entity) {
-			return CompletableFuture.runAsync( () -> persistFunction.accept( entity ) );
-		}
+	@Override
+	public CompletionStage<Void> persist(Object entity) {
+		return CompletableFuture.runAsync( () -> persistFunction.accept( entity ) );
+	}
 
-		@Override
-		public CompletableFuture<Void> remove(Object entity) {
-			return CompletableFuture.runAsync( () -> removeFunction.accept( entity ) );
-		}
+	@Override
+	public CompletionStage<Void> remove(Object entity) {
+		return CompletableFuture.runAsync( () -> removeFunction.accept( entity ) );
+	}
 
 	@Override
 	public <R> RxQuery<R> createQuery(Class<R> resultType, String jpql) {

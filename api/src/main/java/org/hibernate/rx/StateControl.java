@@ -1,13 +1,13 @@
 package org.hibernate.rx;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public interface StateControl {
 
 	void clear();
 
-	CompletableFuture<Void> refresh(Object var1);
+	CompletionStage<Void> refresh(Object var1);
 
-	CompletableFuture<Void> flush();
+	CompletionStage<Void> flush();
 
 }
