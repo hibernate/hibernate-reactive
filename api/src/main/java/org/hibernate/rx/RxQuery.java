@@ -1,8 +1,8 @@
 package org.hibernate.rx;
 
-import io.reactivex.Flowable;
-import io.reactivex.Maybe;
-import io.reactivex.Single;
+import java.util.concurrent.CompletionStage;
+
+import org.reactivestreams.Publisher;
 
 public interface RxQuery<R> {
 
@@ -12,11 +12,15 @@ public interface RxQuery<R> {
 
 	RxQuery<R> setFirstResult(int var1);
 
-	Single<R> getSingleResult();
+	/**
+	 * Like the JPA version, this expects to be able to load
+	 * strictly one result.
+	 * More than one results will cause an exception.
+	 * Zero results will also cause an exception.
+	 */
+	CompletionStage<R> getSingleResult();
 
-	Maybe<R> getOneResultMaybe();
-
-	Flowable<R> resultsFlow();
+	Publisher<R> resultsPublisher();
 
 	/**
 

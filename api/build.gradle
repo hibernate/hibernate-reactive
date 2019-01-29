@@ -6,8 +6,7 @@ plugins {
 description = 'Hibernate RX API'
  
 dependencies {
-    //RxJava 2 is a great API and allows interoperability with other Reactive models
-    implementation 'io.reactivex.rxjava2:rxjava:2.2.6'
+    implementation 'org.reactivestreams:reactive-streams:1.0.2'
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'

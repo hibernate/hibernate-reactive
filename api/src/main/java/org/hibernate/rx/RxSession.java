@@ -1,6 +1,7 @@
 package org.hibernate.rx;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Right now we are playing around, but this is going to be the core
@@ -8,11 +9,11 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface RxSession {
 
-	<T> CompletableFuture<T> load(Class<T> entityClass, Object id);
+	<T> CompletionStage<Optional<T>> find(Class<T> entityClass, Object id);
 
-	CompletableFuture<Void> persist(Object entity);
+	CompletionStage<Void> persist(Object entity);
 
-	CompletableFuture<Void> remove(Object entity);
+	CompletionStage<Void> remove(Object entity);
 
 	<R> RxQuery<R> createQuery(Class<R> resultType, String jpql);
 
