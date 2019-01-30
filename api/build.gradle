@@ -1,0 +1,16 @@
+plugins {
+    // Apply the java-library plugin to add support for Java Library
+    id 'java-library'
+}
+
+description = 'Hibernate RX API'
+ 
+dependencies {
+    //RxJava 2 is a great API and allows interoperability with other Reactive models
+    implementation 'io.reactivex.rxjava2:rxjava:2.2.6'
+
+    // Use JUnit test framework
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.assertj:assertj-core:3.11.1'
+}
+
