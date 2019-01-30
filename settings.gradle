@@ -9,6 +9,6 @@
 
 rootProject.name = 'hibernate-rx'
 
-include 'api'
-include 'core'
+include 'hibernate-rx-api'
+include 'hibernate-rx-core'
 
