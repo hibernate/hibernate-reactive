@@ -2,15 +2,22 @@ package org.hibernate.rx;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import io.vertx.core.Vertx;
+import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Simple tests for checking that the {@link RxSession} API makes sense.
  */
+@ExtendWith(VertxExtension.class)
 public class RxSessionApiTest {
 
 	private final ConcurrentHashMap<Object, Object> db = new ConcurrentHashMap<>();
@@ -21,56 +28,90 @@ public class RxSessionApiTest {
 													.map( Map.Entry::getValue )
 													.findAny()
 													.orElse( null ) ) )
-			.persist( p -> db.put( ( (GuineaPig) p ).getId(), (GuineaPig) p ) )
+			.persist( p -> db.put( ( (GuineaPig) p ).getId(), p ) )
 			.remove( p -> db.remove( ( (GuineaPig) p ).getId() ) ).build();
 
 	@Test
-	public void testLoadNull() throws Exception {
-		session.find( GuineaPig.class, 1 );
-
-//		assertThat( loadedPig ).isNull();
+	public void testLoadNull(VertxTestContext testContext) throws Throwable {
+		session.find( GuineaPig.class, 1 )
+				.whenComplete( (result, err) -> {
+					try {
+						assertThat( (Optional) result ).isNotPresent();
+						testContext.completeNow();
+					}
+					catch (Throwable e) {
+						testContext.failNow( e );
+					}
+				} );
 	}
 
 	@Test
-	public void testLoad() throws Exception {
+	public void testLoad(VertxTestContext testContext) throws Exception {
 		GuineaPig pig = new GuineaPig( 5, "Hamtaro" );
 		db.put( pig.getId(), pig );
 
-		session.find( GuineaPig.class, 5 );
-
-//		assertThat( loadedPig ).isEqualTo( pig );
+		session.find( GuineaPig.class, pig.getId() )
+				.whenComplete( (result, err) -> {
+					try {
+						assertThat( (Optional) result ).isPresent().hasValue( pig );
+						testContext.completeNow();
+					}
+					catch (Throwable e) {
+						testContext.failNow( e );
+					}
+				} );
 	}
 
 	@Test
-	public void testPersist() throws Exception {
+	public void testPersist(VertxTestContext testContext) throws Exception {
 		final GuineaPig pig = new GuineaPig( 1, "Buttercup" );
-
-		session.persist( pig );
-
-//		assertThat( db.values() ).containsExactly( pig );
+		session.persist( pig )
+				.whenComplete( (result, err) -> {
+					try {
+						assertThat( db.values() ).containsExactly( pig );
+						testContext.completeNow();
+					}
+					catch (Throwable e) {
+						testContext.failNow( e );
+					}
+				} );
 	}
 
 	@Test
-	public void testRemove() throws Exception {
+	public void testRemove(VertxTestContext testContext) throws Exception {
 		GuineaPig pig = new GuineaPig( 5, "McCloud" );
 		db.put( pig.getId(), pig );
 
-		session.remove( pig );
-
-//		assertThat( db ).isEmpty();
+		session.remove( pig )
+				.whenComplete( (result, err) -> {
+					try {
+						assertThat( db ).isEmpty();
+						testContext.completeNow();
+					}
+					catch (Throwable e) {
+						testContext.failNow( e );
+					}
+				} );
 	}
 
 	@Test
-	public void testRemoveWithMoreThanOneEntry() throws Exception {
+	public void testRemoveWithMoreThanOneEntry(VertxTestContext testContext) throws Exception {
 		GuineaPig highlander = new GuineaPig( 15, "Highlander" );
 		GuineaPig duncan = new GuineaPig( 82, "Duncan" );
 
 		db.put( highlander.getId(), highlander );
 		db.put( duncan.getId(), duncan );
 
-		session.remove( duncan );
-
-//		assertThat( db.values() ).containsExactly( highlander );
+		session.remove( duncan )
+				.whenComplete( (result, err) -> {
+					try {
+						assertThat( db.values() ).containsExactly( highlander );
+						testContext.completeNow();
+					}
+					catch (Throwable e) {
+						testContext.failNow( e );
+					}
+				} );
 	}
 
 	public static class GuineaPig {
