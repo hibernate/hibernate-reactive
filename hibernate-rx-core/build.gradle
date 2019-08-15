@@ -32,11 +32,14 @@ dependencies {
        exclude group: 'junit', module: 'junit'
     }
 
+    compile 'io.reactiverse:reactive-pg-client:0.11.2'
+
     runtimeOnly 'org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.1.1.Final'
 
     testImplementation 'org.assertj:assertj-core:3.13.2'
     testImplementation 'io.vertx:vertx-junit5:3.6.2'
     testImplementation 'org.postgresql:postgresql:42.1.1'
+
 }
 
 test {
