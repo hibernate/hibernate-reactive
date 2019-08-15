@@ -15,6 +15,8 @@ description = 'Hibernate Rx Core'
 
 dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
+    compile project(':hibernate-rx-api')
+
     compile ('org.hibernate:hibernate-core:5.4.4.Final') {
         exclude group: 'org.javassist', module: 'javassist'
         exclude group: 'net.bytebuddy', module: 'byte-buddy'
