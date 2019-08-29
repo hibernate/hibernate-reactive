@@ -4,8 +4,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Right now we are playing around, but this is going to be the core
- * interface of the project.
+ * Similar to the Hibernate session but the operations are reactive
  */
 public interface RxSession {
 
@@ -18,5 +17,4 @@ public interface RxSession {
 	<R> RxQuery<R> createQuery(Class<R> resultType, String jpql);
 
 	StateControl sessionState();
-
 }

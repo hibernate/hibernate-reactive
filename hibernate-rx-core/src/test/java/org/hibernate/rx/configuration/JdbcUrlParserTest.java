@@ -9,9 +9,7 @@ package org.hibernate.rx.configuration;
 import java.net.URI;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertAll;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class JdbcUrlParserTest {
 
