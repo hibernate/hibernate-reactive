@@ -42,7 +42,3 @@ dependencies {
 
 }
 
-test {
-    // Enable narive JUnit 5
-    useJUnitPlatform()
-}
