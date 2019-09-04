@@ -30,6 +30,7 @@ dependencies {
     testCompile ('org.hibernate:hibernate-testing:5.4.4.Final')
     compile 'io.reactiverse:reactive-pg-client:0.11.2'
 
+//    compile group: 'io.smallrye.reactive', name: 'smallrye-axle-pg-client', version: '0.0.9'
     runtimeOnly 'org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.1.1.Final'
 
     testImplementation 'org.assertj:assertj-core:3.13.2'

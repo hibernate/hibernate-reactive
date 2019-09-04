@@ -17,9 +17,9 @@ public class RxPersistEvent extends PersistEvent {
 	public RxPersistEvent(
 			String entityName,
 			Object original,
-			RxHibernateSession source,
+			EventSource source,
 			RxSession rxSession) {
-		super( entityName, original, (EventSource) source );
+		super( entityName, original, source );
 	}
 
 	public void setStage(CompletionStage<?> stage) {

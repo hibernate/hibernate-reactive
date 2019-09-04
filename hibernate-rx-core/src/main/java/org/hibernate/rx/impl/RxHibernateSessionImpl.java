@@ -38,6 +38,7 @@ public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements 
 		super( delegate );
 		this.factory = factory;
 		this.exceptionConverter = delegate.getExceptionConverter();
+		this.rxActionQueue = new RxActionQueue( this );
 	}
 
 	@Override

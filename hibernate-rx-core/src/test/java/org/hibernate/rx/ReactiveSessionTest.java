@@ -2,7 +2,6 @@ package org.hibernate.rx;
 
 import java.util.Objects;
 import java.util.Properties;
-import java.util.Random;
 import java.util.concurrent.CompletionStage;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -17,13 +16,19 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.rx.service.RxConnection;
+import org.hibernate.rx.service.RxConnectionPoolProviderImpl;
+import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.service.ServiceRegistry;
+import org.hibernate.service.spi.Configurable;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import io.reactiverse.pgclient.PgConnection;
+import io.reactiverse.pgclient.PgPool;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
@@ -35,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ReactiveSessionTest {
 
 	@Rule
-	public Timeout rule = Timeout.seconds( 60 );
+	public Timeout rule = Timeout.seconds( 3600 );
 
 	RxHibernateSession session = null;
 	SessionFactoryImplementor sessionFactory = null;
@@ -85,6 +90,34 @@ public class ReactiveSessionTest {
 	}
 
 	@Test
+	public void connectSuccessfully(TestContext context) {
+		Async async = context.async();
+		try {
+			RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
+			( (Configurable) provider ).configure( constructConfiguration().getProperties() );
+			RxConnection rxConn = provider.getConnection();
+			rxConn.unwrap( PgPool.class ).getConnection( ar1 -> {
+				PgConnection pgConnection = null;
+				try {
+					assertThat( ar1.succeeded() ).isTrue();
+					pgConnection = ar1.result();
+					async.complete();
+				}
+				catch (Throwable t) {
+					context.fail( t );
+				}
+				finally {
+					if ( pgConnection != null ) {
+						pgConnection.close();
+					}
+				}
+			} );
+		}
+		catch (Throwable t) {
+			context.fail( t );
+		}
+	}
+
 	public void testRegularPersist() {
 		session.beginTransaction();
 		session.persist( new GuineaPig( 2, "Aloi" ) );
@@ -105,19 +138,28 @@ public class ReactiveSessionTest {
 //	}
 
 	@Test
+	public void testReactiveFind(TestContext testContext) {
+		Async async = testContext.async();
+
+		RxSession rxSession = session.reactive();
+		rxSession.find( GuineaPig.class, 5 ).whenComplete( (res, err) -> {
+			assertThat( res ).hasValue( new GuineaPig( 5, "Aloi" ) );
+		} );
+	}
+
+	@Test
 	public void testReactivePersist(TestContext testContext) {
 		Async async = testContext.async();
 		final GuineaPig mibbles = new GuineaPig( 22, "Mibbles" );
 
-		session.beginTransaction();
 		RxSession rxSession = session.reactive();
+		rxSession.find( GuineaPig.class, 22 );
 		rxSession.persist( mibbles )
 			.whenComplete( (pig, err) -> {
 				if ( err == null ) {
 					try {
 						assertThat( pig ).isNull();
 						System.out.println( "Complete persist" );
-						session.getTransaction().commit();
 						async.complete();
 					}
 					catch (Throwable t) {
@@ -129,6 +171,7 @@ public class ReactiveSessionTest {
 					testContext.fail( err );
 				}
 			} );
+		session.flush();
 	}
 
 	private void assertNoError(TestContext testContext, CompletionStage<?> stage) {
@@ -182,11 +225,6 @@ public class ReactiveSessionTest {
 		private String name;
 
 		public GuineaPig() {
-		}
-
-		public GuineaPig(String name) {
-			this.id = new Random().nextInt();
-			this.name = name;
 		}
 
 		public GuineaPig(Integer id, String name) {

@@ -27,6 +27,7 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.RxHibernateSession;
 import org.hibernate.rx.engine.impl.RxEntityInsertAction;
 
+import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
@@ -242,7 +243,8 @@ public class DefaultRxPersistEventListener extends DefaultPersistEventListener i
 					source
 			);
 //		}
-		( (RxHibernateSession) source ).getRxActionQueue().addAction( insertAction );
+		RxActionQueue rxActionQueue = ( (RxHibernateSession) source ).getRxActionQueue();
+		rxActionQueue.addAction( insertAction );
 		return insertAction;
 
 	}
@@ -260,7 +262,7 @@ public class DefaultRxPersistEventListener extends DefaultPersistEventListener i
 
 		@Override
 		public boolean areMatch(Object listener, Object original) {
-			if ( listener instanceof RxPersistEventListener && original instanceof PersistEventListener ) {
+			if ( listener instanceof DefaultRxPersistEventListener && original instanceof PersistEventListener ) {
 				return true;
 			}
 
