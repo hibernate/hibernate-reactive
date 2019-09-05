@@ -1,11 +1,9 @@
 package org.hibernate.rx;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiConsumer;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
@@ -130,39 +128,36 @@ public class ReactiveSessionTest {
 	@Test
 	public void reactiveFind(TestContext context) {
 		Async async = context.async();
-		try {
-			populateDB(context).whenComplete( ( create, createEx) -> {
-				if ( createEx == null ) {
-					try {
-						RxSession rxSession = session.reactive();
-						CompletionStage<Optional<GuineaPig>> findStage = rxSession.find( GuineaPig.class, 5 );
-						findStage.whenComplete( (pig, pigEx) -> {
-							if ( pigEx != null ) {
-								context.fail( pigEx );
-							}
-							else {
-								try {
-									assertThat( pig ).hasValue( new GuineaPig( 1, "Aloi" ) );
-									async.complete();
-								}
-								catch (Throwable t) {
-									context.fail( t );
-								}
-							}
-						} );
+		populateDB(context).whenComplete( ( populate, populateErr) -> {
+			if ( populateErr != null ) {
+				context.fail( populateErr );
+			} else {
+				RxSession rxSession = session.reactive();
+				rxSession.find( GuineaPig.class, 5 ).whenComplete( (pig, pigEx) -> {
+					if ( pigEx != null ) {
+						context.fail( pigEx );
 					}
-					catch (Throwable t) {
-						context.fail( t );
+					else {
+						assertThat( pig ).hasValue( new GuineaPig( 5, "Aloi" ) );
 					}
-				}
-				else {
-					context.fail( createEx );
-				}
-			});
-		}
-		catch (Throwable t) {
-			context.fail( t );
-		}
+				} ).whenComplete( (check, checkErr) -> {
+					if (checkErr != null) {
+						context.fail( checkErr.getCause() );
+					}
+					else {
+						dropTable( context )
+								.whenComplete( (drop, dropErr) -> {
+									if ( dropErr != null ) {
+										context.fail( dropErr );
+									}
+									else {
+										async.complete();
+									}
+								} );
+					}
+				} );
+			}
+		});
 	}
 
 	@Entity
@@ -197,7 +192,7 @@ public class ReactiveSessionTest {
 
 		@Override
 		public String toString() {
-			return name;
+			return id + ": " + name;
 		}
 
 		@Override
@@ -209,7 +204,10 @@ public class ReactiveSessionTest {
 				return false;
 			}
 			GuineaPig guineaPig = (GuineaPig) o;
-			return Objects.equals( name, guineaPig.name );
+			// I'm comparing the id only for the purpose of this test
+			// This is not meant as an example of good practice
+			return Objects.equals( id, guineaPig.id ) &&
+					Objects.equals( name, guineaPig.name );
 		}
 
 		@Override

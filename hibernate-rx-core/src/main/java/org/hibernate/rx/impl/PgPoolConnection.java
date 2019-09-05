@@ -32,6 +32,8 @@ public class PgPoolConnection implements RxConnection {
 	public CompletionStage<Void> inTransaction(
 			Consumer<RxSession> consumer,
 			RxSession delegate) {
+		// Not used at the moment
+		// Just an idea
 		return CompletableFuture.runAsync( () -> {
 			pool.getConnection( res -> {
 				if (res.succeeded()) {

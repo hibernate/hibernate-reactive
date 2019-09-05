@@ -2,19 +2,17 @@ package org.hibernate.rx.loader.entity.impl;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.dialect.pagination.LimitHelper;
 import org.hibernate.engine.internal.BatchFetchQueueHelper;
-import org.hibernate.engine.jdbc.spi.JdbcCoordinator;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
@@ -552,15 +550,39 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			}
 		}
 
-		private CompletionStage<Object> doTheLoad(String sql, QueryParameters queryParameters, SharedSessionContractImplementor session) throws SQLException {
+		private CompletionStage<Object> doTheLoad(
+				String sql,
+				QueryParameters queryParameters,
+				SharedSessionContractImplementor session) throws SQLException {
 			final RowSelection selection = queryParameters.getRowSelection();
 			final int maxRows = LimitHelper.hasMaxRows( selection ) ?
 					selection.getMaxRows() :
 					Integer.MAX_VALUE;
 
 			final List<AfterLoadAction> afterLoadActions = new ArrayList<>();
-			final CompletionStage<Object> result = executeRxQueryStatement( sql, queryParameters, false, afterLoadActions, session );
-			return processResult( result, queryParameters, session, false, null, maxRows, afterLoadActions );
+			final CompletionStage<Object> result = executeRxQueryStatement( sql,
+																			queryParameters,
+																			false,
+																			afterLoadActions,
+																			session,
+																			(resultSet) -> {
+																				try {
+																					return processResultSet(
+																							resultSet,
+																							queryParameters,
+																							session,
+																							false,
+																							null,
+																							maxRows,
+																							afterLoadActions
+																					);
+																				}
+																				catch (SQLException ex) {
+																					throw new HibernateException( ex );
+																				}
+																			}
+			);
+			return result;
 		}
 	}
 }
