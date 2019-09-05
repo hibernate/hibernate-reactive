@@ -2,7 +2,9 @@ package org.hibernate.rx;
 
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
@@ -27,8 +29,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import io.reactiverse.pgclient.PgClient;
 import io.reactiverse.pgclient.PgConnection;
 import io.reactiverse.pgclient.PgPool;
+import io.reactiverse.pgclient.PgPoolOptions;
+import io.reactiverse.pgclient.PgRowSet;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
@@ -89,62 +94,83 @@ public class ReactiveSessionTest {
 		session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
 	}
 
+	private CompletionStage<Object> populateDB(TestContext context) {
+		RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
+		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
+		RxConnection rxConn = provider.getConnection();
+		PgPool client = rxConn.unwrap( PgPool.class );
+
+		BiConsumer<Object, Throwable> consumer = (o, t) -> {
+			if (t != null) {
+				System.out.println(t.toString());
+				context.fail( t );
+			} else {
+				System.out.println(o.toString());
+			}
+		};
+
+		return invokeQueryLater(client, "INSERT INTO ReactiveSessionTest$GuineaPig (id, name) VALUES (5, 'Aloi')" ).whenComplete(consumer);
+	}
+
+	private CompletionStage<Object> dropTable(TestContext context) {
+		RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
+		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
+		RxConnection rxConn = provider.getConnection();
+		PgPool client = rxConn.unwrap( PgPool.class );
+
+		BiConsumer<Object, Throwable> consumer = (o, t) -> {
+			if (t != null) {
+				System.out.println(t.toString());
+				context.fail( t );
+			} else {
+				System.out.println(o.toString());
+			}
+		};
+
+		return invokeQueryLater(client, "DROP TABLE ReactiveSessionTest$GuineaPig" ).whenComplete(consumer);
+	}
+
+	private CompletionStage<Object> invokeQueryLater(PgPool client, String query) {//, final BiConsumer<Object, Throwable> consumer) {
+		// A simple query
+		CompletableFuture c = new CompletableFuture<Object>();
+
+		client.query(query, ar -> {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+			}
+			if (ar.succeeded()) {
+				PgRowSet result = ar.result();
+				System.out.println("Got " + result.size() + " rows ");
+				c.complete(result);
+			} else {
+				System.out.println("Failure: " + ar.cause().getMessage());
+				c.completeExceptionally(ar.cause());
+			}
+
+			// Now close the pool
+			client.close();
+		});
+		return c;
+	}
+
 	@Test
-	public void connectSuccessfully(TestContext context) {
+	public void reactiveFind(TestContext context) {
 		Async async = context.async();
 		try {
-			RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
-			( (Configurable) provider ).configure( constructConfiguration().getProperties() );
-			RxConnection rxConn = provider.getConnection();
-			rxConn.unwrap( PgPool.class ).getConnection( ar1 -> {
-				PgConnection pgConnection = null;
-				try {
-					assertThat( ar1.succeeded() ).isTrue();
-					pgConnection = ar1.result();
-					async.complete();
-				}
-				catch (Throwable t) {
-					context.fail( t );
-				}
-				finally {
-					if ( pgConnection != null ) {
-						pgConnection.close();
-					}
-				}
-			} );
+			populateDB(context).whenComplete( ( create, createEx) -> {
+				RxSession rxSession = session.reactive();
+				rxSession.find( GuineaPig.class, 1000 ).whenComplete( (pig, pigEx) -> {
+					assertThat( pig ).hasValue( new GuineaPig( 1, "Aloi" ) );
+					dropTable( context ).whenComplete( ( drop, dropEx) -> {
+						async.complete();
+					} );
+				} );
+			});
 		}
 		catch (Throwable t) {
 			context.fail( t );
 		}
-	}
-
-	public void testRegularPersist() {
-		session.beginTransaction();
-		session.persist( new GuineaPig( 2, "Aloi" ) );
-		session.getTransaction().commit();
-		System.out.println( "Wow!" );
-	}
-
-//	@Test
-//	public void testRegularFind() {
-//		session.be
-//		sessionFactoryScope().inTransaction( (session) -> {
-//			session.persist( new GuineaPig( 2, "Aloi" ) );
-//		} );
-//		sessionFactoryScope().inTransaction( (rxSession) -> {
-//			GuineaPig guineaPig = session.find( GuineaPig.class, 2 );
-//			System.out.println( "Wow!" );
-//		} );
-//	}
-
-	@Test
-	public void testReactiveFind(TestContext testContext) {
-		Async async = testContext.async();
-
-		RxSession rxSession = session.reactive();
-		rxSession.find( GuineaPig.class, 5 ).whenComplete( (res, err) -> {
-			assertThat( res ).hasValue( new GuineaPig( 5, "Aloi" ) );
-		} );
 	}
 
 	@Test
@@ -181,32 +207,6 @@ public class ReactiveSessionTest {
 			}
 		} );
 	}
-
-//	@Test
-//	public void testReactivePersistAndThenFind(VertxTestContext testContext) {
-//		final GuineaPig mibbles = new GuineaPig( 22, "Mibbles" );
-//
-//		try {
-//			// TODO: Tx should be simpler, not EntityTransaction. Allow only setRollback
-//			session.reactive().inTransaction( (rx, tx) -> {
-//				rx.persist( mibbles );
-//				tx.commit();
-//				testContext.completeNow();
-//			} );
-//		}
-//		catch (Throwable t) {
-//			testContext.failNow( t );
-//		}
-//		System.out.println( "" );
-//
-//		assertNoError( testContext, session.reactive().inTransaction( (rxSession, tx) -> {
-//			rxSession.find( GuineaPig.class, mibbles.getId() )
-//					.whenComplete( (pig, err) ->
-//						rxAssert( testContext, () -> assertAll(
-//								()-> assertThat(pig).isPresent().hasValue( mibbles ),
-//								()-> assertThat(err).isNull() ) ) );
-//		} ) );
-//	}
 
 	private void rxAssert(TestContext ctx, Runnable r) {
 		try {

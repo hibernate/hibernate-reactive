@@ -28,7 +28,6 @@ public class RxConnectionProviderTest {
 		Map<String, Object> configuration = new HashMap<>();
 		configuration.put( AvailableSettings.USER, "hibernate-rx" );
 		configuration.put( AvailableSettings.PASS, "hibernate-rx" );
-		configuration.put( AvailableSettings.DATASOURCE, "hibernate-rx" );
 		configuration.put( AvailableSettings.URL, "jdbc:postgresql://localhost:5432/hibernate-rx" );
 		return Collections.unmodifiableMap( configuration );
 	}

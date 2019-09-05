@@ -5,12 +5,13 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.internal.StandardPersisterClassResolver;
 import org.hibernate.persister.spi.PersisterClassResolver;
+import org.hibernate.rx.persister.impl.RxSingleTableEntityPersister;
 
 public class RxPersisterClassResolver extends StandardPersisterClassResolver implements PersisterClassResolver {
 
 	@Override
 	public Class<? extends EntityPersister> singleTableEntityPersister() {
-		return super.singleTableEntityPersister();
+		return RxSingleTableEntityPersister.class;
 	}
 
 	@Override
