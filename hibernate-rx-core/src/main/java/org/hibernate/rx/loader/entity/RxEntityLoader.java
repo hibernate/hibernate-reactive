@@ -112,11 +112,29 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 			LockMode lockMode,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
-		this( persister, uniqueKeyType, batchSize, factory, loadQueryInfluencers, new EntityJoinWalker(
+		this( persister, uniqueKeyType, batchSize, factory, loadQueryInfluencers, new PgEntityJoinWalker(
 				persister,
 				uniqueKey,
 				batchSize,
 				lockMode,
+				factory,
+				loadQueryInfluencers
+		) );
+	}
+
+	public RxEntityLoader(
+			OuterJoinLoadable persister,
+			String[] uniqueKey,
+			Type uniqueKeyType,
+			int batchSize,
+			LockOptions lockOptions,
+			SessionFactoryImplementor factory,
+			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
+		this( persister, uniqueKeyType, batchSize, factory, loadQueryInfluencers, new PgEntityJoinWalker(
+				persister,
+				uniqueKey,
+				batchSize,
+				lockOptions,
 				factory,
 				loadQueryInfluencers
 		) );
@@ -133,31 +151,6 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 		if ( persister == null ) {
 			throw new AssertionFailure( "EntityPersister must not be null or empty" );
 		}
-		initFromWalker( walker );
-		this.compositeKeyManyToOneTargetIndices = walker.getCompositeKeyManyToOneTargetIndices();
-		postInstantiate();
-		batchLoader = batchSize > 1;
-	}
-
-
-	public RxEntityLoader(
-			OuterJoinLoadable persister,
-			String[] uniqueKey,
-			Type uniqueKeyType,
-			int batchSize,
-			LockOptions lockOptions,
-			SessionFactoryImplementor factory,
-			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
-		super( persister, uniqueKeyType, factory, loadQueryInfluencers );
-
-		EntityJoinWalker walker = new EntityJoinWalker(
-				persister,
-				uniqueKey,
-				batchSize,
-				lockOptions,
-				factory,
-				loadQueryInfluencers
-		);
 		initFromWalker( walker );
 		this.compositeKeyManyToOneTargetIndices = walker.getCompositeKeyManyToOneTargetIndices();
 		postInstantiate();
