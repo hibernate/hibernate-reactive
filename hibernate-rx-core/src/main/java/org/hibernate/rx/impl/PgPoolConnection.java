@@ -13,6 +13,7 @@ import io.reactiverse.pgclient.PgConnection;
 import io.reactiverse.pgclient.PgPool;
 import io.reactiverse.pgclient.PgPoolOptions;
 import io.reactiverse.pgclient.PgTransaction;
+import io.vertx.core.Vertx;
 
 /**
  * A reactive connection pool for PostgreSQL
@@ -24,7 +25,7 @@ public class PgPoolConnection implements RxConnection {
 
 	public PgPoolConnection(PgPoolOptions options) {
 		this.options = options;
-		this.pool = PgClient.pool( options );
+		this.pool = PgClient.pool( Vertx.vertx(), options );
 	}
 
 	@Override

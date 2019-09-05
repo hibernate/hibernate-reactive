@@ -8,6 +8,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -312,7 +313,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			System.arraycopy( ids, idPosition, idsInBatch, 0, batchSize );
 
 			QueryParameters qp = buildMultiLoadQueryParameters( persister, idsInBatch, lockOptions );
-			result.addAll( batchingLoader.doEntityBatchFetch( session, qp, idsInBatch ) );
+			result.add( batchingLoader.doEntityBatchFetch( session, qp, idsInBatch ) );
 
 			numberOfIdsLeft = numberOfIdsLeft - batchSize;
 			idPosition += batchSize;
@@ -416,14 +417,15 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			}
 
 			QueryParameters qp = buildQueryParameters( id, idsToLoad, optionalObject, lockOptions );
-			List results = dynamicLoader.doEntityBatchFetch( session, qp, idsToLoad );
+			CompletionStage<Object> results = dynamicLoader.doEntityBatchFetch( session, qp, idsToLoad );
 
 			// The EntityKey for any entity that is not found will remain in the batch.
 			// Explicitly remove the EntityKeys for entities that were not found to
 			// avoid including them in future batches that get executed.
-			BatchFetchQueueHelper.removeNotFoundBatchLoadableEntityKeys( idsToLoad, results, persister(), session );
+//			BatchFetchQueueHelper.removeNotFoundBatchLoadableEntityKeys( idsToLoad, results, persister(), session );
 
-			return getObjectFromList( results, id, session );
+//			return getObjectFromList( results, id, session );
+			return results;
 		}
 	}
 
@@ -493,7 +495,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			return persister.hasSubselectLoadableCollections();
 		}
 
-		public List doEntityBatchFetch(
+		public CompletionStage<Object> doEntityBatchFetch(
 				SharedSessionContractImplementor session,
 				QueryParameters queryParameters,
 				Serializable[] ids) {
@@ -520,7 +522,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 					queryParameters.setReadOnly( persistenceContext.isDefaultReadOnly() );
 				}
 				persistenceContext.beforeLoad();
-				List results;
+				CompletionStage<Object> results;
 				try {
 					try {
 						results = doTheLoad( sql, queryParameters, session );
@@ -550,24 +552,15 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			}
 		}
 
-		private List doTheLoad(String sql, QueryParameters queryParameters, SharedSessionContractImplementor session) throws SQLException {
+		private CompletionStage<Object> doTheLoad(String sql, QueryParameters queryParameters, SharedSessionContractImplementor session) throws SQLException {
 			final RowSelection selection = queryParameters.getRowSelection();
 			final int maxRows = LimitHelper.hasMaxRows( selection ) ?
 					selection.getMaxRows() :
 					Integer.MAX_VALUE;
 
 			final List<AfterLoadAction> afterLoadActions = new ArrayList<>();
-			final SqlStatementWrapper wrapper = executeRxQueryStatement( sql, queryParameters, false, afterLoadActions, session );
-			final ResultSet rs = wrapper.getResultSet();
-			final Statement st = wrapper.getStatement();
-			try {
-				return processResultSet( rs, queryParameters, session, false, null, maxRows, afterLoadActions );
-			}
-			finally {
-				final JdbcCoordinator jdbcCoordinator = session.getJdbcCoordinator();
-				jdbcCoordinator.getLogicalConnection().getResourceRegistry().release( st );
-				jdbcCoordinator.afterStatementExecution();
-			}
+			final CompletionStage<Object> result = executeRxQueryStatement( sql, queryParameters, false, afterLoadActions, session );
+			return processResult( result, queryParameters, session, false, null, maxRows, afterLoadActions );
 		}
 	}
 }

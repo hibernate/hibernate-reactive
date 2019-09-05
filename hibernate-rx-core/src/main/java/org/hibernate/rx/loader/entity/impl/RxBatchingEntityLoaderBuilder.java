@@ -62,7 +62,7 @@ public class RxBatchingEntityLoaderBuilder {
 			LockMode lockMode,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers influencers) {
-		return new RxEntityLoader( persister, persister.getIdentifierType(), factory, influencers);
+		return new RxEntityLoader( persister, factory, influencers);
 	}
 
 	/**
@@ -94,7 +94,7 @@ public class RxBatchingEntityLoaderBuilder {
 			LockOptions lockOptions,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers influencers) {
-		return new RxEntityLoader( persister, persister.getIdentifierType(), factory, influencers);
+		return new RxEntityLoader( persister, factory, influencers);
 	}
 
 	protected UniqueEntityLoader buildBatchingLoader(
@@ -103,7 +103,7 @@ public class RxBatchingEntityLoaderBuilder {
 			LockMode lockMode,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers influencers) {
-		return new RxEntityLoader( persister, persister.getIdentifierType(), factory, influencers);
+		return new RxEntityLoader( persister, factory, influencers);
 	}
 
 	protected UniqueEntityLoader buildBatchingLoader(
@@ -112,6 +112,6 @@ public class RxBatchingEntityLoaderBuilder {
 			LockOptions lockOptions,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers influencers) {
-		return new RxEntityLoader( persister, persister.getIdentifierType(), factory, influencers);
+		return new RxEntityLoader( persister, factory, influencers);
 	}
 }

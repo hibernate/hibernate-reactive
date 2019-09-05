@@ -1,6 +1,7 @@
 package org.hibernate.rx;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -29,10 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import io.reactiverse.pgclient.PgClient;
-import io.reactiverse.pgclient.PgConnection;
 import io.reactiverse.pgclient.PgPool;
-import io.reactiverse.pgclient.PgPoolOptions;
 import io.reactiverse.pgclient.PgRowSet;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -100,16 +98,7 @@ public class ReactiveSessionTest {
 		RxConnection rxConn = provider.getConnection();
 		PgPool client = rxConn.unwrap( PgPool.class );
 
-		BiConsumer<Object, Throwable> consumer = (o, t) -> {
-			if (t != null) {
-				System.out.println(t.toString());
-				context.fail( t );
-			} else {
-				System.out.println(o.toString());
-			}
-		};
-
-		return invokeQueryLater(client, "INSERT INTO ReactiveSessionTest$GuineaPig (id, name) VALUES (5, 'Aloi')" ).whenComplete(consumer);
+		return invokeQuery( client, "INSERT INTO ReactiveSessionTest$GuineaPig (id, name) VALUES (5, 'Aloi')" );
 	}
 
 	private CompletionStage<Object> dropTable(TestContext context) {
@@ -118,33 +107,17 @@ public class ReactiveSessionTest {
 		RxConnection rxConn = provider.getConnection();
 		PgPool client = rxConn.unwrap( PgPool.class );
 
-		BiConsumer<Object, Throwable> consumer = (o, t) -> {
-			if (t != null) {
-				System.out.println(t.toString());
-				context.fail( t );
-			} else {
-				System.out.println(o.toString());
-			}
-		};
-
-		return invokeQueryLater(client, "DROP TABLE ReactiveSessionTest$GuineaPig" ).whenComplete(consumer);
+		return invokeQuery( client, "DROP TABLE ReactiveSessionTest$GuineaPig" );
 	}
 
-	private CompletionStage<Object> invokeQueryLater(PgPool client, String query) {//, final BiConsumer<Object, Throwable> consumer) {
+	private CompletionStage<Object> invokeQuery(PgPool client, String query) {
 		// A simple query
 		CompletableFuture c = new CompletableFuture<Object>();
-
 		client.query(query, ar -> {
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-			}
 			if (ar.succeeded()) {
 				PgRowSet result = ar.result();
-				System.out.println("Got " + result.size() + " rows ");
 				c.complete(result);
 			} else {
-				System.out.println("Failure: " + ar.cause().getMessage());
 				c.completeExceptionally(ar.cause());
 			}
 
@@ -159,62 +132,36 @@ public class ReactiveSessionTest {
 		Async async = context.async();
 		try {
 			populateDB(context).whenComplete( ( create, createEx) -> {
-				RxSession rxSession = session.reactive();
-				rxSession.find( GuineaPig.class, 1000 ).whenComplete( (pig, pigEx) -> {
-					assertThat( pig ).hasValue( new GuineaPig( 1, "Aloi" ) );
-					dropTable( context ).whenComplete( ( drop, dropEx) -> {
-						async.complete();
-					} );
-				} );
+				if ( createEx == null ) {
+					try {
+						RxSession rxSession = session.reactive();
+						CompletionStage<Optional<GuineaPig>> findStage = rxSession.find( GuineaPig.class, 5 );
+						findStage.whenComplete( (pig, pigEx) -> {
+							if ( pigEx != null ) {
+								context.fail( pigEx );
+							}
+							else {
+								try {
+									assertThat( pig ).hasValue( new GuineaPig( 1, "Aloi" ) );
+									async.complete();
+								}
+								catch (Throwable t) {
+									context.fail( t );
+								}
+							}
+						} );
+					}
+					catch (Throwable t) {
+						context.fail( t );
+					}
+				}
+				else {
+					context.fail( createEx );
+				}
 			});
 		}
 		catch (Throwable t) {
 			context.fail( t );
-		}
-	}
-
-	@Test
-	public void testReactivePersist(TestContext testContext) {
-		Async async = testContext.async();
-		final GuineaPig mibbles = new GuineaPig( 22, "Mibbles" );
-
-		RxSession rxSession = session.reactive();
-		rxSession.find( GuineaPig.class, 22 );
-		rxSession.persist( mibbles )
-			.whenComplete( (pig, err) -> {
-				if ( err == null ) {
-					try {
-						assertThat( pig ).isNull();
-						System.out.println( "Complete persist" );
-						async.complete();
-					}
-					catch (Throwable t) {
-						testContext.fail( t );
-					}
-				}
-				else {
-					System.out.println( "Error is not null" );
-					testContext.fail( err );
-				}
-			} );
-		session.flush();
-	}
-
-	private void assertNoError(TestContext testContext, CompletionStage<?> stage) {
-		stage.whenComplete( (res, err) -> {
-			if (err != null) {
-				testContext.fail( err );
-			}
-		} );
-	}
-
-	private void rxAssert(TestContext ctx, Runnable r) {
-		try {
-			r.run();
-			ctx.async().complete();
-		}
-		catch ( Throwable t) {
-			ctx.fail( t );
 		}
 	}
 
