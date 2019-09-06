@@ -142,7 +142,7 @@ public class ReactiveSessionTest {
 					}
 				} ).whenComplete( (check, checkErr) -> {
 					if (checkErr != null) {
-						context.fail( checkErr.getCause() );
+						context.fail( checkErr );
 					}
 					else {
 						dropTable( context )
@@ -158,6 +158,22 @@ public class ReactiveSessionTest {
 				} );
 			}
 		});
+	}
+
+	@Test
+	public void reactivePersist(TestContext context) {
+		Async async = context.async();
+		RxSession rxSession = session.reactive();
+		rxSession.persist( new GuineaPig( 10, "Tulip" ) )
+				.whenComplete( (nope, err) -> {
+					if ( err != null ) {
+						context.fail( err );
+					}
+					else {
+						async.complete();
+					}
+				} );
+		session.flush();
 	}
 
 	@Entity

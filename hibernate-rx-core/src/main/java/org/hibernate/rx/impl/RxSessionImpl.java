@@ -155,19 +155,16 @@ public class RxSessionImpl implements RxSession {
 
 	@Override
 	public CompletionStage<Void> persist(Object entity) {
-		// FIXME: This needs to be changed
 		CompletionStage<Void> stage = new CompletableFuture<>();
 		schedulePersist( entity, stage );
 		return stage;
 	}
 
 	// Should be similar to firePersist
-	private void schedulePersist(Object entity, CompletionStage<?> stage) {
+	private void schedulePersist(Object entity, CompletionStage<Void> stage) {
 		for ( PersistEventListener listener : listeners( EventType.PERSIST ) ) {
-			RxPersistEvent event = new RxPersistEvent( null, entity, (EventSource) rxHibernateSession, this );
+			RxPersistEvent event = new RxPersistEvent( null, entity, (EventSource) rxHibernateSession, this, stage );
 			listener.onPersist( event );
-			// Let's assume there is only one
-			break;
 		}
 	}
 

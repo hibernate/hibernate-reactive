@@ -19,16 +19,44 @@ import io.reactiverse.pgclient.PgRowSet;
 import io.reactiverse.pgclient.Tuple;
 import io.reactiverse.pgclient.impl.ArrayTuple;
 
+// This could be a service
 public class RxQueryExecutor {
 
-	/**
-	 *
-	 * @param sql
-	 * @param queryParameters
-	 * @param factory
-	 * @param transformer Convert the result of the query to a list of entities
-	 * @return
-	 */
+	public CompletionStage<Object> update(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+		RxConnectionPoolProvider poolProvider = factory
+				.getServiceRegistry()
+				.getService( RxConnectionPoolProvider.class );
+
+		CompletableFuture queryResult = new CompletableFuture();
+		RxConnection connection = poolProvider.getConnection();
+		connection.unwrap( PgPool.class ).getConnection( connectionAR -> {
+			if ( connectionAR.succeeded() ) {
+				PgConnection pgConnection = connectionAR.result();
+				pgConnection.preparedQuery( sql, asTuple( paramValues ), queryAR -> {
+					if ( queryAR.succeeded() ) {
+						queryResult.complete( queryAR.result() );
+						pgConnection.close();
+					}
+					else {
+						queryResult.completeExceptionally( queryAR.cause() );
+					}
+				} );
+			}
+			else {
+				queryResult.completeExceptionally( connectionAR.cause() );
+			}
+		} );
+		return queryResult;
+	}
+
+		/**
+		 *
+		 * @param sql
+		 * @param queryParameters
+		 * @param factory
+		 * @param transformer Convert the result of the query to a list of entities
+		 * @return
+		 */
 	public CompletionStage<Object> execute(String sql, QueryParameters queryParameters, SessionFactoryImplementor factory, Function<ResultSet, Object> transformer) {
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
@@ -79,11 +107,15 @@ public class RxQueryExecutor {
 	}
 
 	private Tuple asTuple(QueryParameters queryParameters) {
-		ArrayTuple tuple = new ArrayTuple( queryParameters.getPositionalParameterValues().length );
-		for ( Object value : queryParameters.getPositionalParameterValues() ) {
+		Object[] values = queryParameters.getPositionalParameterValues();
+		return asTuple( values );
+	}
+
+	private Tuple asTuple(Object[] values) {
+		ArrayTuple tuple = new ArrayTuple( values.length );
+		for ( Object value : values ) {
 			tuple.add( value );
 		}
 		return tuple;
 	}
-
 }

@@ -61,12 +61,6 @@ public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements 
 		return this;
 	}
 
-	@Override
-	public void persist(Object object) {
-		checkOpen();
-		firePersist( new RxPersistEvent( null, object, this, this.reactive() ) );
-	}
-
 	private void firePersist(PersistEvent event) {
 		try {
 //			checkTransactionSynchStatus();

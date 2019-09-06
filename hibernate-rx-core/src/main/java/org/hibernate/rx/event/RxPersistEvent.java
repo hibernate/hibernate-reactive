@@ -12,21 +12,19 @@ import org.hibernate.rx.RxSession;
  */
 public class RxPersistEvent extends PersistEvent {
 
-	private CompletionStage<?> stage;
+	private final CompletionStage<Void> stage;
 
 	public RxPersistEvent(
 			String entityName,
 			Object original,
 			EventSource source,
-			RxSession rxSession) {
+			RxSession rxSession,
+			CompletionStage<Void> stage) {
 		super( entityName, original, source );
-	}
-
-	public void setStage(CompletionStage<?> stage) {
 		this.stage = stage;
 	}
 
-	public CompletionStage<?> getStage() {
+	public CompletionStage<Void> getStage() {
 		return stage;
 	}
 }

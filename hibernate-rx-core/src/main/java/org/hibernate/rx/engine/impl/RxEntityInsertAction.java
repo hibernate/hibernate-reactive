@@ -8,6 +8,8 @@ package org.hibernate.rx.engine.impl;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
@@ -29,6 +31,8 @@ import org.hibernate.event.spi.PostInsertEventListener;
 import org.hibernate.event.spi.PreInsertEvent;
 import org.hibernate.event.spi.PreInsertEventListener;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.persister.entity.SingleTableEntityPersister;
+import org.hibernate.rx.persister.impl.RxSingleTableEntityPersister;
 import org.hibernate.stat.internal.StatsHelper;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
@@ -36,9 +40,10 @@ import org.hibernate.stat.spi.StatisticsImplementor;
  * The action for performing an entity insertion, for entities not defined to use IDENTITY generation.
  */
 public final class RxEntityInsertAction extends AbstractEntityInsertAction {
+	private final CompletionStage<Void> insertStage;
+
 	private Object version;
 	private Object cacheEntry;
-
 	/**
 	 * Constructs an EntityInsertAction.
 	 *  @param id The entity identifier
@@ -56,9 +61,11 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction {
 			Object version,
 			EntityPersister descriptor,
 			boolean isVersionIncrementDisabled,
-			SharedSessionContractImplementor session) {
+			SharedSessionContractImplementor session,
+			CompletionStage<Void> insertStage) {
 		super( id, state, instance, isVersionIncrementDisabled, descriptor, session );
 		this.version = version;
+		this.insertStage = insertStage;
 	}
 
 	@Override
@@ -73,75 +80,89 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction {
 
 	@Override
 	public void execute() throws HibernateException {
+		CompletionStage<?> actionInsertStage = null;
 		nullifyTransientReferencesIfNotAlready();
 
-		EntityPersister persister = this.getPersister();
+		RxSingleTableEntityPersister persister = (RxSingleTableEntityPersister) this.getPersister();
 		final SharedSessionContractImplementor session = getSession();
 		final Object instance = getInstance();
 		final Serializable id = getId();
 
+		// FIXME: It needs to become async
 		final boolean veto = preInsert();
 
 		// Don't need to lock the cache here, since if someone
 		// else inserted the same pk first, the insert would fail
 
 		if ( !veto ) {
-
-			persister.insert( id, getState(), instance, session );
-			PersistenceContext persistenceContext = session.getPersistenceContext();
-			final EntityEntry entry = persistenceContext.getEntry( instance );
-			if ( entry == null ) {
-				throw new AssertionFailure( "possible non-threadsafe access to session" );
-			}
-
-			entry.postInsert( getState() );
-
-			if ( persister.hasInsertGeneratedProperties() ) {
-				persister.processInsertGeneratedProperties( id, instance, getState(), session );
-				if ( persister.isVersionPropertyGenerated() ) {
-					version = Versioning.getVersion( getState(), persister );
+			actionInsertStage = persister.insertRx( id, getState(), instance, session ).whenComplete( (res, err) -> {
+				PersistenceContext persistenceContext = session.getPersistenceContext();
+				final EntityEntry entry = persistenceContext.getEntry( instance );
+				if ( entry == null ) {
+					throw new AssertionFailure( "possible non-threadsafe access to session" );
 				}
-				entry.postUpdate( instance, getState(), version );
-			}
 
-			persistenceContext.registerInsertedKey( persister, getId() );
+				entry.postInsert( getState() );
+
+				if ( persister.hasInsertGeneratedProperties() ) {
+					persister.processInsertGeneratedProperties( id, instance, getState(), session );
+					if ( persister.isVersionPropertyGenerated() ) {
+						version = Versioning.getVersion( getState(), persister );
+					}
+					entry.postUpdate( instance, getState(), version );
+				}
+
+				persistenceContext.registerInsertedKey( persister, getId() );
+			} );
+		}
+		else {
+			actionInsertStage = CompletableFuture.completedFuture( null );
 		}
 
-		final SessionFactoryImplementor factory = session.getFactory();
+		actionInsertStage.whenComplete( (res, err) -> {
+			final SessionFactoryImplementor factory = session.getFactory();
 
-		if ( isCachePutEnabled( persister, session ) ) {
-			final EntityDataAccess cacheAccess = factory.getCache()
-					.getEntityRegionAccess( persister.getNavigableRole() );
+			if ( isCachePutEnabled( persister, session ) ) {
+				final EntityDataAccess cacheAccess = factory.getCache()
+						.getEntityRegionAccess( persister.getNavigableRole() );
 
-			final CacheEntry ce = persister.buildCacheEntry(
-					instance,
-					getState(),
-					version,
-					session
-			);
-			cacheEntry = persister.getCacheEntryStructure().structure( ce );
-			final EntityDataAccess cache = persister.getCacheAccessStrategy();
-			final Object ck = cache.generateCacheKey( id, persister, factory, session.getTenantIdentifier() );
-
-			final boolean put = cacheInsert( persister, ck );
-
-			if ( put && factory.getStatistics().isStatisticsEnabled() ) {
-				factory.getStatistics().entityCachePut(
-						persister.getNavigableRole(),
-						cacheAccess.getRegion().getName()
+				final CacheEntry ce = persister.buildCacheEntry(
+						instance,
+						getState(),
+						version,
+						session
 				);
+				cacheEntry = persister.getCacheEntryStructure().structure( ce );
+				final EntityDataAccess cache = persister.getCacheAccessStrategy();
+				final Object ck = cache.generateCacheKey( id, persister, factory, session.getTenantIdentifier() );
+
+				final boolean put = cacheInsert( persister, ck );
+
+				if ( put && factory.getStatistics().isStatisticsEnabled() ) {
+					factory.getStatistics().entityCachePut(
+							persister.getNavigableRole(),
+							cacheAccess.getRegion().getName()
+					);
+				}
 			}
-		}
 
-		handleNaturalIdPostSaveNotifications( id );
+			handleNaturalIdPostSaveNotifications( id );
 
-		postInsert();
+			postInsert();
 
-		if ( factory.getStatistics().isStatisticsEnabled() && !veto ) {
-			factory.getStatistics().insertEntity( getEntityName() );
-		}
+			if ( factory.getStatistics().isStatisticsEnabled() && !veto ) {
+				factory.getStatistics().insertEntity( getEntityName() );
+			}
 
-		markExecuted();
+			markExecuted();
+		}).whenComplete( (res, err) ->  {
+			if ( err == null ) {
+				this.insertStage.toCompletableFuture().complete( null );
+			}
+			else {
+				this.insertStage.toCompletableFuture().completeExceptionally( err );
+			}
+		} );
 	}
 
 	private boolean cacheInsert(EntityPersister persister, Object ck) {

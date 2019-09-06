@@ -2,6 +2,7 @@ package org.hibernate.rx.event;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -12,12 +13,15 @@ import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityEntryExtraState;
 import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.DefaultPersistEventListener;
 import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PersistEvent;
 import org.hibernate.event.spi.PersistEventListener;
+import org.hibernate.id.IdentifierGenerationException;
+import org.hibernate.id.IdentifierGeneratorHelper;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
@@ -64,12 +68,52 @@ public class DefaultRxPersistEventListener extends DefaultPersistEventListener i
 	protected void entityIsTransient(PersistEvent event, Map createCache) {
 		LOG.trace( "Saving transient instance" );
 		final EventSource source = event.getSession();
+		RxPersistEvent rxEvent = (RxPersistEvent) event;
 		final Object entity = source.getPersistenceContextInternal().unproxy(event.getObject());
 
-//		RxPersistEvent rxPersistEvent = (RxPersistEvent) event;
-//		CompletionStage<?> stage = rxPersistEvent.getStage();
+		RxPersistEvent rxPersistEvent = (RxPersistEvent) event;
+		CompletionStage<Void> stage = rxPersistEvent.getStage();
 		if ( createCache.put( entity, entity ) == null ) {
-			saveWithGeneratedId( entity, event.getEntityName(), createCache, source, false );
+			saveWithGeneratedId( entity, event.getEntityName(), createCache, source, false, stage );
+		}
+	}
+
+	protected void saveWithGeneratedId(
+			Object entity,
+			String entityName,
+			Object anything,
+			EventSource source,
+			boolean requiresImmediateIdAccess,
+			CompletionStage<Void> insertStage) {
+		callbackRegistry.preCreate( entity );
+
+		if ( entity instanceof SelfDirtinessTracker ) {
+			( (SelfDirtinessTracker) entity ).$$_hibernate_clearDirtyAttributes();
+		}
+
+		EntityPersister persister = source.getEntityPersister( entityName, entity );
+		Serializable generatedId = persister.getIdentifierGenerator().generate( source, entity );
+		if ( generatedId == null ) {
+			throw new IdentifierGenerationException( "null id generated for:" + entity.getClass() );
+		}
+		else if ( generatedId == IdentifierGeneratorHelper.SHORT_CIRCUIT_INDICATOR ) {
+			// FIXME: CAn I delete this?
+			source.getIdentifier( entity );
+		}
+		else if ( generatedId == IdentifierGeneratorHelper.POST_INSERT_INDICATOR ) {
+			performSave( entity, null, persister, true, anything, source, requiresImmediateIdAccess, insertStage );
+		}
+		else {
+			// TODO: define toString()s for generators
+			if ( LOG.isDebugEnabled() ) {
+				LOG.debugf(
+						"Generated identifier: %s, using strategy: %s",
+						persister.getIdentifierType().toLoggableString( generatedId, source.getFactory() ),
+						persister.getIdentifierGenerator().getClass().getName()
+				);
+			}
+
+			performSave( entity, generatedId, persister, false, anything, source, true, insertStage );
 		}
 	}
 
@@ -80,7 +124,8 @@ public class DefaultRxPersistEventListener extends DefaultPersistEventListener i
 			boolean useIdentityColumn,
 			Object anything,
 			EventSource source,
-			boolean requiresImmediateIdAccess) {
+			boolean requiresImmediateIdAccess,
+			CompletionStage<Void> insertStage) {
 
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracev( "Saving {0}", MessageHelper.infoString( persister, id, source.getFactory() ) );
@@ -115,7 +160,8 @@ public class DefaultRxPersistEventListener extends DefaultPersistEventListener i
 				useIdentityColumn,
 				anything,
 				source,
-				requiresImmediateIdAccess
+				requiresImmediateIdAccess,
+				insertStage
 		);
 	}
 
@@ -126,7 +172,8 @@ public class DefaultRxPersistEventListener extends DefaultPersistEventListener i
 			boolean useIdentityColumn,
 			Object anything,
 			EventSource source,
-			boolean requiresImmediateIdAccess) {
+			boolean requiresImmediateIdAccess,
+			CompletionStage<Void> insertStage) {
 
 		Serializable id = key == null ? null : key.getIdentifier();
 
@@ -177,7 +224,7 @@ public class DefaultRxPersistEventListener extends DefaultPersistEventListener i
 		);
 
 		AbstractEntityInsertAction insert = addInsertAction(
-				values, id, entity, persister, useIdentityColumn, source, shouldDelayIdentityInserts
+				values, id, entity, persister, useIdentityColumn, source, shouldDelayIdentityInserts, insertStage
 		);
 
 		// postpone initializing id in case the insert has non-nullable transient dependencies
@@ -218,7 +265,8 @@ public class DefaultRxPersistEventListener extends DefaultPersistEventListener i
 			EntityPersister persister,
 			boolean useIdentityColumn,
 			EventSource source,
-			boolean shouldDelayIdentityInserts) {
+			boolean shouldDelayIdentityInserts,
+			CompletionStage<Void> insertStage) {
 //		AbstractEntityInsertAction insertAction = null;
 //		if ( useIdentityColumn ) {
 //			insertAction = new RxEntityIdentityInsertAction(
@@ -240,7 +288,8 @@ public class DefaultRxPersistEventListener extends DefaultPersistEventListener i
 					version,
 					persister,
 					isVersionIncrementDisabled(),
-					source
+					source,
+					insertStage
 			);
 //		}
 		RxActionQueue rxActionQueue = ( (RxHibernateSession) source ).getRxActionQueue();
