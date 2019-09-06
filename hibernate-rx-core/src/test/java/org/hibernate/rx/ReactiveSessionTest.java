@@ -1,6 +1,7 @@
 package org.hibernate.rx;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -34,8 +35,6 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(VertxUnitRunner.class)
 public class ReactiveSessionTest {
@@ -90,6 +89,32 @@ public class ReactiveSessionTest {
 		session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
 	}
 
+	private CompletionStage<Object> selectNameFromId(Integer id) {
+		RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
+		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
+		RxConnection rxConn = provider.getConnection();
+		PgPool client = rxConn.unwrap( PgPool.class );
+		CompletableFuture<Object> idStage = new CompletableFuture<>();
+		invokeQuery( client, "SELECT name FROM ReactiveSessionTest$GuineaPig WHERE id = " + id ).whenComplete( (res, err) -> {
+			if ( err == null ) {
+				if ( res != null ) {
+					// Only one result
+					( (PgRowSet) res ).forEach( row -> {
+						String name = row.getString( 0 );
+						idStage.complete( name );
+					} );
+				}
+				else {
+					idStage.complete( null );
+				}
+			}
+			else {
+				idStage.completeExceptionally( err );
+			}
+		});
+		return idStage;
+	}
+
 	private CompletionStage<Object> populateDB(TestContext context) {
 		RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
 		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
@@ -128,37 +153,32 @@ public class ReactiveSessionTest {
 	@Test
 	public void reactiveFind(TestContext context) {
 		Async async = context.async();
-		populateDB(context).whenComplete( ( populate, populateErr) -> {
-			if ( populateErr != null ) {
-				context.fail( populateErr );
-			} else {
-				RxSession rxSession = session.reactive();
-				rxSession.find( GuineaPig.class, 5 ).whenComplete( (pig, pigEx) -> {
-					if ( pigEx != null ) {
-						context.fail( pigEx );
-					}
-					else {
-						assertThat( pig ).hasValue( new GuineaPig( 5, "Aloi" ) );
-					}
-				} ).whenComplete( (check, checkErr) -> {
-					if (checkErr != null) {
-						context.fail( checkErr );
-					}
-					else {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		populateDB( context ).whenComplete( (populate, populateErr) -> {
+			context.assertNull( populateErr );
+
+			RxSession rxSession = session.reactive();
+			rxSession.find( GuineaPig.class, expectedPig.getId() )
+					.whenComplete( (actualPig, pigEx) -> {
+						context.assertNull( pigEx );
+						assertThatPigsAreEqual( context, expectedPig, actualPig );
+					} )
+					.whenComplete( (check, checkErr) -> {
+						context.assertNull( checkErr );
 						dropTable( context )
 								.whenComplete( (drop, dropErr) -> {
-									if ( dropErr != null ) {
-										context.fail( dropErr );
-									}
-									else {
-										async.complete();
-									}
+									context.assertNull( dropErr );
+									async.complete();
 								} );
-					}
-				} );
-			}
-		});
+					} );
+		} );
 	}
+
+	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, Optional<GuineaPig> actual) {
+		context.assertTrue( actual.isPresent() );
+		context.assertEquals( expected.getId(), actual.get().getId() );
+		context.assertEquals( expected.getName(), actual.get().getName() );
+	};
 
 	@Test
 	public void reactivePersist(TestContext context) {
@@ -166,12 +186,13 @@ public class ReactiveSessionTest {
 		RxSession rxSession = session.reactive();
 		rxSession.persist( new GuineaPig( 10, "Tulip" ) )
 				.whenComplete( (nope, err) -> {
-					if ( err != null ) {
-						context.fail( err );
-					}
-					else {
+					context.assertNull( err );
+
+					selectNameFromId( 10 ).whenComplete( (selectRes, selectErr) -> {
+						context.assertNull( selectErr );
+						context.assertEquals( "Tulip", selectRes );
 						async.complete();
-					}
+					} );
 				} );
 		session.flush();
 	}
@@ -220,10 +241,7 @@ public class ReactiveSessionTest {
 				return false;
 			}
 			GuineaPig guineaPig = (GuineaPig) o;
-			// I'm comparing the id only for the purpose of this test
-			// This is not meant as an example of good practice
-			return Objects.equals( id, guineaPig.id ) &&
-					Objects.equals( name, guineaPig.name );
+			return Objects.equals( name, guineaPig.name );
 		}
 
 		@Override
