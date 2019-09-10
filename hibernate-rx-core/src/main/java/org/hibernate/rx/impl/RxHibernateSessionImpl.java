@@ -24,7 +24,6 @@ import org.hibernate.rx.RxHibernateSession;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.engine.spi.RxHibernateSessionFactoryImplementor;
-import org.hibernate.rx.event.RxPersistEvent;
 
 public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements RxHibernateSession, EventSource {
 
@@ -167,6 +166,14 @@ public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements 
 	@Override
 	public void reactive(Consumer<RxSession> consumer) {
 		consumer.accept( new RxSessionImpl( factory, this ) );
+	}
+
+	@Override
+	public <T> T unwrap(Class<T> clazz) {
+		if ( RxHibernateSession.class.isAssignableFrom( clazz ) ) {
+			return (T) this;
+		}
+		return super.unwrap( clazz );
 	}
 }
 

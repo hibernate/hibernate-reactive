@@ -89,22 +89,27 @@ public class ReactiveSessionTest {
 		session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
 	}
 
-	private CompletionStage<Object> selectNameFromId(Integer id) {
+	private CompletionStage<String> selectNameFromId(Integer id) {
 		RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
 		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
 		RxConnection rxConn = provider.getConnection();
 		PgPool client = rxConn.unwrap( PgPool.class );
-		CompletableFuture<Object> idStage = new CompletableFuture<>();
+		CompletableFuture<String> idStage = new CompletableFuture<>();
 		invokeQuery( client, "SELECT name FROM ReactiveSessionTest$GuineaPig WHERE id = " + id ).whenComplete( (res, err) -> {
 			if ( err == null ) {
-				if ( res != null ) {
+				PgRowSet rowSet = ( (PgRowSet) res );
+				if ( rowSet.size() == 1 ) {
 					// Only one result
 					( (PgRowSet) res ).forEach( row -> {
 						String name = row.getString( 0 );
 						idStage.complete( name );
 					} );
 				}
+				else if (rowSet.size() > 1) {
+					idStage.completeExceptionally( new AssertionError( "More than one result returned: " + rowSet.size() ) );
+				}
 				else {
+					// Size 0
 					idStage.complete( null );
 				}
 			}
@@ -195,6 +200,28 @@ public class ReactiveSessionTest {
 					} );
 				} );
 		session.flush();
+	}
+
+	@Test
+	public void reactiveRemove(TestContext context) {
+		Async async = context.async();
+		populateDB( context )
+				.whenComplete( (popAR, popErr) -> {
+				context.assertNull( popErr );
+
+				RxSession rxSession = session.reactive();
+				rxSession.remove( new GuineaPig( 5, "Aloi" ) )
+						.whenComplete( (removeAR, removeErr) -> {
+							context.assertNull( removeErr );
+
+							selectNameFromId( 5 ).whenComplete( (selectRes, selectErr) -> {
+								context.assertNull( selectErr );
+								context.assertNull( selectRes );
+								async.complete();
+							} );
+						} );
+				session.flush();
+		} );
 	}
 
 	@Entity

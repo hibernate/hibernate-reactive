@@ -1,6 +1,11 @@
 package org.hibernate.rx.persister.impl;
 
 import java.io.Serializable;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -11,12 +16,19 @@ import org.hibernate.MappingException;
 import org.hibernate.Session;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
+import org.hibernate.cfg.NotYetImplementedException;
+import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
+import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.jdbc.Expectations;
 import org.hibernate.loader.entity.UniqueEntityLoader;
@@ -27,13 +39,17 @@ import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
+import org.hibernate.rx.sql.Delete;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
+import org.hibernate.type.Type;
 
 public class RxSingleTableEntityPersister extends SingleTableEntityPersister implements EntityPersister {
 
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( RxSingleTableEntityPersister.class );
 
 	private BasicBatchKey inserBatchKey;
+	private BasicBatchKey deleteBatchKey;
+
 	private final RxQueryExecutor queryExecutor = new RxQueryExecutor();
 
 	public RxSingleTableEntityPersister(
@@ -102,6 +118,25 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 
 	@Override
 	public void insert(Serializable id, Object[] fields, Object object, SharedSessionContractImplementor session) {
+		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
+	}
+
+	@Override
+	protected void delete(
+			Serializable id,
+			Object version,
+			int j,
+			Object object,
+			String sql,
+			SharedSessionContractImplementor session,
+			Object[] loadedState) throws HibernateException {
+		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
+	}
+
+	@Override
+	public void delete(
+			Serializable id, Object version, Object object, SharedSessionContractImplementor session)
+			throws HibernateException {
 		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
 	}
 
@@ -224,11 +259,173 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		return paramValues;
 	}
 
+	protected CompletionStage<?> deleteRx(
+			Serializable id,
+			Object version,
+			int j,
+			Object object,
+			String sql,
+			SharedSessionContractImplementor session,
+			Object[] loadedState) throws HibernateException {
+
+		if ( isInverseTable( j ) ) {
+			return CompletableFuture.completedFuture( null );
+		}
+		CompletionStage<Object> deleteStage = null;
+		final boolean useVersion = j == 0 && isVersioned();
+		final boolean callable = isDeleteCallable( j );
+		final Expectation expectation = Expectations.appropriateExpectation( deleteResultCheckStyles[j] );
+		final boolean useBatch = j == 0 && isBatchable() && expectation.canBeBatched();
+		if ( useBatch && deleteBatchKey == null ) {
+			deleteBatchKey = new BasicBatchKey(
+					getEntityName() + "#DELETE",
+					expectation
+			);
+		}
+
+		if ( LOG.isTraceEnabled() ) {
+			LOG.tracev( "Deleting entity: {0}", MessageHelper.infoString( this, id, getFactory() ) );
+			if ( useVersion ) {
+				LOG.tracev( "Version: {0}", version );
+			}
+		}
+
+		if ( isTableCascadeDeleteEnabled( j ) ) {
+			if ( LOG.isTraceEnabled() ) {
+				LOG.tracev( "Delete handled by foreign key constraint: {0}", getTableName( j ) );
+			}
+			//EARLY EXIT!
+			return CompletableFuture.completedFuture( null );
+		}
+
+		//Render the SQL query
+
+		// FIXME: This is a hack to set the right type for the parameters
+		//        until we have a proper type system in place
+		PreparedStatementAdapter delete = new PreparedStatementAdapter();
+
+//			}
+
+		int index = 1;
+
+		try {
+			index += expectation.prepare( delete );
+
+			// Do the key. The key is immutable so we can use the _current_ object state - not necessarily
+			// the state at the time the delete was issued
+			getIdentifierType().nullSafeSet( delete, id, index, session );
+			index += getIdentifierColumnSpan();
+//
+//				// We should use the _current_ object state (ie. after any updates that occurred during flush)
+			if ( useVersion ) {
+				getVersionType().nullSafeSet( delete, version, index, session );
+			}
+			else if ( isAllOrDirtyOptLocking() && loadedState != null ) {
+				boolean[] versionability = getPropertyVersionability();
+				Type[] types = getPropertyTypes();
+				for ( int i = 0; i < getEntityMetamodel().getPropertySpan(); i++ ) {
+					if ( isPropertyOfTable( i, j ) && versionability[i] ) {
+						// this property belongs to the table and it is not specifically
+						// excluded from optimistic locking by optimistic-lock="false"
+						boolean[] settable = types[i].toColumnNullness( loadedState[i], getFactory() );
+						types[i].nullSafeSet( delete, loadedState[i], index, settable, session );
+						index += ArrayHelper.countTrue( settable );
+					}
+				}
+			}
+
+			deleteStage = queryExecutor.update( sql, delete.getParametersAsArray(), getFactory() );
+
+			return deleteStage;
+		}
+		catch (SQLException e) {
+			throw new HibernateException( e );
+		}
+	}
+
+	public CompletionStage<?> deleteRx(
+			Serializable id, Object version, Object object, SharedSessionContractImplementor session)
+			throws HibernateException {
+		final int span = getTableSpan();
+		boolean isImpliedOptimisticLocking = !getEntityMetamodel().isVersioned() && isAllOrDirtyOptLocking();
+		Object[] loadedState = null;
+		if ( isImpliedOptimisticLocking ) {
+			// need to treat this as if it where optimistic-lock="all" (dirty does *not* make sense);
+			// first we need to locate the "loaded" state
+			//
+			// Note, it potentially could be a proxy, so doAfterTransactionCompletion the location the safe way...
+			final EntityKey key = session.generateEntityKey( id, this );
+			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+			Object entity = persistenceContext.getEntity( key );
+			if ( entity != null ) {
+				EntityEntry entry = persistenceContext.getEntry( entity );
+				loadedState = entry.getLoadedState();
+			}
+		}
+
+		final String[] deleteStrings;
+		if ( isImpliedOptimisticLocking && loadedState != null ) {
+			// we need to utilize dynamic delete statements
+			deleteStrings = generateSQLDeleteStrings( loadedState );
+		}
+		else {
+			// otherwise, utilize the static delete statements
+			deleteStrings = getSQLDeleteStrings();
+		}
+
+		for ( int j = span - 1; j >= 0; j-- ) {
+			// For now we assume there is only one delete query
+			return deleteRx( id, version, j, object, deleteStrings[j], session, loadedState );
+		}
+
+		throw new AssertionError( "Something unexpected during the deletion of an entity" );
+	}
+
+	private boolean isAllOrDirtyOptLocking() {
+		return getEntityMetamodel().getOptimisticLockStyle() == OptimisticLockStyle.DIRTY
+				|| getEntityMetamodel().getOptimisticLockStyle() == OptimisticLockStyle.ALL;
+	}
+
+	private String[] generateSQLDeleteStrings(Object[] loadedState) {
+		int span = getTableSpan();
+		String[] deleteStrings = new String[span];
+		for ( int j = span - 1; j >= 0; j-- ) {
+			Delete delete = new Delete()
+					.setTableName( getTableName( j ) )
+					.addPrimaryKeyColumns( getKeyColumns( j ) );
+			if ( getFactory().getSessionFactoryOptions().isCommentsEnabled() ) {
+				delete.setComment( "delete " + getEntityName() + " [" + j + "]" );
+			}
+
+			boolean[] versionability = getPropertyVersionability();
+			Type[] types = getPropertyTypes();
+			for ( int i = 0; i < getEntityMetamodel().getPropertySpan(); i++ ) {
+				if ( isPropertyOfTable( i, j ) && versionability[i] ) {
+					// this property belongs to the table and it is not specifically
+					// excluded from optimistic locking by optimistic-lock="false"
+					String[] propertyColumnNames = getPropertyColumnNames( i );
+					boolean[] propertyNullness = types[i].toColumnNullness( loadedState[i], getFactory() );
+					for ( int k = 0; k < propertyNullness.length; k++ ) {
+						if ( propertyNullness[k] ) {
+							delete.addWhereFragment( propertyColumnNames[k] + " = $" + (k + 1) );
+						}
+						else {
+							delete.addWhereFragment( propertyColumnNames[k] + " is null" );
+						}
+					}
+				}
+			}
+			deleteStrings[j] = delete.toStatementString();
+		}
+		return deleteStrings;
+	}
+
 	@Override
 	protected String generateInsertString(boolean identityInsert, boolean[] includeProperty, int j) {
 		final String VALUES = ") values (";
 		String insertSQL = super.generateInsertString( identityInsert, includeProperty, j );
 		int parametersStartIndex = insertSQL.indexOf( VALUES ) + VALUES.length();
+		// Convert the '?' to a '$d' in a query
 		long paramNum = insertSQL.substring( parametersStartIndex ).chars().filter( ch -> ch == '?' ).count();
 		String firstPart = insertSQL.substring( 0, parametersStartIndex );
 		StringBuilder builder = new StringBuilder();
@@ -239,6 +436,20 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		builder.append( ")" );
 		insertSQL = firstPart + builder.substring( 2 );
 		return insertSQL;
+	}
+
+	@Override
+	protected String generateDeleteString(int j) {
+		final Delete delete = new Delete()
+				.setTableName( getTableName( j ) )
+				.addPrimaryKeyColumns( getKeyColumns( j ) );
+		if ( j == 0 ) {
+			delete.setVersionColumnName( getVersionColumnName() );
+		}
+		if ( getFactory().getSessionFactoryOptions().isCommentsEnabled() ) {
+			delete.setComment( "delete " + getEntityName() );
+		}
+		return delete.toStatementString();
 	}
 }
 

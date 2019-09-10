@@ -80,7 +80,7 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction {
 
 	@Override
 	public void execute() throws HibernateException {
-		CompletionStage<?> actionInsertStage = null;
+		CompletionStage<?> insertStage = null;
 		nullifyTransientReferencesIfNotAlready();
 
 		RxSingleTableEntityPersister persister = (RxSingleTableEntityPersister) this.getPersister();
@@ -95,7 +95,7 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction {
 		// else inserted the same pk first, the insert would fail
 
 		if ( !veto ) {
-			actionInsertStage = persister.insertRx( id, getState(), instance, session ).whenComplete( (res, err) -> {
+			insertStage = persister.insertRx( id, getState(), instance, session ).whenComplete( (res, err) -> {
 				PersistenceContext persistenceContext = session.getPersistenceContext();
 				final EntityEntry entry = persistenceContext.getEntry( instance );
 				if ( entry == null ) {
@@ -116,10 +116,10 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction {
 			} );
 		}
 		else {
-			actionInsertStage = CompletableFuture.completedFuture( null );
+			insertStage = CompletableFuture.completedFuture( null );
 		}
 
-		actionInsertStage.whenComplete( (res, err) -> {
+		insertStage.whenComplete( (res, err) -> {
 			final SessionFactoryImplementor factory = session.getFactory();
 
 			if ( isCachePutEnabled( persister, session ) ) {

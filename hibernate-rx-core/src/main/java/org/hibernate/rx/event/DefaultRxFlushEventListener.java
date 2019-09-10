@@ -6,6 +6,7 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEventListener;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.rx.RxHibernateSession;
+import org.hibernate.rx.engine.spi.RxActionQueue;
 
 import org.jboss.logging.Logger;
 
@@ -25,13 +26,17 @@ public class DefaultRxFlushEventListener extends DefaultFlushEventListener {
 			session.getPersistenceContext().setFlushing( true );
 			// we need to lock the collection caches before executing entity inserts/updates in order to
 			// account for bi-directional associations
-			session.getActionQueue().prepareActions();
-			( (RxHibernateSession) session ).getRxActionQueue().executeActions();
+			actionQueue( session ).prepareActions();
+			actionQueue( session ).executeActions();
 		}
 		finally {
 			session.getPersistenceContext().setFlushing( false );
 			session.getJdbcCoordinator().flushEnding();
 		}
+	}
+
+	private RxActionQueue actionQueue(EventSource session) {
+		return session.unwrap( RxHibernateSession.class ).getRxActionQueue();
 	}
 
 	public static class EventContextManagingFlushEventListenerDuplicationStrategy implements DuplicationStrategy {

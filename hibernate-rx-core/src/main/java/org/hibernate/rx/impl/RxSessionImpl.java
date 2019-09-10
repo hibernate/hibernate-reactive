@@ -28,6 +28,8 @@ import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.service.spi.EventListenerGroup;
 import org.hibernate.event.service.spi.EventListenerRegistry;
+import org.hibernate.event.spi.DeleteEvent;
+import org.hibernate.event.spi.DeleteEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.EventType;
 import org.hibernate.event.spi.LoadEvent;
@@ -45,6 +47,7 @@ import org.hibernate.rx.RxQuery;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.StateControl;
 import org.hibernate.rx.engine.spi.RxHibernateSessionFactoryImplementor;
+import org.hibernate.rx.event.RxDeleteEvent;
 import org.hibernate.rx.event.RxLoadEvent;
 import org.hibernate.rx.event.RxPersistEvent;
 import org.hibernate.service.ServiceRegistry;
@@ -168,8 +171,19 @@ public class RxSessionImpl implements RxSession {
 		}
 	}
 
-	private Executor executor() {
-		return ForkJoinPool.commonPool();
+	@Override
+	public CompletionStage<Void> remove(Object entity) {
+		CompletionStage<Void> stage = new CompletableFuture<>();
+		fireRemove( entity, stage );
+		return stage;
+	}
+
+	// Should be similar to fireRemove
+	private void fireRemove(Object entity, CompletionStage<Void> stage) {
+		for ( DeleteEventListener listener : listeners( EventType.DELETE ) ) {
+			DeleteEvent event = new RxDeleteEvent( null, entity, (EventSource) rxHibernateSession, this, stage );
+			listener.onDelete( event );
+		}
 	}
 
 	private ExceptionConverter exceptionConverter() {
@@ -184,13 +198,6 @@ public class RxSessionImpl implements RxSession {
 		return factory.unwrap( SessionFactoryImplementor.class )
 				.getServiceRegistry().getService( EventListenerRegistry.class )
 				.getEventListenerGroup( type );
-	}
-
-	@Override
-	public CompletionStage<Void> remove(Object entity) {
-		return CompletableFuture.runAsync( () -> {
-			rxHibernateSession.remove( entity );
-		} );
 	}
 
 	@Override

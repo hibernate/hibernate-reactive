@@ -40,9 +40,6 @@ public class DefaultRxPersistEventListener extends DefaultPersistEventListener i
 
 	private CallbackRegistry callbackRegistry;
 
-	public DefaultRxPersistEventListener() {
-	}
-
 	@Override
 	public void injectCallbackRegistry(CallbackRegistry callbackRegistry) {
 		super.injectCallbackRegistry( callbackRegistry );
