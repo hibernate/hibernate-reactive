@@ -35,7 +35,7 @@ import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
-public class DefaultRxPersistEventListener extends DefaultPersistEventListener implements RxPersistEventListener {
+public class DefaultRxPersistEventListener extends DefaultPersistEventListener {
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultRxPersistEventListener.class );
 
 	private CallbackRegistry callbackRegistry;
@@ -44,21 +44,6 @@ public class DefaultRxPersistEventListener extends DefaultPersistEventListener i
 	public void injectCallbackRegistry(CallbackRegistry callbackRegistry) {
 		super.injectCallbackRegistry( callbackRegistry );
 		this.callbackRegistry = callbackRegistry;
-	}
-
-	@Override
-	public void onPersist(RxPersistEvent event) throws HibernateException {
-		super.onPersist( (PersistEvent) event );
-	}
-
-	@Override
-	public void onPersist(RxPersistEvent event, Map<?, ?> createdAlready) throws HibernateException {
-		super.onPersist( (PersistEvent) event, createdAlready );
-	}
-
-	@Override
-	public void onPersist(PersistEvent event) throws HibernateException {
-		super.onPersist( event );
 	}
 
 	@Override
