@@ -9,17 +9,13 @@ import org.hibernate.rx.service.RxConnection;
 import org.hibernate.rx.service.RxConnectionPoolProviderImpl;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.service.spi.Configurable;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import io.vertx.axle.pgclient.PgPool;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.pgclient.PgPool;
-import io.vertx.sqlclient.SqlConnection;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(VertxUnitRunner.class)
 public class RxConnectionProviderTest {
@@ -39,21 +35,13 @@ public class RxConnectionProviderTest {
 			RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
 			( (Configurable) provider ).configure( settings() );
 			RxConnection rxConn = provider.getConnection();
-			rxConn.unwrap( PgPool.class ).getConnection( ar1 -> {
-				SqlConnection pgConnection = null;
-				try {
-					assertThat( ar1.succeeded() ).isTrue();
-					pgConnection = ar1.result();
-					async.complete();
-				}
-				catch (Throwable t) {
-					context.fail( t );
-				}
-				finally {
-					if ( pgConnection != null ) {
-						pgConnection.close();
-					}
-				}
+			rxConn.unwrap( PgPool.class ).getConnection().whenComplete((con, err) -> {
+			    if(err != null)
+			        context.fail(err);
+			    else
+			        async.complete();
+			    if(con != null)
+			        con.close();
 			} );
 		}
 		catch (Throwable t) {

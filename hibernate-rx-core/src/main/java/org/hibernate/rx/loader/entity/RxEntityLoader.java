@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -33,6 +34,8 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
+
+import io.vertx.axle.sqlclient.RowSet;
 
 /**
  * @see org.hibernate.loader.entity.EntityLoader
@@ -297,7 +300,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 		return result;
 	}
 
-	private CompletionStage<Object> doRxQuery(
+	private CompletionStage<Optional<Object>> doRxQuery(
 			final SharedSessionContractImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
@@ -310,7 +313,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 
 		final List<AfterLoadAction> afterLoadActions = new ArrayList<AfterLoadAction>();
 
-		final CompletionStage<Object> result = executeRxQueryStatement(
+		final CompletionStage<Optional<Object>> result = executeRxQueryStatement(
 				queryParameters,
 				false,
 				afterLoadActions,
@@ -335,7 +338,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 		return result;
 	}
 
-	protected CompletionStage<Object> executeRxQueryStatement(
+	protected CompletionStage<Optional<Object>> executeRxQueryStatement(
 			final QueryParameters queryParameters,
 			final boolean scroll,
 			List<AfterLoadAction> afterLoadActions,
@@ -344,7 +347,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 		return executeRxQueryStatement( getSQLString(), queryParameters, scroll, afterLoadActions, session, transformer );
 	}
 
-	protected CompletionStage<Object> executeRxQueryStatement(
+	protected CompletionStage<Optional<Object>> executeRxQueryStatement(
 			String sqlStatement,
 			QueryParameters queryParameters,
 			boolean scroll	,
@@ -367,7 +370,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 //		final PreparedStatement st = prepareQueryStatement( sql, queryParameters, limitHandler, scroll, session );
 
 		RxQueryExecutor executor = new RxQueryExecutor();
-		CompletionStage<Object> result = executor.execute( sql, queryParameters, getFactory(), transformer );
+		CompletionStage<Optional<Object>> result = executor.execute( sql, queryParameters, getFactory(), transformer );
 //		final ResultSet rs = getResultSet(
 //					st,
 //					queryParameters.getRowSelection(),

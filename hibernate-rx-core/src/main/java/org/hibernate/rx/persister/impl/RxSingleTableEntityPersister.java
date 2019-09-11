@@ -43,6 +43,8 @@ import org.hibernate.rx.sql.Delete;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.type.Type;
 
+import io.vertx.axle.sqlclient.RowSet;
+
 public class RxSingleTableEntityPersister extends SingleTableEntityPersister implements EntityPersister {
 
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( RxSingleTableEntityPersister.class );
@@ -201,7 +203,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		return insertStage;
 	}
 
-	public CompletionStage<?> insertRx(
+	public CompletionStage<RowSet> insertRx(
 			Serializable id,
 			Object[] fields,
 			boolean[] notNull,
@@ -243,7 +245,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		final boolean callable = isInsertCallable( j );
 
 		Object[] paramValues = paramValues( id, fields );
-		CompletionStage<Object> insertStage = queryExecutor.update( sql, paramValues, getFactory() );
+		CompletionStage<RowSet> insertStage = queryExecutor.update( sql, paramValues, getFactory() );
 		return insertStage;
 	}
 
@@ -259,7 +261,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		return paramValues;
 	}
 
-	protected CompletionStage<?> deleteRx(
+	protected CompletionStage<RowSet> deleteRx(
 			Serializable id,
 			Object version,
 			int j,
@@ -271,7 +273,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		if ( isInverseTable( j ) ) {
 			return CompletableFuture.completedFuture( null );
 		}
-		CompletionStage<Object> deleteStage = null;
+		CompletionStage<RowSet> deleteStage = null;
 		final boolean useVersion = j == 0 && isVersioned();
 		final boolean callable = isDeleteCallable( j );
 		final Expectation expectation = Expectations.appropriateExpectation( deleteResultCheckStyles[j] );

@@ -33,8 +33,8 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.pgclient.PgPool;
-import io.vertx.sqlclient.RowSet;
+import io.vertx.axle.pgclient.PgPool;
+import io.vertx.axle.sqlclient.RowSet;
 
 @RunWith(VertxUnitRunner.class)
 public class ReactiveSessionTest {
@@ -94,33 +94,22 @@ public class ReactiveSessionTest {
 		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
 		RxConnection rxConn = provider.getConnection();
 		PgPool client = rxConn.unwrap( PgPool.class );
-		CompletableFuture<String> idStage = new CompletableFuture<>();
-		invokeQuery( client, "SELECT name FROM ReactiveSessionTest$GuineaPig WHERE id = " + id ).whenComplete( (res, err) -> {
-			if ( err == null ) {
-				RowSet rowSet = ( (RowSet) res );
+		return invokeQuery( client, "SELECT name FROM ReactiveSessionTest$GuineaPig WHERE id = " + id ).thenApply( rowSet -> {
 				if ( rowSet.size() == 1 ) {
 					// Only one result
-					( (RowSet) res ).forEach( row -> {
-						String name = row.getString( 0 );
-						idStage.complete( name );
-					} );
+				    return rowSet.iterator().next().getString(0);
 				}
 				else if (rowSet.size() > 1) {
-					idStage.completeExceptionally( new AssertionError( "More than one result returned: " + rowSet.size() ) );
+					throw new AssertionError( "More than one result returned: " + rowSet.size() );
 				}
 				else {
 					// Size 0
-					idStage.complete( null );
+					return null;
 				}
-			}
-			else {
-				idStage.completeExceptionally( err );
-			}
 		});
-		return idStage;
 	}
 
-	private CompletionStage<Object> populateDB(TestContext context) {
+	private CompletionStage<RowSet> populateDB(TestContext context) {
 		RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
 		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
 		RxConnection rxConn = provider.getConnection();
@@ -129,7 +118,7 @@ public class ReactiveSessionTest {
 		return invokeQuery( client, "INSERT INTO ReactiveSessionTest$GuineaPig (id, name) VALUES (5, 'Aloi')" );
 	}
 
-	private CompletionStage<Object> dropTable(TestContext context) {
+	private CompletionStage<RowSet> dropTable(TestContext context) {
 		RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
 		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
 		RxConnection rxConn = provider.getConnection();
@@ -138,21 +127,10 @@ public class ReactiveSessionTest {
 		return invokeQuery( client, "DROP TABLE ReactiveSessionTest$GuineaPig" );
 	}
 
-	private CompletionStage<Object> invokeQuery(PgPool client, String query) {
+	private CompletionStage<RowSet> invokeQuery(PgPool client, String query) {
 		// A simple query
-		CompletableFuture c = new CompletableFuture<Object>();
-		client.query(query, ar -> {
-			if (ar.succeeded()) {
-				RowSet result = ar.result();
-				c.complete(result);
-			} else {
-				c.completeExceptionally(ar.cause());
-			}
-
-			// Now close the pool
-			client.close();
-		});
-		return c;
+	    // FIXME: pretty sure you should not close the entire pool
+		return client.query(query).whenComplete((row, t) -> client.close());
 	}
 
 	@Test

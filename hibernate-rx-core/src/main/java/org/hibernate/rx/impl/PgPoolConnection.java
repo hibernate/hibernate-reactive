@@ -8,12 +8,12 @@ import org.hibernate.rx.RxSession;
 import org.hibernate.rx.service.RxConnection;
 import org.hibernate.service.UnknownUnwrapTypeException;
 
-import io.vertx.core.Vertx;
+import io.vertx.axle.core.Vertx;
 import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.pgclient.PgPool;
+import io.vertx.axle.pgclient.PgPool;
 import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.SqlConnection;
-import io.vertx.sqlclient.Transaction;
+import io.vertx.axle.sqlclient.SqlConnection;
+import io.vertx.axle.sqlclient.Transaction;
 
 /**
  * A reactive connection pool for PostgreSQL
@@ -36,22 +36,23 @@ public class PgPoolConnection implements RxConnection {
 			RxSession delegate) {
 		// Not used at the moment
 		// Just an idea
-		return CompletableFuture.runAsync( () -> {
-			pool.getConnection( res -> {
-				if (res.succeeded()) {
-					// Transaction must use a connection
-					SqlConnection conn = res.result();
-
-					// Begin the transaction
-					Transaction tx = conn.begin();
-
-					// Commit the transaction
-					tx.commit(ar -> {
-						consumer.accept( delegate );
-					});
-				}
-			});
-		} );
+//		return CompletableFuture.runAsync( () -> {
+//			pool.getConnection( res -> {
+//				if (res.succeeded()) {
+//					// Transaction must use a connection
+//					SqlConnection conn = res.result();
+//
+//					// Begin the transaction
+//					Transaction tx = conn.begin();
+//
+//					// Commit the transaction
+//					tx.commit(ar -> {
+//						consumer.accept( delegate );
+//					});
+//				}
+//			});
+//		} );
+	    return null;
 	}
 
 	@Override

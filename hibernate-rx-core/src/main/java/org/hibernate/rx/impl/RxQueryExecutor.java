@@ -13,41 +13,23 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.rx.service.RxConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 
-import io.vertx.pgclient.PgConnection;
-import io.vertx.pgclient.PgPool;
-import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.SqlConnection;
-import io.vertx.sqlclient.Tuple;
+import io.vertx.axle.pgclient.PgConnection;
+import io.vertx.axle.pgclient.PgPool;
+import io.vertx.axle.sqlclient.RowSet;
+import io.vertx.axle.sqlclient.SqlConnection;
+import io.vertx.axle.sqlclient.Tuple;
 import io.vertx.sqlclient.impl.ArrayTuple;
 
 // This could be a service
 public class RxQueryExecutor {
 
-	public CompletionStage<Object> update(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+	public CompletionStage<RowSet> update(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService( RxConnectionPoolProvider.class );
 
-		CompletableFuture queryResult = new CompletableFuture();
 		RxConnection connection = poolProvider.getConnection();
-		connection.unwrap( PgPool.class ).getConnection( connectionAR -> {
-			if ( connectionAR.succeeded() ) {
-				SqlConnection pgConnection = connectionAR.result();
-				pgConnection.preparedQuery( sql, asTuple( paramValues ), queryAR -> {
-					if ( queryAR.succeeded() ) {
-						queryResult.complete( queryAR.result() );
-						pgConnection.close();
-					}
-					else {
-						queryResult.completeExceptionally( queryAR.cause() );
-					}
-				} );
-			}
-			else {
-				queryResult.completeExceptionally( connectionAR.cause() );
-			}
-		} );
-		return queryResult;
+		return connection.unwrap( PgPool.class ).preparedQuery( sql, asTuple( paramValues ));
 	}
 
 		/**
@@ -58,37 +40,14 @@ public class RxQueryExecutor {
 		 * @param transformer Convert the result of the query to a list of entities
 		 * @return
 		 */
-	public CompletionStage<Object> execute(String sql, QueryParameters queryParameters, SessionFactoryImplementor factory, Function<ResultSet, Object> transformer) {
+	public CompletionStage<Optional<Object>> execute(String sql, QueryParameters queryParameters, SessionFactoryImplementor factory, Function<ResultSet, Object> transformer) {
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService( RxConnectionPoolProvider.class );
 
-		CompletableFuture queryResult = new CompletableFuture();
 		RxConnection connection = poolProvider.getConnection();
-		connection.unwrap( PgPool.class ).getConnection( connectionAR -> {
-			if ( connectionAR.succeeded() ) {
-				SqlConnection pgConnection = connectionAR.result();
-				pgConnection.preparedQuery( sql, asTuple( queryParameters ), queryAR -> {
-					if ( queryAR.succeeded() ) {
-						try {
-							Optional<Object> entities = entities( transformer, queryAR.result() );
-							queryResult.complete( entities );
-						} catch ( Throwable t) {
-							queryResult.completeExceptionally( t );
-						} finally {
-							pgConnection.close();
-						}
-					}
-					else {
-						queryResult.completeExceptionally( queryAR.cause() );
-					}
-				} );
-			}
-			else {
-				queryResult.completeExceptionally( connectionAR.cause() );
-			}
-		} );
-		return queryResult;
+		return connection.unwrap( PgPool.class ).preparedQuery( sql, asTuple( queryParameters ))
+		    .thenApply(rowset -> entities( transformer, rowset ));
 	}
 
 	private Optional<Object> entities(
@@ -119,6 +78,6 @@ public class RxQueryExecutor {
 	    for (Object object : values) {
 	        ret.add(object);
         }
-	    return ret;
+	    return Tuple.newInstance(ret);
 	}
 }

@@ -24,9 +24,9 @@ import java.util.Map;
 
 import org.hibernate.cfg.NotYetImplementedException;
 
-import io.vertx.sqlclient.RowIterator;
-import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.Row;
+import io.vertx.axle.sqlclient.RowIterator;
+import io.vertx.axle.sqlclient.RowSet;
+import io.vertx.axle.sqlclient.Row;
 
 /**
  * {@link ResultSet} adapter for {@link PgRowSet}.
