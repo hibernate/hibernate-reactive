@@ -29,12 +29,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import io.reactiverse.pgclient.PgPool;
-import io.reactiverse.pgclient.PgRowSet;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.RowSet;
 
 @RunWith(VertxUnitRunner.class)
 public class ReactiveSessionTest {
@@ -97,10 +97,10 @@ public class ReactiveSessionTest {
 		CompletableFuture<String> idStage = new CompletableFuture<>();
 		invokeQuery( client, "SELECT name FROM ReactiveSessionTest$GuineaPig WHERE id = " + id ).whenComplete( (res, err) -> {
 			if ( err == null ) {
-				PgRowSet rowSet = ( (PgRowSet) res );
+				RowSet rowSet = ( (RowSet) res );
 				if ( rowSet.size() == 1 ) {
 					// Only one result
-					( (PgRowSet) res ).forEach( row -> {
+					( (RowSet) res ).forEach( row -> {
 						String name = row.getString( 0 );
 						idStage.complete( name );
 					} );
@@ -143,7 +143,7 @@ public class ReactiveSessionTest {
 		CompletableFuture c = new CompletableFuture<Object>();
 		client.query(query, ar -> {
 			if (ar.succeeded()) {
-				PgRowSet result = ar.result();
+				RowSet result = ar.result();
 				c.complete(result);
 			} else {
 				c.completeExceptionally(ar.cause());

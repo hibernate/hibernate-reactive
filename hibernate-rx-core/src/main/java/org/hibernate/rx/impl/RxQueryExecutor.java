@@ -13,11 +13,12 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.rx.service.RxConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 
-import io.reactiverse.pgclient.PgConnection;
-import io.reactiverse.pgclient.PgPool;
-import io.reactiverse.pgclient.PgRowSet;
-import io.reactiverse.pgclient.Tuple;
-import io.reactiverse.pgclient.impl.ArrayTuple;
+import io.vertx.pgclient.PgConnection;
+import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.SqlConnection;
+import io.vertx.sqlclient.Tuple;
+import io.vertx.sqlclient.impl.ArrayTuple;
 
 // This could be a service
 public class RxQueryExecutor {
@@ -31,7 +32,7 @@ public class RxQueryExecutor {
 		RxConnection connection = poolProvider.getConnection();
 		connection.unwrap( PgPool.class ).getConnection( connectionAR -> {
 			if ( connectionAR.succeeded() ) {
-				PgConnection pgConnection = connectionAR.result();
+				SqlConnection pgConnection = connectionAR.result();
 				pgConnection.preparedQuery( sql, asTuple( paramValues ), queryAR -> {
 					if ( queryAR.succeeded() ) {
 						queryResult.complete( queryAR.result() );
@@ -66,7 +67,7 @@ public class RxQueryExecutor {
 		RxConnection connection = poolProvider.getConnection();
 		connection.unwrap( PgPool.class ).getConnection( connectionAR -> {
 			if ( connectionAR.succeeded() ) {
-				PgConnection pgConnection = connectionAR.result();
+				SqlConnection pgConnection = connectionAR.result();
 				pgConnection.preparedQuery( sql, asTuple( queryParameters ), queryAR -> {
 					if ( queryAR.succeeded() ) {
 						try {
@@ -92,7 +93,7 @@ public class RxQueryExecutor {
 
 	private Optional<Object> entities(
 			Function<ResultSet, Object> transformer,
-			PgRowSet rows) {
+			RowSet rows) {
 		PgResultSet resultSet = new PgResultSet( rows);
 		List<Object> entities = (List<Object>) transformer.apply( resultSet );
 		if ( entities.isEmpty() ) {
@@ -112,10 +113,12 @@ public class RxQueryExecutor {
 	}
 
 	private Tuple asTuple(Object[] values) {
-		ArrayTuple tuple = new ArrayTuple( values.length );
-		for ( Object value : values ) {
-			tuple.add( value );
-		}
-		return tuple;
+	    // FIXME: report this bug to vertx, we get a CCE if we use Tuple.wrap here
+//	    return Tuple.wrap(values);
+	    ArrayTuple ret = new ArrayTuple(values.length);
+	    for (Object object : values) {
+	        ret.add(object);
+        }
+	    return ret;
 	}
 }

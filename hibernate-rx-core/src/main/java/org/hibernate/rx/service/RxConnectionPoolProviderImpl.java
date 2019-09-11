@@ -9,12 +9,14 @@ import org.hibernate.rx.impl.PgPoolConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.service.spi.Configurable;
 
-import io.reactiverse.pgclient.PgPoolOptions;
+import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.sqlclient.PoolOptions;
 
 public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, Configurable {
 
 	public static final int DEFAULT_POOL_SIZE = 5;
-	private PgPoolOptions options;
+	private PoolOptions poolOptions;
+    private PgConnectOptions connectOptions;
 
 	public RxConnectionPoolProviderImpl() {
 	}
@@ -38,18 +40,19 @@ public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, C
 		final Integer poolSize = poolSize( configurationValues );
 		final String database = uri.getPath().substring( 1 );
 
-		options = new PgPoolOptions()
-				.setPort( uri.getPort() )
-				.setHost( uri.getHost() )
-				.setDatabase( database )
-				.setUser( username )
-				.setPassword( password )
+		poolOptions = new PoolOptions()
 				.setMaxSize( poolSize );
+        connectOptions = new PgConnectOptions()
+                .setPort( uri.getPort() )
+                .setHost( uri.getHost() )
+                .setDatabase( database )
+                .setUser( username )
+                .setPassword( password );
 	}
 
 	@Override
 	public RxConnection getConnection() {
-		return new PgPoolConnection( options );
+		return new PgPoolConnection( connectOptions, poolOptions );
 	}
 
 }

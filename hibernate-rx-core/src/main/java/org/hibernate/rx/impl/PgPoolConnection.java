@@ -8,24 +8,26 @@ import org.hibernate.rx.RxSession;
 import org.hibernate.rx.service.RxConnection;
 import org.hibernate.service.UnknownUnwrapTypeException;
 
-import io.reactiverse.pgclient.PgClient;
-import io.reactiverse.pgclient.PgConnection;
-import io.reactiverse.pgclient.PgPool;
-import io.reactiverse.pgclient.PgPoolOptions;
-import io.reactiverse.pgclient.PgTransaction;
 import io.vertx.core.Vertx;
+import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.SqlConnection;
+import io.vertx.sqlclient.Transaction;
 
 /**
  * A reactive connection pool for PostgreSQL
  */
 public class PgPoolConnection implements RxConnection {
 
-	private final PgPoolOptions options;
+	private final PoolOptions poolOptions;
+    private final PgConnectOptions connectOptions;
 	private final PgPool pool;
 
-	public PgPoolConnection(PgPoolOptions options) {
-		this.options = options;
-		this.pool = PgClient.pool( Vertx.vertx(), options );
+	public PgPoolConnection(PgConnectOptions connectOptions, PoolOptions poolOptions) {
+		this.connectOptions = connectOptions;
+		this.poolOptions = poolOptions;
+		this.pool = PgPool.pool(Vertx.vertx(), connectOptions, poolOptions);
 	}
 
 	@Override
@@ -38,10 +40,10 @@ public class PgPoolConnection implements RxConnection {
 			pool.getConnection( res -> {
 				if (res.succeeded()) {
 					// Transaction must use a connection
-					PgConnection conn = res.result();
+					SqlConnection conn = res.result();
 
 					// Begin the transaction
-					PgTransaction tx = conn.begin();
+					Transaction tx = conn.begin();
 
 					// Commit the transaction
 					tx.commit(ar -> {
