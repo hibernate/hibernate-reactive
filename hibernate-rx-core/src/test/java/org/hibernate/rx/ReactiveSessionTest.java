@@ -3,8 +3,8 @@ package org.hibernate.rx;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
@@ -23,18 +23,17 @@ import org.hibernate.rx.service.RxConnectionPoolProviderImpl;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.Configurable;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import io.vertx.axle.pgclient.PgPool;
+import io.vertx.axle.sqlclient.RowSet;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.axle.pgclient.PgPool;
-import io.vertx.axle.sqlclient.RowSet;
 
 @RunWith(VertxUnitRunner.class)
 public class ReactiveSessionTest {
@@ -135,26 +134,15 @@ public class ReactiveSessionTest {
 
 	@Test
 	public void reactiveFind(TestContext context) {
-		Async async = context.async();
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
-		populateDB( context ).whenComplete( (populate, populateErr) -> {
-			context.assertNull( populateErr );
-
-			RxSession rxSession = session.reactive();
-			rxSession.find( GuineaPig.class, expectedPig.getId() )
-					.whenComplete( (actualPig, pigEx) -> {
-						context.assertNull( pigEx );
-						assertThatPigsAreEqual( context, expectedPig, actualPig );
-					} )
-					.whenComplete( (check, checkErr) -> {
-						context.assertNull( checkErr );
-						dropTable( context )
-								.whenComplete( (drop, dropErr) -> {
-									context.assertNull( dropErr );
-									async.complete();
-								} );
-					} );
-		} );
+		test(context,
+		     populateDB( context )
+		     .thenCompose(v -> session.reactive().find( GuineaPig.class, expectedPig.getId() ))
+		     .thenCompose( actualPig -> {
+		         assertThatPigsAreEqual( context, expectedPig, actualPig );
+		         return dropTable( context );
+		     }));
+		
 	}
 
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, Optional<GuineaPig> actual) {
@@ -163,43 +151,41 @@ public class ReactiveSessionTest {
 		context.assertEquals( expected.getName(), actual.get().getName() );
 	};
 
+	private static void test(TestContext context, CompletionStage<?> cs) {
+	    // this will be added to TestContext in the next vert.x release
+	    Async async = context.async();
+	    cs.whenComplete((res, err) -> {
+	        if(err != null)
+	            context.fail(err);
+	        else
+	            async.complete();
+	    });
+	}
+	
 	@Test
 	public void reactivePersist(TestContext context) {
-		Async async = context.async();
 		RxSession rxSession = session.reactive();
-		rxSession.persist( new GuineaPig( 10, "Tulip" ) )
-				.whenComplete( (nope, err) -> {
-					context.assertNull( err );
-
-					selectNameFromId( 10 ).whenComplete( (selectRes, selectErr) -> {
-						context.assertNull( selectErr );
-						context.assertEquals( "Tulip", selectRes );
-						async.complete();
-					} );
-				} );
-		session.flush();
+		test(context, 
+		     flushAfter(rxSession.persist( new GuineaPig( 10, "Tulip" ) ))
+		     .thenCompose(v -> selectNameFromId( 10 ))
+		     .thenAccept(selectRes -> {
+		         context.assertEquals( "Tulip", selectRes );
+		     }));
 	}
 
-	@Test
+	private <T> CompletionStage<T> flushAfter(CompletionStage<T> cs) {
+        // this is a bit weird, but if we don't flush, the persist/remove never completes
+	    session.flush();
+        return cs;
+    }
+
+    @Test
 	public void reactiveRemove(TestContext context) {
-		Async async = context.async();
-		populateDB( context )
-				.whenComplete( (popAR, popErr) -> {
-				context.assertNull( popErr );
-
-				RxSession rxSession = session.reactive();
-				rxSession.remove( new GuineaPig( 5, "Aloi" ) )
-						.whenComplete( (removeAR, removeErr) -> {
-							context.assertNull( removeErr );
-
-							selectNameFromId( 5 ).whenComplete( (selectRes, selectErr) -> {
-								context.assertNull( selectErr );
-								context.assertNull( selectRes );
-								async.complete();
-							} );
-						} );
-				session.flush();
-		} );
+	    test(context,
+	         populateDB( context )
+	         .thenCompose(v -> flushAfter(session.reactive().remove(new GuineaPig( 5, "Aloi" ))))
+	         .thenCompose(v -> selectNameFromId( 5 ))
+	         .thenAccept(ret -> context.assertNull(ret)));
 	}
 
 	@Entity
