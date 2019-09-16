@@ -119,7 +119,6 @@ public abstract class AbstractRxSaveEventListener
         }
         EntityPersister persister = source.getEntityPersister( entityName, entity );
         Serializable generatedId = persister.getIdentifierGenerator().generate( source, entity );
-        System.err.println("generatedid: "+generatedId);
         if ( generatedId == null ) {
             return RxUtil.failedFuture(new IdentifierGenerationException( "null id generated for:" + entity.getClass() ));
         }
@@ -294,9 +293,7 @@ public abstract class AbstractRxSaveEventListener
         CompletionStage<AbstractEntityInsertAction> insertCs = addInsertAction(
                 values, id, entity, persister, useIdentityColumn, source, shouldDelayIdentityInserts
         );
-System.err.println("Added insert action");
         return insertCs.thenApply(insert -> {
-            System.err.println("insert action done");
             // postpone initializing id in case the insert has non-nullable transient dependencies
             // that are not resolved until cascadeAfterSave() is executed
             cascadeAfterSave( source, persister, entity, anything );
@@ -345,7 +342,6 @@ System.err.println("Added insert action");
             RxEntityInsertAction insert = new RxEntityInsertAction(
                     id, values, entity, version, persister, isVersionIncrementDisabled(), source
             );
-            System.err.println("added insert action to queue");
             return ((RxHibernateSessionImpl)source).getRxActionQueue().addAction( insert ).thenApply(v -> insert);
         }
     }

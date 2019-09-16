@@ -85,7 +85,6 @@ public class DefaultRxPersistEventListener
 	public CompletionStage<Void> rxOnPersist(PersistEvent event, Map createCache) throws HibernateException {
 		final SessionImplementor source = event.getSession();
 		final Object object = event.getObject();
-System.err.println("rxOnPersist");
 		final Object entity;
 		if ( object instanceof HibernateProxy ) {
 			LazyInitializer li = ( (HibernateProxy) object ).getHibernateLazyInitializer();

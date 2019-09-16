@@ -93,7 +93,6 @@ public class ReactiveSessionTest {
 		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
 		RxConnection rxConn = provider.getConnection();
 		PgPool client = rxConn.unwrap( PgPool.class );
-        System.err.println("doing select");
 		return invokeQuery( client, "SELECT name FROM ReactiveSessionTest$GuineaPig WHERE id = " + id ).thenApply( rowSet -> {
 				if ( rowSet.size() == 1 ) {
 					// Only one result

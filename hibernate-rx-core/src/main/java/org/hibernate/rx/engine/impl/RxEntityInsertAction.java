@@ -102,7 +102,6 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 		if ( !veto ) {
 			insertStage = persister.insertRx( id, getState(), instance, session )
 			        .thenApply( res -> {
-			            System.err.println("insertRx done");
 				PersistenceContext persistenceContext = session.getPersistenceContext();
 				final EntityEntry entry = persistenceContext.getEntry( instance );
 				if ( entry == null ) {

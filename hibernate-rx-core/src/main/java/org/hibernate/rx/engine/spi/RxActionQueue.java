@@ -256,17 +256,14 @@ public class RxActionQueue {
 	}
 
 	private CompletionStage<Void> addInsertAction(RxEntityInsertAction insert) {
-	    System.err.println("add insert action to queue");
 	    CompletionStage<Void> ret = RxUtil.nullFuture();
 		if ( insert.isEarlyInsert() ) {
 			// For early inserts, must execute inserts before finding non-nullable transient entities.
 			// TODO: find out why this is necessary
 			LOG.tracev( "Executing inserts before finding non-nullable transient entities for early insert: [{0}]", insert );
 			ret = ret.thenCompose(v -> executeInserts());
-	        System.err.println(" early insert");
 		}
 		NonNullableTransientDependencies nonNullableTransientDependencies = insert.findNonNullableTransientEntities();
-        System.err.println(" nonNullabe... "+nonNullableTransientDependencies);
 		if ( nonNullableTransientDependencies == null ) {
 			LOG.tracev( "Adding insert with no non-nullable, transient entities: [{0}]", insert );
 			ret = ret.thenCompose(v -> addResolvedEntityInsertAction( insert ));
@@ -295,11 +292,9 @@ public class RxActionQueue {
 		else {
 			LOG.trace( "Adding resolved non-early insert action." );
 			addAction( RxEntityInsertAction.class, insert );
-			System.err.println("added action for later");
 			ret = RxUtil.nullFuture();
 		}
 		return ret.thenCompose(v -> {
-            System.err.println("resumed insert action");
 		    if ( !insert.isVeto() ) {
 		        insert.makeEntityManaged();
 
