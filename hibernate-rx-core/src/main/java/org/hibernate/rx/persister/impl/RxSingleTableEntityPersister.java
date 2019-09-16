@@ -345,7 +345,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		}
 	}
 
-	public CompletionStage<?> deleteRx(
+	public CompletionStage<Void> deleteRx(
 			Serializable id, Object version, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
 		final int span = getTableSpan();
@@ -377,7 +377,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 
 		for ( int j = span - 1; j >= 0; j-- ) {
 			// For now we assume there is only one delete query
-			return deleteRx( id, version, j, object, deleteStrings[j], session, loadedState );
+			return deleteRx( id, version, j, object, deleteStrings[j], session, loadedState ).thenApply(v -> null);
 		}
 
 		throw new AssertionError( "Something unexpected during the deletion of an entity" );

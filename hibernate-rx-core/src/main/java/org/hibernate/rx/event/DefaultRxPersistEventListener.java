@@ -1,31 +1,35 @@
+/*
+ * Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * License: GNU Lesser General Public License (LGPL), version 2.1 or later.
+ * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
+ */
 package org.hibernate.rx.event;
 
 import java.io.Serializable;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
-import org.hibernate.LockMode;
-import org.hibernate.NonUniqueObjectException;
-import org.hibernate.action.internal.AbstractEntityInsertAction;
-import org.hibernate.action.internal.EntityIdentityInsertAction;
-import org.hibernate.engine.internal.Versioning;
+import org.hibernate.ObjectDeletedException;
+import org.hibernate.PersistentObjectException;
+import org.hibernate.engine.spi.CascadingAction;
+import org.hibernate.engine.spi.CascadingActions;
 import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityEntryExtraState;
-import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.SelfDirtinessTracker;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
-import org.hibernate.event.internal.DefaultPersistEventListener;
 import org.hibernate.event.service.spi.DuplicationStrategy;
+import org.hibernate.event.service.spi.DuplicationStrategy.Action;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.event.spi.FlushEventListener;
 import org.hibernate.event.spi.PersistEvent;
 import org.hibernate.event.spi.PersistEventListener;
-import org.hibernate.id.IdentifierGenerationException;
-import org.hibernate.id.IdentifierGeneratorHelper;
+import org.hibernate.id.ForeignGenerator;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
-
+import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.RxHibernateSession;
@@ -35,274 +39,226 @@ import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
-public class DefaultRxPersistEventListener extends DefaultPersistEventListener {
+import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.rx.event.internal.AbstractRxSaveEventListener;
+import org.hibernate.rx.event.spi.RxPersistEventListener;
+import org.hibernate.rx.util.RxUtil;
+
+/**
+ * Defines the default create event listener used by hibernate for creating
+ * transient entities in response to generated create events.
+ *
+ * @author Gavin King
+ */
+public class DefaultRxPersistEventListener
+		extends AbstractRxSaveEventListener
+		implements PersistEventListener, RxPersistEventListener, CallbackRegistryConsumer {
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultRxPersistEventListener.class );
 
-	private CallbackRegistry callbackRegistry;
-
 	@Override
-	public void injectCallbackRegistry(CallbackRegistry callbackRegistry) {
-		super.injectCallbackRegistry( callbackRegistry );
-		this.callbackRegistry = callbackRegistry;
+	protected CascadingAction getCascadeAction() {
+		return CascadingActions.PERSIST;
 	}
 
 	@Override
-	protected void entityIsTransient(PersistEvent event, Map createCache) {
-		LOG.trace( "Saving transient instance" );
-		final EventSource source = event.getSession();
-		RxPersistEvent rxEvent = (RxPersistEvent) event;
-		final Object entity = source.getPersistenceContextInternal().unproxy(event.getObject());
-
-		RxPersistEvent rxPersistEvent = (RxPersistEvent) event;
-		CompletionStage<Void> stage = rxPersistEvent.getStage();
-		if ( createCache.put( entity, entity ) == null ) {
-			saveWithGeneratedId( entity, event.getEntityName(), createCache, source, false, stage );
-		}
+	protected Boolean getAssumedUnsaved() {
+		return Boolean.TRUE;
 	}
 
-	protected void saveWithGeneratedId(
-			Object entity,
-			String entityName,
-			Object anything,
-			EventSource source,
-			boolean requiresImmediateIdAccess,
-			CompletionStage<Void> insertStage) {
-		callbackRegistry.preCreate( entity );
-
-		if ( entity instanceof SelfDirtinessTracker ) {
-			( (SelfDirtinessTracker) entity ).$$_hibernate_clearDirtyAttributes();
-		}
-
-		EntityPersister persister = source.getEntityPersister( entityName, entity );
-		Serializable generatedId = persister.getIdentifierGenerator().generate( source, entity );
-		if ( generatedId == null ) {
-			throw new IdentifierGenerationException( "null id generated for:" + entity.getClass() );
-		}
-		else if ( generatedId == IdentifierGeneratorHelper.SHORT_CIRCUIT_INDICATOR ) {
-			// FIXME: CAn I delete this?
-			source.getIdentifier( entity );
-		}
-		else if ( generatedId == IdentifierGeneratorHelper.POST_INSERT_INDICATOR ) {
-			performSave( entity, null, persister, true, anything, source, requiresImmediateIdAccess, insertStage );
-		}
-		else {
-			// TODO: define toString()s for generators
-			if ( LOG.isDebugEnabled() ) {
-				LOG.debugf(
-						"Generated identifier: %s, using strategy: %s",
-						persister.getIdentifierType().toLoggableString( generatedId, source.getFactory() ),
-						persister.getIdentifierGenerator().getClass().getName()
-				);
-			}
-
-			performSave( entity, generatedId, persister, false, anything, source, true, insertStage );
-		}
+	/**
+	 * Handle the given create event.
+	 *
+	 * @param event The create event to be handled.
+	 *
+	 */
+	public CompletionStage<Void> rxOnPersist(PersistEvent event) throws HibernateException {
+		return rxOnPersist( event, new IdentityHashMap( 10 ) );
 	}
 
-	protected Serializable performSave(
-			Object entity,
-			Serializable id,
-			EntityPersister persister,
-			boolean useIdentityColumn,
-			Object anything,
-			EventSource source,
-			boolean requiresImmediateIdAccess,
-			CompletionStage<Void> insertStage) {
-
-		if ( LOG.isTraceEnabled() ) {
-			LOG.tracev( "Saving {0}", MessageHelper.infoString( persister, id, source.getFactory() ) );
-		}
-
-		final EntityKey key;
-		if ( !useIdentityColumn ) {
-			key = source.generateEntityKey( id, persister );
-			Object old = source.getPersistenceContext().getEntity( key );
-			if ( old != null ) {
-				if ( source.getPersistenceContext().getEntry( old ).getStatus() == Status.DELETED ) {
-					source.forceFlush( source.getPersistenceContext().getEntry( old ) );
+	/**
+	 * Handle the given create event.
+	 *
+	 * @param event The create event to be handled.
+	 *
+	 */
+	public CompletionStage<Void> rxOnPersist(PersistEvent event, Map createCache) throws HibernateException {
+		final SessionImplementor source = event.getSession();
+		final Object object = event.getObject();
+System.err.println("rxOnPersist");
+		final Object entity;
+		if ( object instanceof HibernateProxy ) {
+			LazyInitializer li = ( (HibernateProxy) object ).getHibernateLazyInitializer();
+			if ( li.isUninitialized() ) {
+				if ( li.getSession() == source ) {
+					return RxUtil.nullFuture(); //NOTE EARLY EXIT!
 				}
 				else {
-					throw new NonUniqueObjectException( id, persister.getEntityName() );
+					return RxUtil.failedFuture(new PersistentObjectException( "uninitialized proxy passed to persist()" ));
 				}
 			}
-			persister.setIdentifier( entity, id, source );
+			entity = li.getImplementation();
 		}
 		else {
-			key = null;
+			entity = object;
 		}
 
-		if ( invokeSaveLifecycle( entity, persister, source ) ) {
-			return id; //EARLY EXIT
+		final String entityName;
+		if ( event.getEntityName() != null ) {
+			entityName = event.getEntityName();
+		}
+		else {
+			entityName = source.bestGuessEntityName( entity );
+			event.setEntityName( entityName );
 		}
 
-		return performSaveOrReplicate(
-				entity,
-				key,
-				persister,
-				useIdentityColumn,
-				anything,
-				source,
-				requiresImmediateIdAccess,
-				insertStage
-		);
-	}
+		final EntityEntry entityEntry = source.getPersistenceContextInternal().getEntry( entity );
+		EntityState entityState = getEntityState( entity, entityName, entityEntry, source );
+		if ( entityState == EntityState.DETACHED ) {
+			// JPA 2, in its version of a "foreign generated", allows the id attribute value
+			// to be manually set by the user, even though this manual value is irrelevant.
+			// The issue is that this causes problems with the Hibernate unsaved-value strategy
+			// which comes into play here in determining detached/transient state.
+			//
+			// Detect if we have this situation and if so null out the id value and calculate the
+			// entity state again.
 
-	protected Serializable performSaveOrReplicate(
-			Object entity,
-			EntityKey key,
-			EntityPersister persister,
-			boolean useIdentityColumn,
-			Object anything,
-			EventSource source,
-			boolean requiresImmediateIdAccess,
-			CompletionStage<Void> insertStage) {
-
-		Serializable id = key == null ? null : key.getIdentifier();
-
-		boolean inTrx = source.isTransactionInProgress();
-		boolean shouldDelayIdentityInserts = !inTrx && !requiresImmediateIdAccess;
-
-		// Put a placeholder in entries, so we don't recurse back and try to save() the
-		// same object again. QUESTION: should this be done before onSave() is called?
-		// likewise, should it be done before onUpdate()?
-
-		// todo (6.0) : Should we do something here like `org.hibernate.sql.results.spi.JdbcValuesSourceProcessingState#registerLoadingEntity` ?
-		EntityEntry original = source.getPersistenceContext().addEntry(
-				entity,
-				Status.SAVING,
-				null,
-				null,
-				id,
-				null,
-				LockMode.WRITE,
-				useIdentityColumn,
-				persister,
-				false
-		);
-
-		cascadeBeforeSave( source, persister, entity, anything );
-
-		Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap( anything ), source );
-		Type[] types = persister.getPropertyTypes();
-
-//		final List<Navigable> navigables = entityDescriptor.getNavigables();
-
-		boolean substitute = substituteValuesIfNecessary( entity, id, values, persister, source );
-
-		if ( persister.hasCollections() ) {
-			substitute = substitute || visitCollectionsBeforeSave( entity, id, values, types, source );
-		}
-
-		if ( substitute ) {
-			persister.setPropertyValues( entity, values );
-		}
-
-		TypeHelper.deepCopy(
-				values,
-				types,
-				persister.getPropertyUpdateability(),
-				values,
-				source
-		);
-
-		AbstractEntityInsertAction insert = addInsertAction(
-				values, id, entity, persister, useIdentityColumn, source, shouldDelayIdentityInserts, insertStage
-		);
-
-		// postpone initializing id in case the insert has non-nullable transient dependencies
-		// that are not resolved until cascadeAfterSave() is executed
-		cascadeAfterSave( source, persister, entity, anything );
-		if ( useIdentityColumn && insert.isEarlyInsert() ) {
-			if ( !EntityIdentityInsertAction.class.isInstance( insert ) ) {
-				throw new IllegalStateException(
-						"Insert should be using an identity column, but action is of unexpected type: " +
-								insert.getClass().getName()
-				);
-			}
-			id = ((EntityIdentityInsertAction) insert).getGeneratedId();
-
-			insert.handleNaturalIdPostSaveNotifications( id );
-		}
-
-		EntityEntry newEntry = source.getPersistenceContext().getEntry( entity );
-
-		if ( newEntry != original ) {
-			EntityEntryExtraState extraState = newEntry.getExtraState( EntityEntryExtraState.class );
-			if ( extraState == null ) {
-				newEntry.addExtraState( original.getExtraState( EntityEntryExtraState.class ) );
+			// NOTE: entityEntry must be null to get here, so we cannot use any of its values
+			EntityPersister persister = source.getFactory().getEntityPersister( entityName );
+			if ( ForeignGenerator.class.isInstance( persister.getIdentifierGenerator() ) ) {
+				if ( LOG.isDebugEnabled() && persister.getIdentifier( entity, source ) != null ) {
+					LOG.debug( "Resetting entity id attribute to null for foreign generator" );
+				}
+				persister.setIdentifier( entity, null, source );
+				entityState = getEntityState( entity, entityName, entityEntry, source );
 			}
 		}
 
-		return id;
+		switch ( entityState ) {
+			case DETACHED: {
+				return RxUtil.failedFuture(new PersistentObjectException(
+						"detached entity passed to persist: " +
+								getLoggableName( event.getEntityName(), entity )
+				));
+			}
+			case PERSISTENT: {
+				entityIsPersistent( event, createCache );
+				return RxUtil.nullFuture();
+			}
+			case TRANSIENT: {
+				return entityIsTransient( event, createCache );
+			}
+			case DELETED: {
+				entityEntry.setStatus( Status.MANAGED );
+				entityEntry.setDeletedState( null );
+				event.getSession().getActionQueue().unScheduleDeletion( entityEntry, event.getObject() );
+				entityIsDeleted( event, createCache );
+                return RxUtil.nullFuture();
+			}
+			default: {
+				return RxUtil.failedFuture(new ObjectDeletedException(
+						"deleted entity passed to persist",
+						null,
+						getLoggableName( event.getEntityName(), entity )
+				));
+			}
+		}
+
 	}
 
-	private static boolean isPartOfTransaction(EventSource source) {
-		return source.isTransactionInProgress() && source.getTransactionCoordinator().isJoined();
+	@SuppressWarnings({"unchecked"})
+	protected void entityIsPersistent(PersistEvent event, Map createCache) {
+		LOG.trace( "Ignoring persistent instance" );
+		final EventSource source = event.getSession();
+
+		//TODO: check that entry.getIdentifier().equals(requestedId)
+
+		final Object entity = source.getPersistenceContextInternal().unproxy( event.getObject() );
+		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
+
+		if ( createCache.put( entity, entity ) == null ) {
+			justCascade( createCache, source, entity, persister );
+		}
 	}
 
-	private AbstractEntityInsertAction addInsertAction(
-			Object[] values,
-			Serializable id,
-			Object entity,
-			EntityPersister persister,
-			boolean useIdentityColumn,
-			EventSource source,
-			boolean shouldDelayIdentityInserts,
-			CompletionStage<Void> insertStage) {
-//		AbstractEntityInsertAction insertAction = null;
-//		if ( useIdentityColumn ) {
-//			insertAction = new RxEntityIdentityInsertAction(
-//					values,
-//					entity,
-//					descriptor,
-//					isVersionIncrementDisabled(),
-//					source,
-//					shouldDelayIdentityInserts,
-//					null // Stage
-//			);
-//		}
-//		else {
-			Object version = Versioning.getVersion( values, persister );
-			RxEntityInsertAction insertAction = new RxEntityInsertAction(
-					id,
-					values,
-					entity,
-					version,
+	private void justCascade(Map createCache, EventSource source, Object entity, EntityPersister persister) {
+		//TODO: merge into one method!
+		cascadeBeforeSave( source, persister, entity, createCache );
+		cascadeAfterSave( source, persister, entity, createCache );
+	}
+
+	/**
+	 * Handle the given create event.
+	 *
+	 * @param event The save event to be handled.
+	 * @param createCache The copy cache of entity instance to merge/copy instance.
+	 */
+	@SuppressWarnings({"unchecked"})
+	protected CompletionStage<Void> entityIsTransient(PersistEvent event, Map createCache) {
+		LOG.trace( "Saving transient instance" );
+
+		final EventSource source = event.getSession();
+		final Object entity = source.getPersistenceContextInternal().unproxy( event.getObject() );
+
+		if ( createCache.put( entity, entity ) == null ) {
+			return saveWithGeneratedId( entity, event.getEntityName(), createCache, source, false )
+			        .thenApply(v -> null);
+		}
+		return RxUtil.nullFuture();
+	}
+
+	@SuppressWarnings({"unchecked"})
+	private void entityIsDeleted(PersistEvent event, Map createCache) {
+		final EventSource source = event.getSession();
+
+		final Object entity = source.getPersistenceContextInternal().unproxy( event.getObject() );
+		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
+
+		if ( LOG.isTraceEnabled() ) {
+			LOG.tracef(
+				"un-scheduling entity deletion [%s]",
+				MessageHelper.infoString(
 					persister,
-					isVersionIncrementDisabled(),
-					source,
-					insertStage
+					persister.getIdentifier( entity, source ),
+					source.getFactory()
+				)
 			);
-//		}
-		RxActionQueue rxActionQueue = ( (RxHibernateSession) source ).getRxActionQueue();
-		rxActionQueue.addAction( insertAction );
-		return insertAction;
-
-	}
-	@Override
-	public void onPersist(PersistEvent event, Map createdAlready) throws HibernateException {
-		super.onPersist( event, createdAlready );
-	}
-
-	public static class EventContextManagingPersistEventListenerDuplicationStrategy implements DuplicationStrategy {
-
-		public static final DuplicationStrategy INSTANCE = new EventContextManagingPersistEventListenerDuplicationStrategy();
-
-		private EventContextManagingPersistEventListenerDuplicationStrategy() {
 		}
 
-		@Override
-		public boolean areMatch(Object listener, Object original) {
-			if ( listener instanceof DefaultRxPersistEventListener && original instanceof PersistEventListener ) {
-				return true;
-			}
-
-			return false;
-		}
-
-		@Override
-		public Action getAction() {
-			return Action.REPLACE_ORIGINAL;
+		if ( createCache.put( entity, entity ) == null ) {
+			justCascade( createCache, source, entity, persister );
 		}
 	}
+
+	   public static class EventContextManagingPersistEventListenerDuplicationStrategy implements DuplicationStrategy {
+
+	        public static final DuplicationStrategy INSTANCE = new DefaultRxPersistEventListener.EventContextManagingPersistEventListenerDuplicationStrategy();
+
+	        private EventContextManagingPersistEventListenerDuplicationStrategy() {
+	        }
+
+	        @Override
+	        public boolean areMatch(Object listener, Object original) {
+	            if ( listener instanceof DefaultRxPersistEventListener && original instanceof PersistEventListener ) {
+	                return true;
+	            }
+
+	            return false;
+	        }
+
+	        @Override
+	        public Action getAction() {
+	            return Action.REPLACE_ORIGINAL;
+	        }
+	    }
+
+    @Override
+    public void onPersist(PersistEvent event) throws HibernateException {
+        // fake method
+    }
+
+    @Override
+    public void onPersist(PersistEvent event, Map createdAlready) throws HibernateException {
+        // fake method
+    }
 }

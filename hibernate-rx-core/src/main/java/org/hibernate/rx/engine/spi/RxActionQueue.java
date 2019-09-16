@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.hibernate.AssertionFailure;
@@ -41,6 +42,7 @@ import org.hibernate.action.spi.AfterTransactionCompletionProcess;
 import org.hibernate.action.spi.BeforeTransactionCompletionProcess;
 import org.hibernate.action.spi.Executable;
 import org.hibernate.cache.CacheException;
+import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.ExecutableList;
@@ -52,7 +54,10 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.rx.action.spi.RxExecutable;
+import org.hibernate.rx.engine.impl.RxEntityDeleteAction;
 import org.hibernate.rx.engine.impl.RxEntityInsertAction;
+import org.hibernate.rx.util.RxUtil;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.EntityType;
@@ -83,8 +88,8 @@ public class RxActionQueue {
 	// Object insertions, updates, and deletions have list semantics because
 	// they must happen in the right order so as to respect referential
 	// integrity
-	private ExecutableList<AbstractEntityInsertAction> insertions;
-	private ExecutableList<EntityDeleteAction> deletions;
+	private RxExecutableList<RxEntityInsertAction> insertions;
+	private RxExecutableList<RxEntityDeleteAction> deletions;
 	private ExecutableList<EntityUpdateAction> updates;
 
 	// Actually the semantics of the next three are really "Bag"
@@ -108,116 +113,116 @@ public class RxActionQueue {
 	/**
 	 * A LinkedHashMap containing providers for all the ExecutableLists, inserted in execution order
 	 */
-	private static final LinkedHashMap<Class<? extends Executable>,ListProvider> EXECUTABLE_LISTS_MAP;
+	private static final LinkedHashMap<Class<? extends RxExecutable>,ListProvider> EXECUTABLE_LISTS_MAP;
 	static {
 		EXECUTABLE_LISTS_MAP = new LinkedHashMap<>( 8 );
 
+//		EXECUTABLE_LISTS_MAP.put(
+//				OrphanRemovalAction.class,
+//				new ListProvider<OrphanRemovalAction>() {
+//					ExecutableList<OrphanRemovalAction> get(RxActionQueue instance) {
+//						return instance.orphanRemovals;
+//					}
+//					ExecutableList<OrphanRemovalAction> init(RxActionQueue instance) {
+//						// OrphanRemovalAction executables never require sorting.
+//						return instance.orphanRemovals = new ExecutableList<>( false );
+//					}
+//				}
+//		);
 		EXECUTABLE_LISTS_MAP.put(
-				OrphanRemovalAction.class,
-				new ListProvider<OrphanRemovalAction>() {
-					ExecutableList<OrphanRemovalAction> get(RxActionQueue instance) {
-						return instance.orphanRemovals;
-					}
-					ExecutableList<OrphanRemovalAction> init(RxActionQueue instance) {
-						// OrphanRemovalAction executables never require sorting.
-						return instance.orphanRemovals = new ExecutableList<>( false );
-					}
-				}
-		);
-		EXECUTABLE_LISTS_MAP.put(
-				AbstractEntityInsertAction.class,
-				new ListProvider<AbstractEntityInsertAction>() {
-					ExecutableList<AbstractEntityInsertAction> get(RxActionQueue instance) {
+				RxEntityInsertAction.class,
+				new ListProvider<RxEntityInsertAction>() {
+					RxExecutableList<RxEntityInsertAction> get(RxActionQueue instance) {
 						return instance.insertions;
 					}
-					ExecutableList<AbstractEntityInsertAction> init(RxActionQueue instance) {
+					RxExecutableList<RxEntityInsertAction> init(RxActionQueue instance) {
 						if ( instance.isOrderInsertsEnabled() ) {
-							return instance.insertions = new ExecutableList<>(
+							return instance.insertions = new RxExecutableList<>(
 									new InsertActionSorter()
 							);
 						}
 						else {
-							return instance.insertions = new ExecutableList<>(
+							return instance.insertions = new RxExecutableList<>(
 									false
 							);
 						}
 					}
 				}
 		);
+//		EXECUTABLE_LISTS_MAP.put(
+//				EntityUpdateAction.class,
+//				new ListProvider<EntityUpdateAction>() {
+//					ExecutableList<EntityUpdateAction> get(RxActionQueue instance) {
+//						return instance.updates;
+//					}
+//					ExecutableList<EntityUpdateAction> init(RxActionQueue instance) {
+//						return instance.updates = new ExecutableList<>(
+//								instance.isOrderUpdatesEnabled()
+//						);
+//					}
+//				}
+//		);
+//		EXECUTABLE_LISTS_MAP.put(
+//				QueuedOperationCollectionAction.class,
+//				new ListProvider<QueuedOperationCollectionAction>() {
+//					ExecutableList<QueuedOperationCollectionAction> get(RxActionQueue instance) {
+//						return instance.collectionQueuedOps;
+//					}
+//					ExecutableList<QueuedOperationCollectionAction> init(RxActionQueue instance) {
+//						return instance.collectionQueuedOps = new ExecutableList<>(
+//								instance.isOrderUpdatesEnabled()
+//						);
+//					}
+//				}
+//		);
+//		EXECUTABLE_LISTS_MAP.put(
+//				CollectionRemoveAction.class,
+//				new ListProvider<CollectionRemoveAction>() {
+//					ExecutableList<CollectionRemoveAction> get(RxActionQueue instance) {
+//						return instance.collectionRemovals;
+//					}
+//					ExecutableList<CollectionRemoveAction> init(RxActionQueue instance) {
+//						return instance.collectionRemovals = new ExecutableList<>(
+//								instance.isOrderUpdatesEnabled()
+//						);
+//					}
+//				}
+//		);
+//		EXECUTABLE_LISTS_MAP.put(
+//				CollectionUpdateAction.class,
+//				new ListProvider<CollectionUpdateAction>() {
+//					ExecutableList<CollectionUpdateAction> get(RxActionQueue instance) {
+//						return instance.collectionUpdates;
+//					}
+//					ExecutableList<CollectionUpdateAction> init(RxActionQueue instance) {
+//						return instance.collectionUpdates = new ExecutableList<>(
+//								instance.isOrderUpdatesEnabled()
+//						);
+//					}
+//				}
+//		);
+//		EXECUTABLE_LISTS_MAP.put(
+//				CollectionRecreateAction.class,
+//				new ListProvider<CollectionRecreateAction>() {
+//					ExecutableList<CollectionRecreateAction> get(RxActionQueue instance) {
+//						return instance.collectionCreations;
+//					}
+//					ExecutableList<CollectionRecreateAction> init(RxActionQueue instance) {
+//						return instance.collectionCreations = new ExecutableList<>(
+//								instance.isOrderUpdatesEnabled()
+//						);
+//					}
+//				}
+//		);
 		EXECUTABLE_LISTS_MAP.put(
-				EntityUpdateAction.class,
-				new ListProvider<EntityUpdateAction>() {
-					ExecutableList<EntityUpdateAction> get(RxActionQueue instance) {
-						return instance.updates;
-					}
-					ExecutableList<EntityUpdateAction> init(RxActionQueue instance) {
-						return instance.updates = new ExecutableList<>(
-								instance.isOrderUpdatesEnabled()
-						);
-					}
-				}
-		);
-		EXECUTABLE_LISTS_MAP.put(
-				QueuedOperationCollectionAction.class,
-				new ListProvider<QueuedOperationCollectionAction>() {
-					ExecutableList<QueuedOperationCollectionAction> get(RxActionQueue instance) {
-						return instance.collectionQueuedOps;
-					}
-					ExecutableList<QueuedOperationCollectionAction> init(RxActionQueue instance) {
-						return instance.collectionQueuedOps = new ExecutableList<>(
-								instance.isOrderUpdatesEnabled()
-						);
-					}
-				}
-		);
-		EXECUTABLE_LISTS_MAP.put(
-				CollectionRemoveAction.class,
-				new ListProvider<CollectionRemoveAction>() {
-					ExecutableList<CollectionRemoveAction> get(RxActionQueue instance) {
-						return instance.collectionRemovals;
-					}
-					ExecutableList<CollectionRemoveAction> init(RxActionQueue instance) {
-						return instance.collectionRemovals = new ExecutableList<>(
-								instance.isOrderUpdatesEnabled()
-						);
-					}
-				}
-		);
-		EXECUTABLE_LISTS_MAP.put(
-				CollectionUpdateAction.class,
-				new ListProvider<CollectionUpdateAction>() {
-					ExecutableList<CollectionUpdateAction> get(RxActionQueue instance) {
-						return instance.collectionUpdates;
-					}
-					ExecutableList<CollectionUpdateAction> init(RxActionQueue instance) {
-						return instance.collectionUpdates = new ExecutableList<>(
-								instance.isOrderUpdatesEnabled()
-						);
-					}
-				}
-		);
-		EXECUTABLE_LISTS_MAP.put(
-				CollectionRecreateAction.class,
-				new ListProvider<CollectionRecreateAction>() {
-					ExecutableList<CollectionRecreateAction> get(RxActionQueue instance) {
-						return instance.collectionCreations;
-					}
-					ExecutableList<CollectionRecreateAction> init(RxActionQueue instance) {
-						return instance.collectionCreations = new ExecutableList<>(
-								instance.isOrderUpdatesEnabled()
-						);
-					}
-				}
-		);
-		EXECUTABLE_LISTS_MAP.put(
-				EntityDeleteAction.class,
-				new ListProvider<EntityDeleteAction>() {
-					ExecutableList<EntityDeleteAction> get(RxActionQueue instance) {
+				RxEntityDeleteAction.class,
+				new ListProvider<RxEntityDeleteAction>() {
+					RxExecutableList<RxEntityDeleteAction> get(RxActionQueue instance) {
 						return instance.deletions;
 					}
-					ExecutableList<EntityDeleteAction> init(RxActionQueue instance) {
+					RxExecutableList<RxEntityDeleteAction> init(RxActionQueue instance) {
 						// EntityDeleteAction executables never require sorting.
-						return instance.deletions = new ExecutableList<>( false );
+						return instance.deletions = new RxExecutableList<>( false );
 					}
 				}
 		);
@@ -235,7 +240,7 @@ public class RxActionQueue {
 
 	public void clear() {
 		for ( ListProvider listProvider : EXECUTABLE_LISTS_MAP.values() ) {
-			ExecutableList<?> l = listProvider.get( this );
+			RxExecutableList<?> l = listProvider.get( this );
 			if( l != null ) {
 				l.clear();
 			}
@@ -245,22 +250,26 @@ public class RxActionQueue {
 		}
 	}
 
-	public void addAction(RxEntityInsertAction action) {
+	public CompletionStage<Void> addAction(RxEntityInsertAction action) {
 		LOG.tracev( "Adding an EntityInsertAction for [{0}] object", action.getEntityName() );
-		addInsertAction( action );
+		return addInsertAction( action );
 	}
 
-	private void addInsertAction(AbstractEntityInsertAction insert) {
+	private CompletionStage<Void> addInsertAction(RxEntityInsertAction insert) {
+	    System.err.println("add insert action to queue");
+	    CompletionStage<Void> ret = RxUtil.nullFuture();
 		if ( insert.isEarlyInsert() ) {
 			// For early inserts, must execute inserts before finding non-nullable transient entities.
 			// TODO: find out why this is necessary
 			LOG.tracev( "Executing inserts before finding non-nullable transient entities for early insert: [{0}]", insert );
-			executeInserts();
+			ret = ret.thenCompose(v -> executeInserts());
+	        System.err.println(" early insert");
 		}
 		NonNullableTransientDependencies nonNullableTransientDependencies = insert.findNonNullableTransientEntities();
+        System.err.println(" nonNullabe... "+nonNullableTransientDependencies);
 		if ( nonNullableTransientDependencies == null ) {
 			LOG.tracev( "Adding insert with no non-nullable, transient entities: [{0}]", insert );
-			addResolvedEntityInsertAction( insert );
+			ret = ret.thenCompose(v -> addResolvedEntityInsertAction( insert ));
 		}
 		else {
 			if ( LOG.isTraceEnabled() ) {
@@ -272,38 +281,47 @@ public class RxActionQueue {
 			}
 			unresolvedInsertions.addUnresolvedEntityInsertAction( insert, nonNullableTransientDependencies );
 		}
+		return ret;
 	}
 
-	private void addResolvedEntityInsertAction(AbstractEntityInsertAction insert) {
+	private CompletionStage<Void> addResolvedEntityInsertAction(RxEntityInsertAction insert) {
+	    CompletionStage<Void> ret;
 		if ( insert.isEarlyInsert() ) {
 			LOG.trace( "Executing insertions before resolved early-insert" );
-			executeInserts();
+			ret = executeInserts();
 			LOG.debug( "Executing identity-insert immediately" );
-			execute( insert );
+			ret = ret.thenCompose(v -> execute( insert ));
 		}
 		else {
 			LOG.trace( "Adding resolved non-early insert action." );
-			addAction( AbstractEntityInsertAction.class, insert );
+			addAction( RxEntityInsertAction.class, insert );
+			System.err.println("added action for later");
+			ret = RxUtil.nullFuture();
 		}
-		if ( !insert.isVeto() ) {
-			insert.makeEntityManaged();
+		return ret.thenCompose(v -> {
+            System.err.println("resumed insert action");
+		    if ( !insert.isVeto() ) {
+		        insert.makeEntityManaged();
 
-			if( unresolvedInsertions != null ) {
-				for ( AbstractEntityInsertAction resolvedAction : unresolvedInsertions.resolveDependentActions( insert.getInstance(), session ) ) {
-					addResolvedEntityInsertAction( resolvedAction );
-				}
-			}
-		}
-		else {
-			throw new EntityActionVetoException(
-					"The EntityInsertAction was vetoed.",
-					insert
-			);
-		}
+		        CompletionStage<Void> comp = RxUtil.nullFuture();
+		        if( unresolvedInsertions != null ) {
+		            for ( AbstractEntityInsertAction resolvedAction : unresolvedInsertions.resolveDependentActions( insert.getInstance(), session ) ) {
+		                comp = comp.thenCompose(v2 -> addResolvedEntityInsertAction( (RxEntityInsertAction) resolvedAction ));
+		            }
+		        }
+		        return comp;
+		    }
+		    else {
+		        throw new EntityActionVetoException(
+		                                            "The EntityInsertAction was vetoed.",
+		                                            insert
+		                );
+		    }
+		});
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T extends Executable & Comparable & Serializable> void addAction(Class<T> executableClass, T action) {
+	private <T extends RxExecutable & Comparable & Serializable> void addAction(Class<T> executableClass, T action) {
 		EXECUTABLE_LISTS_MAP.get( executableClass ).getOrInit( this ).add( action );
 	}
 
@@ -312,9 +330,10 @@ public class RxActionQueue {
 	 *
 	 * @param action The action representing the entity insertion
 	 */
-	public void addAction(EntityIdentityInsertAction action) {
+	public CompletionStage<Void> addAction(EntityIdentityInsertAction action) {
 		LOG.tracev( "Adding an EntityIdentityInsertAction for [{0}] object", action.getEntityName() );
-		addInsertAction( action );
+//		addInsertAction( action );
+		throw new NotYetImplementedException();
 	}
 
 	/**
@@ -322,8 +341,8 @@ public class RxActionQueue {
 	 *
 	 * @param action The action representing the entity deletion
 	 */
-	public void addAction(EntityDeleteAction action) {
-		addAction( EntityDeleteAction.class, action );
+	public void addAction(RxEntityDeleteAction action) {
+		addAction( RxEntityDeleteAction.class, action );
 	}
 
 	/**
@@ -332,7 +351,8 @@ public class RxActionQueue {
 	 * @param action The action representing the orphan removal
 	 */
 	public void addAction(OrphanRemovalAction action) {
-		addAction( OrphanRemovalAction.class, action );
+//		addAction( OrphanRemovalAction.class, action );
+        throw new NotYetImplementedException();
 	}
 
 	/**
@@ -341,7 +361,8 @@ public class RxActionQueue {
 	 * @param action The action representing the entity update
 	 */
 	public void addAction(EntityUpdateAction action) {
-		addAction( EntityUpdateAction.class, action );
+//		addAction( EntityUpdateAction.class, action );
+        throw new NotYetImplementedException();
 	}
 
 	/**
@@ -350,7 +371,8 @@ public class RxActionQueue {
 	 * @param action The action representing the (re)creation of a collection
 	 */
 	public void addAction(CollectionRecreateAction action) {
-		addAction( CollectionRecreateAction.class, action );
+//		addAction( CollectionRecreateAction.class, action );
+        throw new NotYetImplementedException();
 	}
 
 	/**
@@ -359,7 +381,8 @@ public class RxActionQueue {
 	 * @param action The action representing the removal of a collection
 	 */
 	public void addAction(CollectionRemoveAction action) {
-		addAction( CollectionRemoveAction.class, action );
+//		addAction( CollectionRemoveAction.class, action );
+        throw new NotYetImplementedException();
 	}
 
 	/**
@@ -368,7 +391,8 @@ public class RxActionQueue {
 	 * @param action The action representing the update of a collection
 	 */
 	public void addAction(CollectionUpdateAction action) {
-		addAction( CollectionUpdateAction.class, action );
+//		addAction( CollectionUpdateAction.class, action );
+        throw new NotYetImplementedException();
 	}
 
 	/**
@@ -377,7 +401,8 @@ public class RxActionQueue {
 	 * @param action The action representing the queued operation
 	 */
 	public void addAction(QueuedOperationCollectionAction action) {
-		addAction( QueuedOperationCollectionAction.class, action );
+//		addAction( QueuedOperationCollectionAction.class, action );
+        throw new NotYetImplementedException();
 	}
 
 	/**
@@ -456,10 +481,11 @@ public class RxActionQueue {
 	 *
 	 * @throws HibernateException error executing queued insertion actions.
 	 */
-	public void executeInserts() throws HibernateException {
+	public CompletionStage<Void> executeInserts() {
 		if ( insertions != null && !insertions.isEmpty() ) {
-			executeActions( insertions );
+			return executeActions( insertions );
 		}
+		return RxUtil.nullFuture();
 	}
 
 	/**
@@ -467,17 +493,19 @@ public class RxActionQueue {
 	 *
 	 * @throws HibernateException error executing queued actions.
 	 */
-	public void executeActions() throws HibernateException {
+	public CompletionStage<Void> executeActions() {
 		if ( hasUnresolvedEntityInsertActions() ) {
-			throw new IllegalStateException( "About to execute actions, but there are unresolved entity insert actions." );
+			return RxUtil.failedFuture(new IllegalStateException( "About to execute actions, but there are unresolved entity insert actions." ));
 		}
 
+		CompletionStage<Void> ret = RxUtil.nullFuture();
 		for ( ListProvider listProvider : EXECUTABLE_LISTS_MAP.values() ) {
-			ExecutableList<?> l = listProvider.get( this );
+			RxExecutableList<?> l = listProvider.get( this );
 			if ( l != null && !l.isEmpty() ) {
-				executeActions( l );
+				ret = ret.thenCompose(v -> executeActions( l ));
 			}
 		}
+		return ret;
 	}
 
 	/**
@@ -551,7 +579,7 @@ public class RxActionQueue {
 			return false;
 		}
 		for ( ListProvider listProvider : EXECUTABLE_LISTS_MAP.values() ) {
-			ExecutableList<?> l = listProvider.get( this );
+			RxExecutableList<?> l = listProvider.get( this );
 			if ( areTablesToBeUpdated( l, tables ) ) {
 				return true;
 			}
@@ -562,7 +590,7 @@ public class RxActionQueue {
 		return areTablesToBeUpdated( unresolvedInsertions, tables );
 	}
 
-	private static boolean areTablesToBeUpdated(ExecutableList<?> actions, @SuppressWarnings("rawtypes") Set tableSpaces) {
+	private static boolean areTablesToBeUpdated(RxExecutableList<?> actions, @SuppressWarnings("rawtypes") Set tableSpaces) {
 		if ( actions == null || actions.isEmpty() ) {
 			return false;
 		}
@@ -596,32 +624,28 @@ public class RxActionQueue {
 	 *
 	 * @throws HibernateException
 	 */
-	private <E extends Executable & Comparable<?> & Serializable> void executeActions(ExecutableList<E> list) throws HibernateException {
+	private <E extends RxExecutable & Comparable<?> & Serializable> CompletionStage<Void> executeActions(RxExecutableList<E> list) throws HibernateException {
 		// todo : consider ways to improve the double iteration of Executables here:
 		//		1) we explicitly iterate list here to perform Executable#execute()
 		//		2) ExecutableList#getQuerySpaces also iterates the Executables to collect query spaces.
-		try {
-			for ( E e : list ) {
-				try {
-					e.execute();
-				}
-				finally {
-					if( e.getBeforeTransactionCompletionProcess() != null ) {
-						if( beforeTransactionProcesses == null ) {
-							beforeTransactionProcesses = new BeforeTransactionCompletionProcessQueue( session );
-						}
-						beforeTransactionProcesses.register( e.getBeforeTransactionCompletionProcess() );
-					}
-					if( e.getAfterTransactionCompletionProcess() != null ) {
-						if( afterTransactionProcesses == null ) {
-							afterTransactionProcesses = new AfterTransactionCompletionProcessQueue( session );
-						}
-						afterTransactionProcesses.register( e.getAfterTransactionCompletionProcess() );
-					}
-				}
-			}
-		}
-		finally {
+	    CompletionStage<Void> ret = RxUtil.nullFuture();
+	    for ( E e : list ) {
+	        ret = ret.thenCompose(v -> e.rxExecute().whenComplete((v2,x) -> {
+	            if( e.getBeforeTransactionCompletionProcess() != null ) {
+	                if( beforeTransactionProcesses == null ) {
+	                    beforeTransactionProcesses = new BeforeTransactionCompletionProcessQueue( session );
+	                }
+	                beforeTransactionProcesses.register( e.getBeforeTransactionCompletionProcess() );
+	            }
+	            if( e.getAfterTransactionCompletionProcess() != null ) {
+	                if( afterTransactionProcesses == null ) {
+	                    afterTransactionProcesses = new AfterTransactionCompletionProcessQueue( session );
+	                }
+	                afterTransactionProcesses.register( e.getAfterTransactionCompletionProcess() );
+	            }
+	        }));
+	    }
+	    return ret.whenComplete((v, x) -> {
 			if ( session.getFactory().getSessionFactoryOptions().isQueryCacheEnabled() ) {
 				// Strictly speaking, only a subset of the list may have been processed if a RuntimeException occurs.
 				// We still invalidate all spaces. I don't see this as a big deal - after all, RuntimeExceptions are
@@ -629,10 +653,10 @@ public class RxActionQueue {
 				Set propertySpaces = list.getQuerySpaces();
 				invalidateSpaces( convertTimestampSpaces( propertySpaces ) );
 			}
-		}
-
-		list.clear();
-		session.getJdbcCoordinator().executeBatch();
+		}).thenRun(() -> {
+	        list.clear();
+	        session.getJdbcCoordinator().executeBatch();
+		});
 	}
 
 	private static String[] convertTimestampSpaces(Set spaces) {
@@ -642,13 +666,9 @@ public class RxActionQueue {
 	/**
 	 * @param executable The action to execute
 	 */
-	public <E extends Executable & Comparable<?>> void execute(E executable) {
-		try {
-			executable.execute();
-		}
-		finally {
-			registerCleanupActions( executable );
-		}
+	public <E extends RxExecutable & Comparable<?>> CompletionStage<Void> execute(E executable) {
+	    return executable.rxExecute()
+	            .whenComplete((v,x) -> registerCleanupActions( executable ));
 	}
 
 	/**
@@ -677,18 +697,18 @@ public class RxActionQueue {
 	@Override
 	public String toString() {
 		return "RxActionQueue[insertions=" + toString( insertions )
-				+ " updates=" + toString( updates )
-				+ " deletions=" + toString( deletions )
-				+ " orphanRemovals=" + toString( orphanRemovals )
-				+ " collectionCreations=" + toString( collectionCreations )
-				+ " collectionRemovals=" + toString( collectionRemovals )
-				+ " collectionUpdates=" + toString( collectionUpdates )
-				+ " collectionQueuedOps=" + toString( collectionQueuedOps )
+//				+ " updates=" + toString( updates )
+//				+ " deletions=" + toString( deletions )
+//				+ " orphanRemovals=" + toString( orphanRemovals )
+//				+ " collectionCreations=" + toString( collectionCreations )
+//				+ " collectionRemovals=" + toString( collectionRemovals )
+//				+ " collectionUpdates=" + toString( collectionUpdates )
+//				+ " collectionQueuedOps=" + toString( collectionQueuedOps )
 				+ " unresolvedInsertDependencies=" + unresolvedInsertions
 				+ "]";
 	}
 
-	private static String toString(ExecutableList q) {
+	private static String toString(RxExecutableList q) {
 		return q == null ? "ExecutableList{size=0}" : q.toString();
 	}
 
@@ -872,7 +892,7 @@ public class RxActionQueue {
 		unresolvedInsertions.serialize( oos );
 
 		for ( ListProvider p : EXECUTABLE_LISTS_MAP.values() ) {
-			ExecutableList<?> l = p.get( this );
+			RxExecutableList<?> l = p.get( this );
 			if( l == null ) {
 				oos.writeBoolean( false );
 			}
@@ -902,7 +922,7 @@ public class RxActionQueue {
 		rtn.unresolvedInsertions = UnresolvedEntityInsertActions.deserialize( ois, session );
 
 		for ( ListProvider provider : EXECUTABLE_LISTS_MAP.values() ) {
-			ExecutableList<?> l = provider.get( rtn );
+			RxExecutableList<?> l = provider.get( rtn );
 			boolean notNull = ois.readBoolean();
 			if( notNull ) {
 				if(l == null) {
@@ -1030,7 +1050,7 @@ public class RxActionQueue {
 	 *
 	 * @author Jay Erb
 	 */
-	private static class InsertActionSorter implements ExecutableList.Sorter<AbstractEntityInsertAction> {
+	private static class InsertActionSorter implements RxExecutableList.Sorter<RxEntityInsertAction> {
 		/**
 		 * Singleton access
 		 */
@@ -1134,7 +1154,7 @@ public class RxActionQueue {
 		private List<BatchIdentifier> latestBatches;
 
 		// the map of batch numbers to EntityInsertAction lists
-		private Map<BatchIdentifier, List<AbstractEntityInsertAction>> actionBatches;
+		private Map<BatchIdentifier, List<RxEntityInsertAction>> actionBatches;
 
 		public InsertActionSorter() {
 		}
@@ -1142,12 +1162,12 @@ public class RxActionQueue {
 		/**
 		 * Sort the insert actions.
 		 */
-		public void sort(List<AbstractEntityInsertAction> insertions) {
+		public void sort(List<RxEntityInsertAction> insertions) {
 			// optimize the hash size to eliminate a rehash.
 			this.latestBatches = new ArrayList<>( );
 			this.actionBatches = new HashMap<>();
 
-			for ( AbstractEntityInsertAction action : insertions ) {
+			for ( RxEntityInsertAction action : insertions ) {
 				BatchIdentifier batchIdentifier = new BatchIdentifier(
 						action.getEntityName(),
 						action.getSession()
@@ -1238,7 +1258,7 @@ public class RxActionQueue {
 
 			// Now, rebuild the insertions list. There is a batch for each entry in the name list.
 			for ( BatchIdentifier rootIdentifier : latestBatches ) {
-				List<AbstractEntityInsertAction> batch = actionBatches.get( rootIdentifier );
+				List<RxEntityInsertAction> batch = actionBatches.get( rootIdentifier );
 				insertions.addAll( batch );
 			}
 		}
@@ -1329,8 +1349,8 @@ public class RxActionQueue {
 			}
 		}
 
-		private void addToBatch(BatchIdentifier batchIdentifier, AbstractEntityInsertAction action) {
-			List<AbstractEntityInsertAction> actions = actionBatches.get( batchIdentifier );
+		private void addToBatch(BatchIdentifier batchIdentifier, RxEntityInsertAction action) {
+			List<RxEntityInsertAction> actions = actionBatches.get( batchIdentifier );
 
 			if ( actions == null ) {
 				actions = new LinkedList<>();
@@ -1341,11 +1361,11 @@ public class RxActionQueue {
 
 	}
 
-	private abstract static class ListProvider<T extends Executable & Comparable & Serializable> {
-		abstract ExecutableList<T> get(RxActionQueue instance);
-		abstract ExecutableList<T> init(RxActionQueue instance);
-		ExecutableList<T> getOrInit(RxActionQueue instance ) {
-			ExecutableList<T> list = get( instance );
+	private abstract static class ListProvider<T extends RxExecutable & Comparable & Serializable> {
+		abstract RxExecutableList<T> get(RxActionQueue instance);
+		abstract RxExecutableList<T> init(RxActionQueue instance);
+		RxExecutableList<T> getOrInit(RxActionQueue instance ) {
+			RxExecutableList<T> list = get( instance );
 			if ( list == null ) {
 				list = init( instance );
 			}

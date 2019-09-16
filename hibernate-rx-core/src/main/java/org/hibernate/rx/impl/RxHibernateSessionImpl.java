@@ -1,5 +1,6 @@
 package org.hibernate.rx.impl;
 
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 import org.hibernate.FlushMode;
@@ -24,6 +25,8 @@ import org.hibernate.rx.RxHibernateSession;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.engine.spi.RxHibernateSessionFactoryImplementor;
+import org.hibernate.rx.event.spi.RxFlushEventListener;
+import org.hibernate.rx.util.RxUtil;
 
 public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements RxHibernateSession, EventSource {
 
@@ -60,30 +63,30 @@ public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements 
 		return this;
 	}
 
-	private void firePersist(PersistEvent event) {
-		try {
-//			checkTransactionSynchStatus();
-//			checkNoUnresolvedActionsBeforeOperation();
-
-			for ( PersistEventListener listener : listeners( EventType.PERSIST ) ) {
-				listener.onPersist( event );
-			}
-		}
-		catch (MappingException e) {
-			throw exceptionConverter.convert( new IllegalArgumentException( e.getMessage() ) );
-		}
-		catch (RuntimeException e) {
-			throw exceptionConverter.convert( e );
-		}
-		finally {
-//			try {
-//				checkNoUnresolvedActionsAfterOperation();
+//	private void firePersist(PersistEvent event) {
+//		try {
+////			checkTransactionSynchStatus();
+////			checkNoUnresolvedActionsBeforeOperation();
+//
+//			for ( PersistEventListener listener : listeners( EventType.PERSIST ) ) {
+//				listener.rxOnPersist( event );
 //			}
-//			catch (RuntimeException e) {
-//				throw exceptionConverter.convert( e );
-//			}
-		}
-	}
+//		}
+//		catch (MappingException e) {
+//			throw exceptionConverter.convert( new IllegalArgumentException( e.getMessage() ) );
+//		}
+//		catch (RuntimeException e) {
+//			throw exceptionConverter.convert( e );
+//		}
+//		finally {
+////			try {
+////				checkNoUnresolvedActionsAfterOperation();
+////			}
+////			catch (RuntimeException e) {
+////				throw exceptionConverter.convert( e );
+////			}
+//		}
+//	}
 
 	@Override
 	public void flush() {
@@ -91,25 +94,33 @@ public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements 
 		doFlush();
 	}
 
-	private void doFlush() {
+	@Override
+	public CompletionStage<Void> rxFlush() {
+	    checkOpen();
+	    return doFlush();
+	}
+
+	private CompletionStage<Void> doFlush() {
 //		checkTransactionNeeded();
 //		checkTransactionSynchStatus();
 
-		try {
 //			if ( persistenceContext.getCascadeLevel() > 0 ) {
 //				throw new HibernateException( "Flush during cascade is dangerous" );
 //			}
 
+		    CompletionStage<Void> ret = RxUtil.nullFuture();
 			FlushEvent flushEvent = new FlushEvent( this );
 			for ( FlushEventListener listener : listeners( EventType.FLUSH ) ) {
-				listener.onFlush( flushEvent );
+				ret = ret.thenCompose(v -> ((RxFlushEventListener)listener).rxOnFlush( flushEvent ));
 			}
 
 //			delayedAfterCompletion();
-		}
-		catch ( RuntimeException e ) {
-			throw exceptionConverter.convert( e );
-		}
+			return ret.exceptionally(x -> {
+			    if(x instanceof RuntimeException)
+			        throw exceptionConverter.convert( (RuntimeException)x );
+			    else
+			        return RxUtil.rethrow(x);
+			});
 	}
 
 	private <T> Iterable<T> listeners(EventType<T> type) {

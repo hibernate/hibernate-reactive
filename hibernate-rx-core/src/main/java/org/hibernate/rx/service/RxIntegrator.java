@@ -7,6 +7,7 @@ import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventType;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.rx.event.DefaultRxFlushEventListener;
+import org.hibernate.rx.event.DefaultRxLoadEventListener;
 import org.hibernate.rx.event.DefaultRxPersistEventListener;
 import org.hibernate.rx.event.DefaultRxPersistOnFlushEventListener;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
@@ -40,6 +41,9 @@ public class RxIntegrator implements Integrator {
 
 		eventListenerRegistry.addDuplicationStrategy( DefaultRxDeleteEventListener.EventContextManagingDeleteEventListenerDuplicationStrategy.INSTANCE );
 		eventListenerRegistry.getEventListenerGroup( EventType.DELETE ).appendListener( new DefaultRxDeleteEventListener() );
-	}
+
+		eventListenerRegistry.addDuplicationStrategy( DefaultRxLoadEventListener.EventContextManagingLoadEventListenerDuplicationStrategy.INSTANCE );
+		eventListenerRegistry.getEventListenerGroup( EventType.LOAD ).appendListener( new DefaultRxLoadEventListener() );
+}
 
 }

@@ -11,6 +11,8 @@ public interface RxSession {
 	<T> CompletionStage<Optional<T>> find(Class<T> entityClass, Object id);
 
 	CompletionStage<Void> persist(Object entity);
+	
+	CompletionStage<Void> rxFlush();
 
 	CompletionStage<Void> remove(Object entity);
 

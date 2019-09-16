@@ -93,6 +93,7 @@ public class ReactiveSessionTest {
 		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
 		RxConnection rxConn = provider.getConnection();
 		PgPool client = rxConn.unwrap( PgPool.class );
+        System.err.println("doing select");
 		return invokeQuery( client, "SELECT name FROM ReactiveSessionTest$GuineaPig WHERE id = " + id ).thenApply( rowSet -> {
 				if ( rowSet.size() == 1 ) {
 					// Only one result
@@ -166,24 +167,20 @@ public class ReactiveSessionTest {
 	public void reactivePersist(TestContext context) {
 		RxSession rxSession = session.reactive();
 		test(context, 
-		     flushAfter(rxSession.persist( new GuineaPig( 10, "Tulip" ) ))
+		     rxSession.persist( new GuineaPig( 10, "Tulip" ) )
+		     .thenCompose(v -> session.rxFlush())
 		     .thenCompose(v -> selectNameFromId( 10 ))
 		     .thenAccept(selectRes -> {
 		         context.assertEquals( "Tulip", selectRes );
 		     }));
 	}
 
-	private <T> CompletionStage<T> flushAfter(CompletionStage<T> cs) {
-        // this is a bit weird, but if we don't flush, the persist/remove never completes
-	    session.flush();
-        return cs;
-    }
-
     @Test
 	public void reactiveRemove(TestContext context) {
 	    test(context,
 	         populateDB( context )
-	         .thenCompose(v -> flushAfter(session.reactive().remove(new GuineaPig( 5, "Aloi" ))))
+	         .thenCompose(v -> session.reactive().remove(new GuineaPig( 5, "Aloi" )))
+             .thenCompose(v -> session.rxFlush())
 	         .thenCompose(v -> selectNameFromId( 5 ))
 	         .thenAccept(ret -> context.assertNull(ret)));
 	}

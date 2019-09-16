@@ -82,4 +82,9 @@ public class MockRxSession implements RxSession {
 		throw new UnsupportedOperationException( "not implemented" );
 	}
 
+    @Override
+    public CompletionStage<Void> rxFlush() {
+        return CompletableFuture.completedFuture(null);
+    }
+
 }
