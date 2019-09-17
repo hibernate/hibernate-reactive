@@ -4,7 +4,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletionStage;
-
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
@@ -23,6 +22,7 @@ import org.hibernate.rx.service.RxConnectionPoolProviderImpl;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.Configurable;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,6 +44,19 @@ public class ReactiveSessionTest {
 	RxHibernateSession session = null;
 	SessionFactoryImplementor sessionFactory = null;
 
+	private static void test(TestContext context, CompletionStage<?> cs) {
+		// this will be added to TestContext in the next vert.x release
+		Async async = context.async();
+		cs.whenComplete( (res, err) -> {
+			if ( err != null ) {
+				context.fail( err );
+			}
+			else {
+				async.complete();
+			}
+		} );
+	}
+
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
 		configuration.setProperty( Environment.HBM2DDL_AUTO, "create-drop" );
@@ -64,14 +77,19 @@ public class ReactiveSessionTest {
 		return builder.build();
 	}
 
-	protected StandardServiceRegistryImpl buildServiceRegistry(BootstrapServiceRegistry bootRegistry, Configuration configuration) {
+	protected StandardServiceRegistryImpl buildServiceRegistry(
+			BootstrapServiceRegistry bootRegistry,
+			Configuration configuration) {
 		Properties properties = new Properties();
 		properties.putAll( configuration.getProperties() );
 		ConfigurationHelper.resolvePlaceHolders( properties );
 
 		StandardServiceRegistryBuilder cfgRegistryBuilder = configuration.getStandardServiceRegistryBuilder();
 
-		StandardServiceRegistryBuilder registryBuilder = new StandardServiceRegistryBuilder( bootRegistry, cfgRegistryBuilder.getAggregatedCfgXml() )
+		StandardServiceRegistryBuilder registryBuilder = new StandardServiceRegistryBuilder(
+				bootRegistry,
+				cfgRegistryBuilder.getAggregatedCfgXml()
+		)
 				.applySettings( properties );
 
 		return (StandardServiceRegistryImpl) registryBuilder.build();
@@ -84,7 +102,7 @@ public class ReactiveSessionTest {
 		BootstrapServiceRegistry bootRegistry = buildBootstrapServiceRegistry();
 		ServiceRegistry serviceRegistry = buildServiceRegistry( bootRegistry, configuration );
 		// this is done here because Configuration does not currently support 4.0 xsd
-		sessionFactory = ( SessionFactoryImplementor ) configuration.buildSessionFactory( serviceRegistry );
+		sessionFactory = (SessionFactoryImplementor) configuration.buildSessionFactory( serviceRegistry );
 		session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
 	}
 
@@ -93,19 +111,20 @@ public class ReactiveSessionTest {
 		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
 		RxConnection rxConn = provider.getConnection();
 		PgPool client = rxConn.unwrap( PgPool.class );
-		return invokeQuery( client, "SELECT name FROM ReactiveSessionTest$GuineaPig WHERE id = " + id ).thenApply( rowSet -> {
-				if ( rowSet.size() == 1 ) {
-					// Only one result
-				    return rowSet.iterator().next().getString(0);
-				}
-				else if (rowSet.size() > 1) {
-					throw new AssertionError( "More than one result returned: " + rowSet.size() );
-				}
-				else {
-					// Size 0
-					return null;
-				}
-		});
+		return invokeQuery( client, "SELECT name FROM ReactiveSessionTest$GuineaPig WHERE id = " + id ).thenApply(
+				rowSet -> {
+					if ( rowSet.size() == 1 ) {
+						// Only one result
+						return rowSet.iterator().next().getString( 0 );
+					}
+					else if ( rowSet.size() > 1 ) {
+						throw new AssertionError( "More than one result returned: " + rowSet.size() );
+					}
+					else {
+						// Size 0
+						return null;
+					}
+				} );
 	}
 
 	private CompletionStage<RowSet> populateDB(TestContext context) {
@@ -128,60 +147,57 @@ public class ReactiveSessionTest {
 
 	private CompletionStage<RowSet> invokeQuery(PgPool client, String query) {
 		// A simple query
-	    // FIXME: pretty sure you should not close the entire pool
-		return client.query(query).whenComplete((row, t) -> client.close());
+		// FIXME: pretty sure you should not close the entire pool
+		return client.query( query ).whenComplete( (row, t) -> client.close() );
 	}
 
 	@Test
 	public void reactiveFind(TestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
-		test(context,
-		     populateDB( context )
-		     .thenCompose(v -> session.reactive().find( GuineaPig.class, expectedPig.getId() ))
-		     .thenCompose( actualPig -> {
-		         assertThatPigsAreEqual( context, expectedPig, actualPig );
-		         return dropTable( context );
-		     }));
-		
+		test(
+				context,
+				populateDB( context )
+						.thenCompose( v -> session.reactive().find( GuineaPig.class, expectedPig.getId() ) )
+						.thenCompose( actualPig -> {
+							assertThatPigsAreEqual( context, expectedPig, actualPig );
+							return dropTable( context );
+						} )
+		);
+
 	}
+
+	;
 
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, Optional<GuineaPig> actual) {
 		context.assertTrue( actual.isPresent() );
 		context.assertEquals( expected.getId(), actual.get().getId() );
 		context.assertEquals( expected.getName(), actual.get().getName() );
-	};
-
-	private static void test(TestContext context, CompletionStage<?> cs) {
-	    // this will be added to TestContext in the next vert.x release
-	    Async async = context.async();
-	    cs.whenComplete((res, err) -> {
-	        if(err != null)
-	            context.fail(err);
-	        else
-	            async.complete();
-	    });
 	}
-	
+
 	@Test
 	public void reactivePersist(TestContext context) {
 		RxSession rxSession = session.reactive();
-		test(context, 
-		     rxSession.persist( new GuineaPig( 10, "Tulip" ) )
-		     .thenCompose(v -> session.rxFlush())
-		     .thenCompose(v -> selectNameFromId( 10 ))
-		     .thenAccept(selectRes -> {
-		         context.assertEquals( "Tulip", selectRes );
-		     }));
+		test(
+				context,
+				rxSession.persist( new GuineaPig( 10, "Tulip" ) )
+						.thenCompose( v -> session.rxFlush() )
+						.thenCompose( v -> selectNameFromId( 10 ) )
+						.thenAccept( selectRes -> {
+							context.assertEquals( "Tulip", selectRes );
+						} )
+		);
 	}
 
-    @Test
+	@Test
 	public void reactiveRemove(TestContext context) {
-	    test(context,
-	         populateDB( context )
-	         .thenCompose(v -> session.reactive().remove(new GuineaPig( 5, "Aloi" )))
-             .thenCompose(v -> session.rxFlush())
-	         .thenCompose(v -> selectNameFromId( 5 ))
-	         .thenAccept(ret -> context.assertNull(ret)));
+		test(
+				context,
+				populateDB( context )
+						.thenCompose( v -> session.reactive().remove( new GuineaPig( 5, "Aloi" ) ) )
+						.thenCompose( v -> session.rxFlush() )
+						.thenCompose( v -> selectNameFromId( 5 ) )
+						.thenAccept( ret -> context.assertNull( ret ) )
+		);
 	}
 
 	@Entity
