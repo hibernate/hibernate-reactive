@@ -85,7 +85,6 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 
 	@Override
 	public CompletionStage<Void> rxExecute() throws HibernateException {
-		Thread.dumpStack();
 		CompletionStage<Void> insertStage = null;
 		nullifyTransientReferencesIfNotAlready();
 
