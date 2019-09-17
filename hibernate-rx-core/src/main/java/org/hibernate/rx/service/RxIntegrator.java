@@ -3,6 +3,7 @@ package org.hibernate.rx.service;
 import org.hibernate.boot.Metadata;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.internal.DefaultRxDeleteEventListener;
+import org.hibernate.event.internal.DefaultRxFlushEntityEventListener;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventType;
 import org.hibernate.integrator.spi.Integrator;
@@ -34,6 +35,9 @@ public class RxIntegrator implements Integrator {
 
 		eventListenerRegistry.addDuplicationStrategy( DefaultRxFlushEventListener.EventContextManagingFlushEventListenerDuplicationStrategy.INSTANCE );
 		eventListenerRegistry.getEventListenerGroup( EventType.FLUSH ).appendListener( new DefaultRxFlushEventListener() );
+
+		eventListenerRegistry.addDuplicationStrategy( DefaultRxFlushEntityEventListener.EventContextManagingFlushEventListenerDuplicationStrategy.INSTANCE );
+		eventListenerRegistry.getEventListenerGroup( EventType.FLUSH_ENTITY ).appendListener( new DefaultRxFlushEntityEventListener() );
 
 		eventListenerRegistry.addDuplicationStrategy( DefaultRxPersistEventListener.EventContextManagingPersistEventListenerDuplicationStrategy.INSTANCE );
 		eventListenerRegistry.getEventListenerGroup( EventType.PERSIST ).appendListener( new DefaultRxPersistEventListener() );

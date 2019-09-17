@@ -57,6 +57,7 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.rx.action.spi.RxExecutable;
 import org.hibernate.rx.engine.impl.RxEntityDeleteAction;
 import org.hibernate.rx.engine.impl.RxEntityInsertAction;
+import org.hibernate.rx.engine.impl.RxEntityUpdateAction;
 import org.hibernate.rx.util.RxUtil;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.CompositeType;
@@ -118,19 +119,18 @@ public class RxActionQueue {
 					}
 				}
 		);
-//		EXECUTABLE_LISTS_MAP.put(
-//				EntityUpdateAction.class,
-//				new ListProvider<EntityUpdateAction>() {
-//					ExecutableList<EntityUpdateAction> get(RxActionQueue instance) {
-//						return instance.updates;
-//					}
-//					ExecutableList<EntityUpdateAction> init(RxActionQueue instance) {
-//						return instance.updates = new ExecutableList<>(
-//								instance.isOrderUpdatesEnabled()
-//						);
-//					}
-//				}
-//		);
+		EXECUTABLE_LISTS_MAP.put(
+				RxEntityUpdateAction.class,
+				new ListProvider<RxEntityUpdateAction>() {
+					RxExecutableList<RxEntityUpdateAction> get(RxActionQueue instance) {
+						return instance.updates;
+					}
+
+					RxExecutableList<RxEntityUpdateAction> init(RxActionQueue instance) {
+						return instance.updates = new RxExecutableList<>( false );
+					}
+				}
+		);
 //		EXECUTABLE_LISTS_MAP.put(
 //				QueuedOperationCollectionAction.class,
 //				new ListProvider<QueuedOperationCollectionAction>() {
@@ -208,7 +208,7 @@ public class RxActionQueue {
 	// integrity
 	private RxExecutableList<RxEntityInsertAction> insertions;
 	private RxExecutableList<RxEntityDeleteAction> deletions;
-	private ExecutableList<EntityUpdateAction> updates;
+	private RxExecutableList<RxEntityUpdateAction> updates;
 	// Actually the semantics of the next three are really "Bag"
 	// Note that, unlike objects, collection insertions, updates,
 	// deletions are not really remembered between flushes. We
@@ -442,9 +442,8 @@ public class RxActionQueue {
 	 *
 	 * @param action The action representing the entity update
 	 */
-	public void addAction(EntityUpdateAction action) {
-//		addAction( EntityUpdateAction.class, action );
-		throw new NotYetImplementedException();
+	public void addAction(RxEntityUpdateAction action) {
+		addAction( RxEntityUpdateAction.class, action );
 	}
 
 	/**
