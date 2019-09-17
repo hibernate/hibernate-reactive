@@ -83,7 +83,7 @@ public class MockRxSession implements RxSession {
 	}
 
     @Override
-    public CompletionStage<Void> rxFlush() {
+    public CompletionStage<Void> flush() {
         return CompletableFuture.completedFuture(null);
     }
 

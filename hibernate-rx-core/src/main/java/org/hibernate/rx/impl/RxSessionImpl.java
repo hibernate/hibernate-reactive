@@ -72,7 +72,7 @@ public class RxSessionImpl implements RxSession {
 	}
 
 	@Override
-	public CompletionStage<Void> rxFlush() {
+	public CompletionStage<Void> flush() {
 	    return rxHibernateSession.rxFlush();
 	}
 	
