@@ -24,6 +24,4 @@ public interface RxHibernateSession extends Session {
 
 	RxActionQueue getRxActionQueue();
 
-    CompletionStage<Void> rxFlush();
-
 }

@@ -28,6 +28,8 @@ import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.DeleteEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.EventType;
+import org.hibernate.event.spi.FlushEvent;
+import org.hibernate.event.spi.FlushEventListener;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
 import org.hibernate.event.spi.PersistEvent;
@@ -44,6 +46,7 @@ import org.hibernate.rx.StateControl;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.engine.spi.RxHibernateSessionFactoryImplementor;
 import org.hibernate.rx.event.spi.RxDeleteEventListener;
+import org.hibernate.rx.event.spi.RxFlushEventListener;
 import org.hibernate.rx.event.spi.RxLoadEventListener;
 import org.hibernate.rx.event.spi.RxPersistEventListener;
 import org.hibernate.rx.util.RxUtil;
@@ -73,7 +76,31 @@ public class RxSessionImpl implements RxSession {
 
 	@Override
 	public CompletionStage<Void> flush() {
-	    return rxHibernateSession.rxFlush();
+//		checkOpen();
+		return doFlush();
+	}
+
+	private CompletionStage<Void> doFlush() {
+//		checkTransactionNeeded();
+//		checkTransactionSynchStatus();
+
+//			if ( persistenceContext.getCascadeLevel() > 0 ) {
+//				throw new HibernateException( "Flush during cascade is dangerous" );
+//			}
+
+		CompletionStage<Void> ret = RxUtil.nullFuture();
+		FlushEvent flushEvent = new FlushEvent( (EventSource) rxHibernateSession );
+		for ( FlushEventListener listener : listeners( EventType.FLUSH ) ) {
+			ret = ret.thenCompose(v -> ((RxFlushEventListener)listener).rxOnFlush( flushEvent ));
+		}
+
+//			delayedAfterCompletion();
+		return ret.exceptionally(x -> {
+			if(x instanceof RuntimeException)
+				throw exceptionConverter().convert( (RuntimeException)x );
+			else
+				return RxUtil.rethrow(x);
+		});
 	}
 	
 	@Override
