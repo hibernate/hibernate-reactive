@@ -180,7 +180,7 @@ public class ReactiveSessionTest {
 		test(
 				context,
 				rxSession.persist( new GuineaPig( 10, "Tulip" ) )
-						.thenCompose( v -> session.rxFlush() )
+						.thenCompose( v -> rxSession.flush() )
 						.thenCompose( v -> selectNameFromId( 10 ) )
 						.thenAccept( selectRes -> {
 							context.assertEquals( "Tulip", selectRes );
@@ -190,11 +190,12 @@ public class ReactiveSessionTest {
 
 	@Test
 	public void reactiveRemove(TestContext context) {
+		RxSession rxSession = session.reactive();
 		test(
 				context,
 				populateDB( context )
-						.thenCompose( v -> session.reactive().remove( new GuineaPig( 5, "Aloi" ) ) )
-						.thenCompose( v -> session.rxFlush() )
+						.thenCompose( v -> rxSession.remove( new GuineaPig( 5, "Aloi" ) ) )
+						.thenCompose( v -> rxSession.flush() )
 						.thenCompose( v -> selectNameFromId( 5 ) )
 						.thenAccept( ret -> context.assertNull( ret ) )
 		);
