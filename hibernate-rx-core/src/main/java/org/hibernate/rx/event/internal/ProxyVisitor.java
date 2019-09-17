@@ -17,69 +17,70 @@ import org.hibernate.type.EntityType;
 
 /**
  * Reassociates uninitialized proxies with the session
+ *
  * @author Gavin King
  */
 public abstract class ProxyVisitor extends AbstractVisitor {
 
 
-    public ProxyVisitor(EventSource session) {
-        super(session);
-    }
+	public ProxyVisitor(EventSource session) {
+		super( session );
+	}
 
-    Object processEntity(Object value, EntityType entityType) throws HibernateException {
+	/**
+	 * Has the owner of the collection changed since the collection
+	 * was snapshotted and detached?
+	 */
+	protected static boolean isOwnerUnchanged(
+			final PersistentCollection snapshot,
+			final CollectionPersister persister,
+			final Serializable id
+	) {
+		return isCollectionSnapshotValid( snapshot ) &&
+				persister.getRole().equals( snapshot.getRole() ) &&
+				id.equals( snapshot.getKey() );
+	}
 
-        if (value!=null) {
-            getSession().getPersistenceContext().reassociateIfUninitializedProxy(value);
-            // if it is an initialized proxy, let cascade
-            // handle it later on
-        }
+	private static boolean isCollectionSnapshotValid(PersistentCollection snapshot) {
+		return snapshot != null &&
+				snapshot.getRole() != null &&
+				snapshot.getKey() != null;
+	}
 
-        return null;
-    }
+	Object processEntity(Object value, EntityType entityType) throws HibernateException {
 
-    /**
-     * Has the owner of the collection changed since the collection
-     * was snapshotted and detached?
-     */
-    protected static boolean isOwnerUnchanged(
-            final PersistentCollection snapshot, 
-            final CollectionPersister persister, 
-            final Serializable id
-    ) {
-        return isCollectionSnapshotValid(snapshot) &&
-                persister.getRole().equals( snapshot.getRole() ) &&
-                id.equals( snapshot.getKey() );
-    }
+		if ( value != null ) {
+			getSession().getPersistenceContext().reassociateIfUninitializedProxy( value );
+			// if it is an initialized proxy, let cascade
+			// handle it later on
+		}
 
-    private static boolean isCollectionSnapshotValid(PersistentCollection snapshot) {
-        return snapshot != null &&
-                snapshot.getRole() != null &&
-                snapshot.getKey() != null;
-    }
-    
-    /**
-     * Reattach a detached (disassociated) initialized or uninitialized
-     * collection wrapper, using a snapshot carried with the collection
-     * wrapper
-     */
-    protected void reattachCollection(PersistentCollection collection, CollectionType type)
-    throws HibernateException {
-        final EventSource session = getSession();
-        if ( collection.wasInitialized() ) {
-            CollectionPersister collectionPersister = session.getFactory()
-            .getCollectionPersister( type.getRole() );
-            session.getPersistenceContext()
-                .addInitializedDetachedCollection( collectionPersister, collection );
-        }
-        else {
-            if ( !isCollectionSnapshotValid( collection ) ) {
-                throw new HibernateException( "could not reassociate uninitialized transient collection" );
-            }
-            CollectionPersister collectionPersister = session.getFactory()
-                    .getCollectionPersister( collection.getRole() );
-            session.getPersistenceContext()
-                .addUninitializedDetachedCollection( collectionPersister, collection );
-        }
-    }
+		return null;
+	}
+
+	/**
+	 * Reattach a detached (disassociated) initialized or uninitialized
+	 * collection wrapper, using a snapshot carried with the collection
+	 * wrapper
+	 */
+	protected void reattachCollection(PersistentCollection collection, CollectionType type)
+			throws HibernateException {
+		final EventSource session = getSession();
+		if ( collection.wasInitialized() ) {
+			CollectionPersister collectionPersister = session.getFactory()
+					.getCollectionPersister( type.getRole() );
+			session.getPersistenceContext()
+					.addInitializedDetachedCollection( collectionPersister, collection );
+		}
+		else {
+			if ( !isCollectionSnapshotValid( collection ) ) {
+				throw new HibernateException( "could not reassociate uninitialized transient collection" );
+			}
+			CollectionPersister collectionPersister = session.getFactory()
+					.getCollectionPersister( collection.getRole() );
+			session.getPersistenceContext()
+					.addUninitializedDetachedCollection( collectionPersister, collection );
+		}
+	}
 
 }

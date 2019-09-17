@@ -1,7 +1,6 @@
 package org.hibernate.rx.engine.impl;
 
 import java.io.Serializable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
@@ -28,10 +27,9 @@ import org.hibernate.rx.util.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 public class RxEntityDeleteAction extends EntityDeleteAction implements RxExecutable {
+	private final boolean isCascadeDeleteEnabled;
 	private Object[] state;
 	private Object version;
-	private final boolean isCascadeDeleteEnabled;
-
 	private SoftLock lock;
 	private Object[] naturalIdValues;
 
@@ -60,20 +58,23 @@ public class RxEntityDeleteAction extends EntityDeleteAction implements RxExecut
 		this.isCascadeDeleteEnabled = isCascadeDeleteEnabled;
 
 		// before remove we need to remove the local (transactional) natural id cross-reference
-		this.naturalIdValues = session.getPersistenceContextInternal().getNaturalIdHelper().removeLocalNaturalIdCrossReference(
-				getPersister(),
-				getId(),
-				state);
+		this.naturalIdValues = session.getPersistenceContextInternal()
+				.getNaturalIdHelper()
+				.removeLocalNaturalIdCrossReference(
+						getPersister(),
+						getId(),
+						state
+				);
 	}
 
 	@Override
 	public void execute() throws HibernateException {
-	    throw new NotYetImplementedException();
+		throw new NotYetImplementedException();
 	}
-	
+
 	@Override
 	public CompletionStage<Void> rxExecute() throws HibernateException {
-	       final Serializable id = getId();
+		final Serializable id = getId();
 		final EntityPersister persister = getPersister();
 		final SharedSessionContractImplementor session = getSession();
 		final Object instance = getInstance();
@@ -100,11 +101,11 @@ public class RxEntityDeleteAction extends EntityDeleteAction implements RxExecut
 
 		CompletionStage<Void> deleteStep = RxUtil.nullFuture();
 		if ( !isCascadeDeleteEnabled && !veto ) {
-			deleteStep = ( (RxSingleTableEntityPersister) persister).deleteRx( id, version, instance, session );
+			deleteStep = ( (RxSingleTableEntityPersister) persister ).deleteRx( id, version, instance, session );
 		}
 
 		return deleteStep.whenComplete( (deleteAR, deleteErr) -> {
-			if ( deleteErr != null) {
+			if ( deleteErr != null ) {
 				throw new HibernateException( deleteErr );
 			}
 			//postDelete:
@@ -122,10 +123,14 @@ public class RxEntityDeleteAction extends EntityDeleteAction implements RxExecut
 			persistenceContext.removeProxy( entry.getEntityKey() );
 
 			if ( persister.canWriteToCache() ) {
-				persister.getCacheAccessStrategy().remove( session, ck);
+				persister.getCacheAccessStrategy().remove( session, ck );
 			}
 
-			persistenceContext.getNaturalIdHelper().removeSharedNaturalIdCrossReference( persister, id, naturalIdValues );
+			persistenceContext.getNaturalIdHelper().removeSharedNaturalIdCrossReference(
+					persister,
+					id,
+					naturalIdValues
+			);
 
 			postDelete();
 
@@ -184,7 +189,7 @@ public class RxEntityDeleteAction extends EntityDeleteAction implements RxExecut
 					listener.onPostDelete( event );
 				}
 				else {
-					((PostCommitDeleteEventListener) listener).onPostDeleteCommitFailed( event );
+					( (PostCommitDeleteEventListener) listener ).onPostDeleteCommitFailed( event );
 				}
 			}
 			else {

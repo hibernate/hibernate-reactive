@@ -1,11 +1,7 @@
 package org.hibernate.rx.persister.impl;
 
 import java.io.Serializable;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -16,7 +12,6 @@ import org.hibernate.MappingException;
 import org.hibernate.Session;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
-import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
@@ -24,7 +19,6 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
@@ -48,11 +42,9 @@ import io.vertx.axle.sqlclient.RowSet;
 public class RxSingleTableEntityPersister extends SingleTableEntityPersister implements EntityPersister {
 
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( RxSingleTableEntityPersister.class );
-
+	private final RxQueryExecutor queryExecutor = new RxQueryExecutor();
 	private BasicBatchKey inserBatchKey;
 	private BasicBatchKey deleteBatchKey;
-
-	private final RxQueryExecutor queryExecutor = new RxQueryExecutor();
 
 	public RxSingleTableEntityPersister(
 			PersistentClass persistentClass,
@@ -63,7 +55,11 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	}
 
 	@Override
-	public Object load(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session)
+	public Object load(
+			Serializable id,
+			Object optionalObject,
+			LockOptions lockOptions,
+			SharedSessionContractImplementor session)
 			throws HibernateException {
 
 		final UniqueEntityLoader loader = getAppropriateLoader( lockOptions, session );
@@ -142,7 +138,10 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
 	}
 
-	private void preInsertInMemoryValueGeneration(Object[] fields, Object object, SharedSessionContractImplementor session) {
+	private void preInsertInMemoryValueGeneration(
+			Object[] fields,
+			Object object,
+			SharedSessionContractImplementor session) {
 		if ( getEntityMetamodel().hasPreInsertGeneratedValues() ) {
 			final InMemoryValueGenerationStrategy[] strategies = getEntityMetamodel().getInMemoryValueGenerationStrategies();
 			for ( int i = 0; i < strategies.length; i++ ) {
@@ -154,7 +153,11 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		}
 	}
 
-	public CompletionStage<?> insertRx(Serializable id, Object[] fields, Object object, SharedSessionContractImplementor session) {
+	public CompletionStage<?> insertRx(
+			Serializable id,
+			Object[] fields,
+			Object object,
+			SharedSessionContractImplementor session) {
 		// apply any pre-insert in-memory value generation
 		preInsertInMemoryValueGeneration( fields, object, session );
 
@@ -170,7 +173,15 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		else {
 			// For the case of dynamic-insert="false", use the static SQL
 			for ( int j = 0; j < span; j++ ) {
-				insertStage = insertRx( id, fields, getPropertyInsertability(), j, getSQLInsertStrings()[j], object, session );
+				insertStage = insertRx(
+						id,
+						fields,
+						getPropertyInsertability(),
+						j,
+						getSQLInsertStrings()[j],
+						object,
+						session
+				);
 			}
 		}
 		return insertStage;
@@ -197,7 +208,15 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 			// For the case of dynamic-insert="false", use the static SQL
 			id = insert( fields, getPropertyInsertability(), getSQLIdentityInsertString(), object, session );
 			for ( int j = 1; j < span; j++ ) {
-				insertStage = insertRx( id, fields, getPropertyInsertability(), j, getSQLInsertStrings()[j], object, session );
+				insertStage = insertRx(
+						id,
+						fields,
+						getPropertyInsertability(),
+						j,
+						getSQLInsertStrings()[j],
+						object,
+						session
+				);
 			}
 		}
 		return insertStage;
@@ -377,7 +396,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 
 		for ( int j = span - 1; j >= 0; j-- ) {
 			// For now we assume there is only one delete query
-			return deleteRx( id, version, j, object, deleteStrings[j], session, loadedState ).thenApply(v -> null);
+			return deleteRx( id, version, j, object, deleteStrings[j], session, loadedState ).thenApply( v -> null );
 		}
 
 		throw new AssertionError( "Something unexpected during the deletion of an entity" );
@@ -409,7 +428,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 					boolean[] propertyNullness = types[i].toColumnNullness( loadedState[i], getFactory() );
 					for ( int k = 0; k < propertyNullness.length; k++ ) {
 						if ( propertyNullness[k] ) {
-							delete.addWhereFragment( propertyColumnNames[k] + " = $" + (k + 1) );
+							delete.addWhereFragment( propertyColumnNames[k] + " = $" + ( k + 1 ) );
 						}
 						else {
 							delete.addWhereFragment( propertyColumnNames[k] + " is null" );

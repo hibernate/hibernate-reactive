@@ -32,7 +32,6 @@ import org.hibernate.event.spi.PostInsertEventListener;
 import org.hibernate.event.spi.PreInsertEvent;
 import org.hibernate.event.spi.PreInsertEventListener;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.rx.action.spi.RxExecutable;
 import org.hibernate.rx.persister.impl.RxSingleTableEntityPersister;
 import org.hibernate.stat.internal.StatsHelper;
@@ -45,9 +44,11 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 
 	private Object version;
 	private Object cacheEntry;
+
 	/**
 	 * Constructs an EntityInsertAction.
-	 *  @param id The entity identifier
+	 *
+	 * @param id The entity identifier
 	 * @param state The current (extracted) entity state
 	 * @param instance The entity instance
 	 * @param version The current entity version value
@@ -79,12 +80,12 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 
 	@Override
 	public void execute() throws HibernateException {
-	    throw new NotYetImplementedException();
+		throw new NotYetImplementedException();
 	}
-	
+
 	@Override
 	public CompletionStage<Void> rxExecute() throws HibernateException {
-	    Thread.dumpStack();
+		Thread.dumpStack();
 		CompletionStage<Void> insertStage = null;
 		nullifyTransientReferencesIfNotAlready();
 
@@ -101,26 +102,26 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 
 		if ( !veto ) {
 			insertStage = persister.insertRx( id, getState(), instance, session )
-			        .thenApply( res -> {
-				PersistenceContext persistenceContext = session.getPersistenceContext();
-				final EntityEntry entry = persistenceContext.getEntry( instance );
-				if ( entry == null ) {
-					throw new AssertionFailure( "possible non-threadsafe access to session" );
-				}
+					.thenApply( res -> {
+						PersistenceContext persistenceContext = session.getPersistenceContext();
+						final EntityEntry entry = persistenceContext.getEntry( instance );
+						if ( entry == null ) {
+							throw new AssertionFailure( "possible non-threadsafe access to session" );
+						}
 
-				entry.postInsert( getState() );
+						entry.postInsert( getState() );
 
-				if ( persister.hasInsertGeneratedProperties() ) {
-					persister.processInsertGeneratedProperties( id, instance, getState(), session );
-					if ( persister.isVersionPropertyGenerated() ) {
-						version = Versioning.getVersion( getState(), persister );
-					}
-					entry.postUpdate( instance, getState(), version );
-				}
+						if ( persister.hasInsertGeneratedProperties() ) {
+							persister.processInsertGeneratedProperties( id, instance, getState(), session );
+							if ( persister.isVersionPropertyGenerated() ) {
+								version = Versioning.getVersion( getState(), persister );
+							}
+							entry.postUpdate( instance, getState(), version );
+						}
 
-				persistenceContext.registerInsertedKey( persister, getId() );
-				return null;
-			} );
+						persistenceContext.registerInsertedKey( persister, getId() );
+						return null;
+					} );
 		}
 		else {
 			insertStage = CompletableFuture.completedFuture( null );
@@ -172,8 +173,9 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 		boolean var4;
 		try {
 			session.getEventListenerManager().cachePutStart();
-			var4 = persister.getCacheAccessStrategy().insert(session, ck, this.cacheEntry, this.version);
-		} finally {
+			var4 = persister.getCacheAccessStrategy().insert( session, ck, this.cacheEntry, this.version );
+		}
+		finally {
 			session.getEventListenerManager().cachePutEnd();
 		}
 
@@ -218,7 +220,7 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 					listener.onPostInsert( event );
 				}
 				else {
-					((PostCommitInsertEventListener) listener).onPostInsertCommitFailed( event );
+					( (PostCommitInsertEventListener) listener ).onPostInsertCommitFailed( event );
 				}
 			}
 			else {
@@ -235,7 +237,13 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 		if ( listenerGroup.isEmpty() ) {
 			return veto;
 		}
-		final PreInsertEvent event = new PreInsertEvent( getInstance(), getId(), getState(), getPersister(), eventSource() );
+		final PreInsertEvent event = new PreInsertEvent(
+				getInstance(),
+				getId(),
+				getState(),
+				getPersister(),
+				eventSource()
+		);
 		for ( PreInsertEventListener listener : listenerGroup.listeners() ) {
 			veto |= listener.onPreInsert( event );
 		}
@@ -243,20 +251,24 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 	}
 
 	@Override
-	public void doAfterTransactionCompletion(boolean success, SharedSessionContractImplementor session) throws HibernateException {
+	public void doAfterTransactionCompletion(boolean success, SharedSessionContractImplementor session)
+			throws HibernateException {
 		EntityPersister persister = this.getPersister();
-		if (success && this.isCachePutEnabled(persister, this.getSession())) {
+		if ( success && this.isCachePutEnabled( persister, this.getSession() ) ) {
 			EntityDataAccess cache = persister.getCacheAccessStrategy();
 			SessionFactoryImplementor factory = session.getFactory();
-			Object ck = cache.generateCacheKey(this.getId(), persister, factory, session.getTenantIdentifier());
-			boolean put = this.cacheAfterInsert(cache, ck);
+			Object ck = cache.generateCacheKey( this.getId(), persister, factory, session.getTenantIdentifier() );
+			boolean put = this.cacheAfterInsert( cache, ck );
 			StatisticsImplementor statistics = factory.getStatistics();
-			if (put && statistics.isStatisticsEnabled()) {
-				statistics.entityCachePut( StatsHelper.INSTANCE.getRootEntityRole( persister), cache.getRegion().getName());
+			if ( put && statistics.isStatisticsEnabled() ) {
+				statistics.entityCachePut(
+						StatsHelper.INSTANCE.getRootEntityRole( persister ),
+						cache.getRegion().getName()
+				);
 			}
 		}
 
-		this.postCommitInsert(success);
+		this.postCommitInsert( success );
 	}
 
 	private boolean cacheAfterInsert(EntityDataAccess cache, Object ck) {
@@ -284,7 +296,8 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 	}
 
 	private boolean isCachePutEnabled(EntityPersister persister, SharedSessionContractImplementor session) {
-		return persister.canWriteToCache() && !persister.isCacheInvalidationRequired() && session.getCacheMode().isPutEnabled();
+		return persister.canWriteToCache() && !persister.isCacheInvalidationRequired() && session.getCacheMode()
+				.isPutEnabled();
 	}
 
 }

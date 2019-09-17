@@ -1,7 +1,6 @@
 package org.hibernate.rx.event.spi;
 
 
-
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
@@ -16,13 +15,13 @@ import org.hibernate.event.spi.LoadEventListener.LoadType;
  */
 public interface RxLoadEventListener extends Serializable {
 
-    /**
-     * Handle the given load event.
-     *
-     * @param event The load event to be handled.
-     *
-     * @throws HibernateException
-     */
-    public CompletionStage<Void> rxOnLoad(LoadEvent event, LoadType loadType) throws HibernateException;
+	/**
+	 * Handle the given load event.
+	 *
+	 * @param event The load event to be handled.
+	 *
+	 * @throws HibernateException
+	 */
+	public CompletionStage<Void> rxOnLoad(LoadEvent event, LoadType loadType) throws HibernateException;
 
 }

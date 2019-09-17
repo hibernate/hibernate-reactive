@@ -15,12 +15,14 @@ import org.hibernate.event.spi.DeleteEvent;
  */
 public interface RxDeleteEventListener extends Serializable {
 
-    /** Handle the given delete event.
-     *
-     * @param event The delete event to be handled.
-     * @throws HibernateException
-     */
-    public CompletionStage<Void> rxOnDelete(DeleteEvent event) throws HibernateException;
+	/**
+	 * Handle the given delete event.
+	 *
+	 * @param event The delete event to be handled.
+	 *
+	 * @throws HibernateException
+	 */
+	public CompletionStage<Void> rxOnDelete(DeleteEvent event) throws HibernateException;
 
-    public CompletionStage<Void> rxOnDelete(DeleteEvent event, Set transientEntities) throws HibernateException;
+	public CompletionStage<Void> rxOnDelete(DeleteEvent event, Set transientEntities) throws HibernateException;
 }

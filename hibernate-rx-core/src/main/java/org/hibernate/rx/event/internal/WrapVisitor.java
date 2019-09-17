@@ -42,12 +42,12 @@ public class WrapVisitor extends ProxyVisitor {
 		this.id = id;
 	}
 
-	boolean isSubstitutionRequired() {
-		return substitute;
-	}
-
 	WrapVisitor(EventSource session) {
 		super( session );
+	}
+
+	boolean isSubstitutionRequired() {
+		return substitute;
 	}
 
 	@Override

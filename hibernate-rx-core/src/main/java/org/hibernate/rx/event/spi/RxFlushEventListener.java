@@ -18,11 +18,12 @@ import org.hibernate.event.spi.FlushEvent;
  * @author Steve Ebersole
  */
 public interface RxFlushEventListener extends Serializable {
-    /**
+	/**
 	 * Handle the given flush event.
-     *
-     * @param event The flush event to be handled.
-     * @throws HibernateException
-     */
+	 *
+	 * @param event The flush event to be handled.
+	 *
+	 * @throws HibernateException
+	 */
 	public CompletionStage<Void> rxOnFlush(FlushEvent event) throws HibernateException;
 }

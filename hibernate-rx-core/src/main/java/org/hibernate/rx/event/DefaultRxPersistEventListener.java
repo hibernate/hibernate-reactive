@@ -6,7 +6,6 @@
  */
 package org.hibernate.rx.event;
 
-import java.io.Serializable;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -20,25 +19,15 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.service.spi.DuplicationStrategy;
-import org.hibernate.event.service.spi.DuplicationStrategy.Action;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.event.spi.FlushEventListener;
 import org.hibernate.event.spi.PersistEvent;
 import org.hibernate.event.spi.PersistEventListener;
 import org.hibernate.id.ForeignGenerator;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
-import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
-import org.hibernate.rx.RxHibernateSession;
-import org.hibernate.rx.engine.impl.RxEntityInsertAction;
-
-import org.hibernate.rx.engine.spi.RxActionQueue;
-import org.hibernate.type.Type;
-import org.hibernate.type.TypeHelper;
-
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.rx.event.internal.AbstractRxSaveEventListener;
@@ -70,7 +59,6 @@ public class DefaultRxPersistEventListener
 	 * Handle the given create event.
 	 *
 	 * @param event The create event to be handled.
-	 *
 	 */
 	public CompletionStage<Void> rxOnPersist(PersistEvent event) throws HibernateException {
 		return rxOnPersist( event, new IdentityHashMap( 10 ) );
@@ -80,7 +68,6 @@ public class DefaultRxPersistEventListener
 	 * Handle the given create event.
 	 *
 	 * @param event The create event to be handled.
-	 *
 	 */
 	public CompletionStage<Void> rxOnPersist(PersistEvent event, Map createCache) throws HibernateException {
 		final SessionImplementor source = event.getSession();
@@ -93,7 +80,7 @@ public class DefaultRxPersistEventListener
 					return RxUtil.nullFuture(); //NOTE EARLY EXIT!
 				}
 				else {
-					return RxUtil.failedFuture(new PersistentObjectException( "uninitialized proxy passed to persist()" ));
+					return RxUtil.failedFuture( new PersistentObjectException( "uninitialized proxy passed to persist()" ) );
 				}
 			}
 			entity = li.getImplementation();
@@ -135,10 +122,10 @@ public class DefaultRxPersistEventListener
 
 		switch ( entityState ) {
 			case DETACHED: {
-				return RxUtil.failedFuture(new PersistentObjectException(
+				return RxUtil.failedFuture( new PersistentObjectException(
 						"detached entity passed to persist: " +
 								getLoggableName( event.getEntityName(), entity )
-				));
+				) );
 			}
 			case PERSISTENT: {
 				entityIsPersistent( event, createCache );
@@ -152,20 +139,20 @@ public class DefaultRxPersistEventListener
 				entityEntry.setDeletedState( null );
 				event.getSession().getActionQueue().unScheduleDeletion( entityEntry, event.getObject() );
 				entityIsDeleted( event, createCache );
-                return RxUtil.nullFuture();
+				return RxUtil.nullFuture();
 			}
 			default: {
-				return RxUtil.failedFuture(new ObjectDeletedException(
+				return RxUtil.failedFuture( new ObjectDeletedException(
 						"deleted entity passed to persist",
 						null,
 						getLoggableName( event.getEntityName(), entity )
-				));
+				) );
 			}
 		}
 
 	}
 
-	@SuppressWarnings({"unchecked"})
+	@SuppressWarnings({ "unchecked" })
 	protected void entityIsPersistent(PersistEvent event, Map createCache) {
 		LOG.trace( "Ignoring persistent instance" );
 		final EventSource source = event.getSession();
@@ -192,7 +179,7 @@ public class DefaultRxPersistEventListener
 	 * @param event The save event to be handled.
 	 * @param createCache The copy cache of entity instance to merge/copy instance.
 	 */
-	@SuppressWarnings({"unchecked"})
+	@SuppressWarnings({ "unchecked" })
 	protected CompletionStage<Void> entityIsTransient(PersistEvent event, Map createCache) {
 		LOG.trace( "Saving transient instance" );
 
@@ -201,12 +188,12 @@ public class DefaultRxPersistEventListener
 
 		if ( createCache.put( entity, entity ) == null ) {
 			return saveWithGeneratedId( entity, event.getEntityName(), createCache, source, false )
-			        .thenApply(v -> null);
+					.thenApply( v -> null );
 		}
 		return RxUtil.nullFuture();
 	}
 
-	@SuppressWarnings({"unchecked"})
+	@SuppressWarnings({ "unchecked" })
 	private void entityIsDeleted(PersistEvent event, Map createCache) {
 		final EventSource source = event.getSession();
 
@@ -215,12 +202,12 @@ public class DefaultRxPersistEventListener
 
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracef(
-				"un-scheduling entity deletion [%s]",
-				MessageHelper.infoString(
-					persister,
-					persister.getIdentifier( entity, source ),
-					source.getFactory()
-				)
+					"un-scheduling entity deletion [%s]",
+					MessageHelper.infoString(
+							persister,
+							persister.getIdentifier( entity, source ),
+							source.getFactory()
+					)
 			);
 		}
 
@@ -229,35 +216,35 @@ public class DefaultRxPersistEventListener
 		}
 	}
 
-	   public static class EventContextManagingPersistEventListenerDuplicationStrategy implements DuplicationStrategy {
+	@Override
+	public void onPersist(PersistEvent event) throws HibernateException {
+		// fake method
+	}
 
-	        public static final DuplicationStrategy INSTANCE = new DefaultRxPersistEventListener.EventContextManagingPersistEventListenerDuplicationStrategy();
+	@Override
+	public void onPersist(PersistEvent event, Map createdAlready) throws HibernateException {
+		// fake method
+	}
 
-	        private EventContextManagingPersistEventListenerDuplicationStrategy() {
-	        }
+	public static class EventContextManagingPersistEventListenerDuplicationStrategy implements DuplicationStrategy {
 
-	        @Override
-	        public boolean areMatch(Object listener, Object original) {
-	            if ( listener instanceof DefaultRxPersistEventListener && original instanceof PersistEventListener ) {
-	                return true;
-	            }
+		public static final DuplicationStrategy INSTANCE = new DefaultRxPersistEventListener.EventContextManagingPersistEventListenerDuplicationStrategy();
 
-	            return false;
-	        }
+		private EventContextManagingPersistEventListenerDuplicationStrategy() {
+		}
 
-	        @Override
-	        public Action getAction() {
-	            return Action.REPLACE_ORIGINAL;
-	        }
-	    }
+		@Override
+		public boolean areMatch(Object listener, Object original) {
+			if ( listener instanceof DefaultRxPersistEventListener && original instanceof PersistEventListener ) {
+				return true;
+			}
 
-    @Override
-    public void onPersist(PersistEvent event) throws HibernateException {
-        // fake method
-    }
+			return false;
+		}
 
-    @Override
-    public void onPersist(PersistEvent event, Map createdAlready) throws HibernateException {
-        // fake method
-    }
+		@Override
+		public Action getAction() {
+			return Action.REPLACE_ORIGINAL;
+		}
+	}
 }

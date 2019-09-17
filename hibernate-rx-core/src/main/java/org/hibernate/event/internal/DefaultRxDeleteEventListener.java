@@ -4,42 +4,12 @@ import java.io.Serializable;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.CacheMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.TransientObjectException;
 import org.hibernate.action.internal.OrphanRemovalAction;
 import org.hibernate.cfg.NotYetImplementedException;
-import org.hibernate.engine.internal.ForeignKeys;
-import org.hibernate.engine.internal.Nullability;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.Status;
-import org.hibernate.event.service.spi.DuplicationStrategy;
-import org.hibernate.event.spi.DeleteEvent;
-import org.hibernate.event.spi.DeleteEventListener;
-import org.hibernate.event.spi.EventSource;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
-import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.pretty.MessageHelper;
-import org.hibernate.rx.RxHibernateSession;
-import org.hibernate.rx.engine.impl.RxEntityDeleteAction;
-import org.hibernate.rx.engine.spi.RxActionQueue;
-import org.hibernate.rx.event.spi.RxDeleteEventListener;
-import org.hibernate.rx.util.RxUtil;
-import org.hibernate.type.Type;
-import org.hibernate.type.TypeHelper;
-
-import java.io.Serializable;
-import java.util.Set;
-
-import org.hibernate.CacheMode;
-import org.hibernate.HibernateException;
-import org.hibernate.LockMode;
-import org.hibernate.TransientObjectException;
-import org.hibernate.action.internal.EntityDeleteAction;
-import org.hibernate.action.internal.OrphanRemovalAction;
 import org.hibernate.classic.Lifecycle;
 import org.hibernate.engine.internal.Cascade;
 import org.hibernate.engine.internal.CascadePoint;
@@ -50,6 +20,7 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.Status;
+import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.service.spi.JpaBootstrapSensitive;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.DeleteEventListener;
@@ -61,6 +32,11 @@ import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
+import org.hibernate.rx.RxHibernateSession;
+import org.hibernate.rx.engine.impl.RxEntityDeleteAction;
+import org.hibernate.rx.engine.spi.RxActionQueue;
+import org.hibernate.rx.event.spi.RxDeleteEventListener;
+import org.hibernate.rx.util.RxUtil;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
@@ -70,129 +46,131 @@ import org.hibernate.type.TypeHelper;
  *
  * @author Steve Ebersole
  */
-public class DefaultRxDeleteEventListener implements DeleteEventListener, RxDeleteEventListener, CallbackRegistryConsumer, JpaBootstrapSensitive {
-    private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultDeleteEventListener.class );
+public class DefaultRxDeleteEventListener
+		implements DeleteEventListener, RxDeleteEventListener, CallbackRegistryConsumer, JpaBootstrapSensitive {
+	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultDeleteEventListener.class );
 
-    private CallbackRegistry callbackRegistry;
-    private boolean jpaBootstrap;
+	private CallbackRegistry callbackRegistry;
+	private boolean jpaBootstrap;
 
-    @Override
-    public void injectCallbackRegistry(CallbackRegistry callbackRegistry) {
-        this.callbackRegistry = callbackRegistry;
-    }
+	@Override
+	public void injectCallbackRegistry(CallbackRegistry callbackRegistry) {
+		this.callbackRegistry = callbackRegistry;
+	}
 
-    @Override
-    public void wasJpaBootstrap(boolean wasJpaBootstrap) {
-        this.jpaBootstrap = wasJpaBootstrap;
-    }
+	@Override
+	public void wasJpaBootstrap(boolean wasJpaBootstrap) {
+		this.jpaBootstrap = wasJpaBootstrap;
+	}
 
-    /**
-     * Handle the given delete event.
-     *
-     * @param event The delete event to be handled.
-     *
-     * @throws HibernateException
-     */
-    public void onDelete(DeleteEvent event) throws HibernateException {
-        onDelete( event, new IdentitySet() );
-    }
+	/**
+	 * Handle the given delete event.
+	 *
+	 * @param event The delete event to be handled.
+	 *
+	 * @throws HibernateException
+	 */
+	public void onDelete(DeleteEvent event) throws HibernateException {
+		onDelete( event, new IdentitySet() );
+	}
 
-    /**
-     * Handle the given delete event.  This is the cascaded form.
-     *
-     * @param event The delete event.
-     * @param transientEntities The cache of entities already deleted
-     *
-     * @throws HibernateException
-     */
-    public void onDelete(DeleteEvent event, Set transientEntities) throws HibernateException {
-        throw new NotYetImplementedException();
-    }
-    
-    /**
-     * Handle the given delete event.
-     *
-     * @param event The delete event to be handled.
-     * @return 
-     *
-     * @throws HibernateException
-     */
-    public CompletionStage<Void> rxOnDelete(DeleteEvent event) throws HibernateException {
-        return rxOnDelete( event, new IdentitySet() );
-    }
+	/**
+	 * Handle the given delete event.  This is the cascaded form.
+	 *
+	 * @param event The delete event.
+	 * @param transientEntities The cache of entities already deleted
+	 *
+	 * @throws HibernateException
+	 */
+	public void onDelete(DeleteEvent event, Set transientEntities) throws HibernateException {
+		throw new NotYetImplementedException();
+	}
 
-    /**
-     * Handle the given delete event.  This is the cascaded form.
-     *
-     * @param event The delete event.
-     * @param transientEntities The cache of entities already deleted
-     *
-     * @throws HibernateException
-     */
-    public CompletionStage<Void> rxOnDelete(DeleteEvent event, Set transientEntities) throws HibernateException {
+	/**
+	 * Handle the given delete event.
+	 *
+	 * @param event The delete event to be handled.
+	 *
+	 * @return
+	 *
+	 * @throws HibernateException
+	 */
+	public CompletionStage<Void> rxOnDelete(DeleteEvent event) throws HibernateException {
+		return rxOnDelete( event, new IdentitySet() );
+	}
 
-        final EventSource source = event.getSession();
+	/**
+	 * Handle the given delete event.  This is the cascaded form.
+	 *
+	 * @param event The delete event.
+	 * @param transientEntities The cache of entities already deleted
+	 *
+	 * @throws HibernateException
+	 */
+	public CompletionStage<Void> rxOnDelete(DeleteEvent event, Set transientEntities) throws HibernateException {
 
-        final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
-        Object entity = persistenceContext.unproxyAndReassociate( event.getObject() );
+		final EventSource source = event.getSession();
 
-        EntityEntry entityEntry = persistenceContext.getEntry( entity );
-        final EntityPersister persister;
-        final Serializable id;
-        final Object version;
+		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
+		Object entity = persistenceContext.unproxyAndReassociate( event.getObject() );
 
-        if ( entityEntry == null ) {
-            LOG.trace( "Entity was not persistent in delete processing" );
+		EntityEntry entityEntry = persistenceContext.getEntry( entity );
+		final EntityPersister persister;
+		final Serializable id;
+		final Object version;
 
-            persister = source.getEntityPersister( event.getEntityName(), entity );
+		if ( entityEntry == null ) {
+			LOG.trace( "Entity was not persistent in delete processing" );
 
-            if ( ForeignKeys.isTransient( persister.getEntityName(), entity, null, source ) ) {
-                deleteTransientEntity( source, entity, event.isCascadeDeleteEnabled(), persister, transientEntities );
-                // EARLY EXIT!!!
-                return RxUtil.nullFuture();
-            }
-            performDetachedEntityDeletionCheck( event );
+			persister = source.getEntityPersister( event.getEntityName(), entity );
 
-            id = persister.getIdentifier( entity, source );
+			if ( ForeignKeys.isTransient( persister.getEntityName(), entity, null, source ) ) {
+				deleteTransientEntity( source, entity, event.isCascadeDeleteEnabled(), persister, transientEntities );
+				// EARLY EXIT!!!
+				return RxUtil.nullFuture();
+			}
+			performDetachedEntityDeletionCheck( event );
 
-            if ( id == null ) {
-                throw new TransientObjectException(
-                        "the detached instance passed to delete() had a null identifier"
-                );
-            }
+			id = persister.getIdentifier( entity, source );
 
-            final EntityKey key = source.generateEntityKey( id, persister );
+			if ( id == null ) {
+				throw new TransientObjectException(
+						"the detached instance passed to delete() had a null identifier"
+				);
+			}
 
-            persistenceContext.checkUniqueness( key, entity );
+			final EntityKey key = source.generateEntityKey( id, persister );
 
-            new OnUpdateVisitor( source, id, entity ).process( entity, persister );
+			persistenceContext.checkUniqueness( key, entity );
 
-            version = persister.getVersion( entity );
+			new OnUpdateVisitor( source, id, entity ).process( entity, persister );
 
-            entityEntry = persistenceContext.addEntity(
-                    entity,
-                    (persister.isMutable() ? Status.MANAGED : Status.READ_ONLY),
-                    persister.getPropertyValues( entity ),
-                    key,
-                    version,
-                    LockMode.NONE,
-                    true,
-                    persister,
-                    false
-            );
-            persister.afterReassociate( entity, source );
-        }
-        else {
-            LOG.trace( "Deleting a persistent instance" );
+			version = persister.getVersion( entity );
 
-            if ( entityEntry.getStatus() == Status.DELETED || entityEntry.getStatus() == Status.GONE ) {
-                LOG.trace( "Object was already deleted" );
-                return RxUtil.nullFuture();
-            }
-            persister = entityEntry.getPersister();
-            id = entityEntry.getId();
-            version = entityEntry.getVersion();
-        }
+			entityEntry = persistenceContext.addEntity(
+					entity,
+					( persister.isMutable() ? Status.MANAGED : Status.READ_ONLY ),
+					persister.getPropertyValues( entity ),
+					key,
+					version,
+					LockMode.NONE,
+					true,
+					persister,
+					false
+			);
+			persister.afterReassociate( entity, source );
+		}
+		else {
+			LOG.trace( "Deleting a persistent instance" );
+
+			if ( entityEntry.getStatus() == Status.DELETED || entityEntry.getStatus() == Status.GONE ) {
+				LOG.trace( "Object was already deleted" );
+				return RxUtil.nullFuture();
+			}
+			persister = entityEntry.getPersister();
+			id = entityEntry.getId();
+			version = entityEntry.getVersion();
+		}
 
         /*if ( !persister.isMutable() ) {
             throw new HibernateException(
@@ -201,265 +179,275 @@ public class DefaultRxDeleteEventListener implements DeleteEventListener, RxDele
                 );
         }*/
 
-        if ( invokeDeleteLifecycle( source, entity, persister ) ) {
-            return RxUtil.nullFuture();
-        }
+		if ( invokeDeleteLifecycle( source, entity, persister ) ) {
+			return RxUtil.nullFuture();
+		}
 
-        return deleteEntity(
-                source,
-                entity,
-                entityEntry,
-                event.isCascadeDeleteEnabled(),
-                event.isOrphanRemovalBeforeUpdates(),
-                persister,
-                transientEntities
-        ).thenAccept(v -> {
-            if ( source.getFactory().getSettings().isIdentifierRollbackEnabled() ) {
-                persister.resetIdentifier( entity, id, version, source );
-            }
-        });
-    }
+		return deleteEntity(
+				source,
+				entity,
+				entityEntry,
+				event.isCascadeDeleteEnabled(),
+				event.isOrphanRemovalBeforeUpdates(),
+				persister,
+				transientEntities
+		).thenAccept( v -> {
+			if ( source.getFactory().getSettings().isIdentifierRollbackEnabled() ) {
+				persister.resetIdentifier( entity, id, version, source );
+			}
+		} );
+	}
 
-    /**
-     * Called when we have recognized an attempt to delete a detached entity.
-     * <p/>
-     * This is perfectly valid in Hibernate usage; JPA, however, forbids this.
-     * Thus, this is a hook for HEM to affect this behavior.
-     *
-     * @param event The event.
-     */
-    protected void performDetachedEntityDeletionCheck(DeleteEvent event) {
-        if ( jpaBootstrap ) {
-            disallowDeletionOfDetached( event );
-        }
-        // ok in normal Hibernate usage to delete a detached entity; JPA however
-        // forbids it, thus this is a hook for HEM to affect this behavior
-    }
+	/**
+	 * Called when we have recognized an attempt to delete a detached entity.
+	 * <p/>
+	 * This is perfectly valid in Hibernate usage; JPA, however, forbids this.
+	 * Thus, this is a hook for HEM to affect this behavior.
+	 *
+	 * @param event The event.
+	 */
+	protected void performDetachedEntityDeletionCheck(DeleteEvent event) {
+		if ( jpaBootstrap ) {
+			disallowDeletionOfDetached( event );
+		}
+		// ok in normal Hibernate usage to delete a detached entity; JPA however
+		// forbids it, thus this is a hook for HEM to affect this behavior
+	}
 
-    private void disallowDeletionOfDetached(DeleteEvent event) {
-        EventSource source = event.getSession();
-        String entityName = event.getEntityName();
-        EntityPersister persister = source.getEntityPersister( entityName, event.getObject() );
-        Serializable id =  persister.getIdentifier( event.getObject(), source );
-        entityName = entityName == null ? source.guessEntityName( event.getObject() ) : entityName;
-        throw new IllegalArgumentException("Removing a detached instance "+ entityName + "#" + id);
-    }
+	private void disallowDeletionOfDetached(DeleteEvent event) {
+		EventSource source = event.getSession();
+		String entityName = event.getEntityName();
+		EntityPersister persister = source.getEntityPersister( entityName, event.getObject() );
+		Serializable id = persister.getIdentifier( event.getObject(), source );
+		entityName = entityName == null ? source.guessEntityName( event.getObject() ) : entityName;
+		throw new IllegalArgumentException( "Removing a detached instance " + entityName + "#" + id );
+	}
 
-    /**
-     * We encountered a delete request on a transient instance.
-     * <p/>
-     * This is a deviation from historical Hibernate (pre-3.2) behavior to
-     * align with the JPA spec, which states that transient entities can be
-     * passed to remove operation in which case cascades still need to be
-     * performed.
-     *
-     * @param session The session which is the source of the event
-     * @param entity The entity being delete processed
-     * @param cascadeDeleteEnabled Is cascading of deletes enabled
-     * @param persister The entity persister
-     * @param transientEntities A cache of already visited transient entities
-     * (to avoid infinite recursion).
-     */
-    protected void deleteTransientEntity(
-            EventSource session,
-            Object entity,
-            boolean cascadeDeleteEnabled,
-            EntityPersister persister,
-            Set transientEntities) {
-        LOG.handlingTransientEntity();
-        if ( transientEntities.contains( entity ) ) {
-            LOG.trace( "Already handled transient entity; skipping" );
-            return;
-        }
-        transientEntities.add( entity );
-        cascadeBeforeDelete( session, persister, entity, null, transientEntities );
-        cascadeAfterDelete( session, persister, entity, transientEntities );
-    }
+	/**
+	 * We encountered a delete request on a transient instance.
+	 * <p/>
+	 * This is a deviation from historical Hibernate (pre-3.2) behavior to
+	 * align with the JPA spec, which states that transient entities can be
+	 * passed to remove operation in which case cascades still need to be
+	 * performed.
+	 *
+	 * @param session The session which is the source of the event
+	 * @param entity The entity being delete processed
+	 * @param cascadeDeleteEnabled Is cascading of deletes enabled
+	 * @param persister The entity persister
+	 * @param transientEntities A cache of already visited transient entities
+	 * (to avoid infinite recursion).
+	 */
+	protected void deleteTransientEntity(
+			EventSource session,
+			Object entity,
+			boolean cascadeDeleteEnabled,
+			EntityPersister persister,
+			Set transientEntities) {
+		LOG.handlingTransientEntity();
+		if ( transientEntities.contains( entity ) ) {
+			LOG.trace( "Already handled transient entity; skipping" );
+			return;
+		}
+		transientEntities.add( entity );
+		cascadeBeforeDelete( session, persister, entity, null, transientEntities );
+		cascadeAfterDelete( session, persister, entity, transientEntities );
+	}
 
-    /**
-     * Perform the entity deletion.  Well, as with most operations, does not
-     * really perform it; just schedules an action/execution with the
-     * {@link org.hibernate.engine.spi.ActionQueue} for execution during flush.
-     *
-     * @param session The originating session
-     * @param entity The entity to delete
-     * @param entityEntry The entity's entry in the {@link PersistenceContext}
-     * @param isCascadeDeleteEnabled Is delete cascading enabled?
-     * @param persister The entity persister.
-     * @param transientEntities A cache of already deleted entities.
-     */
-    protected final CompletionStage<Void> deleteEntity(
-            final EventSource session,
-            final Object entity,
-            final EntityEntry entityEntry,
-            final boolean isCascadeDeleteEnabled,
-            final boolean isOrphanRemovalBeforeUpdates,
-            final EntityPersister persister,
-            final Set transientEntities) {
+	/**
+	 * Perform the entity deletion.  Well, as with most operations, does not
+	 * really perform it; just schedules an action/execution with the
+	 * {@link org.hibernate.engine.spi.ActionQueue} for execution during flush.
+	 *
+	 * @param session The originating session
+	 * @param entity The entity to delete
+	 * @param entityEntry The entity's entry in the {@link PersistenceContext}
+	 * @param isCascadeDeleteEnabled Is delete cascading enabled?
+	 * @param persister The entity persister.
+	 * @param transientEntities A cache of already deleted entities.
+	 */
+	protected final CompletionStage<Void> deleteEntity(
+			final EventSource session,
+			final Object entity,
+			final EntityEntry entityEntry,
+			final boolean isCascadeDeleteEnabled,
+			final boolean isOrphanRemovalBeforeUpdates,
+			final EntityPersister persister,
+			final Set transientEntities) {
 
-        if ( LOG.isTraceEnabled() ) {
-            LOG.tracev(
-                    "Deleting {0}",
-                    MessageHelper.infoString( persister, entityEntry.getId(), session.getFactory() )
-            );
-        }
+		if ( LOG.isTraceEnabled() ) {
+			LOG.tracev(
+					"Deleting {0}",
+					MessageHelper.infoString( persister, entityEntry.getId(), session.getFactory() )
+			);
+		}
 
-        final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-        final Type[] propTypes = persister.getPropertyTypes();
-        final Object version = entityEntry.getVersion();
+		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+		final Type[] propTypes = persister.getPropertyTypes();
+		final Object version = entityEntry.getVersion();
 
-        final Object[] currentState;
-        if ( entityEntry.getLoadedState() == null ) {
-            //ie. the entity came in from update()
-            currentState = persister.getPropertyValues( entity );
-        }
-        else {
-            currentState = entityEntry.getLoadedState();
-        }
+		final Object[] currentState;
+		if ( entityEntry.getLoadedState() == null ) {
+			//ie. the entity came in from update()
+			currentState = persister.getPropertyValues( entity );
+		}
+		else {
+			currentState = entityEntry.getLoadedState();
+		}
 
-        final Object[] deletedState = createDeletedState( persister, currentState, session );
-        entityEntry.setDeletedState( deletedState );
+		final Object[] deletedState = createDeletedState( persister, currentState, session );
+		entityEntry.setDeletedState( deletedState );
 
-        session.getInterceptor().onDelete(
-                entity,
-                entityEntry.getId(),
-                deletedState,
-                persister.getPropertyNames(),
-                propTypes
-        );
+		session.getInterceptor().onDelete(
+				entity,
+				entityEntry.getId(),
+				deletedState,
+				persister.getPropertyNames(),
+				propTypes
+		);
 
-        // before any callbacks, etc, so subdeletions see that this deletion happened first
-        persistenceContext.setEntryStatus( entityEntry, Status.DELETED );
-        final EntityKey key = session.generateEntityKey( entityEntry.getId(), persister );
+		// before any callbacks, etc, so subdeletions see that this deletion happened first
+		persistenceContext.setEntryStatus( entityEntry, Status.DELETED );
+		final EntityKey key = session.generateEntityKey( entityEntry.getId(), persister );
 
-        cascadeBeforeDelete( session, persister, entity, entityEntry, transientEntities );
+		cascadeBeforeDelete( session, persister, entity, entityEntry, transientEntities );
 
-        new ForeignKeys.Nullifier(  entity, true, false, session, persister ).nullifyTransientReferences( entityEntry.getDeletedState() );
-        new Nullability( session ).checkNullability( entityEntry.getDeletedState(), persister, Nullability.NullabilityCheckType.DELETE );
-        persistenceContext.getNullifiableEntityKeys().add( key );
+		new ForeignKeys.Nullifier(
+				entity,
+				true,
+				false,
+				session,
+				persister
+		).nullifyTransientReferences( entityEntry.getDeletedState() );
+		new Nullability( session ).checkNullability(
+				entityEntry.getDeletedState(),
+				persister,
+				Nullability.NullabilityCheckType.DELETE
+		);
+		persistenceContext.getNullifiableEntityKeys().add( key );
 
-        RxActionQueue actionQueue = actionQueue(session);
-        
-        if ( isOrphanRemovalBeforeUpdates ) {
-            // TODO: The removeOrphan concept is a temporary "hack" for HHH-6484.  This should be removed once action/task
-            // ordering is improved.
-            actionQueue.addAction(
-                    new OrphanRemovalAction(
-                            entityEntry.getId(),
-                            deletedState,
-                            version,
-                            entity,
-                            persister,
-                            isCascadeDeleteEnabled,
-                            session
-                    )
-            );
-        }
-        else {
-            // Ensures that containing deletions happen before sub-deletions
-            actionQueue.addAction(
-                    new RxEntityDeleteAction(
-                            entityEntry.getId(),
-                            deletedState,
-                            version,
-                            entity,
-                            persister,
-                            isCascadeDeleteEnabled,
-                            session
-                    )
-            );
-        }
+		RxActionQueue actionQueue = actionQueue( session );
 
-        cascadeAfterDelete( session, persister, entity, transientEntities );
+		if ( isOrphanRemovalBeforeUpdates ) {
+			// TODO: The removeOrphan concept is a temporary "hack" for HHH-6484.  This should be removed once action/task
+			// ordering is improved.
+			actionQueue.addAction(
+					new OrphanRemovalAction(
+							entityEntry.getId(),
+							deletedState,
+							version,
+							entity,
+							persister,
+							isCascadeDeleteEnabled,
+							session
+					)
+			);
+		}
+		else {
+			// Ensures that containing deletions happen before sub-deletions
+			actionQueue.addAction(
+					new RxEntityDeleteAction(
+							entityEntry.getId(),
+							deletedState,
+							version,
+							entity,
+							persister,
+							isCascadeDeleteEnabled,
+							session
+					)
+			);
+		}
 
-        // the entry will be removed after the flush, and will no longer
-        // override the stale snapshot
-        // This is now handled by removeEntity() in EntityDeleteAction
-        //persistenceContext.removeDatabaseSnapshot(key);
-        return RxUtil.nullFuture();
-    }
+		cascadeAfterDelete( session, persister, entity, transientEntities );
 
-    private RxActionQueue actionQueue(EventSource session) {
-        return session.unwrap( RxHibernateSession.class ).getRxActionQueue();
-    }
+		// the entry will be removed after the flush, and will no longer
+		// override the stale snapshot
+		// This is now handled by removeEntity() in EntityDeleteAction
+		//persistenceContext.removeDatabaseSnapshot(key);
+		return RxUtil.nullFuture();
+	}
 
-    private Object[] createDeletedState(EntityPersister persister, Object[] currentState, EventSource session) {
-        Type[] propTypes = persister.getPropertyTypes();
-        final Object[] deletedState = new Object[propTypes.length];
+	private RxActionQueue actionQueue(EventSource session) {
+		return session.unwrap( RxHibernateSession.class ).getRxActionQueue();
+	}
+
+	private Object[] createDeletedState(EntityPersister persister, Object[] currentState, EventSource session) {
+		Type[] propTypes = persister.getPropertyTypes();
+		final Object[] deletedState = new Object[propTypes.length];
 //      TypeFactory.deepCopy( currentState, propTypes, persister.getPropertyUpdateability(), deletedState, session );
-        boolean[] copyability = new boolean[propTypes.length];
-        java.util.Arrays.fill( copyability, true );
-        TypeHelper.deepCopy( currentState, propTypes, copyability, deletedState, session );
-        return deletedState;
-    }
+		boolean[] copyability = new boolean[propTypes.length];
+		java.util.Arrays.fill( copyability, true );
+		TypeHelper.deepCopy( currentState, propTypes, copyability, deletedState, session );
+		return deletedState;
+	}
 
-    protected boolean invokeDeleteLifecycle(EventSource session, Object entity, EntityPersister persister) {
-        callbackRegistry.preRemove( entity );
+	protected boolean invokeDeleteLifecycle(EventSource session, Object entity, EntityPersister persister) {
+		callbackRegistry.preRemove( entity );
 
-        if ( persister.implementsLifecycle() ) {
-            LOG.debug( "Calling onDelete()" );
-            if ( ( (Lifecycle) entity ).onDelete( session ) ) {
-                LOG.debug( "Deletion vetoed by onDelete()" );
-                return true;
-            }
-        }
-        return false;
-    }
+		if ( persister.implementsLifecycle() ) {
+			LOG.debug( "Calling onDelete()" );
+			if ( ( (Lifecycle) entity ).onDelete( session ) ) {
+				LOG.debug( "Deletion vetoed by onDelete()" );
+				return true;
+			}
+		}
+		return false;
+	}
 
-    protected void cascadeBeforeDelete(
-            EventSource session,
-            EntityPersister persister,
-            Object entity,
-            EntityEntry entityEntry,
-            Set transientEntities) throws HibernateException {
+	protected void cascadeBeforeDelete(
+			EventSource session,
+			EntityPersister persister,
+			Object entity,
+			EntityEntry entityEntry,
+			Set transientEntities) throws HibernateException {
 
-        CacheMode cacheMode = session.getCacheMode();
-        session.setCacheMode( CacheMode.GET );
-        final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-        persistenceContext.incrementCascadeLevel();
-        try {
-            // cascade-delete to collections BEFORE the collection owner is deleted
-            Cascade.cascade(
-                    CascadingActions.DELETE,
-                    CascadePoint.AFTER_INSERT_BEFORE_DELETE,
-                    session,
-                    persister,
-                    entity,
-                    transientEntities
-            );
-        }
-        finally {
-            persistenceContext.decrementCascadeLevel();
-            session.setCacheMode( cacheMode );
-        }
-    }
+		CacheMode cacheMode = session.getCacheMode();
+		session.setCacheMode( CacheMode.GET );
+		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+		persistenceContext.incrementCascadeLevel();
+		try {
+			// cascade-delete to collections BEFORE the collection owner is deleted
+			Cascade.cascade(
+					CascadingActions.DELETE,
+					CascadePoint.AFTER_INSERT_BEFORE_DELETE,
+					session,
+					persister,
+					entity,
+					transientEntities
+			);
+		}
+		finally {
+			persistenceContext.decrementCascadeLevel();
+			session.setCacheMode( cacheMode );
+		}
+	}
 
-    protected void cascadeAfterDelete(
-            EventSource session,
-            EntityPersister persister,
-            Object entity,
-            Set transientEntities) throws HibernateException {
+	protected void cascadeAfterDelete(
+			EventSource session,
+			EntityPersister persister,
+			Object entity,
+			Set transientEntities) throws HibernateException {
 
-        CacheMode cacheMode = session.getCacheMode();
-        session.setCacheMode( CacheMode.GET );
-        final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-        persistenceContext.incrementCascadeLevel();
-        try {
-            // cascade-delete to many-to-one AFTER the parent was deleted
-            Cascade.cascade(
-                    CascadingActions.DELETE,
-                    CascadePoint.BEFORE_INSERT_AFTER_DELETE,
-                    session,
-                    persister,
-                    entity,
-                    transientEntities
-            );
-        }
-        finally {
-            persistenceContext.decrementCascadeLevel();
-            session.setCacheMode( cacheMode );
-        }
-    }
+		CacheMode cacheMode = session.getCacheMode();
+		session.setCacheMode( CacheMode.GET );
+		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+		persistenceContext.incrementCascadeLevel();
+		try {
+			// cascade-delete to many-to-one AFTER the parent was deleted
+			Cascade.cascade(
+					CascadingActions.DELETE,
+					CascadePoint.BEFORE_INSERT_AFTER_DELETE,
+					session,
+					persister,
+					entity,
+					transientEntities
+			);
+		}
+		finally {
+			persistenceContext.decrementCascadeLevel();
+			session.setCacheMode( cacheMode );
+		}
+	}
 
 	public static class EventContextManagingDeleteEventListenerDuplicationStrategy implements DuplicationStrategy {
 

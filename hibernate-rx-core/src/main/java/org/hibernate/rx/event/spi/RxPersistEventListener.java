@@ -20,20 +20,22 @@ import org.hibernate.event.spi.PersistEvent;
  */
 public interface RxPersistEventListener extends Serializable {
 
-    /** 
-     * Handle the given create event.
-     *
-     * @param event The create event to be handled.
-     * @throws HibernateException
-     */
+	/**
+	 * Handle the given create event.
+	 *
+	 * @param event The create event to be handled.
+	 *
+	 * @throws HibernateException
+	 */
 	public CompletionStage<Void> rxOnPersist(PersistEvent event) throws HibernateException;
 
-    /** 
-     * Handle the given create event.
-     *
-     * @param event The create event to be handled.
-     * @throws HibernateException
-     */
+	/**
+	 * Handle the given create event.
+	 *
+	 * @param event The create event to be handled.
+	 *
+	 * @throws HibernateException
+	 */
 	public CompletionStage<Void> rxOnPersist(PersistEvent event, Map createdAlready) throws HibernateException;
 
 }
