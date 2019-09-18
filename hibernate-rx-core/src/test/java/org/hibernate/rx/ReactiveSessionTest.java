@@ -187,6 +187,26 @@ public class ReactiveSessionTest {
 		);
 	}
 
+	@Test
+	public void reactiveUpdate(TestContext context) {
+		final String NEW_NAME = "Tina";
+		RxSession rxSession = session.reactive();
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> rxSession.find( GuineaPig.class, 5 ) )
+						.thenAccept( o -> {
+							GuineaPig pig = o.orElseThrow( () -> new AssertionError( "Guinea pig not found" ) );
+							// Checking we are actually changing the name
+							context.assertNotEquals( pig.getName(), NEW_NAME );
+							pig.setName( NEW_NAME );
+						} )
+						.thenCompose( v -> rxSession.flush() )
+						.thenCompose( v -> selectNameFromId( 5 ) )
+						.thenAccept( name -> context.assertEquals( NEW_NAME, name ) )
+		);
+	}
+
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, Optional<GuineaPig> actual) {
 		context.assertTrue( actual.isPresent() );
 		context.assertEquals( expected.getId(), actual.get().getId() );
