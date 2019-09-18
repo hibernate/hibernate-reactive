@@ -85,11 +85,7 @@ public class ReactiveSessionTest {
 		ConfigurationHelper.resolvePlaceHolders( properties );
 
 		StandardServiceRegistryBuilder cfgRegistryBuilder = configuration.getStandardServiceRegistryBuilder();
-
-		StandardServiceRegistryBuilder registryBuilder = new StandardServiceRegistryBuilder(
-				bootRegistry,
-				cfgRegistryBuilder.getAggregatedCfgXml()
-		)
+		StandardServiceRegistryBuilder registryBuilder = new StandardServiceRegistryBuilder( bootRegistry, cfgRegistryBuilder.getAggregatedCfgXml() )
 				.applySettings( properties );
 
 		return (StandardServiceRegistryImpl) registryBuilder.build();
@@ -127,7 +123,7 @@ public class ReactiveSessionTest {
 				} );
 	}
 
-	private CompletionStage<RowSet> populateDB(TestContext context) {
+	private CompletionStage<RowSet> populateDB() {
 		RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
 		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
 		RxConnection rxConn = provider.getConnection();
@@ -136,7 +132,7 @@ public class ReactiveSessionTest {
 		return invokeQuery( client, "INSERT INTO ReactiveSessionTest$GuineaPig (id, name) VALUES (5, 'Aloi')" );
 	}
 
-	private CompletionStage<RowSet> dropTable(TestContext context) {
+	private CompletionStage<RowSet> dropTable() {
 		RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
 		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
 		RxConnection rxConn = provider.getConnection();
@@ -148,7 +144,7 @@ public class ReactiveSessionTest {
 	private CompletionStage<RowSet> invokeQuery(PgPool client, String query) {
 		// A simple query
 		// FIXME: pretty sure you should not close the entire pool
-		return client.query( query ).whenComplete( (row, t) -> client.close() );
+		return client.query( query );
 	}
 
 	@Test
@@ -156,22 +152,14 @@ public class ReactiveSessionTest {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
-				populateDB( context )
+				populateDB()
 						.thenCompose( v -> session.reactive().find( GuineaPig.class, expectedPig.getId() ) )
 						.thenCompose( actualPig -> {
 							assertThatPigsAreEqual( context, expectedPig, actualPig );
-							return dropTable( context );
+							return dropTable();
 						} )
 		);
 
-	}
-
-	;
-
-	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, Optional<GuineaPig> actual) {
-		context.assertTrue( actual.isPresent() );
-		context.assertEquals( expected.getId(), actual.get().getId() );
-		context.assertEquals( expected.getName(), actual.get().getName() );
 	}
 
 	@Test
@@ -182,9 +170,7 @@ public class ReactiveSessionTest {
 				rxSession.persist( new GuineaPig( 10, "Tulip" ) )
 						.thenCompose( v -> rxSession.flush() )
 						.thenCompose( v -> selectNameFromId( 10 ) )
-						.thenAccept( selectRes -> {
-							context.assertEquals( "Tulip", selectRes );
-						} )
+						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
 		);
 	}
 
@@ -193,12 +179,18 @@ public class ReactiveSessionTest {
 		RxSession rxSession = session.reactive();
 		test(
 				context,
-				populateDB( context )
+				populateDB()
 						.thenCompose( v -> rxSession.remove( new GuineaPig( 5, "Aloi" ) ) )
 						.thenCompose( v -> rxSession.flush() )
 						.thenCompose( v -> selectNameFromId( 5 ) )
 						.thenAccept( ret -> context.assertNull( ret ) )
 		);
+	}
+
+	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, Optional<GuineaPig> actual) {
+		context.assertTrue( actual.isPresent() );
+		context.assertEquals( expected.getId(), actual.get().getId() );
+		context.assertEquals( expected.getName(), actual.get().getName() );
 	}
 
 	@Entity
