@@ -34,6 +34,7 @@ import org.hibernate.event.spi.PreInsertEventListener;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.rx.action.spi.RxExecutable;
 import org.hibernate.rx.persister.impl.RxSingleTableEntityPersister;
+import org.hibernate.rx.util.RxUtil;
 import org.hibernate.stat.internal.StatsHelper;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
@@ -123,7 +124,7 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 					} );
 		}
 		else {
-			insertStage = CompletableFuture.completedFuture( null );
+			insertStage = RxUtil.nullFuture();
 		}
 
 		return insertStage.thenApply( res -> {

@@ -311,13 +311,13 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 			SharedSessionContractImplementor session) throws HibernateException {
 
 		if ( isInverseTable( j ) ) {
-			return CompletableFuture.completedFuture( null );
+			return RxUtil.nullFuture();
 		}
 
 		//note: it is conceptually possible that a UserType could map null to
 		//	  a non-null value, so the following is arguable:
 		if ( isNullableTable( j ) && isAllNull( fields, j ) ) {
-			return CompletableFuture.completedFuture( null );
+			return RxUtil.nullFuture();
 		}
 
 		if ( LOG.isTraceEnabled() ) {
@@ -369,7 +369,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 			Object[] loadedState) throws HibernateException {
 
 		if ( isInverseTable( j ) ) {
-			return CompletableFuture.completedFuture( null );
+			return RxUtil.nullFuture();
 		}
 		CompletionStage<RowSet> deleteStage = null;
 		final boolean useVersion = j == 0 && isVersioned();
@@ -395,7 +395,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 				LOG.tracev( "Delete handled by foreign key constraint: {0}", getTableName( j ) );
 			}
 			//EARLY EXIT!
-			return CompletableFuture.completedFuture( null );
+			return RxUtil.nullFuture();
 		}
 
 		//Render the SQL query
@@ -753,7 +753,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 				);
 			}
 		}
-		return CompletableFuture.completedFuture( null );
+		return RxUtil.nullFuture();
 	}
 
 	protected CompletionStage<?> updateOrInsertRx(
