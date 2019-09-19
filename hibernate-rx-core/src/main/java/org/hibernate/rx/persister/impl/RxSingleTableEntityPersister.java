@@ -5,7 +5,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
@@ -45,8 +44,6 @@ import org.hibernate.rx.sql.Update;
 import org.hibernate.rx.util.RxUtil;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.type.Type;
-
-import io.vertx.axle.sqlclient.RowSet;
 
 public class RxSingleTableEntityPersister extends SingleTableEntityPersister implements EntityPersister {
 
@@ -301,7 +298,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		return insertStage;
 	}
 
-	public CompletionStage<RowSet> insertRx(
+	public CompletionStage<?> insertRx(
 			Serializable id,
 			Object[] fields,
 			boolean[] notNull,
@@ -343,7 +340,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		final boolean callable = isInsertCallable( j );
 
 		Object[] paramValues = paramValues( id, fields );
-		CompletionStage<RowSet> insertStage = queryExecutor.update( sql, paramValues, getFactory() );
+		CompletionStage<Integer> insertStage = queryExecutor.update( sql, paramValues, getFactory() );
 		return insertStage;
 	}
 
@@ -359,7 +356,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		return paramValues;
 	}
 
-	protected CompletionStage<RowSet> deleteRx(
+	protected CompletionStage<?> deleteRx(
 			Serializable id,
 			Object version,
 			int j,
@@ -371,7 +368,6 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		if ( isInverseTable( j ) ) {
 			return RxUtil.nullFuture();
 		}
-		CompletionStage<RowSet> deleteStage = null;
 		final boolean useVersion = j == 0 && isVersioned();
 		final boolean callable = isDeleteCallable( j );
 		final Expectation expectation = Expectations.appropriateExpectation( deleteResultCheckStyles[j] );
@@ -399,16 +395,33 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		}
 
 		//Render the SQL query
+		PreparedStatementAdapter delete = deleteStatement(
+				id,
+				version,
+				j,
+				session,
+				loadedState,
+				useVersion,
+				expectation
+		);
 
-		// FIXME: This is a hack to set the right type for the parameters
-		//        until we have a proper type system in place
-		PreparedStatementAdapter delete = new PreparedStatementAdapter();
+		return queryExecutor.update( sql, delete.getParametersAsArray(), getFactory() );
+	}
 
-//			}
-
-		int index = 1;
-
+	private PreparedStatementAdapter deleteStatement(
+			Serializable id,
+			Object version,
+			int j,
+			SharedSessionContractImplementor session,
+			Object[] loadedState,
+			boolean useVersion,
+			Expectation expectation) {
 		try {
+			// FIXME: This is a hack to set the right type for the parameters
+			//        until we have a proper type system in place
+			PreparedStatementAdapter delete = new PreparedStatementAdapter();
+			int index = 1;
+
 			index += expectation.prepare( delete );
 
 			// Do the key. The key is immutable so we can use the _current_ object state - not necessarily
@@ -433,17 +446,14 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 					}
 				}
 			}
-
-			deleteStage = queryExecutor.update( sql, delete.getParametersAsArray(), getFactory() );
-
-			return deleteStage;
+			return delete;
 		}
 		catch ( SQLException e) {
 			throw new HibernateException( e );
 		}
 	}
 
-	public CompletionStage<Void> deleteRx(
+	public CompletionStage<?> deleteRx(
 			Serializable id, Object version, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
 		final int span = getTableSpan();
@@ -475,7 +485,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 
 		for ( int j = span - 1; j >= 0; j-- ) {
 			// For now we assume there is only one delete query
-			return deleteRx( id, version, j, object, deleteStrings[j], session, loadedState ).thenApply( v -> null );
+			return deleteRx( id, version, j, object, deleteStrings[j], session, loadedState );
 		}
 
 		throw new AssertionError( "Something unexpected during the deletion of an entity" );
@@ -616,8 +626,8 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 //				}
 //				else {
 					return queryExecutor.update( sql, update.getParametersAsArray(), getFactory() )
-							.thenApply( res -> {
-								return res.rowCount() > 0;
+							.thenApply( count -> {
+								return count > 0;
 							} );
 //					return check(
 //							session.getJdbcCoordinator().getResultSetReturn().executeUpdate( update ),

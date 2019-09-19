@@ -99,7 +99,7 @@ public class RxEntityDeleteAction extends EntityDeleteAction implements RxExecut
 			ck = null;
 		}
 
-		CompletionStage<Void> deleteStep = RxUtil.nullFuture();
+		CompletionStage<?> deleteStep = RxUtil.nullFuture();
 		if ( !isCascadeDeleteEnabled && !veto ) {
 			deleteStep = ( (RxSingleTableEntityPersister) persister ).deleteRx( id, version, instance, session );
 		}

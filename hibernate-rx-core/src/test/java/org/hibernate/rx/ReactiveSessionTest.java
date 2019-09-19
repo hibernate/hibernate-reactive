@@ -18,18 +18,17 @@ import org.hibernate.cfg.Environment;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.rx.service.RxConnection;
-import org.hibernate.rx.service.RxConnectionPoolProviderImpl;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.service.ServiceRegistry;
-import org.hibernate.service.spi.Configurable;
 
+import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import io.vertx.axle.pgclient.PgPool;
-import io.vertx.axle.sqlclient.RowSet;
+import io.vertx.axle.sqlclient.Tuple;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
@@ -102,12 +101,14 @@ public class ReactiveSessionTest {
 		session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
 	}
 
+	@After
+	public void tearDown() {
+		dropTable().whenComplete( (r, e) -> { sessionFactory.close(); } );
+	}
+
 	private CompletionStage<String> selectNameFromId(Integer id) {
-		RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
-		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
-		RxConnection rxConn = provider.getConnection();
-		PgPool client = rxConn.unwrap( PgPool.class );
-		return invokeQuery( client, "SELECT name FROM ReactiveSessionTest$GuineaPig WHERE id = " + id ).thenApply(
+		return connection().preparedQuery(
+				"SELECT name FROM ReactiveSessionTest$GuineaPig WHERE id = $1", Tuple.of( id ) ).thenApply(
 				rowSet -> {
 					if ( rowSet.size() == 1 ) {
 						// Only one result
@@ -123,28 +124,18 @@ public class ReactiveSessionTest {
 				} );
 	}
 
-	private CompletionStage<RowSet> populateDB() {
-		RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
-		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
-		RxConnection rxConn = provider.getConnection();
-		PgPool client = rxConn.unwrap( PgPool.class );
-
-		return invokeQuery( client, "INSERT INTO ReactiveSessionTest$GuineaPig (id, name) VALUES (5, 'Aloi')" );
+	private CompletionStage<Integer> populateDB() {
+		return connection().update( "INSERT INTO ReactiveSessionTest$GuineaPig (id, name) VALUES (5, 'Aloi')" );
 	}
 
-	private CompletionStage<RowSet> dropTable() {
-		RxConnectionPoolProvider provider = new RxConnectionPoolProviderImpl();
-		( (Configurable) provider ).configure( constructConfiguration().getProperties() );
-		RxConnection rxConn = provider.getConnection();
-		PgPool client = rxConn.unwrap( PgPool.class );
-
-		return invokeQuery( client, "DROP TABLE ReactiveSessionTest$GuineaPig" );
+	private CompletionStage<Integer> dropTable() {
+		return connection().update( "DROP TABLE ReactiveSessionTest$GuineaPig" );
 	}
 
-	private CompletionStage<RowSet> invokeQuery(PgPool client, String query) {
-		// A simple query
-		// FIXME: pretty sure you should not close the entire pool
-		return client.query( query );
+	private RxConnection connection() {
+		RxConnectionPoolProvider poolProvider = sessionFactory.getServiceRegistry()
+				.getService( RxConnectionPoolProvider.class );
+		return poolProvider.getConnection();
 	}
 
 	@Test
@@ -154,12 +145,10 @@ public class ReactiveSessionTest {
 				context,
 				populateDB()
 						.thenCompose( v -> session.reactive().find( GuineaPig.class, expectedPig.getId() ) )
-						.thenCompose( actualPig -> {
+						.thenAccept( actualPig -> {
 							assertThatPigsAreEqual( context, expectedPig, actualPig );
-							return dropTable();
 						} )
 		);
-
 	}
 
 	@Test
@@ -175,15 +164,32 @@ public class ReactiveSessionTest {
 	}
 
 	@Test
-	public void reactiveRemove(TestContext context) {
+	public void reactiveRemoveTransientEntity(TestContext context) {
 		RxSession rxSession = session.reactive();
 		test(
 				context,
 				populateDB()
+						.thenCompose( v -> selectNameFromId( 5 ) )
+						.thenAccept( name -> context.assertNotNull( name ) )
 						.thenCompose( v -> rxSession.remove( new GuineaPig( 5, "Aloi" ) ) )
 						.thenCompose( v -> rxSession.flush() )
 						.thenCompose( v -> selectNameFromId( 5 ) )
 						.thenAccept( ret -> context.assertNull( ret ) )
+		);
+	}
+
+	@Test
+	public void reactiveRemoveManagedEntity(TestContext context) {
+		RxSession rxSession = session.reactive();
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> rxSession.find( GuineaPig.class, 5 ) )
+						.thenCompose( aloi -> rxSession.remove( aloi.get() ) )
+						.thenCompose( v -> rxSession.flush() )
+						.thenCompose( v -> selectNameFromId( 5 ) )
+						.thenAccept( ret -> context.assertNull( ret )
+						)
 		);
 	}
 

@@ -8,15 +8,17 @@ import org.hibernate.rx.configuration.JdbcUrlParser;
 import org.hibernate.rx.impl.PgPoolConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.service.spi.Configurable;
+import org.hibernate.service.spi.Stoppable;
 
+import io.vertx.axle.core.Vertx;
+import io.vertx.axle.pgclient.PgPool;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.sqlclient.PoolOptions;
 
-public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, Configurable {
+public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, Configurable, Stoppable {
 
 	public static final int DEFAULT_POOL_SIZE = 5;
-	private PoolOptions poolOptions;
-    private PgConnectOptions connectOptions;
+	private PgPool pool;
 
 	public RxConnectionPoolProviderImpl() {
 	}
@@ -40,19 +42,29 @@ public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, C
 		final Integer poolSize = poolSize( configurationValues );
 		final String database = uri.getPath().substring( 1 );
 
-		poolOptions = new PoolOptions()
+		PoolOptions poolOptions = new PoolOptions()
 				.setMaxSize( poolSize );
-        connectOptions = new PgConnectOptions()
-                .setPort( uri.getPort() )
-                .setHost( uri.getHost() )
-                .setDatabase( database )
-                .setUser( username )
-                .setPassword( password );
+		PgConnectOptions connectOptions = new PgConnectOptions()
+				.setPort( uri.getPort() )
+				.setHost( uri.getHost() )
+				.setDatabase( database )
+				.setUser( username )
+				.setPassword( password );
+		this.pool = PgPool.pool( Vertx.vertx(), connectOptions, poolOptions );
 	}
 
 	@Override
 	public RxConnection getConnection() {
-		return new PgPoolConnection( connectOptions, poolOptions );
+		return new PgPoolConnection( pool );
 	}
 
+	@Override
+	public void close() {
+		this.pool.close();
+	}
+
+	@Override
+	public void stop() {
+		close();
+	}
 }

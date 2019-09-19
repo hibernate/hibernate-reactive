@@ -1,33 +1,24 @@
 package org.hibernate.rx.impl;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.service.RxConnection;
-import org.hibernate.service.UnknownUnwrapTypeException;
 
-import io.vertx.axle.core.Vertx;
-import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.axle.pgclient.PgPool;
-import io.vertx.sqlclient.PoolOptions;
-import io.vertx.axle.sqlclient.SqlConnection;
-import io.vertx.axle.sqlclient.Transaction;
+import io.vertx.axle.sqlclient.RowSet;
+import io.vertx.axle.sqlclient.Tuple;
 
 /**
  * A reactive connection pool for PostgreSQL
  */
 public class PgPoolConnection implements RxConnection {
 
-	private final PoolOptions poolOptions;
-    private final PgConnectOptions connectOptions;
 	private final PgPool pool;
 
-	public PgPoolConnection(PgConnectOptions connectOptions, PoolOptions poolOptions) {
-		this.connectOptions = connectOptions;
-		this.poolOptions = poolOptions;
-		this.pool = PgPool.pool(Vertx.vertx(), connectOptions, poolOptions);
+	public PgPoolConnection(PgPool pool) {
+		this.pool = pool;
 	}
 
 	@Override
@@ -52,21 +43,31 @@ public class PgPoolConnection implements RxConnection {
 //				}
 //			});
 //		} );
-	    return null;
+		return null;
 	}
 
 	@Override
-	public boolean isUnwrappableAs(Class unwrapType) {
-		return PgPool.class.isAssignableFrom( unwrapType );
+	public CompletionStage<Integer> update(String sql) {
+		return preparedQuery( sql ).thenApply( res -> res.rowCount() );
 	}
 
 	@Override
-	public <T> T unwrap(Class<T> unwrapType) {
-		if ( PgPool.class.isAssignableFrom( unwrapType ) ) {
-			return (T) pool;
-		}
-
-		throw new UnknownUnwrapTypeException( unwrapType );
+	public CompletionStage<Integer> update(String sql, Tuple parameters) {
+		return preparedQuery( sql, parameters ).thenApply( res -> res.rowCount() );
 	}
 
+	@Override
+	public CompletionStage<RowSet> preparedQuery(String sql, Tuple parameters) {
+		return pool.preparedQuery( sql, parameters );
+	}
+
+	@Override
+	public CompletionStage<RowSet> preparedQuery(String sql) {
+		return pool.preparedQuery( sql );
+	}
+
+	@Override
+	public void close() {
+		// Nothing to do here, I think
+	}
 }

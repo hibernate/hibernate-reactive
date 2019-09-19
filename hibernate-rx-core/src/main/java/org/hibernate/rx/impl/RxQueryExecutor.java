@@ -3,7 +3,6 @@ package org.hibernate.rx.impl;
 import java.sql.ResultSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -13,23 +12,20 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.rx.service.RxConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 
-import io.vertx.axle.pgclient.PgConnection;
-import io.vertx.axle.pgclient.PgPool;
 import io.vertx.axle.sqlclient.RowSet;
-import io.vertx.axle.sqlclient.SqlConnection;
 import io.vertx.axle.sqlclient.Tuple;
 import io.vertx.sqlclient.impl.ArrayTuple;
 
 // This could be a service
 public class RxQueryExecutor {
 
-	public CompletionStage<RowSet> update(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+	public CompletionStage<Integer> update(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService( RxConnectionPoolProvider.class );
 
 		RxConnection connection = poolProvider.getConnection();
-		return connection.unwrap( PgPool.class ).preparedQuery( sql, asTuple( paramValues ));
+		return connection.preparedQuery( sql, asTuple( paramValues )).thenApply( res -> res.rowCount() );
 	}
 
 		/**
@@ -46,8 +42,8 @@ public class RxQueryExecutor {
 				.getService( RxConnectionPoolProvider.class );
 
 		RxConnection connection = poolProvider.getConnection();
-		return connection.unwrap( PgPool.class ).preparedQuery( sql, asTuple( queryParameters ))
-		    .thenApply(rowset -> entities( transformer, rowset ));
+		return connection.preparedQuery( sql, asTuple( queryParameters ) )
+				.thenApply( rowset -> entities( transformer, (RowSet) rowset ) );
 	}
 
 	private Optional<Object> entities(
