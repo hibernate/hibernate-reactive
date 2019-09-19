@@ -104,10 +104,7 @@ public class RxEntityDeleteAction extends EntityDeleteAction implements RxExecut
 			deleteStep = ( (RxSingleTableEntityPersister) persister ).deleteRx( id, version, instance, session );
 		}
 
-		return deleteStep.whenComplete( (deleteAR, deleteErr) -> {
-			if ( deleteErr != null ) {
-				throw new HibernateException( deleteErr );
-			}
+		return deleteStep.thenAccept( deleteAR -> {
 			//postDelete:
 			// After actually deleting a row, record the fact that the instance no longer
 			// exists on the database (needed for identity-column key generation), and
