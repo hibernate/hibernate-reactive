@@ -415,8 +415,8 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 			// the state at the time the delete was issued
 			getIdentifierType().nullSafeSet( delete, id, index, session );
 			index += getIdentifierColumnSpan();
-//
-//				// We should use the _current_ object state (ie. after any updates that occurred during flush)
+
+			// We should use the _current_ object state (ie. after any updates that occurred during flush)
 			if ( useVersion ) {
 				getVersionType().nullSafeSet( delete, version, index, session );
 			}
@@ -438,7 +438,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 
 			return deleteStage;
 		}
-		catch (SQLException e) {
+		catch ( SQLException e) {
 			throw new HibernateException( e );
 		}
 	}

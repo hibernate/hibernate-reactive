@@ -53,12 +53,12 @@ public class RxQueryExecutor {
 	private Optional<Object> entities(
 			Function<ResultSet, Object> transformer,
 			RowSet rows) {
-		PgResultSet resultSet = new PgResultSet( rows);
+		PgResultSet resultSet = new PgResultSet( rows );
 		List<Object> entities = (List<Object>) transformer.apply( resultSet );
 		if ( entities.isEmpty() ) {
 			return Optional.empty();
 		}
-		else if ( entities.size() == 1 ){
+		else if ( entities.size() == 1 ) {
 			return Optional.ofNullable( entities.get( 0 ) );
 		}
 		else {
