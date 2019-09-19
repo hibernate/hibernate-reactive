@@ -23,7 +23,6 @@ import org.hibernate.service.ServiceRegistry;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -102,8 +101,21 @@ public class ReactiveSessionTest {
 	}
 
 	@After
-	public void tearDown() {
-		dropTable().whenComplete( (r, e) -> { sessionFactory.close(); } );
+	// The current test should have already called context.async().complete();
+	public void tearDown(TestContext context) {
+		dropTable()
+				.whenComplete( (res, err) -> {
+					try {
+						sessionFactory.close();
+					}
+					finally {
+						context.assertNull( err );
+					}
+				} )
+				.whenComplete( (res, err) -> {
+					// DropTable worked but SessionFactory didn't close
+					context.assertNull( err );
+				} );
 	}
 
 	private CompletionStage<String> selectNameFromId(Integer id) {
