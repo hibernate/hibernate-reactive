@@ -1,7 +1,6 @@
 package org.hibernate.rx.engine.impl;
 
 import java.io.Serializable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
@@ -368,6 +367,6 @@ public class RxEntityUpdateAction extends EntityAction implements RxExecutable {
 
 	@Override
 	public void execute() throws HibernateException {
-		 throw new UnsupportedOperationException( "This action only support reactive functions calls" );
+		throw new UnsupportedOperationException( "This action only support reactive functions calls" );
 	}
 }

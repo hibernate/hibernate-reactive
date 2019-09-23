@@ -16,8 +16,11 @@ import java.util.function.Supplier;
  */
 public class MockRxSession implements RxSession {
 
-		private BiFunction loadFunction = ( type, id ) -> { return null; };
-		private Consumer persistFunction = obj -> {};
+	private BiFunction loadFunction = (type, id) -> {
+		return null;
+	};
+
+	private Consumer persistFunction = obj -> {};
 		private Consumer removeFunction = obj -> {};
 
 		/**
@@ -82,9 +85,8 @@ public class MockRxSession implements RxSession {
 		throw new UnsupportedOperationException( "not implemented" );
 	}
 
-    @Override
-    public CompletionStage<Void> flush() {
-        return CompletableFuture.completedFuture(null);
-    }
-
+	@Override
+	public CompletionStage<Void> flush() {
+		return CompletableFuture.completedFuture( null );
+	}
 }

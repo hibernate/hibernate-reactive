@@ -34,7 +34,6 @@ import org.hibernate.action.internal.CollectionUpdateAction;
 import org.hibernate.action.internal.EntityActionVetoException;
 import org.hibernate.action.internal.EntityDeleteAction;
 import org.hibernate.action.internal.EntityIdentityInsertAction;
-import org.hibernate.action.internal.EntityUpdateAction;
 import org.hibernate.action.internal.OrphanRemovalAction;
 import org.hibernate.action.internal.QueuedOperationCollectionAction;
 import org.hibernate.action.internal.UnresolvedEntityInsertActions;
@@ -1174,8 +1173,7 @@ public class RxActionQueue {
 			while ( !sorted && iterations <= maxIterations );
 
 			if ( iterations > maxIterations ) {
-				LOG.warn( "The batch containing " + latestBatches.size() + " statements could not be sorted after " + maxIterations + " iterations. " +
-								  "This might indicate a circular entity relationship." );
+				LOG.warn( "The batch containing " + latestBatches.size() + " statements could not be sorted after " + maxIterations + " iterations. " + "This might indicate a circular entity relationship." );
 			}
 
 			// Now, rebuild the insertions list. There is a batch for each entry in the name list.
@@ -1365,12 +1363,12 @@ public class RxActionQueue {
 			}
 
 			/**
-			 * Check if the this {@link BatchIdentifier} has a parent or grand parent
+			 * Check if this {@link BatchIdentifier} has a parent or grand parent
 			 * matching the given {@link BatchIdentifier reference.
 			 *
 			 * @param batchIdentifier {@link BatchIdentifier} reference
 			 *
-			 * @return This {@link BatchIdentifier} has a parent matching the given {@link BatchIdentifier reference
+			 * @return this {@link BatchIdentifier} has a parent matching the given {@link BatchIdentifier reference
 			 */
 			boolean hasParent(BatchIdentifier batchIdentifier) {
 				return (

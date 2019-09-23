@@ -68,12 +68,12 @@ public class RxQueryExecutor {
 	}
 
 	private Tuple asTuple(Object[] values) {
-	    // FIXME: report this bug to vertx, we get a CCE if we use Tuple.wrap here
+		// FIXME: report this bug to vertx, we get a CCE if we use Tuple.wrap here
 //	    return Tuple.wrap(values);
-	    ArrayTuple ret = new ArrayTuple(values.length);
-	    for (Object object : values) {
-	        ret.add(object);
-        }
-	    return Tuple.newInstance(ret);
+		ArrayTuple ret = new ArrayTuple( values.length );
+		for ( Object object : values ) {
+			ret.add( object );
+		}
+		return Tuple.newInstance( ret );
 	}
 }

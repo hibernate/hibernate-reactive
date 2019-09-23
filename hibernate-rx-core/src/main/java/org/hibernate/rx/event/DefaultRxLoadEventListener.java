@@ -1,13 +1,5 @@
 package org.hibernate.rx.event;
 
-
-/*
- * Hibernate, Relational Persistence for Idiomatic Java
- *
- * License: GNU Lesser General Public License (LGPL), version 2.1 or later.
- * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
- */
-
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
@@ -46,12 +38,6 @@ import org.hibernate.type.EmbeddedComponentType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
 
-/**
- * Defines the default load event listeners used by hibernate for loading entities
- * in response to generated load events.
- *
- * @author Steve Ebersole
- */
 public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEventListener {
 
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultRxLoadEventListener.class );
@@ -347,8 +333,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 
 			// This is the crux of HHH-11147
 			// create the (uninitialized) entity instance - has only id set
-			return RxUtil.completedFuture( persister.getBytecodeEnhancementMetadata()
-												   .createEnhancedProxy( keyToLoad, true, session ) );
+			return RxUtil.completedFuture( persister.getBytecodeEnhancementMetadata().createEnhancedProxy( keyToLoad, true, session ) );
 		}
 		else {
 			if ( persister.hasProxy() ) {

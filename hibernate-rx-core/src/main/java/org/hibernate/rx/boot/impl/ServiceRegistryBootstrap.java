@@ -36,77 +36,77 @@ import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 public class ServiceRegistryBootstrap {
 
+	private final static List<StandardServiceInitiator> initiators = standardInitiatorList();
 
-    private final static List<StandardServiceInitiator> initiators = standardInitiatorList();
+	private final static List<ProvidedService> providedServices = new ArrayList<ProvidedService>();
 
-    private final static List<ProvidedService> providedServices = new ArrayList<ProvidedService>();
+	private static BootstrapServiceRegistry buildBootstrapServiceRegistry() {
 
-    private static BootstrapServiceRegistry buildBootstrapServiceRegistry() {
+		final BootstrapServiceRegistryBuilder bsrBuilder = new BootstrapServiceRegistryBuilder();
+		final ClassLoaderService providedClassLoaderService = FlatClassLoaderService.INSTANCE;
+		bsrBuilder.applyClassLoaderService( providedClassLoaderService );
 
-        final BootstrapServiceRegistryBuilder bsrBuilder = new BootstrapServiceRegistryBuilder();
-        final ClassLoaderService providedClassLoaderService = FlatClassLoaderService.INSTANCE;
-        bsrBuilder.applyClassLoaderService(providedClassLoaderService);
+		return bsrBuilder.build();
+	}
 
-        return bsrBuilder.build();
-    }
+	public static StandardServiceRegistry build(Map configurationProperties) {
+		return new StandardServiceRegistryImpl( false, buildBootstrapServiceRegistry(), initiators,
+												providedServices, configurationProperties
+		);
+	}
 
-    public static StandardServiceRegistry build(Map configurationProperties) {
-        return new StandardServiceRegistryImpl(false, buildBootstrapServiceRegistry(), initiators,
-              providedServices, configurationProperties);
-    }
+	private static List<StandardServiceInitiator> standardInitiatorList() {
+		final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
 
-    private static List<StandardServiceInitiator> standardInitiatorList() {
-        final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
-
-        // Custom RX initiators:
+		// Custom RX initiators:
 //        serviceInitiators.add( RxRuntimeModelDescriptorClassResolver.INSTANCE );
 
-        //TODO: Add other services
+		//TODO: Add other services
 
-        // Standard ones in ORM (see org.hibernate.service.StandardServiceInitiators ) :
+		// Standard ones in ORM (see org.hibernate.service.StandardServiceInitiators ) :
 
-        //TODO: remove all services which are in the way:
+		//TODO: remove all services which are in the way:
 
-        serviceInitiators.add( CfgXmlAccessServiceInitiator.INSTANCE );
-        serviceInitiators.add( ConfigurationServiceInitiator.INSTANCE );
-        serviceInitiators.add( PropertyAccessStrategyResolverInitiator.INSTANCE );
+		serviceInitiators.add( CfgXmlAccessServiceInitiator.INSTANCE );
+		serviceInitiators.add( ConfigurationServiceInitiator.INSTANCE );
+		serviceInitiators.add( PropertyAccessStrategyResolverInitiator.INSTANCE );
 
-        serviceInitiators.add( ImportSqlCommandExtractorInitiator.INSTANCE );
-        serviceInitiators.add( SchemaManagementToolInitiator.INSTANCE );
+		serviceInitiators.add( ImportSqlCommandExtractorInitiator.INSTANCE );
+		serviceInitiators.add( SchemaManagementToolInitiator.INSTANCE );
 
-        serviceInitiators.add( JdbcEnvironmentInitiator.INSTANCE );
+		serviceInitiators.add( JdbcEnvironmentInitiator.INSTANCE );
 //        serviceInitiators.add( JndiServiceInitiator.INSTANCE );
 //        serviceInitiators.add( JmxServiceInitiator.INSTANCE );
 
-        serviceInitiators.add( PersisterClassResolverInitiator.INSTANCE );
+		serviceInitiators.add( PersisterClassResolverInitiator.INSTANCE );
 //        serviceInitiators.add( RuntimeModelDescriptorFactoryServiceInitiator.INSTANCE );
 
-        serviceInitiators.add( ConnectionProviderInitiator.INSTANCE );
-        serviceInitiators.add( MultiTenantConnectionProviderInitiator.INSTANCE );
-        serviceInitiators.add( DialectResolverInitiator.INSTANCE );
-        serviceInitiators.add( DialectFactoryInitiator.INSTANCE );
-        serviceInitiators.add( BatchBuilderInitiator.INSTANCE );
-        serviceInitiators.add( JdbcServicesInitiator.INSTANCE );
-        serviceInitiators.add( RefCursorSupportInitiator.INSTANCE );
+		serviceInitiators.add( ConnectionProviderInitiator.INSTANCE );
+		serviceInitiators.add( MultiTenantConnectionProviderInitiator.INSTANCE );
+		serviceInitiators.add( DialectResolverInitiator.INSTANCE );
+		serviceInitiators.add( DialectFactoryInitiator.INSTANCE );
+		serviceInitiators.add( BatchBuilderInitiator.INSTANCE );
+		serviceInitiators.add( JdbcServicesInitiator.INSTANCE );
+		serviceInitiators.add( RefCursorSupportInitiator.INSTANCE );
 
-        serviceInitiators.add( MutableIdentifierGeneratorFactoryInitiator.INSTANCE);
+		serviceInitiators.add( MutableIdentifierGeneratorFactoryInitiator.INSTANCE );
 
-        serviceInitiators.add( JtaPlatformResolverInitiator.INSTANCE );
-        serviceInitiators.add( JtaPlatformInitiator.INSTANCE );
+		serviceInitiators.add( JtaPlatformResolverInitiator.INSTANCE );
+		serviceInitiators.add( JtaPlatformInitiator.INSTANCE );
 
-        serviceInitiators.add( SessionFactoryServiceRegistryFactoryInitiator.INSTANCE );
+		serviceInitiators.add( SessionFactoryServiceRegistryFactoryInitiator.INSTANCE );
 
 //        serviceInitiators.add( RegionFactoryInitiator.INSTANCE );
 
-        serviceInitiators.add( TransactionCoordinatorBuilderInitiator.INSTANCE );
+		serviceInitiators.add( TransactionCoordinatorBuilderInitiator.INSTANCE );
 
-        serviceInitiators.add( ManagedBeanRegistryInitiator.INSTANCE );
-        serviceInitiators.add( EntityCopyObserverFactoryInitiator.INSTANCE );
+		serviceInitiators.add( ManagedBeanRegistryInitiator.INSTANCE );
+		serviceInitiators.add( EntityCopyObserverFactoryInitiator.INSTANCE );
 
-        serviceInitiators.trimToSize();
+		serviceInitiators.trimToSize();
 
-        return Collections.unmodifiableList(serviceInitiators);
-    }
+		return Collections.unmodifiableList( serviceInitiators );
+	}
 
 
 }
