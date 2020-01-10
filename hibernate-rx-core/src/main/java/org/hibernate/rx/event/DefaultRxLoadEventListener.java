@@ -1,7 +1,10 @@
 package org.hibernate.rx.event;
 
 import java.io.Serializable;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+
+import javax.swing.text.html.Option;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -117,8 +120,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 				ret = lockAndLoad( event, persister, keyToLoad, loadType, session );
 			}
 		}
-		return ret.thenCompose( entity -> (CompletionStage<Object>) entity )
-				.thenAccept( entity -> event.setResult( entity ) )
+		return ret.thenAccept( entity -> event.setResult( entity ) )
 				.whenComplete( (v, x) -> {
 					if ( x instanceof HibernateException ) {
 						LOG.unableToLoadCommand( (HibernateException) x );
@@ -218,22 +220,22 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 			persister.setIdentifier( event.getInstanceToLoad(), event.getEntityId(), session );
 		}
 
-		final CompletionStage<Object> entityCs = doLoad( event, persister, keyToLoad, options );
+		final CompletionStage<Optional<Object>> entityCs = doLoad( event, persister, keyToLoad, options );
 
-		return entityCs.thenApply( entity -> {
+		return entityCs.thenApply( optional -> {
 			boolean isOptionalInstance = event.getInstanceToLoad() != null;
 
-			if ( entity == null && ( !options.isAllowNulls() || isOptionalInstance ) ) {
+			if ( optional.isPresent() && ( !options.isAllowNulls() || isOptionalInstance ) ) {
 				session
 						.getFactory()
 						.getEntityNotFoundDelegate()
 						.handleEntityNotFound( event.getEntityClassName(), event.getEntityId() );
 			}
-			else if ( isOptionalInstance && entity != event.getInstanceToLoad() ) {
+			else if ( isOptionalInstance && optional != event.getInstanceToLoad() ) {
 				throw new NonUniqueObjectException( event.getEntityId(), event.getEntityClassName() );
 			}
 
-			return entity;
+			return optional;
 		} );
 	}
 
@@ -519,7 +521,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 	 *
 	 * @return The loaded entity, or null.
 	 */
-	private CompletionStage<Object> doLoad(
+	private CompletionStage<Optional<Object>> doLoad(
 			final LoadEvent event,
 			final EntityPersister persister,
 			final EntityKey keyToLoad,
@@ -540,9 +542,8 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 				options
 		);
 		Object entity = persistenceContextEntry.getEntity();
-
 		if ( entity != null ) {
-			return RxUtil.completedFuture( persistenceContextEntry.isManaged() ? entity : null );
+			return RxUtil.completedFuture( persistenceContextEntry.isManaged() ? Optional.of( entity ) : Optional.empty() );
 		}
 
 		entity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache( event, persister, keyToLoad );
@@ -553,6 +554,8 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 						MessageHelper.infoString( persister, event.getEntityId(), session.getFactory() )
 				);
 			}
+			cacheNaturalId( event, persister, session, entity );
+			return RxUtil.completedFuture( Optional.of( entity ) );
 		}
 		else {
 			if ( traceEnabled ) {
@@ -561,9 +564,17 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 						MessageHelper.infoString( persister, event.getEntityId(), session.getFactory() )
 				);
 			}
-			entity = loadFromDatasource( event, persister );
+			CompletionStage<Optional<Object>> entityStage = loadFromDatasource( event, persister );
+			return entityStage.thenCompose( optional -> {
+				if ( optional.isPresent() ) {
+					cacheNaturalId( event, persister, session, optional.get() );
+				}
+				return RxUtil.completedFuture( optional );
+			} );
 		}
+	}
 
+	private void cacheNaturalId(LoadEvent event, EntityPersister persister, EventSource session, Object entity) {
 		if ( entity != null && persister.hasNaturalIdentifier() ) {
 			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 			final PersistenceContext.NaturalIdHelper naturalIdHelper = persistenceContext.getNaturalIdHelper();
@@ -576,8 +587,6 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 					)
 			);
 		}
-
-		return RxUtil.completedFuture( entity );
 	}
 
 	/**
@@ -590,9 +599,10 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 	 * @return The object loaded from the datasource, or null if not found.
 	 */
 	@SuppressWarnings("WeakerAccess")
-	protected Object loadFromDatasource(
+	protected CompletionStage<Optional<Object>> loadFromDatasource(
 			final LoadEvent event,
 			final EntityPersister persister) {
+
 		Object entity = persister.load(
 				event.getEntityId(),
 				event.getInstanceToLoad(),
@@ -605,7 +615,8 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 			statistics.fetchEntity( event.getEntityClassName() );
 		}
 
-		return entity;
+		// This should work because we are using the rx persister
+		return (CompletionStage<Optional<Object>>) entity;
 	}
 
 	public static class EventContextManagingLoadEventListenerDuplicationStrategy implements DuplicationStrategy {

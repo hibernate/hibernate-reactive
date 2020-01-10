@@ -28,14 +28,19 @@ public class RxQueryExecutor {
 		return connection.preparedQuery( sql, asTuple( paramValues )).thenApply( res -> res.rowCount() );
 	}
 
-		/**
-		 *
-		 * @param sql
-		 * @param queryParameters
-		 * @param factory
-		 * @param transformer Convert the result of the query to a list of entities
-		 * @return
-		 */
+	public CompletionStage<Integer> update(Object entityId, String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+		RxConnectionPoolProvider poolProvider = factory
+				.getServiceRegistry()
+				.getService( RxConnectionPoolProvider.class );
+
+		RxConnection connection = poolProvider.getConnection();
+		Tuple tuple = asTuple( paramValues, entityId );
+		return connection.preparedQuery( sql, tuple ).thenApply( res -> res.rowCount() );
+	}
+
+	/**
+	 * @param transformer Convert the result of the query to a list of entities
+	 */
 	public CompletionStage<Optional<Object>> execute(String sql, QueryParameters queryParameters, SessionFactoryImplementor factory, Function<ResultSet, Object> transformer) {
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
@@ -74,6 +79,17 @@ public class RxQueryExecutor {
 		for ( Object object : values ) {
 			ret.add( object );
 		}
+		return Tuple.newInstance( ret );
+	}
+
+	private Tuple asTuple(Object[] values, Object id) {
+		// FIXME: report this bug to vertx, we get a CCE if we use Tuple.wrap here
+//	    return Tuple.wrap(values);
+		ArrayTuple ret = new ArrayTuple( values.length + 1 );
+		for ( int i = 0; i < values.length; i++ ) {
+			ret.add( i, values[i] );
+		}
+		ret.add( values.length, id );
 		return Tuple.newInstance( ret );
 	}
 }

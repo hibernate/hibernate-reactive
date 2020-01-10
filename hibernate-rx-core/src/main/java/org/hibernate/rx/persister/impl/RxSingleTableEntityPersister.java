@@ -1,6 +1,7 @@
 package org.hibernate.rx.persister.impl;
 
 import java.io.Serializable;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -25,6 +26,7 @@ import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.id.insert.Binder;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.ArrayHelper;
@@ -339,21 +341,28 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		}
 		final boolean callable = isInsertCallable( j );
 
-		Object[] paramValues = paramValues( id, fields );
-		CompletionStage<Integer> insertStage = queryExecutor.update( sql, paramValues, getFactory() );
+		PreparedStatementAdapter adapter = new PreparedStatementAdapter();
+		try {
+			dehydrate( null, fields, notNull, getPropertyColumnInsertable(), 0, adapter, session, false );
+		}
+		catch (SQLException e) {
+			throw new HibernateException( "Error" );
+		}
+		CompletionStage<Integer> insertStage = queryExecutor.update( id, sql, adapter.getParametersAsArray(), getFactory() );
 		return insertStage;
 	}
 
-	// FIXME: Just to make the test works while I figure out the dehydrate method
-	private Object[] paramValues(Serializable id, Object[] fields) {
-		Object[] paramValues = new Object[fields.length + 1];
-		if ( id != null ) {
-			for ( int i = 0; i < fields.length; i++ ) {
-				paramValues[i] = fields[i];
-			}
-			paramValues[fields.length] = id;
-		}
-		return paramValues;
+	@Override
+	protected int dehydrate(
+			Serializable id,
+			Object[] fields,
+			boolean[] includeProperty,
+			boolean[][] includeColumns,
+			int j,
+			PreparedStatement st,
+			SharedSessionContractImplementor session,
+			boolean isUpdate) throws HibernateException, SQLException {
+		return super.dehydrate( id, fields, includeProperty, includeColumns, j, st, session, isUpdate );
 	}
 
 	protected CompletionStage<?> deleteRx(
