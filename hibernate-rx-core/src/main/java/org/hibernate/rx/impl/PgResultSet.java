@@ -25,6 +25,7 @@ import java.time.LocalTime;
 import java.util.Calendar;
 import java.util.Map;
 
+import io.vertx.axle.core.buffer.Buffer;
 import org.hibernate.cfg.NotYetImplementedException;
 
 import io.vertx.axle.sqlclient.RowIterator;
@@ -110,7 +111,8 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public byte[] getBytes(int columnIndex) throws SQLException {
-		return row.getBuffer(columnIndex).getBytes();
+		Buffer buffer = row.getBuffer(columnIndex);
+		return buffer==null ? null : buffer.getBytes();
 	}
 
 	@Override
@@ -195,7 +197,8 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public byte[] getBytes(String columnLabel) throws SQLException {
-		return row.getBuffer( columnLabel ).getBytes();
+		Buffer buffer = row.getBuffer(columnLabel);
+		return buffer == null ? null : buffer.getBytes();
 	}
 
 	@Override
