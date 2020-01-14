@@ -34,6 +34,7 @@ import io.vertx.axle.sqlclient.Row;
 public class PgResultSet implements ResultSet {
 
 	private final RowIterator iterator;
+	private Row row;
 
 	public PgResultSet(RowSet rows) {
 		this.iterator = rows.iterator();
@@ -41,7 +42,11 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public boolean next() throws SQLException {
-		return iterator.hasNext();
+		if ( iterator.hasNext() ) {
+			this.row = iterator.next();
+			return true;
+		}
+		return false;
 	}
 
 	@Override
@@ -55,14 +60,12 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public String getString(int columnIndex) throws SQLException {
-		Row next = iterator.next();
-		return next.getString( columnIndex );
+		return row.getString( columnIndex );
 	}
 
 	@Override
 	public boolean getBoolean(int columnIndex) throws SQLException {
-		Row next = iterator.next();
-		return next.getBoolean( columnIndex );
+		return row.getBoolean( columnIndex );
 	}
 
 	@Override
@@ -72,39 +75,33 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public short getShort(int columnIndex) throws SQLException {
-		Row next = iterator.next();
-		return next.getShort( columnIndex );
+		return row.getShort( columnIndex );
 	}
 
 	@Override
 	public int getInt(int columnIndex) throws SQLException {
-		Row next = iterator.next();
-		return next.getInteger( columnIndex );
+		return row.getInteger( columnIndex );
 
 	}
 
 	@Override
 	public long getLong(int columnIndex) throws SQLException {
-		Row next = iterator.next();
-		return next.getLong( columnIndex );
+		return row.getLong( columnIndex );
 	}
 
 	@Override
 	public float getFloat(int columnIndex) throws SQLException {
-		Row next = iterator.next();
-		return next.getFloat( columnIndex );
+		return row.getFloat( columnIndex );
 	}
 
 	@Override
 	public double getDouble(int columnIndex) throws SQLException {
-		Row next = iterator.next();
-		return next.getDouble( columnIndex );
+		return row.getDouble( columnIndex );
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
-		Row next = iterator.next();
-		return next.getBigDecimal( columnIndex );
+		return row.getBigDecimal( columnIndex );
 	}
 
 	@Override
@@ -144,14 +141,12 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public String getString(String columnLabel) throws SQLException {
-		Row next = iterator.next();
-		return next.getString( columnLabel );
+		return row.getString( columnLabel );
 	}
 
 	@Override
 	public boolean getBoolean(String columnLabel) throws SQLException {
-		Row next = iterator.next();
-		return next.getBoolean( columnLabel );
+		return row.getBoolean( columnLabel );
 	}
 
 	@Override
@@ -161,38 +156,33 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public short getShort(String columnLabel) throws SQLException {
-		Row next = iterator.next();
-		return next.getShort( columnLabel );
+		return row.getShort( columnLabel );
 	}
+	private boolean wasNull = true;
 
 	@Override
 	public int getInt(String columnLabel) throws SQLException {
-		Row next = iterator.next();
-		return next.getInteger( columnLabel );
+		return row.getInteger( columnLabel );
 	}
 
 	@Override
 	public long getLong(String columnLabel) throws SQLException {
-		Row next = iterator.next();
-		return next.getLong( columnLabel );
+		return row.getLong( columnLabel );
 	}
 
 	@Override
 	public float getFloat(String columnLabel) throws SQLException {
-		Row next = iterator.next();
-		return next.getFloat( columnLabel );
+		return row.getFloat( columnLabel );
 	}
 
 	@Override
 	public double getDouble(String columnLabel) throws SQLException {
-		Row next = iterator.next();
-		return next.getDouble( columnLabel );
+		return row.getDouble( columnLabel );
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(String columnLabel, int scale) throws SQLException {
-		Row next = iterator.next();
-		return next.getBigDecimal( columnLabel );
+		return row.getBigDecimal( columnLabel );
 	}
 
 	@Override
@@ -252,19 +242,17 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public Object getObject(int columnIndex) throws SQLException {
-		Row next = iterator.next();
-		return next.getValue( columnIndex );
+		return row.getValue( columnIndex );
 	}
 
 	@Override
 	public Object getObject(String columnLabel) throws SQLException {
-		Row next = iterator.next();
-		return next.getValue( columnLabel );
+		return row.getValue( columnLabel );
 	}
 
 	@Override
 	public int findColumn(String columnLabel) throws SQLException {
-		return 0;
+		return row.getColumnIndex( columnLabel );
 	}
 
 	@Override
