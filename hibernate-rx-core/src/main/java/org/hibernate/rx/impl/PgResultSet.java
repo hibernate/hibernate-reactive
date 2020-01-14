@@ -19,6 +19,9 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Calendar;
 import java.util.Map;
 
@@ -70,7 +73,8 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public byte getByte(int columnIndex) throws SQLException {
-		throw new NotYetImplementedException( "This type hasn't been implemented yet" );
+		Integer integer = row.getInteger( columnIndex );
+		return integer==null ? null : integer.byteValue();
 	}
 
 	@Override
@@ -106,22 +110,25 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public byte[] getBytes(int columnIndex) throws SQLException {
-		throw new NotYetImplementedException( "This type hasn't been implemented yet" );
+		return row.getBuffer(columnIndex).getBytes();
 	}
 
 	@Override
 	public Date getDate(int columnIndex) throws SQLException {
-		throw new NotYetImplementedException( "This type hasn't been implemented yet" );
+		LocalDate localDate = row.getLocalDate(columnIndex);
+		return localDate==null ? null : java.sql.Date.valueOf(localDate);
 	}
 
 	@Override
 	public Time getTime(int columnIndex) throws SQLException {
-		throw new NotYetImplementedException( "This type hasn't been implemented yet" );
+		LocalTime localTime = row.getLocalTime(columnIndex);
+		return localTime==null ? null : Time.valueOf(localTime);
 	}
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex) throws SQLException {
-		throw new NotYetImplementedException( "This type hasn't been implemented yet" );
+		LocalDateTime localDateTime = row.getLocalDateTime(columnIndex);
+		return localDateTime==null ? null : Timestamp.valueOf(localDateTime);
 	}
 
 	@Override
@@ -151,7 +158,8 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public byte getByte(String columnLabel) throws SQLException {
-		throw new NotYetImplementedException( "This type hasn't been implemented yet" );
+		Integer integer = row.getInteger( columnLabel );
+		return integer==null ? null : integer.byteValue();
 	}
 
 	@Override
@@ -187,22 +195,25 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public byte[] getBytes(String columnLabel) throws SQLException {
-		return new byte[0];
+		return row.getBuffer( columnLabel ).getBytes();
 	}
 
 	@Override
 	public Date getDate(String columnLabel) throws SQLException {
-		throw new NotYetImplementedException( "This type hasn't been implemented yet" );
+		LocalDate localDate = row.getLocalDate(columnLabel);
+		return localDate==null ? null : java.sql.Date.valueOf(localDate);
 	}
 
 	@Override
 	public Time getTime(String columnLabel) throws SQLException {
-		throw new NotYetImplementedException( "This type hasn't been implemented yet" );
+		LocalTime localTime = row.getLocalTime(columnLabel);
+		return localTime==null ? null : Time.valueOf(localTime);
 	}
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel) throws SQLException {
-		throw new NotYetImplementedException( "This type hasn't been implemented yet" );
+		LocalDateTime localDateTime = row.getLocalDateTime(columnLabel);
+		return localDateTime==null ? null : Timestamp.valueOf(localDateTime);
 	}
 
 	@Override
@@ -267,12 +278,12 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
-		throw new NotYetImplementedException( "This type hasn't been implemented yet" );
+		return row.getBigDecimal(columnIndex);
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
-		throw new NotYetImplementedException( "This type hasn't been implemented yet" );
+		return row.getBigDecimal(columnLabel);
 	}
 
 	@Override
