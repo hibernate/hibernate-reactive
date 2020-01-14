@@ -39,8 +39,8 @@ import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
-import org.hibernate.rx.sql.Delete;
 import org.hibernate.rx.util.RxUtil;
+import org.hibernate.sql.Delete;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.type.Type;
 
