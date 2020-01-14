@@ -153,6 +153,23 @@ public class EagerUniManyToOneAssociationTest {
 	}
 
 	@Test
+	public void loadOneBook(TestContext context) {
+		persistOneBook(context);
+
+		RxSession rxSession1 = session.reactive();
+		test( context, rxSession1.find( Book.class, 6 ).thenAccept( book -> {
+			context.assertTrue( book.isPresent() );
+			context.assertEquals( book.get().getTitle(),  "The Boy, The Mole, The Fox and The Horse" );
+		} ) );
+
+		RxSession rxSession2 = session.reactive();
+		test( context, rxSession2.find( Author.class, 5 ).thenAccept( author -> {
+			context.assertTrue( author.isPresent() );
+			context.assertEquals( author.get().getName(),"Charlie Mackesy" );
+		} ) );
+	}
+
+	@Test
 	public void persistTwoAuthors(TestContext context) {
 		final Book goodOmens = new Book( 72433, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 		final Author neilGaiman = new Author( 21421, "Neil Gaiman", goodOmens );
