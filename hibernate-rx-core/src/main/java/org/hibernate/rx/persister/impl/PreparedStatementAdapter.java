@@ -1,5 +1,7 @@
 package org.hibernate.rx.persister.impl;
 
+import io.vertx.core.buffer.Buffer;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -113,7 +115,7 @@ public class PreparedStatementAdapter implements PreparedStatement {
 
 	@Override
 	public void setBytes(int parameterIndex, byte[] x) throws SQLException {
-		params.put( parameterIndex, x );
+		params.put( parameterIndex, Buffer.buffer(x) );
 	}
 
 	@Override
