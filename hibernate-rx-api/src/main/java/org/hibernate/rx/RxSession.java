@@ -16,7 +16,7 @@ import java.util.concurrent.CompletionStage;
  * association fetching. All associations used within a unit of work must
  * be fetched eagerly when an entity is first retrieved.
  *
- * {@see org.hibernate.Session}
+ * @see org.hibernate.Session
  */
 public interface RxSession {
 
@@ -28,7 +28,7 @@ public interface RxSession {
 	 * returns an uninitialized instance.)
 	 *
 	 * <pre>
-	 * session.find(Book.class, id).thenAccept(book -> print(book.getTitle()));
+	 * {@code session.find(Book.class, id).thenAccept(book -> print(book.getTitle()));}
 	 * </pre>
 	 *
 	 * @param entityClass The entity type
@@ -48,7 +48,7 @@ public interface RxSession {
 	 * {@code cascade="save-update"}
 	 *
 	 * <pre>
-	 * session.persist(newBook).thenAccept(v -> session.flush());
+	 * {@code session.persist(newBook).thenAccept(v -> session.flush());}
 	 * </pre>
 	 *
 	 * @param entity a transient instance of a persistent class
@@ -65,7 +65,7 @@ public interface RxSession {
 	 * the association is mapped with {@code cascade="delete"}
 	 *
 	 * <pre>
-	 * session.delete(book).thenAccept(v -> session.flush());
+	 * {@code session.delete(book).thenAccept(v -> session.flush());}
 	 * </pre>
 	 *
 	 * @param entity the instance to be removed
@@ -77,13 +77,11 @@ public interface RxSession {
 	/**
 	 * Force this session to flush asynchronously. Must be called at the
 	 * end of a unit of work, before committing the transaction and closing
-	 * the session.
-	 * <p/>
-	 * <i>Flushing</i> is the process of synchronizing the underlying
-	 * persistent store with state held in memory.
+	 * the session. <i>Flushing</i> is the process of synchronizing the
+	 * underlying persistent store with state held in memory.
 	 *
 	 * <pre>
-	 * session.flush().thenAccept(v -> print("done saving changes"));
+	 * {@code session.flush().thenAccept(v -> print("done saving changes"));}
 	 * </pre>
 	 *
 	 * @see javax.persistence.EntityManager#flush()
