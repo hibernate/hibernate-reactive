@@ -87,6 +87,11 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		}
 	}
 
+	@Override
+	protected String getDiscriminatorAlias() {
+		return super.getDiscriminatorAlias().toLowerCase();
+	}
+
 	private Dialect dialect(PersisterCreationContext creationContext) {
 		return creationContext.getSessionFactory()
 					.getServiceRegistry()
