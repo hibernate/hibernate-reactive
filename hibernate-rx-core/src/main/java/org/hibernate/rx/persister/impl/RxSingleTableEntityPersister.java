@@ -58,6 +58,8 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	private BasicBatchKey deleteBatchKey;
 	private BasicBatchKey updateBatchKey;
 
+	private int insertParams = 1;
+
 	// HHH-4635: Some dialects force lobs as last values for SQL queries
 	private final List<Integer> lobProperties = new ArrayList<>();
 
@@ -77,6 +79,13 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 					lobProperties.add( i );
 					i++;
 				}
+			}
+		}
+
+		for (int p = 0; p<getPropertySpan(); p++ ) {
+			String[] writers = getPropertyColumnWriters(p);
+			for (int i = 0; i < writers.length; i++) {
+				if ("?".equals(writers[i])) writers[i] = "$" + insertParams++;
 			}
 		}
 	}
@@ -830,20 +839,8 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 
 	@Override
 	protected String generateInsertString(boolean identityInsert, boolean[] includeProperty, int j) {
-		final String VALUES = ") values (";
-		String insertSQL = super.generateInsertString( identityInsert, includeProperty, j );
-		int parametersStartIndex = insertSQL.indexOf( VALUES ) + VALUES.length();
-		// Convert the '?' to a '$d' in a query
-		long paramNum = insertSQL.substring( parametersStartIndex ).chars().filter( ch -> ch == '?' ).count();
-		String firstPart = insertSQL.substring( 0, parametersStartIndex );
-		StringBuilder builder = new StringBuilder();
-		for ( int i = 1; i < paramNum + 1; i++ ) {
-			builder.append( ", $" );
-			builder.append( i );
-		}
-		builder.append( ")" );
-		insertSQL = firstPart + builder.substring( 2 );
-		return insertSQL;
+		return super.generateInsertString( identityInsert, includeProperty, j )
+				.replace("?", "$" + insertParams);
 	}
 
 	@Override

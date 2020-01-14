@@ -3,13 +3,7 @@ package org.hibernate.rx;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CompletionStage;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
@@ -67,8 +61,10 @@ public class EagerUniManyToOneAssociationTest {
 		configuration.setProperty( AvailableSettings.USER, "hibernate-rx" );
 		configuration.setProperty( AvailableSettings.PASS, "hibernate-rx" );
 		configuration.setProperty( AvailableSettings.URL, "jdbc:postgresql://localhost:5432/hibernate-rx" );
+		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
 
 		configuration.addAnnotatedClass( Book.class );
+		configuration.addAnnotatedClass( SpellBook.class );
 		configuration.addAnnotatedClass( Author.class );
 
 		return configuration;
@@ -153,12 +149,34 @@ public class EagerUniManyToOneAssociationTest {
 	}
 
 	@Test
+	public void persistOneSpellBook(TestContext context) {
+		final SpellBook book = new SpellBook( 6, "Necronomicon", true );
+		final Author author = new Author( 5, "Abdul Alhazred", book );
+
+		RxSession rxSession = session.reactive();
+		test(
+				context,
+				rxSession
+						.persist( book )
+						.thenCompose( v -> rxSession.persist( author ) )
+						.thenCompose( v -> rxSession.flush() )
+						.thenCompose( v -> rxSession.find( Author.class, author.getId() ) )
+						.thenAccept( optionalAuthor -> {
+							context.assertTrue( optionalAuthor.isPresent() );
+							context.assertEquals( author, optionalAuthor.get() );
+							context.assertEquals( book, optionalAuthor.get().getBook()  );
+						} )
+		);
+	}
+
+	@Test
 	public void loadOneBook(TestContext context) {
 		persistOneBook(context);
 
 		RxSession rxSession1 = session.reactive();
 		test( context, rxSession1.find( Book.class, 6 ).thenAccept( book -> {
 			context.assertTrue( book.isPresent() );
+			context.assertFalse( book.get() instanceof SpellBook);
 			context.assertEquals( book.get().getTitle(),  "The Boy, The Mole, The Fox and The Horse" );
 		} ) );
 
@@ -166,6 +184,24 @@ public class EagerUniManyToOneAssociationTest {
 		test( context, rxSession2.find( Author.class, 5 ).thenAccept( author -> {
 			context.assertTrue( author.isPresent() );
 			context.assertEquals( author.get().getName(),"Charlie Mackesy" );
+		} ) );
+	}
+
+	@Test
+	public void loadOneSpellBook(TestContext context) {
+		persistOneSpellBook(context);
+
+		RxSession rxSession1 = session.reactive();
+		test( context, rxSession1.find( Book.class, 6 ).thenAccept( book -> {
+			context.assertTrue( book.isPresent() );
+			context.assertTrue( book.get() instanceof SpellBook);
+			context.assertEquals( book.get().getTitle(),  "Necronomicon" );
+		} ) );
+
+		RxSession rxSession2 = session.reactive();
+		test( context, rxSession2.find( Author.class, 5 ).thenAccept( author -> {
+			context.assertTrue( author.isPresent() );
+			context.assertEquals( author.get().getName(),"Abdul Alhazred" );
 		} ) );
 	}
 
@@ -193,7 +229,29 @@ public class EagerUniManyToOneAssociationTest {
 	}
 
 	@Entity
+	@Table(name = SpellBook.TABLE)
+	@DiscriminatorValue("S")
+	public static class SpellBook extends Book {
+		public static final String TABLE = "SpecialBook";
+
+		private boolean forbidden;
+
+		public SpellBook(Integer id, String title, boolean forbidden) {
+			super(id, title);
+			this.forbidden = forbidden;
+		}
+
+		SpellBook() {}
+
+		public boolean getForbidden() {
+			return forbidden;
+		}
+	}
+
+	@Entity
 	@Table(name = Book.TABLE)
+	@DiscriminatorValue("N")
+	//@Inheritance(strategy = InheritanceType.JOINED)
 	public static class Book {
 		public static final String TABLE = "Book";
 
