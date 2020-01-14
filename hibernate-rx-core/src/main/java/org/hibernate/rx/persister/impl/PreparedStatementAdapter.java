@@ -118,17 +118,17 @@ public class PreparedStatementAdapter implements PreparedStatement {
 
 	@Override
 	public void setDate(int parameterIndex, Date x) throws SQLException {
-		params.put( parameterIndex, x );
+		params.put( parameterIndex, x.toLocalDate() );
 	}
 
 	@Override
 	public void setTime(int parameterIndex, Time x) throws SQLException {
-		params.put( parameterIndex, x );
+		params.put( parameterIndex, x.toLocalTime() );
 	}
 
 	@Override
 	public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
-		params.put( parameterIndex, x );
+		params.put( parameterIndex, x.toLocalDateTime() );
 	}
 
 	@Override
