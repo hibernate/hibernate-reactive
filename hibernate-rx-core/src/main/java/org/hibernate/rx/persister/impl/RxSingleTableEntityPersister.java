@@ -1,7 +1,6 @@
 package org.hibernate.rx.persister.impl;
 
 import java.io.Serializable;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -26,7 +25,6 @@ import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.id.insert.Binder;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.ArrayHelper;
@@ -42,7 +40,6 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
 import org.hibernate.rx.sql.Delete;
-import org.hibernate.rx.sql.Update;
 import org.hibernate.rx.util.RxUtil;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.type.Type;
@@ -98,18 +95,6 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	}
 
 	@Override
-	public Object load(
-			Serializable id,
-			Object optionalObject,
-			LockOptions lockOptions,
-			SharedSessionContractImplementor session)
-			throws HibernateException {
-
-		final UniqueEntityLoader loader = getAppropriateLoader( lockOptions, session );
-		return loader.load( id, optionalObject, session, lockOptions );
-	}
-
-	@Override
 	protected UniqueEntityLoader createEntityLoader(LockMode lockMode, LoadQueryInfluencers loadQueryInfluencers)
 			throws MappingException {
 		//FIXME add support to lock mode and loadQueryInfluencers
@@ -125,11 +110,6 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		//FIXME add support to lock mode and loadQueryInfluencers
 		return RxBatchingEntityLoaderBuilder.getBuilder( getFactory() )
 				.buildLoader( this, batchSize, lockOptions, getFactory(), loadQueryInfluencers );
-	}
-
-	@Override
-	protected UniqueEntityLoader createEntityLoader(LockMode lockMode) throws MappingException {
-		return createEntityLoader( lockMode, LoadQueryInfluencers.NONE );
 	}
 
 	@Override
@@ -361,19 +341,6 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		return insertStage;
 	}
 
-	@Override
-	protected int dehydrate(
-			Serializable id,
-			Object[] fields,
-			boolean[] includeProperty,
-			boolean[][] includeColumns,
-			int j,
-			PreparedStatement st,
-			SharedSessionContractImplementor session,
-			boolean isUpdate) throws HibernateException, SQLException {
-		return super.dehydrate( id, fields, includeProperty, includeColumns, j, st, session, isUpdate );
-	}
-
 	protected CompletionStage<?> deleteRx(
 			Serializable id,
 			Object version,
@@ -413,31 +380,10 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		}
 
 		//Render the SQL query
-		PreparedStatementAdapter delete = deleteStatement(
-				id,
-				version,
-				j,
-				session,
-				loadedState,
-				useVersion,
-				expectation
-		);
-
-		return queryExecutor.update( sql, delete.getParametersAsArray(), getFactory() );
-	}
-
-	private PreparedStatementAdapter deleteStatement(
-			Serializable id,
-			Object version,
-			int j,
-			SharedSessionContractImplementor session,
-			Object[] loadedState,
-			boolean useVersion,
-			Expectation expectation) {
+		PreparedStatementAdapter delete = new PreparedStatementAdapter();
 		try {
 			// FIXME: This is a hack to set the right type for the parameters
 			//        until we have a proper type system in place
-			PreparedStatementAdapter delete = new PreparedStatementAdapter();
 			int index = 1;
 
 			index += expectation.prepare( delete );
@@ -464,11 +410,12 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 					}
 				}
 			}
-			return delete;
 		}
 		catch ( SQLException e) {
 			throw new HibernateException( e );
 		}
+
+		return queryExecutor.update( sql, delete.getParametersAsArray(), getFactory() );
 	}
 
 	public CompletionStage<?> deleteRx(
@@ -845,7 +792,8 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 
 	@Override
 	protected String generateDeleteString(int j) {
-		return super.generateDeleteString(j).replace("?", "$1");
+		return super.generateDeleteString(j)
+				.replace("?", "$1");
 	}
 
 	/**
