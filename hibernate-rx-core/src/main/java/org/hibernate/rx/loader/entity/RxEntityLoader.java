@@ -16,7 +16,6 @@ import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
 import org.hibernate.dialect.pagination.LimitHandler;
 import org.hibernate.dialect.pagination.LimitHelper;
-import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.QueryParameters;
@@ -34,8 +33,6 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
-
-import io.vertx.axle.sqlclient.RowSet;
 
 /**
  * @see org.hibernate.loader.entity.EntityLoader
@@ -350,7 +347,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 	protected CompletionStage<Optional<Object>> executeRxQueryStatement(
 			String sqlStatement,
 			QueryParameters queryParameters,
-			boolean scroll	,
+			boolean scroll,
 			List<AfterLoadAction> afterLoadActions,
 			SharedSessionContractImplementor session,
 			Function<ResultSet, Object> transformer) throws SQLException {

@@ -51,7 +51,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	// FIXME: This should probably be a service
 	private final RxQueryExecutor queryExecutor = new RxQueryExecutor();
 
-	private BasicBatchKey inserBatchKey;
+	private BasicBatchKey insertBatchKey;
 	private BasicBatchKey deleteBatchKey;
 	private BasicBatchKey updateBatchKey;
 
@@ -322,8 +322,8 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 				jdbcBatchSizeToUse > 1 &&
 				getIdentifierGenerator().supportsJdbcBatchInserts();
 
-		if ( useBatch && inserBatchKey == null ) {
-			inserBatchKey = new BasicBatchKey(
+		if ( useBatch && insertBatchKey == null ) {
+			insertBatchKey = new BasicBatchKey(
 					getEntityName() + "#INSERT",
 					expectation
 			);
