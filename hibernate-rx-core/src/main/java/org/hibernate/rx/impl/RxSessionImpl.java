@@ -123,6 +123,13 @@ public class RxSessionImpl implements RxSession {
 	}
 
 	@Override
+	public <T> T getReference(Class<T> entityClass, Object id) {
+		//it's important that this method does not hit the database!
+		//TODO: how can we guarantee that?
+		return rxHibernateSession.getReference( entityClass, id );
+	}
+
+	@Override
 	public <T> CompletionStage<Optional<T>> find(Class<T> entityClass, Object primaryKey) {
 		return find( entityClass, primaryKey, null, null );
 	}

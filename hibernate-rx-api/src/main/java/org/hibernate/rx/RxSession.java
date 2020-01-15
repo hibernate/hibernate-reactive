@@ -41,6 +41,26 @@ public interface RxSession {
 	<T> CompletionStage<Optional<T>> find(Class<T> entityClass, Object id);
 
 	/**
+	 * Return the persistent instance of the given entity class with the
+	 * given identifier, assuming that the instance exists. This method
+	 * never results in access to the underlying data store, and thus
+	 * might return a proxied instance that must be initialized explicitly
+	 * using {@link #fetch}.
+	 *
+	 * You should not use this method to determine if an instance exists
+	 * (use {@link #find} instead). Use this only to retrieve an instance
+	 * that you assume exists, where non-existence would be an actual error.
+	 *
+	 * @param entityClass a persistent class
+	 * @param id a valid identifier of an existing persistent instance of the class
+	 *
+	 * @return the persistent instance or proxy
+	 *
+	 * @see javax.persistence.EntityManager#getReference(Class, Object)
+	 */
+	public <T> T getReference(Class<T> entityClass, Object id);
+
+	/**
 	 * Asynchronously persist the given transient instance, first assigning
 	 * a generated identifier. (Or using the current value of the identifier
 	 * property if the <tt>assigned</tt> generator is used.) This operation

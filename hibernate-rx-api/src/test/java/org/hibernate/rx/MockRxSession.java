@@ -66,6 +66,11 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
+	public <T> T getReference(Class<T> entityClass, Object id) {
+		return null;
+	}
+
+	@Override
 	public CompletionStage<Void> persist(Object entity) {
 		return CompletableFuture.runAsync( () -> persistFunction.accept( entity ) );
 	}
