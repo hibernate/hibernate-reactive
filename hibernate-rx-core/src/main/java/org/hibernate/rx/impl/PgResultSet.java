@@ -39,6 +39,7 @@ public class PgResultSet implements ResultSet {
 
 	private final RowIterator iterator;
 	private Row row;
+	private boolean wasNull;
 
 	public PgResultSet(RowSet rows) {
 		this.iterator = rows.iterator();
@@ -59,78 +60,84 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public boolean wasNull() throws SQLException {
-		return false;
+		return wasNull;
 	}
 
 	@Override
 	public String getString(int columnIndex) throws SQLException {
-		return row.getString( columnIndex );
+		String string = row.getString(columnIndex);
+		return (wasNull=string==null) ? null : string;
 	}
 
 	@Override
 	public boolean getBoolean(int columnIndex) throws SQLException {
-		return row.getBoolean( columnIndex );
+		Boolean bool = row.getBoolean(columnIndex);
+		return (wasNull=bool==null) ? false : bool;
 	}
 
 	@Override
 	public byte getByte(int columnIndex) throws SQLException {
 		Integer integer = row.getInteger( columnIndex );
-		return integer==null ? null : integer.byteValue();
+		return (wasNull=integer==null) ? 0 : integer.byteValue();
 	}
 
 	@Override
 	public short getShort(int columnIndex) throws SQLException {
-		return row.getShort( columnIndex );
+		Short integer = row.getShort(columnIndex);
+		return (wasNull=integer==null) ? 0 : integer;
 	}
 
 	@Override
 	public int getInt(int columnIndex) throws SQLException {
-		return row.getInteger( columnIndex );
-
+		Integer integer = row.getInteger( columnIndex );
+		return (wasNull=integer==null) ? 0 : integer;
 	}
 
 	@Override
 	public long getLong(int columnIndex) throws SQLException {
-		return row.getLong( columnIndex );
+		Long integer = row.getLong(columnIndex);
+		return (wasNull=integer==null) ? 0 : integer;
 	}
 
 	@Override
 	public float getFloat(int columnIndex) throws SQLException {
-		return row.getFloat( columnIndex );
+		Float real = row.getFloat(columnIndex);
+		return (wasNull=real==null) ? 0 : real;
 	}
 
 	@Override
 	public double getDouble(int columnIndex) throws SQLException {
-		return row.getDouble( columnIndex );
+		Double real = row.getDouble(columnIndex);
+		return (wasNull=real==null) ? 0 : real;
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
-		return row.getBigDecimal( columnIndex );
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public byte[] getBytes(int columnIndex) throws SQLException {
 		Buffer buffer = row.getBuffer(columnIndex);
-		return buffer==null ? null : buffer.getBytes();
+		return (wasNull=buffer==null) ? null : buffer.getBytes();
 	}
 
 	@Override
 	public Date getDate(int columnIndex) throws SQLException {
 		LocalDate localDate = row.getLocalDate(columnIndex);
-		return localDate==null ? null : java.sql.Date.valueOf(localDate);
+		return (wasNull=localDate==null) ? null : java.sql.Date.valueOf(localDate);
 	}
 
 	@Override
 	public Time getTime(int columnIndex) throws SQLException {
 		LocalTime localTime = row.getLocalTime(columnIndex);
-		return localTime==null ? null : Time.valueOf(localTime);
+		return (wasNull=localTime==null) ? null : Time.valueOf(localTime);
 	}
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex) throws SQLException {
 		LocalDateTime localDateTime = row.getLocalDateTime(columnIndex);
-		return localDateTime==null ? null : Timestamp.valueOf(localDateTime);
+		return (wasNull=localDateTime==null) ? null : Timestamp.valueOf(localDateTime);
 	}
 
 	@Override
@@ -150,73 +157,79 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public String getString(String columnLabel) throws SQLException {
-		return row.getString( columnLabel );
+		String string = row.getString(columnLabel);
+		return (wasNull=string==null) ? null : string;
 	}
 
 	@Override
 	public boolean getBoolean(String columnLabel) throws SQLException {
-		return row.getBoolean( columnLabel );
+		Boolean bool = row.getBoolean(columnLabel);
+		return (wasNull=bool==null) ? false : bool;
 	}
 
 	@Override
 	public byte getByte(String columnLabel) throws SQLException {
 		Integer integer = row.getInteger( columnLabel );
-		return integer==null ? null : integer.byteValue();
+		return (wasNull=integer==null) ? 0 : integer.byteValue();
 	}
 
 	@Override
 	public short getShort(String columnLabel) throws SQLException {
-		return row.getShort( columnLabel );
+		Short integer = row.getShort(columnLabel);
+		return (wasNull=integer==null) ? 0 : integer;
 	}
-	private boolean wasNull = true;
 
 	@Override
 	public int getInt(String columnLabel) throws SQLException {
-		return row.getInteger( columnLabel );
+		Integer integer = row.getInteger( columnLabel );
+		return (wasNull=integer==null) ? 0 : integer;
 	}
 
 	@Override
 	public long getLong(String columnLabel) throws SQLException {
-		return row.getLong( columnLabel );
+		Long integer = row.getLong(columnLabel);
+		return (wasNull=integer==null) ? 0 : integer;
 	}
 
 	@Override
 	public float getFloat(String columnLabel) throws SQLException {
-		return row.getFloat( columnLabel );
+		Float real = row.getFloat(columnLabel);
+		return (wasNull=real==null) ? 0 : real;
 	}
 
 	@Override
 	public double getDouble(String columnLabel) throws SQLException {
-		return row.getDouble( columnLabel );
+		Double real = row.getDouble(columnLabel);
+		return (wasNull=real==null) ? 0 : real;
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(String columnLabel, int scale) throws SQLException {
-		return row.getBigDecimal( columnLabel );
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public byte[] getBytes(String columnLabel) throws SQLException {
 		Buffer buffer = row.getBuffer(columnLabel);
-		return buffer == null ? null : buffer.getBytes();
+		return (wasNull=buffer==null) ? null : buffer.getBytes();
 	}
 
 	@Override
 	public Date getDate(String columnLabel) throws SQLException {
 		LocalDate localDate = row.getLocalDate(columnLabel);
-		return localDate==null ? null : java.sql.Date.valueOf(localDate);
+		return (wasNull=localDate==null) ? null : java.sql.Date.valueOf(localDate);
 	}
 
 	@Override
 	public Time getTime(String columnLabel) throws SQLException {
 		LocalTime localTime = row.getLocalTime(columnLabel);
-		return localTime==null ? null : Time.valueOf(localTime);
+		return (wasNull=localTime==null) ? null : Time.valueOf(localTime);
 	}
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel) throws SQLException {
 		LocalDateTime localDateTime = row.getLocalDateTime(columnLabel);
-		return localDateTime==null ? null : Timestamp.valueOf(localDateTime);
+		return (wasNull=localDateTime==null) ? null : Timestamp.valueOf(localDateTime);
 	}
 
 	@Override
@@ -281,12 +294,14 @@ public class PgResultSet implements ResultSet {
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
-		return row.getBigDecimal(columnIndex);
+		BigDecimal decimal = row.getBigDecimal(columnIndex);
+		return (wasNull=decimal==null) ? null : decimal;
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
-		return row.getBigDecimal(columnLabel);
+		BigDecimal decimal = row.getBigDecimal(columnLabel);
+		return (wasNull=decimal==null) ? null : decimal;
 	}
 
 	@Override
