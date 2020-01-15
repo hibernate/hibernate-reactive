@@ -12,9 +12,13 @@ import java.util.concurrent.CompletionStage;
  * that the operations are performed asynchronously, returning a
  * {@link CompletionStage} without blocking the calling thread.
  *
- * Entities associated with an {@code RxSession} do not yet support lazy
- * association fetching. All associations used within a unit of work must
- * be fetched eagerly when an entity is first retrieved.
+ * Entities associated with an {@code RxSession} do not support transparent
+ * lazy association fetching. Instead, {@link #fetch} should be used to
+ * explicitly request asynchronous fetching of an association, or the
+ * association should be fetched eagerly when the entity is first retrieved.
+ *
+ * {@code RxSession} does not support JPA entity graphs, but Hibernate fetch
+ * profiles may be used instead.
  *
  * @see org.hibernate.Session
  */
