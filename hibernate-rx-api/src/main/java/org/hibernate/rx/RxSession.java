@@ -162,4 +162,40 @@ public interface RxSession {
 	 * @see javax.persistence.EntityManager#clear()
 	 */
 	void clear();
+
+	/**
+	 * Enable a particular fetch profile on this session.  No-op if requested
+	 * profile is already enabled.
+	 *
+	 * @param name The name of the fetch profile to be enabled.
+	 * @throws org.hibernate.UnknownProfileException Indicates that the given name does not
+	 * match any known profile names
+	 *
+	 * @see org.hibernate.engine.profile.FetchProfile for discussion of this feature
+	 */
+	void enableFetchProfile(String name);
+
+	/**
+	 * Disable a particular fetch profile on this session.  No-op if requested
+	 * profile is already disabled.
+	 *
+	 * @param name The name of the fetch profile to be disabled.
+	 * @throws org.hibernate.UnknownProfileException Indicates that the given name does not
+	 * match any known profile names
+	 *
+	 * @see org.hibernate.engine.profile.FetchProfile for discussion of this feature
+	 */
+	void disableFetchProfile(String name);
+
+	/**
+	 * Is a particular fetch profile enabled on this session?
+	 *
+	 * @param name The name of the profile to be checked.
+	 * @return True if fetch profile is enabled; false if not.
+	 * @throws org.hibernate.UnknownProfileException Indicates that the given name does not
+	 * match any known profile names
+	 *
+	 * @see org.hibernate.engine.profile.FetchProfile for discussion of this feature
+	 */
+	boolean isFetchProfileEnabled(String name);
 }
