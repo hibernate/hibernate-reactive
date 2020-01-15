@@ -3,6 +3,7 @@ package org.hibernate.rx;
 import java.util.function.Consumer;
 
 import org.hibernate.Session;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 
 /**
@@ -21,5 +22,7 @@ public interface RxHibernateSession extends Session {
 	void reactive(Consumer<RxSession> consumer);
 
 	RxActionQueue getRxActionQueue();
+
+	LoadQueryInfluencers getLoadQueryInfluencers();
 
 }

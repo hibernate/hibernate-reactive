@@ -9,7 +9,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -39,7 +38,6 @@ import org.hibernate.type.Type;
  */
 public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntityLoader {
 
-	private final boolean batchLoader;
 	private final int[][] compositeKeyManyToOneTargetIndices;
 
 	public RxEntityLoader(
@@ -49,7 +47,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 		this( persister, 1, LockMode.NONE, factory, loadQueryInfluencers );
 	}
 
-	// We don't use all the parameters but I kept them for simmetry with EntityLoader
+	// We don't use all the parameters but I kept them for symmetry with EntityLoader
 	public RxEntityLoader(
 			OuterJoinLoadable persister,
 			LockMode lockMode,
@@ -108,14 +106,15 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 			LockMode lockMode,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
-		this( persister, uniqueKeyType, batchSize, factory, loadQueryInfluencers, new PgEntityJoinWalker(
-				persister,
-				uniqueKey,
-				batchSize,
-				lockMode,
-				factory,
-				loadQueryInfluencers
-		) );
+		this( persister, uniqueKey, uniqueKeyType, batchSize, lockMode, factory, loadQueryInfluencers,
+				new PgEntityJoinWalker(
+						persister,
+						uniqueKey,
+						batchSize,
+						lockMode,
+						factory,
+						loadQueryInfluencers
+				) );
 	}
 
 	public RxEntityLoader(
@@ -126,31 +125,36 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 			LockOptions lockOptions,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
-		this( persister, uniqueKeyType, batchSize, factory, loadQueryInfluencers, new PgEntityJoinWalker(
-				persister,
-				uniqueKey,
-				batchSize,
-				lockOptions,
-				factory,
-				loadQueryInfluencers
-		) );
+		this( persister, uniqueKey, uniqueKeyType, batchSize, lockOptions.getLockMode(), factory, loadQueryInfluencers,
+				new PgEntityJoinWalker(
+						persister,
+						uniqueKey,
+						batchSize,
+						lockOptions,
+						factory,
+						loadQueryInfluencers
+				) );
 	}
 
 	private RxEntityLoader(
 			OuterJoinLoadable persister,
+			String[] uniqueKey,
 			Type uniqueKeyType,
 			int batchSize,
+			LockMode lockMode,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers,
 			EntityJoinWalker walker) throws MappingException {
 		super( persister, uniqueKeyType, factory, loadQueryInfluencers );
-		if ( persister == null ) {
-			throw new AssertionFailure( "EntityPersister must not be null or empty" );
-		}
+
 		initFromWalker( walker );
 		this.compositeKeyManyToOneTargetIndices = walker.getCompositeKeyManyToOneTargetIndices();
 		postInstantiate();
-		batchLoader = batchSize > 1;
+	}
+
+	@Override
+	public int[][] getCompositeKeyManyToOneTargetIndices() {
+		return compositeKeyManyToOneTargetIndices;
 	}
 
 	@Override

@@ -19,7 +19,6 @@ import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.ExceptionConverter;
-import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.service.spi.EventListenerGroup;
 import org.hibernate.event.service.spi.EventListenerRegistry;
@@ -43,7 +42,6 @@ import org.hibernate.rx.RxHibernateSession;
 import org.hibernate.rx.RxHibernateSessionFactory;
 import org.hibernate.rx.RxQuery;
 import org.hibernate.rx.RxSession;
-import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.engine.spi.RxHibernateSessionFactoryImplementor;
 import org.hibernate.rx.event.spi.RxDeleteEventListener;
 import org.hibernate.rx.event.spi.RxFlushEventListener;
@@ -58,20 +56,10 @@ public class RxSessionImpl implements RxSession {
 	private final RxHibernateSession rxHibernateSession;
 	// Might make sense to have a service or delegator for this
 	private Executor executor = ForkJoinPool.commonPool();
-	private transient LoadQueryInfluencers loadQueryInfluencers;
 
 	public <T> RxSessionImpl(RxHibernateSessionFactoryImplementor factory, RxHibernateSession session) {
 		this.factory = factory;
 		this.rxHibernateSession = session;
-		this.loadQueryInfluencers = new LoadQueryInfluencers( factory );
-	}
-
-	public RxActionQueue getRxActionQueue() {
-		return this.rxHibernateSession.getRxActionQueue();
-	}
-
-	public LoadQueryInfluencers getLoadQueryInfluencers() {
-		return loadQueryInfluencers;
 	}
 
 	@Override
@@ -160,7 +148,7 @@ public class RxSessionImpl implements RxSession {
 
 		return RxUtil.nullFuture()
 				.thenCompose( v -> {
-					getLoadQueryInfluencers().getEffectiveEntityGraph().applyConfiguredGraph( properties );
+					rxHibernateSession.getLoadQueryInfluencers().getEffectiveEntityGraph().applyConfiguredGraph( properties );
 
 					final RxIdentifierLoadAccessImpl<T> loadAccess = byId( entityClass );
 //			loadAccess.with( determineAppropriateLocalCacheMode( properties ) );
@@ -212,7 +200,7 @@ public class RxSessionImpl implements RxSession {
 					}
 					return v;
 				} ).whenComplete( (v, x) -> {
-					getLoadQueryInfluencers().getEffectiveEntityGraph().clear();
+					rxHibernateSession.getLoadQueryInfluencers().getEffectiveEntityGraph().clear();
 				} );
 	}
 
@@ -325,6 +313,10 @@ public class RxSessionImpl implements RxSession {
 
 		private LockOptions lockOptions;
 		private CacheMode cacheMode;
+
+		//Note that entity graphs aren't supported at all
+		//because we're not using the EntityLoader from
+		//the plan package, so this stuff is useless
 		private RootGraphImplementor<T> rootGraph;
 		private GraphSemantic graphSemantic;
 
@@ -378,14 +370,14 @@ public class RxSessionImpl implements RxSession {
 			}
 
 			if ( graphSemantic != null ) {
-				loadQueryInfluencers.getEffectiveEntityGraph().applyGraph( rootGraph, graphSemantic );
+				rxHibernateSession.getLoadQueryInfluencers().getEffectiveEntityGraph().applyGraph( rootGraph, graphSemantic );
 			}
 
 			boolean finalCacheModeChanged = cacheModeChanged;
 			return executor.get()
 					.whenComplete( (v, x) -> {
 						if ( graphSemantic != null ) {
-							loadQueryInfluencers.getEffectiveEntityGraph().clear();
+							rxHibernateSession.getLoadQueryInfluencers().getEffectiveEntityGraph().clear();
 						}
 						if ( finalCacheModeChanged ) {
 							// change it back
