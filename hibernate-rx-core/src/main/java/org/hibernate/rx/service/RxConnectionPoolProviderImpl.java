@@ -19,6 +19,7 @@ public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, C
 
 	public static final int DEFAULT_POOL_SIZE = 5;
 	private PgPool pool;
+	private boolean showSQL;
 
 	public RxConnectionPoolProviderImpl() {
 	}
@@ -51,11 +52,13 @@ public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, C
 				.setUser( username )
 				.setPassword( password );
 		this.pool = PgPool.pool( Vertx.vertx(), connectOptions, poolOptions );
+
+		showSQL = "true".equals( configurationValues.get( AvailableSettings.SHOW_SQL ) );
 	}
 
 	@Override
 	public RxConnection getConnection() {
-		return new PgPoolConnection( pool );
+		return new PgPoolConnection( pool, showSQL );
 	}
 
 	@Override
