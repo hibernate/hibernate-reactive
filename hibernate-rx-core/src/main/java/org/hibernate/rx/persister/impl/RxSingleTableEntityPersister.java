@@ -87,9 +87,60 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		}
 	}
 
+	private static String[] lower(String[] strings) {
+		for (int i = 0; i < strings.length; i++) {
+			strings[i] = strings[i].toLowerCase();
+		}
+		return strings;
+	}
+
+	private static String lower(String string) {
+		return string==null ? null : string.toLowerCase();
+	}
+
+//	@Override
+//	public String getTableAliasForColumn(String columnName, String rootAlias) {
+//		return lower(super.getTableAliasForColumn(columnName, rootAlias));
+//	}
+//
+//	@Override
+//	public String getRootTableAlias(String drivingAlias) {
+//		return lower(super.getRootTableAlias(drivingAlias));
+//	}
+
+	@Override
+	protected String[] getIdentifierAliases() {
+		return lower(super.getIdentifierAliases());
+	}
+
+	@Override
+	public String[] getIdentifierAliases(String suffix) {
+		return lower(super.getIdentifierAliases(suffix));
+	}
+
+	@Override
+	public String[] getSubclassPropertyColumnAliases(String propertyName, String suffix) {
+		return lower(super.getSubclassPropertyColumnAliases(propertyName, suffix));
+	}
+
+	@Override
+	protected String[] getSubclassColumnAliasClosure() {
+		return lower(super.getSubclassColumnAliasClosure());
+	}
+
+	@Override
+	public String[] getPropertyAliases(String suffix, int i) {
+		return lower(super.getPropertyAliases(suffix, i));
+	}
+
+	@Override
+	public String getDiscriminatorAlias(String suffix) {
+		return lower(super.getDiscriminatorAlias(suffix));
+	}
+
 	@Override
 	protected String getDiscriminatorAlias() {
-		return super.getDiscriminatorAlias().toLowerCase();
+		return lower(super.getDiscriminatorAlias().toLowerCase());
 	}
 
 	private Dialect dialect(PersisterCreationContext creationContext) {
