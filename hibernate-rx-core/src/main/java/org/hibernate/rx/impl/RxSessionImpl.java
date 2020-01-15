@@ -36,6 +36,8 @@ import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.rx.RxHibernateSession;
 import org.hibernate.rx.RxHibernateSessionFactory;
 import org.hibernate.rx.RxQuery;
@@ -76,6 +78,20 @@ public class RxSessionImpl implements RxSession {
 	public CompletionStage<Void> flush() {
 //		checkOpen();
 		return doFlush();
+	}
+
+	@Override
+	public <T> CompletionStage<T> fetch(T association) {
+		if ( association instanceof HibernateProxy) {
+			LazyInitializer initializer = ((HibernateProxy) association).getHibernateLazyInitializer();
+			//TODO: is this correct?
+			// SessionImpl doesn't use IdentifierLoadAccessImpl for initializing proxies
+			return new RxIdentifierLoadAccessImpl<T>( initializer.getEntityName() )
+					.fetch( initializer.getIdentifier() )
+					.thenApply(Optional::get);
+		}
+		//TODO: handle PersistentCollection (raise InitializeCollectionEvent)
+		throw new UnsupportedOperationException("could not fetch argument");
 	}
 
 	private CompletionStage<Void> doFlush() {
@@ -393,18 +409,22 @@ public class RxSessionImpl implements RxSession {
 		}
 
 		public final CompletionStage<Optional<T>> load(Serializable id) {
-			return perform( () -> doLoad( id ) );
+			return perform( () -> doLoad( id, LoadEventListener.GET) );
 		}
 
-		protected final CompletionStage<Optional<T>> doLoad(Serializable id) {
+		public final CompletionStage<Optional<T>> fetch(Serializable id) {
+			return doLoad( id, LoadEventListener.IMMEDIATE_LOAD);
+		}
+
+		protected final CompletionStage<Optional<T>> doLoad(Serializable id, LoadEventListener.LoadType loadType) {
 			if ( this.lockOptions != null ) {
 				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, (EventSource) rxHibernateSession
 				);
-				return fireLoad( event, LoadEventListener.GET ).thenApply( v -> (Optional<T>) event.getResult() );
+				return fireLoad( event, loadType ).thenApply( v -> (Optional<T>) event.getResult() );
 			}
 
 			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, (EventSource) rxHibernateSession);
-			return fireLoad( event, LoadEventListener.GET )
+			return fireLoad( event, loadType )
 					.handle( (v, t) -> {
 						afterOperation( t != null );
 						if ( t != null

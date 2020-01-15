@@ -89,6 +89,20 @@ public interface RxSession {
 	CompletionStage<Void> flush();
 
 	/**
+	 * Asynchronously fetch an association that configued for lazy loading.
+	 * (Currently only works for to-one associations, not for collections.)
+	 *
+	 * <pre>
+	 * {@code session.fetch(author.getBook()).thenAccept(book -> print(book.getTitle()));}
+	 * </pre>
+	 *
+	 * @param association a lazy-loaded association
+	 *
+	 * @return the fetched association, via a {@code CompletionStage}
+	 */
+	<T> CompletionStage<T> fetch(T association);
+
+	/**
 	 * Create an instance of {@link RxQuery} for the given HQL/JPQL query
 	 * string.
 	 *

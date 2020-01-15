@@ -94,9 +94,15 @@ public class MockRxSession implements RxSession {
 	public FlushMode getFlushMode() {
 		return FlushMode.AUTO;
 	}
-	
+
 	@Override
 	public CompletionStage<Void> flush() {
 		return CompletableFuture.completedFuture( null );
 	}
+
+	@Override
+	public <T> CompletionStage<T> fetch(T association) {
+		return null;
+	}
+
 }
