@@ -42,7 +42,6 @@ import org.hibernate.rx.RxHibernateSession;
 import org.hibernate.rx.RxHibernateSessionFactory;
 import org.hibernate.rx.RxQuery;
 import org.hibernate.rx.RxSession;
-import org.hibernate.rx.StateControl;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.engine.spi.RxHibernateSessionFactoryImplementor;
 import org.hibernate.rx.event.spi.RxDeleteEventListener;
@@ -259,11 +258,6 @@ public class RxSessionImpl implements RxSession {
 		return null;
 	}
 
-	@Override
-	public StateControl sessionState() {
-		return null;
-	}
-
 	private ServiceRegistry serviceRegistry() {
 		return factory.unwrap( SessionFactoryImplementor.class ).getServiceRegistry();
 	}
@@ -469,5 +463,15 @@ public class RxSessionImpl implements RxSession {
 				rxHibernateSession.setHibernateFlushMode(org.hibernate.FlushMode.ALWAYS);
 				break;
 		}
+	}
+
+	@Override
+	public void detach(Object entity) {
+		rxHibernateSession.detach(entity);
+	}
+
+	@Override
+	public void clear() {
+		rxHibernateSession.clear();
 	}
 }

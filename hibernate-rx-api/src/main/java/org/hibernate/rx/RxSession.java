@@ -121,5 +121,26 @@ public interface RxSession {
 		ALWAYS, AUTO, COMMIT, MANUAL
 	}
 
-	StateControl sessionState();
+	/**
+	 * Remove this instance from the session cache. Changes to the instance
+	 * will not be synchronized with the database. This operation cascades
+	 * to associated instances if the association is mapped with
+	 * <tt>cascade="evict"</tt>.
+	 *
+	 * @param entity The entity to evict
+	 *
+	 * @throws NullPointerException if the passed object is {@code null}
+	 * @throws IllegalArgumentException if the passed object is not defined as an entity
+	 *
+	 * @see javax.persistence.EntityManager#detach(Object)
+	 */
+	void detach(Object entity);
+
+	/**
+	 * Completely clear the session. Evict all loaded instances and cancel
+	 * all pending insertions, updates and deletions.
+	 *
+	 * @see javax.persistence.EntityManager#clear()
+	 */
+	void clear();
 }

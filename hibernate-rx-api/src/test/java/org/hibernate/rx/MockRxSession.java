@@ -81,11 +81,6 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
-	public StateControl sessionState() {
-		throw new UnsupportedOperationException( "not implemented" );
-	}
-
-	@Override
 	public void setFlushMode(FlushMode flushMode) {
 		throw new UnsupportedOperationException();
 	}
@@ -105,4 +100,9 @@ public class MockRxSession implements RxSession {
 		return null;
 	}
 
+	@Override
+	public void clear() {}
+
+	@Override
+	public void detach(Object entity) {}
 }
