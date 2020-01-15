@@ -1,11 +1,5 @@
 package org.hibernate.rx.event;
 
-import java.io.Serializable;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-
-import javax.swing.text.html.Option;
-
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.NonUniqueObjectException;
@@ -40,6 +34,10 @@ import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.EmbeddedComponentType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
+
+import java.io.Serializable;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEventListener {
 
