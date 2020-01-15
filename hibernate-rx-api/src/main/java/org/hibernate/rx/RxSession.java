@@ -20,6 +20,9 @@ import java.util.concurrent.CompletionStage;
  * {@code RxSession} does not support JPA entity graphs, but Hibernate fetch
  * profiles may be used instead.
  *
+ * {@code RxSession} does not (yet) support pessimistic locking, but
+ * optimistic locking via {@code @Version} properties is supported.
+ *
  * @see org.hibernate.Session
  */
 public interface RxSession {
