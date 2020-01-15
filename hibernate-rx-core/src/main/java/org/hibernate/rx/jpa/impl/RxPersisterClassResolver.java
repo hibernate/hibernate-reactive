@@ -7,6 +7,7 @@ import org.hibernate.persister.internal.StandardPersisterClassResolver;
 import org.hibernate.persister.spi.PersisterClassResolver;
 import org.hibernate.rx.persister.impl.RxJoinedSubclassEntityPersister;
 import org.hibernate.rx.persister.impl.RxSingleTableEntityPersister;
+import org.hibernate.rx.persister.impl.RxUnionSubclassEntityPersister;
 
 public class RxPersisterClassResolver extends StandardPersisterClassResolver implements PersisterClassResolver {
 
@@ -22,7 +23,7 @@ public class RxPersisterClassResolver extends StandardPersisterClassResolver imp
 
 	@Override
 	public Class<? extends EntityPersister> unionSubclassEntityPersister() {
-		throw new UnsupportedOperationException( "Union subclasses strategy not supported" );
+		return RxUnionSubclassEntityPersister.class;
 	}
 
 	@Override
