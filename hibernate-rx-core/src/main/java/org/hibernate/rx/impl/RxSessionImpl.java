@@ -17,6 +17,7 @@ import org.hibernate.MappingException;
 import org.hibernate.ObjectDeletedException;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
+import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.ExceptionConverter;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -81,7 +82,7 @@ public class RxSessionImpl implements RxSession {
 
 	@Override
 	public <T> CompletionStage<T> fetch(T association) {
-		if ( association instanceof HibernateProxy) {
+		if ( association instanceof HibernateProxy ) {
 			LazyInitializer initializer = ((HibernateProxy) association).getHibernateLazyInitializer();
 			//TODO: is this correct?
 			// SessionImpl doesn't use IdentifierLoadAccessImpl for initializing proxies
@@ -89,8 +90,11 @@ public class RxSessionImpl implements RxSession {
 					.fetch( initializer.getIdentifier() )
 					.thenApply(Optional::get);
 		}
-		//TODO: handle PersistentCollection (raise InitializeCollectionEvent)
-		throw new UnsupportedOperationException("could not fetch argument");
+		if ( association instanceof PersistentCollection ) {
+			//TODO: handle PersistentCollection (raise InitializeCollectionEvent)
+			throw new UnsupportedOperationException("fetch() is not yet implemented for collections");
+		}
+		return RxUtil.completedFuture(association);
 	}
 
 	private CompletionStage<Void> doFlush() {
@@ -473,5 +477,20 @@ public class RxSessionImpl implements RxSession {
 	@Override
 	public void clear() {
 		rxHibernateSession.clear();
+	}
+
+	@Override
+	public void enableFetchProfile(String name) {
+		rxHibernateSession.enableFetchProfile(name);
+	}
+
+	@Override
+	public void disableFetchProfile(String name) {
+		rxHibernateSession.disableFetchProfile(name);
+	}
+
+	@Override
+	public boolean isFetchProfileEnabled(String name) {
+		return rxHibernateSession.isFetchProfileEnabled(name);
 	}
 }

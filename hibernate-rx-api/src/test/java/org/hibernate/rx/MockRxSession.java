@@ -105,4 +105,15 @@ public class MockRxSession implements RxSession {
 
 	@Override
 	public void detach(Object entity) {}
+
+	@Override
+	public void enableFetchProfile(String name) {}
+
+	@Override
+	public void disableFetchProfile(String name) {}
+
+	@Override
+	public boolean isFetchProfileEnabled(String name) {
+		return false;
+	}
 }
