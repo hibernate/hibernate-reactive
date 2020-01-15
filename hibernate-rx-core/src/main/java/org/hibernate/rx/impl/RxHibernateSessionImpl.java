@@ -1,22 +1,12 @@
 package org.hibernate.rx.impl;
 
-import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
-import org.hibernate.FlushMode;
-import org.hibernate.MappingException;
 import org.hibernate.engine.spi.ExceptionConverter;
 import org.hibernate.engine.spi.SessionDelegatorBaseImpl;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.transaction.spi.TransactionImplementor;
-import org.hibernate.event.service.spi.EventListenerGroup;
-import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.event.spi.EventType;
-import org.hibernate.event.spi.FlushEvent;
-import org.hibernate.event.spi.FlushEventListener;
-import org.hibernate.event.spi.PersistEvent;
-import org.hibernate.event.spi.PersistEventListener;
 import org.hibernate.internal.ExceptionMapperStandardImpl;
 import org.hibernate.resource.transaction.backend.jta.internal.synchronization.ExceptionMapper;
 import org.hibernate.resource.transaction.spi.TransactionCoordinator;
@@ -25,8 +15,6 @@ import org.hibernate.rx.RxHibernateSession;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.engine.spi.RxHibernateSessionFactoryImplementor;
-import org.hibernate.rx.event.spi.RxFlushEventListener;
-import org.hibernate.rx.util.RxUtil;
 
 public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements RxHibernateSession, EventSource {
 

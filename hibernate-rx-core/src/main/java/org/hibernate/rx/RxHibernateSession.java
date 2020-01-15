@@ -1,8 +1,6 @@
 package org.hibernate.rx;
 
-import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.hibernate.Session;
 import org.hibernate.rx.engine.spi.RxActionQueue;
