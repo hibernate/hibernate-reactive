@@ -416,4 +416,38 @@ public class RxSessionImpl implements RxSession {
 					} );
 		}
 	}
+
+	@Override
+	public FlushMode getFlushMode() {
+		switch ( rxHibernateSession.getHibernateFlushMode() ) {
+			case MANUAL:
+				return FlushMode.MANUAL;
+			case COMMIT:
+				return FlushMode.COMMIT;
+			case AUTO:
+				return FlushMode.AUTO;
+			case ALWAYS:
+				return FlushMode.ALWAYS;
+			default:
+				throw new IllegalStateException("impossible flush mode");
+		}
+	}
+
+	@Override
+	public void setFlushMode(FlushMode flushMode) {
+		switch (flushMode) {
+			case COMMIT:
+				rxHibernateSession.setHibernateFlushMode(org.hibernate.FlushMode.COMMIT);
+				break;
+			case AUTO:
+				rxHibernateSession.setHibernateFlushMode(org.hibernate.FlushMode.AUTO);
+				break;
+			case MANUAL:
+				rxHibernateSession.setHibernateFlushMode(org.hibernate.FlushMode.MANUAL);
+				break;
+			case ALWAYS:
+				rxHibernateSession.setHibernateFlushMode(org.hibernate.FlushMode.ALWAYS);
+				break;
+		}
+	}
 }

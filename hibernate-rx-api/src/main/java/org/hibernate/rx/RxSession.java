@@ -100,5 +100,12 @@ public interface RxSession {
 	 */
 	<R> RxQuery<R> createQuery(Class<R> resultType, String queryString);
 
+	void setFlushMode(FlushMode flushMode);
+	FlushMode getFlushMode();
+
+	enum FlushMode {
+		ALWAYS, AUTO, COMMIT, MANUAL
+	}
+
 	StateControl sessionState();
 }

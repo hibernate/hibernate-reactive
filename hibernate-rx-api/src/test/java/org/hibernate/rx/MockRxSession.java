@@ -86,6 +86,16 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
+	public void setFlushMode(FlushMode flushMode) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public FlushMode getFlushMode() {
+		return FlushMode.AUTO;
+	}
+	
+	@Override
 	public CompletionStage<Void> flush() {
 		return CompletableFuture.completedFuture( null );
 	}
