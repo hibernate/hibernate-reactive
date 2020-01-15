@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
 public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersister implements RxEntityPersister {
 
