@@ -4,8 +4,6 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.LockModeType;
@@ -54,10 +52,8 @@ public class RxSessionImpl implements RxSession {
 
 	private final RxHibernateSessionFactory factory;
 	private final RxHibernateSession rxHibernateSession;
-	// Might make sense to have a service or delegator for this
-	private Executor executor = ForkJoinPool.commonPool();
 
-	public <T> RxSessionImpl(RxHibernateSessionFactoryImplementor factory, RxHibernateSession session) {
+	public RxSessionImpl(RxHibernateSessionFactoryImplementor factory, RxHibernateSession session) {
 		this.factory = factory;
 		this.rxHibernateSession = session;
 	}
