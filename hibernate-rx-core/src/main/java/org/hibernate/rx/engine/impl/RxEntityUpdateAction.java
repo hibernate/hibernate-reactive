@@ -27,7 +27,7 @@ import org.hibernate.event.spi.PreUpdateEvent;
 import org.hibernate.event.spi.PreUpdateEventListener;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.rx.action.spi.RxExecutable;
-import org.hibernate.rx.persister.impl.RxSingleTableEntityPersister;
+import org.hibernate.rx.persister.impl.RxEntityPersister;
 import org.hibernate.rx.util.RxUtil;
 import org.hibernate.stat.internal.StatsHelper;
 import org.hibernate.stat.spi.StatisticsImplementor;
@@ -118,7 +118,7 @@ public class RxEntityUpdateAction extends EntityAction implements RxExecutable {
 	@Override
 	public CompletionStage<Void> rxExecute() throws HibernateException {
 		final Serializable id = getId();
-		final RxSingleTableEntityPersister persister = (RxSingleTableEntityPersister) getPersister();
+		final RxEntityPersister persister = (RxEntityPersister) getPersister();
 		final SharedSessionContractImplementor session = getSession();
 		final Object instance = getInstance();
 
@@ -214,7 +214,7 @@ public class RxEntityUpdateAction extends EntityAction implements RxExecutable {
 		} );
 	}
 
-	private Object previousVersion(RxSingleTableEntityPersister persister, Object instance) {
+	private Object previousVersion(RxEntityPersister persister, Object instance) {
 		if ( persister.isVersionPropertyGenerated() ) {
 			// we need to grab the version value from the entity, otherwise
 			// we have issues with generated-version entities that may have

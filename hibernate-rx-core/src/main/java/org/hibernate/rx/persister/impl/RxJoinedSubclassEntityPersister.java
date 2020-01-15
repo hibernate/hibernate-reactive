@@ -1,18 +1,6 @@
 package org.hibernate.rx.persister.impl;
 
-import java.io.Serializable;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
-
-import org.hibernate.HibernateException;
-import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
-import org.hibernate.MappingException;
-import org.hibernate.Session;
+import org.hibernate.*;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.dialect.Dialect;
@@ -20,11 +8,7 @@ import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.LoadQueryInfluencers;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.*;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.ArrayHelper;
@@ -33,8 +17,7 @@ import org.hibernate.jdbc.Expectations;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
-import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.persister.entity.SingleTableEntityPersister;
+import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.impl.RxQueryExecutor;
@@ -44,9 +27,17 @@ import org.hibernate.sql.Delete;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.type.Type;
 
-public class RxSingleTableEntityPersister extends SingleTableEntityPersister implements RxEntityPersister {
+import java.io.Serializable;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( RxSingleTableEntityPersister.class );
+public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersister implements RxEntityPersister {
+
+	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( RxJoinedSubclassEntityPersister.class );
 
 	// FIXME: This should probably be a service
 	private final RxQueryExecutor queryExecutor = new RxQueryExecutor();
@@ -55,12 +46,12 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	private BasicBatchKey deleteBatchKey;
 	private BasicBatchKey updateBatchKey;
 
-	private int insertParams = 1;
+	private int[] insertParams;
 
 	// HHH-4635: Some dialects force lobs as last values for SQL queries
 	private final List<Integer> lobProperties = new ArrayList<>();
 
-	public RxSingleTableEntityPersister(
+	public RxJoinedSubclassEntityPersister(
 			PersistentClass persistentClass,
 			EntityDataAccess cacheAccessStrategy,
 			NaturalIdDataAccess naturalIdRegionAccessStrategy,
@@ -79,10 +70,16 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 			}
 		}
 
+		insertParams = new int[getTableSpan()];
+		for (int table = 0; table<getTableSpan(); table++) {
+			insertParams[table] = 1;
+		}
+
 		for (int p = 0; p<getPropertySpan(); p++ ) {
 			String[] writers = getPropertyColumnWriters(p);
+			int table = getPropertyTableNumbers()[p];
 			for (int i = 0; i < writers.length; i++) {
-				if ("?".equals(writers[i])) writers[i] = "$" + insertParams++;
+				if ("?".equals(writers[i])) writers[i] = "$" + insertParams[table]++;
 			}
 		}
 	}
@@ -276,7 +273,6 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		}
 	}
 
-	@Override
 	public CompletionStage<?> insertRx(
 			Serializable id,
 			Object[] fields,
@@ -285,40 +281,43 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		// apply any pre-insert in-memory value generation
 		preInsertInMemoryValueGeneration( fields, object, session );
 
-		CompletionStage<?> insertStage = null;
+		CompletionStage<?> insertStage = RxUtil.nullFuture();
 		final int span = getTableSpan();
 		if ( getEntityMetamodel().isDynamicInsert() ) {
 			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
 			boolean[] notNull = getPropertiesToInsert( fields );
 			for ( int j = 0; j < span; j++ ) {
-				insertStage = insertRx( id, fields, notNull, j, generateInsertString( notNull, j ), object, session );
+				int jj = j;
+				insertStage = insertStage.thenCompose( v->
+						insertRx( id, fields, notNull, jj, generateInsertString( notNull, jj ), object, session ));
 			}
 		}
 		else {
 			// For the case of dynamic-insert="false", use the static SQL
 			for ( int j = 0; j < span; j++ ) {
-				insertStage = insertRx(
-						id,
-						fields,
-						getPropertyInsertability(),
-						j,
-						getSQLInsertStrings()[j],
-						object,
-						session
-				);
+				int jj = j;
+				insertStage = insertStage.thenCompose( v->
+						insertRx(
+								id,
+								fields,
+								getPropertyInsertability(),
+								jj,
+								getSQLInsertStrings()[jj],
+								object,
+								session
+						));
 			}
 		}
 		return insertStage;
 	}
 
 	// Should it return the id?
-	@Override
 	public CompletionStage<?> insertRx(Object[] fields, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
 		// apply any pre-insert in-memory value generation
 		preInsertInMemoryValueGeneration( fields, object, session );
 
-		CompletionStage<?> insertStage = null;
+		CompletionStage<?> insertStage = RxUtil.nullFuture();
 		final int span = getTableSpan();
 		final Serializable id;
 		if ( getEntityMetamodel().isDynamicInsert() ) {
@@ -326,22 +325,26 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 			boolean[] notNull = getPropertiesToInsert( fields );
 			id = insert( fields, notNull, generateInsertString( true, notNull ), object, session );
 			for ( int j = 1; j < span; j++ ) {
-				insertStage = insertRx( id, fields, notNull, j, generateInsertString( notNull, j ), object, session );
+				int jj = j;
+				insertStage = insertStage.thenCompose( v->
+						insertRx( id, fields, notNull, jj, generateInsertString( notNull, jj ), object, session ));
 			}
 		}
 		else {
 			// For the case of dynamic-insert="false", use the static SQL
 			id = insert( fields, getPropertyInsertability(), getSQLIdentityInsertString(), object, session );
 			for ( int j = 1; j < span; j++ ) {
-				insertStage = insertRx(
-						id,
-						fields,
-						getPropertyInsertability(),
-						j,
-						getSQLInsertStrings()[j],
-						object,
-						session
-				);
+				int jj = j;
+				insertStage = insertStage.thenCompose( v->
+						insertRx(
+								id,
+								fields,
+								getPropertyInsertability(),
+								jj,
+								getSQLInsertStrings()[jj],
+								object,
+								session
+						));
 			}
 		}
 		return insertStage;
@@ -395,8 +398,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		catch (SQLException e) {
 			throw new HibernateException( "Error" );
 		}
-		CompletionStage<Integer> insertStage = queryExecutor.update( id, sql, adapter.getParametersAsArray(), getFactory() );
-		return insertStage;
+		return queryExecutor.update( id, sql, adapter.getParametersAsArray(), getFactory() );
 	}
 
 	protected CompletionStage<?> deleteRx(
@@ -476,7 +478,6 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		return queryExecutor.update( sql, delete.getParametersAsArray(), getFactory() );
 	}
 
-	@Override
 	public CompletionStage<?> deleteRx(
 			Serializable id, Object version, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
@@ -507,12 +508,16 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 			deleteStrings = getSQLDeleteStrings();
 		}
 
+		CompletionStage<?> deleteStage = RxUtil.nullFuture();
 		for ( int j = span - 1; j >= 0; j-- ) {
 			// For now we assume there is only one delete query
-			return deleteRx( id, version, j, object, deleteStrings[j], session, loadedState );
+			int jj = j;
+			Object[] state = loadedState;
+			deleteStage = deleteStage.thenCompose( v->
+					deleteRx( id, version, jj, object, deleteStrings[jj], session, state ));
 		}
 
-		throw new AssertionError( "Something unexpected during the deletion of an entity" );
+		return deleteStage;
 	}
 
 	private boolean isAllOrDirtyOptLocking() {
@@ -679,7 +684,6 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		}
 	}
 
-	@Override
 	public CompletionStage<?> updateRx(
 			final Serializable id,
 			final Object[] fields,
@@ -770,25 +774,28 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 			propsToUpdate = getPropertyUpdateability( object );
 		}
 
+		CompletionStage<?> updateStage = RxUtil.nullFuture();
 		for ( int j = 0; j < span; j++ ) {
 			// Now update only the tables with dirty properties (and the table with the version number)
 			if ( tableUpdateNeeded[j] ) {
 				// We assume there is only one table for now
-				return updateOrInsertRx(
-						id,
-						fields,
-						oldFields,
-						j == 0 ? rowId : null,
-						propsToUpdate,
-						j,
-						oldVersion,
-						object,
-						updateStrings[j],
-						session
-				);
+				final int jj = j;
+				updateStage = updateStage.thenCompose(
+								v-> updateOrInsertRx(
+								id,
+								fields,
+								oldFields,
+								jj == 0 ? rowId : null,
+								propsToUpdate,
+								jj,
+								oldVersion,
+								object,
+								updateStrings[jj],
+								session
+						));
 			}
 		}
-		return RxUtil.nullFuture();
+		return updateStage;
 	}
 
 	protected CompletionStage<?> updateOrInsertRx(
@@ -804,14 +811,11 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 			final SharedSessionContractImplementor session) throws HibernateException {
 
 		if ( !isInverseTable( j ) ) {
-			final Supplier<CompletionStage<?>> executeInsertRx = () -> {
-				return insertRx( id, fields, getPropertyInsertability(), j, getSQLInsertStrings()[j], object, session );
-			};
 
 			if ( isNullableTable( j ) && isAllNull( oldFields, j ) && oldFields != null ) {
 				// don't bother trying to update, we know there is no row there yet
 				if ( !isAllNull( fields, j ) ) {
-					return executeInsertRx.get();
+					return insertRx( id, fields, getPropertyInsertability(), j, getSQLInsertStrings()[j], object, session );
 				}
 			}
 			else if ( isNullableTable( j ) && isAllNull( fields, j ) ) {
@@ -824,7 +828,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 							if ( !updated && !isAllNull( fields, j ) ) {
 								// Nothing has been updated because the row isn't in the db
 								// Run an insert instead
-								return executeInsertRx.get();
+								return insertRx( id, fields, getPropertyInsertability(), j, getSQLInsertStrings()[j], object, session );
 							}
 							return null;
 						} );
@@ -847,7 +851,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	@Override
 	protected String generateInsertString(boolean identityInsert, boolean[] includeProperty, int j) {
 		return super.generateInsertString( identityInsert, includeProperty, j )
-				.replace("?", "$" + insertParams);
+				.replace("?", "$" + insertParams[j]);
 	}
 
 	@Override
@@ -868,8 +872,8 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 			final boolean useRowId) {
 
 		return super.generateUpdateString(includeProperty, j, oldFields, useRowId)
-				.replaceFirst("\\?", "\\$" + insertParams)
-				.replaceFirst("\\?", "\\$" + (insertParams+1));
+				.replaceFirst("\\?", "\\$" + insertParams[j])
+				.replaceFirst("\\?", "\\$" + (insertParams[j]+1));
 	}
 }
 

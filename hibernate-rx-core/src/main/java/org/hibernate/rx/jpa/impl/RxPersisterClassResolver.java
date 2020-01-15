@@ -5,6 +5,7 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.internal.StandardPersisterClassResolver;
 import org.hibernate.persister.spi.PersisterClassResolver;
+import org.hibernate.rx.persister.impl.RxJoinedSubclassEntityPersister;
 import org.hibernate.rx.persister.impl.RxSingleTableEntityPersister;
 
 public class RxPersisterClassResolver extends StandardPersisterClassResolver implements PersisterClassResolver {
@@ -16,7 +17,7 @@ public class RxPersisterClassResolver extends StandardPersisterClassResolver imp
 
 	@Override
 	public Class<? extends EntityPersister> joinedSubclassEntityPersister() {
-		throw new UnsupportedOperationException( "Joined subclasses strategy not supported" );
+		return RxJoinedSubclassEntityPersister.class;
 	}
 
 	@Override

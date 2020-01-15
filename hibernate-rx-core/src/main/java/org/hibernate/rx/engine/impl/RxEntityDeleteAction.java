@@ -22,7 +22,7 @@ import org.hibernate.event.spi.PreDeleteEvent;
 import org.hibernate.event.spi.PreDeleteEventListener;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.rx.action.spi.RxExecutable;
-import org.hibernate.rx.persister.impl.RxSingleTableEntityPersister;
+import org.hibernate.rx.persister.impl.RxEntityPersister;
 import org.hibernate.rx.util.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
@@ -101,7 +101,7 @@ public class RxEntityDeleteAction extends EntityDeleteAction implements RxExecut
 
 		CompletionStage<?> deleteStep = RxUtil.nullFuture();
 		if ( !isCascadeDeleteEnabled && !veto ) {
-			deleteStep = ( (RxSingleTableEntityPersister) persister ).deleteRx( id, version, instance, session );
+			deleteStep = ( (RxEntityPersister) persister ).deleteRx( id, version, instance, session );
 		}
 
 		return deleteStep.thenAccept( deleteAR -> {

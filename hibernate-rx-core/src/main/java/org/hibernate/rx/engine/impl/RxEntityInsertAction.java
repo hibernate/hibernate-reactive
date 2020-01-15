@@ -33,7 +33,7 @@ import org.hibernate.event.spi.PreInsertEvent;
 import org.hibernate.event.spi.PreInsertEventListener;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.rx.action.spi.RxExecutable;
-import org.hibernate.rx.persister.impl.RxSingleTableEntityPersister;
+import org.hibernate.rx.persister.impl.RxEntityPersister;
 import org.hibernate.rx.util.RxUtil;
 import org.hibernate.stat.internal.StatsHelper;
 import org.hibernate.stat.spi.StatisticsImplementor;
@@ -89,7 +89,7 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 		CompletionStage<Void> insertStage = null;
 		nullifyTransientReferencesIfNotAlready();
 
-		RxSingleTableEntityPersister persister = (RxSingleTableEntityPersister) this.getPersister();
+		RxEntityPersister persister = (RxEntityPersister) this.getPersister();
 		final SharedSessionContractImplementor session = getSession();
 		final Object instance = getInstance();
 		final Serializable id = getId();
