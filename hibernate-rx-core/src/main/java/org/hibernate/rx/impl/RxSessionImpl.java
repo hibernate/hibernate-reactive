@@ -9,6 +9,7 @@ import javax.persistence.EntityNotFoundException;
 import javax.persistence.LockModeType;
 
 import org.hibernate.CacheMode;
+import org.hibernate.FlushMode;
 import org.hibernate.JDBCException;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;

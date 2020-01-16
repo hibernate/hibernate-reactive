@@ -1,6 +1,7 @@
 package org.hibernate.rx;
 
 import org.hibernate.CacheMode;
+import org.hibernate.FlushMode;
 
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -67,7 +68,7 @@ public interface RxSession {
 	 *
 	 * @see javax.persistence.EntityManager#getReference(Class, Object)
 	 */
-	public <T> T getReference(Class<T> entityClass, Object id);
+	 <T> T getReference(Class<T> entityClass, Object id);
 
 	/**
 	 * Asynchronously persist the given transient instance, first assigning
@@ -164,11 +165,6 @@ public interface RxSession {
 	 * @return the flush mode
 	 */
 	FlushMode getFlushMode();
-
-	enum FlushMode {
-		ALWAYS, AUTO, COMMIT, MANUAL
-	}
-
 	/**
 	 * Remove this instance from the session cache. Changes to the instance
 	 * will not be synchronized with the database. This operation cascades

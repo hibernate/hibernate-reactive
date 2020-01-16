@@ -1,5 +1,7 @@
 package org.hibernate.rx;
 
+import org.hibernate.FlushMode;
+
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
