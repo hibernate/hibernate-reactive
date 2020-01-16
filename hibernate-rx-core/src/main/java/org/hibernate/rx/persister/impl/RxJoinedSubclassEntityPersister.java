@@ -7,15 +7,12 @@ import org.hibernate.engine.spi.*;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
-import org.hibernate.persister.entity.RxEntityPersisterImpl;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
 
 import java.io.Serializable;
 
 public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersister {
-
-	private RxEntityPersisterImpl persister = new RxEntityPersisterImpl(this);
 
 	public RxJoinedSubclassEntityPersister(
 			PersistentClass persistentClass,

@@ -6,7 +6,6 @@ import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.*;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
-import org.hibernate.persister.entity.RxEntityPersisterImpl;
 import org.hibernate.persister.entity.UnionSubclassEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
@@ -14,8 +13,6 @@ import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
 import java.io.Serializable;
 
 public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister {
-
-	private RxEntityPersisterImpl persister = new RxEntityPersisterImpl(this);
 
 	public RxUnionSubclassEntityPersister(
 			PersistentClass persistentClass,
