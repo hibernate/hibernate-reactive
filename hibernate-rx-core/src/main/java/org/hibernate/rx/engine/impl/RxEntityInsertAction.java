@@ -8,7 +8,6 @@ package org.hibernate.rx.engine.impl;
 
 import java.io.Serializable;
 import java.util.Iterator;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
@@ -89,7 +88,8 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 		CompletionStage<Void> insertStage = null;
 		nullifyTransientReferencesIfNotAlready();
 
-		RxEntityPersister persister = (RxEntityPersister) this.getPersister();
+		EntityPersister persister = getPersister();
+		RxEntityPersister rxPersister = RxEntityPersister.get(persister);
 		final SharedSessionContractImplementor session = getSession();
 		final Object instance = getInstance();
 		final Serializable id = getId();
@@ -101,7 +101,7 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 		// else inserted the same pk first, the insert would fail
 
 		if ( !veto ) {
-			insertStage = persister.insertRx( id, getState(), instance, session )
+			insertStage = rxPersister.insertRx( id, getState(), instance, session )
 					.thenApply( res -> {
 						PersistenceContext persistenceContext = session.getPersistenceContext();
 						final EntityEntry entry = persistenceContext.getEntry( instance );

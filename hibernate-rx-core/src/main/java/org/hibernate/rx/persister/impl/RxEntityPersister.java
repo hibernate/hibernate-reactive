@@ -2,12 +2,20 @@ package org.hibernate.rx.persister.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.persister.entity.RxEntityPersisterImpl;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
-public interface RxEntityPersister extends EntityPersister {
+public interface RxEntityPersister {
+
+    static RxEntityPersister get(EntityPersister persister) {
+        return new RxEntityPersisterImpl((AbstractEntityPersister) persister);
+    }
+
+    EntityPersister getPersister();
 
     CompletionStage<?> insertRx(Serializable id,
             Object[] fields,

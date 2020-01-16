@@ -310,8 +310,7 @@ public class DefaultRxFlushEntityEventListener implements FlushEntityEventListen
 						entity,
 						entry.getRowId(),
 						persister,
-						session,
-						null
+						session
 				)
 		);
 

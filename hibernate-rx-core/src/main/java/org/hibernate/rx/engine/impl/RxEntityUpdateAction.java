@@ -44,7 +44,6 @@ public class RxEntityUpdateAction extends EntityAction implements RxExecutable {
 	private final int[] dirtyFields;
 	private final boolean hasDirtyCollection;
 	private final Object rowId;
-	private final CompletionStage<Void> updateStage;
 	private final Object[] previousNaturalIdValues;
 	private Object nextVersion;
 	private Object cacheEntry;
@@ -76,8 +75,7 @@ public class RxEntityUpdateAction extends EntityAction implements RxExecutable {
 			final Object instance,
 			final Object rowId,
 			final EntityPersister persister,
-			final SharedSessionContractImplementor session,
-			CompletionStage<Void> updateStage) {
+			final SharedSessionContractImplementor session) {
 		super( session, id, instance, persister );
 		this.state = state;
 		this.previousState = previousState;
@@ -86,7 +84,6 @@ public class RxEntityUpdateAction extends EntityAction implements RxExecutable {
 		this.dirtyFields = dirtyProperties;
 		this.hasDirtyCollection = hasDirtyCollection;
 		this.rowId = rowId;
-		this.updateStage = updateStage;
 
 		this.previousNaturalIdValues = determinePreviousNaturalIdValues( persister, previousState, session, id );
 		session.getPersistenceContextInternal().getNaturalIdHelper().manageLocalNaturalIdCrossReference(
@@ -118,7 +115,7 @@ public class RxEntityUpdateAction extends EntityAction implements RxExecutable {
 	@Override
 	public CompletionStage<Void> rxExecute() throws HibernateException {
 		final Serializable id = getId();
-		final RxEntityPersister persister = (RxEntityPersister) getPersister();
+		final EntityPersister persister = getPersister();
 		final SharedSessionContractImplementor session = getSession();
 		final Object instance = getInstance();
 
@@ -144,7 +141,7 @@ public class RxEntityUpdateAction extends EntityAction implements RxExecutable {
 
 		CompletionStage<?> updateAR = veto
 				? RxUtil.nullFuture()
-				: persister.updateRx( id, state, dirtyFields, hasDirtyCollection, previousState, previousVersion, instance, rowId, session );
+				: RxEntityPersister.get(persister).updateRx( id, state, dirtyFields, hasDirtyCollection, previousState, previousVersion, instance, rowId, session );
 
 		return updateAR.thenApply( res -> {
 			final EntityEntry entry = session.getPersistenceContextInternal().getEntry( instance );
@@ -214,7 +211,7 @@ public class RxEntityUpdateAction extends EntityAction implements RxExecutable {
 		} );
 	}
 
-	private Object previousVersion(RxEntityPersister persister, Object instance) {
+	private Object previousVersion(EntityPersister persister, Object instance) {
 		if ( persister.isVersionPropertyGenerated() ) {
 			// we need to grab the version value from the entity, otherwise
 			// we have issues with generated-version entities that may have

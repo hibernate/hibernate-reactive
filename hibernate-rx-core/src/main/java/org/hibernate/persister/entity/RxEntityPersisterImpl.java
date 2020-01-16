@@ -16,6 +16,7 @@ import org.hibernate.jdbc.Expectations;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.persister.impl.PreparedStatementAdapter;
+import org.hibernate.rx.persister.impl.RxEntityPersister;
 import org.hibernate.rx.util.RxUtil;
 import org.hibernate.sql.Delete;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
@@ -27,15 +28,20 @@ import java.util.concurrent.CompletionStage;
 
 //TODO: this class temporarily lives in org.hibernate.persister.entity because
 //      it desperately needs to call protected methods of the persister classes
-public class RxPersister {
+public class RxEntityPersisterImpl implements RxEntityPersister {
 
-    private static final CoreMessageLogger LOG = CoreLogging.messageLogger( RxPersister.class );
+    private static final CoreMessageLogger LOG = CoreLogging.messageLogger( RxEntityPersisterImpl.class );
 
     private static final RxQueryExecutor queryExecutor = new RxQueryExecutor();
 
     private final AbstractEntityPersister delegate;
 
-    public RxPersister(AbstractEntityPersister delegate) {
+    @Override
+    public EntityPersister getPersister() {
+        return delegate;
+    }
+
+    public RxEntityPersisterImpl(AbstractEntityPersister delegate) {
         this.delegate = delegate;
     }
 
@@ -630,23 +636,4 @@ public class RxPersister {
         }
     }
 
-    public static String[] lower(String[] strings) {
-        for (int i = 0; i < strings.length; i++) {
-            strings[i] = strings[i].toLowerCase();
-        }
-        return strings;
-    }
-
-    public static String lower(String string) {
-        return string==null ? null : string.toLowerCase();
-    }
-
-    public static String fixSqlParameters(String sql) {
-        int num = 1;
-        while ( sql.contains("?") ) {
-            sql = sql.replaceFirst("\\?", "\\$" + num );
-            num++;
-        }
-        return sql;
-    }
 }

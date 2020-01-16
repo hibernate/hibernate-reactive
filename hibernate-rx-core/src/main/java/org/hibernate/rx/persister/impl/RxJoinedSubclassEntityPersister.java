@@ -7,16 +7,15 @@ import org.hibernate.engine.spi.*;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
-import org.hibernate.persister.entity.RxPersister;
+import org.hibernate.persister.entity.RxEntityPersisterImpl;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
 
 import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
 
-public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersister implements RxEntityPersister {
+public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersister {
 
-	private RxPersister persister = new RxPersister(this);
+	private RxEntityPersisterImpl persister = new RxEntityPersisterImpl(this);
 
 	public RxJoinedSubclassEntityPersister(
 			PersistentClass persistentClass,
@@ -28,37 +27,37 @@ public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersist
 
 	@Override
 	protected String[] getIdentifierAliases() {
-		return RxPersister.lower(super.getIdentifierAliases());
+		return PersisterUtil.lower(super.getIdentifierAliases());
 	}
 
 	@Override
 	public String[] getIdentifierAliases(String suffix) {
-		return RxPersister.lower(super.getIdentifierAliases(suffix));
+		return PersisterUtil.lower(super.getIdentifierAliases(suffix));
 	}
 
 	@Override
 	public String[] getSubclassPropertyColumnAliases(String propertyName, String suffix) {
-		return RxPersister.lower(super.getSubclassPropertyColumnAliases(propertyName, suffix));
+		return PersisterUtil.lower(super.getSubclassPropertyColumnAliases(propertyName, suffix));
 	}
 
 	@Override
 	protected String[] getSubclassColumnAliasClosure() {
-		return RxPersister.lower(super.getSubclassColumnAliasClosure());
+		return PersisterUtil.lower(super.getSubclassColumnAliasClosure());
 	}
 
 	@Override
 	public String[] getPropertyAliases(String suffix, int i) {
-		return RxPersister.lower(super.getPropertyAliases(suffix, i));
+		return PersisterUtil.lower(super.getPropertyAliases(suffix, i));
 	}
 
 	@Override
 	public String getDiscriminatorAlias(String suffix) {
-		return RxPersister.lower(super.getDiscriminatorAlias(suffix));
+		return PersisterUtil.lower(super.getDiscriminatorAlias(suffix));
 	}
 
 	@Override
 	protected String getDiscriminatorAlias() {
-		return RxPersister.lower(super.getDiscriminatorAlias().toLowerCase());
+		return PersisterUtil.lower(super.getDiscriminatorAlias().toLowerCase());
 	}
 
 	@Override
@@ -79,33 +78,13 @@ public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersist
 	}
 
 	@Override
-	public CompletionStage<?> insertRx(Serializable id, Object[] fields, Object object, SharedSessionContractImplementor session) {
-		return persister.insertRx(id, fields, object, session);
-	}
-
-	@Override
-	public CompletionStage<?> insertRx(Object[] fields, Object object, SharedSessionContractImplementor session) throws HibernateException {
-		return persister.insertRx(fields, object, session);
-	}
-
-	@Override
-	public CompletionStage<?> deleteRx(Serializable id, Object version, Object object, SharedSessionContractImplementor session) throws HibernateException {
-		return persister.deleteRx(id, version, object, session);
-	}
-
-	@Override
-	public CompletionStage<?> updateRx(Serializable id, Object[] fields, int[] dirtyFields, boolean hasDirtyCollection, Object[] oldFields, Object oldVersion, Object object, Object rowId, SharedSessionContractImplementor session) throws HibernateException {
-		return persister.updateRx(id, fields, dirtyFields, hasDirtyCollection, oldFields, oldVersion, object, rowId, session);
-	}
-
-	@Override
 	protected String generateInsertString(boolean identityInsert, boolean[] includeProperty, int j) {
-		return RxPersister.fixSqlParameters( super.generateInsertString( identityInsert, includeProperty, j ) );
+		return PersisterUtil.fixSqlParameters( super.generateInsertString( identityInsert, includeProperty, j ) );
 	}
 
 	@Override
 	protected String generateDeleteString(int j) {
-		return RxPersister.fixSqlParameters( super.generateDeleteString(j) );
+		return PersisterUtil.fixSqlParameters( super.generateDeleteString(j) );
 	}
 
 	@Override
@@ -114,7 +93,7 @@ public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersist
 			final int j,
 			final Object[] oldFields,
 			final boolean useRowId) {
-		return RxPersister.fixSqlParameters( super.generateUpdateString(includeProperty, j, oldFields, useRowId) );
+		return PersisterUtil.fixSqlParameters( super.generateUpdateString(includeProperty, j, oldFields, useRowId) );
 	}
 
 	@Override
