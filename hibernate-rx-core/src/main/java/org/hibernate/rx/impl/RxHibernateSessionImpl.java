@@ -19,14 +19,11 @@ import org.hibernate.rx.engine.spi.RxHibernateSessionFactoryImplementor;
 public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements RxHibernateSession, EventSource {
 
 	private final RxHibernateSessionFactoryImplementor factory;
-	private final ExceptionConverter exceptionConverter;
-	private final ExceptionMapper exceptionMapper = ExceptionMapperStandardImpl.INSTANCE;
 	private transient RxActionQueue rxActionQueue;
 
 	public RxHibernateSessionImpl(RxHibernateSessionFactoryImplementor factory, SessionImplementor delegate) {
 		super( delegate );
 		this.factory = factory;
-		this.exceptionConverter = delegate.getExceptionConverter();
 		this.rxActionQueue = new RxActionQueue( this );
 	}
 
