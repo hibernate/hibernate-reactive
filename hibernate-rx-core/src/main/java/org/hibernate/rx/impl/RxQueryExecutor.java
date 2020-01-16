@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import io.vertx.axle.sqlclient.SqlResult;
+import io.vertx.axle.sqlclient.*;
 import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -14,8 +14,6 @@ import org.hibernate.rx.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.rx.service.RxConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 
-import io.vertx.axle.sqlclient.RowSet;
-import io.vertx.axle.sqlclient.Tuple;
 import io.vertx.sqlclient.impl.ArrayTuple;
 
 // This could be a service
@@ -38,6 +36,20 @@ public class RxQueryExecutor {
 		RxConnection connection = poolProvider.getConnection();
 		Tuple tuple = asTuple( paramValues, entityId );
 		return connection.preparedQuery( sql, tuple ).thenApply(SqlResult::rowCount);
+	}
+
+	public CompletionStage<Optional<Integer>> selectInteger(String sql, SessionFactoryImplementor factory) {
+		RxConnectionPoolProvider poolProvider = factory
+				.getServiceRegistry()
+				.getService(RxConnectionPoolProvider.class);
+
+		RxConnection connection = poolProvider.getConnection();
+		return connection.preparedQuery(sql).thenApply( rowSet -> {
+			for (Row row: rowSet) {
+				return Optional.ofNullable( row.getInteger(0) );
+			}
+			return Optional.empty();
+		});
 	}
 
 	/**

@@ -17,6 +17,8 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
+import org.hibernate.rx.persister.entity.impl.RxGeneratedIdentifierPersister;
+import org.hibernate.rx.persister.entity.impl.RxIdentifierGenerator;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.sql.Delete;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
@@ -98,45 +100,6 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		return insertStage;
 	}
 
-	// Should it return the id?
-	public CompletionStage<?> insertRx(Object[] fields, Object object, SharedSessionContractImplementor session)
-			throws HibernateException {
-		// apply any pre-insert in-memory value generation
-		preInsertInMemoryValueGeneration( fields, object, session );
-
-		CompletionStage<?> insertStage = RxUtil.nullFuture();
-		final int span = delegate.getTableSpan();
-		final Serializable id;
-		if ( delegate.getEntityMetamodel().isDynamicInsert() ) {
-			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
-			boolean[] notNull = delegate.getPropertiesToInsert( fields );
-			id = delegate.insert( fields, notNull, delegate.generateInsertString( true, notNull ), object, session );
-			for ( int j = 1; j < span; j++ ) {
-				int jj = j;
-				insertStage = insertStage.thenCompose( v->
-						insertRx( id, fields, notNull, jj, delegate.generateInsertString( notNull, jj ), object, session ));
-			}
-		}
-		else {
-			// For the case of dynamic-insert="false", use the static SQL
-			id = delegate.insert( fields, delegate.getPropertyInsertability(), delegate.getSQLIdentityInsertString(), object, session );
-			for ( int j = 1; j < span; j++ ) {
-				int jj = j;
-				insertStage = insertStage.thenCompose( v->
-						insertRx(
-								id,
-								fields,
-								delegate.getPropertyInsertability(),
-								jj,
-								delegate.getSQLInsertStrings()[jj],
-								object,
-								session
-						));
-			}
-		}
-		return insertStage;
-	}
-
 	private CompletionStage<?> insertRx(
 			Serializable id,
 			Object[] fields,
@@ -165,10 +128,10 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 
 		// TODO : shouldn't inserts be Expectations.NONE?
 		final Expectation expectation = Expectations.appropriateExpectation( delegate.insertResultCheckStyles[j] );
-		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
-		final boolean useBatch = expectation.canBeBatched() &&
-				jdbcBatchSizeToUse > 1 &&
-				delegate.getIdentifierGenerator().supportsJdbcBatchInserts();
+//		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
+//		final boolean useBatch = expectation.canBeBatched() &&
+//				jdbcBatchSizeToUse > 1 &&
+//				delegate.getIdentifierGenerator().supportsJdbcBatchInserts();
 
 //		if ( useBatch && insertBatchKey == null ) {
 //			insertBatchKey = new BasicBatchKey(
@@ -636,4 +599,8 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		}
 	}
 
+	@Override
+	public RxIdentifierGenerator getIdentifierGenerator() {
+		return ((RxGeneratedIdentifierPersister) delegate).getRxIdentifierGenerator();
+	}
 }

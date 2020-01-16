@@ -12,7 +12,14 @@ import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
 
 import java.io.Serializable;
 
-public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersister {
+public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersister implements RxGeneratedIdentifierPersister {
+
+	private RxIdentifierGenerator identifierGenerator;
+
+	@Override
+	public RxIdentifierGenerator getRxIdentifierGenerator() {
+		return identifierGenerator;
+	}
 
 	public RxJoinedSubclassEntityPersister(
 			PersistentClass persistentClass,
@@ -20,6 +27,8 @@ public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersist
 			NaturalIdDataAccess naturalIdRegionAccessStrategy,
 			PersisterCreationContext creationContext) throws HibernateException {
 		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext );
+
+		identifierGenerator = new SequenceRxIdentifierGenerator(persistentClass, creationContext);
 	}
 
 	@Override

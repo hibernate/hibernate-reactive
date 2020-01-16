@@ -18,7 +18,6 @@ import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.AbstractSaveEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.id.IdentifierGenerationException;
-import org.hibernate.id.IdentifierGeneratorHelper;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
@@ -27,6 +26,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.engine.impl.RxEntityInsertAction;
 import org.hibernate.rx.impl.RxHibernateSessionImpl;
+import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
@@ -104,28 +104,21 @@ abstract class AbstractRxSaveEventListener
 			( (SelfDirtinessTracker) entity ).$$_hibernate_clearDirtyAttributes();
 		}
 		EntityPersister persister = source.getEntityPersister( entityName, entity );
-		Serializable generatedId = persister.getIdentifierGenerator().generate( source, entity );
-		if ( generatedId == null ) {
-			return RxUtil.failedFuture( new IdentifierGenerationException( "null id generated for:" + entity.getClass() ) );
-		}
-		else if ( generatedId == IdentifierGeneratorHelper.SHORT_CIRCUIT_INDICATOR ) {
-			return RxUtil.completedFuture( source.getIdentifier( entity ) );
-		}
-		else if ( generatedId == IdentifierGeneratorHelper.POST_INSERT_INDICATOR ) {
-			return rxPerformSave( entity, null, persister, true, anything, source, requiresImmediateIdAccess );
-		}
-		else {
-			// TODO: define toString()s for generators
-			if ( LOG.isDebugEnabled() ) {
-				LOG.debugf(
-						"Generated identifier: %s, using strategy: %s",
-						persister.getIdentifierType().toLoggableString( generatedId, source.getFactory() ),
-						persister.getIdentifierGenerator().getClass().getName()
-				);
-			}
-
-			return rxPerformSave( entity, generatedId, persister, false, anything, source, true );
-		}
+		return RxEntityPersister.get(persister).getIdentifierGenerator()
+				.generate( source.getFactory() )
+				.thenCompose( generatedId -> {
+					Serializable id;
+					if ( !generatedId.isPresent() ) {
+						id = persister.getIdentifier( entity, source.getSession() );
+						if (id == null) {
+							return RxUtil.failedFuture(new IdentifierGenerationException("ids for this class must be manually assigned before calling save(): " + entityName));
+						}
+					}
+					else {
+						id = generatedId.get();
+					}
+					return rxPerformSave(entity, id, persister, false, anything, source, true);
+				});
 	}
 
 	/**

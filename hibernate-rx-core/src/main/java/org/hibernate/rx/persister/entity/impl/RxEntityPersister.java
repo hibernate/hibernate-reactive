@@ -17,16 +17,12 @@ public interface RxEntityPersister {
 
 	EntityPersister getPersister();
 
+	RxIdentifierGenerator getIdentifierGenerator();
+
 	CompletionStage<?> insertRx(Serializable id,
 			Object[] fields,
 			Object object,
 			SharedSessionContractImplementor session);
-
-	// Should it return the id?
-	CompletionStage<?> insertRx(Object[] fields,
-			Object object,
-			SharedSessionContractImplementor session)
-					throws HibernateException;
 
 	CompletionStage<?> deleteRx(
 			Serializable id,
