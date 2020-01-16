@@ -561,27 +561,28 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 					Integer.MAX_VALUE;
 
 			final List<AfterLoadAction> afterLoadActions = new ArrayList<>();
-			final CompletionStage<Optional<Object>> result = executeRxQueryStatement( sql,
-																			queryParameters,
-																			false,
-																			afterLoadActions,
-																			session,
-																			(resultSet) -> {
-																				try {
-																					return processResultSet(
-																							resultSet,
-																							queryParameters,
-																							session,
-																							false,
-																							null,
-																							maxRows,
-																							afterLoadActions
-																					);
-																				}
-																				catch (SQLException ex) {
-																					throw new HibernateException( ex );
-																				}
-																			}
+			final CompletionStage<Optional<Object>> result =
+					executeRxQueryStatement( sql,
+							queryParameters,
+							false,
+							afterLoadActions,
+							session,
+							(resultSet) -> {
+								try {
+									return processResultSet(
+											resultSet,
+											queryParameters,
+											session,
+											false,
+											null,
+											maxRows,
+											afterLoadActions
+									);
+								}
+								catch (SQLException ex) {
+									throw new HibernateException( ex );
+								}
+							}
 			);
 			return result;
 		}
