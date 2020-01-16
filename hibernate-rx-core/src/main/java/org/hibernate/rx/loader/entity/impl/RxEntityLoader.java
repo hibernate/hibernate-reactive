@@ -327,7 +327,8 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 								maxRows,
 								afterLoadActions
 						);
-					} catch (SQLException ex) {
+					}
+					catch (SQLException ex) {
 						throw new HibernateException(ex);
 					}
 		});

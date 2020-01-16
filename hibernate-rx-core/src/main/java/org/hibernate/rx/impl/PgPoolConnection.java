@@ -50,25 +50,33 @@ public class PgPoolConnection implements RxConnection {
 
 	@Override
 	public CompletionStage<Integer> update(String sql) {
-		if (showSQL) System.out.println(sql);
+		if (showSQL) {
+			System.out.println(sql);
+		}
 		return preparedQuery( sql ).thenApply( res -> res.rowCount() );
 	}
 
 	@Override
 	public CompletionStage<Integer> update(String sql, Tuple parameters) {
-		if (showSQL) System.out.println(sql);
+		if (showSQL) {
+			System.out.println(sql);
+		}
 		return preparedQuery( sql, parameters ).thenApply( res -> res.rowCount() );
 	}
 
 	@Override
 	public CompletionStage<RowSet> preparedQuery(String sql, Tuple parameters) {
-		if (showSQL) System.out.println(sql);
+		if (showSQL) {
+			System.out.println(sql);
+		}
 		return pool.preparedQuery( sql, parameters );
 	}
 
 	@Override
 	public CompletionStage<RowSet> preparedQuery(String sql) {
-		if (showSQL) System.out.println(sql);
+		if (showSQL) {
+			System.out.println(sql);
+		}
 		return pool.preparedQuery( sql );
 	}
 
