@@ -52,4 +52,4 @@ At this time, Hibernate RX does not support the following functionality:
 - JPA's `@NamedEntityGraph`s: use `@FetchProfile` instead
 - criteria queries
 
-Currently only PostgreSQL is supported.
+Currently only PostgreSQL is supported. Support for MySQL is coming soon!
