@@ -1,5 +1,7 @@
 package org.hibernate.rx;
 
+import org.hibernate.CacheMode;
+
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
@@ -225,4 +227,21 @@ public interface RxSession {
 	 * @see org.hibernate.engine.profile.FetchProfile for discussion of this feature
 	 */
 	boolean isFetchProfileEnabled(String name);
+
+	/**
+	 * Set the cache mode.
+	 * <p/>
+	 * Cache mode determines the manner in which this session can interact with
+	 * the second level cache.
+	 *
+	 * @param cacheMode The new cache mode.
+	 */
+	void setCacheMode(CacheMode cacheMode);
+
+	/**
+	 * Get the current cache mode.
+	 *
+	 * @return The current cache mode.
+	 */
+	CacheMode getCacheMode();
 }

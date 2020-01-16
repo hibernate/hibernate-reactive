@@ -133,10 +133,6 @@ public class RxSessionImpl implements RxSession {
 		return find( entityClass, primaryKey, lockModeType, null );
 	}
 
-	private void setCacheMode(CacheMode cacheMode) {
-		this.rxHibernateSession.setCacheMode( cacheMode );
-	}
-
 	public <T> CompletionStage<Optional<T>> find(
 			Class<T> entityClass,
 			Object primaryKey,
@@ -466,6 +462,14 @@ public class RxSessionImpl implements RxSession {
 				rxHibernateSession.setHibernateFlushMode(org.hibernate.FlushMode.ALWAYS);
 				break;
 		}
+	}
+
+	public CacheMode getCacheMode() {
+		return rxHibernateSession.getCacheMode();
+	}
+
+	public void setCacheMode(CacheMode cacheMode) {
+		rxHibernateSession.setCacheMode(cacheMode);
 	}
 
 	@Override
