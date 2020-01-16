@@ -1,5 +1,6 @@
 package org.hibernate.rx;
 
+import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 
 import java.util.Optional;
@@ -122,5 +123,13 @@ public class MockRxSession implements RxSession {
 	@Override
 	public boolean isFetchProfileEnabled(String name) {
 		return false;
+	}
+
+	@Override
+	public void setCacheMode(CacheMode cacheMode) {}
+
+	@Override
+	public CacheMode getCacheMode() {
+		return null;
 	}
 }
