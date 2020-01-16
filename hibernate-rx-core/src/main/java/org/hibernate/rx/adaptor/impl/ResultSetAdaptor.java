@@ -37,11 +37,11 @@ import io.vertx.axle.sqlclient.Row;
  */
 public class ResultSetAdaptor implements ResultSet {
 
-	private final RowIterator iterator;
+	private final RowIterator<Row> iterator;
 	private Row row;
 	private boolean wasNull;
 
-	public ResultSetAdaptor(RowSet rows) {
+	public ResultSetAdaptor(RowSet<Row> rows) {
 		this.iterator = rows.iterator();
 	}
 

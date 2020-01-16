@@ -3,6 +3,7 @@ package org.hibernate.rx.service;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
+import io.vertx.axle.sqlclient.Row;
 import org.hibernate.rx.RxSession;
 
 import io.vertx.axle.sqlclient.RowSet;
@@ -18,9 +19,9 @@ public interface RxConnection {
 
 	CompletionStage<Integer> update(String sql, Tuple asTuple);
 
-	CompletionStage<RowSet> preparedQuery(String query);
+	CompletionStage<RowSet<Row>> preparedQuery(String query);
 
-	CompletionStage<RowSet> preparedQuery(String sql, Tuple asTuple);
+	CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple asTuple);
 
 	void close();
 

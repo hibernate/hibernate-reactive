@@ -3,6 +3,7 @@ package org.hibernate.rx.impl;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
+import io.vertx.axle.sqlclient.Row;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.service.RxConnection;
 
@@ -65,7 +66,7 @@ public class PgPoolConnection implements RxConnection {
 	}
 
 	@Override
-	public CompletionStage<RowSet> preparedQuery(String sql, Tuple parameters) {
+	public CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters) {
 		if (showSQL) {
 			System.out.println(sql);
 		}
@@ -73,7 +74,7 @@ public class PgPoolConnection implements RxConnection {
 	}
 
 	@Override
-	public CompletionStage<RowSet> preparedQuery(String sql) {
+	public CompletionStage<RowSet<Row>> preparedQuery(String sql) {
 		if (showSQL) {
 			System.out.println(sql);
 		}
