@@ -315,37 +315,23 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 		final List<AfterLoadAction> afterLoadActions = new ArrayList<AfterLoadAction>();
 
 		final CompletionStage<Optional<Object>> result = executeRxQueryStatement(
-				queryParameters,
-				false,
-				afterLoadActions,
-				session,
+				getSQLString(), queryParameters, false, afterLoadActions, session,
 				resultSet -> {
 					try {
 						return processResultSet(
 								resultSet,
 								queryParameters,
 								session,
-								false,
-								null,
+								returnProxies,
+								forcedResultTransformer,
 								maxRows,
 								afterLoadActions
 						);
+					} catch (SQLException ex) {
+						throw new HibernateException(ex);
 					}
-					catch (SQLException ex) {
-						throw new HibernateException( ex );
-					}
-				}
-		);
+		});
 		return result;
-	}
-
-	protected CompletionStage<Optional<Object>> executeRxQueryStatement(
-			final QueryParameters queryParameters,
-			final boolean scroll,
-			List<AfterLoadAction> afterLoadActions,
-			final SharedSessionContractImplementor session,
-			Function<ResultSet, Object> transformer) throws SQLException {
-		return executeRxQueryStatement( getSQLString(), queryParameters, scroll, afterLoadActions, session, transformer );
 	}
 
 	protected CompletionStage<Optional<Object>> executeRxQueryStatement(
@@ -368,17 +354,8 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 		// Adding locks and comments.
 		sql = preprocessSQL( sql, queryParameters, getFactory(), afterLoadActions );
 
-//		final PreparedStatement st = prepareQueryStatement( sql, queryParameters, limitHandler, scroll, session );
-
 		RxQueryExecutor executor = new RxQueryExecutor();
 		CompletionStage<Optional<Object>> result = executor.execute( sql, queryParameters, getFactory(), transformer );
-//		final ResultSet rs = getResultSet(
-//					st,
-//					queryParameters.getRowSelection(),
-//					limitHandler,
-//					queryParameters.hasAutoDiscoverScalarTypes(),
-//					session
-//			);
 
 		return result;
 	}
