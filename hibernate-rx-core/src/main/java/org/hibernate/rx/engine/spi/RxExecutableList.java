@@ -21,7 +21,6 @@ import java.util.Set;
 import org.hibernate.action.spi.Executable;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.internal.util.collections.CollectionHelper;
-import org.hibernate.rx.action.spi.RxExecutable;
 
 /**
  * Specialized encapsulating of the state pertaining to each Executable list.

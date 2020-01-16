@@ -12,7 +12,6 @@ import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.OuterJoinLoadable;
-import org.hibernate.rx.loader.entity.RxEntityLoader;
 
 /**
  * @see org.hibernate.loader.entity.BatchingEntityLoaderBuilder

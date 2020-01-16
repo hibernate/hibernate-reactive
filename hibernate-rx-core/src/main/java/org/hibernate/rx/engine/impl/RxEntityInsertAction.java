@@ -31,9 +31,9 @@ import org.hibernate.event.spi.PostInsertEventListener;
 import org.hibernate.event.spi.PreInsertEvent;
 import org.hibernate.event.spi.PreInsertEventListener;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.rx.action.spi.RxExecutable;
-import org.hibernate.rx.persister.impl.RxEntityPersister;
-import org.hibernate.rx.util.RxUtil;
+import org.hibernate.rx.engine.spi.RxExecutable;
+import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
+import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.internal.StatsHelper;
 import org.hibernate.stat.spi.StatisticsImplementor;
 

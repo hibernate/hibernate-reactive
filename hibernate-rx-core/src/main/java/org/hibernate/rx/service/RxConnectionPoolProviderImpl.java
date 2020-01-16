@@ -4,7 +4,7 @@ import java.net.URI;
 import java.util.Map;
 
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.rx.configuration.JdbcUrlParser;
+import org.hibernate.rx.util.impl.JdbcUrlParser;
 import org.hibernate.rx.impl.PgPoolConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.service.spi.Configurable;

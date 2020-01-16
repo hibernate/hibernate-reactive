@@ -1,4 +1,4 @@
-package org.hibernate.rx.loader.entity;
+package org.hibernate.rx.loader.entity.impl;
 
 import java.io.Serializable;
 import java.sql.ResultSet;

@@ -10,6 +10,7 @@ import io.vertx.axle.sqlclient.SqlResult;
 import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.rx.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.rx.service.RxConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 
@@ -55,7 +56,7 @@ public class RxQueryExecutor {
 	private Optional<Object> entities(
 			Function<ResultSet, Object> transformer,
 			RowSet rows) {
-		PgResultSet resultSet = new PgResultSet( rows );
+		ResultSetAdaptor resultSet = new ResultSetAdaptor( rows );
 		List<Object> entities = (List<Object>) transformer.apply( resultSet );
 		if ( entities.isEmpty() ) {
 			return Optional.empty();

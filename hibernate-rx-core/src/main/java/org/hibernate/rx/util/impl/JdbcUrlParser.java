@@ -1,4 +1,4 @@
-package org.hibernate.rx.configuration;
+package org.hibernate.rx.util.impl;
 
 import java.net.URI;
 

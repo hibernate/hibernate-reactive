@@ -1,4 +1,4 @@
-package org.hibernate.rx.persister.impl;
+package org.hibernate.rx.adaptor.impl;
 
 import io.vertx.core.buffer.Buffer;
 
@@ -33,11 +33,11 @@ import java.util.stream.Collectors;
  * I only use it to set the parameters form some query and we need to replace it with something
  * ad hoc for this project (similar to the GridType for Hibernate OGM).
  */
-public class PreparedStatementAdapter implements PreparedStatement {
+public class PreparedStatementAdaptor implements PreparedStatement {
 
 	private final Map<Integer, Object> params;
 
-	public PreparedStatementAdapter() {
+	public PreparedStatementAdaptor() {
 		this.params = new HashMap<>();
 	}
 

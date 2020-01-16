@@ -21,9 +21,9 @@ import org.hibernate.event.spi.PostDeleteEventListener;
 import org.hibernate.event.spi.PreDeleteEvent;
 import org.hibernate.event.spi.PreDeleteEventListener;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.rx.action.spi.RxExecutable;
-import org.hibernate.rx.persister.impl.RxEntityPersister;
-import org.hibernate.rx.util.RxUtil;
+import org.hibernate.rx.engine.spi.RxExecutable;
+import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
+import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 public class RxEntityDeleteAction extends EntityDeleteAction implements RxExecutable {

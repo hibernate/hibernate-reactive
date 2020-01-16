@@ -13,7 +13,7 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.rx.RxHibernateSession;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.event.spi.RxFlushEventListener;
-import org.hibernate.rx.util.RxUtil;
+import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 import org.jboss.logging.Logger;

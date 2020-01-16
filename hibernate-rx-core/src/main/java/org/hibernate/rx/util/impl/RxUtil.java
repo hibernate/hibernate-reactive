@@ -1,4 +1,4 @@
-package org.hibernate.rx.util;
+package org.hibernate.rx.util.impl;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;

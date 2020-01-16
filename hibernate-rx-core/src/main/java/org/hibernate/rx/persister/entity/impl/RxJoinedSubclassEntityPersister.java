@@ -1,4 +1,4 @@
-package org.hibernate.rx.persister.impl;
+package org.hibernate.rx.persister.entity.impl;
 
 import org.hibernate.*;
 import org.hibernate.cache.spi.access.EntityDataAccess;

@@ -1,4 +1,4 @@
-package org.hibernate.rx.action.spi;
+package org.hibernate.rx.engine.spi;
 
 import java.util.concurrent.CompletionStage;
 

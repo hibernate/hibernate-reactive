@@ -1,4 +1,4 @@
-package org.hibernate.rx.persister.impl;
+package org.hibernate.rx.persister.entity.impl;
 
 import org.hibernate.*;
 import org.hibernate.cache.spi.access.EntityDataAccess;
@@ -6,15 +6,15 @@ import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.*;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
-import org.hibernate.persister.entity.SingleTableEntityPersister;
+import org.hibernate.persister.entity.UnionSubclassEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
 
 import java.io.Serializable;
 
-public class RxSingleTableEntityPersister extends SingleTableEntityPersister {
+public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister {
 
-	public RxSingleTableEntityPersister(
+	public RxUnionSubclassEntityPersister(
 			PersistentClass persistentClass,
 			EntityDataAccess cacheAccessStrategy,
 			NaturalIdDataAccess naturalIdRegionAccessStrategy,

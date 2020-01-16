@@ -1,4 +1,4 @@
-package org.hibernate.rx.impl;
+package org.hibernate.rx.adaptor.impl;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -35,13 +35,13 @@ import io.vertx.axle.sqlclient.Row;
 /**
  * {@link ResultSet} adapter for {@link PgRowSet}.
  */
-public class PgResultSet implements ResultSet {
+public class ResultSetAdaptor implements ResultSet {
 
 	private final RowIterator iterator;
 	private Row row;
 	private boolean wasNull;
 
-	public PgResultSet(RowSet rows) {
+	public ResultSetAdaptor(RowSet rows) {
 		this.iterator = rows.iterator();
 	}
 

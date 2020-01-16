@@ -36,7 +36,7 @@ import org.hibernate.rx.RxHibernateSession;
 import org.hibernate.rx.engine.impl.RxEntityDeleteAction;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.event.spi.RxDeleteEventListener;
-import org.hibernate.rx.util.RxUtil;
+import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 

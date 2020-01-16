@@ -45,7 +45,7 @@ import org.hibernate.rx.event.spi.RxDeleteEventListener;
 import org.hibernate.rx.event.spi.RxFlushEventListener;
 import org.hibernate.rx.event.spi.RxLoadEventListener;
 import org.hibernate.rx.event.spi.RxPersistEventListener;
-import org.hibernate.rx.util.RxUtil;
+import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.service.ServiceRegistry;
 
 public class RxSessionImpl implements RxSession {

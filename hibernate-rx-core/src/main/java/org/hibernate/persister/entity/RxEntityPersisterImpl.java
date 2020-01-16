@@ -15,9 +15,9 @@ import org.hibernate.jdbc.Expectation;
 import org.hibernate.jdbc.Expectations;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.impl.RxQueryExecutor;
-import org.hibernate.rx.persister.impl.PreparedStatementAdapter;
-import org.hibernate.rx.persister.impl.RxEntityPersister;
-import org.hibernate.rx.util.RxUtil;
+import org.hibernate.rx.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
+import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.sql.Delete;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.type.Type;
@@ -178,7 +178,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 //        }
 //        final boolean callable = delegate.isInsertCallable( j );
 
-        PreparedStatementAdapter adapter = new PreparedStatementAdapter();
+        PreparedStatementAdaptor adapter = new PreparedStatementAdaptor();
         try {
             delegate.dehydrate( null, fields, notNull, delegate.getPropertyColumnInsertable(), j, adapter, session, false );
         }
@@ -227,7 +227,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
         }
 
         //Render the SQL query
-        PreparedStatementAdapter delete = new PreparedStatementAdapter();
+        PreparedStatementAdaptor delete = new PreparedStatementAdaptor();
         try {
             // FIXME: This is a hack to set the right type for the parameters
             //        until we have a proper type system in place
@@ -387,7 +387,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 //						.getBatchStatement( sql, callable );
 //			}
 //			else {
-            final PreparedStatementAdapter update = new PreparedStatementAdapter();
+            final PreparedStatementAdaptor update = new PreparedStatementAdaptor();
 //			}
 
             try {

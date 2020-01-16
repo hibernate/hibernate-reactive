@@ -30,9 +30,8 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.rx.event.internal.AbstractRxSaveEventListener;
 import org.hibernate.rx.event.spi.RxPersistEventListener;
-import org.hibernate.rx.util.RxUtil;
+import org.hibernate.rx.util.impl.RxUtil;
 
 /**
  * Defines the default create event listener used by hibernate for creating
@@ -187,7 +186,7 @@ public class DefaultRxPersistEventListener
 		final Object entity = source.getPersistenceContextInternal().unproxy( event.getObject() );
 
 		if ( createCache.put( entity, entity ) == null ) {
-			return saveWithGeneratedId( entity, event.getEntityName(), createCache, source, false )
+			return rxSaveWithGeneratedId( entity, event.getEntityName(), createCache, source, false )
 					.thenApply( v -> null );
 		}
 		return RxUtil.nullFuture();
