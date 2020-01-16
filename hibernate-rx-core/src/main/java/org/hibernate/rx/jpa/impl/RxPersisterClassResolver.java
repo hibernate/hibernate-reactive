@@ -2,6 +2,7 @@ package org.hibernate.rx.jpa.impl;
 
 import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.CollectionPersister;
+import org.hibernate.persister.collection.OneToManyPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.internal.StandardPersisterClassResolver;
 import org.hibernate.persister.spi.PersisterClassResolver;
@@ -28,6 +29,6 @@ public class RxPersisterClassResolver extends StandardPersisterClassResolver imp
 
 	@Override
 	public Class<? extends CollectionPersister> getCollectionPersisterClass(Collection metadata) {
-		throw new UnsupportedOperationException( "Collections not supported" );
+		return OneToManyPersister.class;
 	}
 }
