@@ -48,8 +48,10 @@ At this time, Hibernate RX does not support the following functionality:
 - collections, except for `@ManyToOne` associations
 - transparent lazy loading: lazy fetching may be requested explicitly 
    using `session.fetch(entity.association)`, which returns a
-   `CompletionStage`.
+   `CompletionStage`
 - JPA's `@NamedEntityGraph`s: use `@FetchProfile` instead
 - criteria queries
+- only `@SequenceGenerator` is supported for id generation: autoincrement 
+  columns are not supported
 
 Currently only PostgreSQL is supported. Support for MySQL is coming soon!
