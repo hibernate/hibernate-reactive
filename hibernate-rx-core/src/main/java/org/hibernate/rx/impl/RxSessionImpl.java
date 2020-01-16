@@ -410,7 +410,7 @@ public class RxSessionImpl implements RxSession {
 		}
 
 		public final CompletionStage<Optional<T>> fetch(Serializable id) {
-			return doLoad( id, LoadEventListener.IMMEDIATE_LOAD);
+			return perform( () -> doLoad( id, LoadEventListener.IMMEDIATE_LOAD) );
 		}
 
 		protected final CompletionStage<Optional<T>> doLoad(Serializable id, LoadEventListener.LoadType loadType) {
