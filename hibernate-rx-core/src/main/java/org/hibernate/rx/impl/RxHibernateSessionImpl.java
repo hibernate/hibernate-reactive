@@ -23,7 +23,6 @@ public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements 
 	private final ExceptionMapper exceptionMapper = ExceptionMapperStandardImpl.INSTANCE;
 	private transient RxActionQueue rxActionQueue;
 
-
 	public RxHibernateSessionImpl(RxHibernateSessionFactoryImplementor factory, SessionImplementor delegate) {
 		super( delegate );
 		this.factory = factory;
@@ -46,9 +45,8 @@ public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements 
 		return rxActionQueue;
 	}
 
-	@Override
-	public SessionImplementor getSession() {
-		return this;
+	public SessionImplementor delegate() {
+		return super.delegate();
 	}
 
 	private boolean isTransactionFlushable() {

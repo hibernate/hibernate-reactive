@@ -4,6 +4,7 @@ import java.util.function.Consumer;
 
 import org.hibernate.Session;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 
 /**
@@ -15,6 +16,8 @@ public interface RxHibernateSession extends Session {
 
 	@Override
 	RxHibernateSessionFactory getSessionFactory();
+
+	SessionImplementor delegate();
 
 	RxSession reactive();
 

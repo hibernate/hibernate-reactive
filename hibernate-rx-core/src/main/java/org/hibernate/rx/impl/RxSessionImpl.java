@@ -72,7 +72,11 @@ public class RxSessionImpl implements RxSession {
 			// SessionImpl doesn't use IdentifierLoadAccessImpl for initializing proxies
 			return new RxIdentifierLoadAccessImpl<T>( initializer.getEntityName() )
 					.fetch( initializer.getIdentifier() )
-					.thenApply(Optional::get);
+					.thenApply(Optional::get)
+					.thenApply( result -> {
+						initializer.setSession( rxHibernateSession.delegate() );
+						return result;
+					} );
 		}
 		if ( association instanceof PersistentCollection ) {
 			//TODO: handle PersistentCollection (raise InitializeCollectionEvent)

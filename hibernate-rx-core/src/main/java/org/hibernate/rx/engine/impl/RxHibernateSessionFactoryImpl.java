@@ -44,7 +44,7 @@ public class RxHibernateSessionFactoryImpl extends SessionFactoryDelegatingImpl
 
 	@Override
 	public RxHibernateSession openRxSession() throws HibernateException {
-		return new RxHibernateSessionImpl( this, (SessionImplementor) openSession() );
+		return (RxHibernateSession) openSession();
 	}
 
 	@Override
