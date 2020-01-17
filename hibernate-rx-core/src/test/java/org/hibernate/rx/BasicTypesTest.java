@@ -13,6 +13,7 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.service.ServiceRegistry;
 import org.junit.After;
 import org.junit.Before;
@@ -126,11 +127,11 @@ public class BasicTypesTest {
 		b.date = new Date(2000,1,1);
 		b.thing = new String[] {"hello", "world"};
 
-		RxSession s = session.reactive();
 		test( context,
-				s.persist(b.basicTypes)
-				.thenCompose(v -> s.persist(b))
-				.thenCompose(v -> s.flush())
+				session()
+				.thenCompose(s -> s.persist(b.basicTypes))
+				.thenCompose(s -> s.persist(b))
+				.thenCompose(s -> s.flush())
 				.thenApply(newSession())
 				.thenCompose( s2 ->
 					s2.find( BasicTypes.class, b.getId() )
@@ -171,12 +172,16 @@ public class BasicTypesTest {
 		);
 	}
 
-	private Function<Void, RxSession> newSession() {
+	private Function<Object, RxSession> newSession() {
 		return v -> {
 			session.close();
 			session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
 			return session.reactive();
 		};
+	}
+
+	private CompletionStage<RxSession> session() {
+		return RxUtil.completedFuture(session.reactive());
 	}
 
 	enum Cover { hard, soft }

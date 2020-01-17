@@ -13,6 +13,7 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.service.ServiceRegistry;
 import org.junit.After;
 import org.junit.Before;
@@ -21,7 +22,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import javax.persistence.*;
-import java.util.*;
+import java.util.Objects;
+import java.util.Properties;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -106,10 +108,10 @@ public class SequenceGeneratorTest {
 		SequenceId b = new SequenceId();
 		b.string = "Hello World";
 
-		RxSession s = session.reactive();
 		test( context,
-				s.persist(b)
-				.thenCompose(v -> s.flush())
+				session()
+				.thenCompose(s -> s.persist(b))
+				.thenCompose(s -> s.flush())
 				.thenApply(newSession())
 				.thenCompose( s2 ->
 					s2.find( SequenceId.class, b.getId() )
@@ -137,12 +139,16 @@ public class SequenceGeneratorTest {
 		);
 	}
 
-	private Function<Void, RxSession> newSession() {
+	private Function<Object, RxSession> newSession() {
 		return v -> {
 			session.close();
 			session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
 			return session.reactive();
 		};
+	}
+
+	private CompletionStage<RxSession> session() {
+		return RxUtil.completedFuture(session.reactive());
 	}
 
 	enum Cover { hard, soft }
