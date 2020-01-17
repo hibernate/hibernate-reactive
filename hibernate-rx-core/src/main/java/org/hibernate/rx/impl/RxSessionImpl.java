@@ -60,9 +60,9 @@ public class RxSessionImpl implements RxSession {
 	}
 
 	@Override
-	public CompletionStage<Void> flush() {
+	public CompletionStage<RxSession> flush() {
 //		checkOpen();
-		return doFlush();
+		return doFlush().thenApply( v-> this );
 	}
 
 	@Override
@@ -206,8 +206,8 @@ public class RxSessionImpl implements RxSession {
 	}
 
 	@Override
-	public CompletionStage<Void> persist(Object entity) {
-		return schedulePersist( entity );
+	public CompletionStage<RxSession> persist(Object entity) {
+		return schedulePersist( entity ).thenApply( v-> this );
 	}
 
 	// Should be similar to firePersist
@@ -221,8 +221,8 @@ public class RxSessionImpl implements RxSession {
 	}
 
 	@Override
-	public CompletionStage<Void> remove(Object entity) {
-		return fireRemove( entity );
+	public CompletionStage<RxSession> remove(Object entity) {
+		return fireRemove( entity ).thenApply( v-> this );
 	}
 
 	// Should be similar to fireRemove

@@ -74,13 +74,13 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
-	public CompletionStage<Void> persist(Object entity) {
-		return CompletableFuture.runAsync( () -> persistFunction.accept( entity ) );
+	public CompletionStage<RxSession> persist(Object entity) {
+		return CompletableFuture.runAsync( () -> persistFunction.accept( entity ) ).thenApply( v-> this );
 	}
 
 	@Override
-	public CompletionStage<Void> remove(Object entity) {
-		return CompletableFuture.runAsync( () -> removeFunction.accept( entity ) );
+	public CompletionStage<RxSession> remove(Object entity) {
+		return CompletableFuture.runAsync( () -> removeFunction.accept( entity ) ).thenApply( v-> this );
 	}
 
 	@Override
@@ -99,8 +99,8 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
-	public CompletionStage<Void> flush() {
-		return CompletableFuture.completedFuture( null );
+	public CompletionStage<RxSession> flush() {
+		return CompletableFuture.completedFuture( this );
 	}
 
 	@Override

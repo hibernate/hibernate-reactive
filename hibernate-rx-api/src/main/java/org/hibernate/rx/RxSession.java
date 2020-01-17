@@ -85,7 +85,7 @@ public interface RxSession {
 	 * 
 	 * @see javax.persistence.EntityManager#persist(Object)
 	 */
-	CompletionStage<Void> persist(Object entity);
+	CompletionStage<RxSession> persist(Object entity);
 
 	/**
 	 * Asynchronously remove a persistent instance from the datastore. The
@@ -102,7 +102,7 @@ public interface RxSession {
 	 *
 	 * @see javax.persistence.EntityManager#remove(Object)
 	 */
-	CompletionStage<Void> remove(Object entity);
+	CompletionStage<RxSession> remove(Object entity);
 
 	/**
 	 * Force this session to flush asynchronously. Must be called at the
@@ -116,7 +116,7 @@ public interface RxSession {
 	 *
 	 * @see javax.persistence.EntityManager#flush()
 	 */
-	CompletionStage<Void> flush();
+	CompletionStage<RxSession> flush();
 
 	/**
 	 * Asynchronously fetch an association that configued for lazy loading.
