@@ -42,16 +42,18 @@ To obtain an `RxSession` from a Hibernate `SessionFactory`, use:
 
 ## Limitations
 
-At this time, Hibernate RX does not support the following functionality:
+At this time, Hibernate RX does _not_ support the following functionality:
 
 - transactions
+- pessimistic locking via `LockMode`
 - collections, except for `@ManyToOne` associations
 - transparent lazy loading: lazy fetching may be requested explicitly 
    using `session.fetch(entity.association)`, which returns a
    `CompletionStage`
 - JPA's `@NamedEntityGraph`s: use `@FetchProfile` instead
 - criteria queries
-- only `@SequenceGenerator` is supported for id generation: autoincrement 
-  columns are not supported
+- only `@SequenceGenerator` and `@TableGenerator` are supported for id 
+  generation: autoincrement columns are not supported, nor are any other 
+  built-in or custom id generation strategies
 
 Currently only PostgreSQL is supported. Support for MySQL is coming soon!
