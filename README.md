@@ -1,7 +1,7 @@
 # Hibernate RX
 
-A non-blocking API for Hibernate ORM, supporting a reactive style of
-interaction with the database.
+A reactive API for Hibernate ORM, supporting non-blocking database
+drivers and an asynchronous style of interaction with the database.
 
 _This project is still at an experimental stage._
 
