@@ -157,7 +157,7 @@ public interface RxSession {
 	 *
 	 * @param flushMode the new flush mode
 	 */
-	void setFlushMode(FlushMode flushMode);
+	RxSession setFlushMode(FlushMode flushMode);
 
 	/**
 	 * Get the current flush mode for this session.
@@ -178,7 +178,7 @@ public interface RxSession {
 	 *
 	 * @see javax.persistence.EntityManager#detach(Object)
 	 */
-	void detach(Object entity);
+	RxSession detach(Object entity);
 
 	/**
 	 * Completely clear the session. Evict all loaded instances and cancel
@@ -186,7 +186,7 @@ public interface RxSession {
 	 *
 	 * @see javax.persistence.EntityManager#clear()
 	 */
-	void clear();
+	RxSession clear();
 
 	/**
 	 * Enable a particular fetch profile on this session.  No-op if requested
@@ -198,7 +198,7 @@ public interface RxSession {
 	 *
 	 * @see org.hibernate.engine.profile.FetchProfile for discussion of this feature
 	 */
-	void enableFetchProfile(String name);
+	RxSession enableFetchProfile(String name);
 
 	/**
 	 * Disable a particular fetch profile on this session.  No-op if requested
@@ -210,7 +210,7 @@ public interface RxSession {
 	 *
 	 * @see org.hibernate.engine.profile.FetchProfile for discussion of this feature
 	 */
-	void disableFetchProfile(String name);
+	RxSession disableFetchProfile(String name);
 
 	/**
 	 * Is a particular fetch profile enabled on this session?
@@ -232,7 +232,7 @@ public interface RxSession {
 	 *
 	 * @param cacheMode The new cache mode.
 	 */
-	void setCacheMode(CacheMode cacheMode);
+	RxSession setCacheMode(CacheMode cacheMode);
 
 	/**
 	 * Get the current cache mode.

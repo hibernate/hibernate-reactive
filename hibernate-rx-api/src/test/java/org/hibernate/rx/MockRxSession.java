@@ -34,7 +34,7 @@ public class MockRxSession implements RxSession {
 		public static class Builder<T> {
 			MockRxSession session = new MockRxSession();
 
-			public Builder find(BiFunction<Class<T>, ?, T> load ) {
+			public Builder find(BiFunction<Class<T>, ?, T> load) {
 				session.loadFunction = load;
 				return this;
 			}
@@ -89,7 +89,7 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
-	public void setFlushMode(FlushMode flushMode) {
+	public RxSession setFlushMode(FlushMode flushMode) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -109,16 +109,24 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
-	public void clear() {}
+	public RxSession clear() {
+		return this;
+	}
 
 	@Override
-	public void detach(Object entity) {}
+	public RxSession detach(Object entity) {
+		return this;
+	}
 
 	@Override
-	public void enableFetchProfile(String name) {}
+	public RxSession enableFetchProfile(String name) {
+		return this;
+	}
 
 	@Override
-	public void disableFetchProfile(String name) {}
+	public RxSession disableFetchProfile(String name) {
+		return this;
+	}
 
 	@Override
 	public boolean isFetchProfileEnabled(String name) {
@@ -126,7 +134,9 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
-	public void setCacheMode(CacheMode cacheMode) {}
+	public RxSession setCacheMode(CacheMode cacheMode) {
+		return this;
+	}
 
 	@Override
 	public CacheMode getCacheMode() {

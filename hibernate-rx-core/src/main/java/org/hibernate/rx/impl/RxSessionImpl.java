@@ -432,7 +432,7 @@ public class RxSessionImpl implements RxSession {
 	}
 
 	@Override
-	public void setFlushMode(FlushMode flushMode) {
+	public RxSession setFlushMode(FlushMode flushMode) {
 		switch (flushMode) {
 			case COMMIT:
 				rxHibernateSession.setHibernateFlushMode(org.hibernate.FlushMode.COMMIT);
@@ -447,34 +447,40 @@ public class RxSessionImpl implements RxSession {
 				rxHibernateSession.setHibernateFlushMode(org.hibernate.FlushMode.ALWAYS);
 				break;
 		}
+		return this;
 	}
 
 	public CacheMode getCacheMode() {
 		return rxHibernateSession.getCacheMode();
 	}
 
-	public void setCacheMode(CacheMode cacheMode) {
+	public RxSession setCacheMode(CacheMode cacheMode) {
 		rxHibernateSession.setCacheMode(cacheMode);
+		return this;
 	}
 
 	@Override
-	public void detach(Object entity) {
+	public RxSession detach(Object entity) {
 		rxHibernateSession.detach(entity);
+		return this;
 	}
 
 	@Override
-	public void clear() {
+	public RxSession clear() {
 		rxHibernateSession.clear();
+		return this;
 	}
 
 	@Override
-	public void enableFetchProfile(String name) {
+	public RxSession enableFetchProfile(String name) {
 		rxHibernateSession.enableFetchProfile(name);
+		return this;
 	}
 
 	@Override
-	public void disableFetchProfile(String name) {
+	public RxSession disableFetchProfile(String name) {
 		rxHibernateSession.disableFetchProfile(name);
+		return this;
 	}
 
 	@Override
