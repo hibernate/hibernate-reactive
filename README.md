@@ -62,6 +62,8 @@ At this time, Hibernate RX does _not_ support the following features:
   generation strategies
 - `@NamedEntityGraph`
 - transparent lazy loading
+- eager select fetching, for example `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`
+- `cascade` of persistence operations to associated entities
 - criteria queries
 
 Instead, use the following supported features:
@@ -70,7 +72,7 @@ Instead, use the following supported features:
 - `@OneToMany(mappedBy=...)` together with `@ManyToOne`
 - `SEQUENCE` or `TABLE` id generation
 - `@FetchProfile`
-- explicit lazy loading via `session.fetch(entity.association)`, which 
+- explicit lazy loading via `RxSession.fetch(entity.association)`, which 
   returns a `CompletionStage`
 
 Note that you should not use Hibernate RX with a second-level cache 
