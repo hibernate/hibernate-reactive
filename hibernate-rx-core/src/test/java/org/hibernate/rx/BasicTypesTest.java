@@ -125,6 +125,7 @@ public class BasicTypesTest {
 		b.localDateTime = LocalDateTime.now();
 		b.localTime = LocalTime.now();
 		b.date = new Date(2000,1,1);
+		b.thing = new String[] {"hello", "world"};
 
 		RxSession s = session.reactive();
 		test( context,
@@ -141,7 +142,6 @@ public class BasicTypesTest {
 							context.assertEquals( bb.decimal.floatValue(), b.decimal.floatValue());
 							context.assertEquals( bb.integer, b.integer);
 							context.assertTrue( Arrays.equals(bb.bytes, b.bytes) );
-							context.assertEquals( bb.thing, b.thing);
 							context.assertEquals( bb.timeZone, b.timeZone);
 							context.assertEquals( bb.cover, b.cover);
 							context.assertEquals( bb.binInteger.floatValue(), b.binInteger.floatValue());
@@ -150,6 +150,8 @@ public class BasicTypesTest {
 							context.assertEquals( bb.localDateTime, b.localDateTime );
 							context.assertEquals( bb.localTime.truncatedTo(ChronoUnit.MINUTES),
 									b.localTime.truncatedTo(ChronoUnit.MINUTES) );
+							context.assertTrue( bb.thing instanceof String[] );
+							context.assertTrue( Objects.deepEquals(bb.thing, b.thing) );
 							context.assertEquals( bb.version, 0 );
 
 							bb.string = "Goodbye";
