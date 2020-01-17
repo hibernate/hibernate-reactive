@@ -88,6 +88,9 @@ public abstract class BaseRxTest {
 
 	@After
 	public void after(TestContext context) {
+		if (session != null) {
+			session.close();
+		}
 		sessionFactory.close();
 	}
 
