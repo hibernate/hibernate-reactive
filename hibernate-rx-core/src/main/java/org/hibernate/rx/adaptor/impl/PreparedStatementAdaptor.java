@@ -18,531 +18,532 @@ import java.sql.Ref;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.RowId;
-import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /*
- * I've created this class because I wanted to reuse the logic for type assignement fron ORM.
+ * I've created this class because I wanted to reuse the logic for type assignment from ORM.
  * I only use it to set the parameters form some query and we need to replace it with something
  * ad hoc for this project (similar to the GridType for Hibernate OGM).
  */
 public class PreparedStatementAdaptor implements PreparedStatement {
 
-	private final Map<Integer, Object> params;
+	static final Object[] NO_PARAMS = new Object[0];
 
-	public PreparedStatementAdaptor() {
-		this.params = new HashMap<>();
+	Object[] params = NO_PARAMS;
+	int size = 0;
+
+	void put(int parameterIndex, Object parameter) {
+		if ( params.length <= parameterIndex ) {
+			params = Arrays.copyOf(params, 4 + parameterIndex * 2);
+		}
+		params[parameterIndex-1] = parameter;
+		if ( size < parameterIndex ) {
+			size = parameterIndex;
+		}
+	}
+
+	void clear() {
+		params = NO_PARAMS;
 	}
 
 	public Object[] getParametersAsArray() {
-		return params.entrySet().stream()
-				.sorted( (e1, e2) -> {
-					return e1.getKey().compareTo( e2.getKey() );
-				} )
-				.map( entry -> {
-					return entry.getValue();
-				} )
-				.collect( Collectors.toList() )
-				.toArray();
+		return Arrays.copyOf(params, size);
 	}
 
 	@Override
-	public ResultSet executeQuery() throws SQLException {
+	public ResultSet executeQuery() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public int executeUpdate() throws SQLException {
+	public int executeUpdate() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setNull(int parameterIndex, int sqlType) throws SQLException {
-		params.put( parameterIndex, null );
+	public void setNull(int parameterIndex, int sqlType) {
+		put( parameterIndex, null );
 	}
 
 	@Override
-	public void setBoolean(int parameterIndex, boolean x) throws SQLException {
-		params.put( parameterIndex, x );
+	public void setBoolean(int parameterIndex, boolean x) {
+		put( parameterIndex, x );
 	}
 
 	@Override
-	public void setByte(int parameterIndex, byte x) throws SQLException {
-		params.put( parameterIndex, x );
+	public void setByte(int parameterIndex, byte x) {
+		put( parameterIndex, x );
 	}
 
 	@Override
-	public void setShort(int parameterIndex, short x) throws SQLException {
-		params.put( parameterIndex, x );
+	public void setShort(int parameterIndex, short x) {
+		put( parameterIndex, x );
 	}
 
 	@Override
-	public void setInt(int parameterIndex, int x) throws SQLException {
-		params.put( parameterIndex, x );
+	public void setInt(int parameterIndex, int x) {
+		put( parameterIndex, x );
 	}
 
 	@Override
-	public void setLong(int parameterIndex, long x) throws SQLException {
-		params.put( parameterIndex, x );
+	public void setLong(int parameterIndex, long x) {
+		put( parameterIndex, x );
 	}
 
 	@Override
-	public void setFloat(int parameterIndex, float x) throws SQLException {
-		params.put( parameterIndex, x );
+	public void setFloat(int parameterIndex, float x) {
+		put( parameterIndex, x );
 	}
 
 	@Override
-	public void setDouble(int parameterIndex, double x) throws SQLException {
-		params.put( parameterIndex, x );
+	public void setDouble(int parameterIndex, double x) {
+		put( parameterIndex, x );
 	}
 
 	@Override
-	public void setBigDecimal(int parameterIndex, BigDecimal x) throws SQLException {
-		params.put( parameterIndex, x );
+	public void setBigDecimal(int parameterIndex, BigDecimal x) {
+		put( parameterIndex, x );
 	}
 
 	@Override
-	public void setString(int parameterIndex, String x) throws SQLException {
-		params.put( parameterIndex, x );
+	public void setString(int parameterIndex, String x) {
+		put( parameterIndex, x );
 	}
 
 	@Override
-	public void setBytes(int parameterIndex, byte[] x) throws SQLException {
-		params.put( parameterIndex, Buffer.buffer(x) );
+	public void setBytes(int parameterIndex, byte[] x) {
+		put( parameterIndex, Buffer.buffer(x) );
 	}
 
 	@Override
-	public void setDate(int parameterIndex, Date x) throws SQLException {
-		params.put( parameterIndex, x.toLocalDate() );
+	public void setDate(int parameterIndex, Date x) {
+		put( parameterIndex, x.toLocalDate() );
 	}
 
 	@Override
-	public void setTime(int parameterIndex, Time x) throws SQLException {
-		params.put( parameterIndex, x.toLocalTime() );
+	public void setTime(int parameterIndex, Time x) {
+		put( parameterIndex, x.toLocalTime() );
 	}
 
 	@Override
-	public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
-		params.put( parameterIndex, x.toLocalDateTime() );
+	public void setTimestamp(int parameterIndex, Timestamp x) {
+		put( parameterIndex, x.toLocalDateTime() );
 	}
 
 	@Override
-	public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException {
+	public void setAsciiStream(int parameterIndex, InputStream x, int length) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException {
+	public void setUnicodeStream(int parameterIndex, InputStream x, int length) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setBinaryStream(int parameterIndex, InputStream x, int length) throws SQLException {
+	public void setBinaryStream(int parameterIndex, InputStream x, int length) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void clearParameters() throws SQLException {
-		params.clear();
+	public void clearParameters() {
+		clear();
 	}
 
 	@Override
-	public void setObject(int parameterIndex, Object x, int targetSqlType) throws SQLException {
+	public void setObject(int parameterIndex, Object x, int targetSqlType) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setObject(int parameterIndex, Object x) throws SQLException {
+	public void setObject(int parameterIndex, Object x) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean execute() throws SQLException {
+	public boolean execute() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void addBatch() throws SQLException {
+	public void addBatch() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setCharacterStream(int parameterIndex, Reader reader, int length) throws SQLException {
+	public void setCharacterStream(int parameterIndex, Reader reader, int length) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setRef(int parameterIndex, Ref x) throws SQLException {
-		params.put( parameterIndex, x );
+	public void setRef(int parameterIndex, Ref x) {
+		put( parameterIndex, x );
 	}
 
 	@Override
-	public void setBlob(int parameterIndex, Blob x) throws SQLException {
-		params.put( parameterIndex, x );
+	public void setBlob(int parameterIndex, Blob x) {
+		put( parameterIndex, x );
 	}
 
 	@Override
-	public void setClob(int parameterIndex, Clob x) throws SQLException {
-		params.put( parameterIndex, x );
+	public void setClob(int parameterIndex, Clob x) {
+		put( parameterIndex, x );
 	}
 
 	@Override
-	public void setArray(int parameterIndex, Array x) throws SQLException {
-		params.put( parameterIndex, x );
+	public void setArray(int parameterIndex, Array x) {
+		put( parameterIndex, x );
 	}
 
 	@Override
-	public ResultSetMetaData getMetaData() throws SQLException {
+	public ResultSetMetaData getMetaData() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setDate(int parameterIndex, Date x, Calendar cal) throws SQLException {
+	public void setDate(int parameterIndex, Date x, Calendar cal) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setTime(int parameterIndex, Time x, Calendar cal) throws SQLException {
+	public void setTime(int parameterIndex, Time x, Calendar cal) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) throws SQLException {
+	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setNull(int parameterIndex, int sqlType, String typeName) throws SQLException {
+	public void setNull(int parameterIndex, int sqlType, String typeName) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setURL(int parameterIndex, URL x) throws SQLException {
+	public void setURL(int parameterIndex, URL x) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ParameterMetaData getParameterMetaData() throws SQLException {
+	public ParameterMetaData getParameterMetaData() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setRowId(int parameterIndex, RowId x) throws SQLException {
+	public void setRowId(int parameterIndex, RowId x) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setNString(int parameterIndex, String value) throws SQLException {
+	public void setNString(int parameterIndex, String value) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setNCharacterStream(int parameterIndex, Reader value, long length) throws SQLException {
+	public void setNCharacterStream(int parameterIndex, Reader value, long length) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setNClob(int parameterIndex, NClob value) throws SQLException {
-		params.put( parameterIndex,value );
+	public void setNClob(int parameterIndex, NClob value) {
+		put( parameterIndex,value );
 	}
 
 	@Override
-	public void setClob(int parameterIndex, Reader reader, long length) throws SQLException {
+	public void setClob(int parameterIndex, Reader reader, long length) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setBlob(int parameterIndex, InputStream inputStream, long length) throws SQLException {
+	public void setBlob(int parameterIndex, InputStream inputStream, long length) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setNClob(int parameterIndex, Reader reader, long length) throws SQLException {
+	public void setNClob(int parameterIndex, Reader reader, long length) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setSQLXML(int parameterIndex, SQLXML xmlObject) throws SQLException {
+	public void setSQLXML(int parameterIndex, SQLXML xmlObject) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength) throws SQLException {
+	public void setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setAsciiStream(int parameterIndex, InputStream x, long length) throws SQLException {
+	public void setAsciiStream(int parameterIndex, InputStream x, long length) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setBinaryStream(int parameterIndex, InputStream x, long length) throws SQLException {
+	public void setBinaryStream(int parameterIndex, InputStream x, long length) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setCharacterStream(int parameterIndex, Reader reader, long length) throws SQLException {
+	public void setCharacterStream(int parameterIndex, Reader reader, long length) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setAsciiStream(int parameterIndex, InputStream x) throws SQLException {
+	public void setAsciiStream(int parameterIndex, InputStream x) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setBinaryStream(int parameterIndex, InputStream x) throws SQLException {
+	public void setBinaryStream(int parameterIndex, InputStream x) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setCharacterStream(int parameterIndex, Reader reader) throws SQLException {
+	public void setCharacterStream(int parameterIndex, Reader reader) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setNCharacterStream(int parameterIndex, Reader value) throws SQLException {
+	public void setNCharacterStream(int parameterIndex, Reader value) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setClob(int parameterIndex, Reader reader) throws SQLException {
+	public void setClob(int parameterIndex, Reader reader) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setBlob(int parameterIndex, InputStream inputStream) throws SQLException {
+	public void setBlob(int parameterIndex, InputStream inputStream) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setNClob(int parameterIndex, Reader reader) throws SQLException {
+	public void setNClob(int parameterIndex, Reader reader) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ResultSet executeQuery(String sql) throws SQLException {
+	public ResultSet executeQuery(String sql) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public int executeUpdate(String sql) throws SQLException {
+	public int executeUpdate(String sql) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void close() throws SQLException {
+	public void close() {
 
 	}
 
 	@Override
-	public int getMaxFieldSize() throws SQLException {
+	public int getMaxFieldSize() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setMaxFieldSize(int max) throws SQLException {
+	public void setMaxFieldSize(int max) {
 
 	}
 
 	@Override
-	public int getMaxRows() throws SQLException {
+	public int getMaxRows() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setMaxRows(int max) throws SQLException {
+	public void setMaxRows(int max) {
 
 	}
 
 	@Override
-	public void setEscapeProcessing(boolean enable) throws SQLException {
+	public void setEscapeProcessing(boolean enable) {
 
 	}
 
 	@Override
-	public int getQueryTimeout() throws SQLException {
+	public int getQueryTimeout() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setQueryTimeout(int seconds) throws SQLException {
+	public void setQueryTimeout(int seconds) {
 
 	}
 
 	@Override
-	public void cancel() throws SQLException {
+	public void cancel() {
 
 	}
 
 	@Override
-	public SQLWarning getWarnings() throws SQLException {
+	public SQLWarning getWarnings() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void clearWarnings() throws SQLException {
+	public void clearWarnings() {
 
 	}
 
 	@Override
-	public void setCursorName(String name) throws SQLException {
+	public void setCursorName(String name) {
 
 	}
 
 	@Override
-	public boolean execute(String sql) throws SQLException {
+	public boolean execute(String sql) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ResultSet getResultSet() throws SQLException {
+	public ResultSet getResultSet() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public int getUpdateCount() throws SQLException {
+	public int getUpdateCount() {
 		return 0;
 	}
 
 	@Override
-	public boolean getMoreResults() throws SQLException {
+	public boolean getMoreResults() {
 		return false;
 	}
 
 	@Override
-	public int getFetchDirection() throws SQLException {
+	public int getFetchDirection() {
 		return 0;
 	}
 
 	@Override
-	public void setFetchDirection(int direction) throws SQLException {
+	public void setFetchDirection(int direction) {
 
 	}
 
 	@Override
-	public int getFetchSize() throws SQLException {
+	public int getFetchSize() {
 		return 0;
 	}
 
 	@Override
-	public void setFetchSize(int rows) throws SQLException {
+	public void setFetchSize(int rows) {
 
 	}
 
 	@Override
-	public int getResultSetConcurrency() throws SQLException {
+	public int getResultSetConcurrency() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public int getResultSetType() throws SQLException {
+	public int getResultSetType() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void addBatch(String sql) throws SQLException {
+	public void addBatch(String sql) {
 
 	}
 
 	@Override
-	public void clearBatch() throws SQLException {
+	public void clearBatch() {
 
 	}
 
 	@Override
-	public int[] executeBatch() throws SQLException {
+	public int[] executeBatch() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public Connection getConnection() throws SQLException {
+	public Connection getConnection() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean getMoreResults(int current) throws SQLException {
+	public boolean getMoreResults(int current) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ResultSet getGeneratedKeys() throws SQLException {
+	public ResultSet getGeneratedKeys() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
+	public int executeUpdate(String sql, int autoGeneratedKeys) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public int executeUpdate(String sql, int[] columnIndexes) throws SQLException {
+	public int executeUpdate(String sql, int[] columnIndexes) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public int executeUpdate(String sql, String[] columnNames) throws SQLException {
+	public int executeUpdate(String sql, String[] columnNames) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean execute(String sql, int autoGeneratedKeys) throws SQLException {
+	public boolean execute(String sql, int autoGeneratedKeys) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean execute(String sql, int[] columnIndexes) throws SQLException {
+	public boolean execute(String sql, int[] columnIndexes) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean execute(String sql, String[] columnNames) throws SQLException {
+	public boolean execute(String sql, String[] columnNames) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public int getResultSetHoldability() throws SQLException {
+	public int getResultSetHoldability() {
 		return 0;
 	}
 
 	@Override
-	public boolean isClosed() throws SQLException {
+	public boolean isClosed() {
 		return false;
 	}
 
 	@Override
-	public boolean isPoolable() throws SQLException {
+	public boolean isPoolable() {
 		return false;
 	}
 
 	@Override
-	public void setPoolable(boolean poolable) throws SQLException {
+	public void setPoolable(boolean poolable) {
 	}
 
 	@Override
-	public void closeOnCompletion() throws SQLException {
+	public void closeOnCompletion() {
 	}
 
 	@Override
-	public boolean isCloseOnCompletion() throws SQLException {
+	public boolean isCloseOnCompletion() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
+	public <T> T unwrap(Class<T> iface) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean isWrapperFor(Class<?> iface) throws SQLException {
+	public boolean isWrapperFor(Class<?> iface) {
 		throw new UnsupportedOperationException();
 	}
 }
