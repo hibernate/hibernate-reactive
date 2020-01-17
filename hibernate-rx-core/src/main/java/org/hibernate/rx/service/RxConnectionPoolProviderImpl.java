@@ -36,12 +36,27 @@ public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, C
 	@Override
 	public void configure(Map configurationValues) {
 		// FIXME: Check which values can be null
-		final String username = (String) configurationValues.get( AvailableSettings.USER );
-		final String password = (String) configurationValues.get( AvailableSettings.PASS );
+		String username = (String) configurationValues.get( AvailableSettings.USER );
+		String password = (String) configurationValues.get( AvailableSettings.PASS );
 		final String url = (String) configurationValues.get( AvailableSettings.URL );
 		final URI uri = JdbcUrlParser.parse( url );
 		final Integer poolSize = poolSize( configurationValues );
 		final String database = uri.getPath().substring( 1 );
+
+		if (username==null || password==null) {
+			String[] params = uri.getQuery().split("&");
+			for (String param : params) {
+				if ( param.startsWith("user=") ) {
+					username = param.substring(5);
+				}
+				if ( param.startsWith("pass=") ) {
+					password = param.substring(5);
+				}
+				if ( param.startsWith("password=") ) {
+					password = param.substring(9);
+				}
+			}
+		}
 
 		PoolOptions poolOptions = new PoolOptions()
 				.setMaxSize( poolSize );
