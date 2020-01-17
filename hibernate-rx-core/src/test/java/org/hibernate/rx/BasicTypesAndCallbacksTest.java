@@ -1,10 +1,8 @@
 package org.hibernate.rx;
 
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -16,7 +14,6 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-@RunWith(VertxUnitRunner.class)
 public class BasicTypesAndCallbacksTest extends BaseRxTest {
 
 	@Override
