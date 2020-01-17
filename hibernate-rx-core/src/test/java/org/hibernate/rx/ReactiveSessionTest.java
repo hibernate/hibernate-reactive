@@ -58,12 +58,9 @@ public class ReactiveSessionTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
 		configuration.setProperty( Environment.HBM2DDL_AUTO, "create-drop" );
+		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
 		configuration.setImplicitNamingStrategy( ImplicitNamingStrategyLegacyJpaImpl.INSTANCE );
-		configuration.setProperty( AvailableSettings.DIALECT, "org.hibernate.dialect.PostgreSQL9Dialect" );
-		configuration.setProperty( AvailableSettings.DRIVER, "org.postgresql.Driver" );
-		configuration.setProperty( AvailableSettings.USER, "hibernate-rx" );
-		configuration.setProperty( AvailableSettings.PASS, "hibernate-rx" );
-		configuration.setProperty( AvailableSettings.URL, "jdbc:postgresql://localhost:5432/hibernate-rx" );
+		configuration.setProperty( AvailableSettings.URL, "jdbc:postgresql://localhost:5432/hibernate-rx?user=hibernate-rx&password=hibernate-rx" );
 
 		configuration.addAnnotatedClass( GuineaPig.class );
 		return configuration;
