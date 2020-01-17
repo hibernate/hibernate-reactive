@@ -6,12 +6,12 @@
  */
 package org.hibernate.rx.configuration;
 
-import java.net.URI;
-
-import static org.assertj.core.api.Assertions.*;
-
 import org.hibernate.rx.util.impl.JdbcUrlParser;
 import org.junit.Test;
+
+import java.net.URI;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class JdbcUrlParserTest {
 

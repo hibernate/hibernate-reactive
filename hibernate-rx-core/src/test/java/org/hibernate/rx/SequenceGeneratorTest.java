@@ -1,106 +1,20 @@
 package org.hibernate.rx;
 
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.hibernate.boot.registry.BootstrapServiceRegistry;
-import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
-import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.cfg.Environment;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.internal.util.config.ConfigurationHelper;
-import org.hibernate.rx.util.impl.RxUtil;
-import org.hibernate.service.ServiceRegistry;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import javax.persistence.*;
 import java.util.Objects;
-import java.util.Properties;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
-@RunWith(VertxUnitRunner.class)
-public class SequenceGeneratorTest {
+public class SequenceGeneratorTest extends BaseRxTest {
 
-	private static void test(TestContext context, CompletionStage<?> cs) {
-		// this will be added to TestContext in the next vert.x release
-		Async async = context.async();
-		cs.whenComplete( (res, err) -> {
-			if ( err != null ) {
-				context.fail( err );
-			}
-			else {
-				async.complete();
-			}
-		} );
-	}
-
-	@Rule
-	public Timeout rule = Timeout.seconds( 3600 );
-
-	RxHibernateSession session = null;
-	SessionFactoryImplementor sessionFactory = null;
-
+	@Override
 	protected Configuration constructConfiguration() {
-		Configuration configuration = new Configuration();
-		configuration.setProperty( Environment.HBM2DDL_AUTO, "create-drop" );
-		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
-		configuration.setProperty( AvailableSettings.URL, "jdbc:postgresql://localhost:5432/hibernate-rx?user=hibernate-rx&password=hibernate-rx" );
-
+		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( SequenceId.class );
 		return configuration;
 	}
-
-	protected BootstrapServiceRegistry buildBootstrapServiceRegistry() {
-		final BootstrapServiceRegistryBuilder builder = new BootstrapServiceRegistryBuilder();
-		builder.applyClassLoader( getClass().getClassLoader() );
-		return builder.build();
-	}
-
-	protected StandardServiceRegistryImpl buildServiceRegistry(
-			BootstrapServiceRegistry bootRegistry,
-			Configuration configuration) {
-		Properties properties = new Properties();
-		properties.putAll( configuration.getProperties() );
-		ConfigurationHelper.resolvePlaceHolders( properties );
-
-		StandardServiceRegistryBuilder cfgRegistryBuilder = configuration.getStandardServiceRegistryBuilder();
-		StandardServiceRegistryBuilder registryBuilder = new StandardServiceRegistryBuilder( bootRegistry, cfgRegistryBuilder.getAggregatedCfgXml() )
-				.applySettings( properties );
-
-		return (StandardServiceRegistryImpl) registryBuilder.build();
-	}
-
-	@Before
-	public void init() {
-		// for now, build the configuration to get all the property settings
-		Configuration configuration = constructConfiguration();
-		BootstrapServiceRegistry bootRegistry = buildBootstrapServiceRegistry();
-		ServiceRegistry serviceRegistry = buildServiceRegistry( bootRegistry, configuration );
-		// this is done here because Configuration does not currently support 4.0 xsd
-		sessionFactory = (SessionFactoryImplementor) configuration.buildSessionFactory( serviceRegistry );
-		session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
-	}
-
-	@After
-	// The current test should have already called context.async().complete();
-	public void tearDown(TestContext context) {
-		sessionFactory.close();
-	}
-//
-//	private RxConnection connection() {
-//		RxConnectionPoolProvider poolProvider = sessionFactory.getServiceRegistry()
-//				.getService( RxConnectionPoolProvider.class );
-//		return poolProvider.getConnection();
-//	}
 
 	@Test
 	public void testSequenceGenerator(TestContext context) {
@@ -109,10 +23,10 @@ public class SequenceGeneratorTest {
 		b.string = "Hello World";
 
 		test( context,
-				session()
+				openSession()
 				.thenCompose(s -> s.persist(b))
 				.thenCompose(s -> s.flush())
-				.thenApply(newSession())
+				.thenCompose( v -> openSession())
 				.thenCompose( s2 ->
 					s2.find( SequenceId.class, b.getId() )
 						.thenAccept( bt -> {
@@ -129,7 +43,7 @@ public class SequenceGeneratorTest {
 						.thenAccept( bt -> {
 							context.assertEquals( bt.get().version, 1 );
 						}))
-				.thenApply(newSession())
+				.thenCompose( v -> openSession())
 				.thenCompose( s3 -> s3.find( SequenceId.class, b.getId() ) )
 				.thenAccept( bt -> {
 					SequenceId bb = bt.get();
@@ -138,20 +52,6 @@ public class SequenceGeneratorTest {
 				})
 		);
 	}
-
-	private Function<Object, RxSession> newSession() {
-		return v -> {
-			session.close();
-			session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
-			return session.reactive();
-		};
-	}
-
-	private CompletionStage<RxSession> session() {
-		return RxUtil.completedFuture(session.reactive());
-	}
-
-	enum Cover { hard, soft }
 
 	@Entity
 	@SequenceGenerator(name = "seq",

@@ -1,114 +1,22 @@
 package org.hibernate.rx;
 
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.hibernate.boot.registry.BootstrapServiceRegistry;
-import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
-import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.cfg.Environment;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.internal.util.config.ConfigurationHelper;
-import org.hibernate.rx.util.impl.RxUtil;
-import org.hibernate.service.ServiceRegistry;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import javax.persistence.*;
 import java.util.Date;
 import java.util.Objects;
-import java.util.Properties;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
-@RunWith(VertxUnitRunner.class)
-public class SingleTableInheritanceTest {
+public class SingleTableInheritanceTest extends BaseRxTest {
 
-	@Rule
-	public Timeout rule = Timeout.seconds( 3600 );
-
-	RxHibernateSession session = null;
-	SessionFactoryImplementor sessionFactory = null;
-
-	private static void test(TestContext context, CompletionStage<?> cs) {
-		// this will be added to TestContext in the next vert.x release
-		Async async = context.async();
-		cs.whenComplete( (res, err) -> {
-			if ( err != null ) {
-				context.fail( err );
-			}
-			else {
-				async.complete();
-			}
-		} );
-	}
-
+	@Override
 	protected Configuration constructConfiguration() {
-		Configuration configuration = new Configuration();
-		configuration.setProperty( Environment.HBM2DDL_AUTO, "create-drop" );
-		configuration.setProperty( AvailableSettings.URL, "jdbc:postgresql://localhost:5432/hibernate-rx?user=hibernate-rx&password=hibernate-rx" );
-		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
-
-		configuration.addAnnotatedClass( Book.class );
-		configuration.addAnnotatedClass( SpellBook.class );
-		configuration.addAnnotatedClass( Author.class );
-
+		Configuration configuration = super.constructConfiguration();
+		configuration.addAnnotatedClass( SingleTableInheritanceTest.Book.class );
+		configuration.addAnnotatedClass( SingleTableInheritanceTest.SpellBook.class );
+		configuration.addAnnotatedClass( SingleTableInheritanceTest.Author.class );
 		return configuration;
-	}
-
-	protected BootstrapServiceRegistry buildBootstrapServiceRegistry() {
-		final BootstrapServiceRegistryBuilder builder = new BootstrapServiceRegistryBuilder();
-		builder.applyClassLoader( getClass().getClassLoader() );
-		return builder.build();
-	}
-
-	protected StandardServiceRegistryImpl buildServiceRegistry(
-			BootstrapServiceRegistry bootRegistry,
-			Configuration configuration) {
-		Properties properties = new Properties();
-		properties.putAll( configuration.getProperties() );
-		ConfigurationHelper.resolvePlaceHolders( properties );
-
-		StandardServiceRegistryBuilder cfgRegistryBuilder = configuration.getStandardServiceRegistryBuilder();
-		StandardServiceRegistryBuilder registryBuilder = new StandardServiceRegistryBuilder( bootRegistry, cfgRegistryBuilder.getAggregatedCfgXml() )
-				.applySettings( properties );
-
-		return (StandardServiceRegistryImpl) registryBuilder.build();
-	}
-
-	@Before
-	public void init() {
-		// for now, build the configuration to get all the property settings
-		Configuration configuration = constructConfiguration();
-		BootstrapServiceRegistry bootRegistry = buildBootstrapServiceRegistry();
-		ServiceRegistry serviceRegistry = buildServiceRegistry( bootRegistry, configuration );
-		// this is done here because Configuration does not currently support 4.0 xsd
-		sessionFactory = (SessionFactoryImplementor) configuration.buildSessionFactory( serviceRegistry );
-		session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
-	}
-
-	@After
-	public void tearDown(TestContext context) {
-		sessionFactory.close();
-	}
-
-	private CompletionStage<RxSession> session() {
-		return RxUtil.completedFuture(session.reactive());
-	}
-
-	private Function<Object, RxSession> newSession() {
-		return v -> {
-			session.close();
-			session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
-			return session.reactive();
-		};
 	}
 
 	@Test
@@ -118,11 +26,11 @@ public class SingleTableInheritanceTest {
 
 		test(
 				context,
-				session()
+				openSession()
 						.thenCompose( s -> s.persist( book ) )
 						.thenCompose( s -> s.persist( author ) )
 						.thenCompose( s -> s.flush() )
-						.thenApply(newSession())
+						.thenCompose( v -> openSession())
 						.thenCompose( s2 -> s2.find( Author.class, author.getId() ) )
 						.thenAccept( auth -> {
 							context.assertTrue( auth.isPresent() );
@@ -139,7 +47,7 @@ public class SingleTableInheritanceTest {
 
 		test(
 				context,
-				session()
+				openSession()
 						.thenCompose( s -> s.persist( book ))
 						.thenCompose( s -> s.persist( author ) )
 						.thenCompose( s -> s.flush() )
@@ -159,11 +67,11 @@ public class SingleTableInheritanceTest {
 		final Author author = new Author( "Charlie Mackesy", novel );
 
 		test( context,
-				session()
+				openSession()
 						.thenCompose(s -> s.persist(novel))
 						.thenCompose(s -> s.persist(author))
 						.thenCompose(s -> s.flush())
-						.thenApply(newSession())
+						.thenCompose( v -> openSession())
 						.thenCompose(s -> s.find(Book.class, 6))
 						.thenAccept(book -> {
 							context.assertTrue(book.isPresent());
@@ -178,11 +86,11 @@ public class SingleTableInheritanceTest {
 		final Author author = new Author( "Abdul Alhazred", spells );
 
 		test( context,
-				session()
+				openSession()
 						.thenCompose(s -> s.persist(spells))
 						.thenCompose(s -> s.persist(author))
 						.thenCompose(s -> s.flush())
-						.thenApply(newSession())
+						.thenCompose( v -> openSession())
 						.thenCompose(s -> s.find(Book.class, 6))
 						.thenAccept(book -> {
 							context.assertTrue(book.isPresent());

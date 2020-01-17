@@ -1,153 +1,37 @@
 package org.hibernate.rx;
 
-import java.util.Objects;
-import java.util.Properties;
-import java.util.concurrent.CompletionStage;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
-
-import org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl;
-import org.hibernate.boot.registry.BootstrapServiceRegistry;
-import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
-import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.cfg.Environment;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.internal.util.config.ConfigurationHelper;
-import org.hibernate.rx.service.RxConnection;
-import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
-import org.hibernate.service.ServiceRegistry;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import io.vertx.axle.sqlclient.Tuple;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.hibernate.cfg.Configuration;
+import org.junit.Test;
 
-@RunWith(VertxUnitRunner.class)
-public class EagerOneToOneAssociationTest {
+import javax.persistence.*;
+import java.util.Objects;
 
-	@Rule
-	public Timeout rule = Timeout.seconds( 3600 );
+public class EagerOneToOneAssociationTest extends BaseRxTest {
 
-	RxHibernateSession session = null;
-	SessionFactoryImplementor sessionFactory = null;
-
-	private static void test(TestContext context, CompletionStage<?> cs) {
-		// this will be added to TestContext in the next vert.x release
-		Async async = context.async();
-		cs.whenComplete( (res, err) -> {
-			if ( err != null ) {
-				context.fail( err );
-			}
-			else {
-				async.complete();
-			}
-		} );
-	}
-
+	@Override
 	protected Configuration constructConfiguration() {
-		Configuration configuration = new Configuration();
-		configuration.setProperty( Environment.HBM2DDL_AUTO, "create" );
-		configuration.setImplicitNamingStrategy( ImplicitNamingStrategyLegacyJpaImpl.INSTANCE );
-		configuration.setProperty( AvailableSettings.DIALECT, "org.hibernate.dialect.PostgreSQL9Dialect" );
-		configuration.setProperty( AvailableSettings.DRIVER, "org.postgresql.Driver" );
-		configuration.setProperty( AvailableSettings.USER, "hibernate-rx" );
-		configuration.setProperty( AvailableSettings.PASS, "hibernate-rx" );
-		configuration.setProperty( AvailableSettings.URL, "jdbc:postgresql://localhost:5432/hibernate-rx" );
-
+		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( Book.class );
 		configuration.addAnnotatedClass( Author.class );
-
 		return configuration;
 	}
 
-	protected BootstrapServiceRegistry buildBootstrapServiceRegistry() {
-		final BootstrapServiceRegistryBuilder builder = new BootstrapServiceRegistryBuilder();
-		builder.applyClassLoader( getClass().getClassLoader() );
-		return builder.build();
-	}
-
-	protected StandardServiceRegistryImpl buildServiceRegistry(
-			BootstrapServiceRegistry bootRegistry,
-			Configuration configuration) {
-		Properties properties = new Properties();
-		properties.putAll( configuration.getProperties() );
-		ConfigurationHelper.resolvePlaceHolders( properties );
-
-		StandardServiceRegistryBuilder cfgRegistryBuilder = configuration.getStandardServiceRegistryBuilder();
-		StandardServiceRegistryBuilder registryBuilder = new StandardServiceRegistryBuilder( bootRegistry, cfgRegistryBuilder.getAggregatedCfgXml() )
-				.applySettings( properties );
-
-		return (StandardServiceRegistryImpl) registryBuilder.build();
-	}
-
-	@Before
-	public void init() {
-		// for now, build the configuration to get all the property settings
-		Configuration configuration = constructConfiguration();
-		BootstrapServiceRegistry bootRegistry = buildBootstrapServiceRegistry();
-		ServiceRegistry serviceRegistry = buildServiceRegistry( bootRegistry, configuration );
-		// this is done here because Configuration does not currently support 4.0 xsd
-		sessionFactory = (SessionFactoryImplementor) configuration.buildSessionFactory( serviceRegistry );
-		session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
-	}
-
-	@After
-	// The current test should have already called context.async().complete();
-	public void tearDown(TestContext context) {
-		dropTable()
-				.whenComplete( (res, err) -> {
-					try {
-						sessionFactory.close();
-					}
-					finally {
-						context.assertNull( err );
-					}
-				} )
-				.whenComplete( (res, err) -> {
-					// DropTable worked but SessionFactory didn't close
-					context.assertNull( err );
-				} );
-	}
-
-	private CompletionStage<Integer> dropTable() {
-		return connection()
-				.update( "DROP TABLE Book; DROP TABLE Author" );
-	}
-
-	private RxConnection connection() {
-		RxConnectionPoolProvider poolProvider = sessionFactory.getServiceRegistry()
-				.getService( RxConnectionPoolProvider.class );
-		return poolProvider.getConnection();
-	}
-
 	@Test
-	public void persist(TestContext context) {
+	public void testPersist(TestContext context) {
 		final Book mostPopularBook = new Book( 5, "The Boy, The Mole, The Fox and The Horse" );
 		final Author author = new Author( 3, "Charlie Mackesy" );
 		mostPopularBook.setAuthor( author );
 		author.setMostPopularBook( mostPopularBook );
-		RxSession rxSession = session.reactive();
+
 		test(
 				context,
-				rxSession
-						.persist( mostPopularBook )
-						.thenCompose( v -> rxSession.persist( author ) )
-						.thenCompose( v -> rxSession.flush() )
-						.thenCompose( v -> rxSession.find( Book.class, 5 ) )
+				openSession()
+						.thenCompose( s -> s.persist( mostPopularBook ) )
+						.thenCompose( s -> s.persist( author ) )
+						.thenCompose( s -> s.flush() )
+						.thenCompose( v -> openSession())
+						.thenCompose( s -> s.find( Book.class, 5 ) )
 						.thenAccept( optionalBook -> context.assertTrue( optionalBook.isPresent() ) )
 		);
 	}
@@ -161,6 +45,8 @@ public class EagerOneToOneAssociationTest {
 
 		@OneToOne(fetch = FetchType.EAGER)
 		Author author;
+
+		public Book() {}
 
 		public Book(Integer id, String title) {
 			this.id = id;
@@ -224,6 +110,8 @@ public class EagerOneToOneAssociationTest {
 			this.id = id;
 			this.name = name;
 		}
+
+		public Author() {}
 
 		public Integer getId() {
 			return id;
