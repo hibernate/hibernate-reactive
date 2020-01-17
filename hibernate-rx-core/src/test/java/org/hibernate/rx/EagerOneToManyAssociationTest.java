@@ -8,7 +8,6 @@ import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 public class EagerOneToManyAssociationTest extends BaseRxTest {
 
@@ -18,31 +17,31 @@ public class EagerOneToManyAssociationTest extends BaseRxTest {
 		configuration.addAnnotatedClass( Author.class );
 		return configuration;
 	}
-
-	private CompletionStage<Integer> populateDB(Book... books) {
-		StringBuilder authorQueryBuilder = new StringBuilder();
-		StringBuilder bookQueryBuilder = new StringBuilder();
-		for ( Book book : books ) {
-			bookQueryBuilder.append( ", ( " );
-			bookQueryBuilder.append( book.getId() );
-			bookQueryBuilder.append( ", '" );
-			bookQueryBuilder.append( book.getTitle() );
-			bookQueryBuilder.append( "')" );
-			for ( Author author: book.getAuthors() ) {
-				authorQueryBuilder.append( ", (" );
-				authorQueryBuilder.append( author.getId() );
-				authorQueryBuilder.append( ", '" );
-				authorQueryBuilder.append( author.getName() );
-				authorQueryBuilder.append( "', " );
-				authorQueryBuilder.append( book.getId() );
-				authorQueryBuilder.append( ") " );
-			}
-		}
-
-		String authorQuery = "INSERT INTO " + Author.TABLE + " (id, name, book_id) VALUES " + authorQueryBuilder.substring( 1 ) + ";";
-		String bookQuery = "INSERT INTO " + Book.TABLE + " (id, title) VALUES " + bookQueryBuilder.substring( 1 ) + ";";
-		return connection().update( bookQuery).thenCompose( ignore -> connection().update( authorQuery ) );
-	}
+//
+//	private CompletionStage<Integer> populateDB(Book... books) {
+//		StringBuilder authorQueryBuilder = new StringBuilder();
+//		StringBuilder bookQueryBuilder = new StringBuilder();
+//		for ( Book book : books ) {
+//			bookQueryBuilder.append( ", ( " );
+//			bookQueryBuilder.append( book.getId() );
+//			bookQueryBuilder.append( ", '" );
+//			bookQueryBuilder.append( book.getTitle() );
+//			bookQueryBuilder.append( "')" );
+//			for ( Author author: book.getAuthors() ) {
+//				authorQueryBuilder.append( ", (" );
+//				authorQueryBuilder.append( author.getId() );
+//				authorQueryBuilder.append( ", '" );
+//				authorQueryBuilder.append( author.getName() );
+//				authorQueryBuilder.append( "', " );
+//				authorQueryBuilder.append( book.getId() );
+//				authorQueryBuilder.append( ") " );
+//			}
+//		}
+//
+//		String authorQuery = "INSERT INTO " + Author.TABLE + " (id, name, book_id) VALUES " + authorQueryBuilder.substring( 1 ) + ";";
+//		String bookQuery = "INSERT INTO " + Book.TABLE + " (id, title) VALUES " + bookQueryBuilder.substring( 1 ) + ";";
+//		return connection().update( bookQuery).thenCompose( ignore -> connection().update( authorQuery ) );
+//	}
 
 	@Test
 	public void findBookWithAuthors(TestContext context) {
@@ -54,7 +53,11 @@ public class EagerOneToManyAssociationTest extends BaseRxTest {
 
 		test(
 				context,
-				populateDB( goodOmens )
+				openSession()
+						.thenCompose( s -> s.persist(goodOmens) )
+						.thenCompose( s -> s.persist(neilGaiman) )
+						.thenCompose( s -> s.persist(terryPratchett) )
+						.thenCompose( s -> s.flush() )
 						.thenCompose( v -> openSession())
 						.thenCompose( s -> s.find( Book.class, goodOmens.getId() ) )
 						.thenAccept( optionalBook -> {
