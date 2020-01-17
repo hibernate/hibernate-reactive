@@ -103,9 +103,11 @@ public class SecondaryTableTest extends BaseRxTest {
 	@Entity
 	@Table(name = Book.TABLE1)
 	@SecondaryTable(name = Book.TABLE2)
+	@SecondaryTable(name = Book.TABLE3)
 	public static class Book {
 		public static final String TABLE1 = "Book";
 		public static final String TABLE2 = "SpellBook";
+		public static final String TABLE3 = "Empty";
 
 		@Id private Integer id;
 		private String title;
