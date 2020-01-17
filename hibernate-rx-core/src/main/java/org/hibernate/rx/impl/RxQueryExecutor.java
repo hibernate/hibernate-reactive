@@ -38,13 +38,13 @@ public class RxQueryExecutor {
 		return connection.preparedQuery( sql, tuple ).thenApply(SqlResult::rowCount);
 	}
 
-	public CompletionStage<Optional<Integer>> selectInteger(String sql, SessionFactoryImplementor factory) {
+	public CompletionStage<Optional<Integer>> selectInteger(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService(RxConnectionPoolProvider.class);
 
 		RxConnection connection = poolProvider.getConnection();
-		return connection.preparedQuery(sql).thenApply( rowSet -> {
+		return connection.preparedQuery( sql, asTuple( paramValues) ).thenApply( rowSet -> {
 			for (Row row: rowSet) {
 				return Optional.ofNullable( row.getInteger(0) );
 			}

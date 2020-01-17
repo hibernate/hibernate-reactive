@@ -44,7 +44,7 @@ public class SequenceRxIdentifierGenerator implements RxIdentifierGenerator {
                 persistentClass
         );
 
-        final String sequencePerEntitySuffix = ConfigurationHelper.getString(CONFIG_SEQUENCE_PER_ENTITY_SUFFIX, props, DEF_SEQUENCE_SUFFIX );
+        final String sequencePerEntitySuffix = ConfigurationHelper.getString( CONFIG_SEQUENCE_PER_ENTITY_SUFFIX, props, DEF_SEQUENCE_SUFFIX );
 
         String fallbackSequenceName = DEF_SEQUENCE_NAME;
         final Boolean preferGeneratorNameAsDefaultName = database.getServiceRegistry().getService( ConfigurationService.class )
@@ -101,6 +101,6 @@ public class SequenceRxIdentifierGenerator implements RxIdentifierGenerator {
 
     public CompletionStage<Optional<Integer>> generate(SessionFactoryImplementor factory) {
         return sql==null ? RxUtil.completedFuture(Optional.empty())
-                : queryExecutor.selectInteger(sql, factory);
+                : queryExecutor.selectInteger(sql, new Object[0], factory);
     }
 }

@@ -4,6 +4,7 @@ import org.hibernate.*;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.*;
+import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
@@ -28,7 +29,9 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 			PersisterCreationContext creationContext) throws HibernateException {
 		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext );
 
-		identifierGenerator = new SequenceRxIdentifierGenerator(persistentClass, creationContext);
+		identifierGenerator = getIdentifierGenerator() instanceof TableGenerator ?
+				new TableRxIdentifierGenerator(persistentClass, creationContext) :
+				new SequenceRxIdentifierGenerator(persistentClass, creationContext);
 	}
 
 	@Override
