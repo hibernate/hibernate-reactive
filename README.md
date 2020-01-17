@@ -7,12 +7,18 @@ _This project is still at an experimental stage._
 
 ## Building
 
-To compile run `./gradlew build` from this directory.
+To compile, navigate to this directory, and type:
+
+    ./gradlew build
+
+To publish Hibernate RX to your local Maven repository, run:
+
+    ./gradlew publishToMavenLocal
 
 ## Running tests
 
 To run the tests, ensure that PostgreSQL is installed on your machine.
-From the command line, type the following commands
+From the command line, type the following commands:
 
     createdb hibernate-rx
     createuser hibernate-rx
@@ -42,18 +48,25 @@ To obtain an `RxSession` from a Hibernate `SessionFactory`, use:
 
 ## Limitations
 
-At this time, Hibernate RX does _not_ support the following functionality:
+At this time, Hibernate RX does _not_ support the following features:
 
 - transactions
 - pessimistic locking via `LockMode`
-- collections, except for `@ManyToOne` associations
-- transparent lazy loading: lazy fetching may be requested explicitly 
-   using `session.fetch(entity.association)`, which returns a
-   `CompletionStage`
-- JPA's `@NamedEntityGraph`s: use `@FetchProfile` instead
+- `@ElementCollection` and `@ManyToMany`
+- `@OneToMany` without `mappedBy` 
+- `GenerationType.IDENTITY` (autoincrement columns), and custom id 
+  generation strategies
+- `@NamedEntityGraph`
+- transparent lazy loading
 - criteria queries
-- only `@SequenceGenerator` and `@TableGenerator` are supported for id 
-  generation: autoincrement columns are not supported, nor are any other 
-  built-in or custom id generation strategies
+
+Instead, use the following supported features:
+
+- optimistic locking with `@Version`
+- `@OneToMany(mappedBy=...)` together with `@ManyToOne`
+- `SEQUENCE` or `TABLE` id generation
+- `@FetchProfile`
+- explicit lazy loading via `session.fetch(entity.association)`, which 
+  returns a `CompletionStage`
 
 Currently only PostgreSQL is supported. Support for MySQL is coming soon!
