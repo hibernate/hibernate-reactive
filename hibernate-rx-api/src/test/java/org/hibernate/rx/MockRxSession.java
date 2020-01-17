@@ -104,8 +104,8 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
-	public <T> CompletionStage<T> fetch(T association) {
-		return null;
+	public <T> CompletionStage<Optional<T>> fetch(T association) {
+		return CompletableFuture.completedFuture( Optional.ofNullable(association) );
 	}
 
 	@Override

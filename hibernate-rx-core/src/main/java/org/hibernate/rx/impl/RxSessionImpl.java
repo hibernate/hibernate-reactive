@@ -1,36 +1,12 @@
 package org.hibernate.rx.impl;
 
-import java.io.Serializable;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
-import javax.persistence.EntityNotFoundException;
-import javax.persistence.LockModeType;
-
-import org.hibernate.CacheMode;
-import org.hibernate.FlushMode;
-import org.hibernate.JDBCException;
-import org.hibernate.LockOptions;
-import org.hibernate.MappingException;
-import org.hibernate.ObjectDeletedException;
-import org.hibernate.ObjectNotFoundException;
-import org.hibernate.TypeMismatchException;
+import org.hibernate.*;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.ExceptionConverter;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.service.spi.EventListenerGroup;
 import org.hibernate.event.service.spi.EventListenerRegistry;
-import org.hibernate.event.spi.DeleteEvent;
-import org.hibernate.event.spi.DeleteEventListener;
-import org.hibernate.event.spi.EventSource;
-import org.hibernate.event.spi.EventType;
-import org.hibernate.event.spi.FlushEvent;
-import org.hibernate.event.spi.FlushEventListener;
-import org.hibernate.event.spi.LoadEvent;
-import org.hibernate.event.spi.LoadEventListener;
-import org.hibernate.event.spi.PersistEvent;
-import org.hibernate.event.spi.PersistEventListener;
+import org.hibernate.event.spi.*;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
@@ -49,6 +25,14 @@ import org.hibernate.rx.event.spi.RxPersistEventListener;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.service.ServiceRegistry;
 
+import javax.persistence.EntityNotFoundException;
+import javax.persistence.LockModeType;
+import java.io.Serializable;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
+
 public class RxSessionImpl implements RxSession {
 
 	private final RxHibernateSessionFactory factory;
@@ -66,7 +50,7 @@ public class RxSessionImpl implements RxSession {
 	}
 
 	@Override
-	public <T> CompletionStage<T> fetch(T association) {
+	public <T> CompletionStage<Optional<T>> fetch(T association) {
 		if ( association instanceof HibernateProxy ) {
 			LazyInitializer initializer = ((HibernateProxy) association).getHibernateLazyInitializer();
 			//TODO: is this correct?
@@ -76,14 +60,14 @@ public class RxSessionImpl implements RxSession {
 					.thenApply(Optional::get)
 					.thenApply( result -> {
 						initializer.setSession( rxHibernateSession.delegate() );
-						return result;
+						return Optional.ofNullable(result);
 					} );
 		}
 		if ( association instanceof PersistentCollection ) {
 			//TODO: handle PersistentCollection (raise InitializeCollectionEvent)
 			throw new UnsupportedOperationException("fetch() is not yet implemented for collections");
 		}
-		return RxUtil.completedFuture(association);
+		return RxUtil.completedFuture( Optional.ofNullable(association) );
 	}
 
 	private CompletionStage<Void> doFlush() {

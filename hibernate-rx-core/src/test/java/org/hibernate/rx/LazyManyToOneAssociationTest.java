@@ -35,8 +35,8 @@ public class LazyManyToOneAssociationTest extends BaseRxTest {
 									context.assertEquals( author, optionalAuthor.get() );
 									return s.fetch( optionalAuthor.get().getBook() ).thenAccept(
 											fetchedBook -> {
-												context.assertNotNull( book );
-												context.assertEquals( book, fetchedBook );
+												context.assertTrue( fetchedBook.isPresent() );
+												context.assertEquals( book, fetchedBook.get() );
 											});
 								}))
 						.thenCompose( v -> openSession())
@@ -68,9 +68,9 @@ public class LazyManyToOneAssociationTest extends BaseRxTest {
 									context.assertTrue( optionalAuthor.isPresent() );
 									context.assertEquals( neilGaiman, optionalAuthor.get() );
 									return s.fetch( optionalAuthor.get().getBook() ).thenAccept(
-											book -> {
-												context.assertNotNull( book );
-												context.assertEquals( goodOmens, book );
+											fetchedBook -> {
+												context.assertTrue( fetchedBook.isPresent() );
+												context.assertEquals( goodOmens, fetchedBook.get() );
 											});
 								}))
 		);

@@ -130,7 +130,7 @@ public interface RxSession {
 	 *
 	 * @return the fetched association, via a {@code CompletionStage}
 	 */
-	<T> CompletionStage<T> fetch(T association);
+	<T> CompletionStage<Optional<T>> fetch(T association);
 
 	/**
 	 * Create an instance of {@link RxQuery} for the given HQL/JPQL query
