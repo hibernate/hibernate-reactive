@@ -62,15 +62,15 @@ public class IdentifierGeneration {
 		return params;
 	}
 
-    static RxIdentifierGenerator asRxGenerator(PersistentClass persistentClass, PersisterCreationContext creationContext, IdentifierGenerator identifierGenerator) {
-        if (identifierGenerator instanceof TableGenerator) {
-            return new TableRxIdentifierGenerator(persistentClass, creationContext);
-        }
-        else if (identifierGenerator instanceof SequenceStyleGenerator){
-            return new SequenceRxIdentifierGenerator(persistentClass, creationContext);
-        }
-        else {
-            return f -> RxUtil.completedFuture(Optional.empty());
-        }
-    }
+	static RxIdentifierGenerator asRxGenerator(PersistentClass persistentClass, PersisterCreationContext creationContext, IdentifierGenerator identifierGenerator) {
+		if (identifierGenerator instanceof TableGenerator) {
+			return new TableRxIdentifierGenerator(persistentClass, creationContext);
+		}
+		else if (identifierGenerator instanceof SequenceStyleGenerator){
+			return new SequenceRxIdentifierGenerator(persistentClass, creationContext);
+		}
+		else {
+			return f -> RxUtil.completedFuture(Optional.empty());
+		}
+	}
 }

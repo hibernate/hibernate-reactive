@@ -114,7 +114,7 @@ public class ReactiveSessionTest extends BaseRxTest {
 				populateDB()
 						.thenCompose( v -> openSession() )
 						.thenCompose( session ->
-						 	session.find( GuineaPig.class, 5 )
+							session.find( GuineaPig.class, 5 )
 								.thenCompose( aloi -> session.remove( aloi.get() ) )
 								.thenCompose( v -> session.flush() )
 								.thenCompose( v -> selectNameFromId( 5 ) )
