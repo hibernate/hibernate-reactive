@@ -1,15 +1,14 @@
 package org.hibernate.rx.impl;
 
-import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
-
+import io.vertx.axle.pgclient.PgPool;
 import io.vertx.axle.sqlclient.Row;
+import io.vertx.axle.sqlclient.RowSet;
+import io.vertx.axle.sqlclient.Tuple;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.service.RxConnection;
 
-import io.vertx.axle.pgclient.PgPool;
-import io.vertx.axle.sqlclient.RowSet;
-import io.vertx.axle.sqlclient.Tuple;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
 /**
  * A reactive connection pool for PostgreSQL
@@ -51,17 +50,11 @@ public class PgPoolConnection implements RxConnection {
 
 	@Override
 	public CompletionStage<Integer> update(String sql) {
-		if (showSQL) {
-			System.out.println(sql);
-		}
 		return preparedQuery( sql ).thenApply( res -> res.rowCount() );
 	}
 
 	@Override
 	public CompletionStage<Integer> update(String sql, Tuple parameters) {
-		if (showSQL) {
-			System.out.println(sql);
-		}
 		return preparedQuery( sql, parameters ).thenApply( res -> res.rowCount() );
 	}
 
