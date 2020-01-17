@@ -73,4 +73,8 @@ Instead, use the following supported features:
 - explicit lazy loading via `session.fetch(entity.association)`, which 
   returns a `CompletionStage`
 
+Note that you should not use Hibernate RX with a second-level cache 
+implementation which performs blocking IO, for example passivation to the
+filesystem or distributed replication.
+
 Currently only PostgreSQL is supported. Support for MySQL is coming soon!
