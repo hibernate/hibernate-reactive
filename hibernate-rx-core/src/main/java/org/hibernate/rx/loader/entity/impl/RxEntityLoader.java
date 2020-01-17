@@ -181,7 +181,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 			Serializable optionalId,
 			LockOptions lockOptions) {
 
-		Object list = loadRxEntity(
+		return loadRxEntity(
 				session,
 				id,
 				uniqueKeyType,
@@ -190,33 +190,26 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 				optionalId,
 				persister,
 				lockOptions
-		);
-
-// TODO: We need to validate the result
-//		if ( list.size()==1 ) {
-//			return list.get(0);
-//		}
-//		else if ( list.size()==0 ) {
-//			return null;
-//		}
-//		else {
-//			if ( getCollectionOwners()!=null ) {
-//				return list.get(0);
-//			}
-//			else {
-//				throw new HibernateException(
-//						"More than one row with the given identifier was found: " +
-//								id +
-//								", for class: " +
-//								persister.getEntityName()
-//				);
-//			}
-//		}
-
-		return list;
+		).thenApply( list -> {
+			if ( list.size() == 1 ) {
+				return Optional.ofNullable( list.get( 0 ) );
+			}
+			if ( list.size() == 0 ) {
+				return Optional.empty();
+			}
+			if ( getCollectionOwners() != null ) {
+				return Optional.ofNullable( list.get( 0 ) );
+			}
+			throw new HibernateException(
+					"More than one row with the given identifier was found: " +
+							id +
+							", for class: " +
+							persister.getEntityName()
+			);
+		} );
 	}
 
-	protected Object loadRxEntity(
+	protected CompletionStage<List> loadRxEntity(
 			final SharedSessionContractImplementor session,
 			final Object id,
 			final Type identifierType,
@@ -226,7 +219,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 			final EntityPersister persister,
 			LockOptions lockOptions) throws HibernateException {
 
-		Object result;
+		CompletionStage<List> result;
 		try {
 			QueryParameters qp = new QueryParameters();
 			qp.setPositionalParameterTypes( new Type[] { identifierType } );
@@ -237,6 +230,9 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 			qp.setLockOptions( lockOptions );
 
 			result = doRxQueryAndInitializeNonLazyCollections( session, qp, false );
+
+			LOG.debug( "Done entity load" );
+			return result;
 		}
 		catch (SQLException sqle) {
 			final Loadable[] persisters = getEntityPersisters();
@@ -252,12 +248,9 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 					getSQLString()
 			);
 		}
-
-		LOG.debug( "Done entity load" );
-		return result;
 	}
 
-	public Object doRxQueryAndInitializeNonLazyCollections(
+	public CompletionStage<List> doRxQueryAndInitializeNonLazyCollections(
 			final SharedSessionContractImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies)
@@ -265,7 +258,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 		return doRxQueryAndInitializeNonLazyCollections( session, queryParameters, returnProxies, null );
 	}
 
-	public Object doRxQueryAndInitializeNonLazyCollections(
+	public CompletionStage<List> doRxQueryAndInitializeNonLazyCollections(
 			final SharedSessionContractImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
@@ -284,7 +277,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 			queryParameters.setReadOnly( persistenceContext.isDefaultReadOnly() );
 		}
 		persistenceContext.beforeLoad();
-		Object result;
+		CompletionStage<List>  result;
 		try {
 			try {
 				result = doRxQuery( session, queryParameters, returnProxies, forcedResultTransformer );
@@ -301,7 +294,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 		return result;
 	}
 
-	private CompletionStage<Optional<Object>> doRxQuery(
+	private CompletionStage<List> doRxQuery(
 			final SharedSessionContractImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
@@ -314,28 +307,30 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 
 		final List<AfterLoadAction> afterLoadActions = new ArrayList<AfterLoadAction>();
 
-		final CompletionStage<Optional<Object>> result = executeRxQueryStatement(
+		Function<ResultSet, Object> resultSetObjectFunction = resultSet -> {
+			try {
+				return processResultSet(
+						resultSet,
+						queryParameters,
+						session,
+						returnProxies,
+						forcedResultTransformer,
+						maxRows,
+						afterLoadActions
+				);
+			}
+			catch (SQLException ex) {
+				throw new HibernateException( ex );
+			}
+		};
+		final CompletionStage<List> result = executeRxQueryStatement(
 				getSQLString(), queryParameters, false, afterLoadActions, session,
-				resultSet -> {
-					try {
-						return processResultSet(
-								resultSet,
-								queryParameters,
-								session,
-								returnProxies,
-								forcedResultTransformer,
-								maxRows,
-								afterLoadActions
-						);
-					}
-					catch (SQLException ex) {
-						throw new HibernateException(ex);
-					}
-		});
+				resultSetObjectFunction
+		);
 		return result;
 	}
 
-	protected CompletionStage<Optional<Object>> executeRxQueryStatement(
+	protected CompletionStage<List> executeRxQueryStatement(
 			String sqlStatement,
 			QueryParameters queryParameters,
 			boolean scroll,
@@ -356,7 +351,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 		sql = preprocessSQL( sql, queryParameters, getFactory(), afterLoadActions );
 
 		RxQueryExecutor executor = new RxQueryExecutor();
-		CompletionStage<Optional<Object>> result = executor.execute( sql, queryParameters, getFactory(), transformer );
+		CompletionStage<List> result = executor.execute( sql, queryParameters, getFactory(), transformer );
 
 		return result;
 	}

@@ -6,7 +6,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
@@ -415,15 +414,15 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			}
 
 			QueryParameters qp = buildQueryParameters( id, idsToLoad, optionalObject, lockOptions );
-			CompletionStage<Optional<Object>> results = dynamicLoader.doEntityBatchFetch( session, qp, idsToLoad );
+			CompletionStage<List> results = dynamicLoader.doEntityBatchFetch( session, qp, idsToLoad );
 
 			// The EntityKey for any entity that is not found will remain in the batch.
 			// Explicitly remove the EntityKeys for entities that were not found to
 			// avoid including them in future batches that get executed.
 //			BatchFetchQueueHelper.removeNotFoundBatchLoadableEntityKeys( idsToLoad, results, persister(), session );
 
-//			return getObjectFromList( results, id, session );
-			return results;
+			return results
+					.thenApply( list -> getObjectFromList( list, id, session ) );
 		}
 	}
 
@@ -493,7 +492,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			return persister.hasSubselectLoadableCollections();
 		}
 
-		public CompletionStage<Optional<Object>> doEntityBatchFetch(
+		public CompletionStage<List> doEntityBatchFetch(
 				SharedSessionContractImplementor session,
 				QueryParameters queryParameters,
 				Serializable[] ids) {
@@ -520,7 +519,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 					queryParameters.setReadOnly( persistenceContext.isDefaultReadOnly() );
 				}
 				persistenceContext.beforeLoad();
-				CompletionStage<Optional<Object>> results;
+				CompletionStage<List> results;
 				try {
 					try {
 						results = doTheLoad( sql, queryParameters, session );
@@ -550,7 +549,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			}
 		}
 
-		private CompletionStage<Optional<Object>> doTheLoad(
+		private CompletionStage<List> doTheLoad(
 				String sql,
 				QueryParameters queryParameters,
 				SharedSessionContractImplementor session) throws SQLException {
@@ -560,7 +559,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 					Integer.MAX_VALUE;
 
 			final List<AfterLoadAction> afterLoadActions = new ArrayList<>();
-			final CompletionStage<Optional<Object>> result =
+			final CompletionStage<List> result =
 					executeRxQueryStatement( sql,
 							queryParameters,
 							false,

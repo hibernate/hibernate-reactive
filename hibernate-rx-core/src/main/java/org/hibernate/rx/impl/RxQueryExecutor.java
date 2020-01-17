@@ -55,7 +55,7 @@ public class RxQueryExecutor {
 	/**
 	 * @param transformer Convert the result of the query to a list of entities
 	 */
-	public CompletionStage<Optional<Object>> execute(String sql, QueryParameters queryParameters, SessionFactoryImplementor factory, Function<ResultSet, Object> transformer) {
+	public CompletionStage<List> execute(String sql, QueryParameters queryParameters, SessionFactoryImplementor factory, Function<ResultSet, Object> transformer) {
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService( RxConnectionPoolProvider.class );
@@ -65,20 +65,12 @@ public class RxQueryExecutor {
 				.thenApply( rowset -> entities( transformer, rowset ) );
 	}
 
-	private Optional<Object> entities(
+	private List entities(
 			Function<ResultSet, Object> transformer,
 			RowSet rows) {
 		ResultSetAdaptor resultSet = new ResultSetAdaptor( rows );
 		List<Object> entities = (List<Object>) transformer.apply( resultSet );
-		if ( entities.isEmpty() ) {
-			return Optional.empty();
-		}
-		else if ( entities.size() == 1 ) {
-			return Optional.ofNullable( entities.get( 0 ) );
-		}
-		else {
-			throw new NotYetImplementedException( "Returning more than one entity doesn't work at the moment" );
-		}
+		return entities;
 	}
 
 	private Tuple asTuple(QueryParameters queryParameters) {
