@@ -1,6 +1,8 @@
 package org.hibernate.rx;
 
 import io.vertx.ext.unit.TestContext;
+import org.hibernate.annotations.FetchMode;
+import org.hibernate.annotations.FetchProfile;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
@@ -18,7 +20,35 @@ public class LazyManyToOneAssociationTest extends BaseRxTest {
 	}
 
 	@Test
-	public void persistOneBook(TestContext context) {
+	public void fetchProfileWithOneAuthor(TestContext context) {
+		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse" );
+		final Author author = new Author( 5, "Charlie Mackesy", book );
+
+		test(
+				context,
+				openSession()
+						.thenCompose( s -> s.persist( book ) )
+						.thenCompose( s -> s.persist( author ) )
+						.thenCompose( s -> s.flush() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.enableFetchProfile("withBook").find( Author.class, author.getId() )
+								.thenAccept( optionalAuthor -> {
+									context.assertTrue( optionalAuthor.isPresent() );
+									context.assertEquals( author, optionalAuthor.get() );
+									context.assertEquals( book, optionalAuthor.get().getBook() );
+								}))
+						.thenCompose( v -> openSession())
+						.thenCompose( s -> s.find( Book.class, book.getId() ) )
+						.thenAccept( optionalBook -> {
+							context.assertTrue( optionalBook.isPresent() );
+							context.assertEquals( book, optionalBook.get() );
+						})
+		);
+	}
+
+
+	@Test
+	public void fetchWithOneAuthor(TestContext context) {
 		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse" );
 		final Author author = new Author( 5, "Charlie Mackesy", book );
 
@@ -49,7 +79,7 @@ public class LazyManyToOneAssociationTest extends BaseRxTest {
 	}
 
 	@Test
-	public void persistTwoAuthors(TestContext context) {
+	public void fetchWithTwoAuthors(TestContext context) {
 		final Book goodOmens = new Book( 72433, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 		final Author neilGaiman = new Author( 21421, "Neil Gaiman", goodOmens );
 		final Author terryPratchett = new Author( 2111, "Terry Pratchett", goodOmens );
@@ -79,7 +109,6 @@ public class LazyManyToOneAssociationTest extends BaseRxTest {
 	@Entity
 	@Table(name = Book.TABLE)
 	@DiscriminatorValue("N")
-	//@Inheritance(strategy = InheritanceType.JOINED)
 	public static class Book {
 		public static final String TABLE = "Book";
 
@@ -130,6 +159,10 @@ public class LazyManyToOneAssociationTest extends BaseRxTest {
 
 	@Entity
 	@Table(name = Author.TABLE)
+	@FetchProfile(name = "withBook",
+			fetchOverrides = @FetchProfile.FetchOverride(
+					entity = Author.class, association = "book",
+					mode = FetchMode.JOIN))
 	public static class Author {
 
 		public static final String TABLE = "Author";
