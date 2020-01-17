@@ -1,7 +1,11 @@
 # Hibernate RX
 
 A reactive API for Hibernate ORM, supporting non-blocking database
-drivers and an asynchronous style of interaction with the database.
+drivers and a reactive style of interaction with the database.
+
+Hibernate RX may be used in any plain Java program, but is especially
+targeted toward usage in reactive environments like 
+[Quarkus](https://quarkus.io/) and [Vert.x](https://vertx.io/).
 
 _This project is still at an experimental stage._
 
