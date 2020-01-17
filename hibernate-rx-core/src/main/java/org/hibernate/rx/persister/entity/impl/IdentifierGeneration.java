@@ -4,10 +4,15 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.PersistentIdentifierGenerator;
+import org.hibernate.id.enhanced.SequenceStyleGenerator;
+import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.mapping.Column;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.SimpleValue;
+import org.hibernate.persister.spi.PersisterCreationContext;
+import org.hibernate.rx.util.impl.RxUtil;
 
+import java.util.Optional;
 import java.util.Properties;
 
 public class IdentifierGeneration {
@@ -57,4 +62,15 @@ public class IdentifierGeneration {
 		return params;
 	}
 
+    static RxIdentifierGenerator asRxGenerator(PersistentClass persistentClass, PersisterCreationContext creationContext, IdentifierGenerator identifierGenerator) {
+        if (identifierGenerator instanceof TableGenerator) {
+            return new TableRxIdentifierGenerator(persistentClass, creationContext);
+        }
+        else if (identifierGenerator instanceof SequenceStyleGenerator){
+            return new SequenceRxIdentifierGenerator(persistentClass, creationContext);
+        }
+        else {
+            return f -> RxUtil.completedFuture(Optional.empty());
+        }
+    }
 }

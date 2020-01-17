@@ -29,9 +29,7 @@ public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersist
 			PersisterCreationContext creationContext) throws HibernateException {
 		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext );
 
-		identifierGenerator = getIdentifierGenerator() instanceof TableGenerator ?
-				new TableRxIdentifierGenerator(persistentClass, creationContext) :
-				new SequenceRxIdentifierGenerator(persistentClass, creationContext);
+		identifierGenerator = IdentifierGeneration.asRxGenerator( persistentClass, creationContext, getIdentifierGenerator() );
 	}
 
 	@Override
