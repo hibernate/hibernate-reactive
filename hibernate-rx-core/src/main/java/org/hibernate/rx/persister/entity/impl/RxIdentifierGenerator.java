@@ -6,5 +6,5 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 public interface RxIdentifierGenerator {
-    CompletionStage<Optional<Integer>> generate(SessionFactoryImplementor factory);
+	CompletionStage<Optional<Integer>> generate(SessionFactoryImplementor factory);
 }

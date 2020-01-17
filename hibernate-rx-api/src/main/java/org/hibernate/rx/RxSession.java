@@ -68,7 +68,7 @@ public interface RxSession {
 	 *
 	 * @see javax.persistence.EntityManager#getReference(Class, Object)
 	 */
-	 <T> T getReference(Class<T> entityClass, Object id);
+	<T> T getReference(Class<T> entityClass, Object id);
 
 	/**
 	 * Asynchronously persist the given transient instance, first assigning
