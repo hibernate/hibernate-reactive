@@ -7,10 +7,10 @@ import org.hibernate.event.internal.DefaultRxFlushEntityEventListener;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventType;
 import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.rx.event.DefaultRxFlushEventListener;
-import org.hibernate.rx.event.DefaultRxLoadEventListener;
-import org.hibernate.rx.event.DefaultRxPersistEventListener;
-import org.hibernate.rx.event.DefaultRxPersistOnFlushEventListener;
+import org.hibernate.rx.event.impl.DefaultRxFlushEventListener;
+import org.hibernate.rx.event.impl.DefaultRxLoadEventListener;
+import org.hibernate.rx.event.impl.DefaultRxPersistEventListener;
+import org.hibernate.rx.event.impl.DefaultRxPersistOnFlushEventListener;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 
 /**

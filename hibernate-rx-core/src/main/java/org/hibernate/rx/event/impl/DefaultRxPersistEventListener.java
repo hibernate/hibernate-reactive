@@ -4,20 +4,12 @@
  * License: GNU Lesser General Public License (LGPL), version 2.1 or later.
  * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
  */
-package org.hibernate.rx.event;
-
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
+package org.hibernate.rx.event.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.ObjectDeletedException;
 import org.hibernate.PersistentObjectException;
-import org.hibernate.engine.spi.CascadingAction;
-import org.hibernate.engine.spi.CascadingActions;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.engine.spi.Status;
+import org.hibernate.engine.spi.*;
 import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PersistEvent;
@@ -32,6 +24,10 @@ import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.rx.event.spi.RxPersistEventListener;
 import org.hibernate.rx.util.impl.RxUtil;
+
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Defines the default create event listener used by hibernate for creating

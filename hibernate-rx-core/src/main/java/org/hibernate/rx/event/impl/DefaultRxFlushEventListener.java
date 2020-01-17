@@ -1,6 +1,4 @@
-package org.hibernate.rx.event;
-
-import java.util.concurrent.CompletionStage;
+package org.hibernate.rx.event.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -15,8 +13,9 @@ import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.event.spi.RxFlushEventListener;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
-
 import org.jboss.logging.Logger;
+
+import java.util.concurrent.CompletionStage;
 
 public class DefaultRxFlushEventListener extends DefaultFlushEventListener implements RxFlushEventListener {
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger(

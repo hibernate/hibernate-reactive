@@ -1,4 +1,4 @@
-package org.hibernate.rx.event;
+package org.hibernate.rx.event.impl;
 
 import org.hibernate.engine.spi.CascadingAction;
 import org.hibernate.engine.spi.CascadingActions;
