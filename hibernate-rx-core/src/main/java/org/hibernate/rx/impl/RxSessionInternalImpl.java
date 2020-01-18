@@ -3,22 +3,22 @@ package org.hibernate.rx.impl;
 import org.hibernate.*;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.ExceptionConverter;
-import org.hibernate.engine.spi.SessionDelegatorBaseImpl;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.service.spi.EventListenerGroup;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.*;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.internal.SessionCreationOptions;
+import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.internal.SessionImpl;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.spi.RxActionQueue;
-import org.hibernate.rx.engine.spi.RxSessionFactoryImplementor;
 import org.hibernate.rx.event.spi.RxDeleteEventListener;
 import org.hibernate.rx.event.spi.RxFlushEventListener;
 import org.hibernate.rx.event.spi.RxLoadEventListener;
@@ -33,19 +33,12 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements RxSessionInternal, EventSource {
+public class RxSessionInternalImpl extends SessionImpl implements RxSessionInternal, EventSource {
 
-	private final RxSessionFactoryImplementor factory;
 	private transient RxActionQueue rxActionQueue = new RxActionQueue( this );
 
-	public RxSessionInternalImpl(RxSessionFactoryImplementor factory, SessionImplementor delegate) {
-		super( delegate );
-		this.factory = factory;
-	}
-
-	@Override
-	public SessionImplementor delegate() {
-		return super.delegate();
+	public RxSessionInternalImpl(SessionFactoryImpl delegate, SessionCreationOptions options) {
+		super( delegate, options );
 	}
 
 	@Override
@@ -54,13 +47,14 @@ public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements R
 	}
 
 	@Override
-	public RxSessionFactoryImplementor getSessionFactory() {
-		return factory;
+	public RxSession reactive() {
+		return new RxSessionImpl( this );
 	}
 
 	@Override
-	public RxSession reactive() {
-		return new RxSessionImpl( this );
+	public Object immediateLoad(String entityName, Serializable id) throws HibernateException {
+		throw new LazyInitializationException("reactive sessions do not support transparent lazy fetching"
+				+ " - use RxSession.fetch() (entity '" + entityName + "' with id '" + id + "' was not loaded)");
 	}
 
 	@Override
@@ -73,7 +67,7 @@ public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements R
 					.fetch( initializer.getIdentifier() )
 					.thenApply(Optional::get)
 					.thenApply( result -> {
-						initializer.setSession( delegate() );
+						initializer.setSession( this );
 						return Optional.ofNullable(result);
 					} );
 		}
@@ -244,13 +238,9 @@ public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements R
 	}
 
 	private <T> EventListenerGroup<T> eventListenerGroup(EventType<T> type) {
-		return factory.unwrap( SessionFactoryImplementor.class )
+		return getFactory().unwrap( SessionFactoryImplementor.class )
 				.getServiceRegistry().getService( EventListenerRegistry.class )
 				.getEventListenerGroup( type );
-	}
-
-	public SessionFactoryImplementor getFactory() {
-		return factory.unwrap( SessionFactoryImplementor.class );
 	}
 
 	private EntityPersister locateEntityPersister(Class<?> entityClass) {

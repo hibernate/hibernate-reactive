@@ -1,6 +1,7 @@
 package org.hibernate.rx;
 
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 
@@ -12,14 +13,9 @@ import java.util.concurrent.CompletionStage;
 /**
  * A Hibernate {@link Session} that allows the creation of a reactive session
  *
- *  @see RxSession
+ *  @see RxSession the actual user visible API
  */
 public interface RxSessionInternal extends Session {
-
-	@Override
-	RxSessionFactory getSessionFactory();
-
-	SessionImplementor delegate();
 
 	RxSession reactive();
 

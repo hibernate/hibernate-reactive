@@ -26,9 +26,11 @@ public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
 		implements RxSessionFactoryImplementor {
 
 	private final String uuid;
+	private final SessionFactoryImpl delegate;
 
-	public RxSessionFactoryImpl(SessionFactoryImplementor delegate) {
+	public RxSessionFactoryImpl(SessionFactoryImpl delegate) {
 		super( delegate );
+		this.delegate = delegate;
 		uuid = delegate.getUuid();
 		SessionFactoryRegistry.INSTANCE.addSessionFactory(
 				delegate.getUuid(),
@@ -38,6 +40,7 @@ public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
 				delegate.getServiceRegistry().getService( JndiService.class )
 		);
 	}
+
 
 	@Override
 	public RxSession openRxSession() throws HibernateException {
@@ -51,7 +54,10 @@ public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
 
 	@Override
 	public RxSessionBuilderImplementor withOptions() {
-		return new RxSessionBuilderDelegator( delegate().withOptions(), this );
+		return new RxSessionBuilderDelegator(
+				new SessionFactoryImpl.SessionBuilderImpl(delegate),
+				delegate
+		);
 	}
 
 	@Override
