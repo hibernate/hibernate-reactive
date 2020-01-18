@@ -4,6 +4,7 @@ import org.hibernate.engine.spi.AbstractDelegatingSessionBuilderImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.rx.RxSession;
+import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.spi.RxSessionBuilderImplementor;
 
 public class RxSessionBuilderDelegator
@@ -22,8 +23,13 @@ public class RxSessionBuilderDelegator
 	}
 
 	@Override
+	public RxSessionInternal openSession() {
+		return new RxSessionInternalImpl(factory, options);
+	}
+
+	@Override
 	public RxSession openRxSession() {
-		return new RxSessionInternalImpl(factory, options).reactive();
+		return openSession().reactive();
 	}
 
 }

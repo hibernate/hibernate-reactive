@@ -85,19 +85,11 @@ public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
 			return type.cast( this );
 		}
 
-		if ( type.isAssignableFrom( SessionFactoryImpl.class ) ) {
-			return type.cast( this );
-		}
-
 		if ( type.isAssignableFrom( RxSessionFactory.class ) ) {
 			return type.cast( this );
 		}
 
 		if ( type.isAssignableFrom( RxSessionFactoryImplementor.class ) ) {
-			return type.cast( this );
-		}
-
-		if ( type.isAssignableFrom( RxSessionFactoryImpl.class ) ) {
 			return type.cast( this );
 		}
 

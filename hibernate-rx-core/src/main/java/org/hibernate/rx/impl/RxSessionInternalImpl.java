@@ -419,7 +419,10 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	@Override
 	public <T> T unwrap(Class<T> clazz) {
 		if ( RxSessionInternal.class.isAssignableFrom( clazz ) ) {
-			return (T) this;
+			return clazz.cast(this);
+		}
+		if ( RxSession.class.isAssignableFrom( clazz ) ) {
+			return clazz.cast( reactive() );
 		}
 		return super.unwrap( clazz );
 	}

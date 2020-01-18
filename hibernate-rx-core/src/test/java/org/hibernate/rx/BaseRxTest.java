@@ -9,12 +9,12 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.rx.service.RxConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.rx.util.impl.RxUtil;
-import org.hibernate.service.ServiceRegistry;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.CompletionStage;
@@ -59,6 +59,8 @@ public abstract class BaseRxTest {
 		sessionFactory = constructConfiguration().buildSessionFactory(registry);
 		poolProvider = registry.getService(RxConnectionPoolProvider.class);
 
+		//EITHER WAY WORKS:
+//		session = sessionFactory.openSession().unwrap(RxSession.class);
 		session = sessionFactory.unwrap(RxSessionFactory.class).openRxSession();
 	}
 
