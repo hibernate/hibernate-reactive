@@ -40,8 +40,8 @@ public final class Cascade {
 	private final CascadingAction action;
 	private final EntityPersister persister;
 	private final Object parent;
-	private final CascadePoint cascadePoint;
 	private final EventSource eventSource;
+	private CascadePoint cascadePoint;
 
 	private CompletionStage<Void> stage = RxUtil.nullFuture();
 
@@ -406,7 +406,7 @@ public final class Cascade {
 
 		CascadePoint elementsCascadePoint = cascadePoint;
 		if ( cascadePoint == CascadePoint.AFTER_INSERT_BEFORE_DELETE ) {
-			elementsCascadePoint = CascadePoint.AFTER_INSERT_BEFORE_DELETE_VIA_COLLECTION;
+			cascadePoint = CascadePoint.AFTER_INSERT_BEFORE_DELETE_VIA_COLLECTION;
 		}
 
 		//cascade to current collection elements
@@ -421,6 +421,8 @@ public final class Cascade {
 				persister.isCascadeDeleteEnabled()
 			);
 		}
+
+		cascadePoint = elementsCascadePoint;
 	}
 
 	/**

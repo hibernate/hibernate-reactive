@@ -5,6 +5,8 @@ import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class CascadeTest extends BaseRxTest {
@@ -13,6 +15,7 @@ public class CascadeTest extends BaseRxTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( Node.class );
+		configuration.addAnnotatedClass( Element.class );
 		return configuration;
 	}
 
@@ -21,6 +24,9 @@ public class CascadeTest extends BaseRxTest {
 
 		Node basik = new Node("Child");
 		basik.parent = new Node("Parent");
+		basik.elements.add( new Element(basik) );
+		basik.elements.add( new Element(basik) );
+		basik.elements.add( new Element(basik) );
 
 		test( context,
 				openSession()
@@ -73,6 +79,20 @@ public class CascadeTest extends BaseRxTest {
 	}
 
 	@Entity
+	public static class Element {
+		@Id @GeneratedValue Integer id;
+
+		@ManyToOne
+		Node node;
+
+		public Element(Node node) {
+			this.node = node;
+		}
+
+		Element() {}
+	}
+
+	@Entity
 	public static class Node {
 
 		@Id @GeneratedValue Integer id;
@@ -83,6 +103,12 @@ public class CascadeTest extends BaseRxTest {
 				cascade = {CascadeType.PERSIST,
 						CascadeType.REMOVE})
 		Node parent;
+
+		@OneToMany(fetch = FetchType.EAGER,
+				cascade = {CascadeType.PERSIST,
+						CascadeType.REMOVE},
+				mappedBy = "node")
+		List<Element> elements = new ArrayList<Element>();
 
 		@Transient boolean prePersisted;
 		@Transient boolean postPersisted;
