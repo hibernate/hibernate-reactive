@@ -1,20 +1,14 @@
 package org.hibernate.rx.impl;
 
-import java.util.function.Consumer;
-
-import org.hibernate.engine.spi.ExceptionConverter;
 import org.hibernate.engine.spi.SessionDelegatorBaseImpl;
 import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.engine.transaction.spi.TransactionImplementor;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.internal.ExceptionMapperStandardImpl;
-import org.hibernate.resource.transaction.backend.jta.internal.synchronization.ExceptionMapper;
-import org.hibernate.resource.transaction.spi.TransactionCoordinator;
-import org.hibernate.resource.transaction.spi.TransactionStatus;
 import org.hibernate.rx.RxHibernateSession;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.engine.spi.RxHibernateSessionFactoryImplementor;
+
+import java.util.function.Consumer;
 
 public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements RxHibernateSession, EventSource {
 
@@ -25,11 +19,6 @@ public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements 
 		super( delegate );
 		this.factory = factory;
 		this.rxActionQueue = new RxActionQueue( this );
-	}
-
-	@Override
-	public TransactionCoordinator getTransactionCoordinator() {
-		return super.getTransactionCoordinator();
 	}
 
 	@Override
@@ -44,20 +33,6 @@ public class RxHibernateSessionImpl extends SessionDelegatorBaseImpl implements 
 
 	public SessionImplementor delegate() {
 		return super.delegate();
-	}
-
-	private boolean isTransactionFlushable() {
-		if ( getCurrentTransaction() == null ) {
-			// assume it is flushable - CMT, auto-commit, etc
-			return true;
-		}
-		final TransactionStatus status = getCurrentTransaction().getStatus();
-		return status == TransactionStatus.ACTIVE || status == TransactionStatus.COMMITTING;
-	}
-
-	// SessionImpl
-	protected TransactionImplementor getCurrentTransaction() {
-		return (TransactionImplementor) getTransaction();
 	}
 
 	@Override
