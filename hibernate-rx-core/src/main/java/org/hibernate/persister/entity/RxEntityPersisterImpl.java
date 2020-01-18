@@ -14,8 +14,8 @@ import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.jdbc.Expectations;
 import org.hibernate.pretty.MessageHelper;
-import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.persister.entity.impl.RxGeneratedIdentifierPersister;
 import org.hibernate.rx.persister.entity.impl.RxIdentifierGenerator;
@@ -77,16 +77,24 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			boolean[] notNull = delegate.getPropertiesToInsert( fields );
 			for ( int j = 0; j < span; j++ ) {
 				int jj = j;
-				insertStage = insertStage.thenCompose( v->
-						insertRx( id, fields, notNull, jj, delegate.generateInsertString( notNull, jj ), object, session ));
+				insertStage = insertStage.thenCompose(
+						v -> insertRx(
+								id,
+								fields,
+								notNull,
+								jj,
+								delegate.generateInsertString( notNull, jj ),
+								object,
+								session
+						));
 			}
 		}
 		else {
 			// For the case of dynamic-insert="false", use the static SQL
 			for ( int j = 0; j < span; j++ ) {
 				int jj = j;
-				insertStage = insertStage.thenCompose( v->
-						insertRx(
+				insertStage = insertStage.thenCompose(
+						v -> insertRx(
 								id,
 								fields,
 								delegate.getPropertyInsertability(),
@@ -264,8 +272,16 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			// For now we assume there is only one delete query
 			int jj = j;
 			Object[] state = loadedState;
-			deleteStage = deleteStage.thenCompose( v->
-					deleteRx( id, version, jj, object, deleteStrings[jj], session, state ));
+			deleteStage = deleteStage.thenCompose(
+					v-> deleteRx(
+							id,
+							version,
+							jj,
+							object,
+							deleteStrings[jj],
+							session,
+							state
+					));
 		}
 
 		return deleteStage;
@@ -532,7 +548,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 				// We assume there is only one table for now
 				final int jj = j;
 				updateStage = updateStage.thenCompose(
-						v-> updateOrInsertRx(
+						v -> updateOrInsertRx(
 								id,
 								fields,
 								oldFields,
