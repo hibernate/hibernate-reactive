@@ -85,7 +85,7 @@ public class CascadingActions {
 				boolean isCascadeDeleteEnabled)
 				throws HibernateException {
 			LOG.tracev( "Cascading to persist on flush: {0}", entityName );
-			return session.unwrap(RxSessionInternal.class).rxPersist( child );
+			return session.unwrap(RxSessionInternal.class).rxPersistOnFlush( child );
 		}
 	};
 

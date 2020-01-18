@@ -29,6 +29,8 @@ public interface RxSessionInternal extends Session {
 
 	CompletionStage<Void> rxPersist(Object entity);
 
+	CompletionStage<Void> rxPersistOnFlush(Object entity);
+
 	CompletionStage<Void> rxRemove(Object entity);
 
 	CompletionStage<Void> rxFlush();

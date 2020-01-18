@@ -9,7 +9,9 @@ package org.hibernate.rx.event.impl;
 import org.hibernate.HibernateException;
 import org.hibernate.ObjectDeletedException;
 import org.hibernate.PersistentObjectException;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.Status;
 import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PersistEvent;
@@ -22,6 +24,8 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.rx.engine.impl.CascadingAction;
+import org.hibernate.rx.engine.impl.CascadingActions;
 import org.hibernate.rx.event.spi.RxPersistEventListener;
 import org.hibernate.rx.util.impl.RxUtil;
 
@@ -41,7 +45,7 @@ public class DefaultRxPersistEventListener
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultRxPersistEventListener.class );
 
 	@Override
-	protected CascadingAction getCascadeAction() {
+	protected CascadingAction getCascadeRxAction() {
 		return CascadingActions.PERSIST;
 	}
 
@@ -123,8 +127,7 @@ public class DefaultRxPersistEventListener
 				) );
 			}
 			case PERSISTENT: {
-				entityIsPersistent( event, createCache );
-				return RxUtil.nullFuture();
+				return entityIsPersistent( event, createCache );
 			}
 			case TRANSIENT: {
 				return entityIsTransient( event, createCache );
@@ -133,8 +136,7 @@ public class DefaultRxPersistEventListener
 				entityEntry.setStatus( Status.MANAGED );
 				entityEntry.setDeletedState( null );
 				event.getSession().getActionQueue().unScheduleDeletion( entityEntry, event.getObject() );
-				entityIsDeleted( event, createCache );
-				return RxUtil.nullFuture();
+				return entityIsDeleted( event, createCache );
 			}
 			default: {
 				return RxUtil.failedFuture( new ObjectDeletedException(
@@ -148,7 +150,7 @@ public class DefaultRxPersistEventListener
 	}
 
 	@SuppressWarnings({ "unchecked" })
-	protected void entityIsPersistent(PersistEvent event, Map createCache) {
+	protected CompletionStage<Void> entityIsPersistent(PersistEvent event, Map createCache) {
 		LOG.trace( "Ignoring persistent instance" );
 		final EventSource source = event.getSession();
 
@@ -158,14 +160,16 @@ public class DefaultRxPersistEventListener
 		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
 
 		if ( createCache.put( entity, entity ) == null ) {
-			justCascade( createCache, source, entity, persister );
+			return justCascade( createCache, source, entity, persister );
 		}
+		return RxUtil.nullFuture();
 	}
 
-	private void justCascade(Map createCache, EventSource source, Object entity, EntityPersister persister) {
+	private CompletionStage<Void> justCascade(Map createCache, EventSource source, Object entity, EntityPersister persister) {
 		//TODO: merge into one method!
-		cascadeBeforeSave( source, persister, entity, createCache );
-		cascadeAfterSave( source, persister, entity, createCache );
+		CompletionStage<Void> beforeSave = rxCascadeBeforeSave(source, persister, entity, createCache);
+		CompletionStage<Void> afterSave = rxCascadeAfterSave(source, persister, entity, createCache);
+		return beforeSave.thenCompose( v -> afterSave);
 	}
 
 	/**
@@ -189,7 +193,7 @@ public class DefaultRxPersistEventListener
 	}
 
 	@SuppressWarnings({ "unchecked" })
-	private void entityIsDeleted(PersistEvent event, Map createCache) {
+	private CompletionStage<Void> entityIsDeleted(PersistEvent event, Map createCache) {
 		final EventSource source = event.getSession();
 
 		final Object entity = source.getPersistenceContextInternal().unproxy( event.getObject() );
@@ -207,8 +211,9 @@ public class DefaultRxPersistEventListener
 		}
 
 		if ( createCache.put( entity, entity ) == null ) {
-			justCascade( createCache, source, entity, persister );
+			return justCascade( createCache, source, entity, persister );
 		}
+		return RxUtil.nullFuture();
 	}
 
 	@Override

@@ -26,8 +26,7 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 	@Test
 	public void testBasicTypes(TestContext context) {
 
-		Basic basik = new Basic();
-		basik.string = "Hello World";
+		Basic basik = new Basic("Hello World");
 		basik.decimal = new BigDecimal(12.12d);
 		basik.integer = BigInteger.valueOf(123L);
 		basik.bytes =  "hello world".getBytes();
@@ -35,7 +34,7 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 		basik.timeZone = TimeZone.getDefault();
 		basik.cover = Cover.hard;
 		basik.binInteger = BigInteger.valueOf(12345L);
-		basik.parent = new Basic();
+		basik.parent = new Basic("Parent");
 		basik.localDate = LocalDate.now();
 		basik.localDateTime = LocalDateTime.now();
 		basik.localTime = LocalTime.now();
@@ -47,8 +46,10 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 				.thenCompose(s -> s.persist(basik.parent))
 				.thenCompose(s -> s.persist(basik))
 				.thenApply(s -> { context.assertTrue(basik.prePersisted && !basik.postPersisted); return s; } )
+				.thenApply(s -> { context.assertTrue(basik.parent.prePersisted && !basik.parent.postPersisted); return s; } )
 				.thenCompose(s -> s.flush())
 				.thenApply(s -> { context.assertTrue(basik.postPersisted && basik.postPersisted); return s; } )
+				.thenApply(s -> { context.assertTrue(basik.parent.prePersisted && basik.parent.postPersisted); return s; } )
 				.thenCompose(v -> openSession())
 				.thenCompose(s2 ->
 					s2.find( Basic.class, basik.getId() )
@@ -74,11 +75,14 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 
 							basic.string = "Goodbye";
 							basic.cover = Cover.soft;
-							return s2.flush()
+							basic.parent = new Basic("New Parent");
+							return s2.persist(basic.parent)
+									.thenCompose( v -> s2.flush() )
 									.thenAccept(v -> {
 										context.assertTrue( option.isPresent() );
 										context.assertTrue( basic.postUpdated && basic.preUpdated );
 										context.assertFalse( basic.postPersisted && basic.prePersisted );
+										context.assertTrue( basic.parent.postPersisted && basic.parent.prePersisted );
 										context.assertEquals( basic.version, 1 );
 									});
 						}))
@@ -144,8 +148,7 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 		@Convert(converter = BinInteger.class)
 		private BigInteger binInteger;
 
-		@ManyToOne(fetch = FetchType.LAZY,
-				cascade = CascadeType.REMOVE)
+		@ManyToOne(fetch = FetchType.LAZY)
 		Basic parent;
 
 		@Transient boolean prePersisted;
@@ -156,13 +159,16 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 		@Transient boolean preRemoved;
 		@Transient boolean loaded;
 
-		public Basic() {
+		public Basic(String string) {
+			this.string = string;
 		}
 
 		public Basic(Integer id, String string) {
 			this.id = id;
 			this.string = string;
 		}
+
+		Basic() {}
 
 		@PrePersist
 		void prePersist() {

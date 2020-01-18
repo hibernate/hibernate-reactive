@@ -5,6 +5,7 @@ import org.hibernate.LockMode;
 import org.hibernate.NonUniqueObjectException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.action.internal.EntityIdentityInsertAction;
+import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.*;
 import org.hibernate.event.internal.AbstractSaveEventListener;
@@ -17,6 +18,8 @@ import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.RxSessionInternal;
+import org.hibernate.rx.engine.impl.Cascade;
+import org.hibernate.rx.engine.impl.CascadingAction;
 import org.hibernate.rx.engine.impl.RxEntityInsertAction;
 import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
@@ -24,6 +27,7 @@ import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
 import java.io.Serializable;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -53,7 +57,7 @@ abstract class AbstractRxSaveEventListener
 	 *
 	 * @return The id used to save the entity.
 	 */
-	protected CompletionStage<Serializable> rxSaveWithRequestedId(
+	protected CompletionStage<Void> rxSaveWithRequestedId(
 			Object entity,
 			Serializable requestedId,
 			String entityName,
@@ -87,7 +91,7 @@ abstract class AbstractRxSaveEventListener
 	 * @return The id used to save the entity; may be null depending on the
 	 * type of id generator used and the requiresImmediateIdAccess value
 	 */
-	protected CompletionStage<Serializable> rxSaveWithGeneratedId(
+	protected CompletionStage<Void> rxSaveWithGeneratedId(
 			Object entity,
 			String entityName,
 			Object anything,
@@ -99,21 +103,27 @@ abstract class AbstractRxSaveEventListener
 			( (SelfDirtinessTracker) entity ).$$_hibernate_clearDirtyAttributes();
 		}
 		EntityPersister persister = source.getEntityPersister( entityName, entity );
-		return RxEntityPersister.get(persister).getIdentifierGenerator()
+		Serializable assignedId = persister.getIdentifier( entity, source.getSession() );
+		return RxEntityPersister.get(persister)
+				.getIdentifierGenerator()
 				.generate( source.getFactory() )
-				.thenCompose( generatedId -> {
-					Serializable id;
-					if ( !generatedId.isPresent() ) {
-						id = persister.getIdentifier( entity, source.getSession() );
-						if (id == null) {
-							return RxUtil.failedFuture(new IdentifierGenerationException("ids for this class must be manually assigned before calling save(): " + entityName));
-						}
-					}
-					else {
-						id = generatedId.get();
-					}
-					return rxPerformSave(entity, id, persister, false, anything, source, true);
-				});
+				.thenCompose( id -> rxPerformSave(entity,
+						assignIdIfNecessary(id, assignedId, entityName),
+						persister, false, anything, source, true) );
+	}
+
+	private static Serializable assignIdIfNecessary(Optional<Integer> generatedId, Serializable assignedId, String entityName) {
+		Serializable id;
+		if ( !generatedId.isPresent() ) {
+			if (assignedId == null) {
+				throw new IdentifierGenerationException("ids for this class must be manually assigned before calling save(): " + entityName);
+			}
+			return assignedId;
+		}
+		else {
+			id = generatedId.get();
+		}
+		return id;
 	}
 
 	/**
@@ -134,7 +144,7 @@ abstract class AbstractRxSaveEventListener
 	 * @return The id used to save the entity; may be null depending on the
 	 * type of id generator used and the requiresImmediateIdAccess value
 	 */
-	protected CompletionStage<Serializable> rxPerformSave(
+	protected CompletionStage<Void> rxPerformSave(
 			Object entity,
 			Serializable id,
 			EntityPersister persister,
@@ -167,7 +177,7 @@ abstract class AbstractRxSaveEventListener
 		}
 
 		if ( invokeSaveLifecycle( entity, persister, source ) ) {
-			return RxUtil.completedFuture( id ); //EARLY EXIT
+			return RxUtil.nullFuture(); //RxUtil.completedFuture( id ); //EARLY EXIT
 		}
 
 		return rxPerformSaveOrReplicate(
@@ -197,7 +207,7 @@ abstract class AbstractRxSaveEventListener
 	 * @return The id used to save the entity; may be null depending on the
 	 * type of id generator used and the requiresImmediateIdAccess value
 	 */
-	protected CompletionStage<Serializable> rxPerformSaveOrReplicate(
+	protected CompletionStage<Void> rxPerformSaveOrReplicate(
 			Object entity,
 			EntityKey key,
 			EntityPersister persister,
@@ -228,7 +238,7 @@ abstract class AbstractRxSaveEventListener
 				false
 		);
 
-		cascadeBeforeSave( source, persister, entity, anything );
+		CompletionStage<Void> cascadeBeforeSave = rxCascadeBeforeSave(source, persister, entity, anything);
 
 		Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap( anything ), source );
 		Type[] types = persister.getPropertyTypes();
@@ -251,37 +261,42 @@ abstract class AbstractRxSaveEventListener
 				source
 		);
 
-		CompletionStage<AbstractEntityInsertAction> insertCs = addInsertAction(
+		CompletionStage<AbstractEntityInsertAction> insert = addInsertAction(
 				values, id, entity, persister, useIdentityColumn, source, shouldDelayIdentityInserts
 		);
-		return insertCs.thenApply( insert -> {
+
+		CompletionStage<Void> cascadeAfterSave = rxCascadeAfterSave(source, persister, entity, anything);
+
+		EntityEntry newEntry = persistenceContext.getEntry( entity );
+
+		if ( newEntry != original ) {
+			EntityEntryExtraState extraState = newEntry.getExtraState( EntityEntryExtraState.class );
+			if ( extraState == null ) {
+				newEntry.addExtraState( original.getExtraState( EntityEntryExtraState.class ) );
+			}
+		}
+
+		return cascadeBeforeSave
+				.thenCompose(v -> insert)
+				.thenCompose(v -> cascadeAfterSave);
+//				.thenAccept( v -> {
 			// postpone initializing id in case the insert has non-nullable transient dependencies
 			// that are not resolved until cascadeAfterSave() is executed
-			cascadeAfterSave( source, persister, entity, anything );
-			Serializable newId = id;
-			if ( useIdentityColumn && insert.isEarlyInsert() ) {
-				if ( !EntityIdentityInsertAction.class.isInstance( insert ) ) {
-					throw new IllegalStateException(
-							"Insert should be using an identity column, but action is of unexpected type: " +
-									insert.getClass().getName()
-					);
-				}
-				newId = ( (EntityIdentityInsertAction) insert ).getGeneratedId();
 
-				insert.handleNaturalIdPostSaveNotifications( newId );
-			}
-
-			EntityEntry newEntry = persistenceContext.getEntry( entity );
-
-			if ( newEntry != original ) {
-				EntityEntryExtraState extraState = newEntry.getExtraState( EntityEntryExtraState.class );
-				if ( extraState == null ) {
-					newEntry.addExtraState( original.getExtraState( EntityEntryExtraState.class ) );
-				}
-			}
-
-			return newId;
-		} );
+//			Serializable newId = id;
+//			if ( useIdentityColumn && insert.isEarlyInsert() ) {
+//				if ( !EntityIdentityInsertAction.class.isInstance( insert ) ) {
+//					throw new IllegalStateException(
+//							"Insert should be using an identity column, but action is of unexpected type: " +
+//									insert.getClass().getName()
+//					);
+//				}
+//				newId = ( (EntityIdentityInsertAction) insert ).getGeneratedId();
+//
+//				insert.handleNaturalIdPostSaveNotifications( newId );
+//			}
+//			return newId;
+//		} );
 	}
 
 	private CompletionStage<AbstractEntityInsertAction> addInsertAction(
@@ -307,4 +322,69 @@ abstract class AbstractRxSaveEventListener
 		}
 	}
 
+	/**
+	 * Handles the calls needed to perform pre-save cascades for the given entity.
+	 *
+	 * @param source The session from whcih the save event originated.
+	 * @param persister The entity's persister instance.
+	 * @param entity The entity to be saved.
+	 * @param anything Generally cascade-specific data
+	 */
+	protected CompletionStage<Void> rxCascadeBeforeSave(
+			EventSource source,
+			EntityPersister persister,
+			Object entity,
+			Object anything) {
+
+		// cascade-save to many-to-one BEFORE the parent is saved
+		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
+		persistenceContext.incrementCascadeLevel();
+		try {
+			return new Cascade(
+					getCascadeRxAction(),
+					CascadePoint.BEFORE_INSERT_AFTER_DELETE,
+					persister,
+					entity,
+					source)
+					.cascade(anything);
+		}
+		finally {
+			persistenceContext.decrementCascadeLevel();
+		}
+	}
+
+	/**
+	 * Handles to calls needed to perform post-save cascades.
+	 *
+	 * @param source The session from which the event originated.
+	 * @param persister The entity's persister instance.
+	 * @param entity The entity beng saved.
+	 * @param anything Generally cascade-specific data
+	 */
+	protected CompletionStage<Void> rxCascadeAfterSave(
+			EventSource source,
+			EntityPersister persister,
+			Object entity,
+			Object anything) {
+
+		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
+		// cascade-save to collections AFTER the collection owner was saved
+		persistenceContext.incrementCascadeLevel();
+		try {
+			return new Cascade(getCascadeRxAction(),
+					CascadePoint.AFTER_INSERT_BEFORE_DELETE,
+					persister,entity, source)
+					.cascade(anything);
+		}
+		finally {
+			persistenceContext.decrementCascadeLevel();
+		}
+	}
+
+	protected abstract CascadingAction getCascadeRxAction();
+
+	@Override
+	protected org.hibernate.engine.spi.CascadingAction getCascadeAction() {
+		return getCascadeRxAction().delegate();
+	}
 }

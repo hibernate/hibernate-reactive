@@ -1,11 +1,11 @@
 package org.hibernate.rx.event.impl;
 
-import org.hibernate.engine.spi.CascadingAction;
-import org.hibernate.engine.spi.CascadingActions;
+import org.hibernate.rx.engine.impl.CascadingAction;
+import org.hibernate.rx.engine.impl.CascadingActions;
 
 public class DefaultRxPersistOnFlushEventListener extends DefaultRxPersistEventListener {
 	@Override
-	protected CascadingAction getCascadeAction() {
+	protected CascadingAction getCascadeRxAction() {
 		return CascadingActions.PERSIST_ON_FLUSH;
 	}
 }

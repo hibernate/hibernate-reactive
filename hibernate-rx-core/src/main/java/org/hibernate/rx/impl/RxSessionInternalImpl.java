@@ -94,7 +94,24 @@ public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements R
 		CompletionStage<Void> ret = RxUtil.nullFuture();
 		for ( PersistEventListener listener : listeners( EventType.PERSIST ) ) {
 			PersistEvent event = new PersistEvent( null, entity, this );
-			ret = ret.thenCompose( v -> ( (RxPersistEventListener) listener ).rxOnPersist( event ) );
+			CompletionStage<Void> stage = ((RxPersistEventListener) listener).rxOnPersist(event);
+			ret = ret.thenCompose(v -> stage);
+		}
+		return ret;
+	}
+
+	@Override
+	public CompletionStage<Void> rxPersistOnFlush(Object entity) {
+		return schedulePersistOnFlush( entity );
+	}
+
+	// Should be similar to firePersist
+	private CompletionStage<Void> schedulePersistOnFlush(Object entity) {
+		CompletionStage<Void> ret = RxUtil.nullFuture();
+		for ( PersistEventListener listener : listeners( EventType.PERSIST_ONFLUSH ) ) {
+			PersistEvent event = new PersistEvent( null, entity, this );
+			CompletionStage<Void> stage = ((RxPersistEventListener) listener).rxOnPersist(event);
+			ret = ret.thenCompose(v -> stage);
 		}
 		return ret;
 	}

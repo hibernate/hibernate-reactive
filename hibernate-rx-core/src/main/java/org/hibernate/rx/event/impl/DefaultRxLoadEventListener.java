@@ -4,7 +4,6 @@ import org.hibernate.*;
 import org.hibernate.action.internal.DelayedPostInsertIdentifier;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.SoftLock;
-import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.spi.*;
 import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.spi.EventSource;
@@ -42,7 +41,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 	public void onLoad(
 			final LoadEvent event,
 			final LoadEventListener.LoadType loadType) throws HibernateException {
-		throw new NotYetImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	/**
