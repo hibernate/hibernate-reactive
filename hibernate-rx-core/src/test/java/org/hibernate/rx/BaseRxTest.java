@@ -5,24 +5,18 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.hibernate.SessionFactory;
-import org.hibernate.boot.registry.BootstrapServiceRegistry;
-import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.cfg.Environment;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.rx.service.RxConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.service.ServiceRegistry;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.runner.RunWith;
 
-import java.util.Properties;
 import java.util.concurrent.CompletionStage;
 
 @RunWith(VertxUnitRunner.class)
@@ -50,42 +44,22 @@ public abstract class BaseRxTest {
 
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
-		configuration.setProperty( Environment.HBM2DDL_AUTO, "create-drop" );
+		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, "create-drop" );
 		configuration.setProperty( AvailableSettings.URL, "jdbc:postgresql://localhost:5432/hibernate-rx?user=hibernate-rx&password=hibernate-rx" );
 		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
 		return configuration;
 	}
 
-	protected BootstrapServiceRegistry buildBootstrapServiceRegistry() {
-		final BootstrapServiceRegistryBuilder builder = new BootstrapServiceRegistryBuilder();
-		builder.applyClassLoader( getClass().getClassLoader() );
-		return builder.build();
-	}
-
-	protected StandardServiceRegistry buildServiceRegistry(
-			BootstrapServiceRegistry bootRegistry,
-			Configuration configuration) {
-		Properties properties = new Properties();
-		properties.putAll( configuration.getProperties() );
-		ConfigurationHelper.resolvePlaceHolders( properties );
-
-		StandardServiceRegistryBuilder cfgRegistryBuilder = configuration.getStandardServiceRegistryBuilder();
-		StandardServiceRegistryBuilder registryBuilder = new StandardServiceRegistryBuilder( bootRegistry, cfgRegistryBuilder.getAggregatedCfgXml() )
-				.applySettings( properties );
-
-		return registryBuilder.build();
-	}
-
 	@Before
 	public void before() {
-		// for now, build the configuration to get all the property settings
-		Configuration configuration = constructConfiguration();
-		BootstrapServiceRegistry bootRegistry = buildBootstrapServiceRegistry();
-		ServiceRegistry serviceRegistry = buildServiceRegistry( bootRegistry, configuration );
-		// this is done here because Configuration does not currently support 4.0 xsd
-		sessionFactory = configuration.buildSessionFactory( serviceRegistry );
-		poolProvider = serviceRegistry.getService(RxConnectionPoolProvider.class);
-		session = sessionFactory.unwrap( RxSessionFactory.class ).openRxSession();
+		StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
+				.applySettings( constructConfiguration().getProperties() )
+				.build();
+
+		sessionFactory = constructConfiguration().buildSessionFactory(registry);
+		poolProvider = registry.getService(RxConnectionPoolProvider.class);
+
+		session = sessionFactory.unwrap(RxSessionFactory.class).openRxSession();
 	}
 
 	@After
@@ -93,6 +67,7 @@ public abstract class BaseRxTest {
 		if (session != null) {
 			session.close();
 		}
+
 		sessionFactory.close();
 	}
 
