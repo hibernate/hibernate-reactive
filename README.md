@@ -63,7 +63,6 @@ At this time, Hibernate RX does _not_ support the following features:
 - `@NamedEntityGraph`
 - transparent lazy loading
 - eager select fetching, for example `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`
-- `cascade` of persistence operations to associated entities
 - criteria queries
 
 Instead, use the following supported features:
