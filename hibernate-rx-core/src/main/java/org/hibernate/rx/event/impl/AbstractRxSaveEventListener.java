@@ -374,7 +374,7 @@ abstract class AbstractRxSaveEventListener
 		try {
 			return new Cascade(getCascadeRxAction(),
 					CascadePoint.AFTER_INSERT_BEFORE_DELETE,
-					persister,entity, source)
+					persister, entity, source)
 					.cascade(anything);
 		}
 		finally {
