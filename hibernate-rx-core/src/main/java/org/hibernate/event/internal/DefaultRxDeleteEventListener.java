@@ -5,7 +5,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.TransientObjectException;
 import org.hibernate.action.internal.OrphanRemovalAction;
-import org.hibernate.classic.Lifecycle;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.ForeignKeys;
 import org.hibernate.engine.internal.Nullability;
@@ -164,16 +163,7 @@ public class DefaultRxDeleteEventListener
 			version = entityEntry.getVersion();
 		}
 
-        /*if ( !persister.isMutable() ) {
-            throw new HibernateException(
-                    "attempted to delete an object of immutable class: " +
-                    MessageHelper.infoString(persister)
-                );
-        }*/
-
-		if ( invokeDeleteLifecycle( source, entity, persister ) ) {
-			return RxUtil.nullFuture();
-		}
+		callbackRegistry.preRemove( entity );
 
 		return deleteEntity(
 				source,
@@ -369,19 +359,6 @@ public class DefaultRxDeleteEventListener
 		java.util.Arrays.fill( copyability, true );
 		TypeHelper.deepCopy( currentState, propTypes, copyability, deletedState, session );
 		return deletedState;
-	}
-
-	protected boolean invokeDeleteLifecycle(EventSource session, Object entity, EntityPersister persister) {
-		callbackRegistry.preRemove( entity );
-
-		if ( persister.implementsLifecycle() ) {
-			LOG.debug( "Calling onDelete()" );
-			if ( ( (Lifecycle) entity ).onDelete( session ) ) {
-				LOG.debug( "Deletion vetoed by onDelete()" );
-				return true;
-			}
-		}
-		return false;
 	}
 
 	protected CompletionStage<?> cascadeBeforeDelete(

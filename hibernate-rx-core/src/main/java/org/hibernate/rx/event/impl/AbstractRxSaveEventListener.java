@@ -177,10 +177,6 @@ abstract class AbstractRxSaveEventListener
 			key = null;
 		}
 
-		if ( helper.invokeSaveLifecycle( entity, persister, source ) ) {
-			return RxUtil.nullFuture(); //RxUtil.completedFuture( id ); //EARLY EXIT
-		}
-
 		return rxPerformSaveOrReplicate(
 				entity,
 				key,
@@ -406,11 +402,6 @@ abstract class AbstractRxSaveEventListener
 		@Override
 		protected boolean visitCollectionsBeforeSave(Object entity, Serializable id, Object[] values, Type[] types, EventSource source) {
 			return super.visitCollectionsBeforeSave(entity, id, values, types, source);
-		}
-
-		@Override
-		protected boolean invokeSaveLifecycle(Object entity, EntityPersister persister, EventSource source) {
-			return super.invokeSaveLifecycle(entity, persister, source);
 		}
 
 		@Override
