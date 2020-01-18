@@ -6,11 +6,11 @@
  */
 package org.hibernate.rx.event.spi;
 
-import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.HibernateException;
 import org.hibernate.event.spi.FlushEvent;
+
+import java.io.Serializable;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Defines the contract for handling of session flush events.
@@ -25,5 +25,5 @@ public interface RxFlushEventListener extends Serializable {
 	 *
 	 * @throws HibernateException
 	 */
-	public CompletionStage<Void> rxOnFlush(FlushEvent event) throws HibernateException;
+	CompletionStage<Void> rxOnFlush(FlushEvent event) throws HibernateException;
 }

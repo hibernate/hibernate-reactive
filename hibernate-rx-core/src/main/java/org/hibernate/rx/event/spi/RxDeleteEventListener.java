@@ -1,12 +1,12 @@
 package org.hibernate.rx.event.spi;
 
 
+import org.hibernate.HibernateException;
+import org.hibernate.event.spi.DeleteEvent;
+
 import java.io.Serializable;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-
-import org.hibernate.HibernateException;
-import org.hibernate.event.spi.DeleteEvent;
 
 /**
  * Defines the contract for handling of deletion events generated from a session.
@@ -22,7 +22,7 @@ public interface RxDeleteEventListener extends Serializable {
 	 *
 	 * @throws HibernateException
 	 */
-	public CompletionStage<Void> rxOnDelete(DeleteEvent event) throws HibernateException;
+	CompletionStage<Void> rxOnDelete(DeleteEvent event) throws HibernateException;
 
-	public CompletionStage<Void> rxOnDelete(DeleteEvent event, Set transientEntities) throws HibernateException;
+	CompletionStage<Void> rxOnDelete(DeleteEvent event, Set transientEntities) throws HibernateException;
 }

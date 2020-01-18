@@ -144,7 +144,8 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 		@Convert(converter = BinInteger.class)
 		private BigInteger binInteger;
 
-		@ManyToOne(fetch = FetchType.LAZY)
+		@ManyToOne(fetch = FetchType.LAZY,
+				cascade = CascadeType.REMOVE)
 		Basic parent;
 
 		@Transient boolean prePersisted;

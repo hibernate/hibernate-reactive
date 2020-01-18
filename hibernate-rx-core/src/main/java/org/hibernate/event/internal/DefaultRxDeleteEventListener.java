@@ -7,11 +7,13 @@ import org.hibernate.TransientObjectException;
 import org.hibernate.action.internal.OrphanRemovalAction;
 import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.classic.Lifecycle;
-import org.hibernate.engine.internal.Cascade;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.ForeignKeys;
 import org.hibernate.engine.internal.Nullability;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.Status;
 import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.service.spi.JpaBootstrapSensitive;
 import org.hibernate.event.spi.DeleteEvent;
@@ -25,6 +27,8 @@ import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.RxSessionInternal;
+import org.hibernate.rx.engine.impl.Cascade;
+import org.hibernate.rx.engine.impl.CascadingActions;
 import org.hibernate.rx.engine.impl.RxEntityDeleteAction;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.event.spi.RxDeleteEventListener;
@@ -64,7 +68,6 @@ public class DefaultRxDeleteEventListener
 	 *
 	 * @param event The delete event to be handled.
 	 *
-	 * @throws HibernateException
 	 */
 	public void onDelete(DeleteEvent event) throws HibernateException {
 		onDelete( event, new IdentitySet() );
@@ -76,7 +79,6 @@ public class DefaultRxDeleteEventListener
 	 * @param event The delete event.
 	 * @param transientEntities The cache of entities already deleted
 	 *
-	 * @throws HibernateException
 	 */
 	public void onDelete(DeleteEvent event, Set transientEntities) throws HibernateException {
 		throw new NotYetImplementedException();
@@ -87,9 +89,6 @@ public class DefaultRxDeleteEventListener
 	 *
 	 * @param event The delete event to be handled.
 	 *
-	 * @return
-	 *
-	 * @throws HibernateException
 	 */
 	public CompletionStage<Void> rxOnDelete(DeleteEvent event) throws HibernateException {
 		return rxOnDelete( event, new IdentitySet() );
@@ -101,7 +100,6 @@ public class DefaultRxDeleteEventListener
 	 * @param event The delete event.
 	 * @param transientEntities The cache of entities already deleted
 	 *
-	 * @throws HibernateException
 	 */
 	public CompletionStage<Void> rxOnDelete(DeleteEvent event, Set transientEntities) throws HibernateException {
 
@@ -121,9 +119,8 @@ public class DefaultRxDeleteEventListener
 			persister = source.getEntityPersister( event.getEntityName(), entity );
 
 			if ( ForeignKeys.isTransient( persister.getEntityName(), entity, null, source ) ) {
-				deleteTransientEntity( source, entity, event.isCascadeDeleteEnabled(), persister, transientEntities );
 				// EARLY EXIT!!!
-				return RxUtil.nullFuture();
+				return deleteTransientEntity( source, entity, event.isCascadeDeleteEnabled(), persister, transientEntities );
 			}
 			performDetachedEntityDeletionCheck( event );
 
@@ -234,7 +231,7 @@ public class DefaultRxDeleteEventListener
 	 * @param transientEntities A cache of already visited transient entities
 	 * (to avoid infinite recursion).
 	 */
-	protected void deleteTransientEntity(
+	protected CompletionStage<Void> deleteTransientEntity(
 			EventSource session,
 			Object entity,
 			boolean cascadeDeleteEnabled,
@@ -243,11 +240,11 @@ public class DefaultRxDeleteEventListener
 		LOG.handlingTransientEntity();
 		if ( transientEntities.contains( entity ) ) {
 			LOG.trace( "Already handled transient entity; skipping" );
-			return;
+			return RxUtil.nullFuture();
 		}
 		transientEntities.add( entity );
-		cascadeBeforeDelete( session, persister, entity, null, transientEntities );
-		cascadeAfterDelete( session, persister, entity, transientEntities );
+		return cascadeBeforeDelete( session, persister, entity, null, transientEntities )
+				.thenCompose( v -> cascadeAfterDelete( session, persister, entity, transientEntities ) );
 	}
 
 	/**
@@ -262,7 +259,7 @@ public class DefaultRxDeleteEventListener
 	 * @param persister The entity persister.
 	 * @param transientEntities A cache of already deleted entities.
 	 */
-	protected final CompletionStage<Void> deleteEntity(
+	protected CompletionStage<?> deleteEntity(
 			final EventSource session,
 			final Object entity,
 			final EntityEntry entityEntry,
@@ -306,7 +303,7 @@ public class DefaultRxDeleteEventListener
 		persistenceContext.setEntryStatus( entityEntry, Status.DELETED );
 		final EntityKey key = session.generateEntityKey( entityEntry.getId(), persister );
 
-		cascadeBeforeDelete( session, persister, entity, entityEntry, transientEntities );
+		CompletionStage<?> result = cascadeBeforeDelete( session, persister, entity, entityEntry, transientEntities );
 
 		new ForeignKeys.Nullifier(
 				entity,
@@ -354,13 +351,8 @@ public class DefaultRxDeleteEventListener
 			);
 		}
 
-		cascadeAfterDelete( session, persister, entity, transientEntities );
+		return result.thenCompose(v -> cascadeAfterDelete( session, persister, entity, transientEntities ));
 
-		// the entry will be removed after the flush, and will no longer
-		// override the stale snapshot
-		// This is now handled by removeEntity() in EntityDeleteAction
-		//persistenceContext.removeDatabaseSnapshot(key);
-		return RxUtil.nullFuture();
 	}
 
 	private RxActionQueue actionQueue(EventSource session) {
@@ -390,7 +382,7 @@ public class DefaultRxDeleteEventListener
 		return false;
 	}
 
-	protected void cascadeBeforeDelete(
+	protected CompletionStage<?> cascadeBeforeDelete(
 			EventSource session,
 			EntityPersister persister,
 			Object entity,
@@ -403,14 +395,9 @@ public class DefaultRxDeleteEventListener
 		persistenceContext.incrementCascadeLevel();
 		try {
 			// cascade-delete to collections BEFORE the collection owner is deleted
-			Cascade.cascade(
-					CascadingActions.DELETE,
-					CascadePoint.AFTER_INSERT_BEFORE_DELETE,
-					session,
-					persister,
-					entity,
-					transientEntities
-			);
+			return new Cascade(CascadingActions.DELETE, CascadePoint.AFTER_INSERT_BEFORE_DELETE,
+					persister, entity, session)
+					.cascade( transientEntities );
 		}
 		finally {
 			persistenceContext.decrementCascadeLevel();
@@ -418,7 +405,7 @@ public class DefaultRxDeleteEventListener
 		}
 	}
 
-	protected void cascadeAfterDelete(
+	protected CompletionStage<Void> cascadeAfterDelete(
 			EventSource session,
 			EntityPersister persister,
 			Object entity,
@@ -430,14 +417,9 @@ public class DefaultRxDeleteEventListener
 		persistenceContext.incrementCascadeLevel();
 		try {
 			// cascade-delete to many-to-one AFTER the parent was deleted
-			Cascade.cascade(
-					CascadingActions.DELETE,
-					CascadePoint.BEFORE_INSERT_AFTER_DELETE,
-					session,
-					persister,
-					entity,
-					transientEntities
-			);
+			return new Cascade(CascadingActions.DELETE, CascadePoint.BEFORE_INSERT_AFTER_DELETE,
+					persister, entity, session)
+					.cascade( transientEntities );
 		}
 		finally {
 			persistenceContext.decrementCascadeLevel();

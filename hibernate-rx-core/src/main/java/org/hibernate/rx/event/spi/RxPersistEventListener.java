@@ -6,12 +6,12 @@
  */
 package org.hibernate.rx.event.spi;
 
+import org.hibernate.HibernateException;
+import org.hibernate.event.spi.PersistEvent;
+
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-
-import org.hibernate.HibernateException;
-import org.hibernate.event.spi.PersistEvent;
 
 /**
  * Defines the contract for handling of create events generated from a session.
@@ -27,7 +27,7 @@ public interface RxPersistEventListener extends Serializable {
 	 *
 	 * @throws HibernateException
 	 */
-	public CompletionStage<Void> rxOnPersist(PersistEvent event) throws HibernateException;
+	CompletionStage<Void> rxOnPersist(PersistEvent event) throws HibernateException;
 
 	/**
 	 * Handle the given create event.
@@ -36,6 +36,6 @@ public interface RxPersistEventListener extends Serializable {
 	 *
 	 * @throws HibernateException
 	 */
-	public CompletionStage<Void> rxOnPersist(PersistEvent event, Map createdAlready) throws HibernateException;
+	CompletionStage<Void> rxOnPersist(PersistEvent event, Map createdAlready) throws HibernateException;
 
 }
