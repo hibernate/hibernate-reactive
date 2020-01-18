@@ -1,1 +1,1 @@
-org.hibernate.rx.boot.impl.RxHibernateSessionFactoryBuilderFactory
+org.hibernate.rx.boot.impl.RxSessionFactoryBuilderFactory

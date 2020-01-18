@@ -240,4 +240,10 @@ public interface RxSession {
 	 * @return The current cache mode.
 	 */
 	CacheMode getCacheMode();
+
+	/**
+	 * Close the reactive session.
+	 */
+	void close();
+
 }

@@ -1,36 +1,33 @@
 package org.hibernate.rx.engine.impl;
 
-import java.util.List;
-import javax.naming.NamingException;
-import javax.naming.Reference;
-import javax.naming.StringRefAddr;
-import javax.persistence.EntityGraph;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.PersistenceException;
-
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.engine.jndi.spi.JndiService;
 import org.hibernate.engine.spi.SessionFactoryDelegatingImpl;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionFactoryRegistry;
 import org.hibernate.internal.SessionFactoryRegistry.ObjectFactoryImpl;
-import org.hibernate.rx.RxHibernateSession;
-import org.hibernate.rx.RxHibernateSessionFactory;
-import org.hibernate.rx.engine.spi.RxHibernateSessionBuilderImplementor;
-import org.hibernate.rx.engine.spi.RxHibernateSessionFactoryImplementor;
-import org.hibernate.rx.impl.RxHibernateSessionBuilderDelegator;
-import org.hibernate.rx.impl.RxHibernateSessionImpl;
+import org.hibernate.rx.RxSession;
+import org.hibernate.rx.RxSessionFactory;
+import org.hibernate.rx.engine.spi.RxSessionBuilderImplementor;
+import org.hibernate.rx.engine.spi.RxSessionFactoryImplementor;
+import org.hibernate.rx.impl.RxSessionBuilderDelegator;
 
-public class RxHibernateSessionFactoryImpl extends SessionFactoryDelegatingImpl
-		implements RxHibernateSessionFactoryImplementor {
+import javax.naming.Reference;
+import javax.naming.StringRefAddr;
+import javax.persistence.EntityGraph;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceException;
+import java.util.List;
+
+public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
+		implements RxSessionFactoryImplementor {
 
 	private final String uuid;
 
-	public RxHibernateSessionFactoryImpl(SessionFactoryImplementor delegate) {
+	public RxSessionFactoryImpl(SessionFactoryImplementor delegate) {
 		super( delegate );
 		uuid = delegate.getUuid();
 		SessionFactoryRegistry.INSTANCE.addSessionFactory(
@@ -43,22 +40,22 @@ public class RxHibernateSessionFactoryImpl extends SessionFactoryDelegatingImpl
 	}
 
 	@Override
-	public RxHibernateSession openRxSession() throws HibernateException {
-		return (RxHibernateSession) openSession();
-	}
-
-	@Override
-	public Session openSession() throws HibernateException {
+	public RxSession openRxSession() throws HibernateException {
 		return withOptions().openRxSession();
 	}
 
 	@Override
-	public RxHibernateSessionBuilderImplementor withOptions() {
-		return new RxHibernateSessionBuilderDelegator( delegate().withOptions(), this );
+	public Session openSession() throws HibernateException {
+		return withOptions().openSession();
 	}
 
 	@Override
-	public Reference getReference() throws NamingException {
+	public RxSessionBuilderImplementor withOptions() {
+		return new RxSessionBuilderDelegator( delegate().withOptions(), this );
+	}
+
+	@Override
+	public Reference getReference() {
 		return new Reference(
 				getClass().getName(),
 				new StringRefAddr( "uuid", uuid ),
@@ -86,15 +83,15 @@ public class RxHibernateSessionFactoryImpl extends SessionFactoryDelegatingImpl
 			return type.cast( this );
 		}
 
-		if ( type.isAssignableFrom( RxHibernateSessionFactory.class ) ) {
+		if ( type.isAssignableFrom( RxSessionFactory.class ) ) {
 			return type.cast( this );
 		}
 
-		if ( type.isAssignableFrom( RxHibernateSessionFactoryImplementor.class ) ) {
+		if ( type.isAssignableFrom( RxSessionFactoryImplementor.class ) ) {
 			return type.cast( this );
 		}
 
-		if ( type.isAssignableFrom( RxHibernateSessionFactoryImpl.class ) ) {
+		if ( type.isAssignableFrom( RxSessionFactoryImpl.class ) ) {
 			return type.cast( this );
 		}
 

@@ -142,4 +142,8 @@ public class MockRxSession implements RxSession {
 	public CacheMode getCacheMode() {
 		return null;
 	}
+
+	@Override
+	public void close() {}
+
 }

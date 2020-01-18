@@ -3,9 +3,9 @@ package org.hibernate.rx.boot.impl;
 import org.hibernate.boot.spi.AbstractDelegatingSessionFactoryOptions;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 
-public class RxHibernateSessionFactoryOptions extends AbstractDelegatingSessionFactoryOptions {
+public class RxSessionFactoryOptions extends AbstractDelegatingSessionFactoryOptions {
 
-	public RxHibernateSessionFactoryOptions(SessionFactoryOptions delegate) {
+	public RxSessionFactoryOptions(SessionFactoryOptions delegate) {
 		super( delegate );
 	}
 

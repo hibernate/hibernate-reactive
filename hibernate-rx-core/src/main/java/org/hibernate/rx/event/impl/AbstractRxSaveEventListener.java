@@ -16,8 +16,8 @@ import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
+import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.impl.RxEntityInsertAction;
-import org.hibernate.rx.impl.RxHibernateSessionImpl;
 import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.type.Type;
@@ -296,16 +296,15 @@ abstract class AbstractRxSaveEventListener
 			EntityIdentityInsertAction insert = new EntityIdentityInsertAction(
 					values, entity, persister, isVersionIncrementDisabled(), source, shouldDelayIdentityInserts
 			);
-			return ( (RxHibernateSessionImpl) source ).getRxActionQueue().addAction( insert ).thenApply( v -> insert );
+			return ( (RxSessionInternal) source ).getRxActionQueue().addAction( insert ).thenApply(v -> insert );
 		}
 		else {
 			Object version = Versioning.getVersion( values, persister );
 			RxEntityInsertAction insert = new RxEntityInsertAction(
 					id, values, entity, version, persister, isVersionIncrementDisabled(), source
 			);
-			return ( (RxHibernateSessionImpl) source ).getRxActionQueue().addAction( insert ).thenApply( v -> insert );
+			return ( (RxSessionInternal) source ).getRxActionQueue().addAction( insert ).thenApply(v -> insert );
 		}
 	}
-
 
 }

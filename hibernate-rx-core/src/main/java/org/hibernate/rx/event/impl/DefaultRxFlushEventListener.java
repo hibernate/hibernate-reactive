@@ -8,7 +8,7 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEvent;
 import org.hibernate.event.spi.FlushEventListener;
 import org.hibernate.internal.CoreMessageLogger;
-import org.hibernate.rx.RxHibernateSession;
+import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.event.spi.RxFlushEventListener;
 import org.hibernate.rx.util.impl.RxUtil;
@@ -80,7 +80,7 @@ public class DefaultRxFlushEventListener extends DefaultFlushEventListener imple
 	}
 
 	private RxActionQueue actionQueue(EventSource session) {
-		return session.unwrap( RxHibernateSession.class ).getRxActionQueue();
+		return session.unwrap( RxSessionInternal.class ).getRxActionQueue();
 	}
 
 	public static class EventContextManagingFlushEventListenerDuplicationStrategy implements DuplicationStrategy {

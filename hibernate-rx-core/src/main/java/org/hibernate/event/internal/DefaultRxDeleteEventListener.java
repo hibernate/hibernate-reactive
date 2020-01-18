@@ -1,9 +1,5 @@
 package org.hibernate.event.internal;
 
-import java.io.Serializable;
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.CacheMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -15,11 +11,7 @@ import org.hibernate.engine.internal.Cascade;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.ForeignKeys;
 import org.hibernate.engine.internal.Nullability;
-import org.hibernate.engine.spi.CascadingActions;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.Status;
+import org.hibernate.engine.spi.*;
 import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.service.spi.JpaBootstrapSensitive;
 import org.hibernate.event.spi.DeleteEvent;
@@ -32,13 +24,17 @@ import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
-import org.hibernate.rx.RxHibernateSession;
+import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.impl.RxEntityDeleteAction;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.event.spi.RxDeleteEventListener;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
+
+import java.io.Serializable;
+import java.util.Set;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Defines the default delete event listener used by hibernate for deleting entities
@@ -368,7 +364,7 @@ public class DefaultRxDeleteEventListener
 	}
 
 	private RxActionQueue actionQueue(EventSource session) {
-		return session.unwrap( RxHibernateSession.class ).getRxActionQueue();
+		return session.unwrap( RxSessionInternal.class ).getRxActionQueue();
 	}
 
 	private Object[] createDeletedState(EntityPersister persister, Object[] currentState, EventSource session) {

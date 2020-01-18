@@ -4,14 +4,14 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
+import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.rx.service.RxConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
@@ -31,8 +31,9 @@ public abstract class BaseRxTest {
 	@Rule
 	public Timeout rule = Timeout.seconds( 3600 );
 
-	private RxHibernateSession session;
-	private SessionFactoryImplementor sessionFactory;
+	private RxSession session;
+	private SessionFactory sessionFactory;
+	private RxConnectionPoolProvider poolProvider;
 
 	protected static void test(TestContext context, CompletionStage<?> cs) {
 		// this will be added to TestContext in the next vert.x release
@@ -61,7 +62,7 @@ public abstract class BaseRxTest {
 		return builder.build();
 	}
 
-	protected StandardServiceRegistryImpl buildServiceRegistry(
+	protected StandardServiceRegistry buildServiceRegistry(
 			BootstrapServiceRegistry bootRegistry,
 			Configuration configuration) {
 		Properties properties = new Properties();
@@ -72,7 +73,7 @@ public abstract class BaseRxTest {
 		StandardServiceRegistryBuilder registryBuilder = new StandardServiceRegistryBuilder( bootRegistry, cfgRegistryBuilder.getAggregatedCfgXml() )
 				.applySettings( properties );
 
-		return (StandardServiceRegistryImpl) registryBuilder.build();
+		return registryBuilder.build();
 	}
 
 	@Before
@@ -82,8 +83,9 @@ public abstract class BaseRxTest {
 		BootstrapServiceRegistry bootRegistry = buildBootstrapServiceRegistry();
 		ServiceRegistry serviceRegistry = buildServiceRegistry( bootRegistry, configuration );
 		// this is done here because Configuration does not currently support 4.0 xsd
-		sessionFactory = (SessionFactoryImplementor) configuration.buildSessionFactory( serviceRegistry );
-		session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
+		sessionFactory = configuration.buildSessionFactory( serviceRegistry );
+		poolProvider = serviceRegistry.getService(RxConnectionPoolProvider.class);
+		session = sessionFactory.unwrap( RxSessionFactory.class ).openRxSession();
 	}
 
 	@After
@@ -94,24 +96,17 @@ public abstract class BaseRxTest {
 		sessionFactory.close();
 	}
 
-//	protected CompletionStage<RxSession> session() {
-//		return RxUtil.completedFuture(session.reactive());
-//	}
-//
-
 	protected CompletionStage<RxSession> openSession() {
 		return RxUtil.nullFuture().thenApply( v -> {
 			if (session != null) {
 				session.close();
 			}
-			session = sessionFactory.unwrap( RxHibernateSessionFactory.class ).openRxSession();
-			return session.reactive();
+			session = sessionFactory.unwrap( RxSessionFactory.class ).openRxSession();
+			return session;
 		});
 	}
 
 	protected RxConnection connection() {
-		RxConnectionPoolProvider poolProvider = sessionFactory.getServiceRegistry()
-				.getService( RxConnectionPoolProvider.class );
 		return poolProvider.getConnection();
 	}
 

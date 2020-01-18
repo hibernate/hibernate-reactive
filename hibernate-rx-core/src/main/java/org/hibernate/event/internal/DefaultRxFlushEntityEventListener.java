@@ -1,23 +1,11 @@
 package org.hibernate.event.internal;
 
-import java.io.Serializable;
-import java.util.Arrays;
-
-import org.hibernate.AssertionFailure;
-import org.hibernate.CustomEntityDirtinessStrategy;
-import org.hibernate.HibernateException;
-import org.hibernate.SessionFactory;
-import org.hibernate.StaleObjectStateException;
+import org.hibernate.*;
 import org.hibernate.action.internal.DelayedPostInsertIdentifier;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.internal.Versioning;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.SelfDirtinessTracker;
-import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.engine.spi.Status;
+import org.hibernate.engine.spi.*;
 import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEntityEvent;
@@ -30,10 +18,13 @@ import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
-import org.hibernate.rx.RxHibernateSession;
+import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.impl.RxEntityUpdateAction;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.Type;
+
+import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * @see org.hibernate.event.internal.DefaultFlushEntityEventListener
@@ -296,7 +287,7 @@ public class DefaultRxFlushEntityEventListener implements FlushEntityEventListen
 
 		// schedule the update
 		// note that we intentionally do _not_ pass in currentPersistentState!
-		( (RxHibernateSession) session ).getRxActionQueue().addAction(
+		( (RxSessionInternal) session ).getRxActionQueue().addAction(
 				new RxEntityUpdateAction(
 						entry.getId(),
 						values,
