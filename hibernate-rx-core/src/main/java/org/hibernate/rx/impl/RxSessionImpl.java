@@ -4,9 +4,7 @@ import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.rx.RxQuery;
 import org.hibernate.rx.RxSession;
-import org.hibernate.rx.RxSessionFactory;
 import org.hibernate.rx.RxSessionInternal;
-import org.hibernate.rx.engine.spi.RxSessionFactoryImplementor;
 
 import javax.persistence.LockModeType;
 import java.util.Map;
@@ -19,11 +17,9 @@ import java.util.concurrent.CompletionStage;
  */
 public class RxSessionImpl implements RxSession {
 
-	private final RxSessionFactory factory;
 	private final RxSessionInternal delegate;
 
-	public RxSessionImpl(RxSessionFactoryImplementor factory, RxSessionInternal session) {
-		this.factory = factory;
+	public RxSessionImpl(RxSessionInternal session) {
 		this.delegate = session;
 	}
 

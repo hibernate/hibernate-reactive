@@ -31,7 +31,6 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements RxSessionInternal, EventSource {
@@ -61,12 +60,7 @@ public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements R
 
 	@Override
 	public RxSession reactive() {
-		return new RxSessionImpl( factory, this );
-	}
-
-	@Override
-	public void reactive(Consumer<RxSession> consumer) {
-		consumer.accept( new RxSessionImpl( factory, this ) );
+		return new RxSessionImpl( this );
 	}
 
 	@Override

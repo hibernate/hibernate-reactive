@@ -8,7 +8,6 @@ import javax.persistence.LockModeType;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
 
 /**
  * A Hibernate {@link Session} that allows the creation of a reactive session
@@ -23,9 +22,6 @@ public interface RxSessionInternal extends Session {
 	SessionImplementor delegate();
 
 	RxSession reactive();
-
-	// Alternative
-	void reactive(Consumer<RxSession> consumer);
 
 	RxActionQueue getRxActionQueue();
 
