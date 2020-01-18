@@ -71,18 +71,19 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 		//		during-flush callbacks more leniency in regards to initializing proxies and
 		//		lazy collections during their processing.
 		// For more information, see HHH-2763
-		CompletionStage<Void> ret = RxUtil.nullFuture();
-		return ret.thenCompose( v -> {
-			session.getJdbcCoordinator().flushBeginning();
-			session.getPersistenceContext().setFlushing( true );
-			// we need to lock the collection caches before executing entity inserts/updates in order to
-			// account for bi-directional associations
-			actionQueue( session ).prepareActions();
-			return actionQueue( session ).executeActions();
-		} ).whenComplete( (v, x) -> {
-			session.getPersistenceContext().setFlushing( false );
-			session.getJdbcCoordinator().flushEnding();
-		} );
+		return RxUtil.nullFuture()
+				.thenCompose(v -> {
+					session.getJdbcCoordinator().flushBeginning();
+					session.getPersistenceContext().setFlushing( true );
+					// we need to lock the collection caches before executing entity inserts/updates in order to
+					// account for bi-directional associations
+					actionQueue( session ).prepareActions();
+					return actionQueue( session ).executeActions();
+				} )
+				.whenComplete( (v, x) -> {
+					session.getPersistenceContext().setFlushing( false );
+					session.getJdbcCoordinator().flushEnding();
+				} );
 	}
 
 	private RxActionQueue actionQueue(EventSource session) {
@@ -143,7 +144,6 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 		LOG.debug( "Processing flush-time cascades" );
 
 		CompletionStage<Void> stage = RxUtil.nullFuture();
-
 		final Object anything = null;
 		//safe from concurrent modification because of how concurrentEntries() is implemented on IdentityMap
 		for ( Map.Entry<Object, EntityEntry> me : persistenceContext.reentrantSafeEntityEntries() ) {
@@ -151,7 +151,7 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 			Status status = entry.getStatus();
 			if ( status == Status.MANAGED || status == Status.SAVING || status == Status.READ_ONLY ) {
 				CompletionStage<Void> cascade = cascadeOnFlush(session, entry.getPersister(), me.getKey(), anything);
-				stage = stage.thenCompose( v -> cascade );
+				stage = stage.thenCompose(v -> cascade);
 			}
 		}
 		return stage;

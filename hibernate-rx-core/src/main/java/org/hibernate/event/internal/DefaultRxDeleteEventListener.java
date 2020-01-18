@@ -242,8 +242,9 @@ public class DefaultRxDeleteEventListener
 			return RxUtil.nullFuture();
 		}
 		transientEntities.add( entity );
-		return cascadeBeforeDelete( session, persister, entity, null, transientEntities )
-				.thenCompose( v -> cascadeAfterDelete( session, persister, entity, transientEntities ) );
+		CompletionStage<?> beforeDelete = cascadeBeforeDelete(session, persister, entity, null, transientEntities);
+		CompletionStage<Void> afterDelete = cascadeAfterDelete(session, persister, entity, transientEntities);
+		return beforeDelete.thenCompose(v -> afterDelete);
 	}
 
 	/**
@@ -302,7 +303,7 @@ public class DefaultRxDeleteEventListener
 		persistenceContext.setEntryStatus( entityEntry, Status.DELETED );
 		final EntityKey key = session.generateEntityKey( entityEntry.getId(), persister );
 
-		CompletionStage<?> result = cascadeBeforeDelete( session, persister, entity, entityEntry, transientEntities );
+		CompletionStage<?> beforeDelete = cascadeBeforeDelete( session, persister, entity, entityEntry, transientEntities );
 
 		new ForeignKeys.Nullifier(
 				entity,
@@ -350,7 +351,9 @@ public class DefaultRxDeleteEventListener
 			);
 		}
 
-		return result.thenCompose(v -> cascadeAfterDelete( session, persister, entity, transientEntities ));
+		CompletionStage<Void> afterDelete = cascadeAfterDelete(session, persister, entity, transientEntities);
+
+		return beforeDelete.thenCompose(v -> afterDelete);
 
 	}
 

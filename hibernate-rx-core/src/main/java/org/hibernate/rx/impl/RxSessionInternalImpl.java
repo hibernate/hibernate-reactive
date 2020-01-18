@@ -126,7 +126,9 @@ public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements R
 		CompletionStage<Void> ret = RxUtil.nullFuture();
 		for ( DeleteEventListener listener : listeners( EventType.DELETE ) ) {
 			DeleteEvent event = new DeleteEvent( null, entity, this );
-			ret = ret.thenCompose( v -> ( (RxDeleteEventListener) listener ).rxOnDelete( event ) );
+
+			CompletionStage<Void> delete = ((RxDeleteEventListener) listener).rxOnDelete(event);
+			ret = ret.thenCompose(v -> delete);
 		}
 		return ret;
 	}
@@ -148,7 +150,8 @@ public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements R
 		CompletionStage<Void> ret = RxUtil.nullFuture();
 		FlushEvent flushEvent = new FlushEvent( this );
 		for ( FlushEventListener listener : listeners( EventType.FLUSH ) ) {
-			ret = ret.thenCompose( v -> ( (RxFlushEventListener) listener ).rxOnFlush( flushEvent ) );
+			CompletionStage<Void> flush = ((RxFlushEventListener) listener).rxOnFlush(flushEvent);
+			ret = ret.thenCompose( v -> flush );
 		}
 
 //			delayedAfterCompletion();
@@ -273,7 +276,8 @@ public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements R
 //		pulseTransactionCoordinator();
 		CompletionStage<Void> ret = RxUtil.nullFuture();
 		for ( LoadEventListener listener : listeners( EventType.LOAD ) ) {
-			ret = ret.thenCompose( v -> ( (RxLoadEventListener) listener ).rxOnLoad( event, loadType ) );
+			CompletionStage<Void> load = ((RxLoadEventListener) listener).rxOnLoad(event, loadType);
+			ret = ret.thenCompose( v -> load );
 		}
 		return ret;
 	}

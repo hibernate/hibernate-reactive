@@ -440,10 +440,8 @@ public final class Cascade {
 			final PersistenceContext persistenceContext = eventSource.getPersistenceContextInternal();
 			persistenceContext.addChildParent( child, parent );
 			try {
-				stage = stage.thenCompose(v ->
-						action.cascade( eventSource, child, entityName, anything, isCascadeDeleteEnabled )
-						.thenAccept(vv->{})
-				);
+				CompletionStage<?> cascade = action.cascade(eventSource, child, entityName, anything, isCascadeDeleteEnabled);
+				stage = stage.thenCompose(v -> cascade).thenAccept(vv->{});
 			}
 			finally {
 				persistenceContext.removeChildParent( child );
