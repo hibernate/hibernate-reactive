@@ -134,7 +134,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		}
 
 		// TODO : shouldn't inserts be Expectations.NONE?
-		final Expectation expectation = Expectations.appropriateExpectation( delegate.insertResultCheckStyles[j] );
+		final Expectation expectation = Expectations.appropriateExpectation( delegate.getInsertResultCheckStyles()[j] );
 //		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
 //		final boolean useBatch = expectation.canBeBatched() &&
 //				jdbcBatchSizeToUse > 1 &&
@@ -172,7 +172,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		}
 		final boolean useVersion = j == 0 && delegate.isVersioned();
 //		final boolean callable = delegate.isDeleteCallable( j );
-		final Expectation expectation = Expectations.appropriateExpectation( delegate.deleteResultCheckStyles[j] );
+		final Expectation expectation = Expectations.appropriateExpectation( delegate.getDeleteResultCheckStyles()[j] );
 //		final boolean useBatch = j == 0 && delegate.isBatchable() && expectation.canBeBatched();
 //		if ( useBatch && deleteBatchKey == null ) {
 //			deleteBatchKey = new BasicBatchKey(
@@ -337,7 +337,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			final String sql,
 			final SharedSessionContractImplementor session) throws HibernateException {
 
-		final Expectation expectation = Expectations.appropriateExpectation( delegate.updateResultCheckStyles[j] );
+		final Expectation expectation = Expectations.appropriateExpectation( delegate.getUpdateResultCheckStyles()[j] );
 //		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
 //		final boolean useBatch = expectation.canBeBatched() && isBatchable() && jdbcBatchSizeToUse > 1;
 //		if ( useBatch && updateBatchKey == null ) {
