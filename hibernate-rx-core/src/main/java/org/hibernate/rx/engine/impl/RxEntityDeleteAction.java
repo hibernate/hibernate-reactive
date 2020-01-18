@@ -1,8 +1,5 @@
 package org.hibernate.rx.engine.impl;
 
-import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityDeleteAction;
@@ -14,24 +11,22 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.service.spi.EventListenerGroup;
-import org.hibernate.event.spi.EventType;
-import org.hibernate.event.spi.PostCommitDeleteEventListener;
-import org.hibernate.event.spi.PostDeleteEvent;
-import org.hibernate.event.spi.PostDeleteEventListener;
-import org.hibernate.event.spi.PreDeleteEvent;
-import org.hibernate.event.spi.PreDeleteEventListener;
+import org.hibernate.event.spi.*;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.rx.engine.spi.RxExecutable;
 import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
+import java.io.Serializable;
+import java.util.concurrent.CompletionStage;
+
 public class RxEntityDeleteAction extends EntityDeleteAction implements RxExecutable {
 	private final boolean isCascadeDeleteEnabled;
-	private Object[] state;
-	private Object version;
+	private final Object[] state;
+	private final Object version;
+	private final Object[] naturalIdValues;
 	private SoftLock lock;
-	private Object[] naturalIdValues;
 
 	/**
 	 * Constructs an EntityDeleteAction.

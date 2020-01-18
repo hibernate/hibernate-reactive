@@ -6,10 +6,6 @@
  */
 package org.hibernate.rx.engine.impl;
 
-import java.io.Serializable;
-import java.util.Iterator;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
@@ -17,25 +13,19 @@ import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.entry.CacheEntry;
 import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.internal.Versioning;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.SessionEventListenerManager;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.*;
 import org.hibernate.event.service.spi.EventListenerGroup;
-import org.hibernate.event.spi.EventType;
-import org.hibernate.event.spi.PostCommitInsertEventListener;
-import org.hibernate.event.spi.PostInsertEvent;
-import org.hibernate.event.spi.PostInsertEventListener;
-import org.hibernate.event.spi.PreInsertEvent;
-import org.hibernate.event.spi.PreInsertEventListener;
+import org.hibernate.event.spi.*;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.rx.engine.spi.RxExecutable;
 import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.internal.StatsHelper;
 import org.hibernate.stat.spi.StatisticsImplementor;
+
+import java.io.Serializable;
+import java.util.Iterator;
+import java.util.concurrent.CompletionStage;
 
 /**
  * The action for performing an entity insertion, for entities not defined to use IDENTITY generation.
@@ -85,7 +75,7 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 
 	@Override
 	public CompletionStage<Void> rxExecute() throws HibernateException {
-		CompletionStage<Void> insertStage = null;
+
 		nullifyTransientReferencesIfNotAlready();
 
 		EntityPersister persister = getPersister();
@@ -99,7 +89,7 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 
 		// Don't need to lock the cache here, since if someone
 		// else inserted the same pk first, the insert would fail
-
+		CompletionStage<Void> insertStage;
 		if ( !veto ) {
 			insertStage = rxPersister.insertRx( id, getState(), instance, session )
 					.thenApply( res -> {
