@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Implementats the RxSession API. This delegating class is needed to
+ * Implements the RxSession API. This delegating class is needed to
  * avoid name clashes when implementing both RxSession and Session.
  */
 public class RxSessionImpl implements RxSession {
@@ -152,6 +152,22 @@ public class RxSessionImpl implements RxSession {
 	public boolean isFetchProfileEnabled(String name) {
 		return delegate.isFetchProfileEnabled(name);
 	}
+
+	//Filters can't be tested until we have HQL
+	/*@Override
+	public Filter enableFilter(String filterName) {
+		return delegate.enableFilter(filterName);
+	}
+
+	@Override
+	public void disableFilter(String filterName) {
+		delegate.disableFilter(filterName);
+	}
+
+	@Override
+	public Filter getEnabledFilter(String filterName) {
+		return delegate.getEnabledFilter(filterName);
+	}*/
 
 	@Override
 	public void close() {
