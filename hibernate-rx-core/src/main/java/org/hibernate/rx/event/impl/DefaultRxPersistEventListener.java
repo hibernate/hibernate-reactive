@@ -12,6 +12,7 @@ import org.hibernate.PersistentObjectException;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
+import org.hibernate.event.internal.AbstractSaveEventListener.EntityState;
 import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PersistEvent;
@@ -47,11 +48,6 @@ public class DefaultRxPersistEventListener
 	@Override
 	protected CascadingAction getCascadeRxAction() {
 		return CascadingActions.PERSIST;
-	}
-
-	@Override
-	protected Boolean getAssumedUnsaved() {
-		return Boolean.TRUE;
 	}
 
 	/**
@@ -98,7 +94,7 @@ public class DefaultRxPersistEventListener
 		}
 
 		final EntityEntry entityEntry = source.getPersistenceContextInternal().getEntry( entity );
-		EntityState entityState = getEntityState( entity, entityName, entityEntry, source );
+		EntityState entityState = helper.getEntityState( entity, entityName, entityEntry, source );
 		if ( entityState == EntityState.DETACHED ) {
 			// JPA 2, in its version of a "foreign generated", allows the id attribute value
 			// to be manually set by the user, even though this manual value is irrelevant.
@@ -115,7 +111,7 @@ public class DefaultRxPersistEventListener
 					LOG.debug( "Resetting entity id attribute to null for foreign generator" );
 				}
 				persister.setIdentifier( entity, null, source );
-				entityState = getEntityState( entity, entityName, entityEntry, source );
+				entityState = helper.getEntityState( entity, entityName, entityEntry, source );
 			}
 		}
 
@@ -123,7 +119,7 @@ public class DefaultRxPersistEventListener
 			case DETACHED: {
 				return RxUtil.failedFuture( new PersistentObjectException(
 						"detached entity passed to persist: " +
-								getLoggableName( event.getEntityName(), entity )
+								helper.getLoggableName( event.getEntityName(), entity )
 				) );
 			}
 			case PERSISTENT: {
@@ -142,7 +138,7 @@ public class DefaultRxPersistEventListener
 				return RxUtil.failedFuture( new ObjectDeletedException(
 						"deleted entity passed to persist",
 						null,
-						getLoggableName( event.getEntityName(), entity )
+						helper.getLoggableName( event.getEntityName(), entity )
 				) );
 			}
 		}
@@ -217,13 +213,13 @@ public class DefaultRxPersistEventListener
 	}
 
 	@Override
-	public void onPersist(PersistEvent event) throws HibernateException {
-		// fake method
+	public void onPersist(PersistEvent event) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void onPersist(PersistEvent event, Map createdAlready) throws HibernateException {
-		// fake method
+	public void onPersist(PersistEvent event, Map createdAlready) {
+		throw new UnsupportedOperationException();
 	}
 
 	public static class EventContextManagingPersistEventListenerDuplicationStrategy implements DuplicationStrategy {

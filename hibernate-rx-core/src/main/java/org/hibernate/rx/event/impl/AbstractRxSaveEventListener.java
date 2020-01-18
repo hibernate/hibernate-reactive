@@ -27,6 +27,7 @@ import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
@@ -36,13 +37,13 @@ import java.util.concurrent.CompletionStage;
  * @author Steve Ebersole.
  */
 abstract class AbstractRxSaveEventListener
-		extends AbstractSaveEventListener
 		implements CallbackRegistryConsumer {
+
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( AbstractRxSaveEventListener.class );
+
 	private CallbackRegistry callbackRegistry;
 
 	public void injectCallbackRegistry(CallbackRegistry callbackRegistry) {
-		super.injectCallbackRegistry(callbackRegistry);
 		this.callbackRegistry = callbackRegistry;
 	}
 
@@ -176,7 +177,7 @@ abstract class AbstractRxSaveEventListener
 			key = null;
 		}
 
-		if ( invokeSaveLifecycle( entity, persister, source ) ) {
+		if ( helper.invokeSaveLifecycle( entity, persister, source ) ) {
 			return RxUtil.nullFuture(); //RxUtil.completedFuture( id ); //EARLY EXIT
 		}
 
@@ -243,10 +244,10 @@ abstract class AbstractRxSaveEventListener
 		Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap( anything ), source );
 		Type[] types = persister.getPropertyTypes();
 
-		boolean substitute = substituteValuesIfNecessary( entity, id, values, persister, source );
+		boolean substitute = helper.substituteValuesIfNecessary( entity, id, values, persister, source );
 
 		if ( persister.hasCollections() ) {
-			substitute = substitute || visitCollectionsBeforeSave( entity, id, values, types, source );
+			substitute = substitute || helper.visitCollectionsBeforeSave( entity, id, values, types, source );
 		}
 
 		if ( substitute ) {
@@ -299,6 +300,10 @@ abstract class AbstractRxSaveEventListener
 //		} );
 	}
 
+	protected Map getMergeMap(Object anything) {
+		return null;
+	}
+
 	private CompletionStage<AbstractEntityInsertAction> addInsertAction(
 			Object[] values,
 			Serializable id,
@@ -309,14 +314,14 @@ abstract class AbstractRxSaveEventListener
 			boolean shouldDelayIdentityInserts) {
 		if ( useIdentityColumn ) {
 			EntityIdentityInsertAction insert = new EntityIdentityInsertAction(
-					values, entity, persister, isVersionIncrementDisabled(), source, shouldDelayIdentityInserts
+					values, entity, persister, false, source, shouldDelayIdentityInserts
 			);
 			return ( (RxSessionInternal) source ).getRxActionQueue().addAction( insert ).thenApply(v -> insert );
 		}
 		else {
 			Object version = Versioning.getVersion( values, persister );
 			RxEntityInsertAction insert = new RxEntityInsertAction(
-					id, values, entity, version, persister, isVersionIncrementDisabled(), source
+					id, values, entity, version, persister, false, source
 			);
 			return ( (RxSessionInternal) source ).getRxActionQueue().addAction( insert ).thenApply(v -> insert );
 		}
@@ -383,8 +388,46 @@ abstract class AbstractRxSaveEventListener
 
 	protected abstract CascadingAction getCascadeRxAction();
 
-	@Override
-	protected org.hibernate.engine.spi.CascadingAction getCascadeAction() {
-		return getCascadeRxAction().delegate();
-	}
+	//TO AVOID TOTAL COPY/PASTE JOB
+
+	protected static final Helper helper = new Helper();
+
+	public static class Helper extends AbstractSaveEventListener {
+		@Override
+		protected org.hibernate.engine.spi.CascadingAction getCascadeAction() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		protected EntityState getEntityState(Object entity, String entityName, EntityEntry entry, SessionImplementor source) {
+			return super.getEntityState(entity, entityName, entry, source);
+		}
+
+		@Override
+		protected boolean visitCollectionsBeforeSave(Object entity, Serializable id, Object[] values, Type[] types, EventSource source) {
+			return super.visitCollectionsBeforeSave(entity, id, values, types, source);
+		}
+
+		@Override
+		protected boolean invokeSaveLifecycle(Object entity, EntityPersister persister, EventSource source) {
+			return super.invokeSaveLifecycle(entity, persister, source);
+		}
+
+		@Override
+		protected boolean substituteValuesIfNecessary(Object entity, Serializable id, Object[] values, EntityPersister persister, SessionImplementor source) {
+			return super.substituteValuesIfNecessary(entity, id, values, persister, source);
+		}
+
+		@Override
+		protected String getLoggableName(String entityName, Object entity) {
+			return super.getLoggableName(entityName, entity);
+		}
+
+		@Override
+		protected Boolean getAssumedUnsaved() {
+			//TODO: this is wrong for merge()
+			return true;
+		}
+	};
+
 }

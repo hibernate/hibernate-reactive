@@ -5,7 +5,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.TransientObjectException;
 import org.hibernate.action.internal.OrphanRemovalAction;
-import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.classic.Lifecycle;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.ForeignKeys;
@@ -69,8 +68,8 @@ public class DefaultRxDeleteEventListener
 	 * @param event The delete event to be handled.
 	 *
 	 */
-	public void onDelete(DeleteEvent event) throws HibernateException {
-		onDelete( event, new IdentitySet() );
+	public void onDelete(DeleteEvent event) {
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -80,8 +79,8 @@ public class DefaultRxDeleteEventListener
 	 * @param transientEntities The cache of entities already deleted
 	 *
 	 */
-	public void onDelete(DeleteEvent event, Set transientEntities) throws HibernateException {
-		throw new NotYetImplementedException();
+	public void onDelete(DeleteEvent event, Set transientEntities) {
+		throw new UnsupportedOperationException();
 	}
 
 	/**
