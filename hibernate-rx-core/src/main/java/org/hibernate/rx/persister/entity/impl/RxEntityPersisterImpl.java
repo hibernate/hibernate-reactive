@@ -1,4 +1,4 @@
-package org.hibernate.persister.entity;
+package org.hibernate.rx.persister.entity.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
@@ -13,12 +13,11 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.jdbc.Expectations;
+import org.hibernate.persister.entity.AbstractEntityPersister;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.rx.impl.RxQueryExecutor;
-import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
-import org.hibernate.rx.persister.entity.impl.RxGeneratedIdentifierPersister;
-import org.hibernate.rx.persister.entity.impl.RxIdentifierGenerator;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.sql.Delete;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;

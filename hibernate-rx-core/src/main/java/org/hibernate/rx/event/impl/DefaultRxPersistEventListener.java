@@ -12,7 +12,8 @@ import org.hibernate.PersistentObjectException;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
-import org.hibernate.event.internal.AbstractSaveEventListener.EntityState;
+import org.hibernate.event.internal.EntityState;
+import org.hibernate.event.internal.EventUtil;
 import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PersistEvent;
@@ -94,7 +95,7 @@ public class DefaultRxPersistEventListener
 		}
 
 		final EntityEntry entityEntry = source.getPersistenceContextInternal().getEntry( entity );
-		EntityState entityState = helper.getEntityState( entity, entityName, entityEntry, source );
+		EntityState entityState = EntityState.getEntityState( entity, entityName, entityEntry, source, true );
 		if ( entityState == EntityState.DETACHED ) {
 			// JPA 2, in its version of a "foreign generated", allows the id attribute value
 			// to be manually set by the user, even though this manual value is irrelevant.
@@ -111,7 +112,7 @@ public class DefaultRxPersistEventListener
 					LOG.debug( "Resetting entity id attribute to null for foreign generator" );
 				}
 				persister.setIdentifier( entity, null, source );
-				entityState = helper.getEntityState( entity, entityName, entityEntry, source );
+				entityState = EntityState.getEntityState( entity, entityName, entityEntry, source, true );
 			}
 		}
 
@@ -119,7 +120,7 @@ public class DefaultRxPersistEventListener
 			case DETACHED: {
 				return RxUtil.failedFuture( new PersistentObjectException(
 						"detached entity passed to persist: " +
-								helper.getLoggableName( event.getEntityName(), entity )
+								EventUtil.getLoggableName( event.getEntityName(), entity )
 				) );
 			}
 			case PERSISTENT: {
@@ -138,7 +139,7 @@ public class DefaultRxPersistEventListener
 				return RxUtil.failedFuture( new ObjectDeletedException(
 						"deleted entity passed to persist",
 						null,
-						helper.getLoggableName( event.getEntityName(), entity )
+						EventUtil.getLoggableName( event.getEntityName(), entity )
 				) );
 			}
 		}

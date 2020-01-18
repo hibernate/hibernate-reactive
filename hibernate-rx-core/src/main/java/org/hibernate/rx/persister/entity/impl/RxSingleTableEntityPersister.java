@@ -32,7 +32,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	}
 
 	@Override
-	protected String[] getIdentifierAliases() {
+	public String[] getIdentifierAliases() {
 		return PersisterUtil.lower(super.getIdentifierAliases());
 	}
 
@@ -47,7 +47,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	}
 
 	@Override
-	protected String[] getSubclassColumnAliasClosure() {
+	public String[] getSubclassColumnAliasClosure() {
 		return PersisterUtil.lower(super.getSubclassColumnAliasClosure());
 	}
 
@@ -62,7 +62,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	}
 
 	@Override
-	protected String getDiscriminatorAlias() {
+	public String getDiscriminatorAlias() {
 		return PersisterUtil.lower(super.getDiscriminatorAlias().toLowerCase());
 	}
 
@@ -84,17 +84,17 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	}
 
 	@Override
-	protected String generateInsertString(boolean identityInsert, boolean[] includeProperty, int j) {
+	public String generateInsertString(boolean identityInsert, boolean[] includeProperty, int j) {
 		return PersisterUtil.fixSqlParameters( super.generateInsertString( identityInsert, includeProperty, j ) );
 	}
 
 	@Override
-	protected String generateDeleteString(int j) {
+	public String generateDeleteString(int j) {
 		return PersisterUtil.fixSqlParameters( super.generateDeleteString(j) );
 	}
 
 	@Override
-	protected String generateUpdateString(
+	public String generateUpdateString(
 			final boolean[] includeProperty,
 			final int j,
 			final Object[] oldFields,
@@ -103,14 +103,14 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	}
 
 	@Override
-	protected Serializable insert(
+	public Serializable insert(
 			Object[] fields, boolean[] notNull, String sql, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
 		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
 	}
 
 	@Override
-	protected void insert(
+	public void insert(
 			Serializable id,
 			Object[] fields,
 			boolean[] notNull,
@@ -133,7 +133,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	}
 
 	@Override
-	protected void delete(
+	public void delete(
 			Serializable id,
 			Object version,
 			int j,
@@ -152,7 +152,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	}
 
 	@Override
-	protected void updateOrInsert(
+	public void updateOrInsert(
 			Serializable id,
 			Object[] fields,
 			Object[] oldFields,
@@ -167,7 +167,7 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	}
 
 	@Override
-	protected boolean update(
+	public boolean update(
 			Serializable id,
 			Object[] fields,
 			Object[] oldFields,

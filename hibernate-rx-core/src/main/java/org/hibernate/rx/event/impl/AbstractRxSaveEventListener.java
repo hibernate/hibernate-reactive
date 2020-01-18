@@ -8,7 +8,7 @@ import org.hibernate.action.internal.EntityIdentityInsertAction;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.*;
-import org.hibernate.event.internal.AbstractSaveEventListener;
+import org.hibernate.event.internal.WrapVisitor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.id.IdentifierGenerationException;
 import org.hibernate.internal.CoreLogging;
@@ -240,10 +240,10 @@ abstract class AbstractRxSaveEventListener
 		Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap( anything ), source );
 		Type[] types = persister.getPropertyTypes();
 
-		boolean substitute = helper.substituteValuesIfNecessary( entity, id, values, persister, source );
+		boolean substitute = substituteValuesIfNecessary( entity, id, values, persister, source );
 
 		if ( persister.hasCollections() ) {
-			substitute = substitute || helper.visitCollectionsBeforeSave( entity, id, values, types, source );
+			substitute = substitute || visitCollectionsBeforeSave( entity, id, values, types, source );
 		}
 
 		if ( substitute ) {
@@ -384,41 +384,55 @@ abstract class AbstractRxSaveEventListener
 
 	protected abstract CascadingAction getCascadeRxAction();
 
-	//TO AVOID TOTAL COPY/PASTE JOB
+	/**
+	 * Perform any property value substitution that is necessary
+	 * (interceptor callback, version initialization...)
+	 *
+	 * @param entity The entity
+	 * @param id The entity identifier
+	 * @param values The snapshot entity state
+	 * @param persister The entity persister
+	 * @param source The originating session
+	 *
+	 * @return True if the snapshot state changed such that
+	 *         reinjection of the values into the entity is required.
+	 */
+	protected boolean substituteValuesIfNecessary(
+			Object entity,
+			Serializable id,
+			Object[] values,
+			EntityPersister persister,
+			SessionImplementor source) {
+		boolean substitute = source.getInterceptor().onSave(
+				entity,
+				id,
+				values,
+				persister.getPropertyNames(),
+				persister.getPropertyTypes()
+		);
 
-	protected static final Helper helper = new Helper();
-
-	public static class Helper extends AbstractSaveEventListener {
-		@Override
-		protected org.hibernate.engine.spi.CascadingAction getCascadeAction() {
-			throw new UnsupportedOperationException();
+		//keep the existing version number in the case of replicate!
+		if ( persister.isVersioned() ) {
+			substitute = Versioning.seedVersion(
+					values,
+					persister.getVersionProperty(),
+					persister.getVersionType(),
+					source
+			) || substitute;
 		}
+		return substitute;
+	}
 
-		@Override
-		protected EntityState getEntityState(Object entity, String entityName, EntityEntry entry, SessionImplementor source) {
-			return super.getEntityState(entity, entityName, entry, source);
-		}
-
-		@Override
-		protected boolean visitCollectionsBeforeSave(Object entity, Serializable id, Object[] values, Type[] types, EventSource source) {
-			return super.visitCollectionsBeforeSave(entity, id, values, types, source);
-		}
-
-		@Override
-		protected boolean substituteValuesIfNecessary(Object entity, Serializable id, Object[] values, EntityPersister persister, SessionImplementor source) {
-			return super.substituteValuesIfNecessary(entity, id, values, persister, source);
-		}
-
-		@Override
-		protected String getLoggableName(String entityName, Object entity) {
-			return super.getLoggableName(entityName, entity);
-		}
-
-		@Override
-		protected Boolean getAssumedUnsaved() {
-			//TODO: this is wrong for merge()
-			return true;
-		}
-	};
+	protected boolean visitCollectionsBeforeSave(
+			Object entity,
+			Serializable id,
+			Object[] values,
+			Type[] types,
+			EventSource source) {
+		WrapVisitor visitor = new WrapVisitor( entity, id, source );
+		// substitutes into values by side-effect
+		visitor.processEntityPropertyValues( values, types );
+		return visitor.isSubstitutionRequired();
+	}
 
 }

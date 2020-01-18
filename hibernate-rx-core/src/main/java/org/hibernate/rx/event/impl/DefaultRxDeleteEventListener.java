@@ -1,4 +1,4 @@
-package org.hibernate.event.internal;
+package org.hibernate.rx.event.impl;
 
 import org.hibernate.CacheMode;
 import org.hibernate.HibernateException;
@@ -12,6 +12,8 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.Status;
+import org.hibernate.event.internal.DefaultDeleteEventListener;
+import org.hibernate.event.internal.OnUpdateVisitor;
 import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.service.spi.JpaBootstrapSensitive;
 import org.hibernate.event.spi.DeleteEvent;

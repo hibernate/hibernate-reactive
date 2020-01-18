@@ -8,64 +8,37 @@ package org.hibernate.rx.engine.impl;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
-import org.hibernate.action.internal.AbstractEntityInsertAction;
+import org.hibernate.action.internal.EntityInsertAction;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.entry.CacheEntry;
 import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.internal.Versioning;
-import org.hibernate.engine.spi.*;
-import org.hibernate.event.service.spi.EventListenerGroup;
-import org.hibernate.event.spi.*;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.rx.engine.spi.RxExecutable;
 import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
-import org.hibernate.stat.internal.StatsHelper;
-import org.hibernate.stat.spi.StatisticsImplementor;
 
 import java.io.Serializable;
-import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
 
 /**
  * The action for performing an entity insertion, for entities not defined to use IDENTITY generation.
  */
-public final class RxEntityInsertAction extends AbstractEntityInsertAction implements RxExecutable {
+public class RxEntityInsertAction extends EntityInsertAction implements RxExecutable {
 
-	private Object version;
-	private Object cacheEntry;
-
-	/**
-	 * Constructs an EntityInsertAction.
-	 *
-	 * @param id The entity identifier
-	 * @param state The current (extracted) entity state
-	 * @param instance The entity instance
-	 * @param version The current entity version value
-	 * @param descriptor The entity's descriptor
-	 * @param isVersionIncrementDisabled Whether version incrementing is disabled.
-	 * @param session The session
-	 */
 	public RxEntityInsertAction(
 			Serializable id,
 			Object[] state,
 			Object instance,
 			Object version,
-			EntityPersister descriptor,
+			EntityPersister persister,
 			boolean isVersionIncrementDisabled,
 			SharedSessionContractImplementor session) {
-		super( id, state, instance, isVersionIncrementDisabled, descriptor, session );
-		this.version = version;
-	}
-
-	@Override
-	public boolean isEarlyInsert() {
-		return false;
-	}
-
-	@Override
-	protected EntityKey getEntityKey() {
-		return getSession().generateEntityKey( getId(), getPersister() );
+		super( id, state, instance, version, persister, isVersionIncrementDisabled, session );
 	}
 
 	@Override
@@ -104,9 +77,9 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 						if ( persister.hasInsertGeneratedProperties() ) {
 							persister.processInsertGeneratedProperties( id, instance, getState(), session );
 							if ( persister.isVersionPropertyGenerated() ) {
-								version = Versioning.getVersion( getState(), persister );
+								setVersion( Versioning.getVersion( getState(), persister ) );
 							}
-							entry.postUpdate( instance, getState(), version );
+							entry.postUpdate( instance, getState(), getVersion() );
 						}
 
 						persistenceContext.registerInsertedKey( persister, getId() );
@@ -127,10 +100,10 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 				final CacheEntry ce = persister.buildCacheEntry(
 						instance,
 						getState(),
-						version,
+						getVersion(),
 						session
 				);
-				cacheEntry = persister.getCacheEntryStructure().structure( ce );
+				setCacheEntry( persister.getCacheEntryStructure().structure( ce ) );
 				final EntityDataAccess cache = persister.getCacheAccessStrategy();
 				final Object ck = cache.generateCacheKey( id, persister, factory, session.getTenantIdentifier() );
 
@@ -155,139 +128,6 @@ public final class RxEntityInsertAction extends AbstractEntityInsertAction imple
 			markExecuted();
 			return null;
 		} );
-	}
-
-	private boolean cacheInsert(EntityPersister persister, Object ck) {
-		SharedSessionContractImplementor session = this.getSession();
-
-		boolean var4;
-		try {
-			session.getEventListenerManager().cachePutStart();
-			var4 = persister.getCacheAccessStrategy().insert( session, ck, this.cacheEntry, this.version );
-		}
-		finally {
-			session.getEventListenerManager().cachePutEnd();
-		}
-
-		return var4;
-	}
-
-	private void postInsert() {
-		EventListenerGroup<PostInsertEventListener> listenerGroup = this.listenerGroup( EventType.POST_INSERT );
-		if ( !listenerGroup.isEmpty() ) {
-			PostInsertEvent event = new PostInsertEvent(
-					this.getInstance(),
-					this.getId(),
-					this.getState(),
-					this.getPersister(),
-					this.eventSource()
-			);
-			Iterator var3 = listenerGroup.listeners().iterator();
-
-			while ( var3.hasNext() ) {
-				PostInsertEventListener listener = (PostInsertEventListener) var3.next();
-				listener.onPostInsert( event );
-			}
-
-		}
-	}
-
-	private void postCommitInsert(boolean success) {
-		final EventListenerGroup<PostInsertEventListener> listenerGroup = listenerGroup( EventType.POST_COMMIT_INSERT );
-		if ( listenerGroup.isEmpty() ) {
-			return;
-		}
-		final PostInsertEvent event = new PostInsertEvent(
-				getInstance(),
-				getId(),
-				getState(),
-				getPersister(),
-				eventSource()
-		);
-		for ( PostInsertEventListener listener : listenerGroup.listeners() ) {
-			if ( PostCommitInsertEventListener.class.isInstance( listener ) ) {
-				if ( success ) {
-					listener.onPostInsert( event );
-				}
-				else {
-					( (PostCommitInsertEventListener) listener ).onPostInsertCommitFailed( event );
-				}
-			}
-			else {
-				//default to the legacy implementation that always fires the event
-				listener.onPostInsert( event );
-			}
-		}
-	}
-
-	private boolean preInsert() {
-		boolean veto = false;
-
-		final EventListenerGroup<PreInsertEventListener> listenerGroup = listenerGroup( EventType.PRE_INSERT );
-		if ( listenerGroup.isEmpty() ) {
-			return veto;
-		}
-		final PreInsertEvent event = new PreInsertEvent(
-				getInstance(),
-				getId(),
-				getState(),
-				getPersister(),
-				eventSource()
-		);
-		for ( PreInsertEventListener listener : listenerGroup.listeners() ) {
-			veto |= listener.onPreInsert( event );
-		}
-		return veto;
-	}
-
-	@Override
-	public void doAfterTransactionCompletion(boolean success, SharedSessionContractImplementor session)
-			throws HibernateException {
-		EntityPersister persister = this.getPersister();
-		if ( success && this.isCachePutEnabled( persister, this.getSession() ) ) {
-			EntityDataAccess cache = persister.getCacheAccessStrategy();
-			SessionFactoryImplementor factory = session.getFactory();
-			Object ck = cache.generateCacheKey( this.getId(), persister, factory, session.getTenantIdentifier() );
-			boolean put = this.cacheAfterInsert( cache, ck );
-			StatisticsImplementor statistics = factory.getStatistics();
-			if ( put && statistics.isStatisticsEnabled() ) {
-				statistics.entityCachePut(
-						StatsHelper.INSTANCE.getRootEntityRole( persister ),
-						cache.getRegion().getName()
-				);
-			}
-		}
-
-		this.postCommitInsert( success );
-	}
-
-	private boolean cacheAfterInsert(EntityDataAccess cache, Object ck) {
-		SharedSessionContractImplementor session = getSession();
-		final SessionEventListenerManager eventListenerManager = session.getEventListenerManager();
-		try {
-			eventListenerManager.cachePutStart();
-			return cache.afterInsert( session, ck, cacheEntry, version );
-		}
-		finally {
-			eventListenerManager.cachePutEnd();
-		}
-	}
-
-	@Override
-	protected boolean hasPostCommitEventListeners() {
-		final EventListenerGroup<PostInsertEventListener> group = listenerGroup( EventType.POST_COMMIT_INSERT );
-		for ( PostInsertEventListener listener : group.listeners() ) {
-			if ( listener.requiresPostCommitHandling( getPersister() ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	private boolean isCachePutEnabled(EntityPersister persister, SharedSessionContractImplementor session) {
-		return persister.canWriteToCache() && !persister.isCacheInvalidationRequired() && session.getCacheMode()
-				.isPutEnabled();
 	}
 
 }

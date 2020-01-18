@@ -158,28 +158,13 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 	}
 
 	@Override
-	public Object load(
-			Serializable id, Object optionalObject, SharedSessionContractImplementor session)
-			throws HibernateException {
-		return load( id, optionalObject, session, LockOptions.NONE );
-	}
-
-	@Override
-	public Object load(
-			Serializable id,
-			Object optionalObject,
-			SharedSessionContractImplementor session,
-			LockOptions lockOptions) {
-		return load( session, id, optionalObject, id, lockOptions );
-	}
-
-	@Override
 	protected Object load(
 			SharedSessionContractImplementor session,
 			Object id,
 			Object optionalObject,
 			Serializable optionalId,
-			LockOptions lockOptions) {
+			LockOptions lockOptions,
+			Boolean readOnly) {
 
 		return loadRxEntity(
 				session,

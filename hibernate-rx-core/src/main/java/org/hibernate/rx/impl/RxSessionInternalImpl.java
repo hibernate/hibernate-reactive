@@ -377,11 +377,11 @@ public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements R
 
 		protected CompletionStage<Optional<T>> doGetReference(Serializable id) {
 			if ( lockOptions != null ) {
-				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, RxSessionInternalImpl.this);
+				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, RxSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
 				return fireLoad( event, LoadEventListener.LOAD ).thenApply( v -> (Optional<T>) event.getResult() );
 			}
 
-			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, RxSessionInternalImpl.this);
+			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, RxSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
 			return fireLoad( event, LoadEventListener.LOAD )
 					.thenApply( v -> {
 						if ( event.getResult() == null ) {
@@ -402,14 +402,17 @@ public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements R
 			return perform( () -> doLoad( id, LoadEventListener.IMMEDIATE_LOAD) );
 		}
 
+		private Boolean getReadOnlyFromLoadQueryInfluencers() {
+			return getLoadQueryInfluencers().getReadOnly();
+		}
+
 		protected final CompletionStage<Optional<T>> doLoad(Serializable id, LoadEventListener.LoadType loadType) {
 			if ( lockOptions != null ) {
-				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, RxSessionInternalImpl.this
-				);
+				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, RxSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
 				return fireLoad( event, loadType ).thenApply( v -> (Optional<T>) event.getResult() );
 			}
 
-			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, RxSessionInternalImpl.this);
+			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, RxSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
 			return fireLoad( event, loadType )
 					.handle( (v, t) -> {
 						afterOperation( t != null );

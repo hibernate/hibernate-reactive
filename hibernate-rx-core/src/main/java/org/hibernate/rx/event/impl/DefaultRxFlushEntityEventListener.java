@@ -1,4 +1,4 @@
-package org.hibernate.event.internal;
+package org.hibernate.rx.event.impl;
 
 import org.hibernate.*;
 import org.hibernate.action.internal.DelayedPostInsertIdentifier;
@@ -6,6 +6,9 @@ import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.*;
+import org.hibernate.event.internal.DirtyCollectionSearchVisitor;
+import org.hibernate.event.internal.FlushVisitor;
+import org.hibernate.event.internal.WrapVisitor;
 import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEntityEvent;

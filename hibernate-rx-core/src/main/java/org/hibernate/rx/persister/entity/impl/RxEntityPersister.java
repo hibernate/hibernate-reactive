@@ -4,7 +4,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.persister.entity.RxEntityPersisterImpl;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;

@@ -2,8 +2,8 @@ package org.hibernate.rx.service;
 
 import org.hibernate.boot.Metadata;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.event.internal.DefaultRxDeleteEventListener;
-import org.hibernate.event.internal.DefaultRxFlushEntityEventListener;
+import org.hibernate.rx.event.impl.DefaultRxDeleteEventListener;
+import org.hibernate.rx.event.impl.DefaultRxFlushEntityEventListener;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventType;
 import org.hibernate.integrator.spi.Integrator;
