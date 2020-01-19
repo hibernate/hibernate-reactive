@@ -32,41 +32,6 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	}
 
 	@Override
-	public String[] getIdentifierAliases() {
-		return PersisterUtil.lower(super.getIdentifierAliases());
-	}
-
-	@Override
-	public String[] getIdentifierAliases(String suffix) {
-		return PersisterUtil.lower(super.getIdentifierAliases(suffix));
-	}
-
-	@Override
-	public String[] getSubclassPropertyColumnAliases(String propertyName, String suffix) {
-		return PersisterUtil.lower(super.getSubclassPropertyColumnAliases(propertyName, suffix));
-	}
-
-	@Override
-	public String[] getSubclassColumnAliasClosure() {
-		return PersisterUtil.lower(super.getSubclassColumnAliasClosure());
-	}
-
-	@Override
-	public String[] getPropertyAliases(String suffix, int i) {
-		return PersisterUtil.lower(super.getPropertyAliases(suffix, i));
-	}
-
-	@Override
-	public String getDiscriminatorAlias(String suffix) {
-		return PersisterUtil.lower(super.getDiscriminatorAlias(suffix));
-	}
-
-	@Override
-	public String getDiscriminatorAlias() {
-		return PersisterUtil.lower(super.getDiscriminatorAlias().toLowerCase());
-	}
-
-	@Override
 	protected UniqueEntityLoader createEntityLoader(LockMode lockMode, LoadQueryInfluencers loadQueryInfluencers)
 			throws MappingException {
 		//FIXME add support to lock mode and loadQueryInfluencers
