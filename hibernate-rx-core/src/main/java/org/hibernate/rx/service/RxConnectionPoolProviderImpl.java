@@ -1,24 +1,26 @@
 package org.hibernate.rx.service;
 
-import java.net.URI;
-import java.util.Map;
-
+import io.vertx.axle.core.Vertx;
+import io.vertx.axle.mysqlclient.MySQLPool;
+import io.vertx.axle.pgclient.PgPool;
+import io.vertx.axle.sqlclient.Pool;
+import io.vertx.mysqlclient.MySQLConnectOptions;
+import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.sqlclient.PoolOptions;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.rx.util.impl.JdbcUrlParser;
-import org.hibernate.rx.impl.PgPoolConnection;
+import org.hibernate.rx.impl.PoolConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
+import org.hibernate.rx.util.impl.JdbcUrlParser;
 import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.Stoppable;
 
-import io.vertx.axle.core.Vertx;
-import io.vertx.axle.pgclient.PgPool;
-import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.sqlclient.PoolOptions;
+import java.net.URI;
+import java.util.Map;
 
 public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, Configurable, Stoppable {
 
 	public static final int DEFAULT_POOL_SIZE = 5;
-	private PgPool pool;
+	private Pool pool;
 	private boolean showSQL;
 
 	public RxConnectionPoolProviderImpl() {
@@ -60,20 +62,37 @@ public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, C
 
 		PoolOptions poolOptions = new PoolOptions()
 				.setMaxSize( poolSize );
-		PgConnectOptions connectOptions = new PgConnectOptions()
-				.setPort( uri.getPort() )
-				.setHost( uri.getHost() )
-				.setDatabase( database )
-				.setUser( username )
-				.setPassword( password );
-		this.pool = PgPool.pool( Vertx.vertx(), connectOptions, poolOptions );
+		switch ( uri.getScheme() ) {
+			case "postgresql":
+				PgConnectOptions pgOptions = new PgConnectOptions()
+						.setPort( uri.getPort() )
+						.setHost( uri.getHost() )
+						.setDatabase( database )
+						.setUser( username );
+				if (password != null) {
+					pgOptions.setPassword( password );
+				}
+				this.pool = PgPool.pool(Vertx.vertx(), pgOptions, poolOptions);
+				break;
+			case "mysql":
+				MySQLConnectOptions mysqlOptions = new MySQLConnectOptions()
+						.setPort( uri.getPort() )
+						.setHost( uri.getHost() )
+						.setDatabase( database )
+						.setUser( username );
+				if (password != null) {
+					mysqlOptions.setPassword( password );
+				}
+				this.pool = MySQLPool.pool(Vertx.vertx(), mysqlOptions, poolOptions);
+				break;
+		}
 
 		showSQL = "true".equals( configurationValues.get( AvailableSettings.SHOW_SQL ) );
 	}
 
 	@Override
 	public RxConnection getConnection() {
-		return new PgPoolConnection( pool, showSQL );
+		return new PoolConnection( pool, showSQL );
 	}
 
 	@Override
