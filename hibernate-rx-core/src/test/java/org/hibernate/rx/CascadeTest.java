@@ -24,9 +24,9 @@ public class CascadeTest extends BaseRxTest {
 
 		Node basik = new Node("Child");
 		basik.parent = new Node("Parent");
-		basik.elements.add( new Element(basik) );
-		basik.elements.add( new Element(basik) );
-		basik.elements.add( new Element(basik) );
+//		basik.elements.add( new Element(basik) );
+//		basik.elements.add( new Element(basik) );
+//		basik.elements.add( new Element(basik) );
 
 		test( context,
 				openSession()
@@ -104,11 +104,11 @@ public class CascadeTest extends BaseRxTest {
 						CascadeType.REMOVE})
 		Node parent;
 
-		@OneToMany(fetch = FetchType.EAGER,
-				cascade = {CascadeType.PERSIST,
-						CascadeType.REMOVE},
-				mappedBy = "node")
-		List<Element> elements = new ArrayList<Element>();
+//		@OneToMany(fetch = FetchType.EAGER,
+//				cascade = {CascadeType.PERSIST,
+//						CascadeType.REMOVE},
+//				mappedBy = "node")
+//		List<Element> elements = new ArrayList<Element>();
 
 		@Transient boolean prePersisted;
 		@Transient boolean postPersisted;
