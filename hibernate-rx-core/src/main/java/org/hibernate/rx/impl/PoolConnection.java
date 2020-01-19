@@ -1,6 +1,6 @@
 package org.hibernate.rx.impl;
 
-import io.vertx.axle.pgclient.PgPool;
+import io.vertx.axle.sqlclient.Pool;
 import io.vertx.axle.sqlclient.Row;
 import io.vertx.axle.sqlclient.RowSet;
 import io.vertx.axle.sqlclient.Tuple;
@@ -13,12 +13,12 @@ import java.util.function.Consumer;
 /**
  * A reactive connection pool for PostgreSQL
  */
-public class PgPoolConnection implements RxConnection {
+public class PoolConnection implements RxConnection {
 
-	private final PgPool pool;
+	private final Pool pool;
 	private final boolean showSQL;
 
-	public PgPoolConnection(PgPool pool, boolean showSQL) {
+	public PoolConnection(Pool pool, boolean showSQL) {
 		this.pool = pool;
 		this.showSQL = showSQL;
 	}
