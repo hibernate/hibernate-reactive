@@ -2,10 +2,9 @@ package org.hibernate.rx.persister.entity.impl;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.boot.model.relational.Database;
 import org.hibernate.boot.model.relational.Namespace;
-import org.hibernate.boot.model.relational.QualifiedNameParser;
+import org.hibernate.boot.model.relational.QualifiedName;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.Dialect;
@@ -13,7 +12,7 @@ import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.id.IdentifierGenerator;
+import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.config.ConfigurationHelper;
@@ -28,8 +27,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletionStage;
 
-import static org.hibernate.id.PersistentIdentifierGenerator.CATALOG;
-import static org.hibernate.id.PersistentIdentifierGenerator.SCHEMA;
 import static org.hibernate.id.enhanced.TableGenerator.*;
 
 public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
@@ -39,8 +36,8 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 	private final String selectQuery;
 	private final String updateQuery;
 	private final String insertQuery;
-	private final String segmentColumnName;
-	private final String valueColumnName;
+	private String segmentColumnName;
+	private String valueColumnName;
 	private final String renderedTableName;
 	private final boolean storeLastUsedValue;
 	private final int initialValue;
@@ -48,17 +45,24 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 
 	@Override
 	public CompletionStage<Optional<Integer>> generate(SessionFactoryImplementor factory) {
-		return queryExecutor.selectInteger( selectQuery, new Object[] { segmentValue }, factory )
+		Object[] param = segmentColumnName == null ? new Object[] {} : new Object[] {segmentValue};
+		return queryExecutor.selectInteger( selectQuery, param, factory )
 				.thenCompose( result -> {
 					if ( !result.isPresent() ) {
 						int initializationValue = storeLastUsedValue ? initialValue - 1 : initialValue;
-						return queryExecutor.update( insertQuery, new Object[] { segmentValue, initializationValue }, factory )
+						Object[] params = segmentColumnName == null ?
+								new Object[] {initializationValue} :
+								new Object[] {segmentValue, initializationValue};
+						return queryExecutor.update( insertQuery, params, factory )
 								.thenApply( v -> Optional.of( initialValue ) );
 					}
 					else {
 						int currentValue = result.get();
 						int updatedValue = currentValue + 1;
-						return queryExecutor.update( updateQuery, new Object[] { updatedValue, currentValue, segmentValue }, factory )
+						Object[] params = segmentColumnName == null ?
+								new Object[] {updatedValue, currentValue} :
+								new Object[] {updatedValue, currentValue, segmentValue};
+						return queryExecutor.update( updateQuery, params, factory )
 								.thenApply( v -> Optional.of( storeLastUsedValue ? updatedValue : currentValue ) );
 					}
 				});
@@ -70,6 +74,7 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 		SessionFactoryImplementor sessionFactory = creationContext.getSessionFactory();
 		Database database = metadata.getDatabase();
 		JdbcEnvironment jdbcEnvironment = database.getJdbcEnvironment();
+		Dialect dialect = database.getJdbcEnvironment().getDialect();
 
 		Properties props = IdentifierGeneration.identifierGeneratorProperties(
 				jdbcEnvironment.getDialect(),
@@ -77,63 +82,44 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 				persistentClass
 		);
 
-		storeLastUsedValue = database.getServiceRegistry().getService( ConfigurationService.class )
-				.getSetting( AvailableSettings.TABLE_GENERATOR_STORE_LAST_USED, StandardConverters.BOOLEAN, true );
-
-		String fallbackTableName = TableGenerator.DEF_TABLE;
-		final Boolean preferGeneratorNameAsDefaultName = database.getServiceRegistry().getService( ConfigurationService.class )
-				.getSetting( AvailableSettings.PREFER_GENERATOR_NAME_AS_DEFAULT_SEQUENCE_NAME, StandardConverters.BOOLEAN, true );
-		if ( preferGeneratorNameAsDefaultName ) {
-			final String generatorName = props.getProperty( IdentifierGenerator.GENERATOR_NAME );
-			if ( StringHelper.isNotEmpty( generatorName ) ) {
-				fallbackTableName = generatorName;
-			}
-		}
-
-		String tableName = ConfigurationHelper.getString( TableGenerator.TABLE_PARAM, props, fallbackTableName );
-
-		QualifiedNameParser.NameParts qualifiedTableName;
-		if ( tableName.contains( "." ) ) {
-			qualifiedTableName = QualifiedNameParser.INSTANCE.parse( tableName );
-		}
-		else {
-			// todo : need to incorporate implicit catalog and schema names
-			final Identifier catalog = jdbcEnvironment.getIdentifierHelper().toIdentifier(
-					ConfigurationHelper.getString( CATALOG, props )
-			);
-			final Identifier schema = jdbcEnvironment.getIdentifierHelper().toIdentifier(
-					ConfigurationHelper.getString( SCHEMA, props )
-			);
-			qualifiedTableName = new QualifiedNameParser.NameParts(
-					catalog,
-					schema,
-					jdbcEnvironment.getIdentifierHelper().toIdentifier( tableName )
-			);
-		}
-
-		segmentColumnName = determineSegmentColumnName( props, jdbcEnvironment );
-		valueColumnName = determineValueColumnName( props, jdbcEnvironment );
-
-		segmentValue = determineSegmentValue( props );
-		initialValue = determineInitialValue( props );
-
+		QualifiedName qualifiedTableName = IdentifierGeneration.determineTableName(database, jdbcEnvironment, props);
 		final Namespace namespace = database.locateNamespace(
 				qualifiedTableName.getCatalogName(),
 				qualifiedTableName.getSchemaName()
 		);
-
 		Table table = namespace.locateTable( qualifiedTableName.getObjectName() );
 
-		// allow physical naming strategies a chance to kick in
-		final Dialect dialect = database.getJdbcEnvironment().getDialect();
-		renderedTableName = database.getJdbcEnvironment().getQualifiedObjectNameFormatter().format(
-				table.getQualifiedTableName(),
-				dialect
-		);
+		if (table == null) {
+			//it's a SequenceStyleGenerator backed by a table
+			qualifiedTableName = IdentifierGeneration.determineSequenceName(props, jdbcEnvironment, database);
+			renderedTableName = qualifiedTableName.render();
+
+			valueColumnName = determineValueColumnNameForSequenceEmulation(props, jdbcEnvironment);
+			segmentColumnName = null;
+			segmentValue = null;
+			initialValue = determineInitialValueForSequenceEmulation( props );
+
+		}
+		else {
+			//It's a regular TableGenerator
+			segmentColumnName = determineSegmentColumnName( props, jdbcEnvironment );
+			valueColumnName = determineValueColumnNameForTable( props, jdbcEnvironment );
+			segmentValue = determineSegmentValue( props );
+			initialValue = determineInitialValueForTable( props );
+
+			// allow physical naming strategies a chance to kick in
+			renderedTableName = database.getJdbcEnvironment().getQualifiedObjectNameFormatter().format(
+					table.getQualifiedTableName(),
+					dialect
+			);
+		}
 
 		this.selectQuery = buildSelectQuery( dialect );
 		this.updateQuery = buildUpdateQuery();
 		this.insertQuery = buildInsertQuery();
+
+		storeLastUsedValue = database.getServiceRegistry().getService( ConfigurationService.class )
+				.getSetting( AvailableSettings.TABLE_GENERATOR_STORE_LAST_USED, StandardConverters.BOOLEAN, true );
 	}
 
 	protected String determineSegmentColumnName(Properties params, JdbcEnvironment jdbcEnvironment) {
@@ -141,8 +127,13 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 		return jdbcEnvironment.getIdentifierHelper().toIdentifier( name ).render( jdbcEnvironment.getDialect() );
 	}
 
-	protected String determineValueColumnName(Properties params, JdbcEnvironment jdbcEnvironment) {
-		final String name = ConfigurationHelper.getString( VALUE_COLUMN_PARAM, params, DEF_VALUE_COLUMN );
+	protected String determineValueColumnNameForTable(Properties params, JdbcEnvironment jdbcEnvironment) {
+		final String name = ConfigurationHelper.getString(TableGenerator.VALUE_COLUMN_PARAM, params, TableGenerator.DEF_VALUE_COLUMN );
+		return jdbcEnvironment.getIdentifierHelper().toIdentifier( name ).render( jdbcEnvironment.getDialect() );
+	}
+
+	static String determineValueColumnNameForSequenceEmulation(Properties params, JdbcEnvironment jdbcEnvironment) {
+		final String name = ConfigurationHelper.getString( SequenceStyleGenerator.VALUE_COLUMN_PARAM, params, SequenceStyleGenerator.DEF_VALUE_COLUMN );
 		return jdbcEnvironment.getIdentifierHelper().toIdentifier( name ).render( jdbcEnvironment.getDialect() );
 	}
 
@@ -160,15 +151,20 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 		return defaultToUse;
 	}
 
-	protected int determineInitialValue(Properties params) {
-		return ConfigurationHelper.getInt( INITIAL_PARAM, params, DEFAULT_INITIAL_VALUE );
+	protected int determineInitialValueForTable(Properties params) {
+		return ConfigurationHelper.getInt( TableGenerator.INITIAL_PARAM, params, TableGenerator.DEFAULT_INITIAL_VALUE );
 	}
 
+	protected int determineInitialValueForSequenceEmulation(Properties params) {
+		return ConfigurationHelper.getInt( SequenceStyleGenerator.INITIAL_PARAM, params, SequenceStyleGenerator.DEFAULT_INITIAL_VALUE );
+	}
 	protected String buildSelectQuery(Dialect dialect) {
 		final String alias = "tbl";
-		final String query = "select " + StringHelper.qualify( alias, valueColumnName ) +
-				" from " + renderedTableName + ' ' + alias +
-				" where " + StringHelper.qualify( alias, segmentColumnName ) + "=$1";
+		String query = "select " + StringHelper.qualify( alias, valueColumnName ) +
+				" from " + renderedTableName + ' ' + alias;
+		if (segmentColumnName != null) {
+			query += " where " + StringHelper.qualify(alias, segmentColumnName) + "=$1";
+		}
 		final LockOptions lockOptions = new LockOptions( LockMode.PESSIMISTIC_WRITE );
 		lockOptions.setAliasSpecificLockMode( alias, LockMode.PESSIMISTIC_WRITE );
 		final Map updateTargetColumnsMap = Collections.singletonMap( alias, new String[] { valueColumnName } );
@@ -176,13 +172,24 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 	}
 
 	protected String buildUpdateQuery() {
-		return "update " + renderedTableName +
+		String update = "update " + renderedTableName +
 				" set " + valueColumnName + "=$1" +
-				" where " + valueColumnName + "=$2 and " + segmentColumnName + "=$3";
+				" where " + valueColumnName + "=$2";
+		if (segmentColumnName != null) {
+			update += "and " + segmentColumnName + "=$3";
+		}
+		return update;
 	}
 
 	protected String buildInsertQuery() {
-		return "insert into " + renderedTableName + " (" + segmentColumnName + ", " + valueColumnName + ") " + " values ($1,$2)";
+		String insert = "insert into " + renderedTableName;
+		if (segmentColumnName != null) {
+			insert += " (" + segmentColumnName + ", " + valueColumnName + ") " + " values (?,?)";
+		}
+		else {
+			insert += " (" + valueColumnName + ") " + " values (?)";
+		}
+		return insert;
 	}
 
 }
