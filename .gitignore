@@ -16,9 +16,6 @@
 
 # IntelliJ specific files/directories
 out
-*.ipr
-*.iws
-*.iml
 .idea/uiDesigner.xml
 .idea/workspace.xml
 atlassian-ide-plugin.xml
