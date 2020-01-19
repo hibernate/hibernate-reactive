@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.HibernateException;
+import org.hibernate.JDBCException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.dialect.pagination.LimitHelper;
@@ -505,7 +505,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 					jdbcServices.getJdbcEnvironment().getDialect()
 			);
 
-			try {
+//			try {
 				final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 				boolean defaultReadOnlyOrig = persistenceContext.isDefaultReadOnly();
 				if ( queryParameters.isReadOnlyInitialized() ) {
@@ -535,54 +535,52 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 					// Restore the original default
 					persistenceContext.setDefaultReadOnly( defaultReadOnlyOrig );
 				}
-			}
-			catch ( SQLException sqle ) {
-				throw jdbcServices.getSqlExceptionHelper().convert(
-						sqle,
-						"could not load an entity batch: " + MessageHelper.infoString(
-								getEntityPersisters()[0],
-								ids,
-								session.getFactory()
-						),
-						sql
-				);
-			}
+//			}
+//			catch ( SQLException sqle ) {
+//				throw jdbcServices.getSqlExceptionHelper().convert(
+//						sqle,
+//						"could not load an entity batch: " + MessageHelper.infoString(
+//								getEntityPersisters()[0],
+//								ids,
+//								session.getFactory()
+//						),
+//						sql
+//				);
+//			}
 		}
 
 		private CompletionStage<List> doTheLoad(
 				String sql,
 				QueryParameters queryParameters,
-				SharedSessionContractImplementor session) throws SQLException {
+				SharedSessionContractImplementor session) {
 			final RowSelection selection = queryParameters.getRowSelection();
 			final int maxRows = LimitHelper.hasMaxRows( selection ) ?
 					selection.getMaxRows() :
 					Integer.MAX_VALUE;
 
 			final List<AfterLoadAction> afterLoadActions = new ArrayList<>();
-			final CompletionStage<List> result =
-					executeRxQueryStatement( sql,
-							queryParameters,
-							false,
-							afterLoadActions,
-							session,
-							(resultSet) -> {
-								try {
-									return processResultSet(
-											resultSet,
-											queryParameters,
-											session,
-											false,
-											null,
-											maxRows,
-											afterLoadActions
-									);
-								}
-								catch (SQLException ex) {
-									throw new HibernateException( ex );
-								}
-							}
+			return executeRxQueryStatement( sql,
+					queryParameters,
+					false,
+					afterLoadActions,
+					session,
+					(resultSet) -> {
+						try {
+							return processResultSet(
+									resultSet,
+									queryParameters,
+									session,
+									false,
+									null,
+									maxRows,
+									afterLoadActions
+							);
+						}
+						catch (SQLException ex) {
+							throw new JDBCException( "error querying", ex );
+						}
+					}
 			);
-			return result;
 		}
 	}
 }

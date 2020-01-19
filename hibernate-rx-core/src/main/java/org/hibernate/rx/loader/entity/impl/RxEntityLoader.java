@@ -9,10 +9,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import org.hibernate.HibernateException;
-import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
-import org.hibernate.MappingException;
+import org.hibernate.*;
 import org.hibernate.dialect.pagination.LimitHandler;
 import org.hibernate.dialect.pagination.LimitHelper;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
@@ -298,7 +295,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 			final SharedSessionContractImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
-			final ResultTransformer forcedResultTransformer) throws SQLException, HibernateException {
+			final ResultTransformer forcedResultTransformer) throws HibernateException {
 
 		final RowSelection selection = queryParameters.getRowSelection();
 		final int maxRows = LimitHelper.hasMaxRows( selection ) ?
@@ -307,27 +304,26 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 
 		final List<AfterLoadAction> afterLoadActions = new ArrayList<AfterLoadAction>();
 
-		Function<ResultSet, Object> resultSetObjectFunction = resultSet -> {
-			try {
-				return processResultSet(
-						resultSet,
-						queryParameters,
-						session,
-						returnProxies,
-						forcedResultTransformer,
-						maxRows,
-						afterLoadActions
-				);
-			}
-			catch (SQLException ex) {
-				throw new HibernateException( ex );
-			}
-		};
-		final CompletionStage<List> result = executeRxQueryStatement(
+		return executeRxQueryStatement(
 				getSQLString(), queryParameters, false, afterLoadActions, session,
-				resultSetObjectFunction
+				resultSet -> {
+					try {
+						return processResultSet(
+								resultSet,
+								queryParameters,
+								session,
+								returnProxies,
+								forcedResultTransformer,
+								maxRows,
+								afterLoadActions
+						);
+					}
+					catch (SQLException ex) {
+						//never actually happens
+						throw new JDBCException( "error querying", ex );
+					}
+				}
 		);
-		return result;
 	}
 
 	protected CompletionStage<List> executeRxQueryStatement(
@@ -336,7 +332,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 			boolean scroll,
 			List<AfterLoadAction> afterLoadActions,
 			SharedSessionContractImplementor session,
-			Function<ResultSet, Object> transformer) throws SQLException {
+			Function<ResultSet, List<Object>> transformer) {
 
 		// Processing query filters.
 		queryParameters.processFilters( sqlStatement, session );

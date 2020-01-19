@@ -55,7 +55,7 @@ public class RxQueryExecutor {
 	/**
 	 * @param transformer Convert the result of the query to a list of entities
 	 */
-	public CompletionStage<List> execute(String sql, QueryParameters queryParameters, SessionFactoryImplementor factory, Function<ResultSet, Object> transformer) {
+	public CompletionStage<List> execute(String sql, QueryParameters queryParameters, SessionFactoryImplementor factory, Function<ResultSet, List<Object>> transformer) {
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService( RxConnectionPoolProvider.class );
@@ -66,10 +66,10 @@ public class RxQueryExecutor {
 	}
 
 	private List entities(
-			Function<ResultSet, Object> transformer,
+			Function<ResultSet, List<Object>> transformer,
 			RowSet rows) {
 		ResultSetAdaptor resultSet = new ResultSetAdaptor( rows );
-		List<Object> entities = (List<Object>) transformer.apply( resultSet );
+		List<Object> entities = transformer.apply( resultSet );
 		return entities;
 	}
 
