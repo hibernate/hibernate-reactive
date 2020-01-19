@@ -46,8 +46,6 @@ public abstract class BaseRxTest {
 		Configuration configuration = new Configuration();
 		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, "create-drop" );
 		configuration.setProperty( AvailableSettings.URL, "jdbc:postgresql://localhost:5432/hibernate-rx?user=hibernate-rx&password=hibernate-rx" );
-//		configuration.setProperty( AvailableSettings.URL, "jdbc:mysql://localhost:3306/hibernaterx?user=hibernate-rx&password=hibernate-rx" );
-//		configuration.setProperty( AvailableSettings.DIALECT, MySQL8Dialect.class.getName());
 		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
 		return configuration;
 	}
