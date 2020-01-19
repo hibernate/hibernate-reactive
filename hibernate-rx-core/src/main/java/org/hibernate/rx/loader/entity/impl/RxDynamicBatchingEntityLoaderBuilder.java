@@ -14,15 +14,7 @@ import org.hibernate.LockOptions;
 import org.hibernate.dialect.pagination.LimitHelper;
 import org.hibernate.engine.internal.BatchFetchQueueHelper;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.LoadQueryInfluencers;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.RowSelection;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.engine.spi.Status;
+import org.hibernate.engine.spi.*;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
@@ -49,10 +41,10 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 
 	public static final RxDynamicBatchingEntityLoaderBuilder INSTANCE = new RxDynamicBatchingEntityLoaderBuilder();
 
-	public List multiLoad(
+	public List<?> multiLoad(
 			OuterJoinLoadable persister,
 			Serializable[] ids,
-			SharedSessionContractImplementor session,
+			SessionImplementor session,
 			MultiLoadOptions loadOptions) {
 		if ( loadOptions.isOrderReturnEnabled() ) {
 			return performOrderedMultiLoad( persister, ids, session, loadOptions );
@@ -62,15 +54,14 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	private List performOrderedMultiLoad(
+	private List<?> performOrderedMultiLoad(
 			OuterJoinLoadable persister,
 			Serializable[] ids,
-			SharedSessionContractImplementor session,
+			SessionImplementor session,
 			MultiLoadOptions loadOptions) {
 		assert loadOptions.isOrderReturnEnabled();
 
-		final List result = CollectionHelper.arrayList( ids.length );
+		final List<Object> result = CollectionHelper.arrayList( ids.length );
 
 		final LockOptions lockOptions = (loadOptions.getLockOptions() == null)
 				? new LockOptions( LockMode.NONE )
@@ -179,7 +170,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			List<Serializable> idsInBatch,
 			LockOptions lockOptions,
 			OuterJoinLoadable persister,
-			SharedSessionContractImplementor session) {
+			SessionImplementor session) {
 		final int batchSize =  idsInBatch.size();
 		final DynamicEntityLoader batchingLoader = new DynamicEntityLoader(
 				persister,
@@ -197,15 +188,14 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 		idsInBatch.clear();
 	}
 
-	@SuppressWarnings("unchecked")
-	protected List performUnorderedMultiLoad(
+	protected List<?> performUnorderedMultiLoad(
 			OuterJoinLoadable persister,
 			Serializable[] ids,
-			SharedSessionContractImplementor session,
+			SessionImplementor session,
 			MultiLoadOptions loadOptions) {
 		assert !loadOptions.isOrderReturnEnabled();
 
-		final List result = CollectionHelper.arrayList( ids.length );
+		final List<Object> result = CollectionHelper.arrayList( ids.length );
 
 		final LockOptions lockOptions = (loadOptions.getLockOptions() == null)
 				? new LockOptions( LockMode.NONE )
@@ -218,7 +208,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			// entity associated with the PC - if it does we add it to the result
 			// list immediately and remove its id from the group of ids to load.
 			boolean foundAnyManagedEntities = false;
-			final List<Serializable> nonManagedIds = new ArrayList<Serializable>();
+			final List<Serializable> nonManagedIds = new ArrayList<>();
 			for ( Serializable id : ids ) {
 				final EntityKey entityKey = new EntityKey( id, persister );
 
@@ -416,7 +406,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			}
 
 			QueryParameters qp = buildQueryParameters( id, idsToLoad, optionalObject, lockOptions, false );
-			CompletionStage<List> results = dynamicLoader.doEntityBatchFetch( session, qp, idsToLoad );
+			CompletionStage<List<?>> results = dynamicLoader.doEntityBatchFetch( (SessionImplementor) session, qp, idsToLoad );
 
 			// The EntityKey for any entity that is not found will remain in the batch.
 			// Explicitly remove the EntityKeys for entities that were not found to
@@ -494,8 +484,8 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			return persister.hasSubselectLoadableCollections();
 		}
 
-		public CompletionStage<List> doEntityBatchFetch(
-				SharedSessionContractImplementor session,
+		public CompletionStage<List<?>> doEntityBatchFetch(
+				SessionImplementor session,
 				QueryParameters queryParameters,
 				Serializable[] ids) {
 			final JdbcServices jdbcServices = session.getJdbcServices();
@@ -521,7 +511,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 					queryParameters.setReadOnly( persistenceContext.isDefaultReadOnly() );
 				}
 				persistenceContext.beforeLoad();
-				CompletionStage<List> results;
+				CompletionStage<List<?>> results;
 				try {
 					try {
 						results = doTheLoad( sql, queryParameters, session );
@@ -551,10 +541,10 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 //			}
 		}
 
-		private CompletionStage<List> doTheLoad(
+		private CompletionStage<List<?>> doTheLoad(
 				String sql,
 				QueryParameters queryParameters,
-				SharedSessionContractImplementor session) {
+				SessionImplementor session) {
 			final RowSelection selection = queryParameters.getRowSelection();
 			final int maxRows = LimitHelper.hasMaxRows( selection ) ?
 					selection.getMaxRows() :
@@ -566,7 +556,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 					false,
 					afterLoadActions,
 					session,
-					(resultSet) -> {
+					resultSet -> {
 						try {
 							return processResultSet(
 									resultSet,
