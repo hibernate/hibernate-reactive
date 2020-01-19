@@ -19,7 +19,6 @@ import org.hibernate.engine.spi.RowSelection;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.entity.AbstractEntityLoader;
-import org.hibernate.loader.entity.EntityJoinWalker;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.entity.EntityPersister;
@@ -104,7 +103,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
 		this( persister, uniqueKey, uniqueKeyType, batchSize, lockMode, factory, loadQueryInfluencers,
-				new PgEntityJoinWalker(
+				new EntityJoinWalker(
 						persister,
 						uniqueKey,
 						batchSize,
@@ -123,7 +122,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
 		this( persister, uniqueKey, uniqueKeyType, batchSize, lockOptions.getLockMode(), factory, loadQueryInfluencers,
-				new PgEntityJoinWalker(
+				new EntityJoinWalker(
 						persister,
 						uniqueKey,
 						batchSize,
@@ -141,7 +140,7 @@ public class RxEntityLoader extends AbstractEntityLoader implements UniqueEntity
 			LockMode lockMode,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers,
-			EntityJoinWalker walker) throws MappingException {
+			org.hibernate.loader.entity.EntityJoinWalker walker) throws MappingException {
 		super( persister, uniqueKeyType, factory, loadQueryInfluencers );
 
 		initFromWalker( walker );

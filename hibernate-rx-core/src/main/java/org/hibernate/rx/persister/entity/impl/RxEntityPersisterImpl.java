@@ -3,12 +3,10 @@ package org.hibernate.rx.persister.entity.impl;
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
 import org.hibernate.Session;
+import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.Versioning;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.*;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.ArrayHelper;
@@ -27,9 +25,8 @@ import org.hibernate.type.Type;
 import java.io.Serializable;
 import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
-//TODO: this class temporarily lives in org.hibernate.persister.entity because
-//	  it desperately needs to call protected methods of the persister classes
 public class RxEntityPersisterImpl implements RxEntityPersister {
 
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( RxEntityPersisterImpl.class );

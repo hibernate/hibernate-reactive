@@ -9,6 +9,10 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.UnionSubclassEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
+import org.hibernate.rx.sql.impl.Delete;
+import org.hibernate.rx.sql.impl.Insert;
+import org.hibernate.rx.sql.impl.Parameters;
+import org.hibernate.rx.sql.impl.Update;
 
 import java.io.Serializable;
 
@@ -39,7 +43,6 @@ public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister
 				.buildLoader( this, batchSize, lockMode, getFactory(), loadQueryInfluencers );
 	}
 
-
 	@Override
 	protected UniqueEntityLoader createEntityLoader(LockOptions lockOptions, LoadQueryInfluencers loadQueryInfluencers)
 			throws MappingException {
@@ -49,22 +52,20 @@ public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister
 	}
 
 	@Override
-	public String generateInsertString(boolean identityInsert, boolean[] includeProperty, int j) {
-		return PersisterUtil.fixSqlParameters( super.generateInsertString( identityInsert, includeProperty, j ) );
+	protected Update createUpdate() {
+		return new Update( getFactory().getJdbcServices().getDialect(),
+				Parameters.createDialectParameterGenerator( getFactory() ) );
 	}
 
 	@Override
-	public String generateDeleteString(int j) {
-		return PersisterUtil.fixSqlParameters( super.generateDeleteString(j) );
+	protected Insert createInsert() {
+		return new Insert( getFactory().getJdbcServices().getDialect(),
+				Parameters.createDialectParameterGenerator( getFactory() ) );
 	}
 
 	@Override
-	public String generateUpdateString(
-			final boolean[] includeProperty,
-			final int j,
-			final Object[] oldFields,
-			final boolean useRowId) {
-		return PersisterUtil.fixSqlParameters( super.generateUpdateString(includeProperty, j, oldFields, useRowId) );
+	protected Delete createDelete() {
+		return new Delete( Parameters.createDialectParameterGenerator( getFactory() ) );
 	}
 
 	@Override
