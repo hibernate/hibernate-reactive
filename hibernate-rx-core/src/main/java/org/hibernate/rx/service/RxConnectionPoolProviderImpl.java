@@ -8,6 +8,7 @@ import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.sqlclient.PoolOptions;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.rx.impl.PoolConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.rx.util.impl.JdbcUrlParser;
@@ -23,26 +24,20 @@ public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, C
 	private Pool pool;
 	private boolean showSQL;
 
-	public RxConnectionPoolProviderImpl() {
-	}
-
 	public RxConnectionPoolProviderImpl(Map configurationValues) {
 		configure( configurationValues );
-	}
-
-	private Integer poolSize(Map configurationValues) {
-		Integer poolSize = (Integer) configurationValues.get( AvailableSettings.POOL_SIZE );
-		return poolSize != null ? poolSize : DEFAULT_POOL_SIZE;
 	}
 
 	@Override
 	public void configure(Map configurationValues) {
 		// FIXME: Check which values can be null
-		String username = (String) configurationValues.get( AvailableSettings.USER );
-		String password = (String) configurationValues.get( AvailableSettings.PASS );
-		final String url = (String) configurationValues.get( AvailableSettings.URL );
+		String username = ConfigurationHelper.getString(AvailableSettings.USER, configurationValues);
+		String password = ConfigurationHelper.getString(AvailableSettings.PASS, configurationValues);
+
+		final Integer poolSize = ConfigurationHelper.getInt(AvailableSettings.POOL_SIZE, configurationValues, DEFAULT_POOL_SIZE);
+
+		final String url = ConfigurationHelper.getString(AvailableSettings.URL, configurationValues);
 		final URI uri = JdbcUrlParser.parse( url );
-		final Integer poolSize = poolSize( configurationValues );
 		final String database = uri.getPath().substring( 1 );
 
 		if (username==null || password==null) {
