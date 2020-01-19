@@ -40,6 +40,7 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 		basik.localTime = LocalTime.now();
 		basik.date = new Date(2000,1,1);
 		basik.thing = new String[] {"hello", "world"};
+		basik.embed = new Embed("one", "two");
 
 		test( context,
 				openSession()
@@ -71,6 +72,7 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 									basik.localTime.truncatedTo(ChronoUnit.MINUTES) );
 							context.assertTrue( basic.thing instanceof String[] );
 							context.assertTrue( Objects.deepEquals(basic.thing, basik.thing) );
+							context.assertEquals( basic.embed, basik.embed );
 							context.assertEquals( basic.version, 0 );
 
 							basic.string = "Goodbye";
@@ -108,6 +110,49 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 	}
 
 	enum Cover { hard, soft }
+
+	@Embeddable
+	static class Embed {
+		String one;
+		String two;
+
+		public Embed(String one, String two) {
+			this.one = one;
+			this.two = two;
+		}
+
+		Embed() {}
+
+		public String getOne() {
+			return one;
+		}
+
+		public void setOne(String one) {
+			this.one = one;
+		}
+
+		public String getTwo() {
+			return two;
+		}
+
+		public void setTwo(String two) {
+			this.two = two;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			Embed embed = (Embed) o;
+			return Objects.equals(one, embed.one) &&
+					Objects.equals(two, embed.two);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(one, two);
+		}
+	}
 
 	@Entity
 	public static class Basic {
@@ -150,6 +195,8 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 
 		@ManyToOne(fetch = FetchType.LAZY)
 		Basic parent;
+
+		Embed embed;
 
 		@Transient boolean prePersisted;
 		@Transient boolean postPersisted;
