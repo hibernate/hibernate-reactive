@@ -7,7 +7,6 @@
 package org.hibernate.rx.sql.impl;
 
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -17,31 +16,10 @@ import java.util.function.Supplier;
  */
 public class Delete extends org.hibernate.sql.Delete {
 
-	private String tableName;
-	private String versionColumnName;
-	private String where;
 	private final Supplier<String> nextParameter;
-
-	private Map<String,String> primaryKeyColumns = new LinkedHashMap<>();
-	
-	private String comment;
-
-	public Delete() {
-		nextParameter = () -> "?";
-	}
 
 	public Delete(Supplier<String> nextParameter) {
 		this.nextParameter = nextParameter;
-	}
-
-	public Delete setComment(String comment) {
-		this.comment = comment;
-		return this;
-	}
-
-	public Delete setTableName(String tableName) {
-		this.tableName = tableName;
-		return this;
 	}
 
 	public String toStatementString() {
@@ -57,7 +35,7 @@ public class Delete extends org.hibernate.sql.Delete {
 		Iterator<Map.Entry<String,String>> iter = primaryKeyColumns.entrySet().iterator();
 		while ( iter.hasNext() ) {
 			Map.Entry<String,String> e =  iter.next();
-			buf.append( e.getKey() ).append( '=' ).append( e.getValue() );
+			buf.append( e.getKey() ).append( '=' ).append( value( e.getValue() ) );
 			if ( iter.hasNext() ) {
 				buf.append( " and " );
 			}
@@ -79,61 +57,17 @@ public class Delete extends org.hibernate.sql.Delete {
 		return buf.toString();
 	}
 
-	public Delete setWhere(String where) {
-		this.where=where;
-		return this;
-	}
-
-	public Delete addWhereFragment(String fragment) {
-		if ( where == null ) {
-			where = fragment;
+	private String value(String val) {
+		switch (val) {
+			case "?":
+				return nextParameter.get();
+			case "=?":
+			case "= ?":
+			case " = ?":
+				return "=" + nextParameter.get();
+			default:
+				return val;
 		}
-		else {
-			where += ( " and " + fragment );
-		}
-		return this;
-	}
-
-	public Delete setPrimaryKeyColumnNames(String[] columnNames) {
-		this.primaryKeyColumns.clear();
-		addPrimaryKeyColumns(columnNames);
-		return this;
-	}	
-
-	public Delete addPrimaryKeyColumns(String[] columnNames) {
-		for ( String columnName : columnNames ) {
-			addPrimaryKeyColumn( columnName, nextParameter.get() );
-		}
-		return this;
-	}
-	
-	public Delete addPrimaryKeyColumns(String[] columnNames, boolean[] includeColumns, String[] valueExpressions) {
-		for ( int i=0; i<columnNames.length; i++ ) {
-			if( includeColumns[i] ) {
-				addPrimaryKeyColumn( columnNames[i], valueExpressions[i] );
-			}
-		}
-		return this;
-	}
-	
-	public Delete addPrimaryKeyColumns(String[] columnNames, String[] valueExpressions) {
-		for ( int i=0; i<columnNames.length; i++ ) {
-			addPrimaryKeyColumn( columnNames[i], valueExpressions[i] );
-		}
-		return this;
-	}	
-
-	public Delete addPrimaryKeyColumn(String columnName, String valueExpression) {
-		if ( "?".equals(valueExpression) ) {
-			valueExpression = nextParameter.get();
-		}
-		this.primaryKeyColumns.put(columnName, valueExpression);
-		return this;
-	}
-
-	public Delete setVersionColumnName(String versionColumnName) {
-		this.versionColumnName = versionColumnName;
-		return this;
 	}
 
 }
