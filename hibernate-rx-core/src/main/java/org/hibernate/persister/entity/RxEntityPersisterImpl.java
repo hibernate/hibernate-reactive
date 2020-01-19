@@ -152,13 +152,14 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 
 		PreparedStatementAdaptor insert = new PreparedStatementAdaptor();
 		try {
-			delegate.dehydrate( null, fields, notNull, delegate.getPropertyColumnInsertable(), j, insert, session, false );
+			int index = delegate.dehydrate( null, fields, notNull, delegate.getPropertyColumnInsertable(), j, insert, session, false );
+			delegate.getIdentifierType().nullSafeSet( insert, id, index, session );
 		}
 		catch (SQLException e) {
 			//can't actually occur!
 			throw new JDBCException( "error while binding parameters", e );
 		}
-		return queryExecutor.update( id, sql, insert.getParametersAsArray(), delegate.getFactory() )
+		return queryExecutor.update( sql, insert.getParametersAsArray(), delegate.getFactory() )
 				.thenAccept( count -> {
 					try {
 						expectation.verifyOutcome(count, insert, -1);

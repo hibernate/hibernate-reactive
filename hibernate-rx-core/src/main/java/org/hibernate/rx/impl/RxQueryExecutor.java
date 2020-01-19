@@ -1,20 +1,24 @@
 package org.hibernate.rx.impl;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import io.vertx.axle.sqlclient.*;
-import org.hibernate.cfg.NotYetImplementedException;
+import org.hibernate.JDBCException;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.rx.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.rx.adaptor.impl.ResultSetAdaptor;
-import org.hibernate.rx.service.RxConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 
 import io.vertx.sqlclient.impl.ArrayTuple;
+import org.hibernate.type.Type;
 
 // This could be a service
 public class RxQueryExecutor {
@@ -24,18 +28,8 @@ public class RxQueryExecutor {
 				.getServiceRegistry()
 				.getService( RxConnectionPoolProvider.class );
 
-		RxConnection connection = poolProvider.getConnection();
-		return connection.preparedQuery( sql, asTuple( paramValues )).thenApply(SqlResult::rowCount);
-	}
-
-	public CompletionStage<Integer> update(Object entityId, String sql, Object[] paramValues, SessionFactoryImplementor factory) {
-		RxConnectionPoolProvider poolProvider = factory
-				.getServiceRegistry()
-				.getService( RxConnectionPoolProvider.class );
-
-		RxConnection connection = poolProvider.getConnection();
-		Tuple tuple = asTuple( paramValues, entityId );
-		return connection.preparedQuery( sql, tuple ).thenApply(SqlResult::rowCount);
+		return poolProvider.getConnection()
+				.preparedQuery( sql, asTuple( paramValues )).thenApply(SqlResult::rowCount);
 	}
 
 	public CompletionStage<Optional<Integer>> selectInteger(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
@@ -43,59 +37,57 @@ public class RxQueryExecutor {
 				.getServiceRegistry()
 				.getService(RxConnectionPoolProvider.class);
 
-		RxConnection connection = poolProvider.getConnection();
-		return connection.preparedQuery( sql, asTuple( paramValues) ).thenApply( rowSet -> {
-			for (Row row: rowSet) {
-				return Optional.ofNullable( row.getInteger(0) );
-			}
-			return Optional.empty();
-		});
+		return poolProvider.getConnection()
+				.preparedQuery( sql, asTuple( paramValues) ).thenApply(rowSet -> {
+					for (Row row: rowSet) {
+						return Optional.ofNullable( row.getInteger(0) );
+					}
+					return Optional.empty();
+				});
 	}
 
 	/**
 	 * @param transformer Convert the result of the query to a list of entities
 	 */
-	public CompletionStage<List> execute(String sql, QueryParameters queryParameters, SessionFactoryImplementor factory, Function<ResultSet, List<Object>> transformer) {
-		RxConnectionPoolProvider poolProvider = factory
+	public CompletionStage<List<?>> execute(String sql, QueryParameters queryParameters,
+										 SessionImplementor session,
+										 Function<ResultSet, List<Object>> transformer) {
+		RxConnectionPoolProvider poolProvider = session.getSessionFactory()
 				.getServiceRegistry()
 				.getService( RxConnectionPoolProvider.class );
 
-		RxConnection connection = poolProvider.getConnection();
-		return connection.preparedQuery( sql, asTuple( queryParameters ) )
-				.thenApply( rowset -> entities( transformer, rowset ) );
+		return poolProvider.getConnection()
+				.preparedQuery( sql, asTuple( queryParameters, session ) )
+				.thenApply( rowset ->
+						transformer.apply( new ResultSetAdaptor(rowset) ) );
 	}
 
-	private List entities(
-			Function<ResultSet, List<Object>> transformer,
-			RowSet rows) {
-		ResultSetAdaptor resultSet = new ResultSetAdaptor( rows );
-		List<Object> entities = transformer.apply( resultSet );
-		return entities;
-	}
-
-	private Tuple asTuple(QueryParameters queryParameters) {
+	private Tuple asTuple(QueryParameters queryParameters, SessionImplementor session) {
+		PreparedStatementAdaptor adaptor = new PreparedStatementAdaptor();
+		Type[] types = queryParameters.getPositionalParameterTypes();
 		Object[] values = queryParameters.getPositionalParameterValues();
-		return asTuple( values );
+		int n = 1;
+		for (int i = 0; i < types.length; i++) {
+			Type type = types[i];
+			Object value = values[i];
+			try {
+				type.nullSafeSet(adaptor, value, n, session);
+				n += type.getColumnSpan( session.getSessionFactory() );
+			}
+			catch (SQLException e) {
+				//can never happen
+				throw new JDBCException("error binding parameters", e);
+			}
+		}
+		return asTuple( adaptor.getParametersAsArray() );
 	}
 
 	private Tuple asTuple(Object[] values) {
 		// FIXME: report this bug to vertx, we get a CCE if we use Tuple.wrap here
 //	    return Tuple.wrap(values);
 		ArrayTuple ret = new ArrayTuple( values.length );
-		for ( Object object : values ) {
-			ret.add( object );
-		}
+		Collections.addAll( ret, values );
 		return Tuple.newInstance( ret );
 	}
 
-	private Tuple asTuple(Object[] values, Object id) {
-		// FIXME: report this bug to vertx, we get a CCE if we use Tuple.wrap here
-//	    return Tuple.wrap(values);
-		ArrayTuple ret = new ArrayTuple( values.length + 1 );
-		for ( int i = 0; i < values.length; i++ ) {
-			ret.add( i, values[i] );
-		}
-		ret.add( values.length, id );
-		return Tuple.newInstance( ret );
-	}
 }
