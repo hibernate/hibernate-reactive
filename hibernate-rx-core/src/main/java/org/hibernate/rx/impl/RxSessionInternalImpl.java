@@ -175,11 +175,9 @@ public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements R
 
 		LockOptions lockOptions = null;
 
-		return RxUtil.nullFuture()
-				.thenCompose( v -> {
-					getLoadQueryInfluencers().getEffectiveEntityGraph().applyConfiguredGraph( properties );
+		getLoadQueryInfluencers().getEffectiveEntityGraph().applyConfiguredGraph( properties );
 
-					final RxIdentifierLoadAccessImpl<T> loadAccess = rxById( entityClass );
+		final RxIdentifierLoadAccessImpl<T> loadAccess = rxById( entityClass );
 //			loadAccess.with( determineAppropriateLocalCacheMode( properties ) );
 
 //			if ( lockModeType != null ) {
@@ -190,8 +188,8 @@ public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements R
 //				loadAccess.with( lockOptions );
 //			}
 
-					return loadAccess.load( (Serializable) primaryKey );
-				} ).handle( (v, x) -> {
+		return loadAccess.load( (Serializable) primaryKey )
+				.handle( (v, x) -> {
 					if ( x instanceof EntityNotFoundException) {
 						// DefaultLoadEventListener.returnNarrowedProxy may throw ENFE (see HHH-7861 for details),
 						// which find() should not throw. Find() should return null if the entity was not found.
@@ -228,7 +226,8 @@ public class RxSessionInternalImpl extends SessionDelegatorBaseImpl implements R
 						throw exceptionConverter().convert( (RuntimeException) x, lockOptions );
 					}
 					return v;
-				} ).whenComplete( (v, x) -> getLoadQueryInfluencers().getEffectiveEntityGraph().clear() );
+				} )
+				.whenComplete( (v, x) -> getLoadQueryInfluencers().getEffectiveEntityGraph().clear() );
 	}
 
 	<T> RxIdentifierLoadAccessImpl<T> rxById(Class<T> entityClass) {
