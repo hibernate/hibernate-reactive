@@ -1,6 +1,7 @@
 package org.hibernate.rx.persister.entity.impl;
 
 import org.hibernate.HibernateException;
+import org.hibernate.JDBCException;
 import org.hibernate.Session;
 import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.Versioning;
@@ -148,14 +149,24 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 //		}
 //		final boolean callable = delegate.isInsertCallable( j );
 
-		PreparedStatementAdaptor adapter = new PreparedStatementAdaptor();
+		PreparedStatementAdaptor insert = new PreparedStatementAdaptor();
 		try {
-			delegate.dehydrate( null, fields, notNull, delegate.getPropertyColumnInsertable(), j, adapter, session, false );
+			delegate.dehydrate( null, fields, notNull, delegate.getPropertyColumnInsertable(), j, insert, session, false );
 		}
 		catch (SQLException e) {
-			throw new HibernateException( "Error" );
+			//can't actually occur!
+			throw new JDBCException( "error while binding parameters", e );
 		}
-		return queryExecutor.update( id, sql, adapter.getParametersAsArray(), delegate.getFactory() );
+		return queryExecutor.update( id, sql, insert.getParametersAsArray(), delegate.getFactory() )
+				.thenAccept( count -> {
+					try {
+						expectation.verifyOutcome(count, insert, -1);
+					}
+					catch (SQLException e) {
+						//can't actually occur!
+						throw new JDBCException( "error while verifying result count", e );
+					}
+				});
 	}
 
 	private CompletionStage<?> deleteRx(
@@ -232,7 +243,16 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			throw new HibernateException( e );
 		}
 
-		return queryExecutor.update( sql, delete.getParametersAsArray(), delegate.getFactory() );
+		return queryExecutor.update( sql, delete.getParametersAsArray(), delegate.getFactory() )
+				.thenAccept( count -> {
+					try {
+						expectation.verifyOutcome(count, delete, -1);
+					}
+					catch (SQLException e) {
+						//can't actually occur!
+						throw new JDBCException( "error while verifying result count", e );
+					}
+				});
 	}
 
 	public CompletionStage<?> deleteRx(
@@ -422,8 +442,15 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 //				else {
 				return queryExecutor.update( sql, update.getParametersAsArray(), delegate.getFactory() )
 						.thenApply( count -> {
+							try {
+								expectation.verifyOutcome(count, update, -1);
+							}
+							catch (SQLException e) {
+								//can't actually occur!
+								throw new JDBCException( "error while verifying result count", e );
+							}
 							return count > 0;
-						} );
+						});
 //					return check(
 //							session.getJdbcCoordinator().getResultSetReturn().executeUpdate( update ),
 //							id,
