@@ -6,12 +6,11 @@
  */
 package org.hibernate.rx.loader.entity.impl;
 
-import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.CascadingAction;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.loader.JoinWalker;
-import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 
 public class RxCascadeEntityLoader extends RxAbstractEntityLoader {
@@ -41,18 +40,4 @@ public class RxCascadeEntityLoader extends RxAbstractEntityLoader {
 		}
 	}
 
-	public static UniqueEntityLoader create(OuterJoinLoadable persister, LockOptions lockOptions, SharedSessionContractImplementor session) {
-		String internalProfile = session.getLoadQueryInfluencers().getInternalFetchProfile();
-		if ( internalProfile==null || !LockMode.UPGRADE.greaterThan( lockOptions.getLockMode() ) ) {
-			return null;
-		}
-		switch (internalProfile) {
-			case "merge":
-				return new RxCascadeEntityLoader( persister, CascadingActions.MERGE, session.getFactory() );
-			case "refresh":
-				return new RxCascadeEntityLoader( persister, CascadingActions.REFRESH, session.getFactory() );
-			default:
-				return null;
-		}
-	}
 }

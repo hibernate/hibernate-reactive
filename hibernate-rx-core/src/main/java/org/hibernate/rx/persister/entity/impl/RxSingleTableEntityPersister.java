@@ -6,6 +6,7 @@ import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
+import org.hibernate.engine.spi.CascadingActions;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.entity.UniqueEntityLoader;
@@ -41,6 +42,14 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 	}
 
 	@Override
+	protected void createLoaders() {
+		super.createLoaders();
+
+		getLoaders().put( "merge", new RxCascadeEntityLoader( this, CascadingActions.MERGE, getFactory() ) );
+		getLoaders().put( "refresh", new RxCascadeEntityLoader( this, CascadingActions.REFRESH, getFactory() ) );
+	}
+
+	@Override
 	protected UniqueEntityLoader createEntityLoader(LockMode lockMode, LoadQueryInfluencers loadQueryInfluencers)
 			throws MappingException {
 		//FIXME add support to lock mode and loadQueryInfluencers
@@ -54,12 +63,6 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		//FIXME add support to lock mode and loadQueryInfluencers
 		return RxBatchingEntityLoaderBuilder.getBuilder( getFactory() )
 				.buildLoader( this, batchSize, lockOptions, getFactory(), loadQueryInfluencers );
-	}
-
-	@Override
-	protected UniqueEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session) {
-		UniqueEntityLoader loader = RxCascadeEntityLoader.create(this, lockOptions, session);
-		return loader == null ? super.getAppropriateLoader(lockOptions, session) : loader;
 	}
 
 	@Override
