@@ -84,6 +84,11 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
+	public <T> CompletionStage<T> merge(T object) {
+		return null;
+	}
+
+	@Override
 	public CompletionStage<RxSession> refresh(Object entity) {
 		return null;
 	}

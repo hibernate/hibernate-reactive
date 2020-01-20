@@ -14,7 +14,6 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.EntityState;
 import org.hibernate.event.internal.EventUtil;
-import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PersistEvent;
 import org.hibernate.event.spi.PersistEventListener;
@@ -223,25 +222,4 @@ public class DefaultRxPersistEventListener
 		throw new UnsupportedOperationException();
 	}
 
-	public static class EventContextManagingPersistEventListenerDuplicationStrategy implements DuplicationStrategy {
-
-		public static final DuplicationStrategy INSTANCE = new DefaultRxPersistEventListener.EventContextManagingPersistEventListenerDuplicationStrategy();
-
-		private EventContextManagingPersistEventListenerDuplicationStrategy() {
-		}
-
-		@Override
-		public boolean areMatch(Object listener, Object original) {
-			if ( listener instanceof DefaultRxPersistEventListener && original instanceof PersistEventListener ) {
-				return true;
-			}
-
-			return false;
-		}
-
-		@Override
-		public Action getAction() {
-			return Action.REPLACE_ORIGINAL;
-		}
-	}
 }

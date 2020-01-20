@@ -32,6 +32,10 @@ public interface RxSessionInternal extends Session {
 
 	CompletionStage<Void> rxRemove(Object entity, boolean isCascadeDeleteEnabled, Set transientObjects);
 
+	<T> CompletionStage<T> rxMerge(T object);
+
+	CompletionStage<Void> rxMerge(Object object, Map copiedAlready);
+
 	CompletionStage<Void> rxFlush();
 
 	CompletionStage<Void> rxRefresh(Object entity);

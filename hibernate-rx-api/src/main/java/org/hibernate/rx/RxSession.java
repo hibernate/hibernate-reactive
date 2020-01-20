@@ -105,6 +105,23 @@ public interface RxSession {
 	CompletionStage<RxSession> remove(Object entity);
 
 	/**
+	 * Copy the state of the given object onto the persistent object with the same
+	 * identifier. If there is no persistent instance currently associated with
+	 * the session, it will be loaded. Return the persistent instance. If the
+	 * given instance is unsaved, save a copy of and return it as a newly persistent
+	 * instance. The given instance does not become associated with the session.
+	 * This operation cascades to associated instances if the association is mapped
+	 * with {@code cascade="merge"}
+	 * <p/>
+	 * The semantics of this method are defined by JSR-220.
+	 *
+	 * @param object a detached instance with state to be copied
+	 *
+	 * @return an updated persistent instance
+	 */
+	<T> CompletionStage<T> merge(T object);
+
+	/**
 	 * Re-read the state of the given instance from the underlying database. It is
 	 * inadvisable to use this to implement long-running sessions that span many
 	 * business tasks. This method is, however, useful in certain special circumstances.

@@ -408,25 +408,4 @@ public class DefaultRxDeleteEventListener
 		}
 	}
 
-	public static class EventContextManagingDeleteEventListenerDuplicationStrategy implements DuplicationStrategy {
-
-		public static final DuplicationStrategy INSTANCE = new DefaultRxDeleteEventListener.EventContextManagingDeleteEventListenerDuplicationStrategy();
-
-		private EventContextManagingDeleteEventListenerDuplicationStrategy() {
-		}
-
-		@Override
-		public boolean areMatch(Object listener, Object original) {
-			if ( listener instanceof DefaultRxDeleteEventListener && original instanceof DeleteEventListener ) {
-				return true;
-			}
-
-			return false;
-		}
-
-		@Override
-		public Action getAction() {
-			return Action.REPLACE_ORIGINAL;
-		}
-	}
 }

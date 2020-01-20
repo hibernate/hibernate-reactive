@@ -240,6 +240,79 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@Override
+	public <T> CompletionStage<T> rxMerge(T object) throws HibernateException {
+		checkOpen();
+		return fireMerge( new MergeEvent( null, object, this ));
+	}
+
+	@Override
+	public CompletionStage<Void> rxMerge(Object object, Map copiedAlready)
+			throws HibernateException {
+		checkOpenOrWaitingForAutoClose();
+		return fireMerge( copiedAlready, new MergeEvent( null, object, this ) );
+	}
+
+	private <T> CompletionStage<T> fireMerge(MergeEvent event) {
+		checkTransactionSynchStatus();
+		checkNoUnresolvedActionsBeforeOperation();
+
+		CompletionStage<Void> ret = RxUtil.nullFuture();
+		for ( MergeEventListener listener : listeners( EventType.MERGE ) ) {
+			CompletionStage<Void> merge = ((RxMergeEventListener) listener).rxOnMerge(event);
+			ret = ret.thenCompose( v -> merge );
+		}
+
+		return ret.handle( (v,e) -> {
+			checkNoUnresolvedActionsAfterOperation();
+
+			if (e instanceof ObjectDeletedException) {
+				throw getExceptionConverter().convert( new IllegalArgumentException( e ) );
+			}
+			else if (e instanceof MappingException) {
+				throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage(), e ) );
+			}
+			else if (e instanceof RuntimeException) {
+				//including HibernateException
+				throw getExceptionConverter().convert( (RuntimeException) e );
+			}
+			else if (e !=null) {
+				return RxUtil.rethrow(e);
+			}
+			return (T) event.getResult();
+		});
+	}
+
+	private CompletionStage<Void> fireMerge(final Map copiedAlready, final MergeEvent event) {
+		pulseTransactionCoordinator();
+
+		CompletionStage<Void> ret = RxUtil.nullFuture();
+		for ( MergeEventListener listener : listeners( EventType.MERGE ) ) {
+			CompletionStage<Void> merge = ((RxMergeEventListener) listener).rxOnMerge(event, copiedAlready);
+			ret = ret.thenCompose( v -> merge );
+		}
+
+		return ret.handle( (v,e) -> {
+			delayedAfterCompletion();
+
+			if (e instanceof ObjectDeletedException) {
+				throw getExceptionConverter().convert( new IllegalArgumentException( e ) );
+			}
+			else if (e instanceof MappingException) {
+				throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage(), e ) );
+			}
+			else if (e instanceof RuntimeException) {
+				//including HibernateException
+				throw getExceptionConverter().convert( (RuntimeException) e );
+			}
+			else if (e !=null) {
+				return RxUtil.rethrow(e);
+			}
+			return v;
+		});
+
+	}
+
+	@Override
 	public CompletionStage<Void> rxFlush() {
 		checkOpen();
 		return doFlush();

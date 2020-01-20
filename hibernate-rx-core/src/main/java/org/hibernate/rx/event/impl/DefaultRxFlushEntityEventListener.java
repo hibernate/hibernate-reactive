@@ -9,7 +9,6 @@ import org.hibernate.engine.spi.*;
 import org.hibernate.event.internal.DirtyCollectionSearchVisitor;
 import org.hibernate.event.internal.FlushVisitor;
 import org.hibernate.event.internal.WrapVisitor;
-import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEntityEvent;
 import org.hibernate.event.spi.FlushEntityEventListener;
@@ -703,25 +702,4 @@ public class DefaultRxFlushEntityEventListener implements FlushEntityEventListen
 		return persistenceContext.getCachedDatabaseSnapshot( entityKey );
 	}
 
-	public static class EventContextManagingFlushEventListenerDuplicationStrategy implements DuplicationStrategy {
-
-		public static final DuplicationStrategy INSTANCE = new DefaultRxFlushEntityEventListener.EventContextManagingFlushEventListenerDuplicationStrategy();
-
-		private EventContextManagingFlushEventListenerDuplicationStrategy() {
-		}
-
-		@Override
-		public boolean areMatch(Object listener, Object original) {
-			if ( listener instanceof DefaultRxFlushEntityEventListener && original instanceof FlushEntityEventListener ) {
-				return true;
-			}
-
-			return false;
-		}
-
-		@Override
-		public Action getAction() {
-			return Action.REPLACE_ORIGINAL;
-		}
-	}
 }

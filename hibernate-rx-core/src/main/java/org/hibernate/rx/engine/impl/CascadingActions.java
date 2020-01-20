@@ -93,6 +93,25 @@ public class CascadingActions {
 	};
 
 	/**
+	 * @see org.hibernate.Session#merge(Object)
+	 */
+	public static final CascadingAction MERGE =
+			new BaseCascadingAction(org.hibernate.engine.spi.CascadingActions.MERGE) {
+				@Override
+				public CompletionStage <?> cascade(
+						EventSource session,
+						Object child,
+						String entityName,
+						Object anything,
+						boolean isCascadeDeleteEnabled)
+						throws HibernateException {
+					LOG.tracev("Cascading to refresh: {0}", entityName);
+					return session.unwrap(RxSessionInternal.class).rxMerge( child, (Map) anything );
+				}
+			};
+
+
+	/**
 	 * @see org.hibernate.Session#refresh(Object)
 	 */
 	public static final CascadingAction REFRESH =

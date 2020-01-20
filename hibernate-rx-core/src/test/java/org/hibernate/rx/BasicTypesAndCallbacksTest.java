@@ -101,6 +101,11 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 									.preparedQuery("update Basic set string = 'Goodnight'")
 									.thenCompose(v -> s3.refresh(basic))
 									.thenAccept(v -> context.assertEquals(basic.getString(), "Goodnight"))
+									.thenCompose(v -> {
+										basik.version = basic.version;
+										return s3.merge(basik);
+									})
+									.thenAccept( b -> context.assertEquals( b.string, "Hello World") )
 									.thenCompose(v -> s3.remove(basic))
 									.thenAccept(v -> context.assertTrue( !basic.postRemoved && basic.preRemoved ) )
 									.thenCompose(v -> s3.flush())

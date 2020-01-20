@@ -27,25 +27,15 @@ public class RxIntegrator implements Integrator {
 
 	private void attachEventContextManagingListenersIfRequired(SessionFactoryServiceRegistry serviceRegistry) {
 		EventListenerRegistry eventListenerRegistry = serviceRegistry.getService( EventListenerRegistry.class );
+		eventListenerRegistry.addDuplicationStrategy( ReplacementDuplicationStrategy.INSTANCE );
 
-		eventListenerRegistry.addDuplicationStrategy( DefaultRxFlushEventListener.EventContextManagingFlushEventListenerDuplicationStrategy.INSTANCE );
 		eventListenerRegistry.getEventListenerGroup( EventType.FLUSH ).appendListener( new DefaultRxFlushEventListener() );
-
-		eventListenerRegistry.addDuplicationStrategy( DefaultRxFlushEntityEventListener.EventContextManagingFlushEventListenerDuplicationStrategy.INSTANCE );
 		eventListenerRegistry.getEventListenerGroup( EventType.FLUSH_ENTITY ).appendListener( new DefaultRxFlushEntityEventListener() );
-
-		eventListenerRegistry.addDuplicationStrategy( DefaultRxPersistEventListener.EventContextManagingPersistEventListenerDuplicationStrategy.INSTANCE );
 		eventListenerRegistry.getEventListenerGroup( EventType.PERSIST ).appendListener( new DefaultRxPersistEventListener() );
-		eventListenerRegistry.getEventListenerGroup( EventType.PERSIST_ONFLUSH )
-				.appendListener( new DefaultRxPersistOnFlushEventListener() );
-
-		eventListenerRegistry.addDuplicationStrategy( DefaultRxDeleteEventListener.EventContextManagingDeleteEventListenerDuplicationStrategy.INSTANCE );
+		eventListenerRegistry.getEventListenerGroup( EventType.PERSIST_ONFLUSH ).appendListener( new DefaultRxPersistOnFlushEventListener() );
+		eventListenerRegistry.getEventListenerGroup( EventType.MERGE ).appendListener( new DefaultRxMergeEventListener() );
 		eventListenerRegistry.getEventListenerGroup( EventType.DELETE ).appendListener( new DefaultRxDeleteEventListener() );
-
-		eventListenerRegistry.addDuplicationStrategy( DefaultRxRefreshEventListener.EventContextManagingDeleteEventListenerDuplicationStrategy.INSTANCE );
 		eventListenerRegistry.getEventListenerGroup( EventType.REFRESH ).appendListener( new DefaultRxRefreshEventListener() );
-
-		eventListenerRegistry.addDuplicationStrategy( DefaultRxLoadEventListener.EventContextManagingLoadEventListenerDuplicationStrategy.INSTANCE );
 		eventListenerRegistry.getEventListenerGroup( EventType.LOAD ).appendListener( new DefaultRxLoadEventListener() );
 	}
 

@@ -5,7 +5,6 @@ import org.hibernate.action.internal.DelayedPostInsertIdentifier;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.SoftLock;
 import org.hibernate.engine.spi.*;
-import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
@@ -607,25 +606,4 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		return (CompletionStage<Optional<Object>>) entity;
 	}
 
-	public static class EventContextManagingLoadEventListenerDuplicationStrategy implements DuplicationStrategy {
-
-		public static final DuplicationStrategy INSTANCE = new DefaultRxLoadEventListener.EventContextManagingLoadEventListenerDuplicationStrategy();
-
-		private EventContextManagingLoadEventListenerDuplicationStrategy() {
-		}
-
-		@Override
-		public boolean areMatch(Object listener, Object original) {
-			if ( listener instanceof DefaultRxLoadEventListener && original instanceof LoadEventListener ) {
-				return true;
-			}
-
-			return false;
-		}
-
-		@Override
-		public Action getAction() {
-			return Action.REPLACE_ORIGINAL;
-		}
-	}
 }

@@ -9,7 +9,6 @@ import org.hibernate.action.internal.QueuedOperationCollectionAction;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.Collections;
 import org.hibernate.engine.spi.*;
-import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.*;
 import org.hibernate.internal.CoreMessageLogger;
@@ -347,28 +346,6 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 
 	protected void postPostFlush(SessionImplementor session) {
 		session.getInterceptor().postFlush( session.getPersistenceContextInternal().managedEntitiesIterator() );
-	}
-
-	public static class EventContextManagingFlushEventListenerDuplicationStrategy implements DuplicationStrategy {
-
-		public static final DuplicationStrategy INSTANCE = new DefaultRxFlushEventListener.EventContextManagingFlushEventListenerDuplicationStrategy();
-
-		private EventContextManagingFlushEventListenerDuplicationStrategy() {
-		}
-
-		@Override
-		public boolean areMatch(Object listener, Object original) {
-			if ( listener instanceof DefaultRxFlushEventListener && original instanceof FlushEventListener ) {
-				return true;
-			}
-
-			return false;
-		}
-
-		@Override
-		public Action getAction() {
-			return Action.REPLACE_ORIGINAL;
-		}
 	}
 
 	@Override
