@@ -12,6 +12,7 @@ import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.spi.*;
 import org.hibernate.event.internal.EntityState;
 import org.hibernate.event.internal.EventUtil;
+import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.spi.*;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
