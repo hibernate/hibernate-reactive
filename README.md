@@ -29,6 +29,14 @@ From the command line, type the following commands:
     create user "hibernate-rx" with password 'hibernate-rx';
     grant all privileges on database "hibernate-rx" to "hibernate-rx";
 
+If you also want to run the MySQL tests, ensure that MySQL is installed, 
+and then type the following:
+
+    mysql -uroot
+    create database hibernaterx;
+    create user "hibernate-rx" identified by 'hibernate-rx';
+    grant all on hibernaterx.* to "hibernate-rx";
+
 Finally, run `./gradlew test` from this directory.
 
 ## Dependencies
