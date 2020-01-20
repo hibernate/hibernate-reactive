@@ -57,6 +57,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 
 	@Override
 	public <T> CompletionStage<Optional<T>> rxFetch(T association) {
+		checkOpen();
 		if ( association instanceof HibernateProxy ) {
 			LazyInitializer initializer = ((HibernateProxy) association).getHibernateLazyInitializer();
 			//TODO: is this correct?
@@ -79,13 +80,13 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 
 	@Override
 	public CompletionStage<Void> rxPersist(Object entity) {
-//		checkOpen();
+		checkOpen();
 		return firePersist( new PersistEvent( null, entity, this ) );
 	}
 
 	@Override
 	public CompletionStage<Void> rxPersist(Object object, Map copiedAlready) {
-//		checkOpenOrWaitingForAutoClose();
+		checkOpenOrWaitingForAutoClose();
 		return firePersist( copiedAlready, new PersistEvent( null, object, this ) );
 	}
 
@@ -147,7 +148,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 
 	@Override
 	public CompletionStage<Void> rxPersistOnFlush(Object entity, Map copiedAlready) {
-//		checkOpenOrWaitingForAutoClose();
+		checkOpenOrWaitingForAutoClose();
 		return firePersistOnFlush( entity, copiedAlready );
 	}
 
@@ -165,14 +166,14 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 
 	@Override
 	public CompletionStage<Void> rxRemove(Object entity) {
-//		checkOpen();
+		checkOpen();
 		return fireRemove( new DeleteEvent( null, entity, this ) );
 	}
 
 	@Override
 	public CompletionStage<Void> rxRemove(Object object, boolean isCascadeDeleteEnabled, Set transientEntities)
 			throws HibernateException {
-//		checkOpenOrWaitingForAutoClose();
+		checkOpenOrWaitingForAutoClose();
 		final boolean removingOrphanBeforeUpates =
 				((StatefulPersistenceContext) getPersistenceContextInternal())
 						.isRemovingOrphanBeforeUpates();
@@ -245,7 +246,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 
 	@Override
 	public CompletionStage<Void> rxFlush() {
-//		checkOpen();
+		checkOpen();
 		return doFlush();
 	}
 
@@ -277,13 +278,13 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 
 	@Override
 	public CompletionStage<Void> rxRefresh(Object entity) {
-//		checkOpen();
+		checkOpen();
 		return fireRefresh( new RefreshEvent(null, entity, this) );
 	}
 
 	@Override
 	public CompletionStage<Void> rxRefresh(Object object, Map refreshedAlready) {
-//		checkOpenOrWaitingForAutoClose();
+		checkOpenOrWaitingForAutoClose();
 		return fireRefresh( refreshedAlready, new RefreshEvent( null, object, this ) );
 	}
 
@@ -352,7 +353,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 			Object primaryKey,
 			LockModeType lockModeType,
 			Map<String, Object> properties) {
-//		checkOpen();
+		checkOpen();
 
 		LockOptions lockOptions = null;
 
@@ -435,7 +436,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	private CompletionStage<Void> fireLoad(LoadEvent event, LoadEventListener.LoadType loadType) {
-//		checkOpenOrWaitingForAutoClose();
+		checkOpenOrWaitingForAutoClose();
 		return fireLoadNoChecks( event, loadType );
 //		delayedAfterCompletion();
 	}
