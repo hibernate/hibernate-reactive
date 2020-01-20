@@ -126,7 +126,8 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 
 				event.setNumberOfEntitiesProcessed(entityCount);
 				event.setNumberOfCollectionsProcessed(collectionCount);
-			} finally {
+			}
+			finally {
 				persistenceContext.setFlushing(false);
 			}
 		});

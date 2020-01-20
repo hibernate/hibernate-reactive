@@ -244,7 +244,8 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 				if (!persister.isMutable()) {
 					// this is probably redundant; it should already be read-only
 					source.setReadOnly(result, true);
-				} else {
+				}
+				else {
 					source.setReadOnly(result, (e == null ? source.isDefaultReadOnly() : e.isReadOnly()));
 				}
 			}
