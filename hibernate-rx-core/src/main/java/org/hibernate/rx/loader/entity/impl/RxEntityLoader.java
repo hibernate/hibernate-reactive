@@ -91,6 +91,11 @@ public class RxEntityLoader extends RxAbstractEntityLoader implements UniqueEnti
 						factory,
 						loadQueryInfluencers
 				) );
+
+		if ( LOG.isDebugEnabled() ) {
+			LOG.debugf( "Static select for entity %s [%s]: %s", entityName, lockMode, getSQLString() );
+		}
+
 	}
 
 	public RxEntityLoader(
@@ -110,6 +115,14 @@ public class RxEntityLoader extends RxAbstractEntityLoader implements UniqueEnti
 						factory,
 						loadQueryInfluencers
 				) );
+
+		if ( LOG.isDebugEnabled() ) {
+			LOG.debugf( "Static select for entity %s [%s:%s]: %s",
+					entityName,
+					lockOptions.getLockMode(),
+					lockOptions.getTimeOut(),
+					getSQLString() );
+		}
 	}
 
 	private RxEntityLoader(
