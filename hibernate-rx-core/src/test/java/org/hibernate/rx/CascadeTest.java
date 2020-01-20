@@ -86,7 +86,15 @@ public class CascadeTest extends BaseRxTest {
 							context.assertFalse( node.postPersisted && node.prePersisted );
 							context.assertEquals( node.version, 2 );
 							context.assertEquals( node.string, "ADOPTED");
-							return s3.remove(node)
+							basik.version = node.version;
+							basik.string = "Hello World!";
+							basik.parent.string = "Goodbye World!";
+							return s3.merge(basik)
+									.thenAccept( b -> {
+										context.assertEquals( b.string, "Hello World!");
+										context.assertEquals( b.parent.string, "Goodbye World!");
+									})
+									.thenCompose(v -> s3.remove(node))
 									.thenAccept(v -> context.assertTrue( !node.postRemoved && node.preRemoved ) )
 									.thenCompose(v -> s3.flush())
 									.thenAccept(v -> context.assertTrue( node.postRemoved && node.preRemoved ) );
@@ -122,6 +130,7 @@ public class CascadeTest extends BaseRxTest {
 		@ManyToOne(fetch = FetchType.LAZY,
 				cascade = {CascadeType.PERSIST,
 						CascadeType.REFRESH,
+						CascadeType.MERGE,
 						CascadeType.REMOVE})
 		Node parent;
 
