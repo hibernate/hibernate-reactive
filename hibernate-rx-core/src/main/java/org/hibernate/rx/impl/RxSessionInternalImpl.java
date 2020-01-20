@@ -419,6 +419,13 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@Override
+	public <T> CompletionStage<Optional<T>> rxGet(
+			Class<T> entityClass,
+			Serializable id) {
+		return new RxIdentifierLoadAccessImpl<>( entityClass ).load( id );
+	}
+
+	@Override
 	public <T> CompletionStage<Optional<T>> rxFind(
 			Class<T> entityClass,
 			Object primaryKey,

@@ -4,6 +4,7 @@ import org.hibernate.Session;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 
 import javax.persistence.LockModeType;
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -41,6 +42,10 @@ public interface RxSessionInternal extends Session {
 	CompletionStage<Void> rxRefresh(Object entity);
 
 	CompletionStage<?> rxRefresh(Object child, Map refreshedAlready);
+
+	<T> CompletionStage<Optional<T>> rxGet(
+			Class<T> entityClass,
+			Serializable id);
 
 	<T> CompletionStage<Optional<T>> rxFind(
 			Class<T> entityClass,

@@ -249,11 +249,10 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 					source.setReadOnly(result, (e == null ? source.isDefaultReadOnly() : e.isReadOnly()));
 				}
 			}
-			source.getLoadQueryInfluencers().setInternalFetchProfile(previousFetchProfile);
 
 			UnresolvableObjectException.throwIfNull(result, id, persister.getEntityName());
-
-		});
+		})
+		.whenComplete( (v,t) -> source.getLoadQueryInfluencers().setInternalFetchProfile(previousFetchProfile) );
 
 	}
 
@@ -289,25 +288,4 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 		}
 	}
 
-	public static class EventContextManagingDeleteEventListenerDuplicationStrategy implements DuplicationStrategy {
-
-		public static final DuplicationStrategy INSTANCE = new DefaultRxRefreshEventListener.EventContextManagingDeleteEventListenerDuplicationStrategy();
-
-		private EventContextManagingDeleteEventListenerDuplicationStrategy() {
-		}
-
-		@Override
-		public boolean areMatch(Object listener, Object original) {
-			if ( listener instanceof DefaultRxRefreshEventListener && original instanceof RefreshEventListener) {
-				return true;
-			}
-
-			return false;
-		}
-
-		@Override
-		public Action getAction() {
-			return Action.REPLACE_ORIGINAL;
-		}
-	}
 }

@@ -19,6 +19,7 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.impl.Cascade;
 import org.hibernate.rx.engine.impl.CascadingAction;
 import org.hibernate.rx.event.spi.RxMergeEventListener;
@@ -293,11 +294,13 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
 		final String entityName = persister.getEntityName();
 
-		Serializable id = event.getRequestedId();
-		if ( id == null ) {
+		Serializable requestedId = event.getRequestedId();
+		Serializable id;
+		if ( requestedId == null ) {
 			id = persister.getIdentifier( entity, source );
 		}
 		else {
+			id = requestedId;
 			// check that entity id = requestedId
 			Serializable entityId = persister.getIdentifier( entity, source );
 			if ( !persister.getIdentifierType().isEqual( id, entityId, source.getFactory() ) ) {
@@ -310,78 +313,68 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 
 		//we must clone embedded composite identifiers, or
 		//we will get back the same instance that we pass in
-		final Serializable clonedIdentifier = (Serializable) persister.getIdentifierType().deepCopy( id, source.getFactory() );
-		Object response = source.get(entityName, clonedIdentifier);
+		final Serializable clonedIdentifier = (Serializable)
+				persister.getIdentifierType().deepCopy( id, source.getFactory() );
 
-		//TODO: uuufff this is bad! Source sometimes returns the CompletionStage,
-		//      and other times returns the entity itself
-		final CompletionStage<Optional<Object>> stage =
-				response instanceof CompletionStage ?
-						(CompletionStage<Optional<Object>>) response :
-						RxUtil.completedFuture( Optional.of(response) );
+		return source.unwrap(RxSessionInternal.class)
+				.rxGet( (Class<?>) persister.getMappedClass(), clonedIdentifier )
+				.thenCompose(option -> {
+					if ( option.isPresent() ) {
+						Object result = option.get();
+						// before cascade!
+						((MergeContext) copyCache).put(entity, result, true);
 
-		final Serializable ident = id;
-		return stage.thenCompose( option -> {
-			source.getLoadQueryInfluencers().setInternalFetchProfile(previousFetchProfile);
-
-			Object result = option.get();
-			if (result == null) {
-				//TODO: we should throw an exception if we really *know* for sure
-				//      that this is a detached instance, rather than just assuming
-				//throw new StaleObjectStateException(entityName, id);
-
-				// we got here because we assumed that an instance
-				// with an assigned id was detached, when it was
-				// really persistent
-				return entityIsTransient(event, copyCache);
-			}
-			else {
-				// before cascade!
-				((MergeContext) copyCache).put(entity, result, true);
-
-				return unproxyManagedForDetachedMerging(entity, result, persister, source)
-						.thenCompose(optional -> {
-							Object target = optional.get();
-							if (target == entity) {
-								throw new AssertionFailure("entity was not detached");
+						Object target = unproxyManagedForDetachedMerging(entity, result, persister, source);
+						if (target == entity) {
+							throw new AssertionFailure("entity was not detached");
+						}
+						else if ( !source.getEntityName(target).equals(entityName) ) {
+							throw new WrongClassException(
+									"class of the given object did not match class of persistent copy",
+									event.getRequestedId(),
+									entityName
+							);
+						}
+						else if ( isVersionChanged(entity, source, persister, target) ) {
+							final StatisticsImplementor statistics = source.getFactory().getStatistics();
+							if (statistics.isStatisticsEnabled()) {
+								statistics.optimisticFailure(entityName);
 							}
-							else if ( !source.getEntityName(target).equals(entityName) ) {
-								throw new WrongClassException(
-										"class of the given object did not match class of persistent copy",
-										event.getRequestedId(),
-										entityName
-								);
-							}
-							else if ( isVersionChanged(entity, source, persister, target) ) {
-								final StatisticsImplementor statistics = source.getFactory().getStatistics();
-								if (statistics.isStatisticsEnabled()) {
-									statistics.optimisticFailure(entityName);
-								}
-								throw new StaleObjectStateException(entityName, ident);
-							}
+							throw new StaleObjectStateException(entityName, id);
+						}
 
-							// cascade first, so that all unsaved objects get their
-							// copy created before we actually copy
-							return cascadeOnMerge(source, persister, entity, copyCache)
-									.thenAccept(v -> {
-										copyValues(persister, entity, target, source, copyCache);
-										//copyValues works by reflection, so explicitly mark the entity instance dirty
-										markInterceptorDirty(entity, target, persister);
-										event.setResult(result);
-									});
-						});
-			}
-		});
+						// cascade first, so that all unsaved objects get their
+						// copy created before we actually copy
+						return cascadeOnMerge(source, persister, entity, copyCache)
+								.thenAccept(v -> {
+									copyValues(persister, entity, target, source, copyCache);
+									//copyValues works by reflection, so explicitly mark the entity instance dirty
+									markInterceptorDirty(entity, target, persister);
+									event.setResult(result);
+								});
+					}
+					else {
+						//TODO: we should throw an exception if we really *know* for sure
+						//      that this is a detached instance, rather than just assuming
+						//throw new StaleObjectStateException(entityName, id);
+
+						// we got here because we assumed that an instance
+						// with an assigned id was detached, when it was
+						// really persistent
+						return entityIsTransient(event, copyCache);
+					}
+				})
+				.whenComplete( (v,e) -> source.getLoadQueryInfluencers().setInternalFetchProfile(previousFetchProfile) );
 
 	}
 
-	private CompletionStage<Optional<Object>> unproxyManagedForDetachedMerging(
+	private Object unproxyManagedForDetachedMerging(
 			Object incoming,
 			Object managed,
 			EntityPersister persister,
 			EventSource source) {
 		if ( managed instanceof HibernateProxy ) {
-			return RxUtil.completedFuture( Optional.of( source.getPersistenceContextInternal().unproxy( managed ) ) );
+			return source.getPersistenceContextInternal().unproxy( managed );
 		}
 
 		if ( incoming instanceof PersistentAttributeInterceptable
@@ -397,19 +390,20 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 
 			// if the managed entity is not a proxy, we can just return it
 			if ( ! ( managedInterceptor instanceof EnhancementAsProxyLazinessInterceptor ) ) {
-				return RxUtil.completedFuture( Optional.of(managed) );
+				return managed;
 			}
 
 			// if the incoming entity is still a proxy there is no need to force initialization of the managed one
 			if ( incomingInterceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
-				return RxUtil.completedFuture( Optional.of(managed) );
+				return managed;
 			}
 
 			// otherwise, force initialization
-			return (CompletionStage<Optional<Object>>) persister.initializeEnhancedEntityUsedAsProxy( managed, null, source );
+			//TODO: probably needs to be made async!
+			return persister.initializeEnhancedEntityUsedAsProxy( managed, null, source );
 		}
 
-		return RxUtil.completedFuture( Optional.of(managed) );
+		return managed;
 	}
 
 	private void markInterceptorDirty(final Object entity, final Object target, EntityPersister persister) {
