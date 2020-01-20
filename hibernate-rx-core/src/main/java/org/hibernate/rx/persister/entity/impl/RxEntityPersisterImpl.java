@@ -4,7 +4,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
 import org.hibernate.Session;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.identity.IdentityColumnSupport;
+import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.*;
@@ -18,6 +18,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.rx.impl.RxQueryExecutor;
+import org.hibernate.rx.sql.impl.Parameters;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.sql.Delete;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
@@ -215,6 +216,8 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			Object object,
 			SharedSessionContractImplementor session) throws HibernateException {
 
+		sql = Parameters.processParameters(sql, session);
+
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracev( "Inserting entity: {0}", MessageHelper.infoString( delegate ) );
 			if ( delegate.isVersioned() ) {
@@ -233,16 +236,21 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 
 		SessionFactoryImplementor factory = session.getFactory();
 		Dialect dialect = factory.getJdbcServices().getDialect();
-		IdentityColumnSupport identitySupport = dialect.getIdentityColumnSupport();
+		String identifierColumnName = delegate.getIdentifierColumnNames()[0];
 		if ( factory.getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
+			//TODO: wooooo this is awful ... I believe the problem is fixed in Hibernate 6
+			if ( dialect instanceof PostgreSQL81Dialect) {
+				sql = sql + " returning " + identifierColumnName;
+			}
 			return queryExecutor.updateReturning( sql, insert.getParametersAsArray(), factory )
 					.thenApply(Optional::get);
 		}
 		else {
-			String selectIdSql = identitySupport
+			//use an extra round trip to fetch the id
+			String selectIdSql = dialect.getIdentityColumnSupport()
 					.getIdentitySelectString(
 							delegate.getTableName(),
-							delegate.getIdentifierColumnNames()[0],
+							identifierColumnName,
 							Types.INTEGER
 					);
 			return queryExecutor.update( sql, insert.getParametersAsArray(), factory)

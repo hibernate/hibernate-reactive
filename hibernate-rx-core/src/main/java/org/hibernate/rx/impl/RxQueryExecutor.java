@@ -40,7 +40,13 @@ public class RxQueryExecutor {
 
 		return poolProvider.getConnection()
 				.preparedQuery( sql, asTuple(paramValues) )
-				.thenApply( rows -> Optional.ofNullable( rows.property(MySQLClient.LAST_INSERTED_ID) ) );
+				.thenApply( rows -> {
+					RowIterator<Row> iterator = rows.iterator();
+					Integer id = iterator.hasNext() ?
+							iterator.next().getInteger(0) :
+							rows.property(MySQLClient.LAST_INSERTED_ID);
+					return Optional.ofNullable(id);
+				});
 	}
 
 	public CompletionStage<Optional<Integer>> selectInteger(String sql, Object[] paramValues, SessionFactoryImplementor factory) {

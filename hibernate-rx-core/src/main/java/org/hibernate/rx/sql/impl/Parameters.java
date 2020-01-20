@@ -2,6 +2,7 @@ package org.hibernate.rx.sql.impl;
 
 import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 
 import java.util.function.Supplier;
 
@@ -29,4 +30,14 @@ public class Parameters {
 		}
 	}
 
+	/**
+	 * Better to not use this approach.
+	 */
+	public static String processParameters(String sql, SharedSessionContractImplementor session) {
+		Supplier<String> generator = createDialectParameterGenerator( session.getFactory() );
+		for ( int i = sql.indexOf('?'); i>=0; i = sql.indexOf('?', i+1) ) {
+			sql = sql.substring(0, i) + generator.get() + sql.substring(i+1);
+		}
+		return sql;
+	}
 }
