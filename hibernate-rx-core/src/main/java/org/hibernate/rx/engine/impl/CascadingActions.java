@@ -17,6 +17,7 @@ import org.jboss.logging.Logger;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -48,7 +49,8 @@ public class CascadingActions {
 				boolean isCascadeDeleteEnabled) {
 			LOG.tracev( "Cascading to delete: {0}", entityName );
 			return session.unwrap(RxSessionInternal.class).rxFetch(child)
-					.thenCompose( c -> session.unwrap(RxSessionInternal.class).rxRemove( c.get() ) );
+					.thenCompose( c -> session.unwrap(RxSessionInternal.class)
+							.rxRemove( c.get(), isCascadeDeleteEnabled, (Set) anything ) );
 		}
 	};
 
@@ -66,7 +68,7 @@ public class CascadingActions {
 				boolean isCascadeDeleteEnabled)
 				throws HibernateException {
 			LOG.tracev( "Cascading to persist: {0}", entityName );
-			return session.unwrap(RxSessionInternal.class).rxPersist( child );
+			return session.unwrap(RxSessionInternal.class).rxPersist( child, (Map) anything );
 		}
 	};
 
@@ -86,7 +88,7 @@ public class CascadingActions {
 				boolean isCascadeDeleteEnabled)
 				throws HibernateException {
 			LOG.tracev( "Cascading to persist on flush: {0}", entityName );
-			return session.unwrap(RxSessionInternal.class).rxPersistOnFlush( child );
+			return session.unwrap(RxSessionInternal.class).rxPersistOnFlush( child, (Map) anything );
 		}
 	};
 
@@ -104,7 +106,7 @@ public class CascadingActions {
 				boolean isCascadeDeleteEnabled)
 				throws HibernateException {
 			LOG.tracev("Cascading to refresh: {0}", entityName);
-			return session.unwrap(RxSessionInternal.class).rxRefresh( child );
+			return session.unwrap(RxSessionInternal.class).rxRefresh( child, (Map) anything );
 		}
 	};
 

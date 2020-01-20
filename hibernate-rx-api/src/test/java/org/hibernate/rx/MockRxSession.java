@@ -84,6 +84,11 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
+	public CompletionStage<RxSession> refresh(Object entity) {
+		return null;
+	}
+
+	@Override
 	public <R> RxQuery<R> createQuery(Class<R> resultType, String jpql) {
 		throw new UnsupportedOperationException( "not implemented" );
 	}

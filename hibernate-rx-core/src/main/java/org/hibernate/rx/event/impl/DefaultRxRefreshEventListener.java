@@ -26,6 +26,7 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.engine.impl.Cascade;
 import org.hibernate.rx.engine.impl.CascadingActions;
 import org.hibernate.rx.event.spi.RxRefreshEventListener;
+import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.Type;
@@ -80,14 +81,14 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 			if ( isTransient ) {
 				source.setReadOnly( event.getObject(), source.isDefaultReadOnly() );
 			}
-			return null;
+			return RxUtil.nullFuture();
 		}
 
 		final Object object = persistenceContext.unproxyAndReassociate( event.getObject() );
 
 		if ( refreshedAlready.containsKey( object ) ) {
 			LOG.trace( "Already refreshed" );
-			return null;
+			return RxUtil.nullFuture();
 		}
 
 		final EntityEntry e = persistenceContext.getEntry( object );
@@ -224,7 +225,8 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 			postRefreshLockMode = null;
 		}
 
-		final CompletionStage<Optional<Object>> stage = (CompletionStage<Optional<Object>>) persister.load( id, object, lockOptionsToUse, source );
+		final CompletionStage<Optional<Object>> stage =
+				(CompletionStage<Optional<Object>>) persister.load( id, object, lockOptionsToUse, source );
 
 		return cascade.thenCompose(v -> stage).thenAccept(option -> {
 			Object result = option.get();

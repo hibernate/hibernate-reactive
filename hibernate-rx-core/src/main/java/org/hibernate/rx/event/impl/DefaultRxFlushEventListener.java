@@ -23,6 +23,7 @@ import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.jboss.logging.Logger;
 
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
@@ -144,10 +145,10 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 		LOG.debug( "Processing flush-time cascades" );
 
 		CompletionStage<Void> stage = RxUtil.nullFuture();
-		final Object anything = null;
+		final Object anything = new IdentityHashMap( 10 );
 		//safe from concurrent modification because of how concurrentEntries() is implemented on IdentityMap
 		for ( Map.Entry<Object, EntityEntry> me : persistenceContext.reentrantSafeEntityEntries() ) {
-			EntityEntry entry = (EntityEntry) me.getValue();
+			EntityEntry entry = me.getValue();
 			Status status = entry.getStatus();
 			if ( status == Status.MANAGED || status == Status.SAVING || status == Status.READ_ONLY ) {
 				CompletionStage<Void> cascade = cascadeOnFlush(session, entry.getPersister(), me.getKey(), anything);
