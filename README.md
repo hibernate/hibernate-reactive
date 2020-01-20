@@ -24,9 +24,9 @@ To publish Hibernate RX to your local Maven repository, run:
 To run the tests, ensure that PostgreSQL is installed on your machine.
 From the command line, type the following commands:
 
-    createdb hibernate-rx
-    createuser hibernate-rx
     psql
+    create database "hibernate-rx";
+    create user "hibernate-rx" with password 'hibernate-rx';
     grant all privileges on database "hibernate-rx" to "hibernate-rx";
 
 Finally, run `./gradlew test` from this directory.
