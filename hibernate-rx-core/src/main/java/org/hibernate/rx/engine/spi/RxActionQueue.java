@@ -6,63 +6,32 @@
  */
 package org.hibernate.rx.engine.spi;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.PropertyValueException;
-import org.hibernate.action.internal.AbstractEntityInsertAction;
-import org.hibernate.action.internal.BulkOperationCleanupAction;
-import org.hibernate.action.internal.CollectionRecreateAction;
-import org.hibernate.action.internal.CollectionRemoveAction;
-import org.hibernate.action.internal.CollectionUpdateAction;
-import org.hibernate.action.internal.EntityActionVetoException;
-import org.hibernate.action.internal.EntityDeleteAction;
-import org.hibernate.action.internal.EntityIdentityInsertAction;
-import org.hibernate.action.internal.OrphanRemovalAction;
-import org.hibernate.action.internal.QueuedOperationCollectionAction;
-import org.hibernate.action.internal.UnresolvedEntityInsertActions;
+import org.hibernate.action.internal.*;
 import org.hibernate.action.spi.AfterTransactionCompletionProcess;
 import org.hibernate.action.spi.BeforeTransactionCompletionProcess;
 import org.hibernate.action.spi.Executable;
 import org.hibernate.cache.CacheException;
-import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.ExecutableList;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.*;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.rx.engine.impl.RxEntityDeleteAction;
-import org.hibernate.rx.engine.impl.RxEntityInsertAction;
-import org.hibernate.rx.engine.impl.RxEntityUpdateAction;
+import org.hibernate.rx.engine.impl.*;
 import org.hibernate.rx.util.impl.RxUtil;
-import org.hibernate.type.CollectionType;
-import org.hibernate.type.CompositeType;
-import org.hibernate.type.EntityType;
-import org.hibernate.type.ForeignKeyDirection;
-import org.hibernate.type.OneToOneType;
-import org.hibernate.type.Type;
+import org.hibernate.type.*;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.*;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Responsible for maintaining the queue of actions related to events.
@@ -97,15 +66,15 @@ public class RxActionQueue {
 //				}
 //		);
 		EXECUTABLE_LISTS_MAP.put(
-				RxEntityInsertAction.class,
-				new ListProvider<RxEntityInsertAction>() {
-					RxExecutableList<RxEntityInsertAction> get(RxActionQueue instance) {
+				RxAbstractEntityInsertAction.class,
+				new ListProvider<RxAbstractEntityInsertAction>() {
+					RxExecutableList<RxAbstractEntityInsertAction> get(RxActionQueue instance) {
 						return instance.insertions;
 					}
 
-					RxExecutableList<RxEntityInsertAction> init(RxActionQueue instance) {
+					RxExecutableList<RxAbstractEntityInsertAction> init(RxActionQueue instance) {
 						if ( instance.isOrderInsertsEnabled() ) {
-							return instance.insertions = new RxExecutableList<>(
+							return instance.insertions = new RxExecutableList<RxAbstractEntityInsertAction>(
 									new InsertActionSorter()
 							);
 						}
@@ -204,7 +173,7 @@ public class RxActionQueue {
 	// Object insertions, updates, and deletions have list semantics because
 	// they must happen in the right order so as to respect referential
 	// integrity
-	private RxExecutableList<RxEntityInsertAction> insertions;
+	private RxExecutableList<RxAbstractEntityInsertAction> insertions;
 	private RxExecutableList<RxEntityDeleteAction> deletions;
 	private RxExecutableList<RxEntityUpdateAction> updates;
 	// Actually the semantics of the next three are really "Bag"
@@ -332,7 +301,7 @@ public class RxActionQueue {
 		return addInsertAction( action );
 	}
 
-	private CompletionStage<Void> addInsertAction(RxEntityInsertAction insert) {
+	private CompletionStage<Void> addInsertAction(RxAbstractEntityInsertAction insert) {
 		CompletionStage<Void> ret = RxUtil.nullFuture();
 		if ( insert.isEarlyInsert() ) {
 			// For early inserts, must execute inserts before finding non-nullable transient entities.
@@ -343,6 +312,7 @@ public class RxActionQueue {
 			);
 			ret = ret.thenCompose( v -> executeInserts() );
 		}
+
 		NonNullableTransientDependencies nonNullableTransientDependencies = insert.findNonNullableTransientEntities();
 		if ( nonNullableTransientDependencies == null ) {
 			LOG.tracev( "Adding insert with no non-nullable, transient entities: [{0}]", insert );
@@ -358,12 +328,12 @@ public class RxActionQueue {
 			if ( unresolvedInsertions == null ) {
 				unresolvedInsertions = new UnresolvedEntityInsertActions();
 			}
-			unresolvedInsertions.addUnresolvedEntityInsertAction( insert, nonNullableTransientDependencies );
+			unresolvedInsertions.addUnresolvedEntityInsertAction( (AbstractEntityInsertAction) insert, nonNullableTransientDependencies );
 		}
 		return ret;
 	}
 
-	private CompletionStage<Void> addResolvedEntityInsertAction(RxEntityInsertAction insert) {
+	private CompletionStage<Void> addResolvedEntityInsertAction(RxAbstractEntityInsertAction insert) {
 		CompletionStage<Void> ret;
 		if ( insert.isEarlyInsert() ) {
 			LOG.trace( "Executing insertions before resolved early-insert" );
@@ -373,9 +343,10 @@ public class RxActionQueue {
 		}
 		else {
 			LOG.trace( "Adding resolved non-early insert action." );
-			addAction( RxEntityInsertAction.class, insert );
+			addAction( RxAbstractEntityInsertAction.class, insert );
 			ret = RxUtil.nullFuture();
 		}
+
 		return ret.thenCompose( v -> {
 			if ( !insert.isVeto() ) {
 				insert.makeEntityManaged();
@@ -394,7 +365,7 @@ public class RxActionQueue {
 			else {
 				throw new EntityActionVetoException(
 						"The EntityInsertAction was vetoed.",
-						insert
+						(EntityAction) insert
 				);
 			}
 		} );
@@ -410,10 +381,9 @@ public class RxActionQueue {
 	 *
 	 * @param action The action representing the entity insertion
 	 */
-	public CompletionStage<Void> addAction(EntityIdentityInsertAction action) {
+	public CompletionStage<Void> addAction(RxEntityIdentityInsertAction action) {
 		LOG.tracev( "Adding an EntityIdentityInsertAction for [{0}] object", action.getEntityName() );
-//		addInsertAction( action );
-		throw new NotYetImplementedException();
+		return addInsertAction( action );
 	}
 
 	/**
@@ -432,7 +402,7 @@ public class RxActionQueue {
 	 */
 	public void addAction(OrphanRemovalAction action) {
 //		addAction( OrphanRemovalAction.class, action );
-		throw new NotYetImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -451,7 +421,7 @@ public class RxActionQueue {
 	 */
 	public void addAction(CollectionRecreateAction action) {
 //		addAction( CollectionRecreateAction.class, action );
-		throw new NotYetImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -461,7 +431,7 @@ public class RxActionQueue {
 	 */
 	public void addAction(CollectionRemoveAction action) {
 //		addAction( CollectionRemoveAction.class, action );
-		throw new NotYetImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -471,7 +441,7 @@ public class RxActionQueue {
 	 */
 	public void addAction(CollectionUpdateAction action) {
 //		addAction( CollectionUpdateAction.class, action );
-		throw new NotYetImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -481,7 +451,7 @@ public class RxActionQueue {
 	 */
 	public void addAction(QueuedOperationCollectionAction action) {
 //		addAction( QueuedOperationCollectionAction.class, action );
-		throw new NotYetImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -1065,7 +1035,7 @@ public class RxActionQueue {
 	 *
 	 * @author Jay Erb
 	 */
-	private static class InsertActionSorter implements RxExecutableList.Sorter<RxEntityInsertAction> {
+	private static class InsertActionSorter implements RxExecutableList.Sorter<RxAbstractEntityInsertAction> {
 		/**
 		 * Singleton access
 		 */
@@ -1073,7 +1043,7 @@ public class RxActionQueue {
 		// the mapping of entity names to their latest batch numbers.
 		private List<BatchIdentifier> latestBatches;
 		// the map of batch numbers to EntityInsertAction lists
-		private Map<BatchIdentifier, List<RxEntityInsertAction>> actionBatches;
+		private Map<BatchIdentifier, List<RxAbstractEntityInsertAction>> actionBatches;
 
 		public InsertActionSorter() {
 		}
@@ -1081,12 +1051,12 @@ public class RxActionQueue {
 		/**
 		 * Sort the insert actions.
 		 */
-		public void sort(List<RxEntityInsertAction> insertions) {
+		public void sort(List<RxAbstractEntityInsertAction> insertions) {
 			// optimize the hash size to eliminate a rehash.
 			this.latestBatches = new ArrayList<>();
 			this.actionBatches = new HashMap<>();
 
-			for ( RxEntityInsertAction action : insertions ) {
+			for ( RxAbstractEntityInsertAction action : insertions ) {
 				BatchIdentifier batchIdentifier = new BatchIdentifier(
 						action.getEntityName(),
 						action.getSession()
@@ -1177,8 +1147,7 @@ public class RxActionQueue {
 
 			// Now, rebuild the insertions list. There is a batch for each entry in the name list.
 			for ( BatchIdentifier rootIdentifier : latestBatches ) {
-				List<RxEntityInsertAction> batch = actionBatches.get( rootIdentifier );
-				insertions.addAll( batch );
+				insertions.addAll( actionBatches.get( rootIdentifier ) );
 			}
 		}
 
@@ -1188,7 +1157,7 @@ public class RxActionQueue {
 		 * @param action The action being sorted
 		 * @param batchIdentifier The batch identifier of the entity affected by the action
 		 */
-		private void addParentChildEntityNames(AbstractEntityInsertAction action, BatchIdentifier batchIdentifier) {
+		private void addParentChildEntityNames(RxAbstractEntityInsertAction action, BatchIdentifier batchIdentifier) {
 			Object[] propertyValues = action.getState();
 			ClassMetadata classMetadata = action.getPersister().getClassMetadata();
 			if ( classMetadata != null ) {
@@ -1213,7 +1182,7 @@ public class RxActionQueue {
 		}
 
 		private void addParentChildEntityNameByPropertyAndValue(
-				AbstractEntityInsertAction action,
+				RxAbstractEntityInsertAction action,
 				BatchIdentifier batchIdentifier,
 				Type type,
 				Object value) {
@@ -1285,8 +1254,8 @@ public class RxActionQueue {
 			}
 		}
 
-		private void addToBatch(BatchIdentifier batchIdentifier, RxEntityInsertAction action) {
-			List<RxEntityInsertAction> actions = actionBatches.get( batchIdentifier );
+		private void addToBatch(BatchIdentifier batchIdentifier, RxAbstractEntityInsertAction action) {
+			List<RxAbstractEntityInsertAction> actions = actionBatches.get( batchIdentifier );
 
 			if ( actions == null ) {
 				actions = new LinkedList<>();

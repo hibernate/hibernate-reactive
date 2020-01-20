@@ -29,7 +29,7 @@ public class RxQueryExecutor {
 				.getService( RxConnectionPoolProvider.class );
 
 		return poolProvider.getConnection()
-				.preparedQuery( sql, asTuple( paramValues )).thenApply(SqlResult::rowCount);
+				.preparedQuery( sql, asTuple(paramValues) ).thenApply(SqlResult::rowCount);
 	}
 
 	public CompletionStage<Optional<Integer>> selectInteger(String sql, Object[] paramValues, SessionFactoryImplementor factory) {

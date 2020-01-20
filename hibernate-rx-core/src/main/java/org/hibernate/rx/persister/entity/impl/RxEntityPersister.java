@@ -18,7 +18,13 @@ public interface RxEntityPersister {
 
 	RxIdentifierGenerator getIdentifierGenerator();
 
-	CompletionStage<?> insertRx(Serializable id,
+	CompletionStage<?> insertRx(
+			Serializable id,
+			Object[] fields,
+			Object object,
+			SharedSessionContractImplementor session);
+
+	CompletionStage<Serializable> insertRx(
 			Object[] fields,
 			Object object,
 			SharedSessionContractImplementor session);
@@ -30,7 +36,8 @@ public interface RxEntityPersister {
 			SharedSessionContractImplementor session)
 					throws HibernateException;
 
-	CompletionStage<?> updateRx(Serializable id,
+	CompletionStage<?> updateRx(
+			Serializable id,
 			Object[] fields, int[] dirtyFields,
 			boolean hasDirtyCollection,
 			Object[] oldFields, Object oldVersion,

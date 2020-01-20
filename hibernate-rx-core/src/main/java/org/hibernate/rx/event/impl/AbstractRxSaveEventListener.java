@@ -4,7 +4,6 @@ package org.hibernate.rx.event.impl;
 import org.hibernate.LockMode;
 import org.hibernate.NonUniqueObjectException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
-import org.hibernate.action.internal.EntityIdentityInsertAction;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.*;
@@ -20,6 +19,7 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.impl.Cascade;
 import org.hibernate.rx.engine.impl.CascadingAction;
+import org.hibernate.rx.engine.impl.RxEntityIdentityInsertAction;
 import org.hibernate.rx.engine.impl.RxEntityInsertAction;
 import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
@@ -103,28 +103,37 @@ abstract class AbstractRxSaveEventListener
 		if ( entity instanceof SelfDirtinessTracker ) {
 			( (SelfDirtinessTracker) entity ).$$_hibernate_clearDirtyAttributes();
 		}
+
 		EntityPersister persister = source.getEntityPersister( entityName, entity );
-		Serializable assignedId = persister.getIdentifier( entity, source.getSession() );
+		boolean autoincrement = persister.isIdentifierAssignedByInsert();
 		return RxEntityPersister.get(persister)
 				.getIdentifierGenerator()
 				.generate( source.getFactory() )
-				.thenCompose( id -> rxPerformSave(entity,
-						assignIdIfNecessary(id, assignedId, entityName),
-						persister, false, anything, source, true) );
+				.thenCompose( id ->
+						rxPerformSave(
+								entity,
+								autoincrement ? null : assignIdIfNecessary( id, entity, entityName, source ),
+								persister,
+								autoincrement,
+								anything,
+								source,
+								!autoincrement || requiresImmediateIdAccess
+						));
 	}
 
-	private static Serializable assignIdIfNecessary(Optional<Integer> generatedId, Serializable assignedId, String entityName) {
-		Serializable id;
+	private static Serializable assignIdIfNecessary(Optional<Integer> generatedId, Object entity, String entityName, EventSource source) {
 		if ( !generatedId.isPresent() ) {
+			Serializable assignedId =
+					source.getEntityPersister( entityName, entity )
+							.getIdentifier( entity, source.getSession() );
 			if (assignedId == null) {
 				throw new IdentifierGenerationException("ids for this class must be manually assigned before calling save(): " + entityName);
 			}
 			return assignedId;
 		}
 		else {
-			id = generatedId.get();
+			return generatedId.get();
 		}
-		return id;
 	}
 
 	/**
@@ -309,17 +318,21 @@ abstract class AbstractRxSaveEventListener
 			EventSource source,
 			boolean shouldDelayIdentityInserts) {
 		if ( useIdentityColumn ) {
-			EntityIdentityInsertAction insert = new EntityIdentityInsertAction(
+			RxEntityIdentityInsertAction insert = new RxEntityIdentityInsertAction(
 					values, entity, persister, false, source, shouldDelayIdentityInserts
 			);
-			return ( (RxSessionInternal) source ).getRxActionQueue().addAction( insert ).thenApply(v -> insert );
+			return ( (RxSessionInternal) source ).getRxActionQueue()
+					.addAction( insert )
+					.thenApply(v -> insert );
 		}
 		else {
 			Object version = Versioning.getVersion( values, persister );
 			RxEntityInsertAction insert = new RxEntityInsertAction(
 					id, values, entity, version, persister, false, source
 			);
-			return ( (RxSessionInternal) source ).getRxActionQueue().addAction( insert ).thenApply(v -> insert );
+			return ( (RxSessionInternal) source ).getRxActionQueue()
+					.addAction( insert )
+					.thenApply(v -> insert );
 		}
 	}
 

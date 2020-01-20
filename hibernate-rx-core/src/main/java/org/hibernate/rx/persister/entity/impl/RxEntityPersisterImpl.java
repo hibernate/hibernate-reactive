@@ -3,10 +3,12 @@ package org.hibernate.rx.persister.entity.impl;
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
 import org.hibernate.Session;
-import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.Versioning;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.ArrayHelper;
@@ -24,8 +26,9 @@ import org.hibernate.type.Type;
 
 import java.io.Serializable;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
 public class RxEntityPersisterImpl implements RxEntityPersister {
 
@@ -59,6 +62,39 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		}
 	}
 
+	@Override
+	public CompletionStage<Serializable> insertRx(Object[] fields, Object object, SharedSessionContractImplementor session)
+			throws HibernateException {
+		// apply any pre-insert in-memory value generation
+		preInsertInMemoryValueGeneration( fields, object, session );
+
+		final int span = delegate.getTableSpan();
+		CompletionStage<Serializable> stage = RxUtil.completedFuture(null);
+		if ( delegate.getEntityMetamodel().isDynamicInsert() ) {
+			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
+			boolean[] notNull = delegate.getPropertiesToInsert( fields );
+			stage = stage.thenCompose( n -> insertRx( fields, notNull, delegate.generateInsertString( true, notNull ), object, session ) );
+			for ( int j = 1; j < span; j++ ) {
+				final int jj = j;
+				stage = stage.thenCompose( id ->
+						insertRx(id, fields, notNull, jj, delegate.generateInsertString(notNull, jj), object, session)
+							.thenApply( v -> id ));
+			}
+		}
+		else {
+			// For the case of dynamic-insert="false", use the static SQL
+			stage = stage.thenCompose( n -> insertRx( fields, delegate.getPropertyInsertability(), delegate.getSQLIdentityInsertString(), object, session ) );
+			for ( int j = 1; j < span; j++ ) {
+				final int jj = j;
+				stage = stage.thenCompose( id ->
+						insertRx(id, fields, delegate.getPropertyInsertability(), jj, delegate.getSQLInsertStrings()[jj], object, session)
+								.thenApply( v -> id ));
+			}
+		}
+		return stage;
+	}
+
+	@Override
 	public CompletionStage<?> insertRx(
 			Serializable id,
 			Object[] fields,
@@ -165,6 +201,49 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 						throw new JDBCException( "error while verifying result count", e );
 					}
 				});
+	}
+
+	/**
+	 * Perform an SQL INSERT, and then retrieve a generated identifier.
+	 * <p/>
+	 * This form is used for PostInsertIdentifierGenerator-style ids (IDENTITY,
+	 * select, etc).
+	 */
+	private CompletionStage<Serializable> insertRx(
+			Object[] fields,
+			boolean[] notNull,
+			String sql,
+			Object object,
+			SharedSessionContractImplementor session) throws HibernateException {
+
+		if ( LOG.isTraceEnabled() ) {
+			LOG.tracev( "Inserting entity: {0}", MessageHelper.infoString( delegate ) );
+			if ( delegate.isVersioned() ) {
+				LOG.tracev( "Version: {0}", Versioning.getVersion( fields, delegate ) );
+			}
+		}
+
+		PreparedStatementAdaptor insert = new PreparedStatementAdaptor();
+		try {
+			delegate.dehydrate( null, fields, notNull, delegate.getPropertyColumnInsertable(), 0, insert, session, false );
+		}
+		catch (SQLException e) {
+			//can't actually occur!
+			throw new JDBCException( "error while binding parameters", e );
+		}
+
+		//TODO: the following is approach requires an additional round trip
+		//      it's used because the driver doesn't support getKeys() yet
+		String selectIdSql = session.getFactory().getJdbcServices().getDialect()
+				.getIdentityColumnSupport()
+				.getIdentitySelectString(
+						delegate.getTableName(),
+						delegate.getIdentifierColumnNames()[0],
+						Types.INTEGER
+				);
+		return queryExecutor.update( sql, insert.getParametersAsArray(), delegate.getFactory() )
+				.thenCompose( v -> queryExecutor.selectInteger( selectIdSql, new Object[0], session.getFactory() ) )
+				.thenApply(Optional::get);
 	}
 
 	private CompletionStage<?> deleteRx(

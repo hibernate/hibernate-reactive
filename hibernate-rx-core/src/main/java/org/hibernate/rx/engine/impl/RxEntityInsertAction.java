@@ -11,7 +11,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityInsertAction;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.entry.CacheEntry;
-import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -28,7 +27,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * The action for performing an entity insertion, for entities not defined to use IDENTITY generation.
  */
-public class RxEntityInsertAction extends EntityInsertAction implements RxExecutable {
+public class RxEntityInsertAction extends EntityInsertAction implements RxAbstractEntityInsertAction {
 
 	public RxEntityInsertAction(
 			Serializable id,
@@ -43,7 +42,7 @@ public class RxEntityInsertAction extends EntityInsertAction implements RxExecut
 
 	@Override
 	public void execute() throws HibernateException {
-		throw new NotYetImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
