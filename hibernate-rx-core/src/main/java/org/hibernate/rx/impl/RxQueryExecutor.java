@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import io.vertx.axle.mysqlclient.MySQLClient;
 import io.vertx.axle.sqlclient.*;
 import org.hibernate.JDBCException;
 import org.hibernate.engine.spi.QueryParameters;
@@ -30,6 +31,16 @@ public class RxQueryExecutor {
 
 		return poolProvider.getConnection()
 				.preparedQuery( sql, asTuple(paramValues) ).thenApply(SqlResult::rowCount);
+	}
+
+	public CompletionStage<Optional<Integer>> updateReturning(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+		RxConnectionPoolProvider poolProvider = factory
+				.getServiceRegistry()
+				.getService( RxConnectionPoolProvider.class );
+
+		return poolProvider.getConnection()
+				.preparedQuery( sql, asTuple(paramValues) )
+				.thenApply( rows -> Optional.ofNullable( rows.property(MySQLClient.LAST_INSERTED_ID) ) );
 	}
 
 	public CompletionStage<Optional<Integer>> selectInteger(String sql, Object[] paramValues, SessionFactoryImplementor factory) {

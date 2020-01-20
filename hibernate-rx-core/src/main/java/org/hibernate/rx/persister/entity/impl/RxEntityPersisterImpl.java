@@ -3,12 +3,11 @@ package org.hibernate.rx.persister.entity.impl;
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
 import org.hibernate.Session;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.identity.IdentityColumnSupport;
 import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.Versioning;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.*;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.ArrayHelper;
@@ -232,18 +231,26 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			throw new JDBCException( "error while binding parameters", e );
 		}
 
-		//TODO: the following is approach requires an additional round trip
-		//      it's used because the driver doesn't support getKeys() yet
-		String selectIdSql = session.getFactory().getJdbcServices().getDialect()
-				.getIdentityColumnSupport()
-				.getIdentitySelectString(
-						delegate.getTableName(),
-						delegate.getIdentifierColumnNames()[0],
-						Types.INTEGER
-				);
-		return queryExecutor.update( sql, insert.getParametersAsArray(), delegate.getFactory() )
-				.thenCompose( v -> queryExecutor.selectInteger( selectIdSql, new Object[0], session.getFactory() ) )
-				.thenApply(Optional::get);
+		SessionFactoryImplementor factory = session.getFactory();
+		Dialect dialect = factory.getJdbcServices().getDialect();
+		IdentityColumnSupport identitySupport = dialect.getIdentityColumnSupport();
+		if ( factory.getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
+			return queryExecutor.updateReturning( sql, insert.getParametersAsArray(), factory )
+					.thenApply(Optional::get);
+		}
+		else {
+			String selectIdSql = identitySupport
+					.getIdentitySelectString(
+							delegate.getTableName(),
+							delegate.getIdentifierColumnNames()[0],
+							Types.INTEGER
+					);
+			return queryExecutor.update( sql, insert.getParametersAsArray(), factory)
+					.thenCompose( v -> queryExecutor.selectInteger(selectIdSql, new Object[0], factory) )
+					.thenApply(Optional::get);
+		}
+
+
 	}
 
 	private CompletionStage<?> deleteRx(

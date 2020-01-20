@@ -1,5 +1,6 @@
 package org.hibernate.rx.impl;
 
+import io.vertx.axle.mysqlclient.MySQLClient;
 import io.vertx.axle.sqlclient.Pool;
 import io.vertx.axle.sqlclient.Row;
 import io.vertx.axle.sqlclient.RowSet;
@@ -7,6 +8,7 @@ import io.vertx.axle.sqlclient.Tuple;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.service.RxConnection;
 
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
@@ -50,12 +52,18 @@ public class PoolConnection implements RxConnection {
 
 	@Override
 	public CompletionStage<Integer> update(String sql) {
-		return preparedQuery( sql ).thenApply( res -> res.rowCount() );
+		return preparedQuery( sql ).thenApply( rows -> rows.rowCount() );
 	}
 
 	@Override
 	public CompletionStage<Integer> update(String sql, Tuple parameters) {
-		return preparedQuery( sql, parameters ).thenApply( res -> res.rowCount() );
+		return preparedQuery( sql, parameters ).thenApply( rows -> rows.rowCount() );
+	}
+
+	@Override
+	public CompletionStage<Optional<Integer>> updateReturning(String sql, Tuple parameters) {
+		return preparedQuery( sql, parameters )
+				.thenApply( rows -> Optional.ofNullable( rows.property(MySQLClient.LAST_INSERTED_ID) ) );
 	}
 
 	@Override
