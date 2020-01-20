@@ -58,21 +58,20 @@ At this time, Hibernate RX does _not_ support the following features:
 - pessimistic locking via `LockMode`
 - `@ElementCollection` and `@ManyToMany`
 - `@OneToMany` without `mappedBy` 
-- `GenerationType.IDENTITY` (autoincrement columns), and custom id 
-  generation strategies
-- `@NamedEntityGraph`
 - transparent lazy loading
+- JPA's `@NamedEntityGraph`
 - eager select fetching, for example `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`
+- custom id generation strategies
 - criteria queries
 
 Instead, use the following supported features:
 
 - optimistic locking with `@Version`
 - `@OneToMany(mappedBy=...)` together with `@ManyToOne`
-- `SEQUENCE` or `TABLE` id generation
-- `@FetchProfile`
 - explicit lazy loading via `RxSession.fetch(entity.association)`, which 
   returns a `CompletionStage`
+- `@FetchProfile`
+- JPA-standard `SEQUENCE`, `TABLE`, or `IDENTITY` id generation
 
 Note that you should not use Hibernate RX with a second-level cache 
 implementation which performs blocking IO, for example passivation to the
