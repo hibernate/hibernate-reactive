@@ -112,12 +112,12 @@ public interface RxSession {
 	 * instance. The given instance does not become associated with the session.
 	 * This operation cascades to associated instances if the association is mapped
 	 * with {@code cascade="merge"}
-	 * <p/>
-	 * The semantics of this method are defined by JSR-220.
 	 *
 	 * @param object a detached instance with state to be copied
 	 *
 	 * @return an updated persistent instance
+	 *
+	 * @see javax.persistence.EntityManager#merge(Object)
 	 */
 	<T> CompletionStage<T> merge(T object);
 
@@ -133,6 +133,8 @@ public interface RxSession {
 	 * </ul>
 	 *
 	 * @param entity a persistent or detached instance
+	 *
+	 * @see javax.persistence.EntityManager#refresh(Object)
 	 */
 	CompletionStage<RxSession> refresh(Object entity);
 
