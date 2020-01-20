@@ -13,16 +13,16 @@ subprojects {
     }
 }
 
-allprojects {
-    apply plugin: 'checkstyle'
-
-    checkstyle {
-        toolVersion "8.24"
-//    sourceSets = [ project.sourceSets.main ]
-        configFile = rootProject.file( 'shared/config/checkstyle/checkstyle.xml' )
-        showViolations = true
-    }
-}
+//allprojects {
+//    apply plugin: 'checkstyle'
+//
+//    checkstyle {
+//        toolVersion "8.24"
+////    sourceSets = [ project.sourceSets.main ]
+//        configFile = rootProject.file( 'shared/config/checkstyle/checkstyle.xml' )
+//        showViolations = true
+//    }
+//}
 
 
 
