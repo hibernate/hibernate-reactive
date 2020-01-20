@@ -46,7 +46,8 @@ The project has been tested with
 - Java 8
 - PostgreSQL
 - [Hibernate ORM](https://hibernate.org/orm/) 5.4.11-SNAPSHOT
-- [SmallRye PostgreSQL Client](https://github.com/smallrye/smallrye-reactive-utils) 0.0.12
+- [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 0.0.12
+- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 0.0.12
 
 ## Usage
 
