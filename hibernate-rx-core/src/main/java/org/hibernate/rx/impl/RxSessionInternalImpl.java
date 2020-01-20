@@ -19,10 +19,7 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.spi.RxActionQueue;
-import org.hibernate.rx.event.spi.RxDeleteEventListener;
-import org.hibernate.rx.event.spi.RxFlushEventListener;
-import org.hibernate.rx.event.spi.RxLoadEventListener;
-import org.hibernate.rx.event.spi.RxPersistEventListener;
+import org.hibernate.rx.event.spi.*;
 import org.hibernate.rx.util.impl.RxUtil;
 
 import javax.persistence.EntityNotFoundException;
@@ -157,6 +154,49 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 				return RxUtil.rethrow( x );
 			}
 		} );
+	}
+
+	@Override
+	public CompletionStage<Void> rxRefresh(Object entity) {
+//		checkOpen();
+		return fireRefresh( new RefreshEvent(null, entity, this) );
+	}
+
+	CompletionStage<Void> fireRefresh(RefreshEvent event) {
+//		try {
+			if ( !getSessionFactory().getSessionFactoryOptions().isAllowRefreshDetachedEntity() ) {
+				if ( event.getEntityName() != null ) {
+					if ( !contains( event.getEntityName(), event.getObject() ) ) {
+						throw new IllegalArgumentException( "Entity not managed" );
+					}
+				}
+				else {
+					if ( !contains( event.getObject() ) ) {
+						throw new IllegalArgumentException( "Entity not managed" );
+					}
+				}
+			}
+//			pulseTransactionCoordinator();
+
+			CompletionStage<Void> ret = RxUtil.nullFuture();
+			for ( RefreshEventListener listener : listeners( EventType.REFRESH ) ) {
+				CompletionStage<Void> flush = ((RxRefreshEventListener) listener).rxOnRefresh(event);
+				ret = ret.thenCompose( v -> flush );
+			}
+			return ret;
+//		}
+//		catch (RuntimeException e) {
+//			if ( !getSessionFactory().getSessionFactoryOptions().isJpaBootstrap() ) {
+//				if ( e instanceof HibernateException ) {
+//					throw e;
+//				}
+//			}
+//			//including HibernateException
+//			throw getExceptionConverter().convert( e );
+//		}
+//		finally {
+//			delayedAfterCompletion();
+//		}
 	}
 
 	@Override

@@ -105,6 +105,21 @@ public interface RxSession {
 	CompletionStage<RxSession> remove(Object entity);
 
 	/**
+	 * Re-read the state of the given instance from the underlying database. It is
+	 * inadvisable to use this to implement long-running sessions that span many
+	 * business tasks. This method is, however, useful in certain special circumstances.
+	 * For example
+	 * <ul>
+	 * <li>where a database trigger alters the object state upon insert or update
+	 * <li>after executing direct SQL (eg. a mass update) in the same session
+	 * <li>after inserting a <tt>Blob</tt> or <tt>Clob</tt>
+	 * </ul>
+	 *
+	 * @param entity a persistent or detached instance
+	 */
+	CompletionStage<RxSession> refresh(Object entity);
+
+	/**
 	 * Force this session to flush asynchronously. Must be called at the
 	 * end of a unit of work, before committing the transaction and closing
 	 * the session. <i>Flushing</i> is the process of synchronizing the

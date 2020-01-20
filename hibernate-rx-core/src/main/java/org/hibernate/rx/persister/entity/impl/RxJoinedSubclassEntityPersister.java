@@ -1,14 +1,19 @@
 package org.hibernate.rx.persister.entity.impl;
 
-import org.hibernate.*;
+import org.hibernate.HibernateException;
+import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
+import org.hibernate.MappingException;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
+import org.hibernate.rx.loader.entity.impl.RxCascadeEntityLoader;
 import org.hibernate.rx.sql.impl.Delete;
 import org.hibernate.rx.sql.impl.Insert;
 import org.hibernate.rx.sql.impl.Parameters;
@@ -43,7 +48,6 @@ public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersist
 				.buildLoader( this, batchSize, lockMode, getFactory(), loadQueryInfluencers );
 	}
 
-
 	@Override
 	protected UniqueEntityLoader createEntityLoader(LockOptions lockOptions, LoadQueryInfluencers loadQueryInfluencers)
 			throws MappingException {
@@ -56,6 +60,12 @@ public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersist
 	protected Update createUpdate() {
 		return new Update( getFactory().getJdbcServices().getDialect(),
 				Parameters.createDialectParameterGenerator( getFactory() ) );
+	}
+
+	@Override
+	protected UniqueEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session) {
+		UniqueEntityLoader loader = RxCascadeEntityLoader.create(this, lockOptions, session);
+		return loader == null ? super.getAppropriateLoader(lockOptions, session) : loader;
 	}
 
 	@Override

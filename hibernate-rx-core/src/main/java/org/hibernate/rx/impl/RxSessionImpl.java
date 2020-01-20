@@ -72,7 +72,12 @@ public class RxSessionImpl implements RxSession {
 
 	@Override
 	public CompletionStage<RxSession> remove(Object entity) {
-		return delegate.rxRemove( entity ).thenApply(v-> this );
+		return delegate.rxRemove( entity ).thenApply( v-> this );
+	}
+
+	@Override
+	public CompletionStage<RxSession> refresh(Object entity) {
+		return delegate.rxRefresh( entity ).thenApply( v-> this );
 	}
 
 	@Override

@@ -1,14 +1,19 @@
 package org.hibernate.rx.persister.entity.impl;
 
-import org.hibernate.*;
+import org.hibernate.HibernateException;
+import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
+import org.hibernate.MappingException;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
+import org.hibernate.rx.loader.entity.impl.RxCascadeEntityLoader;
 import org.hibernate.rx.sql.impl.Delete;
 import org.hibernate.rx.sql.impl.Insert;
 import org.hibernate.rx.sql.impl.Parameters;
@@ -49,6 +54,12 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 		//FIXME add support to lock mode and loadQueryInfluencers
 		return RxBatchingEntityLoaderBuilder.getBuilder( getFactory() )
 				.buildLoader( this, batchSize, lockOptions, getFactory(), loadQueryInfluencers );
+	}
+
+	@Override
+	protected UniqueEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session) {
+		UniqueEntityLoader loader = RxCascadeEntityLoader.create(this, lockOptions, session);
+		return loader == null ? super.getAppropriateLoader(lockOptions, session) : loader;
 	}
 
 	@Override

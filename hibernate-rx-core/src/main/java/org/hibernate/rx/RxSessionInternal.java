@@ -31,6 +31,8 @@ public interface RxSessionInternal extends Session {
 
 	CompletionStage<Void> rxFlush();
 
+	CompletionStage<Void> rxRefresh(Object entity);
+
 	<T> CompletionStage<Optional<T>> rxFind(
 			Class<T> entityClass,
 			Object primaryKey,

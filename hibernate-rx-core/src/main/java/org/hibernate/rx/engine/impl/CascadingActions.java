@@ -16,6 +16,7 @@ import org.hibernate.type.Type;
 import org.jboss.logging.Logger;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -86,6 +87,24 @@ public class CascadingActions {
 				throws HibernateException {
 			LOG.tracev( "Cascading to persist on flush: {0}", entityName );
 			return session.unwrap(RxSessionInternal.class).rxPersistOnFlush( child );
+		}
+	};
+
+	/**
+	 * @see org.hibernate.Session#refresh(Object)
+	 */
+	public static final CascadingAction REFRESH =
+			new BaseCascadingAction(org.hibernate.engine.spi.CascadingActions.REFRESH) {
+		@Override
+		public CompletionStage <?> cascade(
+				EventSource session,
+				Object child,
+				String entityName,
+				Object anything,
+				boolean isCascadeDeleteEnabled)
+				throws HibernateException {
+			LOG.tracev("Cascading to refresh: {0}", entityName);
+			return session.unwrap(RxSessionInternal.class).rxRefresh( child );
 		}
 	};
 

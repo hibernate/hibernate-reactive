@@ -2,15 +2,10 @@ package org.hibernate.rx.service;
 
 import org.hibernate.boot.Metadata;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.rx.event.impl.DefaultRxDeleteEventListener;
-import org.hibernate.rx.event.impl.DefaultRxFlushEntityEventListener;
+import org.hibernate.rx.event.impl.*;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventType;
 import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.rx.event.impl.DefaultRxFlushEventListener;
-import org.hibernate.rx.event.impl.DefaultRxLoadEventListener;
-import org.hibernate.rx.event.impl.DefaultRxPersistEventListener;
-import org.hibernate.rx.event.impl.DefaultRxPersistOnFlushEventListener;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 
 /**
@@ -46,6 +41,9 @@ public class RxIntegrator implements Integrator {
 
 		eventListenerRegistry.addDuplicationStrategy( DefaultRxDeleteEventListener.EventContextManagingDeleteEventListenerDuplicationStrategy.INSTANCE );
 		eventListenerRegistry.getEventListenerGroup( EventType.DELETE ).appendListener( new DefaultRxDeleteEventListener() );
+
+		eventListenerRegistry.addDuplicationStrategy( DefaultRxRefreshEventListener.EventContextManagingDeleteEventListenerDuplicationStrategy.INSTANCE );
+		eventListenerRegistry.getEventListenerGroup( EventType.REFRESH ).appendListener( new DefaultRxRefreshEventListener() );
 
 		eventListenerRegistry.addDuplicationStrategy( DefaultRxLoadEventListener.EventContextManagingLoadEventListenerDuplicationStrategy.INSTANCE );
 		eventListenerRegistry.getEventListenerGroup( EventType.LOAD ).appendListener( new DefaultRxLoadEventListener() );
