@@ -18,7 +18,8 @@ directory.
 
 ## Gradle build
 
-The project is built with Gradle.
+The project is built with Gradle, but you do _not_ need to have Gradle
+installed on your machine.
 
 ### Building
 
