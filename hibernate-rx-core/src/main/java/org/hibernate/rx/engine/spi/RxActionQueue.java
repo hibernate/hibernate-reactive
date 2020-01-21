@@ -688,7 +688,7 @@ public class RxActionQueue {
 	 *
 	 * @param spaces The spaces to invalidate
 	 */
-	private void invalidateSpaces(Serializable... spaces) {
+	private void invalidateSpaces(Serializable[] spaces) {
 		if ( spaces != null && spaces.length > 0 ) {
 			for ( Serializable s : spaces ) {
 				if ( afterTransactionProcesses == null ) {
