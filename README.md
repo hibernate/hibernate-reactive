@@ -70,6 +70,7 @@ At this time, Hibernate RX does _not_ support the following features:
 - transparent lazy loading
 - JPA's `@NamedEntityGraph`
 - eager select fetching, for example `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`
+- hi/lo optimization for id generation
 - custom id generation strategies
 - criteria queries
 
