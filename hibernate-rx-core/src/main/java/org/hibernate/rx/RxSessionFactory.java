@@ -3,12 +3,10 @@ package org.hibernate.rx;
 import org.hibernate.SessionBuilder;
 import org.hibernate.SessionFactory;
 import org.hibernate.rx.engine.spi.RxSessionBuilderImplementor;
-import org.hibernate.rx.engine.spi.RxSessionFactoryImplementor;
 
 /**
  * Factory for {@link RxSession reactive sessions}.
  *
- * @see RxSessionFactoryImplementor
  * @see org.hibernate.rx.engine.impl.RxSessionFactoryImpl
  */
 public interface RxSessionFactory extends SessionFactory {

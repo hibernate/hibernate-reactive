@@ -12,7 +12,6 @@ import org.hibernate.internal.SessionFactoryRegistry.ObjectFactoryImpl;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionFactory;
 import org.hibernate.rx.engine.spi.RxSessionBuilderImplementor;
-import org.hibernate.rx.engine.spi.RxSessionFactoryImplementor;
 import org.hibernate.rx.impl.RxSessionBuilderDelegator;
 
 import javax.naming.Reference;
@@ -26,7 +25,7 @@ import java.util.List;
  * Implementation of {@link RxSessionFactory}.
  */
 public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
-		implements RxSessionFactoryImplementor {
+		implements RxSessionFactory {
 
 	private final String uuid;
 	private final SessionFactoryImpl delegate;
@@ -89,10 +88,6 @@ public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
 		}
 
 		if ( type.isAssignableFrom( RxSessionFactory.class ) ) {
-			return type.cast( this );
-		}
-
-		if ( type.isAssignableFrom( RxSessionFactoryImplementor.class ) ) {
 			return type.cast( this );
 		}
 
