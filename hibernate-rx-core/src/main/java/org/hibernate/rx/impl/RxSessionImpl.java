@@ -12,8 +12,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Implements the RxSession API. This delegating class is needed to
- * avoid name clashes when implementing both RxSession and Session.
+ * Implements the {@link RxSession} API. This delegating class is
+ * needed to avoid name clashes when implementing both
+ * {@code RxSession} and {@link org.hibernate.Session}.
  */
 public class RxSessionImpl implements RxSession {
 
