@@ -119,7 +119,7 @@ public interface RxSession {
 	CompletionStage<RxSession> flush();
 
 	/**
-	 * Asynchronously fetch an association that configued for lazy loading.
+	 * Asynchronously fetch an association that's configured for lazy loading.
 	 * (Currently only works for to-one associations, not for collections.)
 	 *
 	 * <pre>
