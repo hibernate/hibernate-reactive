@@ -21,6 +21,18 @@ directory.
 The project is built with Gradle, but you do _not_ need to have Gradle
 installed on your machine.
 
+### Obtaining a snapshot build of Hibernate ORM
+
+Temporarily, you'll need a snapshot build of `hibernate-core-5.4.11.jar`.
+Clone the [hibernate-orm][] project from GitHub, and run:
+
+    ./gradlew hibernate-core:publishToMavenLocal
+
+from the `hibernate-orm` directory. This will publish the snapshot to your
+local Maven repository.
+
+[hibernate-orm]: https://github.com/hibernate/hibernate-orm
+
 ### Building
 
 To compile, navigate to this directory, and type:
