@@ -11,6 +11,7 @@ import org.hibernate.internal.SessionFactoryRegistry;
 import org.hibernate.internal.SessionFactoryRegistry.ObjectFactoryImpl;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionFactory;
+import org.hibernate.rx.boot.impl.RxSessionFactoryBuilderImpl;
 import org.hibernate.rx.engine.spi.RxSessionBuilderImplementor;
 import org.hibernate.rx.impl.RxSessionBuilderDelegator;
 
@@ -23,6 +24,8 @@ import java.util.List;
 
 /**
  * Implementation of {@link RxSessionFactory}.
+ *
+ * @see RxSessionFactoryBuilderImpl
  */
 public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
 		implements RxSessionFactory {

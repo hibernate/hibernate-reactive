@@ -6,17 +6,23 @@ import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.rx.RxSessionFactory;
+import org.hibernate.rx.boot.RxSessionFactoryBuilder;
 import org.hibernate.rx.boot.RxSessionFactoryBuilderImplementor;
 import org.hibernate.rx.engine.impl.RxSessionFactoryImpl;
 
-public class RxSessionFactoryBuilder
+/**
+ * Implementation of {@link RxSessionFactoryBuilder}.
+ *
+ * @see RxSessionFactoryBuilder
+ */
+public class RxSessionFactoryBuilderImpl
 		extends AbstractDelegatingSessionFactoryBuilderImplementor<RxSessionFactoryBuilderImplementor> implements
 		RxSessionFactoryBuilderImplementor {
 
 	private final SessionFactoryBuilderImplementor delegate;
 	private final MetadataImplementor metadata;
 
-	public RxSessionFactoryBuilder(MetadataImplementor metadata, SessionFactoryBuilderImplementor delegate) {
+	public RxSessionFactoryBuilderImpl(MetadataImplementor metadata, SessionFactoryBuilderImplementor delegate) {
 		super( delegate );
 
 		this.metadata = metadata;
@@ -24,7 +30,7 @@ public class RxSessionFactoryBuilder
 	}
 
 	@Override
-	protected RxSessionFactoryBuilder getThis() {
+	protected RxSessionFactoryBuilderImpl getThis() {
 		return this;
 	}
 
