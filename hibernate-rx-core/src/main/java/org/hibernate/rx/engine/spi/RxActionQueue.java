@@ -60,13 +60,13 @@ public class RxActionQueue {
 //				}
 //		);
 		EXECUTABLE_LISTS_MAP.put(
-				RxAbstractEntityInsertAction.class,
-				new ListProvider<RxAbstractEntityInsertAction>() {
-					ExecutableList<RxAbstractEntityInsertAction> get(RxActionQueue instance) {
+				RxEntityInsertAction.class,
+				new ListProvider<RxEntityInsertAction>() {
+					ExecutableList<RxEntityInsertAction> get(RxActionQueue instance) {
 						return instance.insertions;
 					}
 
-					ExecutableList<RxAbstractEntityInsertAction> init(RxActionQueue instance) {
+					ExecutableList<RxEntityInsertAction> init(RxActionQueue instance) {
 						if ( instance.isOrderInsertsEnabled() ) {
 							return instance.insertions = new ExecutableList<>(
 									new InsertActionSorter()
@@ -167,7 +167,7 @@ public class RxActionQueue {
 	// Object insertions, updates, and deletions have list semantics because
 	// they must happen in the right order so as to respect referential
 	// integrity
-	private ExecutableList<RxAbstractEntityInsertAction> insertions;
+	private ExecutableList<RxEntityInsertAction> insertions;
 	private ExecutableList<RxEntityDeleteAction> deletions;
 	private ExecutableList<RxEntityUpdateAction> updates;
 	// Actually the semantics of the next three are really "Bag"
@@ -290,12 +290,12 @@ public class RxActionQueue {
 		}
 	}
 
-	public CompletionStage<Void> addAction(RxEntityInsertAction action) {
+	public CompletionStage<Void> addAction(RxEntityRegularInsertAction action) {
 		LOG.tracev( "Adding an EntityInsertAction for [{0}] object", action.getEntityName() );
 		return addInsertAction( action );
 	}
 
-	private CompletionStage<Void> addInsertAction(RxAbstractEntityInsertAction insert) {
+	private CompletionStage<Void> addInsertAction(RxEntityInsertAction insert) {
 		CompletionStage<Void> ret = RxUtil.nullFuture();
 		if ( insert.isEarlyInsert() ) {
 			// For early inserts, must execute inserts before finding non-nullable transient entities.
@@ -327,7 +327,7 @@ public class RxActionQueue {
 		return ret;
 	}
 
-	private CompletionStage<Void> addResolvedEntityInsertAction(RxAbstractEntityInsertAction insert) {
+	private CompletionStage<Void> addResolvedEntityInsertAction(RxEntityInsertAction insert) {
 		CompletionStage<Void> ret;
 		if ( insert.isEarlyInsert() ) {
 			LOG.trace( "Executing insertions before resolved early-insert" );
@@ -337,7 +337,7 @@ public class RxActionQueue {
 		}
 		else {
 			LOG.trace( "Adding resolved non-early insert action." );
-			addAction( RxAbstractEntityInsertAction.class, insert );
+			addAction( RxEntityInsertAction.class, insert );
 			ret = RxUtil.nullFuture();
 		}
 
@@ -351,7 +351,7 @@ public class RxActionQueue {
 							insert.getInstance(),
 							session
 					) ) {
-						comp = comp.thenCompose( v2 -> addResolvedEntityInsertAction( (RxEntityInsertAction) resolvedAction ) );
+						comp = comp.thenCompose( v2 -> addResolvedEntityInsertAction( (RxEntityRegularInsertAction) resolvedAction ) );
 					}
 				}
 				return comp;
@@ -1031,7 +1031,7 @@ public class RxActionQueue {
 	 *
 	 * @author Jay Erb
 	 */
-	private static class InsertActionSorter implements ExecutableList.Sorter<RxAbstractEntityInsertAction> {
+	private static class InsertActionSorter implements ExecutableList.Sorter<RxEntityInsertAction> {
 		/**
 		 * Singleton access
 		 */
@@ -1039,7 +1039,7 @@ public class RxActionQueue {
 		// the mapping of entity names to their latest batch numbers.
 		private List<BatchIdentifier> latestBatches;
 		// the map of batch numbers to EntityInsertAction lists
-		private Map<BatchIdentifier, List<RxAbstractEntityInsertAction>> actionBatches;
+		private Map<BatchIdentifier, List<RxEntityInsertAction>> actionBatches;
 
 		public InsertActionSorter() {
 		}
@@ -1047,12 +1047,12 @@ public class RxActionQueue {
 		/**
 		 * Sort the insert actions.
 		 */
-		public void sort(List<RxAbstractEntityInsertAction> insertions) {
+		public void sort(List<RxEntityInsertAction> insertions) {
 			// optimize the hash size to eliminate a rehash.
 			this.latestBatches = new ArrayList<>();
 			this.actionBatches = new HashMap<>();
 
-			for ( RxAbstractEntityInsertAction action : insertions ) {
+			for ( RxEntityInsertAction action : insertions ) {
 				BatchIdentifier batchIdentifier = new BatchIdentifier(
 						action.getEntityName(),
 						action.getSession()
@@ -1151,7 +1151,7 @@ public class RxActionQueue {
 		 * @param action The action being sorted
 		 * @param batchIdentifier The batch identifier of the entity affected by the action
 		 */
-		private void addParentChildEntityNames(RxAbstractEntityInsertAction action, BatchIdentifier batchIdentifier) {
+		private void addParentChildEntityNames(RxEntityInsertAction action, BatchIdentifier batchIdentifier) {
 			Object[] propertyValues = action.getState();
 			ClassMetadata classMetadata = action.getPersister().getClassMetadata();
 			if ( classMetadata != null ) {
@@ -1176,7 +1176,7 @@ public class RxActionQueue {
 		}
 
 		private void addParentChildEntityNameByPropertyAndValue(
-				RxAbstractEntityInsertAction action,
+				RxEntityInsertAction action,
 				BatchIdentifier batchIdentifier,
 				Type type,
 				Object value) {
@@ -1248,8 +1248,8 @@ public class RxActionQueue {
 			}
 		}
 
-		private void addToBatch(BatchIdentifier batchIdentifier, RxAbstractEntityInsertAction action) {
-			List<RxAbstractEntityInsertAction> actions = actionBatches.get( batchIdentifier );
+		private void addToBatch(BatchIdentifier batchIdentifier, RxEntityInsertAction action) {
+			List<RxEntityInsertAction> actions = actionBatches.get( batchIdentifier );
 
 			if ( actions == null ) {
 				actions = new LinkedList<>();

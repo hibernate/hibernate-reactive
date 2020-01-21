@@ -20,7 +20,7 @@ import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.impl.Cascade;
 import org.hibernate.rx.engine.impl.CascadingAction;
 import org.hibernate.rx.engine.impl.RxEntityIdentityInsertAction;
-import org.hibernate.rx.engine.impl.RxEntityInsertAction;
+import org.hibernate.rx.engine.impl.RxEntityRegularInsertAction;
 import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.type.Type;
@@ -329,7 +329,7 @@ abstract class AbstractRxSaveEventListener
 		}
 		else {
 			Object version = Versioning.getVersion( values, persister );
-			RxEntityInsertAction insert = new RxEntityInsertAction(
+			RxEntityRegularInsertAction insert = new RxEntityRegularInsertAction(
 					id, values, entity, version, persister, false, source
 			);
 			return ( (RxSessionInternal) source ).getRxActionQueue()

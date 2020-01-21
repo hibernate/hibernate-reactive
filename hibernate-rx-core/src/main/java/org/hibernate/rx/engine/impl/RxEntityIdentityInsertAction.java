@@ -22,7 +22,7 @@ import java.util.concurrent.CompletionStage;
  * A reactific {@link EntityIdentityInsertAction} (used when
  * inserting into tables with autoincrement columns).
  */
-public class RxEntityIdentityInsertAction extends EntityIdentityInsertAction implements RxAbstractEntityInsertAction {
+public class RxEntityIdentityInsertAction extends EntityIdentityInsertAction implements RxEntityInsertAction {
 
 	public RxEntityIdentityInsertAction(Object[] state, Object instance, EntityPersister persister, boolean isVersionIncrementDisabled, SharedSessionContractImplementor session, boolean isDelayed) {
 		super(state, instance, persister, isVersionIncrementDisabled, session, isDelayed);
