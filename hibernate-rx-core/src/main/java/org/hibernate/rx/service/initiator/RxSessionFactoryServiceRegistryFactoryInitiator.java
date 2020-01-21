@@ -1,12 +1,18 @@
 package org.hibernate.rx.service.initiator;
 
-import java.util.Map;
-
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.rx.service.RxSessionFactoryServiceRegistryFactoryImpl;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.service.spi.SessionFactoryServiceRegistryFactory;
 
+import java.util.Map;
+
+/**
+ * A Hibernate {@link StandardServiceInitiator service initiator} that
+ * integrates our implementation of {@link SessionFactoryServiceRegistryFactory}.
+ *
+ * @see RxSessionFactoryServiceRegistryFactoryImpl
+ */
 public class RxSessionFactoryServiceRegistryFactoryInitiator implements StandardServiceInitiator<SessionFactoryServiceRegistryFactory> {
 
 	public static final RxSessionFactoryServiceRegistryFactoryInitiator INSTANCE = new RxSessionFactoryServiceRegistryFactoryInitiator();

@@ -1,7 +1,5 @@
 package org.hibernate.rx.service.initiator;
 
-import java.util.Map;
-
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.LobCreationContext;
@@ -18,8 +16,12 @@ import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.ServiceRegistryAwareService;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
+import java.util.Map;
+
 /**
- * Return a JdbcServicesImpl that does not access the underlying database
+ * A Hibernate {@link StandardServiceInitiator service initiator} that
+ * provides an implementation of {@link JdbcServices} that never
+ * accesses the database via JDBC.
  */
 public class RxJdbcServicesInitiator implements StandardServiceInitiator<JdbcServices> {
 	public static final RxJdbcServicesInitiator INSTANCE = new RxJdbcServicesInitiator();

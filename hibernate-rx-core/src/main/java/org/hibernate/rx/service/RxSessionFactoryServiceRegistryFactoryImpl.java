@@ -15,6 +15,10 @@ import org.hibernate.service.spi.SessionFactoryServiceContributor;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 import org.hibernate.service.spi.SessionFactoryServiceRegistryFactory;
 
+/**
+ * An implementation of {@link SessionFactoryServiceRegistryFactory}
+ * for Hibernate RX.
+ */
 public class RxSessionFactoryServiceRegistryFactoryImpl implements SessionFactoryServiceRegistryFactory {
 
 	private final ServiceRegistryImplementor theBasicServiceRegistry;

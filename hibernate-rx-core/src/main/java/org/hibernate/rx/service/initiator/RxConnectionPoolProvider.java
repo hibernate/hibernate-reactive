@@ -6,6 +6,8 @@ import org.hibernate.service.Service;
 /**
  * A Hibernate {@link Service} that provides access to pooled
  * {@link RxConnection reactive connections}.
+ *
+ * @see org.hibernate.rx.service.RxConnectionPoolProviderImpl
  */
 public interface RxConnectionPoolProvider extends Service {
 
