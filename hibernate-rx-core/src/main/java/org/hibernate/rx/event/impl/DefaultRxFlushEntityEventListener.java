@@ -31,6 +31,12 @@ import java.util.Arrays;
 
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultFlushEntityEventListener}.
+ * This implementation is almost, but not quite, a line-for-line copy of
+ * {@code DefaultFlushEntityEventListener}. The only difference is that it creates
+ * {@link RxEntityUpdateAction}s. Unlike other event listeners in this package, this
+ * listener's {@link #onFlushEntity(FlushEntityEvent)} method does not need to by
+ * called in a non-blocking manner, and so therefore there is no
+ * {@code RxFlushEntityEventListener} interface.
  */
 public class DefaultRxFlushEntityEventListener implements FlushEntityEventListener, CallbackRegistryConsumer {
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultRxFlushEntityEventListener.class );
@@ -48,7 +54,7 @@ public class DefaultRxFlushEntityEventListener implements FlushEntityEventListen
 	public void checkId(Object object, EntityPersister persister, Serializable id, SessionImplementor session)
 			throws HibernateException {
 
-		if ( id != null && id instanceof DelayedPostInsertIdentifier ) {
+		if (id instanceof DelayedPostInsertIdentifier) {
 			// this is a situation where the entity id is assigned by a post-insert generator
 			// and was saved outside the transaction forcing it to be delayed
 			return;
@@ -523,7 +529,7 @@ public class DefaultRxFlushEntityEventListener implements FlushEntityEventListen
 
 					@Override
 					public void doDirtyChecking(CustomEntityDirtinessStrategy.AttributeChecker attributeChecker) {
-						found = new DefaultRxFlushEntityEventListener.DirtyCheckAttributeInfoImpl( event ).visitAttributes( attributeChecker );
+						found = new DirtyCheckAttributeInfoImpl( event ).visitAttributes( attributeChecker );
 						if ( found != null && found.length == 0 ) {
 							found = null;
 						}
