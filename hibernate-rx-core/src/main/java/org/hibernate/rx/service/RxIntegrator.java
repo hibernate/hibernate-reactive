@@ -9,7 +9,10 @@ import org.hibernate.rx.event.impl.*;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 
 /**
- * Integrates Hibernate Reactive with Hibernate ORM
+ * Integrates Hibernate Reactive with Hibernate ORM by
+ * replacing the built-in
+ * {@link org.hibernate.event.spi.AbstractEvent event}
+ * listeners with reactive listeners.
  */
 public class RxIntegrator implements Integrator {
 	@Override

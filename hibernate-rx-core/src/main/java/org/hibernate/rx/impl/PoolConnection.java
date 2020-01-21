@@ -13,7 +13,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 /**
- * A reactive connection pool for PostgreSQL
+ * A reactive connection based on Vert.x's {@link Pool}.
  */
 public class PoolConnection implements RxConnection {
 

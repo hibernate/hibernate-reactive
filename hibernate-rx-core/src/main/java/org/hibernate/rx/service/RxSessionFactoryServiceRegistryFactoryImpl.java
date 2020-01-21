@@ -7,7 +7,6 @@
 package org.hibernate.rx.service;
 
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
-import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryBuilderImpl;

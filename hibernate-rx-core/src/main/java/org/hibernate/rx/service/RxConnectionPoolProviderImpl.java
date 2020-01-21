@@ -18,6 +18,10 @@ import org.hibernate.service.spi.Stoppable;
 import java.net.URI;
 import java.util.Map;
 
+/**
+ * A pool of reactive connections backed by a
+ * Vert.x {@link PgPool} or {@link MySQLPool}.
+ */
 public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, Configurable, Stoppable {
 
 	public static final int DEFAULT_POOL_SIZE = 5;
