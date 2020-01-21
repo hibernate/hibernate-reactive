@@ -12,6 +12,10 @@ import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
 
 import java.io.Serializable;
 
+/**
+ * A {@link SingleTableEntityPersister} that supports
+ * decoration with {@link RxEntityPersister}
+ */
 public class RxSingleTableEntityPersister extends SingleTableEntityPersister implements RxGeneratedIdentifierPersister {
 
 	private RxIdentifierGenerator identifierGenerator;

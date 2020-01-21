@@ -29,6 +29,13 @@ import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.id.enhanced.TableGenerator.*;
 
+/**
+ * Support for JPA's {@link javax.persistence.TableGenerator}. This
+ * generator functions in two different modes: as a table generator
+ * where different logical sequences are represented by different
+ * rows ("segments"), or as an emulated sequence generator with
+ * just one row and one column.
+ */
 public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 
 	private static final RxQueryExecutor queryExecutor = new RxQueryExecutor();

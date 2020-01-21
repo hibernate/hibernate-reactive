@@ -29,6 +29,14 @@ import java.io.Serializable;
 import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * An {@link RxEntityPersister} that decorates a {@link AbstractEntityPersister}.
+ * Note that there are three main flavors of {@code AbstractEntityPersister},
+ * for each of the three inheritance mapping strategies, but here is
+ * only one flavor of {@link RxEntityPersister}, which delegates these
+ * intricacies. This design avoid duplicating the code in this class in the
+ * three different subclasses.
+ */
 //TODO: this class temporarily lives in org.hibernate.persister.entity because
 //	  it desperately needs to call protected methods of the persister classes
 public class RxEntityPersisterImpl implements RxEntityPersister {

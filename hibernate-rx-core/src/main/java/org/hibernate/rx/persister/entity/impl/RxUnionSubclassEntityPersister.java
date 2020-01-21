@@ -13,6 +13,10 @@ import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
 
 import java.io.Serializable;
 
+/**
+ * A {@link UnionSubclassEntityPersister} that supports
+ * decoration with {@link RxEntityPersister}.
+ */
 public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister implements RxGeneratedIdentifierPersister {
 
 	private RxIdentifierGenerator identifierGenerator;
