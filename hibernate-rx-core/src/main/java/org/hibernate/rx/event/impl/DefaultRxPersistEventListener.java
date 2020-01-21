@@ -35,10 +35,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Defines the default create event listener used by hibernate for creating
- * transient entities in response to generated create events.
- *
- * @author Gavin King
+ * A reactific {@link org.hibernate.event.internal.DefaultPersistEventListener}.
  */
 public class DefaultRxPersistEventListener
 		extends AbstractRxSaveEventListener

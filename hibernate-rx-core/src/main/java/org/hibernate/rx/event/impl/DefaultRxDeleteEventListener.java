@@ -12,9 +12,7 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.Status;
-import org.hibernate.event.internal.DefaultDeleteEventListener;
 import org.hibernate.event.internal.OnUpdateVisitor;
-import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.service.spi.JpaBootstrapSensitive;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.DeleteEventListener;
@@ -41,14 +39,11 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Defines the default delete event listener used by hibernate for deleting entities
- * from the datastore in response to generated delete events.
- *
- * @author Steve Ebersole
+ * A reactific {@link org.hibernate.event.internal.DefaultDeleteEventListener}.
  */
 public class DefaultRxDeleteEventListener
 		implements DeleteEventListener, RxDeleteEventListener, CallbackRegistryConsumer, JpaBootstrapSensitive {
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultDeleteEventListener.class );
+	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultRxDeleteEventListener.class );
 
 	private CallbackRegistry callbackRegistry;
 	private boolean jpaBootstrap;

@@ -26,6 +26,9 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * A reactific {@link org.hibernate.event.internal.DefaultFlushEventListener}.
+ */
 public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushEventListener {
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger(
 			CoreMessageLogger.class,

@@ -28,6 +28,9 @@ import java.io.Serializable;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * A reactific {@link org.hibernate.event.internal.DefaultLoadEventListener}.
+ */
 public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEventListener {
 
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultRxLoadEventListener.class );

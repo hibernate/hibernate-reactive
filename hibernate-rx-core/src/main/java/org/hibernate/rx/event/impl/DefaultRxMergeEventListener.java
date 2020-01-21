@@ -35,10 +35,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Defines the default copy event listener used by hibernate for copying entities
- * in response to generated copy events.
- *
- * @author Gavin King
+ * A reactific {@link org.hibernate.event.internal.DefaultMergeEventListener}.
  */
 public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener implements RxMergeEventListener, MergeEventListener {
 

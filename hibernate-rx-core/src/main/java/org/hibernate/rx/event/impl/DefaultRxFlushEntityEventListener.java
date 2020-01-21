@@ -6,6 +6,7 @@ import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.*;
+import org.hibernate.event.internal.DefaultDeleteEventListener;
 import org.hibernate.event.internal.DirtyCollectionSearchVisitor;
 import org.hibernate.event.internal.FlushVisitor;
 import org.hibernate.event.internal.WrapVisitor;
@@ -29,7 +30,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * @see org.hibernate.event.internal.DefaultFlushEntityEventListener
+ * A reactific {@link org.hibernate.event.internal.DefaultFlushEntityEventListener}.
  */
 public class DefaultRxFlushEntityEventListener implements FlushEntityEventListener, CallbackRegistryConsumer {
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultRxFlushEntityEventListener.class );

@@ -32,9 +32,11 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
- * A convenience base class for listeners responding to save events.
+ * Functionality common to persist and merge event listeners.
  *
- * @author Steve Ebersole.
+ * @see DefaultRxPersistEventListener
+ * @see DefaultRxPersistOnFlushEventListener
+ * @see DefaultRxMergeEventListener
  */
 abstract class AbstractRxSaveEventListener
 		implements CallbackRegistryConsumer {

@@ -38,10 +38,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Defines the default refresh event listener used by hibernate for refreshing entities
- * in response to generated refresh events.
- *
- * @author Steve Ebersole
+ * A reactific {@link org.hibernate.event.internal.DefaultRefreshEventListener}.
  */
 public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRefreshEventListener {
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultRxRefreshEventListener.class );
