@@ -17,7 +17,6 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.rx.engine.spi.RxExecutable;
 import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
 
@@ -25,7 +24,8 @@ import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
 /**
- * The action for performing an entity insertion, for entities not defined to use IDENTITY generation.
+ /**
+ * A reactific {@link EntityInsertAction}.
  */
 public class RxEntityInsertAction extends EntityInsertAction implements RxAbstractEntityInsertAction {
 

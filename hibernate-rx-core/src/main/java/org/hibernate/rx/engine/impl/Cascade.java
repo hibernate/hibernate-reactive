@@ -30,6 +30,8 @@ import java.util.concurrent.CompletionStage;
 /**
  * Delegate responsible for, in conjunction with the various
  * {@link CascadingAction actions}, implementing cascade processing.
+ * This is a reactive counterpart to Hibernate's
+ * {@link org.hibernate.engine.internal.Cascade}.
  *
  * @author Gavin King
  * @see CascadingAction

@@ -21,7 +21,8 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
- * @author Steve Ebersole
+ * The possible {@link CascadingAction cascading actions} for
+ * a {@link org.hibernate.rx.RxSession reactive session}.
  */
 public class CascadingActions {
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger(

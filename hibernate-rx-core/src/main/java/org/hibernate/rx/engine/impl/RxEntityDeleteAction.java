@@ -18,6 +18,9 @@ import org.hibernate.stat.spi.StatisticsImplementor;
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * A reactific {@link EntityDeleteAction}.
+ */
 public class RxEntityDeleteAction extends EntityDeleteAction implements RxExecutable {
 
 	public RxEntityDeleteAction(

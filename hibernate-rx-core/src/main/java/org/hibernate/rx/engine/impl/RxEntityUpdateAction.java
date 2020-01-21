@@ -19,7 +19,7 @@ import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
 /**
- * @see org.hibernate.action.internal.EntityUpdateAction
+ * A reactific {@link EntityUpdateAction}.
  */
 public class RxEntityUpdateAction extends EntityUpdateAction implements RxExecutable {
 

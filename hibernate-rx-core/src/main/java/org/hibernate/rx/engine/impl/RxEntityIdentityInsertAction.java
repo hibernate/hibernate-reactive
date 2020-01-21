@@ -8,7 +8,6 @@ package org.hibernate.rx.engine.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityIdentityInsertAction;
-import org.hibernate.action.internal.EntityInsertAction;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -20,9 +19,8 @@ import org.hibernate.stat.spi.StatisticsImplementor;
 import java.util.concurrent.CompletionStage;
 
 /**
- * The action for performing entity insertions when entity is using IDENTITY column identifier generation
- *
- * @see EntityInsertAction
+ * A reactific {@link EntityIdentityInsertAction} (used when
+ * inserting into tables with autoincrement columns).
  */
 public class RxEntityIdentityInsertAction extends EntityIdentityInsertAction implements RxAbstractEntityInsertAction {
 
