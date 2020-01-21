@@ -11,7 +11,10 @@ _This project is still at an experimental stage._
 
 ## Example program
 
-There is a very simple example program in the `example` directory.
+There is a very simple example program in the [`example`][example] 
+directory.
+
+[example]: https://github.com/hibernate/hibernate-rx/tree/master/example 
 
 ## Gradle build
 
@@ -21,7 +24,7 @@ The project is built with Gradle.
 
 To compile, navigate to this directory, and type:
 
-	./gradlew build
+	./gradlew compileJava
 
 To publish Hibernate RX to your local Maven repository, run:
 
@@ -89,7 +92,10 @@ Configuration is completely transparent; configure Hibernate
 exactly as you normally would, for example by providing a
 `META-INF/persistence.xml` file.
 
-An example `persistence.xml` file is included in the example program.
+An example [`persistence.xml`][xml] file is included in the example 
+program.
+
+[xml]: https://github.com/hibernate/hibernate-rx/blob/master/example/src/main/resources/META-INF/persistence.xml
 
 ### Obtaining a reactive session factory
 
