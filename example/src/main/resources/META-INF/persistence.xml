@@ -1,0 +1,20 @@
+<persistence xmlns="http://java.sun.com/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd"
+             version="2.0">
+
+    <persistence-unit name="example">
+
+        <class>org.hibernate.example.rx.Book</class>
+
+        <properties>
+            <property name="javax.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/hibernate-rx?user=hibernate-rx&amp;password=hibernate-rx"/>
+            <!--property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/hibernaterx?user=hibernate-rx&amp;password=hibernate-rx"/-->
+
+            <property name="avax.persistence.schema-generation.database.action" value="create-drop"/>
+            <property name="hibernate.show_sql" value="true"/>
+        </properties>
+
+    </persistence-unit>
+
+</persistence>

@@ -11,4 +11,5 @@ rootProject.name = 'hibernate-rx'
 
 include 'hibernate-rx-api'
 include 'hibernate-rx-core'
+include 'example'
 
