@@ -14,6 +14,7 @@ import org.hibernate.rx.engine.impl.RxSessionFactoryImpl;
  * Implementation of {@link RxSessionFactoryBuilder}.
  *
  * @see RxSessionFactoryBuilder
+ * @see RxSessionFactoryBuilderFactory
  */
 public class RxSessionFactoryBuilderImpl
 		extends AbstractDelegatingSessionFactoryBuilderImplementor<RxSessionFactoryBuilderImplementor> implements

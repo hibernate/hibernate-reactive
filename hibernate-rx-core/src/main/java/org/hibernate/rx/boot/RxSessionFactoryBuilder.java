@@ -19,6 +19,7 @@ import java.util.Map;
  * A {@link SessionFactoryBuilder builder} for the {@link RxSessionFactory}.
  *
  * @see RxSessionFactory
+ * @see org.hibernate.rx.boot.impl.RxSessionFactoryBuilderImpl
  */
 public interface RxSessionFactoryBuilder extends SessionFactoryBuilder {
 
