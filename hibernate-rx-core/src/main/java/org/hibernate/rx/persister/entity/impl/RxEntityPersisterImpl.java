@@ -30,6 +30,14 @@ import java.sql.Types;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * An {@link RxEntityPersister} that decorates a {@link AbstractEntityPersister}.
+ * Note that there are three main flavors of {@code AbstractEntityPersister},
+ * for each of the three inheritance mapping strategies, but here is
+ * only one flavor of {@link RxEntityPersister}, which delegates these
+ * intricacies. This design avoid duplicating the code in this class in the
+ * three different subclasses.
+ */
 public class RxEntityPersisterImpl implements RxEntityPersister {
 
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( RxEntityPersisterImpl.class );

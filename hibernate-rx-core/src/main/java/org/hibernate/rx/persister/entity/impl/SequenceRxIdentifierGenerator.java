@@ -16,6 +16,9 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * Support for JPA's {@link javax.persistence.SequenceGenerator}.
+ */
 public class SequenceRxIdentifierGenerator implements RxIdentifierGenerator {
 
 	private static final RxQueryExecutor queryExecutor = new RxQueryExecutor();
@@ -57,6 +60,7 @@ public class SequenceRxIdentifierGenerator implements RxIdentifierGenerator {
 		}
 	}
 
+	@Override
 	public CompletionStage<Optional<Integer>> generate(SessionFactoryImplementor factory) {
 		return sql==null ? RxUtil.completedFuture(Optional.empty())
 				: queryExecutor.selectInteger(sql, new Object[0], factory);

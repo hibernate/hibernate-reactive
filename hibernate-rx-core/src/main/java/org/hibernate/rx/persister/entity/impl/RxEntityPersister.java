@@ -8,6 +8,10 @@ import org.hibernate.persister.entity.EntityPersister;
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * A reactive decorator for an {@link AbstractEntityPersister}.
+ * Supports non-blocking insert/update/delete operations.
+ */
 public interface RxEntityPersister {
 
 	static RxEntityPersister get(EntityPersister persister) {
@@ -17,18 +21,33 @@ public interface RxEntityPersister {
 	EntityPersister getPersister();
 
 	RxIdentifierGenerator getIdentifierGenerator();
-
+	
+	/**
+	 * Insert the given instance state without blocking.
+	 *
+	 * @see EntityPersister#insert(Serializable, Object[], Object, SharedSessionContractImplementor)
+	 */
 	CompletionStage<?> insertRx(
 			Serializable id,
 			Object[] fields,
 			Object object,
 			SharedSessionContractImplementor session);
 
+	/**
+	 * Insert the given instance state without blocking.
+	 *
+	 * @see EntityPersister#insert(Object[], Object, SharedSessionContractImplementor)
+	 */
 	CompletionStage<Serializable> insertRx(
 			Object[] fields,
 			Object object,
 			SharedSessionContractImplementor session);
 
+	/**
+	 * Delete the given instance without blocking.
+	 *
+	 * @see EntityPersister#delete(Serializable, Object, Object, SharedSessionContractImplementor) 
+	 */
 	CompletionStage<?> deleteRx(
 			Serializable id,
 			Object version,
@@ -36,6 +55,11 @@ public interface RxEntityPersister {
 			SharedSessionContractImplementor session)
 					throws HibernateException;
 
+	/**
+	 * Update the given instance state without blocking.
+	 *
+	 * @see EntityPersister#update(Serializable, Object[], int[], boolean, Object[], Object, Object, Object, SharedSessionContractImplementor)
+	 */
 	CompletionStage<?> updateRx(
 			Serializable id,
 			Object[] fields, int[] dirtyFields,
