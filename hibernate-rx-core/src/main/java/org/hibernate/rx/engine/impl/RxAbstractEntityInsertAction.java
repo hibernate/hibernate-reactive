@@ -7,7 +7,7 @@ import org.hibernate.rx.engine.spi.RxExecutable;
 
 import java.io.Serializable;
 
-public interface RxAbstractEntityInsertAction extends RxExecutable, Comparable, Serializable {
+public interface RxAbstractEntityInsertAction extends RxExecutable, Serializable {
 	boolean isEarlyInsert();
 	NonNullableTransientDependencies findNonNullableTransientEntities();
 	SharedSessionContractImplementor getSession();
