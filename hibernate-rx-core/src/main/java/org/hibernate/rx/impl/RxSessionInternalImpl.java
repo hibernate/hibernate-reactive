@@ -4,7 +4,6 @@ import org.hibernate.*;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.event.service.spi.EventListenerGroup;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.*;
 import org.hibernate.graph.GraphSemantic;
@@ -30,6 +29,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class RxSessionInternalImpl extends SessionImpl implements RxSessionInternal, EventSource {
@@ -96,67 +97,56 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
-		CompletionStage<Void> ret = RxUtil.nullFuture();
-		for ( PersistEventListener listener : listeners( EventType.PERSIST ) ) {
-			CompletionStage<Void> stage = ((RxPersistEventListener) listener).rxOnPersist(event);
-			ret = ret.thenCompose(v -> stage);
-		}
-		return ret.handle( (v, e) -> {
-			checkNoUnresolvedActionsAfterOperation();
+		return fire(event, EventType.PERSIST, (RxPersistEventListener l) -> l::rxOnPersist)
+				.handle( (v, e) -> {
+					checkNoUnresolvedActionsAfterOperation();
 
-			if (e instanceof MappingException) {
-				throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage() ) );
-			}
-			else if (e instanceof RuntimeException) {
-				throw getExceptionConverter().convert( (RuntimeException) e );
-			}
-			else if (e != null) {
-				return RxUtil.rethrow(e);
-			}
-			return v;
-		});
+					if (e instanceof MappingException) {
+						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage() ) );
+					}
+					else if (e instanceof RuntimeException) {
+						throw getExceptionConverter().convert( (RuntimeException) e );
+					}
+					else if (e != null) {
+						return RxUtil.rethrow(e);
+					}
+					return v;
+				});
 	}
 
 	private CompletionStage<Void> firePersist(final Map copiedAlready, final PersistEvent event) {
 		pulseTransactionCoordinator();
 
-		CompletionStage<Void> ret = RxUtil.nullFuture();
-		for ( PersistEventListener listener : listeners( EventType.PERSIST ) ) {
-			CompletionStage<Void> stage = ((RxPersistEventListener) listener).rxOnPersist(event, copiedAlready);
-			ret = ret.thenCompose(v -> stage);
-		}
-		return ret.handle( (v, e) -> {
-			delayedAfterCompletion();
+		return fire(event, copiedAlready, EventType.PERSIST,
+				(RxPersistEventListener l) -> l::rxOnPersist)
+				.handle( (v, e) -> {
+					delayedAfterCompletion();
 
-			if (e instanceof MappingException) {
-				throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage() ) );
-			}
-			else if (e instanceof RuntimeException) {
-				throw getExceptionConverter().convert( (RuntimeException) e );
-			}
-			else if (e != null){
-				return RxUtil.rethrow(e);
-			}
-			return v;
-		});
+					if (e instanceof MappingException) {
+						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage() ) );
+					}
+					else if (e instanceof RuntimeException) {
+						throw getExceptionConverter().convert( (RuntimeException) e );
+					}
+					else if (e != null){
+						return RxUtil.rethrow(e);
+					}
+					return v;
+				});
 	}
 
 	@Override
 	public CompletionStage<Void> rxPersistOnFlush(Object entity, Map copiedAlready) {
 		checkOpenOrWaitingForAutoClose();
-		return firePersistOnFlush( entity, copiedAlready );
+		return firePersistOnFlush( copiedAlready, new PersistEvent( null, entity, this ) );
 	}
 
-	private CompletionStage<Void> firePersistOnFlush(Object entity, Map copiedAlready) {
+	private CompletionStage<Void> firePersistOnFlush(Map copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
-		CompletionStage<Void> ret = RxUtil.nullFuture();
-		for ( PersistEventListener listener : listeners( EventType.PERSIST_ONFLUSH ) ) {
-			PersistEvent event = new PersistEvent( null, entity, this );
-			CompletionStage<Void> stage = ((RxPersistEventListener) listener).rxOnPersist(event, copiedAlready);
-			ret = ret.thenCompose(v -> stage);
-		}
-		return ret.handle( (v, e) -> { delayedAfterCompletion(); return v; });
+		return fire(event, copiedAlready, EventType.PERSIST_ONFLUSH,
+				(RxPersistEventListener l) -> l::rxOnPersist)
+				.handle( (v, e) -> { delayedAfterCompletion(); return v; });
 	}
 
 	@Override
@@ -186,57 +176,51 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	private CompletionStage<Void> fireRemove(DeleteEvent event) {
 		pulseTransactionCoordinator();
 
-		CompletionStage<Void> ret = RxUtil.nullFuture();
-		for ( DeleteEventListener listener : listeners( EventType.DELETE ) ) {
-			CompletionStage<Void> delete = ((RxDeleteEventListener) listener).rxOnDelete(event);
-			ret = ret.thenCompose(v -> delete);
-		}
-		return ret.handle( (v, e) -> {
-			delayedAfterCompletion();
+		return fire(event, EventType.DELETE,
+				(RxDeleteEventListener l) -> l::rxOnDelete)
+				.handle( (v, e) -> {
+					delayedAfterCompletion();
 
-			if ( e instanceof ObjectDeletedException ) {
-				throw getExceptionConverter().convert( new IllegalArgumentException( e ) );
-			}
-			else if ( e instanceof MappingException ) {
-				throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage(), e ) );
-			}
-			else if ( e instanceof RuntimeException ) {
-				//including HibernateException
-				throw getExceptionConverter().convert( (RuntimeException) e );
-			}
-			else if (e != null) {
-				return RxUtil.rethrow(e);
-			}
-			return v;
-		});
+					if ( e instanceof ObjectDeletedException ) {
+						throw getExceptionConverter().convert( new IllegalArgumentException( e ) );
+					}
+					else if ( e instanceof MappingException ) {
+						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage(), e ) );
+					}
+					else if ( e instanceof RuntimeException ) {
+						//including HibernateException
+						throw getExceptionConverter().convert( (RuntimeException) e );
+					}
+					else if (e != null) {
+						return RxUtil.rethrow(e);
+					}
+					return v;
+				});
 	}
 
 	private CompletionStage<Void> fireRemove(final DeleteEvent event, final Set transientEntities) {
 		pulseTransactionCoordinator();
 
-		CompletionStage<Void> ret = RxUtil.nullFuture();
-		for ( DeleteEventListener listener : listeners( EventType.DELETE ) ) {
-			CompletionStage<Void> delete = ((RxDeleteEventListener) listener).rxOnDelete(event, transientEntities);
-			ret = ret.thenCompose(v -> delete);
-		}
-		return ret.handle( (v, e) -> {
-			delayedAfterCompletion();
+		return fire(event, transientEntities, EventType.DELETE,
+				(RxDeleteEventListener l) -> l::rxOnDelete)
+				.handle( (v, e) -> {
+					delayedAfterCompletion();
 
-			if ( e instanceof ObjectDeletedException ) {
-				throw getExceptionConverter().convert( new IllegalArgumentException( e ) );
-			}
-			else if ( e instanceof MappingException ) {
-				throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage(), e ) );
-			}
-			else if ( e instanceof RuntimeException ) {
-				//including HibernateException
-				throw getExceptionConverter().convert( (RuntimeException) e );
-			}
-			else if (e != null) {
-				return RxUtil.rethrow(e);
-			}
-			return v;
-		});
+					if ( e instanceof ObjectDeletedException ) {
+						throw getExceptionConverter().convert( new IllegalArgumentException( e ) );
+					}
+					else if ( e instanceof MappingException ) {
+						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage(), e ) );
+					}
+					else if ( e instanceof RuntimeException ) {
+						//including HibernateException
+						throw getExceptionConverter().convert( (RuntimeException) e );
+					}
+					else if (e != null) {
+						return RxUtil.rethrow(e);
+					}
+					return v;
+				});
 	}
 
 	@Override
@@ -256,59 +240,51 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
-		CompletionStage<Void> ret = RxUtil.nullFuture();
-		for ( MergeEventListener listener : listeners( EventType.MERGE ) ) {
-			CompletionStage<Void> merge = ((RxMergeEventListener) listener).rxOnMerge(event);
-			ret = ret.thenCompose( v -> merge );
-		}
+		return fire(event, EventType.MERGE,
+				(RxMergeEventListener l) -> l::rxOnMerge)
+				.handle( (v,e) -> {
+					checkNoUnresolvedActionsAfterOperation();
 
-		return ret.handle( (v,e) -> {
-			checkNoUnresolvedActionsAfterOperation();
-
-			if (e instanceof ObjectDeletedException) {
-				throw getExceptionConverter().convert( new IllegalArgumentException( e ) );
-			}
-			else if (e instanceof MappingException) {
-				throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage(), e ) );
-			}
-			else if (e instanceof RuntimeException) {
-				//including HibernateException
-				throw getExceptionConverter().convert( (RuntimeException) e );
-			}
-			else if (e !=null) {
-				return RxUtil.rethrow(e);
-			}
-			return (T) event.getResult();
-		});
+					if (e instanceof ObjectDeletedException) {
+						throw getExceptionConverter().convert( new IllegalArgumentException( e ) );
+					}
+					else if (e instanceof MappingException) {
+						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage(), e ) );
+					}
+					else if (e instanceof RuntimeException) {
+						//including HibernateException
+						throw getExceptionConverter().convert( (RuntimeException) e );
+					}
+					else if (e !=null) {
+						return RxUtil.rethrow(e);
+					}
+					return (T) event.getResult();
+				});
 	}
 
 	private CompletionStage<Void> fireMerge(final Map copiedAlready, final MergeEvent event) {
 		pulseTransactionCoordinator();
 
-		CompletionStage<Void> ret = RxUtil.nullFuture();
-		for ( MergeEventListener listener : listeners( EventType.MERGE ) ) {
-			CompletionStage<Void> merge = ((RxMergeEventListener) listener).rxOnMerge(event, copiedAlready);
-			ret = ret.thenCompose( v -> merge );
-		}
+		return fire(event, copiedAlready, EventType.MERGE,
+				(RxMergeEventListener l) -> l::rxOnMerge)
+				.handle( (v,e) -> {
+					delayedAfterCompletion();
 
-		return ret.handle( (v,e) -> {
-			delayedAfterCompletion();
-
-			if (e instanceof ObjectDeletedException) {
-				throw getExceptionConverter().convert( new IllegalArgumentException( e ) );
-			}
-			else if (e instanceof MappingException) {
-				throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage(), e ) );
-			}
-			else if (e instanceof RuntimeException) {
-				//including HibernateException
-				throw getExceptionConverter().convert( (RuntimeException) e );
-			}
-			else if (e !=null) {
-				return RxUtil.rethrow(e);
-			}
-			return v;
-		});
+					if (e instanceof ObjectDeletedException) {
+						throw getExceptionConverter().convert( new IllegalArgumentException( e ) );
+					}
+					else if (e instanceof MappingException) {
+						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage(), e ) );
+					}
+					else if (e instanceof RuntimeException) {
+						//including HibernateException
+						throw getExceptionConverter().convert( (RuntimeException) e );
+					}
+					else if (e !=null) {
+						return RxUtil.rethrow(e);
+					}
+					return v;
+				});
 
 	}
 
@@ -326,24 +302,19 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 			throw new HibernateException( "Flush during cascade is dangerous" );
 		}
 
-		CompletionStage<Void> ret = RxUtil.nullFuture();
-		FlushEvent flushEvent = new FlushEvent( this );
-		for ( FlushEventListener listener : listeners( EventType.FLUSH ) ) {
-			CompletionStage<Void> flush = ((RxFlushEventListener) listener).rxOnFlush(flushEvent);
-			ret = ret.thenCompose( v -> flush );
-		}
+		return fire(new FlushEvent( this ), EventType.FLUSH,
+				(RxFlushEventListener l) -> l::rxOnFlush)
+				.handle( (v, e) -> {
+					delayedAfterCompletion();
 
-		return ret.handle( (v, e) -> {
-			delayedAfterCompletion();
-
-			if ( e instanceof RuntimeException ) {
-				throw getExceptionConverter().convert( (RuntimeException) e );
-			}
-			else if (e != null) {
-				return RxUtil.rethrow( e );
-			}
-			return v;
-		} );
+					if ( e instanceof RuntimeException ) {
+						throw getExceptionConverter().convert( (RuntimeException) e );
+					}
+					else if (e != null) {
+						return RxUtil.rethrow( e );
+					}
+					return v;
+				} );
 	}
 
 	@Override
@@ -373,49 +344,43 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		}
 		pulseTransactionCoordinator();
 
-		CompletionStage<Void> ret = RxUtil.nullFuture();
-		for ( RefreshEventListener listener : listeners( EventType.REFRESH ) ) {
-			CompletionStage<Void> flush = ((RxRefreshEventListener) listener).rxOnRefresh(event);
-			ret = ret.thenCompose( v -> flush );
-		}
-		return ret.handle( (v, e) -> {
-			delayedAfterCompletion();
+		return fire(event, EventType.REFRESH,
+				(RxRefreshEventListener l) -> l::rxOnRefresh)
+				.handle( (v, e) -> {
+					delayedAfterCompletion();
 
-			if (e instanceof RuntimeException) {
-				if ( !getSessionFactory().getSessionFactoryOptions().isJpaBootstrap() ) {
-					if ( e instanceof HibernateException ) {
+					if (e instanceof RuntimeException) {
+						if ( !getSessionFactory().getSessionFactoryOptions().isJpaBootstrap() ) {
+							if ( e instanceof HibernateException ) {
+								return RxUtil.rethrow(e);
+							}
+						}
+						//including HibernateException
+						throw getExceptionConverter().convert( (RuntimeException) e );
+					}
+					else if (e != null) {
 						return RxUtil.rethrow(e);
 					}
-				}
-				//including HibernateException
-				throw getExceptionConverter().convert( (RuntimeException) e );
-			}
-			else if (e != null) {
-				return RxUtil.rethrow(e);
-			}
-			return v;
-		});
+					return v;
+				});
 	}
 
 	private CompletionStage<Void> fireRefresh(final Map refreshedAlready, final RefreshEvent event) {
 		pulseTransactionCoordinator();
 
-		CompletionStage<Void> ret = RxUtil.nullFuture();
-		for ( RefreshEventListener listener : listeners( EventType.REFRESH ) ) {
-			CompletionStage<Void> flush = ((RxRefreshEventListener) listener).rxOnRefresh(event, refreshedAlready);
-			ret = ret.thenCompose( v -> flush );
-		}
-		return ret.handle( (v, e) -> {
-			delayedAfterCompletion();
+		return fire(event, refreshedAlready, EventType.REFRESH,
+				(RxRefreshEventListener l) -> l::rxOnRefresh)
+				.handle( (v, e) -> {
+					delayedAfterCompletion();
 
-			if (e instanceof RuntimeException) {
-				throw getExceptionConverter().convert( (RuntimeException) e );
-			}
-			else if (e != null) {
-				return RxUtil.rethrow(e);
-			}
-			return v;
-		});
+					if (e instanceof RuntimeException) {
+						throw getExceptionConverter().convert( (RuntimeException) e );
+					}
+					else if (e != null) {
+						return RxUtil.rethrow(e);
+					}
+					return v;
+				});
 	}
 
 	@Override
@@ -493,14 +458,36 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 				.whenComplete( (v, e) -> getLoadQueryInfluencers().getEffectiveEntityGraph().clear() );
 	}
 
-	private <T> Iterable<T> listeners(EventType<T> type) {
-		return eventListenerGroup( type ).listeners();
+	@SuppressWarnings("unchecked")
+	private <E,L,RL> CompletionStage<Void> fire(E event, EventType<L> eventType,
+												Function<RL,Function<E,CompletionStage<Void>>> fun) {
+		CompletionStage<Void> ret = RxUtil.nullFuture();
+		for ( L listener : eventListeners(eventType) ) {
+			//to preserve atomicity of the RxSession methods
+			//call apply() from within the arg of thenCompose()
+			ret = ret.thenCompose( v -> fun.apply((RL) listener).apply(event) );
+		}
+		return ret;
 	}
 
-	private <T> EventListenerGroup<T> eventListenerGroup(EventType<T> type) {
+	@SuppressWarnings("unchecked")
+	private <E,L,RL,P> CompletionStage<Void> fire(E event, P extra, EventType<L> eventType,
+												  Function<RL, BiFunction<E, P, CompletionStage<Void>>> fun) {
+		CompletionStage<Void> ret = RxUtil.nullFuture();
+		for ( L listener : eventListeners(eventType) ) {
+			//to preserve atomicity of the RxSession methods
+			//call apply() from within the arg of thenCompose()
+			ret = ret.thenCompose( v -> fun.apply((RL) listener).apply(event, extra) );
+		}
+		return ret;
+	}
+
+	@SuppressWarnings("deprecation")
+	private <T> Iterable<T> eventListeners(EventType<T> type) {
 		return getFactory().unwrap( SessionFactoryImplementor.class )
 				.getServiceRegistry().getService( EventListenerRegistry.class )
-				.getEventListenerGroup( type );
+				.getEventListenerGroup( type )
+				.listeners();
 	}
 
 	private CompletionStage<Void> fireLoad(LoadEvent event, LoadEventListener.LoadType loadType) {
@@ -516,12 +503,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	private CompletionStage<Void> fireLoadNoChecks(LoadEvent event, LoadEventListener.LoadType loadType) {
 		pulseTransactionCoordinator();
 
-		CompletionStage<Void> ret = RxUtil.nullFuture();
-		for ( LoadEventListener listener : listeners( EventType.LOAD ) ) {
-			CompletionStage<Void> load = ((RxLoadEventListener) listener).rxOnLoad(event, loadType);
-			ret = ret.thenCompose( v -> load );
-		}
-		return ret;
+		return fire(event, loadType, EventType.LOAD, (RxLoadEventListener l) -> l::rxOnLoad);
 	}
 
 	@Override
