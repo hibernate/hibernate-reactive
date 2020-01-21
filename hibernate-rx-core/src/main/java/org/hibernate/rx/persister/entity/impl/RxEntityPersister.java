@@ -20,7 +20,9 @@ public interface RxEntityPersister {
 
 	EntityPersister getPersister();
 
-	RxIdentifierGenerator getIdentifierGenerator();
+	//TODO: we only support Long for now, but eventually
+	//      we need to do something more general
+	RxIdentifierGenerator<Long> getIdentifierGenerator();
 	
 	/**
 	 * Insert the given instance state without blocking.

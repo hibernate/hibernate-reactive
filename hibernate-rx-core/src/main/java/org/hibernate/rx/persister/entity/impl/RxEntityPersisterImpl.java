@@ -262,7 +262,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 							Types.INTEGER
 					);
 			return queryExecutor.update( sql, insert.getParametersAsArray(), factory)
-					.thenCompose( v -> queryExecutor.selectInteger(selectIdSql, new Object[0], factory) )
+					.thenCompose( v -> queryExecutor.selectLong(selectIdSql, new Object[0], factory) )
 					.thenApply(Optional::get);
 		}
 

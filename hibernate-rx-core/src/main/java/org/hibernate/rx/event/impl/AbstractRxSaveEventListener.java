@@ -1,6 +1,7 @@
 package org.hibernate.rx.event.impl;
 
 
+import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.NonUniqueObjectException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
@@ -23,6 +24,8 @@ import org.hibernate.rx.engine.impl.RxEntityIdentityInsertAction;
 import org.hibernate.rx.engine.impl.RxEntityRegularInsertAction;
 import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
+import org.hibernate.type.IntegerType;
+import org.hibernate.type.LongType;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
@@ -123,18 +126,28 @@ abstract class AbstractRxSaveEventListener
 						));
 	}
 
-	private static Serializable assignIdIfNecessary(Optional<Integer> generatedId, Object entity, String entityName, EventSource source) {
-		if ( !generatedId.isPresent() ) {
-			Serializable assignedId =
-					source.getEntityPersister( entityName, entity )
-							.getIdentifier( entity, source.getSession() );
+	private static Serializable assignIdIfNecessary(Optional<Long> generatedId, Object entity, String entityName, EventSource source) {
+		EntityPersister persister = source.getEntityPersister(entityName, entity);
+		if ( generatedId.isPresent() ) {
+			Long longId = generatedId.get();
+			Type identifierType = persister.getIdentifierType();
+			if (identifierType == LongType.INSTANCE) {
+				return longId;
+			}
+			else if (identifierType == IntegerType.INSTANCE) {
+				return longId.intValue();
+			}
+			else  {
+				throw new HibernateException("cannot generate identifiers of type "
+						+ identifierType.getReturnedClass().getSimpleName() + " for: " + entityName);
+			}
+		}
+		else {
+			Serializable assignedId = persister.getIdentifier( entity, source.getSession() );
 			if (assignedId == null) {
 				throw new IdentifierGenerationException("ids for this class must be manually assigned before calling save(): " + entityName);
 			}
 			return assignedId;
-		}
-		else {
-			return generatedId.get();
 		}
 	}
 

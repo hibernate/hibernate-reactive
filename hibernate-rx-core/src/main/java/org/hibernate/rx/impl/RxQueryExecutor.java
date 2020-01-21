@@ -55,7 +55,7 @@ public class RxQueryExecutor {
 				});
 	}
 
-	public CompletionStage<Optional<Integer>> selectInteger(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+	public CompletionStage<Optional<Long>> selectLong(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService(RxConnectionPoolProvider.class);
@@ -63,7 +63,7 @@ public class RxQueryExecutor {
 		return poolProvider.getConnection()
 				.preparedQuery( sql, asTuple( paramValues) ).thenApply(rowSet -> {
 					for (Row row: rowSet) {
-						return Optional.ofNullable( row.getInteger(0) );
+						return Optional.ofNullable( row.getLong(0) );
 					}
 					return Optional.empty();
 				});

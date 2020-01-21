@@ -37,7 +37,7 @@ import static org.hibernate.id.enhanced.TableGenerator.*;
  * rows ("segments"), or as an emulated sequence generator with
  * just one row and one column.
  */
-public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
+public class TableRxIdentifierGenerator implements RxIdentifierGenerator<Long> {
 
 	private static final RxQueryExecutor queryExecutor = new RxQueryExecutor();
 
@@ -48,18 +48,18 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 	private String valueColumnName;
 	private final String renderedTableName;
 	private final boolean storeLastUsedValue;
-	private final int initialValue;
+	private final long initialValue;
 	private final String segmentValue;
 
 	private final SessionFactoryImplementor sessionFactory;
 
 	@Override
-	public CompletionStage<Optional<Integer>> generate(SessionFactoryImplementor factory) {
+	public CompletionStage<Optional<Long>> generate(SessionFactoryImplementor factory) {
 		Object[] param = segmentColumnName == null ? new Object[] {} : new Object[] {segmentValue};
-		return queryExecutor.selectInteger( selectQuery, param, factory )
+		return queryExecutor.selectLong( selectQuery, param, factory )
 				.thenCompose( result -> {
 					if ( !result.isPresent() ) {
-						int initializationValue = storeLastUsedValue ? initialValue - 1 : initialValue;
+						long initializationValue = storeLastUsedValue ? initialValue - 1 : initialValue;
 						Object[] params = segmentColumnName == null ?
 								new Object[] {initializationValue} :
 								new Object[] {segmentValue, initializationValue};
@@ -67,8 +67,8 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 								.thenApply( v -> Optional.of( initialValue ) );
 					}
 					else {
-						int currentValue = result.get();
-						int updatedValue = currentValue + 1;
+						long currentValue = result.get();
+						long updatedValue = currentValue + 1;
 						Object[] params = segmentColumnName == null ?
 								new Object[] {updatedValue, currentValue} :
 								new Object[] {updatedValue, currentValue, segmentValue};
