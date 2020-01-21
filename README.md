@@ -13,7 +13,11 @@ _This project is still at an experimental stage._
 
 There is a very simple example program in the `example` directory.
 
-## Building
+## Gradle build
+
+The project is built with Gradle.
+
+### Building
 
 To compile, navigate to this directory, and type:
 
@@ -23,7 +27,7 @@ To publish Hibernate RX to your local Maven repository, run:
 
 	./gradlew publishToMavenLocal
 
-## Running tests
+### Running tests
 
 To run the tests, ensure that PostgreSQL is installed on your machine.
 From the command line, type the following commands:
@@ -37,7 +41,7 @@ Finally, run `./gradlew test` from this directory.
 
 ## Dependencies
 
-The project has been tested with
+The project has been tested with:
 
 - Java 8
 - PostgreSQL
@@ -49,7 +53,7 @@ The project has been tested with
 Usage is very straightforward for anyone with any prior experience with
 Hibernate or JPA. 
 
-#### Including Hibernate RX in your project
+### Including Hibernate RX in your project
 
 Add the following dependency to your project:
 
@@ -60,7 +64,7 @@ driver, and a regular JDBC driver (which is used for schema export).
 
 There is an example Gradle build included in the example program.
 
-#### Mapping entity classes
+### Mapping entity classes
 
 Use the regular JPA mapping annotations defined in the package 
 `javax.persistence`, and/or the Hibernate mapping annotations in
@@ -70,7 +74,7 @@ Most mapping annotations are already supported in Hibernate RX. The
 annotations which are not yet supported are listed in _Limitations_,
 below.
 
-#### Configuration
+### Configuration
 
 Configuration is completely transparent; configure Hibernate 
 exactly as you normally would, for example by providing a
@@ -78,7 +82,7 @@ exactly as you normally would, for example by providing a
 
 An example `persistence.xml` file is included in the example program.
 
-#### Obtaining a reactive session factory
+### Obtaining a reactive session factory
 
 Obtain a Hibernate `SessionFactory` or JPA `EntityManagerFactory` 
 just as you normally would, for example, by calling:
@@ -89,13 +93,13 @@ just as you normally would, for example, by calling:
  
 	RxSessionFactory sessionFactory = emf.unwrap(RxSessionFactory.class);
 
-#### Obtaining a reactive session
+### Obtaining a reactive session
 
 To obtain an `RxSession` from the `RxSessionFactory`, use `openRxSession()`:
 
 	RxSession session = sessionFactory.openRxSession();
 
-#### Using the reactive session
+### Using the reactive session
 
 The `RxSession` interface has methods with the same names as methods of the
 JPA `EntityManager`. However, each of these methods returns its result via
