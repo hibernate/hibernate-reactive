@@ -11,12 +11,20 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
- * A Hibernate {@link Session} that allows the creation of a reactive session
+ * A Hibernate {@link Session} backing the user-visible
+ * {@link RxSession reactive session}. Note that even
+ * though this interface extends {@code Session},
+ * allowing it to be passed around through code in
+ * Hibernate core, its non-reactive operations are
+ * expected to throw {@link UnsupportedOperationException}.
  *
  *  @see RxSession the actual user visible API
  */
 public interface RxSessionInternal extends Session {
 
+	/**
+	 * @return a reactive session backed by this object
+	 */
 	RxSession reactive();
 
 	RxActionQueue getRxActionQueue();

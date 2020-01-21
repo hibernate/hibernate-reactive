@@ -33,6 +33,12 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+/**
+ * An {@link RxSessionInternal} implemented by extension of
+ * the {@link SessionImpl} in Hibernate core. Extension was
+ * preferred to delegation because there are places where
+ * Hibernate core compares the identity of session instances.
+ */
 public class RxSessionInternalImpl extends SessionImpl implements RxSessionInternal, EventSource {
 
 	private transient RxActionQueue rxActionQueue = new RxActionQueue( this );

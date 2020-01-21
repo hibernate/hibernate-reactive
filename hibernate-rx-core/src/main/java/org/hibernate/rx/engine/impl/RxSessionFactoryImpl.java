@@ -22,6 +22,9 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
 import java.util.List;
 
+/**
+ * Implementation of {@link RxSessionFactory}.
+ */
 public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
 		implements RxSessionFactoryImplementor {
 
