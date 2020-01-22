@@ -177,7 +177,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			OuterJoinLoadable persister,
 			SessionImplementor session) {
 		final int batchSize =  idsInBatch.size();
-		final DynamicEntityLoader batchingLoader = new DynamicEntityLoader(
+		final RxDynamicEntityLoader batchingLoader = new RxDynamicEntityLoader(
 				persister,
 				batchSize,
 				lockOptions,
@@ -299,7 +299,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 		int idPosition = 0;
 		while ( numberOfIdsLeft > 0 ) {
 			int batchSize =  Math.min( numberOfIdsLeft, maxBatchSize );
-			final DynamicEntityLoader batchingLoader = new DynamicEntityLoader(
+			final RxDynamicEntityLoader batchingLoader = new RxDynamicEntityLoader(
 					persister,
 					batchSize,
 					lockOptions,
@@ -363,7 +363,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 	public static class DynamicBatchingEntityLoader extends BatchingEntityLoader {
 		private final int maxBatchSize;
 		private final UniqueEntityLoader singleKeyLoader;
-		private final DynamicEntityLoader dynamicLoader;
+		private final RxDynamicEntityLoader dynamicLoader;
 
 		public DynamicBatchingEntityLoader(
 				OuterJoinLoadable persister,
@@ -374,7 +374,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			super( persister );
 			this.maxBatchSize = maxBatchSize;
 			this.singleKeyLoader = new RxEntityLoader( persister, 1, lockMode, factory, loadQueryInfluencers );
-			this.dynamicLoader = new DynamicEntityLoader( persister, maxBatchSize, lockMode, factory, loadQueryInfluencers );
+			this.dynamicLoader = new RxDynamicEntityLoader( persister, maxBatchSize, lockMode, factory, loadQueryInfluencers );
 		}
 
 		public DynamicBatchingEntityLoader(
@@ -386,7 +386,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			super( persister );
 			this.maxBatchSize = maxBatchSize;
 			this.singleKeyLoader = new RxEntityLoader( persister, 1, lockOptions, factory, loadQueryInfluencers );
-			this.dynamicLoader = new DynamicEntityLoader( persister, maxBatchSize, lockOptions, factory, loadQueryInfluencers );
+			this.dynamicLoader = new RxDynamicEntityLoader( persister, maxBatchSize, lockOptions, factory, loadQueryInfluencers );
 		}
 
 		@Override
@@ -432,13 +432,13 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 	}
 
 
-	private static class DynamicEntityLoader extends RxEntityLoader {
+	private static class RxDynamicEntityLoader extends RxEntityLoader {
 		// todo : see the discussion on org.hibernate.loader.collection.DynamicBatchingCollectionInitializerBuilder.DynamicBatchingCollectionLoader
 
 		private final String sqlTemplate;
 		private final String alias;
 
-		public DynamicEntityLoader(
+		public RxDynamicEntityLoader(
 				OuterJoinLoadable persister,
 				int maxBatchSize,
 				LockOptions lockOptions,
@@ -447,7 +447,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			this( persister, maxBatchSize, lockOptions.getLockMode(), factory, loadQueryInfluencers );
 		}
 
-		public DynamicEntityLoader(
+		public RxDynamicEntityLoader(
 				OuterJoinLoadable persister,
 				int maxBatchSize,
 				LockMode lockMode,
