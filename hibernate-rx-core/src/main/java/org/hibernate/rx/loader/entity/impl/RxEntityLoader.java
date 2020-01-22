@@ -1,13 +1,20 @@
 package org.hibernate.rx.loader.entity.impl;
 
+import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.OuterJoinLoadable;
+import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
+
+import java.sql.SQLException;
+import java.util.List;
 
 /**
  * @see org.hibernate.loader.entity.EntityLoader
@@ -146,4 +153,13 @@ public class RxEntityLoader extends RxAbstractEntityLoader implements UniqueEnti
 		return compositeKeyManyToOneTargetIndices;
 	}
 
+	@Override
+	public List<?> doQueryAndInitializeNonLazyCollections(SharedSessionContractImplementor session, QueryParameters queryParameters, boolean returnProxies) throws HibernateException, SQLException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public List<?> doQueryAndInitializeNonLazyCollections(SharedSessionContractImplementor session, QueryParameters queryParameters, boolean returnProxies, ResultTransformer forcedResultTransformer) throws HibernateException, SQLException {
+		throw new UnsupportedOperationException();
+	}
 }

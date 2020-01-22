@@ -209,4 +209,27 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 
 		return new RxQueryExecutor().execute( sql, queryParameters, session, transformer );
 	}
+
+
+	@Override
+	public CompletionStage<Optional<Object>> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session) {
+		// this form is deprecated!
+		return load( id, optionalObject, session, LockOptions.NONE, null );
+	}
+
+	@Override
+	public CompletionStage<Optional<Object>> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, Boolean readOnly) {
+		// this form is deprecated!
+		return load( id, optionalObject, session, LockOptions.NONE, readOnly );
+	}
+
+	@Override
+	public CompletionStage<Optional<Object>> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions) {
+		return load( id, optionalObject, session, lockOptions, null );
+	}
+
+	@Override
+	public CompletionStage<Optional<Object>> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions, Boolean readOnly) {
+		return load( session, id, optionalObject, id, lockOptions, readOnly );
+	}
 }
