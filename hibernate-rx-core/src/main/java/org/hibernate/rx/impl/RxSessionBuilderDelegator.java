@@ -1,8 +1,10 @@
 package org.hibernate.rx.impl;
 
+import org.hibernate.SessionBuilder;
 import org.hibernate.engine.spi.AbstractDelegatingSessionBuilderImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.internal.SessionFactoryImpl.SessionBuilderImpl;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.spi.RxSessionBuilderImplementor;
@@ -15,7 +17,7 @@ public class RxSessionBuilderDelegator
 	private final SessionFactoryImpl factory;
 
 	public RxSessionBuilderDelegator(
-			SessionFactoryImpl.SessionBuilderImpl builder,
+			SessionBuilderImpl<SessionBuilder> builder,
 			SessionFactoryImpl factory) {
 		super(builder);
 		this.options = builder;

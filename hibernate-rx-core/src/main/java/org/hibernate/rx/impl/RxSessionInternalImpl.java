@@ -4,6 +4,7 @@ import org.hibernate.*;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.*;
 import org.hibernate.graph.GraphSemantic;
@@ -12,6 +13,7 @@ import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
+import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.jpa.QueryHints;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
@@ -27,7 +29,6 @@ import javax.persistence.LockModeType;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -93,7 +94,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@Override
-	public CompletionStage<Void> rxPersist(Object object, Map copiedAlready) {
+	public CompletionStage<Void> rxPersist(Object object, IdentitySet copiedAlready) {
 		checkOpenOrWaitingForAutoClose();
 		return firePersist( copiedAlready, new PersistEvent( null, object, this ) );
 	}
@@ -120,7 +121,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 				});
 	}
 
-	private CompletionStage<Void> firePersist(final Map copiedAlready, final PersistEvent event) {
+	private CompletionStage<Void> firePersist(IdentitySet copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
 		return fire(event, copiedAlready, EventType.PERSIST,
@@ -142,12 +143,12 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@Override
-	public CompletionStage<Void> rxPersistOnFlush(Object entity, Map copiedAlready) {
+	public CompletionStage<Void> rxPersistOnFlush(Object entity, IdentitySet copiedAlready) {
 		checkOpenOrWaitingForAutoClose();
 		return firePersistOnFlush( copiedAlready, new PersistEvent( null, entity, this ) );
 	}
 
-	private CompletionStage<Void> firePersistOnFlush(Map copiedAlready, PersistEvent event) {
+	private CompletionStage<Void> firePersistOnFlush(IdentitySet copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
 		return fire(event, copiedAlready, EventType.PERSIST_ONFLUSH,
@@ -162,7 +163,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@Override
-	public CompletionStage<Void> rxRemove(Object object, boolean isCascadeDeleteEnabled, Set transientEntities)
+	public CompletionStage<Void> rxRemove(Object object, boolean isCascadeDeleteEnabled, IdentitySet transientEntities)
 			throws HibernateException {
 		checkOpenOrWaitingForAutoClose();
 		return fireRemove(
@@ -204,7 +205,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 				});
 	}
 
-	private CompletionStage<Void> fireRemove(final DeleteEvent event, final Set transientEntities) {
+	private CompletionStage<Void> fireRemove(DeleteEvent event, IdentitySet transientEntities) {
 		pulseTransactionCoordinator();
 
 		return fire(event, transientEntities, EventType.DELETE,
@@ -236,12 +237,13 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@Override
-	public CompletionStage<Void> rxMerge(Object object, Map copiedAlready)
+	public CompletionStage<Void> rxMerge(Object object, MergeContext copiedAlready)
 			throws HibernateException {
 		checkOpenOrWaitingForAutoClose();
 		return fireMerge( copiedAlready, new MergeEvent( null, object, this ) );
 	}
 
+	@SuppressWarnings("unchecked")
 	private <T> CompletionStage<T> fireMerge(MergeEvent event) {
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
@@ -268,7 +270,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 				});
 	}
 
-	private CompletionStage<Void> fireMerge(final Map copiedAlready, final MergeEvent event) {
+	private CompletionStage<Void> fireMerge(MergeContext copiedAlready, MergeEvent event) {
 		pulseTransactionCoordinator();
 
 		return fire(event, copiedAlready, EventType.MERGE,
@@ -330,7 +332,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@Override
-	public CompletionStage<Void> rxRefresh(Object object, Map refreshedAlready) {
+	public CompletionStage<Void> rxRefresh(Object object, IdentitySet refreshedAlready) {
 		checkOpenOrWaitingForAutoClose();
 		return fireRefresh( refreshedAlready, new RefreshEvent( null, object, this ) );
 	}
@@ -371,7 +373,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 				});
 	}
 
-	private CompletionStage<Void> fireRefresh(final Map refreshedAlready, final RefreshEvent event) {
+	private CompletionStage<Void> fireRefresh(IdentitySet refreshedAlready, RefreshEvent event) {
 		pulseTransactionCoordinator();
 
 		return fire(event, refreshedAlready, EventType.REFRESH,
@@ -409,14 +411,14 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		Boolean readOnly = properties == null ? null : (Boolean) properties.get( QueryHints.HINT_READONLY );
 		getLoadQueryInfluencers().setReadOnly( readOnly );
 
-		final RxIdentifierLoadAccessImpl<T> loadAccess = new RxIdentifierLoadAccessImpl<T>(entityClass);
+		final RxIdentifierLoadAccessImpl<T> loadAccess = new RxIdentifierLoadAccessImpl<>(entityClass);
 		loadAccess.with( determineAppropriateLocalCacheMode( properties ) );
 
 		LockOptions lockOptions;
 		if ( lockModeType != null ) {
-			if ( !LockModeType.NONE.equals( lockModeType) ) {
+//			if ( !LockModeType.NONE.equals( lockModeType) ) {
 //					checkTransactionNeededForUpdateOperation();
-			}
+//			}
 			lockOptions = buildLockOptions( lockModeType, properties );
 			loadAccess.with( lockOptions );
 		}
@@ -606,6 +608,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 					} );
 		}
 
+		@SuppressWarnings("unchecked")
 		protected CompletionStage<Optional<T>> doGetReference(Serializable id) {
 			if ( lockOptions != null ) {
 				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, RxSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
@@ -637,6 +640,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 			return getLoadQueryInfluencers().getReadOnly();
 		}
 
+		@SuppressWarnings("unchecked")
 		protected final CompletionStage<Optional<T>> doLoad(Serializable id, LoadEventListener.LoadType loadType) {
 			if ( lockOptions != null ) {
 				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, RxSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());

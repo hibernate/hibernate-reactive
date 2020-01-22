@@ -23,6 +23,7 @@ import org.hibernate.type.*;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
@@ -65,8 +66,6 @@ public final class Cascade {
 
 	/**
 	 * Cascade an action from the parent entity instance to all its children.
-	 *
-	 * @throws HibernateException
 	 */
 	public CompletionStage<Void> cascade() throws HibernateException {
 		cascade( null );
@@ -108,7 +107,7 @@ public final class Cascade {
 						// Cascade to an uninitialized, lazy value only if
 						// parent is managed in the PersistenceContext.
 						// If parent is a detached entity being merged,
-						// then parent will not be in the PersistencContext
+						// then parent will not be in the PersistenceContext
 						// (so lazy attributes must not be initialized).
 						if ( persistenceContext.getEntry( parent ) == null ) {
 							// parent was not in the PersistenceContext
@@ -318,7 +317,7 @@ public final class Cascade {
 							}
 							else {
 								// Else, we must delete after the updates.
-								eventSource.delete( entityName, loadedValue, isCascadeDeleteEnabled, new HashSet() );
+								eventSource.delete( entityName, loadedValue, isCascadeDeleteEnabled, new HashSet<>() );
 							}
 						}
 					}
@@ -403,7 +402,8 @@ public final class Cascade {
 			final CascadeStyle style,
 			final Object anything,
 			final CollectionType type) {
-		final CollectionPersister persister = eventSource.getFactory().getCollectionPersister( type.getRole() );
+		final CollectionPersister persister =
+				eventSource.getFactory().getMetamodel().collectionPersister( type.getRole() );
 		final Type elemType = persister.getElementType();
 
 		CascadePoint elementsCascadePoint = cascadePoint;
@@ -473,7 +473,7 @@ public final class Cascade {
 				LOG.tracev( "Cascade {0} for collection: {1}", action, collectionType.getRole() );
 			}
 
-			final Iterator itr = action.getCascadableChildrenIterator( eventSource, collectionType, child );
+			final Iterator<?> itr = action.getCascadableChildrenIterator( eventSource, collectionType, child );
 			while ( itr.hasNext() ) {
 				cascadeProperty(
 						componentPathStackDepth,
@@ -519,11 +519,11 @@ public final class Cascade {
 	 */
 	private void deleteOrphans(String entityName, PersistentCollection pc) throws HibernateException {
 		//TODO: suck this logic into the collection!
-		final Collection orphans;
+		final Collection<?> orphans;
 		if ( pc.wasInitialized() ) {
 			final CollectionEntry ce = eventSource.getPersistenceContextInternal().getCollectionEntry( pc );
 			orphans = ce==null
-					? java.util.Collections.EMPTY_LIST
+					? Collections.EMPTY_LIST
 					: ce.getOrphans( entityName, pc );
 		}
 		else {
@@ -533,7 +533,7 @@ public final class Cascade {
 		for ( Object orphan : orphans ) {
 			if ( orphan != null ) {
 				LOG.tracev( "Deleting orphaned entity instance: {0}", entityName );
-				eventSource.delete( entityName, orphan, false, new HashSet() );
+				eventSource.delete( entityName, orphan, false, new HashSet<>() );
 			}
 		}
 	}

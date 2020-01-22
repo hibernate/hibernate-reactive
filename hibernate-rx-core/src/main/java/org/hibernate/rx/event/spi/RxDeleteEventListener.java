@@ -3,6 +3,7 @@ package org.hibernate.rx.event.spi;
 
 import org.hibernate.HibernateException;
 import org.hibernate.event.spi.DeleteEvent;
+import org.hibernate.internal.util.collections.IdentitySet;
 
 import java.io.Serializable;
 import java.util.Set;
@@ -19,10 +20,8 @@ public interface RxDeleteEventListener extends Serializable {
 	 * Handle the given delete event.
 	 *
 	 * @param event The delete event to be handled.
-	 *
-	 * @throws HibernateException
 	 */
 	CompletionStage<Void> rxOnDelete(DeleteEvent event) throws HibernateException;
 
-	CompletionStage<Void> rxOnDelete(DeleteEvent event, Set transientEntities) throws HibernateException;
+	CompletionStage<Void> rxOnDelete(DeleteEvent event, IdentitySet transientEntities) throws HibernateException;
 }

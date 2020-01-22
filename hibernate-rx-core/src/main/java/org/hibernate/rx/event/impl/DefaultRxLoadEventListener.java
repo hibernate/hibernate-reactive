@@ -61,10 +61,10 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 			throw new HibernateException( "Unable to locate persister: " + event.getEntityClassName() );
 		}
 
-		final Class idClass = persister.getIdentifierType().getReturnedClass();
+		final Class<?> idClass = persister.getIdentifierType().getReturnedClass();
 		if ( idClass != null &&
 				!idClass.isInstance( event.getEntityId() ) &&
-				!DelayedPostInsertIdentifier.class.isInstance( event.getEntityId() ) ) {
+				!(event.getEntityId() instanceof DelayedPostInsertIdentifier)) {
 			// FIXME (Stef): this calls setResult in some cases, but the original code went on to call doOnLoad
 			// I wonder if it was a bug or if I should go on too?
 			return checkIdClass( persister, event, loadType, idClass );
@@ -110,7 +110,8 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 				ret = lockAndLoad( event, persister, keyToLoad, loadType, session );
 			}
 		}
-		return ret.thenAccept( entity -> event.setResult( entity ) )
+		assert ret != null;
+		return ret.thenAccept(event::setResult)
 				.whenComplete( (v, x) -> {
 					if ( x instanceof HibernateException ) {
 						LOG.unableToLoadCommand( (HibernateException) x );
@@ -122,7 +123,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 			final EntityPersister persister,
 			final LoadEvent event,
 			final LoadEventListener.LoadType loadType,
-			final Class idClass) {
+			final Class<?> idClass) {
 		// we may have the kooky jpa requirement of allowing find-by-id where
 		// "id" is the "simple pk value" of a dependent objects parent.  This
 		// is part of its generally goofy "derived identity" "feature"
@@ -174,8 +175,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 					final EntityKey dependentEntityKey = session.generateEntityKey( dependent, dependentPersister );
 					event.setEntityId( dependent );
 
-					return doLoad( event, dependentPersister, dependentEntityKey, options )
-							.thenAccept( entity -> event.setResult( entity ) );
+					return doLoad( event, dependentPersister, dependentEntityKey, options ).thenAccept(event::setResult);
 				} );
 	}
 
@@ -588,7 +588,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 	 *
 	 * @return The object loaded from the datasource, or null if not found.
 	 */
-	@SuppressWarnings("WeakerAccess")
+	@SuppressWarnings("unchecked")
 	protected CompletionStage<Optional<Object>> loadFromDatasource(
 			final LoadEvent event,
 			final EntityPersister persister) {

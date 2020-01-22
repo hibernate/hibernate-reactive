@@ -22,8 +22,6 @@ public interface RxFlushEventListener extends Serializable {
 	 * Handle the given flush event.
 	 *
 	 * @param event The flush event to be handled.
-	 *
-	 * @throws HibernateException
 	 */
 	CompletionStage<Void> rxOnFlush(FlushEvent event) throws HibernateException;
 }

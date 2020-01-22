@@ -320,7 +320,7 @@ abstract class AbstractRxSaveEventListener
 //		} );
 	}
 
-	protected Map getMergeMap(Object anything) {
+	protected Map<?,?> getMergeMap(Object anything) {
 		return null;
 	}
 

@@ -1,10 +1,7 @@
 package org.hibernate.rx.impl;
 
 import io.vertx.axle.mysqlclient.MySQLClient;
-import io.vertx.axle.sqlclient.Pool;
-import io.vertx.axle.sqlclient.Row;
-import io.vertx.axle.sqlclient.RowSet;
-import io.vertx.axle.sqlclient.Tuple;
+import io.vertx.axle.sqlclient.*;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.service.RxConnection;
 
@@ -52,12 +49,12 @@ public class PoolConnection implements RxConnection {
 
 	@Override
 	public CompletionStage<Integer> update(String sql) {
-		return preparedQuery( sql ).thenApply( rows -> rows.rowCount() );
+		return preparedQuery( sql ).thenApply(SqlResult::rowCount);
 	}
 
 	@Override
 	public CompletionStage<Integer> update(String sql, Tuple parameters) {
-		return preparedQuery( sql, parameters ).thenApply( rows -> rows.rowCount() );
+		return preparedQuery( sql, parameters ).thenApply(SqlResult::rowCount);
 	}
 
 	@Override

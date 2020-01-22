@@ -12,6 +12,7 @@ import org.hibernate.engine.spi.*;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.*;
 import org.hibernate.internal.CoreMessageLogger;
+import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.impl.Cascade;
@@ -22,7 +23,6 @@ import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.jboss.logging.Logger;
 
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
@@ -41,19 +41,18 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 
 		if ( persistenceContext.getNumberOfManagedEntities() > 0 ||
-				persistenceContext.getCollectionEntries().size() > 0 ) {
+				persistenceContext.getCollectionEntriesSize() > 0 ) {
 
 			source.getEventListenerManager().flushStart();
 
 			return flushEverythingToExecutions(event)
 					.thenCompose( v -> performExecutions(source) )
 					.thenRun( () -> postFlush( source ) )
-					.whenComplete( (v, x) -> {
-						source.getEventListenerManager().flushEnd(
+					.whenComplete( (v, x) ->
+							source.getEventListenerManager().flushEnd(
 								event.getNumberOfEntitiesProcessed(),
 								event.getNumberOfCollectionsProcessed()
-						);
-					} )
+					))
 					.thenRun( () -> {
 						postPostFlush( source );
 
@@ -100,7 +99,6 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 	 *
 	 * @param event The flush event.
 	 * @throws HibernateException Error flushing caches to execution queues.
-	 * @return
 	 */
 	private CompletionStage<Void> flushEverythingToExecutions(FlushEvent event) throws HibernateException {
 
@@ -148,13 +146,13 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 		LOG.debug( "Processing flush-time cascades" );
 
 		CompletionStage<Void> stage = RxUtil.nullFuture();
-		final Object anything = new IdentityHashMap( 10 );
+		final IdentitySet copiedAlready = new IdentitySet( 10 );
 		//safe from concurrent modification because of how concurrentEntries() is implemented on IdentityMap
 		for ( Map.Entry<Object, EntityEntry> me : persistenceContext.reentrantSafeEntityEntries() ) {
 			EntityEntry entry = me.getValue();
 			Status status = entry.getStatus();
 			if ( status == Status.MANAGED || status == Status.SAVING || status == Status.READ_ONLY ) {
-				CompletionStage<Void> cascade = cascadeOnFlush(session, entry.getPersister(), me.getKey(), anything);
+				CompletionStage<Void> cascade = cascadeOnFlush(session, entry.getPersister(), me.getKey(), copiedAlready);
 				stage = stage.thenCompose(v -> cascade);
 			}
 		}
@@ -171,9 +169,7 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 		// and reset reached, doupdate, etc.
 
 		LOG.debug( "Dirty checking collections" );
-		persistenceContext.forEachCollectionEntry( (pc,ce) -> {
-			ce.preFlush( pc );
-		}, true );
+		persistenceContext.forEachCollectionEntry( (pc,ce) -> ce.preFlush( pc ), true );
 	}
 
 	/**
@@ -186,10 +182,11 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 		LOG.trace( "Flushing entities and processing referenced collections" );
 
 		final EventSource source = event.getSession();
-		final Iterable<FlushEntityEventListener> flushListeners = source.getFactory().getServiceRegistry()
-				.getService( EventListenerRegistry.class )
-				.getEventListenerGroup( EventType.FLUSH_ENTITY )
-				.listeners();
+		final Iterable<FlushEntityEventListener> flushListeners =
+				source.getFactory().getServiceRegistry()
+					.getService( EventListenerRegistry.class )
+					.getEventListenerGroup( EventType.FLUSH_ENTITY )
+					.listeners();
 
 		// Among other things, updateReachables() will recursively load all
 		// collections that are moving roles. This might cause entities to
@@ -224,7 +221,6 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 	 * process any unreferenced collections and then inspect all known collections,
 	 * scheduling creates/removes/updates
 	 */
-	@SuppressWarnings("unchecked")
 	private int flushCollections(final EventSource session, final PersistenceContext persistenceContext) throws HibernateException {
 		LOG.trace( "Processing unreferenced collections" );
 
@@ -298,12 +294,12 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 		return count;
 	}
 
-	private CompletionStage<Void> cascadeOnFlush(EventSource session, EntityPersister persister, Object object, Object anything)
+	private CompletionStage<Void> cascadeOnFlush(EventSource session, EntityPersister persister, Object object, IdentitySet copiedAlready)
 			throws HibernateException {
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 		persistenceContext.incrementCascadeLevel();
 		try {
-			return new Cascade( CascadingActions.PERSIST_ON_FLUSH, CascadePoint.BEFORE_FLUSH, persister, object, session ).cascade( anything );
+			return new Cascade( CascadingActions.PERSIST_ON_FLUSH, CascadePoint.BEFORE_FLUSH, persister, object, session ).cascade( copiedAlready );
 		}
 		finally {
 			persistenceContext.decrementCascadeLevel();

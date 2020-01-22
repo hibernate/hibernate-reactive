@@ -8,9 +8,9 @@ package org.hibernate.rx.event.spi;
 
 import org.hibernate.HibernateException;
 import org.hibernate.event.spi.RefreshEvent;
+import org.hibernate.internal.util.collections.IdentitySet;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -24,10 +24,9 @@ public interface RxRefreshEventListener extends Serializable {
      * Handle the given refresh event.
      *
      * @param event The refresh event to be handled.
-     * @throws HibernateException
      */
 	CompletionStage<Void> rxOnRefresh(RefreshEvent event) throws HibernateException;
 	
-	CompletionStage<Void> rxOnRefresh(RefreshEvent event, Map refreshedAlready) throws HibernateException;
+	CompletionStage<Void> rxOnRefresh(RefreshEvent event, IdentitySet refreshedAlready) throws HibernateException;
 
 }

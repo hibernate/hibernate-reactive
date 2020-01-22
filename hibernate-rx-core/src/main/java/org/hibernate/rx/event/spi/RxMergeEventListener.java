@@ -7,6 +7,7 @@
 package org.hibernate.rx.event.spi;
 
 import org.hibernate.HibernateException;
+import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.spi.MergeEvent;
 
 import java.io.Serializable;
@@ -24,7 +25,6 @@ public interface RxMergeEventListener extends Serializable {
      * Handle the given merge event.
      *
      * @param event The merge event to be handled.
-     * @throws HibernateException
      */
 	CompletionStage<Void> rxOnMerge(MergeEvent event) throws HibernateException;
 
@@ -32,8 +32,7 @@ public interface RxMergeEventListener extends Serializable {
      * Handle the given merge event.
      *
      * @param event The merge event to be handled.
-     * @throws HibernateException
      */
-	CompletionStage<Void> rxOnMerge(MergeEvent event, Map copiedAlready) throws HibernateException;
+	CompletionStage<Void> rxOnMerge(MergeEvent event, MergeContext copiedAlready) throws HibernateException;
 
 }

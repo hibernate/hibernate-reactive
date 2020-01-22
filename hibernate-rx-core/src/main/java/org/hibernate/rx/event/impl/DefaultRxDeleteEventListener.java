@@ -96,7 +96,7 @@ public class DefaultRxDeleteEventListener
 	 * @param transientEntities The cache of entities already deleted
 	 *
 	 */
-	public CompletionStage<Void> rxOnDelete(DeleteEvent event, Set transientEntities) throws HibernateException {
+	public CompletionStage<Void> rxOnDelete(DeleteEvent event, IdentitySet transientEntities) throws HibernateException {
 
 		final EventSource source = event.getSession();
 
@@ -171,7 +171,7 @@ public class DefaultRxDeleteEventListener
 				persister,
 				transientEntities
 		).thenAccept( v -> {
-			if ( source.getFactory().getSettings().isIdentifierRollbackEnabled() ) {
+			if ( source.getFactory().getSessionFactoryOptions().isIdentifierRollbackEnabled() ) {
 				persister.resetIdentifier( entity, id, version, source );
 			}
 		} );
@@ -222,7 +222,7 @@ public class DefaultRxDeleteEventListener
 			Object entity,
 			boolean cascadeDeleteEnabled,
 			EntityPersister persister,
-			Set transientEntities) {
+			IdentitySet transientEntities) {
 		LOG.handlingTransientEntity();
 		if ( transientEntities.contains( entity ) ) {
 			LOG.trace( "Already handled transient entity; skipping" );
@@ -253,7 +253,7 @@ public class DefaultRxDeleteEventListener
 			final boolean isCascadeDeleteEnabled,
 			final boolean isOrphanRemovalBeforeUpdates,
 			final EntityPersister persister,
-			final Set transientEntities) {
+			final Set<?> transientEntities) {
 
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracev(
@@ -304,7 +304,7 @@ public class DefaultRxDeleteEventListener
 				persister,
 				Nullability.NullabilityCheckType.DELETE
 		);
-		persistenceContext.getNullifiableEntityKeys().add( key );
+		persistenceContext.registerNullifiableEntityKey( key );
 
 		RxActionQueue actionQueue = actionQueue( session );
 
@@ -363,7 +363,7 @@ public class DefaultRxDeleteEventListener
 			EntityPersister persister,
 			Object entity,
 			EntityEntry entityEntry,
-			Set transientEntities) throws HibernateException {
+			Set<?> transientEntities) throws HibernateException {
 
 		CacheMode cacheMode = session.getCacheMode();
 		session.setCacheMode( CacheMode.GET );
@@ -385,7 +385,7 @@ public class DefaultRxDeleteEventListener
 			EventSource session,
 			EntityPersister persister,
 			Object entity,
-			Set transientEntities) throws HibernateException {
+			Set<?> transientEntities) throws HibernateException {
 
 		CacheMode cacheMode = session.getCacheMode();
 		session.setCacheMode( CacheMode.GET );

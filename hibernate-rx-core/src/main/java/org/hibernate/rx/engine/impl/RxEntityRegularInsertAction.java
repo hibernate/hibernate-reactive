@@ -24,7 +24,6 @@ import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
 /**
- /**
  * A reactific {@link EntityInsertAction}.
  */
 public class RxEntityRegularInsertAction extends EntityInsertAction implements RxEntityInsertAction {
@@ -93,9 +92,6 @@ public class RxEntityRegularInsertAction extends EntityInsertAction implements R
 			final SessionFactoryImplementor factory = session.getFactory();
 
 			if ( isCachePutEnabled( persister, session ) ) {
-				final EntityDataAccess cacheAccess = factory.getCache()
-						.getEntityRegionAccess( persister.getNavigableRole() );
-
 				final CacheEntry ce = persister.buildCacheEntry(
 						instance,
 						getState(),
@@ -111,7 +107,7 @@ public class RxEntityRegularInsertAction extends EntityInsertAction implements R
 				if ( put && factory.getStatistics().isStatisticsEnabled() ) {
 					factory.getStatistics().entityCachePut(
 							persister.getNavigableRole(),
-							cacheAccess.getRegion().getName()
+							persister.getCacheAccessStrategy().getRegion().getName()
 					);
 				}
 			}

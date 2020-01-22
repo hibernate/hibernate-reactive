@@ -6,7 +6,6 @@ import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.*;
-import org.hibernate.event.internal.DefaultDeleteEventListener;
 import org.hibernate.event.internal.DirtyCollectionSearchVisitor;
 import org.hibernate.event.internal.FlushVisitor;
 import org.hibernate.event.internal.WrapVisitor;
@@ -224,7 +223,7 @@ public class DefaultRxFlushEntityEventListener implements FlushEntityEventListen
 				return true;
 			}
 			else {
-				if ( SelfDirtinessTracker.class.isInstance( event.getEntity() ) ) {
+				if ( event.getEntity() instanceof SelfDirtinessTracker ) {
 					( (SelfDirtinessTracker) event.getEntity() ).$$_hibernate_clearDirtyAttributes();
 				}
 				event.getSession()
@@ -420,9 +419,8 @@ public class DefaultRxFlushEntityEventListener implements FlushEntityEventListen
 			FlushEntityEvent event,
 			EntityEntry entry,
 			EntityPersister persister,
-			int[] dirtyProperties
-	) {
-		final boolean isVersionIncrementRequired = entry.getStatus() != Status.DELETED && (
+			int[] dirtyProperties) {
+		return entry.getStatus() != Status.DELETED && (
 				dirtyProperties == null ||
 						Versioning.isVersionIncrementRequired(
 								dirtyProperties,
@@ -430,7 +428,6 @@ public class DefaultRxFlushEntityEventListener implements FlushEntityEventListen
 								persister.getPropertyVersionability()
 						)
 		);
-		return isVersionIncrementRequired;
 	}
 
 	/**

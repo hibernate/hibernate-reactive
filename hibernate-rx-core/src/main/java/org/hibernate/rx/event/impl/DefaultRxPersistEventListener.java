@@ -20,6 +20,7 @@ import org.hibernate.event.spi.PersistEventListener;
 import org.hibernate.id.ForeignGenerator;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
+import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
@@ -30,7 +31,6 @@ import org.hibernate.rx.engine.impl.CascadingActions;
 import org.hibernate.rx.event.spi.RxPersistEventListener;
 import org.hibernate.rx.util.impl.RxUtil;
 
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
@@ -53,7 +53,7 @@ public class DefaultRxPersistEventListener
 	 * @param event The create event to be handled.
 	 */
 	public CompletionStage<Void> rxOnPersist(PersistEvent event) throws HibernateException {
-		return rxOnPersist( event, new IdentityHashMap( 10 ) );
+		return rxOnPersist( event, new IdentitySet( 10 ) );
 	}
 
 	/**
@@ -61,7 +61,7 @@ public class DefaultRxPersistEventListener
 	 *
 	 * @param event The create event to be handled.
 	 */
-	public CompletionStage<Void> rxOnPersist(PersistEvent event, Map createCache) throws HibernateException {
+	public CompletionStage<Void> rxOnPersist(PersistEvent event, IdentitySet createCache) throws HibernateException {
 		final SessionImplementor source = event.getSession();
 		final Object object = event.getObject();
 		final Object entity;
@@ -102,8 +102,8 @@ public class DefaultRxPersistEventListener
 			// entity state again.
 
 			// NOTE: entityEntry must be null to get here, so we cannot use any of its values
-			EntityPersister persister = source.getFactory().getEntityPersister( entityName );
-			if ( ForeignGenerator.class.isInstance( persister.getIdentifierGenerator() ) ) {
+			EntityPersister persister = source.getFactory().getMetamodel().entityPersister( entityName );
+			if (persister.getIdentifierGenerator() instanceof ForeignGenerator) {
 				if ( LOG.isDebugEnabled() && persister.getIdentifier( entity, source ) != null ) {
 					LOG.debug( "Resetting entity id attribute to null for foreign generator" );
 				}
@@ -139,11 +139,9 @@ public class DefaultRxPersistEventListener
 				) );
 			}
 		}
-
 	}
 
-	@SuppressWarnings({ "unchecked" })
-	protected CompletionStage<Void> entityIsPersistent(PersistEvent event, Map createCache) {
+	protected CompletionStage<Void> entityIsPersistent(PersistEvent event, IdentitySet createCache) {
 		LOG.trace( "Ignoring persistent instance" );
 		final EventSource source = event.getSession();
 
@@ -152,13 +150,13 @@ public class DefaultRxPersistEventListener
 		final Object entity = source.getPersistenceContextInternal().unproxy( event.getObject() );
 		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
 
-		if ( createCache.put( entity, entity ) == null ) {
+		if ( createCache.add( entity ) ) {
 			return justCascade( createCache, source, entity, persister );
 		}
 		return RxUtil.nullFuture();
 	}
 
-	private CompletionStage<Void> justCascade(Map createCache, EventSource source, Object entity, EntityPersister persister) {
+	private CompletionStage<Void> justCascade(IdentitySet createCache, EventSource source, Object entity, EntityPersister persister) {
 		//TODO: merge into one method!
 		CompletionStage<Void> beforeSave = rxCascadeBeforeSave(source, persister, entity, createCache);
 		CompletionStage<Void> afterSave = rxCascadeAfterSave(source, persister, entity, createCache);
@@ -171,22 +169,20 @@ public class DefaultRxPersistEventListener
 	 * @param event The save event to be handled.
 	 * @param createCache The copy cache of entity instance to merge/copy instance.
 	 */
-	@SuppressWarnings({ "unchecked" })
-	protected CompletionStage<Void> entityIsTransient(PersistEvent event, Map createCache) {
+	protected CompletionStage<Void> entityIsTransient(PersistEvent event, IdentitySet createCache) {
 		LOG.trace( "Saving transient instance" );
 
 		final EventSource source = event.getSession();
 		final Object entity = source.getPersistenceContextInternal().unproxy( event.getObject() );
 
-		if ( createCache.put( entity, entity ) == null ) {
+		if ( createCache.add( entity ) ) {
 			return rxSaveWithGeneratedId( entity, event.getEntityName(), createCache, source, false )
 					.thenApply( v -> null );
 		}
 		return RxUtil.nullFuture();
 	}
 
-	@SuppressWarnings({ "unchecked" })
-	private CompletionStage<Void> entityIsDeleted(PersistEvent event, Map createCache) {
+	private CompletionStage<Void> entityIsDeleted(PersistEvent event, IdentitySet createCache) {
 		final EventSource source = event.getSession();
 
 		final Object entity = source.getPersistenceContextInternal().unproxy( event.getObject() );
@@ -203,7 +199,7 @@ public class DefaultRxPersistEventListener
 			);
 		}
 
-		if ( createCache.put( entity, entity ) == null ) {
+		if ( createCache.add( entity ) ) {
 			return justCascade( createCache, source, entity, persister );
 		}
 		return RxUtil.nullFuture();

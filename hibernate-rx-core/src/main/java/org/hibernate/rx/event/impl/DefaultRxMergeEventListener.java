@@ -31,7 +31,6 @@ import org.hibernate.type.TypeHelper;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -52,7 +51,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 	}
 
 	@Override
-	protected Map getMergeMap(Object anything) {
+	protected Map<?,?> getMergeMap(Object anything) {
 		return ( (MergeContext) anything ).invertMap();
 	}
 
@@ -60,8 +59,6 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 	 * Handle the given merge event.
 	 *
 	 * @param event The merge event to be handled.
-	 *
-	 * @throws HibernateException
 	 */
 	@Override
 	public CompletionStage<Void> rxOnMerge(MergeEvent event) throws HibernateException {
@@ -86,13 +83,10 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 	 * Handle the given merge event.
 	 *
 	 * @param event The merge event to be handled.
-	 *
-	 * @throws HibernateException
 	 */
 	@Override
-	public CompletionStage<Void> rxOnMerge(MergeEvent event, Map copiedAlready) throws HibernateException {
+	public CompletionStage<Void> rxOnMerge(MergeEvent event, MergeContext copyCache) throws HibernateException {
 
-		final MergeContext copyCache = (MergeContext) copiedAlready;
 		final EventSource source = event.getSession();
 		final Object original = event.getOriginal();
 
@@ -190,7 +184,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 		return RxUtil.nullFuture();
 	}
 
-	protected CompletionStage<Void> entityIsPersistent(MergeEvent event, Map copyCache) {
+	protected CompletionStage<Void> entityIsPersistent(MergeEvent event, MergeContext copyCache) {
 		LOG.trace( "Ignoring persistent instance" );
 
 		//TODO: check that entry.getIdentifier().equals(requestedId)
@@ -199,7 +193,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 		final EventSource source = event.getSession();
 		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
 
-		( (MergeContext) copyCache ).put( entity, entity, true );  //before cascade!
+		copyCache.put( entity, entity, true );  //before cascade!
 
 		return cascadeOnMerge( source, persister, entity, copyCache )
 				.thenAccept(v -> {
@@ -208,7 +202,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 				});
 	}
 
-	protected CompletionStage<Void> entityIsTransient(MergeEvent event, Map copyCache) {
+	protected CompletionStage<Void> entityIsTransient(MergeEvent event, MergeContext copyCache) {
 
 		LOG.trace( "Merging transient instance" );
 
@@ -232,7 +226,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 			copy = session.instantiate( persister, id );
 
 			//before cascade!
-			( (MergeContext) copyCache ).put( entity, copy, true );
+			copyCache.put( entity, copy, true );
 		}
 
 		// cascade first, so that all unsaved objects get their
@@ -269,7 +263,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 			String entityName,
 			Serializable requestedId,
 			EventSource source,
-			Map copyCache) {
+			MergeContext copyCache) {
 		//this bit is only *really* absolutely necessary for handling
 		//requestedId, but is also good if we merge multiple object
 		//graphs, since it helps ensure uniqueness
@@ -281,7 +275,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 		}
 	}
 
-	protected CompletionStage<Void> entityIsDetached(MergeEvent event, Map copyCache) {
+	protected CompletionStage<Void> entityIsDetached(MergeEvent event, MergeContext copyCache) {
 
 		LOG.trace( "Merging detached instance" );
 
@@ -319,7 +313,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 					if ( option.isPresent() ) {
 						Object result = option.get();
 						// before cascade!
-						((MergeContext) copyCache).put(entity, result, true);
+						copyCache.put(entity, result, true);
 
 						Object target = unproxyManagedForDetachedMerging(entity, result, persister, source);
 						if (target == entity) {
@@ -459,7 +453,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 			final Object entity,
 			final Object target,
 			final SessionImplementor source,
-			final Map copyCache) {
+			final MergeContext copyCache) {
 		final Object[] copiedValues = TypeHelper.replace(
 				persister.getPropertyValues( entity ),
 				persister.getPropertyValues( target ),
@@ -477,7 +471,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 			final Object entity,
 			final Object target,
 			final SessionImplementor source,
-			final Map copyCache,
+			final MergeContext copyCache,
 			final ForeignKeyDirection foreignKeyDirection) {
 
 		final Object[] copiedValues;
@@ -517,13 +511,12 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 	 * @param persister The persister of the entity being copied.
 	 * @param entity The entity being copied.
 	 * @param copyCache A cache of already copied instance.
-	 * @return
 	 */
 	protected CompletionStage<Void> cascadeOnMerge(
 			final EventSource source,
 			final EntityPersister persister,
 			final Object entity,
-			final Map copyCache
+			final MergeContext copyCache
 	) {
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		persistenceContext.incrementCascadeLevel();
@@ -549,7 +542,6 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 
 	/**
 	 * Cascade behavior is redefined by this subclass, disable superclass behavior
-	 * @return
 	 */
 	@Override
 	protected CompletionStage<Void> rxCascadeAfterSave(EventSource source, EntityPersister persister, Object entity, Object anything)
@@ -559,7 +551,6 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 
 	/**
 	 * Cascade behavior is redefined by this subclass, disable superclass behavior
-	 * @return
 	 */
 	@Override
 	protected CompletionStage<Void> rxCascadeBeforeSave(EventSource source, EntityPersister persister, Object entity, Object anything)

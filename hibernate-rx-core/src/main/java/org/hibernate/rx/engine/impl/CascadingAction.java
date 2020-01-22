@@ -34,9 +34,8 @@ public interface CascadingAction {
 	 * @param anything Anything ;)  Typically some form of cascade-local cache
 	 * which is specific to each CascadingAction type
 	 * @param isCascadeDeleteEnabled Are cascading deletes enabled.
-	 * @throws HibernateException
 	 */
-	CompletionStage<? extends Object> cascade(
+	CompletionStage<?> cascade(
 			EventSource session,
 			Object child,
 			String entityName,
@@ -47,12 +46,12 @@ public interface CascadingAction {
 	 * Given a collection, get an iterator of the children upon which the
 	 * current cascading action should be visited.
 	 *
-	 * @param session The session within which the cascade is occuring.
+	 * @param session The session within which the cascade is occurring.
 	 * @param collectionType The mapping type of the collection.
 	 * @param collection The collection instance.
 	 * @return The children iterator.
 	 */
-	Iterator<Object> getCascadableChildrenIterator(
+	Iterator<?> getCascadableChildrenIterator(
 			EventSource session,
 			CollectionType collectionType,
 			Object collection);
@@ -76,7 +75,7 @@ public interface CascadingAction {
 	 * Called (in the case of {@link #requiresNoCascadeChecking} returning true) to validate
 	 * that no cascade on the given property is considered a valid semantic.
 	 *
-	 * @param session The session witin which the cascade is occurring.
+	 * @param session The session within which the cascade is occurring.
 	 * @param parent The property value owner
 	 * @param persister The entity persister for the owner
 	 * @param propertyType The property type

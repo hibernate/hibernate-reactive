@@ -13,12 +13,12 @@ import org.hibernate.cache.spi.access.SoftLock;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.spi.*;
 import org.hibernate.event.internal.EvictVisitor;
-import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.RefreshEvent;
 import org.hibernate.event.spi.RefreshEventListener;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
+import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.metamodel.spi.MetamodelImplementor;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
@@ -32,7 +32,6 @@ import org.hibernate.type.CompositeType;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -44,7 +43,7 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultRxRefreshEventListener.class );
 
 	public CompletionStage<Void> rxOnRefresh(RefreshEvent event) throws HibernateException {
-		return rxOnRefresh( event, new IdentityHashMap( 10 ) );
+		return rxOnRefresh( event, new IdentitySet( 10 ) );
 	}
 
 	@Override
@@ -61,9 +60,8 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 	 * Handle the given refresh event.
 	 *
 	 * @param event The refresh event to be handled.
-	 * @return
 	 */
-	public CompletionStage<Void> rxOnRefresh(RefreshEvent event, Map refreshedAlready) {
+	public CompletionStage<Void> rxOnRefresh(RefreshEvent event, IdentitySet refreshedAlready) {
 
 		final EventSource source = event.getSession();
 		boolean isTransient;
@@ -83,7 +81,7 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 
 		final Object object = persistenceContext.unproxyAndReassociate( event.getObject() );
 
-		if ( refreshedAlready.containsKey( object ) ) {
+		if ( refreshedAlready.contains( object ) ) {
 			LOG.trace( "Already refreshed" );
 			return RxUtil.nullFuture();
 		}
@@ -137,7 +135,7 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 		}
 
 		// cascade the refresh prior to refreshing this entity
-		refreshedAlready.put( object, object );
+		refreshedAlready.add( object );
 		CompletionStage<Void> cascade =
 				new Cascade(CascadingActions.REFRESH,
 						CascadePoint.BEFORE_REFRESH,
@@ -222,13 +220,14 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 			postRefreshLockMode = null;
 		}
 
-		final CompletionStage<Optional<Object>> stage =
-				(CompletionStage<Optional<Object>>) persister.load( id, object, lockOptionsToUse, source );
+		@SuppressWarnings("unchecked")
+		final CompletionStage<Optional<Object>> stage = (CompletionStage<Optional<Object>>)
+						persister.load( id, object, lockOptionsToUse, source );
 
 		return cascade.thenCompose(v -> stage).thenAccept(option -> {
-			Object result = option.get();
+			if ( option.isPresent() ) {
+				Object result = option.get();
 
-			if (result != null) {
 				// apply `postRefreshLockMode`, if needed
 				if (postRefreshLockMode != null) {
 					// if we get here, there was a previous entry and we need to re-set its lock-mode
@@ -247,7 +246,7 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 				}
 			}
 
-			UnresolvableObjectException.throwIfNull(result, id, persister.getEntityName());
+			UnresolvableObjectException.throwIfNull(option.get(), id, persister.getEntityName());
 		})
 		.whenComplete( (v,t) -> source.getLoadQueryInfluencers().setInternalFetchProfile(previousFetchProfile) );
 

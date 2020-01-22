@@ -1,13 +1,14 @@
 package org.hibernate.rx;
 
 import org.hibernate.Session;
+import org.hibernate.event.internal.MergeContext;
+import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 
 import javax.persistence.LockModeType;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -33,23 +34,23 @@ public interface RxSessionInternal extends Session {
 
 	CompletionStage<Void> rxPersist(Object entity);
 
-	CompletionStage<Void> rxPersist(Object object, Map copiedAlready);
+	CompletionStage<Void> rxPersist(Object object, IdentitySet copiedAlready);
 
-	CompletionStage<Void> rxPersistOnFlush(Object entity, Map copiedAlready);
+	CompletionStage<Void> rxPersistOnFlush(Object entity, IdentitySet copiedAlready);
 
 	CompletionStage<Void> rxRemove(Object entity);
 
-	CompletionStage<Void> rxRemove(Object entity, boolean isCascadeDeleteEnabled, Set transientObjects);
+	CompletionStage<Void> rxRemove(Object entity, boolean isCascadeDeleteEnabled, IdentitySet transientObjects);
 
 	<T> CompletionStage<T> rxMerge(T object);
 
-	CompletionStage<Void> rxMerge(Object object, Map copiedAlready);
+	CompletionStage<Void> rxMerge(Object object, MergeContext copiedAlready);
 
 	CompletionStage<Void> rxFlush();
 
 	CompletionStage<Void> rxRefresh(Object entity);
 
-	CompletionStage<?> rxRefresh(Object child, Map refreshedAlready);
+	CompletionStage<?> rxRefresh(Object child, IdentitySet refreshedAlready);
 
 	<T> CompletionStage<Optional<T>> rxGet(
 			Class<T> entityClass,

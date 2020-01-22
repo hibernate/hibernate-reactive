@@ -8,6 +8,7 @@ package org.hibernate.rx.event.spi;
 
 import org.hibernate.HibernateException;
 import org.hibernate.event.spi.PersistEvent;
+import org.hibernate.internal.util.collections.IdentitySet;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -36,6 +37,6 @@ public interface RxPersistEventListener extends Serializable {
 	 *
 	 * @throws HibernateException
 	 */
-	CompletionStage<Void> rxOnPersist(PersistEvent event, Map createdAlready) throws HibernateException;
+	CompletionStage<Void> rxOnPersist(PersistEvent event, IdentitySet createdAlready) throws HibernateException;
 
 }

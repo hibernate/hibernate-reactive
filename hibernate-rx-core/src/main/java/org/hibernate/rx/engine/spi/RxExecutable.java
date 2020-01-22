@@ -10,6 +10,7 @@ import java.util.concurrent.CompletionStage;
  * execution in an {@link RxActionQueue}. Reactive counterpart
  * to {@link Executable}.
  */
+@SuppressWarnings("rawtypes")
 public interface RxExecutable extends Executable, Comparable, Serializable {
 	CompletionStage<Void> rxExecute();
 }

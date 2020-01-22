@@ -7,6 +7,7 @@ import org.hibernate.engine.jndi.spi.JndiService;
 import org.hibernate.engine.spi.SessionFactoryDelegatingImpl;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.internal.SessionFactoryImpl.SessionBuilderImpl;
 import org.hibernate.internal.SessionFactoryRegistry;
 import org.hibernate.internal.SessionFactoryRegistry.ObjectFactoryImpl;
 import org.hibernate.rx.RxSession;
@@ -59,10 +60,7 @@ public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
 
 	@Override
 	public RxSessionBuilderImplementor withOptions() {
-		return new RxSessionBuilderDelegator(
-				new SessionFactoryImpl.SessionBuilderImpl(delegate),
-				delegate
-		);
+		return new RxSessionBuilderDelegator( new SessionBuilderImpl<>(delegate), delegate );
 	}
 
 	@Override
