@@ -3,8 +3,10 @@ package org.hibernate.example.rx;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Entity
+@Table(name="books")
 class Book {
 	@Id @GeneratedValue Integer id;
 	String title;
