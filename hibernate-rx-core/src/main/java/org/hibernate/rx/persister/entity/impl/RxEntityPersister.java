@@ -17,7 +17,7 @@ public interface RxEntityPersister extends EntityPersister {
 
 	//TODO: we only support Long for now, but eventually
 	//      we need to do something more general
-	RxIdentifierGenerator<Long> getRxIdentifierGenerator();
+	RxIdentifierGenerator<?> getRxIdentifierGenerator();
 	
 	/**
 	 * Insert the given instance state without blocking.

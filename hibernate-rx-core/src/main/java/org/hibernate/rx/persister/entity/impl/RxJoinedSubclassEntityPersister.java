@@ -28,10 +28,10 @@ import java.io.Serializable;
  */
 public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersister implements RxAbstractEntityPersister {
 
-	private final RxIdentifierGenerator identifierGenerator;
+	private final RxIdentifierGenerator<?> identifierGenerator;
 
 	@Override
-	public RxIdentifierGenerator getRxIdentifierGenerator() {
+	public RxIdentifierGenerator<?> getRxIdentifierGenerator() {
 		return identifierGenerator;
 	}
 

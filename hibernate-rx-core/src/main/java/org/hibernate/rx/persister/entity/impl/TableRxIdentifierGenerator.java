@@ -12,6 +12,7 @@ import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.internal.util.StringHelper;
@@ -54,16 +55,16 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator<Long> {
 	private final SessionFactoryImplementor sessionFactory;
 
 	@Override
-	public CompletionStage<Optional<Long>> generate(SessionFactoryImplementor factory) {
+	public CompletionStage<Optional<Long>> generate(SharedSessionContractImplementor session) {
 		Object[] param = segmentColumnName == null ? new Object[] {} : new Object[] {segmentValue};
-		return queryExecutor.selectLong( selectQuery, param, factory )
+		return queryExecutor.selectLong( selectQuery, param, session.getFactory() )
 				.thenCompose( result -> {
 					if ( !result.isPresent() ) {
 						long initializationValue = storeLastUsedValue ? initialValue - 1 : initialValue;
 						Object[] params = segmentColumnName == null ?
 								new Object[] {initializationValue} :
 								new Object[] {segmentValue, initializationValue};
-						return queryExecutor.update( insertQuery, params, factory )
+						return queryExecutor.update( insertQuery, params, session.getFactory() )
 								.thenApply( v -> Optional.of( initialValue ) );
 					}
 					else {
@@ -72,7 +73,7 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator<Long> {
 						Object[] params = segmentColumnName == null ?
 								new Object[] {updatedValue, currentValue} :
 								new Object[] {updatedValue, currentValue, segmentValue};
-						return queryExecutor.update( updateQuery, params, factory )
+						return queryExecutor.update( updateQuery, params, session.getFactory() )
 								.thenApply( v -> Optional.of( storeLastUsedValue ? updatedValue : currentValue ) );
 					}
 				});

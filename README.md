@@ -158,8 +158,7 @@ At this time, Hibernate RX does _not_ support the following features:
 - transparent lazy loading
 - JPA's `@NamedEntityGraph`
 - eager select fetching, for example `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`
-- hi/lo optimization for id generation
-- custom id generation strategies
+- optimizers for `SEQUENCE` and `TABLE` id generation
 - criteria queries
 
 Instead, use the following supported features:
@@ -169,7 +168,6 @@ Instead, use the following supported features:
 - explicit lazy loading via `RxSession.fetch(entity.association)`, which 
   returns a `CompletionStage`
 - `@FetchProfile`
-- JPA-standard `SEQUENCE`, `TABLE`, or `IDENTITY` id generation
 
 Note that you should not use Hibernate RX with a second-level cache 
 implementation which performs blocking IO, for example passivation to the

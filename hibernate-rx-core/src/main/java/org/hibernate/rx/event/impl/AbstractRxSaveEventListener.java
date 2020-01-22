@@ -82,6 +82,37 @@ abstract class AbstractRxSaveEventListener<C>
 		);
 	}
 
+	private static Serializable assignIdIfNecessary(Optional<?> generatedId, Object entity, String entityName, EventSource source) {
+		EntityPersister persister = source.getEntityPersister(entityName, entity);
+		if ( generatedId.isPresent() ) {
+			Object id = generatedId.get();
+			if (id instanceof Long) {
+				Long longId = (Long) id;
+				Type identifierType = persister.getIdentifierType();
+				if (identifierType == LongType.INSTANCE) {
+					return longId;
+				}
+				else if (identifierType == IntegerType.INSTANCE) {
+					return longId.intValue();
+				}
+				else {
+					throw new HibernateException("cannot generate identifiers of type "
+							+ identifierType.getReturnedClass().getSimpleName() + " for: " + entityName);
+				}
+			}
+			else {
+				return (Serializable) id;
+			}
+		}
+		else {
+			Serializable assignedId = persister.getIdentifier( entity, source.getSession() );
+			if (assignedId == null) {
+				throw new IdentifierGenerationException("ids for this class must be manually assigned before calling save(): " + entityName);
+			}
+			return assignedId;
+		}
+	}
+
 	/**
 	 * Prepares the save call using a newly generated id.
 	 *
@@ -113,7 +144,7 @@ abstract class AbstractRxSaveEventListener<C>
 		boolean autoincrement = persister.isIdentifierAssignedByInsert();
 		return ((RxEntityPersister) persister)
 				.getRxIdentifierGenerator()
-				.generate( source.getFactory() )
+				.generate( source )
 				.thenCompose( id ->
 						rxPerformSave(
 								entity,
@@ -124,31 +155,6 @@ abstract class AbstractRxSaveEventListener<C>
 								source,
 								!autoincrement || requiresImmediateIdAccess
 						));
-	}
-
-	private static Serializable assignIdIfNecessary(Optional<Long> generatedId, Object entity, String entityName, EventSource source) {
-		EntityPersister persister = source.getEntityPersister(entityName, entity);
-		if ( generatedId.isPresent() ) {
-			Long longId = generatedId.get();
-			Type identifierType = persister.getIdentifierType();
-			if (identifierType == LongType.INSTANCE) {
-				return longId;
-			}
-			else if (identifierType == IntegerType.INSTANCE) {
-				return longId.intValue();
-			}
-			else  {
-				throw new HibernateException("cannot generate identifiers of type "
-						+ identifierType.getReturnedClass().getSimpleName() + " for: " + entityName);
-			}
-		}
-		else {
-			Serializable assignedId = persister.getIdentifier( entity, source.getSession() );
-			if (assignedId == null) {
-				throw new IdentifierGenerationException("ids for this class must be manually assigned before calling save(): " + entityName);
-			}
-			return assignedId;
-		}
 	}
 
 	/**

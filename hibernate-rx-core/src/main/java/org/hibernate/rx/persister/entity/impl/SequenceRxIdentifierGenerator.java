@@ -7,6 +7,7 @@ import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.impl.RxQueryExecutor;
@@ -61,8 +62,8 @@ public class SequenceRxIdentifierGenerator implements RxIdentifierGenerator<Long
 	}
 
 	@Override
-	public CompletionStage<Optional<Long>> generate(SessionFactoryImplementor factory) {
+	public CompletionStage<Optional<Long>> generate(SharedSessionContractImplementor session) {
 		return sql==null ? RxUtil.completedFuture(Optional.empty())
-				: queryExecutor.selectLong(sql, new Object[0], factory);
+				: queryExecutor.selectLong( sql, new Object[0], session.getFactory() );
 	}
 }
