@@ -89,7 +89,7 @@ public class RxEntityUpdateAction extends EntityUpdateAction implements RxExecut
 
 		CompletionStage<?> updateAR = veto
 				? RxUtil.nullFuture()
-				: RxEntityPersister.get(persister).updateRx( id, getState(), getDirtyFields(), hasDirtyCollection(), getPreviousState(), previousVersion, instance, getRowId(), session );
+				: ((RxEntityPersister) persister).updateRx( id, getState(), getDirtyFields(), hasDirtyCollection(), getPreviousState(), previousVersion, instance, getRowId(), session );
 
 		return updateAR.thenApply( res -> {
 			final EntityEntry entry = session.getPersistenceContextInternal().getEntry( instance );

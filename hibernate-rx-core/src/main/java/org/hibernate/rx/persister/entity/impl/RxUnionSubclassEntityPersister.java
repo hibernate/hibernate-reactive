@@ -23,10 +23,10 @@ import org.hibernate.rx.sql.impl.Update;
 import java.io.Serializable;
 
 /**
- * A {@link UnionSubclassEntityPersister} that supports
- * decoration with {@link RxEntityPersister}.
+ * An {@link RxEntityPersister} backed by {@link UnionSubclassEntityPersister}
+ * amd {@link RxAbstractEntityPersister}.
  */
-public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister implements RxGeneratedIdentifierPersister {
+public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister implements RxAbstractEntityPersister {
 
 	private RxIdentifierGenerator identifierGenerator;
 

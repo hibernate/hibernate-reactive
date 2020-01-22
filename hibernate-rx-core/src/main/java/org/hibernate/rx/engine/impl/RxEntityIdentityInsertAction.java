@@ -47,7 +47,7 @@ public class RxEntityIdentityInsertAction extends EntityIdentityInsertAction imp
 		// else inserted the same pk first, the insert would fail
 
 		if ( !isVeto() ) {
-			return RxEntityPersister.get(persister).insertRx( getState(), instance, session )
+			return ((RxEntityPersister) persister).insertRx( getState(), instance, session )
 				.thenAccept( generatedId -> {
 					setGeneratedId(generatedId);
 					if (persister.hasInsertGeneratedProperties()) {

@@ -111,8 +111,8 @@ abstract class AbstractRxSaveEventListener
 
 		EntityPersister persister = source.getEntityPersister( entityName, entity );
 		boolean autoincrement = persister.isIdentifierAssignedByInsert();
-		return RxEntityPersister.get(persister)
-				.getIdentifierGenerator()
+		return ((RxEntityPersister) persister)
+				.getRxIdentifierGenerator()
 				.generate( source.getFactory() )
 				.thenCompose( id ->
 						rxPerformSave(

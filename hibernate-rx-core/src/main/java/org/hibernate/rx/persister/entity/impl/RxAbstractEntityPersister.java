@@ -8,13 +8,11 @@ import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.*;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.jdbc.Expectations;
 import org.hibernate.persister.entity.AbstractEntityPersister;
-import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.rx.impl.RxQueryExecutor;
@@ -23,6 +21,7 @@ import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.sql.Delete;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.type.Type;
+import org.jboss.logging.Logger;
 
 import java.io.Serializable;
 import java.sql.SQLException;
@@ -31,34 +30,38 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
- * An {@link RxEntityPersister} that decorates a {@link AbstractEntityPersister}.
- * Note that there are three main flavors of {@code AbstractEntityPersister},
- * for each of the three inheritance mapping strategies, but here is
- * only one flavor of {@link RxEntityPersister}, which delegates these
- * intricacies. This design avoid duplicating the code in this class in the
- * three different subclasses.
+ * An abstract implementation of {@link RxEntityPersister} whose
+ * concrete implementations each extend a concrete subclass of
+ * {@link AbstractEntityPersister}. Note that there are three
+ * main flavors of {@code AbstractEntityPersister}, one for each
+ * of the three inheritance mapping strategies, and thus we have
+ * three flavors of {@link RxEntityPersister}. Therefore, this
+ * interface is defined as a mixin. This design avoid duplicating
+ * the code in this class in the three different subclasses.
+ *
+ * Concrete implementations of this interface _must_ also extend
+ * {@code AbstractEntityPersister} or one of its concrete
+ * subclasses.
+ *
+ * @see RxJoinedSubclassEntityPersister
+ * @see RxUnionSubclassEntityPersister
+ * @see RxSingleTableEntityPersister
  */
-public class RxEntityPersisterImpl implements RxEntityPersister {
+public interface RxAbstractEntityPersister extends RxEntityPersister {
+	Logger log = Logger.getLogger( JoinedSubclassEntityPersister.class );
 
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( RxEntityPersisterImpl.class );
+	RxQueryExecutor queryExecutor = new RxQueryExecutor();
 
-	private static final RxQueryExecutor queryExecutor = new RxQueryExecutor();
-
-	private final AbstractEntityPersister delegate;
-
-	@Override
-	public EntityPersister getPersister() {
-		return delegate;
-	}
-
-	public RxEntityPersisterImpl(AbstractEntityPersister delegate) {
-		this.delegate = delegate;
-	}
-
-	private void preInsertInMemoryValueGeneration(
+	/**
+	 * This is a copy of a
+	 * {@link AbstractEntityPersister#preInsertInMemoryValueGeneration(Object[], Object, SharedSessionContractImplementor) private method}
+	 * of {@code AbstractEntityPersister} that we could have made public.
+	 */
+	static void preInsertInMemoryValueGeneration(
 			Object[] fields,
 			Object object,
-			SharedSessionContractImplementor session) {
+			SharedSessionContractImplementor session,
+			AbstractEntityPersister delegate) {
 		if ( delegate.getEntityMetamodel().hasPreInsertGeneratedValues() ) {
 			final InMemoryValueGenerationStrategy[] strategies = delegate.getEntityMetamodel().getInMemoryValueGenerationStrategies();
 			for ( int i = 0; i < strategies.length; i++ ) {
@@ -70,32 +73,45 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		}
 	}
 
+	default RxQueryExecutor queryExecutor() {
+		return queryExecutor;
+	}
+
+	/**
+	 * A self-reference of type {@code AbstractEntityPersister}.
+	 *
+	 * @return this object
+	 */
+	default AbstractEntityPersister delegate() {
+		return (AbstractEntityPersister) this;
+	}
+
 	@Override
-	public CompletionStage<Serializable> insertRx(Object[] fields, Object object, SharedSessionContractImplementor session)
+	default CompletionStage<Serializable> insertRx(Object[] fields, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
 		// apply any pre-insert in-memory value generation
-		preInsertInMemoryValueGeneration( fields, object, session );
+		preInsertInMemoryValueGeneration( fields, object, session, delegate() );
 
-		final int span = delegate.getTableSpan();
+		final int span = delegate().getTableSpan();
 		CompletionStage<Serializable> stage = RxUtil.completedFuture(null);
-		if ( delegate.getEntityMetamodel().isDynamicInsert() ) {
+		if ( delegate().getEntityMetamodel().isDynamicInsert() ) {
 			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
-			boolean[] notNull = delegate.getPropertiesToInsert( fields );
-			stage = stage.thenCompose( n -> insertRx( fields, notNull, delegate.generateInsertString( true, notNull ), object, session ) );
+			boolean[] notNull = delegate().getPropertiesToInsert( fields );
+			stage = stage.thenCompose( n -> insertRx( fields, notNull, delegate().generateInsertString( true, notNull ), object, session ) );
 			for ( int j = 1; j < span; j++ ) {
 				final int jj = j;
 				stage = stage.thenCompose( id ->
-						insertRx(id, fields, notNull, jj, delegate.generateInsertString(notNull, jj), object, session)
+						insertRx(id, fields, notNull, jj, delegate().generateInsertString(notNull, jj), object, session)
 							.thenApply( v -> id ));
 			}
 		}
 		else {
 			// For the case of dynamic-insert="false", use the static SQL
-			stage = stage.thenCompose( n -> insertRx( fields, delegate.getPropertyInsertability(), delegate.getSQLIdentityInsertString(), object, session ) );
+			stage = stage.thenCompose( n -> insertRx( fields, delegate().getPropertyInsertability(), delegate().getSQLIdentityInsertString(), object, session ) );
 			for ( int j = 1; j < span; j++ ) {
 				final int jj = j;
 				stage = stage.thenCompose( id ->
-						insertRx(id, fields, delegate.getPropertyInsertability(), jj, delegate.getSQLInsertStrings()[jj], object, session)
+						insertRx(id, fields, delegate().getPropertyInsertability(), jj, delegate().getSQLInsertStrings()[jj], object, session)
 								.thenApply( v -> id ));
 			}
 		}
@@ -103,19 +119,19 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 	}
 
 	@Override
-	public CompletionStage<?> insertRx(
+	default CompletionStage<?> insertRx(
 			Serializable id,
 			Object[] fields,
 			Object object,
 			SharedSessionContractImplementor session) {
 		// apply any pre-insert in-memory value generation
-		preInsertInMemoryValueGeneration( fields, object, session );
+		preInsertInMemoryValueGeneration( fields, object, session, delegate() );
 
 		CompletionStage<?> insertStage = RxUtil.nullFuture();
-		final int span = delegate.getTableSpan();
-		if ( delegate.getEntityMetamodel().isDynamicInsert() ) {
+		final int span = delegate().getTableSpan();
+		if ( delegate().getEntityMetamodel().isDynamicInsert() ) {
 			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
-			boolean[] notNull = delegate.getPropertiesToInsert( fields );
+			boolean[] notNull = delegate().getPropertiesToInsert( fields );
 			for ( int j = 0; j < span; j++ ) {
 				int jj = j;
 				insertStage = insertStage.thenCompose(
@@ -124,7 +140,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 								fields,
 								notNull,
 								jj,
-								delegate.generateInsertString( notNull, jj ),
+								delegate().generateInsertString( notNull, jj ),
 								object,
 								session
 						));
@@ -138,9 +154,9 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 						v -> insertRx(
 								id,
 								fields,
-								delegate.getPropertyInsertability(),
+								delegate().getPropertyInsertability(),
 								jj,
-								delegate.getSQLInsertStrings()[jj],
+								delegate().getSQLInsertStrings()[jj],
 								object,
 								session
 						));
@@ -149,7 +165,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		return insertStage;
 	}
 
-	private CompletionStage<?> insertRx(
+	default CompletionStage<?> insertRx(
 			Serializable id,
 			Object[] fields,
 			boolean[] notNull,
@@ -158,25 +174,25 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			Object object,
 			SharedSessionContractImplementor session) throws HibernateException {
 
-		if ( delegate.isInverseTable( j ) ) {
+		if ( delegate().isInverseTable( j ) ) {
 			return RxUtil.nullFuture();
 		}
 
 		//note: it is conceptually possible that a UserType could map null to
 		//	  a non-null value, so the following is arguable:
-		if ( delegate.isNullableTable( j ) && delegate.isAllNull( fields, j ) ) {
+		if ( delegate().isNullableTable( j ) && delegate().isAllNull( fields, j ) ) {
 			return RxUtil.nullFuture();
 		}
 
-		if ( LOG.isTraceEnabled() ) {
-			LOG.tracev( "Inserting entity: {0}", MessageHelper.infoString( delegate, id, delegate.getFactory() ) );
-			if ( j == 0 && delegate.isVersioned() ) {
-				LOG.tracev( "Version: {0}", Versioning.getVersion( fields, delegate ) );
+		if ( log.isTraceEnabled() ) {
+			log.tracev( "Inserting entity: {0}", MessageHelper.infoString(delegate(), id, delegate().getFactory() ) );
+			if ( j == 0 && delegate().isVersioned() ) {
+				log.tracev( "Version: {0}", Versioning.getVersion( fields, delegate()) );
 			}
 		}
 
 		// TODO : shouldn't inserts be Expectations.NONE?
-		final Expectation expectation = Expectations.appropriateExpectation( delegate.getInsertResultCheckStyles()[j] );
+		final Expectation expectation = Expectations.appropriateExpectation( delegate().getInsertResultCheckStyles()[j] );
 //		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
 //		final boolean useBatch = expectation.canBeBatched() &&
 //				jdbcBatchSizeToUse > 1 &&
@@ -192,14 +208,14 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 
 		PreparedStatementAdaptor insert = new PreparedStatementAdaptor();
 		try {
-			int index = delegate.dehydrate( null, fields, notNull, delegate.getPropertyColumnInsertable(), j, insert, session, false );
-			delegate.getIdentifierType().nullSafeSet( insert, id, index, session );
+			int index = delegate().dehydrate( null, fields, notNull, delegate().getPropertyColumnInsertable(), j, insert, session, false );
+			delegate().getIdentifierType().nullSafeSet( insert, id, index, session );
 		}
 		catch (SQLException e) {
 			//can't actually occur!
 			throw new JDBCException( "error while binding parameters", e );
 		}
-		return queryExecutor.update( sql, insert.getParametersAsArray(), delegate.getFactory() )
+		return queryExecutor().update( sql, insert.getParametersAsArray(), delegate().getFactory() )
 				.thenAccept( count -> {
 					try {
 						expectation.verifyOutcome(count, insert, -1);
@@ -217,7 +233,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 	 * This form is used for PostInsertIdentifierGenerator-style ids (IDENTITY,
 	 * select, etc).
 	 */
-	private CompletionStage<Serializable> insertRx(
+	default CompletionStage<Serializable> insertRx(
 			Object[] fields,
 			boolean[] notNull,
 			String sql,
@@ -226,16 +242,16 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 
 		sql = Parameters.processParameters(sql, session);
 
-		if ( LOG.isTraceEnabled() ) {
-			LOG.tracev( "Inserting entity: {0}", MessageHelper.infoString( delegate ) );
-			if ( delegate.isVersioned() ) {
-				LOG.tracev( "Version: {0}", Versioning.getVersion( fields, delegate ) );
+		if ( log.isTraceEnabled() ) {
+			log.tracev( "Inserting entity: {0}", MessageHelper.infoString(delegate()) );
+			if ( delegate().isVersioned() ) {
+				log.tracev( "Version: {0}", Versioning.getVersion( fields, delegate()) );
 			}
 		}
 
 		PreparedStatementAdaptor insert = new PreparedStatementAdaptor();
 		try {
-			delegate.dehydrate( null, fields, notNull, delegate.getPropertyColumnInsertable(), 0, insert, session, false );
+			delegate().dehydrate( null, fields, notNull, delegate().getPropertyColumnInsertable(), 0, insert, session, false );
 		}
 		catch (SQLException e) {
 			//can't actually occur!
@@ -244,31 +260,31 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 
 		SessionFactoryImplementor factory = session.getFactory();
 		Dialect dialect = factory.getJdbcServices().getDialect();
-		String identifierColumnName = delegate.getIdentifierColumnNames()[0];
+		String identifierColumnName = delegate().getIdentifierColumnNames()[0];
 		if ( factory.getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
 			//TODO: wooooo this is awful ... I believe the problem is fixed in Hibernate 6
 			if ( dialect instanceof PostgreSQL81Dialect) {
 				sql = sql + " returning " + identifierColumnName;
 			}
-			return queryExecutor.updateReturning( sql, insert.getParametersAsArray(), factory )
+			return queryExecutor().updateReturning( sql, insert.getParametersAsArray(), factory )
 					.thenApply(Optional::get);
 		}
 		else {
 			//use an extra round trip to fetch the id
 			String selectIdSql = dialect.getIdentityColumnSupport()
 					.getIdentitySelectString(
-							delegate.getTableName(),
+							delegate().getTableName(),
 							identifierColumnName,
 							Types.INTEGER
 					);
-			return queryExecutor.update( sql, insert.getParametersAsArray(), factory)
-					.thenCompose( v -> queryExecutor.selectLong(selectIdSql, new Object[0], factory) )
+			return queryExecutor().update( sql, insert.getParametersAsArray(), factory)
+					.thenCompose( v -> queryExecutor().selectLong(selectIdSql, new Object[0], factory) )
 					.thenApply(Optional::get);
 		}
 
 	}
 
-	private CompletionStage<?> deleteRx(
+	default CompletionStage<?> deleteRx(
 			Serializable id,
 			Object version,
 			int j,
@@ -277,12 +293,12 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			SharedSessionContractImplementor session,
 			Object[] loadedState) throws HibernateException {
 
-		if ( delegate.isInverseTable( j ) ) {
+		if ( delegate().isInverseTable( j ) ) {
 			return RxUtil.nullFuture();
 		}
-		final boolean useVersion = j == 0 && delegate.isVersioned();
+		final boolean useVersion = j == 0 && delegate().isVersioned();
 //		final boolean callable = delegate.isDeleteCallable( j );
-		final Expectation expectation = Expectations.appropriateExpectation( delegate.getDeleteResultCheckStyles()[j] );
+		final Expectation expectation = Expectations.appropriateExpectation( delegate().getDeleteResultCheckStyles()[j] );
 //		final boolean useBatch = j == 0 && delegate.isBatchable() && expectation.canBeBatched();
 //		if ( useBatch && deleteBatchKey == null ) {
 //			deleteBatchKey = new BasicBatchKey(
@@ -291,16 +307,16 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 //			);
 //		}
 
-		if ( LOG.isTraceEnabled() ) {
-			LOG.tracev( "Deleting entity: {0}", MessageHelper.infoString( delegate, id, delegate.getFactory() ) );
+		if ( log.isTraceEnabled() ) {
+			log.tracev( "Deleting entity: {0}", MessageHelper.infoString(delegate(), id, delegate().getFactory() ) );
 			if ( useVersion ) {
-				LOG.tracev( "Version: {0}", version );
+				log.tracev( "Version: {0}", version );
 			}
 		}
 
-		if ( delegate.isTableCascadeDeleteEnabled( j ) ) {
-			if ( LOG.isTraceEnabled() ) {
-				LOG.tracev( "Delete handled by foreign key constraint: {0}", delegate.getTableName( j ) );
+		if ( delegate().isTableCascadeDeleteEnabled( j ) ) {
+			if ( log.isTraceEnabled() ) {
+				log.tracev( "Delete handled by foreign key constraint: {0}", delegate().getTableName( j ) );
 			}
 			//EARLY EXIT!
 			return RxUtil.nullFuture();
@@ -317,21 +333,21 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 
 			// Do the key. The key is immutable so we can use the _current_ object state - not necessarily
 			// the state at the time the delete was issued
-			delegate.getIdentifierType().nullSafeSet( delete, id, index, session );
-			index += delegate.getIdentifierColumnSpan();
+			delegate().getIdentifierType().nullSafeSet( delete, id, index, session );
+			index += delegate().getIdentifierColumnSpan();
 
 			// We should use the _current_ object state (ie. after any updates that occurred during flush)
 			if ( useVersion ) {
-				delegate.getVersionType().nullSafeSet( delete, version, index, session );
+				delegate().getVersionType().nullSafeSet( delete, version, index, session );
 			}
-			else if ( isAllOrDirtyOptLocking() && loadedState != null ) {
-				boolean[] versionability = delegate.getPropertyVersionability();
-				Type[] types = delegate.getPropertyTypes();
-				for ( int i = 0; i < delegate.getEntityMetamodel().getPropertySpan(); i++ ) {
-					if ( delegate.isPropertyOfTable( i, j ) && versionability[i] ) {
+			else if ( isAllOrDirtyOptimisticLocking() && loadedState != null ) {
+				boolean[] versionability = delegate().getPropertyVersionability();
+				Type[] types = delegate().getPropertyTypes();
+				for (int i = 0; i < delegate().getEntityMetamodel().getPropertySpan(); i++ ) {
+					if ( delegate().isPropertyOfTable( i, j ) && versionability[i] ) {
 						// this property belongs to the table and it is not specifically
 						// excluded from optimistic locking by optimistic-lock="false"
-						boolean[] settable = types[i].toColumnNullness( loadedState[i], delegate.getFactory() );
+						boolean[] settable = types[i].toColumnNullness( loadedState[i], delegate().getFactory() );
 						types[i].nullSafeSet( delete, loadedState[i], index, settable, session );
 						index += ArrayHelper.countTrue( settable );
 					}
@@ -342,7 +358,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			throw new HibernateException( e );
 		}
 
-		return queryExecutor.update( sql, delete.getParametersAsArray(), delegate.getFactory() )
+		return queryExecutor().update( sql, delete.getParametersAsArray(), delegate().getFactory() )
 				.thenAccept( count -> {
 					try {
 						expectation.verifyOutcome(count, delete, -1);
@@ -354,19 +370,19 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 				});
 	}
 
-	public CompletionStage<?> deleteRx(
+	default CompletionStage<?> deleteRx(
 			Serializable id, Object version, Object object,
 			SharedSessionContractImplementor session)
 			throws HibernateException {
-		final int span = delegate.getTableSpan();
-		boolean isImpliedOptimisticLocking = !delegate.getEntityMetamodel().isVersioned() && isAllOrDirtyOptLocking();
+		final int span = delegate().getTableSpan();
+		boolean isImpliedOptimisticLocking = !delegate().getEntityMetamodel().isVersioned() && isAllOrDirtyOptimisticLocking();
 		Object[] loadedState = null;
 		if ( isImpliedOptimisticLocking ) {
 			// need to treat this as if it where optimistic-lock="all" (dirty does *not* make sense);
 			// first we need to locate the "loaded" state
 			//
 			// Note, it potentially could be a proxy, so doAfterTransactionCompletion the location the safe way...
-			final EntityKey key = session.generateEntityKey( id, delegate );
+			final EntityKey key = session.generateEntityKey( id, delegate());
 			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 			Object entity = persistenceContext.getEntity( key );
 			if ( entity != null ) {
@@ -382,7 +398,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		}
 		else {
 			// otherwise, utilize the static delete statements
-			deleteStrings = delegate.getSQLDeleteStrings();
+			deleteStrings = delegate().getSQLDeleteStrings();
 		}
 
 		CompletionStage<?> deleteStage = RxUtil.nullFuture();
@@ -405,30 +421,37 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		return deleteStage;
 	}
 
-	private boolean isAllOrDirtyOptLocking() {
-		return delegate.getEntityMetamodel().getOptimisticLockStyle() == OptimisticLockStyle.DIRTY
-				|| delegate.getEntityMetamodel().getOptimisticLockStyle() == OptimisticLockStyle.ALL;
+	/**
+	 * This is a copy of a
+	 * {@link AbstractEntityPersister#isAllOrDirtyOptLocking() private method}
+	 * of {@code AbstractEntityPersister} that we could have made public.
+	 */
+	default boolean isAllOrDirtyOptimisticLocking() {
+		OptimisticLockStyle optimisticLockStyle =
+				delegate().getEntityMetamodel().getOptimisticLockStyle();
+		return optimisticLockStyle == OptimisticLockStyle.DIRTY
+				|| optimisticLockStyle == OptimisticLockStyle.ALL;
 	}
 
-	private String[] generateSQLDeleteStrings(Object[] loadedState) {
-		int span = delegate.getTableSpan();
+	default String[] generateSQLDeleteStrings(Object[] loadedState) {
+		int span = delegate().getTableSpan();
 		String[] deleteStrings = new String[span];
 		for ( int j = span - 1; j >= 0; j-- ) {
 			Delete delete = new Delete()
-					.setTableName( delegate.getTableName( j ) )
-					.addPrimaryKeyColumns( delegate.getKeyColumns( j ) );
-			if ( delegate.getFactory().getSessionFactoryOptions().isCommentsEnabled() ) {
-				delete.setComment( "delete " + delegate.getEntityName() + " [" + j + "]" );
+					.setTableName( delegate().getTableName( j ) )
+					.addPrimaryKeyColumns( delegate().getKeyColumns( j ) );
+			if ( delegate().getFactory().getSessionFactoryOptions().isCommentsEnabled() ) {
+				delete.setComment( "delete " + delegate().getEntityName() + " [" + j + "]" );
 			}
 
-			boolean[] versionability = delegate.getPropertyVersionability();
-			Type[] types = delegate.getPropertyTypes();
-			for ( int i = 0; i < delegate.getEntityMetamodel().getPropertySpan(); i++ ) {
-				if ( delegate.isPropertyOfTable( i, j ) && versionability[i] ) {
+			boolean[] versionability = delegate().getPropertyVersionability();
+			Type[] types = delegate().getPropertyTypes();
+			for (int i = 0; i < delegate().getEntityMetamodel().getPropertySpan(); i++ ) {
+				if ( delegate().isPropertyOfTable( i, j ) && versionability[i] ) {
 					// this property belongs to the table and it is not specifically
 					// excluded from optimistic locking by optimistic-lock="false"
-					String[] propertyColumnNames = delegate.getPropertyColumnNames( i );
-					boolean[] propertyNullness = types[i].toColumnNullness( loadedState[i], delegate.getFactory() );
+					String[] propertyColumnNames = delegate().getPropertyColumnNames( i );
+					boolean[] propertyNullness = types[i].toColumnNullness( loadedState[i], delegate().getFactory() );
 					for ( int k = 0; k < propertyNullness.length; k++ ) {
 						if ( propertyNullness[k] ) {
 							delete.addWhereFragment( propertyColumnNames[k] + " = $" + ( k + 1 ) );
@@ -444,7 +467,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		return deleteStrings;
 	}
 
-	protected CompletionStage<Boolean> updateRx(
+	default CompletionStage<Boolean> updateRx(
 			final Serializable id,
 			final Object[] fields,
 			final Object[] oldFields,
@@ -456,7 +479,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			final String sql,
 			final SharedSessionContractImplementor session) throws HibernateException {
 
-		final Expectation expectation = Expectations.appropriateExpectation( delegate.getUpdateResultCheckStyles()[j] );
+		final Expectation expectation = Expectations.appropriateExpectation( delegate().getUpdateResultCheckStyles()[j] );
 //		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
 //		final boolean useBatch = expectation.canBeBatched() && isBatchable() && jdbcBatchSizeToUse > 1;
 //		if ( useBatch && updateBatchKey == null ) {
@@ -466,12 +489,12 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 //			);
 //		}
 //		final boolean callable = delegate.isUpdateCallable( j );
-		final boolean useVersion = j == 0 && delegate.isVersioned();
+		final boolean useVersion = j == 0 && delegate().isVersioned();
 
-		if ( LOG.isTraceEnabled() ) {
-			LOG.tracev( "Updating entity: {0}", MessageHelper.infoString( delegate, id, delegate.getFactory() ) );
+		if ( log.isTraceEnabled() ) {
+			log.tracev( "Updating entity: {0}", MessageHelper.infoString(delegate(), id, delegate().getFactory() ) );
 			if ( useVersion ) {
-				LOG.tracev( "Existing version: {0} -> New version:{1}", oldVersion, fields[delegate.getVersionProperty()] );
+				log.tracev( "Existing version: {0} -> New version:{1}", oldVersion, fields[delegate().getVersionProperty()] );
 			}
 		}
 
@@ -491,12 +514,12 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 				index += expectation.prepare( update );
 
 				//Now write the values of fields onto the prepared statement
-				index = delegate.dehydrate(
+				index = delegate().dehydrate(
 						id,
 						fields,
 						rowId,
 						includeProperty,
-						delegate.getPropertyColumnUpdateable(),
+						delegate().getPropertyColumnUpdateable(),
 						j,
 						update,
 						session,
@@ -505,23 +528,23 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 				);
 
 				// Write any appropriate versioning conditional parameters
-				if ( useVersion && delegate.getEntityMetamodel().getOptimisticLockStyle() == OptimisticLockStyle.VERSION ) {
-					if ( delegate.checkVersion( includeProperty ) ) {
-						delegate.getVersionType().nullSafeSet( update, oldVersion, index, session );
+				if ( useVersion && delegate().getEntityMetamodel().getOptimisticLockStyle() == OptimisticLockStyle.VERSION ) {
+					if ( delegate().checkVersion( includeProperty ) ) {
+						delegate().getVersionType().nullSafeSet( update, oldVersion, index, session );
 					}
 				}
-				else if ( isAllOrDirtyOptLocking() && oldFields != null ) {
-					boolean[] versionability = delegate.getPropertyVersionability(); //TODO: is this really necessary????
-					boolean[] includeOldField = delegate.getEntityMetamodel().getOptimisticLockStyle() == OptimisticLockStyle.ALL
-							? delegate.getPropertyUpdateability()
+				else if ( isAllOrDirtyOptimisticLocking() && oldFields != null ) {
+					boolean[] versionability = delegate().getPropertyVersionability(); //TODO: is this really necessary????
+					boolean[] includeOldField = delegate().getEntityMetamodel().getOptimisticLockStyle() == OptimisticLockStyle.ALL
+							? delegate().getPropertyUpdateability()
 							: includeProperty;
-					Type[] types = delegate.getPropertyTypes();
-					for ( int i = 0; i < delegate.getEntityMetamodel().getPropertySpan(); i++ ) {
+					Type[] types = delegate().getPropertyTypes();
+					for (int i = 0; i < delegate().getEntityMetamodel().getPropertySpan(); i++ ) {
 						boolean include = includeOldField[i] &&
-								delegate.isPropertyOfTable( i, j ) &&
+								delegate().isPropertyOfTable( i, j ) &&
 								versionability[i]; //TODO: is this really necessary????
 						if ( include ) {
-							boolean[] settable = types[i].toColumnNullness( oldFields[i], delegate.getFactory() );
+							boolean[] settable = types[i].toColumnNullness( oldFields[i], delegate().getFactory() );
 							types[i].nullSafeSet(
 									update,
 									oldFields[i],
@@ -539,7 +562,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 //					return true;
 //				}
 //				else {
-				return queryExecutor.update( sql, update.getParametersAsArray(), delegate.getFactory() )
+				return queryExecutor().update( sql, update.getParametersAsArray(), delegate().getFactory() )
 						.thenApply( count -> {
 							try {
 								expectation.verifyOutcome(count, update, -1);
@@ -568,15 +591,15 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 
 		}
 		catch (SQLException e) {
-			throw delegate.getFactory().getSQLExceptionHelper().convert(
+			throw delegate().getFactory().getSQLExceptionHelper().convert(
 					e,
-					"could not update: " + MessageHelper.infoString( delegate, id, delegate.getFactory() ),
+					"could not update: " + MessageHelper.infoString(delegate(), id, delegate().getFactory() ),
 					sql
 			);
 		}
 	}
 
-	public CompletionStage<?> updateRx(
+	default CompletionStage<?> updateRx(
 			final Serializable id,
 			final Object[] fields,
 			int[] dirtyFields,
@@ -588,8 +611,8 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			final SharedSessionContractImplementor session) throws HibernateException {
 
 		// apply any pre-update in-memory value generation
-		if ( delegate.getEntityMetamodel().hasPreUpdateGeneratedValues() ) {
-			final InMemoryValueGenerationStrategy[] valueGenerationStrategies = delegate.getEntityMetamodel().getInMemoryValueGenerationStrategies();
+		if ( delegate().getEntityMetamodel().hasPreUpdateGeneratedValues() ) {
+			final InMemoryValueGenerationStrategy[] valueGenerationStrategies = delegate().getEntityMetamodel().getInMemoryValueGenerationStrategies();
 			int valueGenerationStrategiesSize = valueGenerationStrategies.length;
 			if ( valueGenerationStrategiesSize != 0 ) {
 				int[] fieldsPreUpdateNeeded = new int[valueGenerationStrategiesSize];
@@ -601,7 +624,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 								(Session) session,
 								object
 						);
-						delegate.setPropertyValue( object, i, fields[i] );
+						delegate().setPropertyValue( object, i, fields[i] );
 						fieldsPreUpdateNeeded[count++] = i;
 					}
 				}
@@ -614,8 +637,8 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		//note: dirtyFields==null means we had no snapshot, and we couldn't get one using select-before-update
 		//	  oldFields==null just means we had no snapshot to begin with (we might have used select-before-update to get the dirtyFields)
 
-		final boolean[] tableUpdateNeeded = delegate.getTableUpdateNeeded( dirtyFields, hasDirtyCollection );
-		final int span = delegate.getTableSpan();
+		final boolean[] tableUpdateNeeded = delegate().getTableUpdateNeeded( dirtyFields, hasDirtyCollection );
+		final int span = delegate().getTableSpan();
 
 		final boolean[] propsToUpdate;
 		final String[] updateStrings;
@@ -623,21 +646,21 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 
 		// Ensure that an immutable or non-modifiable entity is not being updated unless it is
 		// in the process of being deleted.
-		if ( entry == null && !delegate.isMutable() ) {
+		if ( entry == null && !delegate().isMutable() ) {
 			throw new IllegalStateException( "Updating immutable entity that is not in session yet!" );
 		}
-		if ( ( delegate.getEntityMetamodel().isDynamicUpdate() && dirtyFields != null ) ) {
+		if ( ( delegate().getEntityMetamodel().isDynamicUpdate() && dirtyFields != null ) ) {
 			// We need to generate the UPDATE SQL when dynamic-update="true"
-			propsToUpdate = delegate.getPropertiesToUpdate( dirtyFields, hasDirtyCollection );
+			propsToUpdate = delegate().getPropertiesToUpdate( dirtyFields, hasDirtyCollection );
 			// don't need to check laziness (dirty checking algorithm handles that)
 			updateStrings = new String[span];
 			for ( int j = 0; j < span; j++ ) {
 				updateStrings[j] = tableUpdateNeeded[j] ?
-						delegate.generateUpdateString( propsToUpdate, j, oldFields, j == 0 && rowId != null ) :
+						delegate().generateUpdateString( propsToUpdate, j, oldFields, j == 0 && rowId != null ) :
 						null;
 			}
 		}
-		else if ( !delegate.isModifiableEntity( entry ) ) {
+		else if ( !delegate().isModifiableEntity( entry ) ) {
 			// We need to generate UPDATE SQL when a non-modifiable entity (e.g., read-only or immutable)
 			// needs:
 			// - to have references to transient entities set to null before being deleted
@@ -645,7 +668,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			// If dirtyFields == null, then that means that there are no dirty properties to
 			// to be updated; an empty array for the dirty fields needs to be passed to
 			// getPropertiesToUpdate() instead of null.
-			propsToUpdate = delegate.getPropertiesToUpdate(
+			propsToUpdate = delegate().getPropertiesToUpdate(
 					( dirtyFields == null ? ArrayHelper.EMPTY_INT_ARRAY : dirtyFields ),
 					hasDirtyCollection
 			);
@@ -653,17 +676,17 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			updateStrings = new String[span];
 			for ( int j = 0; j < span; j++ ) {
 				updateStrings[j] = tableUpdateNeeded[j] ?
-						delegate.generateUpdateString( propsToUpdate, j, oldFields, j == 0 && rowId != null ) :
+						delegate().generateUpdateString( propsToUpdate, j, oldFields, j == 0 && rowId != null ) :
 						null;
 			}
 		}
 		else {
 			// For the case of dynamic-update="false", or no snapshot, we use the static SQL
-			updateStrings = getUpdateStrings(
+			updateStrings = getSQLUpdateStrings(
 					rowId != null,
-					delegate.hasUninitializedLazyProperties( object )
+					delegate().hasUninitializedLazyProperties( object )
 			);
-			propsToUpdate = delegate.getPropertyUpdateability( object );
+			propsToUpdate = delegate().getPropertyUpdateability( object );
 		}
 
 		CompletionStage<?> updateStage = RxUtil.nullFuture();
@@ -690,7 +713,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		return updateStage;
 	}
 
-	private CompletionStage<?> updateOrInsertRx(
+	default CompletionStage<?> updateOrInsertRx(
 			final Serializable id,
 			final Object[] fields,
 			final Object[] oldFields,
@@ -702,25 +725,25 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			final String sql,
 			final SharedSessionContractImplementor session) throws HibernateException {
 
-		if ( !delegate.isInverseTable( j ) ) {
+		if ( !delegate().isInverseTable( j ) ) {
 
-			if ( delegate.isNullableTable( j ) && delegate.isAllNull( oldFields, j ) && oldFields != null ) {
+			if ( delegate().isNullableTable( j ) && delegate().isAllNull( oldFields, j ) && oldFields != null ) {
 				// don't bother trying to update, we know there is no row there yet
-				if ( !delegate.isAllNull( fields, j ) ) {
-					return insertRx( id, fields, delegate.getPropertyInsertability(), j, delegate.getSQLInsertStrings()[j], object, session );
+				if ( !delegate().isAllNull( fields, j ) ) {
+					return insertRx( id, fields, delegate().getPropertyInsertability(), j, delegate().getSQLInsertStrings()[j], object, session );
 				}
 			}
-			else if ( delegate.isNullableTable( j ) && delegate.isAllNull( fields, j ) ) {
+			else if ( delegate().isNullableTable( j ) && delegate().isAllNull( fields, j ) ) {
 				// All fields are null, we can just delete the row
-				return deleteRx( id, oldVersion, j, object, delegate.getSQLDeleteStrings()[j], session, null );
+				return deleteRx( id, oldVersion, j, object, delegate().getSQLDeleteStrings()[j], session, null );
 			}
 			else {
 				return updateRx( id, fields, oldFields, rowId, includeProperty, j, oldVersion, object, sql, session )
 						.thenApply( updated -> {
-							if ( !updated && !delegate.isAllNull( fields, j ) ) {
+							if ( !updated && !delegate().isAllNull( fields, j ) ) {
 								// Nothing has been updated because the row isn't in the db
 								// Run an insert instead
-								return insertRx( id, fields, delegate.getPropertyInsertability(), j, delegate.getSQLInsertStrings()[j], object, session );
+								return insertRx( id, fields, delegate().getPropertyInsertability(), j, delegate().getSQLInsertStrings()[j], object, session );
 							}
 							return null;
 						} );
@@ -731,17 +754,14 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		return RxUtil.nullFuture();
 	}
 
-	private String[] getUpdateStrings(boolean byRowId, boolean lazy) {
-		if ( byRowId ) {
-			return lazy ? delegate.getSQLLazyUpdateByRowIdStrings() : delegate.getSQLUpdateByRowIdStrings();
-		}
-		else {
-			return lazy ? delegate.getSQLLazyUpdateStrings() : delegate.getSQLUpdateStrings();
-		}
-	}
-
-	@Override
-	public RxIdentifierGenerator getIdentifierGenerator() {
-		return ((RxGeneratedIdentifierPersister) delegate).getRxIdentifierGenerator();
+	/**
+	 * This is a copy of a
+	 * {@link AbstractEntityPersister#getUpdateStrings(boolean, boolean) private method}
+	 * of {@code AbstractEntityPersister} that we could have made public.
+	 */
+	default String[] getSQLUpdateStrings(boolean byRowId, boolean lazy) {
+		return byRowId ?
+				lazy ? delegate().getSQLLazyUpdateByRowIdStrings() : delegate().getSQLUpdateByRowIdStrings() :
+				lazy ? delegate().getSQLLazyUpdateStrings() : delegate().getSQLUpdateStrings();
 	}
 }

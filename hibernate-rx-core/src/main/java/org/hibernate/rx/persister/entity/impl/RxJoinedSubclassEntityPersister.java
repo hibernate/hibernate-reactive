@@ -23,12 +23,12 @@ import org.hibernate.rx.sql.impl.Update;
 import java.io.Serializable;
 
 /**
- * A {@link JoinedSubclassEntityPersister} that supports
- * decoration with {@link RxEntityPersister}
+ * An {@link RxEntityPersister} backed by {@link JoinedSubclassEntityPersister}
+ *  * amd {@link RxAbstractEntityPersister}.
  */
-public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersister implements RxGeneratedIdentifierPersister {
+public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersister implements RxAbstractEntityPersister {
 
-	private RxIdentifierGenerator identifierGenerator;
+	private final RxIdentifierGenerator identifierGenerator;
 
 	@Override
 	public RxIdentifierGenerator getRxIdentifierGenerator() {
@@ -178,5 +178,4 @@ public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersist
 			SharedSessionContractImplementor session) throws HibernateException {
 		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
 	}
-
 }

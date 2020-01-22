@@ -2,27 +2,22 @@ package org.hibernate.rx.persister.entity.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
 /**
- * A reactive decorator for an {@link AbstractEntityPersister}.
- * Supports non-blocking insert/update/delete operations.
+ * A reactive {@link EntityPersister}. Supports non-blocking
+ * insert/update/delete operations.
+ *
+ * @see RxAbstractEntityPersister
  */
-public interface RxEntityPersister {
-
-	static RxEntityPersister get(EntityPersister persister) {
-		return new RxEntityPersisterImpl((AbstractEntityPersister) persister);
-	}
-
-	EntityPersister getPersister();
+public interface RxEntityPersister extends EntityPersister {
 
 	//TODO: we only support Long for now, but eventually
 	//      we need to do something more general
-	RxIdentifierGenerator<Long> getIdentifierGenerator();
+	RxIdentifierGenerator<Long> getRxIdentifierGenerator();
 	
 	/**
 	 * Insert the given instance state without blocking.

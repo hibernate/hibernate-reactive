@@ -51,7 +51,6 @@ public class RxEntityRegularInsertAction extends EntityInsertAction implements R
 		nullifyTransientReferencesIfNotAlready();
 
 		EntityPersister persister = getPersister();
-		RxEntityPersister rxPersister = RxEntityPersister.get(persister);
 		final SharedSessionContractImplementor session = getSession();
 		final Object instance = getInstance();
 		final Serializable id = getId();
@@ -63,7 +62,8 @@ public class RxEntityRegularInsertAction extends EntityInsertAction implements R
 		// else inserted the same pk first, the insert would fail
 		CompletionStage<Void> insertStage;
 		if ( !veto ) {
-			insertStage = rxPersister.insertRx( id, getState(), instance, session )
+			insertStage = ((RxEntityPersister) persister)
+					.insertRx( id, getState(), instance, session )
 					.thenApply( res -> {
 						PersistenceContext persistenceContext = session.getPersistenceContext();
 						final EntityEntry entry = persistenceContext.getEntry( instance );
