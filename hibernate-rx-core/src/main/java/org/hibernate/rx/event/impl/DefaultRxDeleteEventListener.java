@@ -253,7 +253,7 @@ public class DefaultRxDeleteEventListener
 			final boolean isCascadeDeleteEnabled,
 			final boolean isOrphanRemovalBeforeUpdates,
 			final EntityPersister persister,
-			final Set<?> transientEntities) {
+			final IdentitySet transientEntities) {
 
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracev(
@@ -363,7 +363,7 @@ public class DefaultRxDeleteEventListener
 			EntityPersister persister,
 			Object entity,
 			EntityEntry entityEntry,
-			Set<?> transientEntities) throws HibernateException {
+			IdentitySet transientEntities) throws HibernateException {
 
 		CacheMode cacheMode = session.getCacheMode();
 		session.setCacheMode( CacheMode.GET );
@@ -371,7 +371,7 @@ public class DefaultRxDeleteEventListener
 		persistenceContext.incrementCascadeLevel();
 		try {
 			// cascade-delete to collections BEFORE the collection owner is deleted
-			return new Cascade(CascadingActions.DELETE, CascadePoint.AFTER_INSERT_BEFORE_DELETE,
+			return new Cascade<>(CascadingActions.DELETE, CascadePoint.AFTER_INSERT_BEFORE_DELETE,
 					persister, entity, session)
 					.cascade( transientEntities );
 		}
@@ -385,7 +385,7 @@ public class DefaultRxDeleteEventListener
 			EventSource session,
 			EntityPersister persister,
 			Object entity,
-			Set<?> transientEntities) throws HibernateException {
+			IdentitySet transientEntities) throws HibernateException {
 
 		CacheMode cacheMode = session.getCacheMode();
 		session.setCacheMode( CacheMode.GET );
@@ -393,7 +393,7 @@ public class DefaultRxDeleteEventListener
 		persistenceContext.incrementCascadeLevel();
 		try {
 			// cascade-delete to many-to-one AFTER the parent was deleted
-			return new Cascade(CascadingActions.DELETE, CascadePoint.BEFORE_INSERT_AFTER_DELETE,
+			return new Cascade<>(CascadingActions.DELETE, CascadePoint.BEFORE_INSERT_AFTER_DELETE,
 					persister, entity, session)
 					.cascade( transientEntities );
 		}

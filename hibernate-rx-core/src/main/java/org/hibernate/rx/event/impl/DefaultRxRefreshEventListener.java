@@ -137,7 +137,7 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 		// cascade the refresh prior to refreshing this entity
 		refreshedAlready.add( object );
 		CompletionStage<Void> cascade =
-				new Cascade(CascadingActions.REFRESH,
+				new Cascade<>(CascadingActions.REFRESH,
 						CascadePoint.BEFORE_REFRESH,
 						persister,
 						object,

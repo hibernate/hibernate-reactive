@@ -38,12 +38,12 @@ import java.util.concurrent.CompletionStage;
  * A reactific {@link org.hibernate.event.internal.DefaultPersistEventListener}.
  */
 public class DefaultRxPersistEventListener
-		extends AbstractRxSaveEventListener
+		extends AbstractRxSaveEventListener<IdentitySet>
 		implements PersistEventListener, RxPersistEventListener, CallbackRegistryConsumer {
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultRxPersistEventListener.class );
 
 	@Override
-	protected CascadingAction getCascadeRxAction() {
+	protected CascadingAction<IdentitySet> getCascadeRxAction() {
 		return CascadingActions.PERSIST;
 	}
 

@@ -521,7 +521,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		persistenceContext.incrementCascadeLevel();
 		try {
-			return new Cascade(
+			return new Cascade<>(
 					getCascadeRxAction(),
 					CascadePoint.BEFORE_MERGE,
 					persister,
@@ -536,7 +536,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 
 
 	@Override
-	protected CascadingAction getCascadeRxAction() {
+	protected CascadingAction<MergeContext> getCascadeRxAction() {
 		return org.hibernate.rx.engine.impl.CascadingActions.MERGE;
 	}
 

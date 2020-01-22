@@ -41,7 +41,7 @@ import java.util.concurrent.CompletionStage;
  * @see DefaultRxPersistOnFlushEventListener
  * @see DefaultRxMergeEventListener
  */
-abstract class AbstractRxSaveEventListener
+abstract class AbstractRxSaveEventListener<C>
 		implements CallbackRegistryConsumer {
 
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( AbstractRxSaveEventListener.class );
@@ -58,7 +58,7 @@ abstract class AbstractRxSaveEventListener
 	 * @param entity The entity to be saved.
 	 * @param requestedId The id to which to associate the entity.
 	 * @param entityName The name of the entity being saved.
-	 * @param anything Generally cascade-specific information.
+	 * @param context Generally cascade-specific information.
 	 * @param source The session which is the source of this save event.
 	 *
 	 * @return The id used to save the entity.
@@ -67,7 +67,7 @@ abstract class AbstractRxSaveEventListener
 			Object entity,
 			Serializable requestedId,
 			String entityName,
-			Object anything,
+			C context,
 			EventSource source) {
 		callbackRegistry.preCreate( entity );
 
@@ -76,7 +76,7 @@ abstract class AbstractRxSaveEventListener
 				requestedId,
 				source.getEntityPersister( entityName, entity ),
 				false,
-				anything,
+				context,
 				source,
 				true
 		);
@@ -87,7 +87,7 @@ abstract class AbstractRxSaveEventListener
 	 *
 	 * @param entity The entity to be saved
 	 * @param entityName The entity-name for the entity to be saved
-	 * @param anything Generally cascade-specific information.
+	 * @param context Generally cascade-specific information.
 	 * @param source The session which is the source of this save event.
 	 * @param requiresImmediateIdAccess does the event context require
 	 * access to the identifier immediately after execution of this method (if
@@ -100,7 +100,7 @@ abstract class AbstractRxSaveEventListener
 	protected CompletionStage<Void> rxSaveWithGeneratedId(
 			Object entity,
 			String entityName,
-			Object anything,
+			C context,
 			EventSource source,
 			boolean requiresImmediateIdAccess) {
 		callbackRegistry.preCreate( entity );
@@ -120,7 +120,7 @@ abstract class AbstractRxSaveEventListener
 								autoincrement ? null : assignIdIfNecessary( id, entity, entityName, source ),
 								persister,
 								autoincrement,
-								anything,
+								context,
 								source,
 								!autoincrement || requiresImmediateIdAccess
 						));
@@ -159,7 +159,7 @@ abstract class AbstractRxSaveEventListener
 	 * @param id The id by which to save the entity.
 	 * @param persister The entity's persister instance.
 	 * @param useIdentityColumn Is an identity column being used?
-	 * @param anything Generally cascade-specific information.
+	 * @param context Generally cascade-specific information.
 	 * @param source The session from which the event originated.
 	 * @param requiresImmediateIdAccess does the event context require
 	 * access to the identifier immediately after execution of this method (if
@@ -174,7 +174,7 @@ abstract class AbstractRxSaveEventListener
 			Serializable id,
 			EntityPersister persister,
 			boolean useIdentityColumn,
-			Object anything,
+			C context,
 			EventSource source,
 			boolean requiresImmediateIdAccess) {
 
@@ -206,7 +206,7 @@ abstract class AbstractRxSaveEventListener
 				key,
 				persister,
 				useIdentityColumn,
-				anything,
+				context,
 				source,
 				requiresImmediateIdAccess
 		);
@@ -220,7 +220,7 @@ abstract class AbstractRxSaveEventListener
 	 * @param key The id to be used for saving the entity (or null, in the case of identity columns)
 	 * @param persister The entity's persister instance.
 	 * @param useIdentityColumn Should an identity column be used for id generation?
-	 * @param anything Generally cascade-specific information.
+	 * @param context Generally cascade-specific information.
 	 * @param source The session which is the source of the current event.
 	 * @param requiresImmediateIdAccess Is access to the identifier required immediately
 	 * after the completion of the save?  persist(), for example, does not require this...
@@ -233,7 +233,7 @@ abstract class AbstractRxSaveEventListener
 			EntityKey key,
 			EntityPersister persister,
 			boolean useIdentityColumn,
-			Object anything,
+			C context,
 			EventSource source,
 			boolean requiresImmediateIdAccess) {
 
@@ -259,9 +259,9 @@ abstract class AbstractRxSaveEventListener
 				false
 		);
 
-		CompletionStage<Void> cascadeBeforeSave = rxCascadeBeforeSave(source, persister, entity, anything);
+		CompletionStage<Void> cascadeBeforeSave = rxCascadeBeforeSave(source, persister, entity, context);
 
-		Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap( anything ), source );
+		Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap( context ), source );
 		Type[] types = persister.getPropertyTypes();
 
 		boolean substitute = substituteValuesIfNecessary( entity, id, values, persister, source );
@@ -286,7 +286,7 @@ abstract class AbstractRxSaveEventListener
 				values, id, entity, persister, useIdentityColumn, source, shouldDelayIdentityInserts
 		);
 
-		CompletionStage<Void> cascadeAfterSave = rxCascadeAfterSave(source, persister, entity, anything);
+		CompletionStage<Void> cascadeAfterSave = rxCascadeAfterSave(source, persister, entity, context);
 
 		EntityEntry newEntry = persistenceContext.getEntry( entity );
 
@@ -320,7 +320,7 @@ abstract class AbstractRxSaveEventListener
 //		} );
 	}
 
-	protected Map<?,?> getMergeMap(Object anything) {
+	protected Map<?,?> getMergeMap(Object context) {
 		return null;
 	}
 
@@ -357,25 +357,25 @@ abstract class AbstractRxSaveEventListener
 	 * @param source The session from whcih the save event originated.
 	 * @param persister The entity's persister instance.
 	 * @param entity The entity to be saved.
-	 * @param anything Generally cascade-specific data
+	 * @param context Generally cascade-specific data
 	 */
 	protected CompletionStage<Void> rxCascadeBeforeSave(
 			EventSource source,
 			EntityPersister persister,
 			Object entity,
-			Object anything) {
+			C context) {
 
 		// cascade-save to many-to-one BEFORE the parent is saved
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		persistenceContext.incrementCascadeLevel();
 		try {
-			return new Cascade(
+			return new Cascade<>(
 					getCascadeRxAction(),
 					CascadePoint.BEFORE_INSERT_AFTER_DELETE,
 					persister,
 					entity,
 					source)
-					.cascade(anything);
+					.cascade(context);
 		}
 		finally {
 			persistenceContext.decrementCascadeLevel();
@@ -388,29 +388,29 @@ abstract class AbstractRxSaveEventListener
 	 * @param source The session from which the event originated.
 	 * @param persister The entity's persister instance.
 	 * @param entity The entity beng saved.
-	 * @param anything Generally cascade-specific data
+	 * @param context Generally cascade-specific data
 	 */
 	protected CompletionStage<Void> rxCascadeAfterSave(
 			EventSource source,
 			EntityPersister persister,
 			Object entity,
-			Object anything) {
+			C context) {
 
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		// cascade-save to collections AFTER the collection owner was saved
 		persistenceContext.incrementCascadeLevel();
 		try {
-			return new Cascade(getCascadeRxAction(),
+			return new Cascade<>(getCascadeRxAction(),
 					CascadePoint.AFTER_INSERT_BEFORE_DELETE,
 					persister, entity, source)
-					.cascade(anything);
+					.cascade(context);
 		}
 		finally {
 			persistenceContext.decrementCascadeLevel();
 		}
 	}
 
-	protected abstract CascadingAction getCascadeRxAction();
+	protected abstract CascadingAction<C> getCascadeRxAction();
 
 	/**
 	 * Perform any property value substitution that is necessary

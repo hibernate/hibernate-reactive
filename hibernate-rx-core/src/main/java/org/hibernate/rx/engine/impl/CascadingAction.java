@@ -23,7 +23,7 @@ import java.util.concurrent.CompletionStage;
  * @see CascadingActions
  * @author Gavin King
  */
-public interface CascadingAction {
+public interface CascadingAction<C> {
 
 	/**
 	 * Cascade the action to the child object.
@@ -31,7 +31,7 @@ public interface CascadingAction {
 	 * @param session The session within which the cascade is occurring.
 	 * @param child The child to which cascading should be performed.
 	 * @param entityName The child's entity name
-	 * @param anything Anything ;)  Typically some form of cascade-local cache
+	 * @param context Anything ;)  Typically some form of cascade-local cache
 	 * which is specific to each CascadingAction type
 	 * @param isCascadeDeleteEnabled Are cascading deletes enabled.
 	 */
@@ -39,7 +39,7 @@ public interface CascadingAction {
 			EventSource session,
 			Object child,
 			String entityName,
-			Object anything,
+			C context,
 			boolean isCascadeDeleteEnabled) throws HibernateException;
 
 	/**
