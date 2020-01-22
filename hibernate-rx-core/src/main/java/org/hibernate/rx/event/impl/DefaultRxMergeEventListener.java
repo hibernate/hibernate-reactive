@@ -526,8 +526,9 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 					CascadePoint.BEFORE_MERGE,
 					persister,
 					entity,
+					copyCache,
 					source)
-					.cascade(copyCache);
+					.cascade();
 		}
 		finally {
 			persistenceContext.decrementCascadeLevel();

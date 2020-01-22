@@ -374,8 +374,9 @@ abstract class AbstractRxSaveEventListener<C>
 					CascadePoint.BEFORE_INSERT_AFTER_DELETE,
 					persister,
 					entity,
+					context,
 					source)
-					.cascade(context);
+					.cascade();
 		}
 		finally {
 			persistenceContext.decrementCascadeLevel();
@@ -402,8 +403,8 @@ abstract class AbstractRxSaveEventListener<C>
 		try {
 			return new Cascade<>(getCascadeRxAction(),
 					CascadePoint.AFTER_INSERT_BEFORE_DELETE,
-					persister, entity, source)
-					.cascade(context);
+					persister, entity, context, source)
+					.cascade();
 		}
 		finally {
 			persistenceContext.decrementCascadeLevel();

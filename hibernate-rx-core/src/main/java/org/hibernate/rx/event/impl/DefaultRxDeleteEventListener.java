@@ -372,8 +372,8 @@ public class DefaultRxDeleteEventListener
 		try {
 			// cascade-delete to collections BEFORE the collection owner is deleted
 			return new Cascade<>(CascadingActions.DELETE, CascadePoint.AFTER_INSERT_BEFORE_DELETE,
-					persister, entity, session)
-					.cascade( transientEntities );
+					persister, entity, transientEntities, session)
+					.cascade();
 		}
 		finally {
 			persistenceContext.decrementCascadeLevel();
@@ -394,8 +394,8 @@ public class DefaultRxDeleteEventListener
 		try {
 			// cascade-delete to many-to-one AFTER the parent was deleted
 			return new Cascade<>(CascadingActions.DELETE, CascadePoint.BEFORE_INSERT_AFTER_DELETE,
-					persister, entity, session)
-					.cascade( transientEntities );
+					persister, entity, transientEntities, session)
+					.cascade();
 		}
 		finally {
 			persistenceContext.decrementCascadeLevel();

@@ -141,8 +141,9 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 						CascadePoint.BEFORE_REFRESH,
 						persister,
 						object,
+						refreshedAlready,
 						source)
-						.cascade(refreshedAlready);
+						.cascade();
 
 		if ( e != null ) {
 			final EntityKey key = source.generateEntityKey( id, persister );

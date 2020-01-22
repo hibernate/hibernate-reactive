@@ -299,7 +299,9 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 		persistenceContext.incrementCascadeLevel();
 		try {
-			return new Cascade<>( CascadingActions.PERSIST_ON_FLUSH, CascadePoint.BEFORE_FLUSH, persister, object, session ).cascade( copiedAlready );
+			return new Cascade<>( CascadingActions.PERSIST_ON_FLUSH, CascadePoint.BEFORE_FLUSH,
+					persister, object, copiedAlready, session )
+					.cascade();
 		}
 		finally {
 			persistenceContext.decrementCascadeLevel();

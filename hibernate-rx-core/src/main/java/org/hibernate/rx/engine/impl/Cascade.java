@@ -44,6 +44,7 @@ public final class Cascade<C> {
 	private final EntityPersister persister;
 	private final Object parent;
 	private final EventSource eventSource;
+	private final C context;
 	private CascadePoint cascadePoint;
 
 	private CompletionStage<Void> stage = RxUtil.nullFuture();
@@ -56,30 +57,22 @@ public final class Cascade<C> {
 				   final CascadePoint cascadePoint,
 				   final EntityPersister persister,
 				   final Object parent,
+				   final C context,
 				   final EventSource eventSource) {
 		this.action = action;
 		this.parent = parent;
 		this.persister = persister;
 		this.cascadePoint = cascadePoint;
 		this.eventSource = eventSource;
+		this.context = context;
 	}
 
 	/**
 	 * Cascade an action from the parent entity instance to all its children.
-	 */
-	public CompletionStage<Void> cascade() throws HibernateException {
-		cascade( null );
-		return stage;
-	}
-
-	/**
-	 * Cascade an action from the parent entity instance to all its children.  This
-	 * form is typically called from within cascade actions.
 	 *
-	 * @param context Anything ;)   Typically some form of cascade-local cache
 	 * which is specific to each CascadingAction type
 	 */
-	public CompletionStage<Void> cascade(final C context) throws HibernateException {
+	public CompletionStage<Void> cascade() throws HibernateException {
 
 		if ( persister.hasCascades() || action.requiresNoCascadeChecking() ) { // performance opt
 			final boolean traceEnabled = LOG.isTraceEnabled();
@@ -156,7 +149,6 @@ public final class Cascade<C> {
 							types[ i ],
 							style,
 							propertyName,
-							context,
 							false
 					);
 				}
@@ -201,7 +193,6 @@ public final class Cascade<C> {
 			final Type type,
 			final CascadeStyle style,
 			final String propertyName,
-			final C context,
 			final boolean isCascadeDeleteEnabled) throws HibernateException {
 
 		if ( child != null ) {
@@ -213,7 +204,6 @@ public final class Cascade<C> {
 							child,
 							type,
 							style,
-							context,
 							isCascadeDeleteEnabled
 						);
 				}
@@ -222,8 +212,7 @@ public final class Cascade<C> {
 				cascadeComponent(
 						componentPathStackDepth,
 						child,
-						(CompositeType) type,
-						context
+						(CompositeType) type
 				);
 			}
 		}
@@ -345,8 +334,7 @@ public final class Cascade<C> {
 	private void cascadeComponent(
 			final int componentPathStackDepth,
 			final Object child,
-			final CompositeType componentType,
-			final C context) {
+			final CompositeType componentType) {
 
 		Object[] children = null;
 		final Type[] types = componentType.getSubtypes();
@@ -365,7 +353,6 @@ public final class Cascade<C> {
 						types[i],
 						componentPropertyStyle,
 						subPropertyName,
-						context,
 						false
 					);
 			}
@@ -377,17 +364,15 @@ public final class Cascade<C> {
 			final Object child,
 			final Type type,
 			final CascadeStyle style,
-			final C context,
 			final boolean isCascadeDeleteEnabled) {
 		if ( type.isEntityType() || type.isAnyType() ) {
-			cascadeToOne( child, type, style, context, isCascadeDeleteEnabled );
+			cascadeToOne( child, type, style, isCascadeDeleteEnabled );
 		}
 		else if ( type.isCollectionType() ) {
 			cascadeCollection(
 					componentPathStackDepth,
 					child,
 					style,
-					context,
 					(CollectionType) type
 			);
 		}
@@ -400,7 +385,6 @@ public final class Cascade<C> {
 			final int componentPathStackDepth,
 			final Object child,
 			final CascadeStyle style,
-			final C context,
 			final CollectionType type) {
 		final CollectionPersister persister =
 				eventSource.getFactory().getMetamodel().collectionPersister( type.getRole() );
@@ -419,7 +403,6 @@ public final class Cascade<C> {
 				type,
 				style,
 				elemType,
-				context,
 				persister.isCascadeDeleteEnabled()
 			);
 		}
@@ -434,7 +417,6 @@ public final class Cascade<C> {
 			final Object child,
 			final Type type,
 			final CascadeStyle style,
-			final C context,
 			final boolean isCascadeDeleteEnabled) {
 		final String entityName = type.isEntityType()
 				? ( (EntityType) type ).getAssociatedEntityName()
@@ -462,7 +444,6 @@ public final class Cascade<C> {
 			final CollectionType collectionType,
 			final CascadeStyle style,
 			final Type elemType,
-			final C context,
 			final boolean isCascadeDeleteEnabled) throws HibernateException {
 		final boolean reallyDoCascade = style.reallyDoCascade( action.delegate() )
 				&& child != CollectionType.UNFETCHED_COLLECTION;
@@ -481,7 +462,6 @@ public final class Cascade<C> {
 						elemType,
 						style,
 						null,
-						context,
 						isCascadeDeleteEnabled
 				);
 			}
