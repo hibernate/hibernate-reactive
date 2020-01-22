@@ -17,19 +17,17 @@ import org.hibernate.persister.entity.OuterJoinLoadable;
  * @see org.hibernate.loader.entity.BatchingEntityLoaderBuilder
  */
 public class RxBatchingEntityLoaderBuilder {
-	public static RxDynamicBatchingEntityLoaderBuilder getBuilder(SessionFactoryImplementor factory) {
-//		switch ( factory.getSettings().getBatchFetchStyle() ) {
-//			case PADDED: {
-//				return PaddedBatchingEntityLoaderBuilder.INSTANCE;
-//			}
-//			case DYNAMIC: {
+	public static RxBatchingEntityLoaderBuilder getBuilder(SessionFactoryImplementor factory) {
+		switch ( factory.getSessionFactoryOptions().getBatchFetchStyle() ) {
+			case PADDED:
+				return RxPaddedBatchingEntityLoaderBuilder.INSTANCE;
+			case DYNAMIC:
 				return RxDynamicBatchingEntityLoaderBuilder.INSTANCE;
-//			}
-//			default: {
-//				return org.hibernate.loader.entity.plan.LegacyBatchingEntityLoaderBuilder.INSTANCE;
-////				return LegacyBatchingEntityLoaderBuilder.INSTANCE;
-//			}
-//		}
+			default:
+				//we don't have support for the "legacy" (default) style yet
+				//return LegacyBatchingEntityLoaderBuilder.INSTANCE;
+				return RxDynamicBatchingEntityLoaderBuilder.INSTANCE;
+		}
 	}
 
 	/**
