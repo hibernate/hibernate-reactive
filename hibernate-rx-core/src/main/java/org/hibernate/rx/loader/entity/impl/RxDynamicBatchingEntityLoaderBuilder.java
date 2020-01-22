@@ -1,13 +1,5 @@
 package org.hibernate.rx.loader.entity.impl;
 
-import java.io.Serializable;
-import java.lang.reflect.Array;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.JDBCException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -29,9 +21,17 @@ import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.pretty.MessageHelper;
+import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.type.Type;
-
 import org.jboss.logging.Logger;
+
+import java.io.Serializable;
+import java.lang.reflect.Array;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 /**
  * @see org.hibernate.loader.entity.DynamicBatchingEntityLoaderBuilder
@@ -41,20 +41,17 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 
 	public static final RxDynamicBatchingEntityLoaderBuilder INSTANCE = new RxDynamicBatchingEntityLoaderBuilder();
 
-	public List<?> multiLoad(
+	public CompletionStage<List<?>> multiLoad(
 			OuterJoinLoadable persister,
 			Serializable[] ids,
 			SessionImplementor session,
 			MultiLoadOptions loadOptions) {
-		if ( loadOptions.isOrderReturnEnabled() ) {
-			return performOrderedMultiLoad( persister, ids, session, loadOptions );
-		}
-		else {
-			return performUnorderedMultiLoad( persister, ids, session, loadOptions );
-		}
+		return loadOptions.isOrderReturnEnabled() ?
+				performOrderedMultiLoad(persister, ids, session, loadOptions) :
+				performUnorderedMultiLoad(persister, ids, session, loadOptions);
 	}
 
-	private List<?> performOrderedMultiLoad(
+	private CompletionStage<List<?>> performOrderedMultiLoad(
 			OuterJoinLoadable persister,
 			Serializable[] ids,
 			SessionImplementor session,
@@ -63,7 +60,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 
 		final List<Object> result = CollectionHelper.arrayList( ids.length );
 
-		final LockOptions lockOptions = (loadOptions.getLockOptions() == null)
+		final LockOptions lockOptions = loadOptions.getLockOptions() == null
 				? new LockOptions( LockMode.NONE )
 				: loadOptions.getLockOptions();
 
@@ -80,6 +77,8 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 
 		final List<Serializable> idsInBatch = new ArrayList<>();
 		final List<Integer> elementPositionsLoadedByBatch = new ArrayList<>();
+
+		CompletionStage<?> stage = RxUtil.nullFuture();
 
 		for ( int i = 0; i < ids.length; i++ ) {
 			final Serializable id = ids[i];
@@ -98,16 +97,18 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 
 				if ( loadOptions.isSessionCheckingEnabled() ) {
 					// look for it in the Session first
-					CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry = CacheEntityLoaderHelper.INSTANCE
-							.loadFromSessionCache(
-									loadEvent,
-									entityKey,
-									LoadEventListener.GET
-							);
+					CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry =
+							CacheEntityLoaderHelper.INSTANCE
+									.loadFromSessionCache(
+											loadEvent,
+											entityKey,
+											LoadEventListener.GET
+									);
 					managedEntity = persistenceContextEntry.getEntity();
 
-					if ( managedEntity != null && !loadOptions.isReturnOfDeletedEntitiesEnabled() && !persistenceContextEntry
-							.isManaged() ) {
+					if ( managedEntity != null
+							&& !loadOptions.isReturnOfDeletedEntitiesEnabled()
+							&& !persistenceContextEntry.isManaged() ) {
 						// put a null in the result
 						result.add( i, null );
 						continue;
@@ -116,11 +117,12 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 
 				if ( managedEntity == null && loadOptions.isSecondLevelCacheCheckingEnabled() ) {
 					// look for it in the SessionFactory
-					managedEntity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache(
-							loadEvent,
-							persister,
-							entityKey
-					);
+					managedEntity = CacheEntityLoaderHelper.INSTANCE
+							.loadFromSecondLevelCache(
+									loadEvent,
+									persister,
+									entityKey
+							);
 				}
 
 				if ( managedEntity != null ) {
@@ -134,7 +136,8 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			idsInBatch.add( ids[i] );
 
 			if ( idsInBatch.size() >= maxBatchSize ) {
-				performOrderedBatchLoad( idsInBatch, lockOptions, persister, session );
+				CompletionStage<List<?>> load = performOrderedBatchLoad(idsInBatch, lockOptions, persister, session);
+				stage = stage.thenCompose( v -> load );
 			}
 
 			// Save the EntityKey instance for use later!
@@ -143,30 +146,32 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 		}
 
 		if ( !idsInBatch.isEmpty() ) {
-			performOrderedBatchLoad( idsInBatch, lockOptions, persister, session );
+			CompletionStage<List<?>> load = performOrderedBatchLoad(idsInBatch, lockOptions, persister, session);
+			stage = stage.thenCompose( v -> load);
 		}
 
-		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-		for ( Integer position : elementPositionsLoadedByBatch ) {
-			// the element value at this position in the result List should be
-			// the EntityKey for that entity; reuse it!
-			final EntityKey entityKey = (EntityKey) result.get( position );
-			Object entity = persistenceContext.getEntity( entityKey );
-			if ( entity != null && !loadOptions.isReturnOfDeletedEntitiesEnabled() ) {
-				// make sure it is not DELETED
-				final EntityEntry entry = persistenceContext.getEntry( entity );
-				if ( entry.getStatus() == Status.DELETED || entry.getStatus() == Status.GONE ) {
-					// the entity is locally deleted, and the options ask that we not return such entities...
-					entity = null;
+		return stage.thenApply( v -> {
+			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+			for ( Integer position : elementPositionsLoadedByBatch ) {
+				// the element value at this position in the result List should be
+				// the EntityKey for that entity; reuse it!
+				final EntityKey entityKey = (EntityKey) result.get( position );
+				Object entity = persistenceContext.getEntity( entityKey );
+				if ( entity != null && !loadOptions.isReturnOfDeletedEntitiesEnabled() ) {
+					// make sure it is not DELETED
+					final EntityEntry entry = persistenceContext.getEntry( entity );
+					if ( entry.getStatus() == Status.DELETED || entry.getStatus() == Status.GONE ) {
+						// the entity is locally deleted, and the options ask that we not return such entities...
+						entity = null;
+					}
 				}
+				result.set( position, entity );
 			}
-			result.set( position, entity );
-		}
-
-		return result;
+			return result;
+		});
 	}
 
-	private void performOrderedBatchLoad(
+	private CompletionStage<List<?>> performOrderedBatchLoad(
 			List<Serializable> idsInBatch,
 			LockOptions lockOptions,
 			OuterJoinLoadable persister,
@@ -180,15 +185,14 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 				session.getLoadQueryInfluencers()
 		);
 
-		final Serializable[] idsInBatchArray = idsInBatch.toArray( new Serializable[ idsInBatch.size() ] );
-
+		final Serializable[] idsInBatchArray = idsInBatch.toArray(new Serializable[0]);
 		QueryParameters qp = buildMultiLoadQueryParameters( persister, idsInBatchArray, lockOptions );
-		batchingLoader.doEntityBatchFetch( session, qp, idsInBatchArray );
-
+		CompletionStage<List<?>> result = batchingLoader.doEntityBatchFetch(session, qp, idsInBatchArray);
 		idsInBatch.clear();
+		return result;
 	}
 
-	protected List<?> performUnorderedMultiLoad(
+	protected CompletionStage<List<?>> performUnorderedMultiLoad(
 			OuterJoinLoadable persister,
 			Serializable[] ids,
 			SessionImplementor session,
@@ -197,7 +201,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 
 		final List<Object> result = CollectionHelper.arrayList( ids.length );
 
-		final LockOptions lockOptions = (loadOptions.getLockOptions() == null)
+		final LockOptions lockOptions = loadOptions.getLockOptions() == null
 				? new LockOptions( LockMode.NONE )
 				: loadOptions.getLockOptions();
 
@@ -223,8 +227,8 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 				Object managedEntity = null;
 
 				// look for it in the Session first
-				CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry = CacheEntityLoaderHelper.INSTANCE
-						.loadFromSessionCache(
+				CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry =
+						CacheEntityLoaderHelper.INSTANCE.loadFromSessionCache(
 								loadEvent,
 								entityKey,
 								LoadEventListener.GET
@@ -232,8 +236,9 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 				if ( loadOptions.isSessionCheckingEnabled() ) {
 					managedEntity = persistenceContextEntry.getEntity();
 
-					if ( managedEntity != null && !loadOptions.isReturnOfDeletedEntitiesEnabled() && !persistenceContextEntry
-							.isManaged() ) {
+					if ( managedEntity != null
+							&& !loadOptions.isReturnOfDeletedEntitiesEnabled()
+							&& !persistenceContextEntry.isManaged() ) {
 						foundAnyManagedEntities = true;
 						result.add( null );
 						continue;
@@ -260,7 +265,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			if ( foundAnyManagedEntities ) {
 				if ( nonManagedIds.isEmpty() ) {
 					// all of the given ids were already associated with the Session
-					return result;
+					return RxUtil.completedFuture(result);
 				}
 				else {
 					// over-write the ids to be loaded with the collection of
@@ -281,11 +286,15 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			maxBatchSize = loadOptions.getBatchSize();
 		}
 		else {
-			maxBatchSize = session.getJdbcServices().getJdbcEnvironment().getDialect().getDefaultBatchLoadSizingStrategy().determineOptimalBatchLoadSize(
-					persister.getIdentifierType().getColumnSpan( session.getFactory() ),
-					numberOfIdsLeft
-			);
+			maxBatchSize = session.getJdbcServices().getJdbcEnvironment().getDialect()
+					.getDefaultBatchLoadSizingStrategy()
+					.determineOptimalBatchLoadSize(
+							persister.getIdentifierType().getColumnSpan( session.getFactory() ),
+							numberOfIdsLeft
+					);
 		}
+
+		CompletionStage<Void> stage = RxUtil.nullFuture();
 
 		int idPosition = 0;
 		while ( numberOfIdsLeft > 0 ) {
@@ -302,13 +311,16 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			System.arraycopy( ids, idPosition, idsInBatch, 0, batchSize );
 
 			QueryParameters qp = buildMultiLoadQueryParameters( persister, idsInBatch, lockOptions );
-			result.add( batchingLoader.doEntityBatchFetch( session, qp, idsInBatch ) );
+			CompletionStage<Void> fetch =
+					batchingLoader.doEntityBatchFetch(session, qp, idsInBatch)
+							.thenAccept(result::addAll);
+			stage = stage.thenCompose( v -> fetch );
 
 			numberOfIdsLeft = numberOfIdsLeft - batchSize;
 			idPosition += batchSize;
 		}
 
-		return result;
+		return stage.thenApply( v -> result  );
 	}
 
 	public static QueryParameters buildMultiLoadQueryParameters(
@@ -378,7 +390,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 		}
 
 		@Override
-		public Object load(
+		public CompletionStage<Object> load(
 				Serializable id,
 				Object optionalObject,
 				SharedSessionContractImplementor session,
@@ -395,7 +407,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 					// in the batch to avoid including it in future batches that get executed.
 					BatchFetchQueueHelper.removeBatchLoadableEntityKey( id, persister(), session );
 				}
-				return result;
+				return RxUtil.completedFuture(result);
 			}
 
 			final Serializable[] idsToLoad = new Serializable[numberOfIds];
@@ -406,15 +418,16 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			}
 
 			QueryParameters qp = buildQueryParameters( id, idsToLoad, optionalObject, lockOptions, false );
-			CompletionStage<List<?>> results = dynamicLoader.doEntityBatchFetch( (SessionImplementor) session, qp, idsToLoad );
 
-			// The EntityKey for any entity that is not found will remain in the batch.
-			// Explicitly remove the EntityKeys for entities that were not found to
-			// avoid including them in future batches that get executed.
-//			BatchFetchQueueHelper.removeNotFoundBatchLoadableEntityKeys( idsToLoad, results, persister(), session );
+			return dynamicLoader.doEntityBatchFetch( (SessionImplementor) session, qp, idsToLoad )
+					.thenApply(results -> {
+						// The EntityKey for any entity that is not found will remain in the batch.
+						// Explicitly remove the EntityKeys for entities that were not found to
+						// avoid including them in future batches that get executed.
+						BatchFetchQueueHelper.removeNotFoundBatchLoadableEntityKeys( idsToLoad, results, persister(), session );
 
-			return results
-					.thenApply( list -> getObjectFromList( list, id, session ) );
+						return getObjectFromList(results, id, session);
+					});
 		}
 	}
 
@@ -511,34 +524,27 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 					queryParameters.setReadOnly( persistenceContext.isDefaultReadOnly() );
 				}
 				persistenceContext.beforeLoad();
-				CompletionStage<List<?>> results;
-				try {
-					try {
-						results = doTheLoad( sql, queryParameters, session );
-					}
-					finally {
-						persistenceContext.afterLoad();
-					}
-					persistenceContext.initializeNonLazyCollections();
-					log.debug( "Done batch load" );
-					return results;
-				}
-				finally {
-					// Restore the original default
-					persistenceContext.setDefaultReadOnly( defaultReadOnlyOrig );
-				}
-//			}
-//			catch ( SQLException sqle ) {
-//				throw jdbcServices.getSqlExceptionHelper().convert(
-//						sqle,
-//						"could not load an entity batch: " + MessageHelper.infoString(
-//								getEntityPersisters()[0],
-//								ids,
-//								session.getFactory()
-//						),
-//						sql
-//				);
-//			}
+				return doTheLoad( sql, queryParameters, session )
+						.handle( (results, e) -> {
+							persistenceContext.afterLoad();
+							if (e==null) {
+								persistenceContext.initializeNonLazyCollections();
+								log.debug( "Done batch load" );
+							}
+							persistenceContext.setDefaultReadOnly( defaultReadOnlyOrig );
+							if (e instanceof SQLException) {
+								throw jdbcServices.getSqlExceptionHelper().convert(
+										(SQLException) e,
+										"could not load an entity batch: " + MessageHelper.infoString(
+												getEntityPersisters()[0],
+												ids,
+												session.getFactory()
+										),
+										sql
+								);
+							}
+							return results;
+				});
 		}
 
 		private CompletionStage<List<?>> doTheLoad(
