@@ -14,9 +14,9 @@ import java.util.concurrent.CompletionStage;
  * @see SequenceRxIdentifierGenerator
  */
 @FunctionalInterface
-public interface RxIdentifierGenerator {
+public interface RxIdentifierGenerator<Id> {
 	/**
 	 * Returns a generated identifier, via a {@link CompletionStage}.
 	 */
-	CompletionStage<Optional<Integer>> generate(SessionFactoryImplementor factory);
+	CompletionStage<Optional<Id>> generate(SessionFactoryImplementor factory);
 }

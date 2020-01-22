@@ -1,52 +1,45 @@
 package org.hibernate.rx.loader.entity.impl;
 
-import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
-import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.CascadingAction;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.loader.entity.EntityJoinWalker;
 import org.hibernate.persister.entity.OuterJoinLoadable;
+import org.hibernate.rx.sql.impl.Parameters;
 import org.hibernate.sql.ConditionFragment;
 import org.hibernate.sql.DisjunctionFragment;
 import org.hibernate.sql.InFragment;
 
-public class PgEntityJoinWalker extends EntityJoinWalker {
-	public PgEntityJoinWalker(
-			OuterJoinLoadable persister,
-			String[] uniqueKey,
-			int batchSize,
-			LockMode lockMode,
-			SessionFactoryImplementor factory,
-			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
-		super( persister, uniqueKey, batchSize, lockMode, factory, loadQueryInfluencers );
-	}
+import java.util.function.Supplier;
 
-	public PgEntityJoinWalker(
-			OuterJoinLoadable persister,
-			String[] uniqueKey,
-			int batchSize,
-			LockOptions lockOptions,
-			SessionFactoryImplementor factory,
-			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
-		super( persister, uniqueKey, batchSize, lockOptions, factory, loadQueryInfluencers );
+/**
+ * A {@link org.hibernate.loader.entity.EntityJoinWalker} that generates
+ * SQL with the database-native bind variable syntax.
+ */
+public class CascadeEntityJoinWalker extends org.hibernate.loader.entity.CascadeEntityJoinWalker {
+
+	public CascadeEntityJoinWalker(OuterJoinLoadable persister, CascadingAction action, SessionFactoryImplementor factory)
+			throws MappingException {
+		super(persister, action, factory);
 	}
 
 	@Override
 	protected StringBuilder whereString(String alias, String[] columnNames, int batchSize) {
+
+		Supplier<String> nextParameter = Parameters.createDialectParameterGenerator(getFactory());
+
 		if ( columnNames.length == 1 ) {
 			// if not a composite key, use "foo in (?, ?, ?)" for batching
 			// if no batch, and not a composite key, use "foo = ?"
 			InFragment in = new InFragment().setColumn( alias, columnNames[0] );
 			for ( int i = 0; i < batchSize; i++ ) {
-				in.addValue( "$1" );
+				in.addValue( nextParameter.get() );
 			}
 			return new StringBuilder( in.toFragmentString() );
 		}
 		else {
 			String[] rhs = new String[columnNames.length];
 			for ( int i = 0; i < columnNames.length; i++ ) {
-				rhs[i] = "$" + (i+1);
+				rhs[i] = nextParameter.get();
 			}
 			//a composite key
 			ConditionFragment byId = new ConditionFragment()
@@ -71,4 +64,5 @@ public class PgEntityJoinWalker extends EntityJoinWalker {
 			return whereString;
 		}
 	}
+
 }

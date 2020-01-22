@@ -1,11 +1,18 @@
 package org.hibernate.rx.service.initiator;
 
-import java.util.Map;
-
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.rx.service.RxConnectionPoolProviderImpl;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
+import java.util.Map;
+
+/**
+ * A Hibernate {@link StandardServiceInitiator service initiator} that
+ * integrates our {@link RxConnectionPoolProvider}.
+ *
+ * @see RxConnectionPoolProvider
+ * @see RxConnectionPoolProviderImpl
+ */
 public class RxConnectionProviderInitiator implements StandardServiceInitiator<RxConnectionPoolProviderImpl> {
 
 	public static final RxConnectionProviderInitiator INSTANCE = new RxConnectionProviderInitiator();

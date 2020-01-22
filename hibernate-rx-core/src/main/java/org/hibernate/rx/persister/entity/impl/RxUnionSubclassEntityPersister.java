@@ -1,15 +1,24 @@
 package org.hibernate.rx.persister.entity.impl;
 
-import org.hibernate.*;
+import org.hibernate.HibernateException;
+import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
+import org.hibernate.MappingException;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
-import org.hibernate.engine.spi.*;
-import org.hibernate.id.enhanced.TableGenerator;
+import org.hibernate.engine.spi.CascadingActions;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.UnionSubclassEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
+import org.hibernate.rx.loader.entity.impl.RxCascadeEntityLoader;
+import org.hibernate.rx.sql.impl.Delete;
+import org.hibernate.rx.sql.impl.Insert;
+import org.hibernate.rx.sql.impl.Parameters;
+import org.hibernate.rx.sql.impl.Update;
 
 import java.io.Serializable;
 
@@ -37,38 +46,11 @@ public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister
 	}
 
 	@Override
-	protected String[] getIdentifierAliases() {
-		return PersisterUtil.lower(super.getIdentifierAliases());
-	}
+	protected void createLoaders() {
+		super.createLoaders();
 
-	@Override
-	public String[] getIdentifierAliases(String suffix) {
-		return PersisterUtil.lower(super.getIdentifierAliases(suffix));
-	}
-
-	@Override
-	public String[] getSubclassPropertyColumnAliases(String propertyName, String suffix) {
-		return PersisterUtil.lower(super.getSubclassPropertyColumnAliases(propertyName, suffix));
-	}
-
-	@Override
-	protected String[] getSubclassColumnAliasClosure() {
-		return PersisterUtil.lower(super.getSubclassColumnAliasClosure());
-	}
-
-	@Override
-	public String[] getPropertyAliases(String suffix, int i) {
-		return PersisterUtil.lower(super.getPropertyAliases(suffix, i));
-	}
-
-	@Override
-	public String getDiscriminatorAlias(String suffix) {
-		return PersisterUtil.lower(super.getDiscriminatorAlias(suffix));
-	}
-
-	@Override
-	protected String getDiscriminatorAlias() {
-		return PersisterUtil.lower(super.getDiscriminatorAlias().toLowerCase());
+		getLoaders().put( "merge", new RxCascadeEntityLoader( this, CascadingActions.MERGE, getFactory() ) );
+		getLoaders().put( "refresh", new RxCascadeEntityLoader( this, CascadingActions.REFRESH, getFactory() ) );
 	}
 
 	@Override
@@ -79,7 +61,6 @@ public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister
 				.buildLoader( this, batchSize, lockMode, getFactory(), loadQueryInfluencers );
 	}
 
-
 	@Override
 	protected UniqueEntityLoader createEntityLoader(LockOptions lockOptions, LoadQueryInfluencers loadQueryInfluencers)
 			throws MappingException {
@@ -89,33 +70,31 @@ public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister
 	}
 
 	@Override
-	protected String generateInsertString(boolean identityInsert, boolean[] includeProperty, int j) {
-		return PersisterUtil.fixSqlParameters( super.generateInsertString( identityInsert, includeProperty, j ) );
+	protected Update createUpdate() {
+		return new Update( getFactory().getJdbcServices().getDialect(),
+				Parameters.createDialectParameterGenerator( getFactory() ) );
 	}
 
 	@Override
-	protected String generateDeleteString(int j) {
-		return PersisterUtil.fixSqlParameters( super.generateDeleteString(j) );
+	protected Insert createInsert() {
+		return new Insert( getFactory().getJdbcServices().getDialect(),
+				Parameters.createDialectParameterGenerator( getFactory() ) );
 	}
 
 	@Override
-	protected String generateUpdateString(
-			final boolean[] includeProperty,
-			final int j,
-			final Object[] oldFields,
-			final boolean useRowId) {
-		return PersisterUtil.fixSqlParameters( super.generateUpdateString(includeProperty, j, oldFields, useRowId) );
+	protected Delete createDelete() {
+		return new Delete( Parameters.createDialectParameterGenerator( getFactory() ) );
 	}
 
 	@Override
-	protected Serializable insert(
+	public Serializable insert(
 			Object[] fields, boolean[] notNull, String sql, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
 		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
 	}
 
 	@Override
-	protected void insert(
+	public void insert(
 			Serializable id,
 			Object[] fields,
 			boolean[] notNull,
@@ -138,7 +117,7 @@ public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister
 	}
 
 	@Override
-	protected void delete(
+	public void delete(
 			Serializable id,
 			Object version,
 			int j,
@@ -157,7 +136,7 @@ public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister
 	}
 
 	@Override
-	protected void updateOrInsert(
+	public void updateOrInsert(
 			Serializable id,
 			Object[] fields,
 			Object[] oldFields,
@@ -172,7 +151,7 @@ public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister
 	}
 
 	@Override
-	protected boolean update(
+	public boolean update(
 			Serializable id,
 			Object[] fields,
 			Object[] oldFields,

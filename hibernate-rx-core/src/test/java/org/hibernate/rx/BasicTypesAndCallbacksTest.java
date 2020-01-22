@@ -97,7 +97,16 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 							context.assertFalse( basic.postPersisted && basic.prePersisted );
 							context.assertEquals( basic.version, 1 );
 							context.assertEquals( basic.string, "Goodbye");
-							return s3.remove(basic)
+							return connection()
+									.preparedQuery("update Basic set string = 'Goodnight'")
+									.thenCompose(v -> s3.refresh(basic))
+									.thenAccept(v -> context.assertEquals(basic.getString(), "Goodnight"))
+									.thenCompose(v -> {
+										basik.version = basic.version;
+										return s3.merge(basik);
+									})
+									.thenAccept( b -> context.assertEquals( b.string, "Hello World") )
+									.thenCompose(v -> s3.remove(basic))
 									.thenAccept(v -> context.assertTrue( !basic.postRemoved && basic.preRemoved ) )
 									.thenCompose(v -> s3.flush())
 									.thenAccept(v -> context.assertTrue( basic.postRemoved && basic.preRemoved ) );
@@ -154,7 +163,7 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 		}
 	}
 
-	@Entity
+	@Entity @Table(name="Basic")
 	public static class Basic {
 
 		@Id @GeneratedValue Integer id;

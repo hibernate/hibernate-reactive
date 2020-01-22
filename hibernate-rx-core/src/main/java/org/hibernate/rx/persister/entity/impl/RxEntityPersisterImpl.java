@@ -1,25 +1,24 @@
-package org.hibernate.persister.entity;
+package org.hibernate.rx.persister.entity.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
 import org.hibernate.Session;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.Versioning;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.*;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.jdbc.Expectations;
+import org.hibernate.persister.entity.AbstractEntityPersister;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.rx.impl.RxQueryExecutor;
-import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
-import org.hibernate.rx.persister.entity.impl.RxGeneratedIdentifierPersister;
-import org.hibernate.rx.persister.entity.impl.RxIdentifierGenerator;
+import org.hibernate.rx.sql.impl.Parameters;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.sql.Delete;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
@@ -27,6 +26,8 @@ import org.hibernate.type.Type;
 
 import java.io.Serializable;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -37,8 +38,6 @@ import java.util.concurrent.CompletionStage;
  * intricacies. This design avoid duplicating the code in this class in the
  * three different subclasses.
  */
-//TODO: this class temporarily lives in org.hibernate.persister.entity because
-//	  it desperately needs to call protected methods of the persister classes
 public class RxEntityPersisterImpl implements RxEntityPersister {
 
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( RxEntityPersisterImpl.class );
@@ -71,6 +70,39 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		}
 	}
 
+	@Override
+	public CompletionStage<Serializable> insertRx(Object[] fields, Object object, SharedSessionContractImplementor session)
+			throws HibernateException {
+		// apply any pre-insert in-memory value generation
+		preInsertInMemoryValueGeneration( fields, object, session );
+
+		final int span = delegate.getTableSpan();
+		CompletionStage<Serializable> stage = RxUtil.completedFuture(null);
+		if ( delegate.getEntityMetamodel().isDynamicInsert() ) {
+			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
+			boolean[] notNull = delegate.getPropertiesToInsert( fields );
+			stage = stage.thenCompose( n -> insertRx( fields, notNull, delegate.generateInsertString( true, notNull ), object, session ) );
+			for ( int j = 1; j < span; j++ ) {
+				final int jj = j;
+				stage = stage.thenCompose( id ->
+						insertRx(id, fields, notNull, jj, delegate.generateInsertString(notNull, jj), object, session)
+							.thenApply( v -> id ));
+			}
+		}
+		else {
+			// For the case of dynamic-insert="false", use the static SQL
+			stage = stage.thenCompose( n -> insertRx( fields, delegate.getPropertyInsertability(), delegate.getSQLIdentityInsertString(), object, session ) );
+			for ( int j = 1; j < span; j++ ) {
+				final int jj = j;
+				stage = stage.thenCompose( id ->
+						insertRx(id, fields, delegate.getPropertyInsertability(), jj, delegate.getSQLInsertStrings()[jj], object, session)
+								.thenApply( v -> id ));
+			}
+		}
+		return stage;
+	}
+
+	@Override
 	public CompletionStage<?> insertRx(
 			Serializable id,
 			Object[] fields,
@@ -144,7 +176,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		}
 
 		// TODO : shouldn't inserts be Expectations.NONE?
-		final Expectation expectation = Expectations.appropriateExpectation( delegate.insertResultCheckStyles[j] );
+		final Expectation expectation = Expectations.appropriateExpectation( delegate.getInsertResultCheckStyles()[j] );
 //		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
 //		final boolean useBatch = expectation.canBeBatched() &&
 //				jdbcBatchSizeToUse > 1 &&
@@ -179,6 +211,63 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 				});
 	}
 
+	/**
+	 * Perform an SQL INSERT, and then retrieve a generated identifier.
+	 * <p/>
+	 * This form is used for PostInsertIdentifierGenerator-style ids (IDENTITY,
+	 * select, etc).
+	 */
+	private CompletionStage<Serializable> insertRx(
+			Object[] fields,
+			boolean[] notNull,
+			String sql,
+			Object object,
+			SharedSessionContractImplementor session) throws HibernateException {
+
+		sql = Parameters.processParameters(sql, session);
+
+		if ( LOG.isTraceEnabled() ) {
+			LOG.tracev( "Inserting entity: {0}", MessageHelper.infoString( delegate ) );
+			if ( delegate.isVersioned() ) {
+				LOG.tracev( "Version: {0}", Versioning.getVersion( fields, delegate ) );
+			}
+		}
+
+		PreparedStatementAdaptor insert = new PreparedStatementAdaptor();
+		try {
+			delegate.dehydrate( null, fields, notNull, delegate.getPropertyColumnInsertable(), 0, insert, session, false );
+		}
+		catch (SQLException e) {
+			//can't actually occur!
+			throw new JDBCException( "error while binding parameters", e );
+		}
+
+		SessionFactoryImplementor factory = session.getFactory();
+		Dialect dialect = factory.getJdbcServices().getDialect();
+		String identifierColumnName = delegate.getIdentifierColumnNames()[0];
+		if ( factory.getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
+			//TODO: wooooo this is awful ... I believe the problem is fixed in Hibernate 6
+			if ( dialect instanceof PostgreSQL81Dialect) {
+				sql = sql + " returning " + identifierColumnName;
+			}
+			return queryExecutor.updateReturning( sql, insert.getParametersAsArray(), factory )
+					.thenApply(Optional::get);
+		}
+		else {
+			//use an extra round trip to fetch the id
+			String selectIdSql = dialect.getIdentityColumnSupport()
+					.getIdentitySelectString(
+							delegate.getTableName(),
+							identifierColumnName,
+							Types.INTEGER
+					);
+			return queryExecutor.update( sql, insert.getParametersAsArray(), factory)
+					.thenCompose( v -> queryExecutor.selectLong(selectIdSql, new Object[0], factory) )
+					.thenApply(Optional::get);
+		}
+
+	}
+
 	private CompletionStage<?> deleteRx(
 			Serializable id,
 			Object version,
@@ -193,7 +282,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 		}
 		final boolean useVersion = j == 0 && delegate.isVersioned();
 //		final boolean callable = delegate.isDeleteCallable( j );
-		final Expectation expectation = Expectations.appropriateExpectation( delegate.deleteResultCheckStyles[j] );
+		final Expectation expectation = Expectations.appropriateExpectation( delegate.getDeleteResultCheckStyles()[j] );
 //		final boolean useBatch = j == 0 && delegate.isBatchable() && expectation.canBeBatched();
 //		if ( useBatch && deleteBatchKey == null ) {
 //			deleteBatchKey = new BasicBatchKey(
@@ -367,7 +456,7 @@ public class RxEntityPersisterImpl implements RxEntityPersister {
 			final String sql,
 			final SharedSessionContractImplementor session) throws HibernateException {
 
-		final Expectation expectation = Expectations.appropriateExpectation( delegate.updateResultCheckStyles[j] );
+		final Expectation expectation = Expectations.appropriateExpectation( delegate.getUpdateResultCheckStyles()[j] );
 //		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
 //		final boolean useBatch = expectation.canBeBatched() && isBatchable() && jdbcBatchSizeToUse > 1;
 //		if ( useBatch && updateBatchKey == null ) {

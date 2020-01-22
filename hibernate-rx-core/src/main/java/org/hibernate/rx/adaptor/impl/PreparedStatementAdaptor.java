@@ -24,10 +24,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.*;
 
-/*
- * I've created this class because I wanted to reuse the logic for type assignment from ORM.
- * I only use it to set the parameters form some query and we need to replace it with something
- * ad hoc for this project (similar to the GridType for Hibernate OGM).
+/**
+ * Collects parameter bindings from Hibernate core code
+ * that expects a JDBC {@link PreparedStatement}.
  */
 public class PreparedStatementAdaptor implements PreparedStatement {
 

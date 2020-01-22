@@ -1,13 +1,19 @@
 package org.hibernate.rx.service.initiator;
 
-import java.util.Map;
-
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.resource.transaction.spi.TransactionCoordinatorBuilder;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
+import java.util.Map;
+
+/**
+ * A Hibernate {@link StandardServiceInitiator service initiator} that
+ * integrates our implementation of {@link TransactionCoordinatorBuilder}.
+ *
+ * @see TransactionCoordinatorBuilder
+ */
 public class RxTransactionCoordinatorBuilderInitiator implements StandardServiceInitiator<TransactionCoordinatorBuilder> {
 
 	public static final RxTransactionCoordinatorBuilderInitiator INSTANCE = new RxTransactionCoordinatorBuilderInitiator();

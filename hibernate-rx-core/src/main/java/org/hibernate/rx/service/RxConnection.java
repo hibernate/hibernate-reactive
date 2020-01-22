@@ -1,5 +1,6 @@
 package org.hibernate.rx.service;
 
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
@@ -9,6 +10,11 @@ import org.hibernate.rx.RxSession;
 import io.vertx.axle.sqlclient.RowSet;
 import io.vertx.axle.sqlclient.Tuple;
 
+/**
+ * Abstracts over reactive connection pools.
+ *
+ * @see org.hibernate.rx.impl.PoolConnection
+ */
 // FIXME: We might need to replace RowSet and Tuple classes
 public interface RxConnection {
 	CompletionStage<Void> inTransaction(
@@ -17,11 +23,13 @@ public interface RxConnection {
 
 	CompletionStage<Integer> update(String sql);
 
-	CompletionStage<Integer> update(String sql, Tuple asTuple);
+	CompletionStage<Integer> update(String sql, Tuple parameters);
 
 	CompletionStage<RowSet<Row>> preparedQuery(String query);
 
-	CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple asTuple);
+	CompletionStage<Optional<Integer>> updateReturning(String sql, Tuple parameters);
+
+	CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters);
 
 	void close();
 

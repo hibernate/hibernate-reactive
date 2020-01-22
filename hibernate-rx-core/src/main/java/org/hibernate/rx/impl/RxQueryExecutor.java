@@ -1,5 +1,20 @@
 package org.hibernate.rx.impl;
 
+import io.vertx.axle.mysqlclient.MySQLClient;
+import io.vertx.axle.sqlclient.Row;
+import io.vertx.axle.sqlclient.RowIterator;
+import io.vertx.axle.sqlclient.SqlResult;
+import io.vertx.axle.sqlclient.Tuple;
+import io.vertx.sqlclient.impl.ArrayTuple;
+import org.hibernate.JDBCException;
+import org.hibernate.engine.spi.QueryParameters;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.rx.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.rx.adaptor.impl.ResultSetAdaptor;
+import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
+import org.hibernate.type.Type;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -8,19 +23,11 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import io.vertx.axle.sqlclient.*;
-import org.hibernate.JDBCException;
-import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.rx.adaptor.impl.PreparedStatementAdaptor;
-import org.hibernate.rx.adaptor.impl.ResultSetAdaptor;
-import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
-
-import io.vertx.sqlclient.impl.ArrayTuple;
-import org.hibernate.type.Type;
-
-// This could be a service
+/**
+ * A facade which simplifies execution of SQL against an
+ * {@link org.hibernate.rx.service.RxConnection} obtained
+ * via the {@link RxConnectionPoolProvider} service.
+ */
 public class RxQueryExecutor {
 
 	public CompletionStage<Integer> update(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
@@ -29,10 +36,26 @@ public class RxQueryExecutor {
 				.getService( RxConnectionPoolProvider.class );
 
 		return poolProvider.getConnection()
-				.preparedQuery( sql, asTuple( paramValues )).thenApply(SqlResult::rowCount);
+				.preparedQuery( sql, asTuple(paramValues) ).thenApply(SqlResult::rowCount);
 	}
 
-	public CompletionStage<Optional<Integer>> selectInteger(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+	public CompletionStage<Optional<Integer>> updateReturning(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+		RxConnectionPoolProvider poolProvider = factory
+				.getServiceRegistry()
+				.getService( RxConnectionPoolProvider.class );
+
+		return poolProvider.getConnection()
+				.preparedQuery( sql, asTuple(paramValues) )
+				.thenApply( rows -> {
+					RowIterator<Row> iterator = rows.iterator();
+					Integer id = iterator.hasNext() ?
+							iterator.next().getInteger(0) :
+							rows.property(MySQLClient.LAST_INSERTED_ID);
+					return Optional.ofNullable(id);
+				});
+	}
+
+	public CompletionStage<Optional<Long>> selectLong(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService(RxConnectionPoolProvider.class);
@@ -40,7 +63,7 @@ public class RxQueryExecutor {
 		return poolProvider.getConnection()
 				.preparedQuery( sql, asTuple( paramValues) ).thenApply(rowSet -> {
 					for (Row row: rowSet) {
-						return Optional.ofNullable( row.getInteger(0) );
+						return Optional.ofNullable( row.getLong(0) );
 					}
 					return Optional.empty();
 				});

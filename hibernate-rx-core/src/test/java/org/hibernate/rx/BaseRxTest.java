@@ -9,12 +9,12 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.rx.service.RxConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.rx.util.impl.RxUtil;
-import org.hibernate.service.ServiceRegistry;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.CompletionStage;
@@ -46,8 +46,6 @@ public abstract class BaseRxTest {
 		Configuration configuration = new Configuration();
 		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, "create-drop" );
 		configuration.setProperty( AvailableSettings.URL, "jdbc:postgresql://localhost:5432/hibernate-rx?user=hibernate-rx&password=hibernate-rx" );
-//		configuration.setProperty( AvailableSettings.URL, "jdbc:mysql://localhost:3306/hibernaterx?user=hibernate-rx&password=hibernate-rx" );
-//		configuration.setProperty( AvailableSettings.DIALECT, MySQL8Dialect.class.getName());
 		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
 		return configuration;
 	}
@@ -61,6 +59,8 @@ public abstract class BaseRxTest {
 		sessionFactory = constructConfiguration().buildSessionFactory(registry);
 		poolProvider = registry.getService(RxConnectionPoolProvider.class);
 
+		//EITHER WAY WORKS:
+//		session = sessionFactory.openSession().unwrap(RxSession.class);
 		session = sessionFactory.unwrap(RxSessionFactory.class).openRxSession();
 	}
 

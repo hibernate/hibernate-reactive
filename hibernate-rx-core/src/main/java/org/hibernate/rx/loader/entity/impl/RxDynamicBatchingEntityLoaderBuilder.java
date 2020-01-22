@@ -90,7 +90,8 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 						id,
 						persister.getMappedClass().getName(),
 						lockOptions,
-						(EventSource) session
+						(EventSource) session,
+						null
 				);
 
 				Object managedEntity = null;
@@ -215,7 +216,8 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 						id,
 						persister.getMappedClass().getName(),
 						lockOptions,
-						(EventSource) session
+						(EventSource) session,
+						null
 				);
 
 				Object managedEntity = null;
@@ -403,7 +405,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 				log.debugf( "Batch loading entity: %s", MessageHelper.infoString( persister(), idsToLoad, session.getFactory() ) );
 			}
 
-			QueryParameters qp = buildQueryParameters( id, idsToLoad, optionalObject, lockOptions );
+			QueryParameters qp = buildQueryParameters( id, idsToLoad, optionalObject, lockOptions, false );
 			CompletionStage<List<?>> results = dynamicLoader.doEntityBatchFetch( (SessionImplementor) session, qp, idsToLoad );
 
 			// The EntityKey for any entity that is not found will remain in the batch.

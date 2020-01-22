@@ -4,7 +4,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.persister.entity.RxEntityPersisterImpl;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
@@ -21,14 +20,27 @@ public interface RxEntityPersister {
 
 	EntityPersister getPersister();
 
-	RxIdentifierGenerator getIdentifierGenerator();
+	//TODO: we only support Long for now, but eventually
+	//      we need to do something more general
+	RxIdentifierGenerator<Long> getIdentifierGenerator();
+	
+	/**
+	 * Insert the given instance state without blocking.
+	 *
+	 * @see EntityPersister#insert(Serializable, Object[], Object, SharedSessionContractImplementor)
+	 */
+	CompletionStage<?> insertRx(
+			Serializable id,
+			Object[] fields,
+			Object object,
+			SharedSessionContractImplementor session);
 
 	/**
 	 * Insert the given instance state without blocking.
-	 * 
-	 * @see EntityPersister#insert(Serializable, Object[], Object, SharedSessionContractImplementor)
+	 *
+	 * @see EntityPersister#insert(Object[], Object, SharedSessionContractImplementor)
 	 */
-	CompletionStage<?> insertRx(Serializable id,
+	CompletionStage<Serializable> insertRx(
 			Object[] fields,
 			Object object,
 			SharedSessionContractImplementor session);
@@ -48,9 +60,10 @@ public interface RxEntityPersister {
 	/**
 	 * Update the given instance state without blocking.
 	 *
-	 * @see EntityPersister#update(Serializable, Object[], int[], boolean, Object[], Object, Object, Object, SharedSessionContractImplementor) 
+	 * @see EntityPersister#update(Serializable, Object[], int[], boolean, Object[], Object, Object, Object, SharedSessionContractImplementor)
 	 */
-	CompletionStage<?> updateRx(Serializable id,
+	CompletionStage<?> updateRx(
+			Serializable id,
 			Object[] fields, int[] dirtyFields,
 			boolean hasDirtyCollection,
 			Object[] oldFields, Object oldVersion,

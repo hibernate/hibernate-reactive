@@ -24,9 +24,9 @@ public class CascadeTest extends BaseRxTest {
 
 		Node basik = new Node("Child");
 		basik.parent = new Node("Parent");
-//		basik.elements.add( new Element(basik) );
-//		basik.elements.add( new Element(basik) );
-//		basik.elements.add( new Element(basik) );
+		basik.elements.add( new Element(basik) );
+		basik.elements.add( new Element(basik) );
+		basik.elements.add( new Element(basik) );
 
 		test( context,
 				openSession()
@@ -57,6 +57,26 @@ public class CascadeTest extends BaseRxTest {
 										context.assertEquals( node.version, 2 );
 									});
 						}))
+						.thenCompose(v -> openSession())
+						.thenCompose(s2 ->
+								s2.find( Node.class, basik.getId() )
+										.thenCompose( option -> {
+											context.assertTrue( option.isPresent() );
+											Node node = option.get();
+											context.assertEquals( node.version, 2 );
+											context.assertEquals( node.string, "Adopted");
+											return s2.fetch( node.parent )
+													.thenCompose( opt -> {
+														context.assertTrue( opt.isPresent() );
+														Node parent = opt.get();
+														return connection().preparedQuery("update Node set string = upper(string)")
+																.thenCompose(v -> s2.refresh(node))
+																.thenAccept(v -> {
+																	context.assertEquals( node.getString(), "ADOPTED" );
+																	context.assertEquals( parent.getString(), "NEW PARENT" );
+																});
+													});
+										}))
 				.thenCompose(v -> openSession())
 				.thenCompose(s3 ->
 					s3.find( Node.class, basik.getId() )
@@ -65,8 +85,16 @@ public class CascadeTest extends BaseRxTest {
 							context.assertFalse( node.postUpdated && node.preUpdated );
 							context.assertFalse( node.postPersisted && node.prePersisted );
 							context.assertEquals( node.version, 2 );
-							context.assertEquals( node.string, "Adopted");
-							return s3.remove(node)
+							context.assertEquals( node.string, "ADOPTED");
+							basik.version = node.version;
+							basik.string = "Hello World!";
+							basik.parent.string = "Goodbye World!";
+							return s3.merge(basik)
+									.thenAccept( b -> {
+										context.assertEquals( b.string, "Hello World!");
+										context.assertEquals( b.parent.string, "Goodbye World!");
+									})
+									.thenCompose(v -> s3.remove(node))
 									.thenAccept(v -> context.assertTrue( !node.postRemoved && node.preRemoved ) )
 									.thenCompose(v -> s3.flush())
 									.thenAccept(v -> context.assertTrue( node.postRemoved && node.preRemoved ) );
@@ -78,7 +106,7 @@ public class CascadeTest extends BaseRxTest {
 		);
 	}
 
-	@Entity
+	@Entity @Table(name="Element")
 	public static class Element {
 		@Id @GeneratedValue Integer id;
 
@@ -92,7 +120,7 @@ public class CascadeTest extends BaseRxTest {
 		Element() {}
 	}
 
-	@Entity
+	@Entity @Table(name="Node")
 	public static class Node {
 
 		@Id @GeneratedValue Integer id;
@@ -101,14 +129,16 @@ public class CascadeTest extends BaseRxTest {
 
 		@ManyToOne(fetch = FetchType.LAZY,
 				cascade = {CascadeType.PERSIST,
+						CascadeType.REFRESH,
+						CascadeType.MERGE,
 						CascadeType.REMOVE})
 		Node parent;
 
-//		@OneToMany(fetch = FetchType.EAGER,
-//				cascade = {CascadeType.PERSIST,
-//						CascadeType.REMOVE},
-//				mappedBy = "node")
-//		List<Element> elements = new ArrayList<Element>();
+		@OneToMany(fetch = FetchType.EAGER,
+				cascade = {CascadeType.PERSIST,
+						CascadeType.REMOVE},
+				mappedBy = "node")
+		List<Element> elements = new ArrayList<Element>();
 
 		@Transient boolean prePersisted;
 		@Transient boolean postPersisted;

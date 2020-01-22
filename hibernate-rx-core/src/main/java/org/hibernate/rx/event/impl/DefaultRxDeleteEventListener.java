@@ -1,4 +1,4 @@
-package org.hibernate.event.internal;
+package org.hibernate.rx.event.impl;
 
 import org.hibernate.CacheMode;
 import org.hibernate.HibernateException;
@@ -12,7 +12,7 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.Status;
-import org.hibernate.event.service.spi.DuplicationStrategy;
+import org.hibernate.event.internal.OnUpdateVisitor;
 import org.hibernate.event.service.spi.JpaBootstrapSensitive;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.DeleteEventListener;
@@ -39,14 +39,11 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Defines the default delete event listener used by hibernate for deleting entities
- * from the datastore in response to generated delete events.
- *
- * @author Steve Ebersole
+ * A reactific {@link org.hibernate.event.internal.DefaultDeleteEventListener}.
  */
 public class DefaultRxDeleteEventListener
 		implements DeleteEventListener, RxDeleteEventListener, CallbackRegistryConsumer, JpaBootstrapSensitive {
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultDeleteEventListener.class );
+	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultRxDeleteEventListener.class );
 
 	private CallbackRegistry callbackRegistry;
 	private boolean jpaBootstrap;
@@ -406,25 +403,4 @@ public class DefaultRxDeleteEventListener
 		}
 	}
 
-	public static class EventContextManagingDeleteEventListenerDuplicationStrategy implements DuplicationStrategy {
-
-		public static final DuplicationStrategy INSTANCE = new DefaultRxDeleteEventListener.EventContextManagingDeleteEventListenerDuplicationStrategy();
-
-		private EventContextManagingDeleteEventListenerDuplicationStrategy() {
-		}
-
-		@Override
-		public boolean areMatch(Object listener, Object original) {
-			if ( listener instanceof DefaultRxDeleteEventListener && original instanceof DeleteEventListener ) {
-				return true;
-			}
-
-			return false;
-		}
-
-		@Override
-		public Action getAction() {
-			return Action.REPLACE_ORIGINAL;
-		}
-	}
 }

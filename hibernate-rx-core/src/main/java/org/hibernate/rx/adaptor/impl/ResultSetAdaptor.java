@@ -1,38 +1,25 @@
 package org.hibernate.rx.adaptor.impl;
 
+import io.vertx.axle.core.buffer.Buffer;
+import io.vertx.axle.sqlclient.Row;
+import io.vertx.axle.sqlclient.RowIterator;
+import io.vertx.axle.sqlclient.RowSet;
+import org.hibernate.cfg.NotYetImplementedException;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Date;
-import java.sql.NClob;
-import java.sql.Ref;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.RowId;
-import java.sql.SQLWarning;
-import java.sql.SQLXML;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Calendar;
 import java.util.Map;
 
-import io.vertx.axle.core.buffer.Buffer;
-import org.hibernate.cfg.NotYetImplementedException;
-
-import io.vertx.axle.sqlclient.RowIterator;
-import io.vertx.axle.sqlclient.RowSet;
-import io.vertx.axle.sqlclient.Row;
-
 /**
- * {@link ResultSet} adapter for {@link PgRowSet}.
+ * An adaptor that allows Hibenate core code which expects a JDBC
+ * {@code ResultSet} to read values from Vert.x's {@code RowSet}.
  */
 public class ResultSetAdaptor implements ResultSet {
 

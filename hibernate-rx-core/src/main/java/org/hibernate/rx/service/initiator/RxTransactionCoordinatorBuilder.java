@@ -5,6 +5,10 @@ import org.hibernate.resource.transaction.spi.TransactionCoordinator;
 import org.hibernate.resource.transaction.spi.TransactionCoordinatorBuilder;
 import org.hibernate.resource.transaction.spi.TransactionCoordinatorOwner;
 
+/**
+ * An implementation of the Hibernate {@link TransactionCoordinatorBuilder}
+ * service for Hibernate RX.
+ */
 public class RxTransactionCoordinatorBuilder implements TransactionCoordinatorBuilder {
 
 	private final TransactionCoordinatorBuilder delegate;

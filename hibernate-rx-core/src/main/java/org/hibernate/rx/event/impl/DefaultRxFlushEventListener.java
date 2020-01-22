@@ -9,7 +9,6 @@ import org.hibernate.action.internal.QueuedOperationCollectionAction;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.Collections;
 import org.hibernate.engine.spi.*;
-import org.hibernate.event.service.spi.DuplicationStrategy;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.*;
 import org.hibernate.internal.CoreMessageLogger;
@@ -23,9 +22,13 @@ import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.jboss.logging.Logger;
 
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * A reactific {@link org.hibernate.event.internal.DefaultFlushEventListener}.
+ */
 public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushEventListener {
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger(
 			CoreMessageLogger.class,
@@ -125,7 +128,8 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 
 				event.setNumberOfEntitiesProcessed(entityCount);
 				event.setNumberOfCollectionsProcessed(collectionCount);
-			} finally {
+			}
+			finally {
 				persistenceContext.setFlushing(false);
 			}
 		});
@@ -144,10 +148,10 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 		LOG.debug( "Processing flush-time cascades" );
 
 		CompletionStage<Void> stage = RxUtil.nullFuture();
-		final Object anything = null;
+		final Object anything = new IdentityHashMap( 10 );
 		//safe from concurrent modification because of how concurrentEntries() is implemented on IdentityMap
 		for ( Map.Entry<Object, EntityEntry> me : persistenceContext.reentrantSafeEntityEntries() ) {
-			EntityEntry entry = (EntityEntry) me.getValue();
+			EntityEntry entry = me.getValue();
 			Status status = entry.getStatus();
 			if ( status == Status.MANAGED || status == Status.SAVING || status == Status.READ_ONLY ) {
 				CompletionStage<Void> cascade = cascadeOnFlush(session, entry.getPersister(), me.getKey(), anything);
@@ -345,28 +349,6 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 
 	protected void postPostFlush(SessionImplementor session) {
 		session.getInterceptor().postFlush( session.getPersistenceContextInternal().managedEntitiesIterator() );
-	}
-
-	public static class EventContextManagingFlushEventListenerDuplicationStrategy implements DuplicationStrategy {
-
-		public static final DuplicationStrategy INSTANCE = new DefaultRxFlushEventListener.EventContextManagingFlushEventListenerDuplicationStrategy();
-
-		private EventContextManagingFlushEventListenerDuplicationStrategy() {
-		}
-
-		@Override
-		public boolean areMatch(Object listener, Object original) {
-			if ( listener instanceof DefaultRxFlushEventListener && original instanceof FlushEventListener ) {
-				return true;
-			}
-
-			return false;
-		}
-
-		@Override
-		public Action getAction() {
-			return Action.REPLACE_ORIGINAL;
-		}
 	}
 
 	@Override

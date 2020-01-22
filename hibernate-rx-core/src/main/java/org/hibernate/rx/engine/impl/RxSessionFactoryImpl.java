@@ -11,8 +11,8 @@ import org.hibernate.internal.SessionFactoryRegistry;
 import org.hibernate.internal.SessionFactoryRegistry.ObjectFactoryImpl;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionFactory;
+import org.hibernate.rx.boot.impl.RxSessionFactoryBuilderImpl;
 import org.hibernate.rx.engine.spi.RxSessionBuilderImplementor;
-import org.hibernate.rx.engine.spi.RxSessionFactoryImplementor;
 import org.hibernate.rx.impl.RxSessionBuilderDelegator;
 
 import javax.naming.Reference;
@@ -22,13 +22,20 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
 import java.util.List;
 
+/**
+ * Implementation of {@link RxSessionFactory}.
+ *
+ * @see RxSessionFactoryBuilderImpl
+ */
 public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
-		implements RxSessionFactoryImplementor {
+		implements RxSessionFactory {
 
 	private final String uuid;
+	private final SessionFactoryImpl delegate;
 
-	public RxSessionFactoryImpl(SessionFactoryImplementor delegate) {
+	public RxSessionFactoryImpl(SessionFactoryImpl delegate) {
 		super( delegate );
+		this.delegate = delegate;
 		uuid = delegate.getUuid();
 		SessionFactoryRegistry.INSTANCE.addSessionFactory(
 				delegate.getUuid(),
@@ -38,6 +45,7 @@ public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
 				delegate.getServiceRegistry().getService( JndiService.class )
 		);
 	}
+
 
 	@Override
 	public RxSession openRxSession() throws HibernateException {
@@ -51,7 +59,10 @@ public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
 
 	@Override
 	public RxSessionBuilderImplementor withOptions() {
-		return new RxSessionBuilderDelegator( delegate().withOptions(), this );
+		return new RxSessionBuilderDelegator(
+				new SessionFactoryImpl.SessionBuilderImpl(delegate),
+				delegate
+		);
 	}
 
 	@Override
@@ -79,19 +90,7 @@ public class RxSessionFactoryImpl extends SessionFactoryDelegatingImpl
 			return type.cast( this );
 		}
 
-		if ( type.isAssignableFrom( SessionFactoryImpl.class ) ) {
-			return type.cast( this );
-		}
-
 		if ( type.isAssignableFrom( RxSessionFactory.class ) ) {
-			return type.cast( this );
-		}
-
-		if ( type.isAssignableFrom( RxSessionFactoryImplementor.class ) ) {
-			return type.cast( this );
-		}
-
-		if ( type.isAssignableFrom( RxSessionFactoryImpl.class ) ) {
 			return type.cast( this );
 		}
 

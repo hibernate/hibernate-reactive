@@ -10,7 +10,11 @@ import org.hibernate.rx.RxSessionFactory;
 import java.util.Map;
 
 /**
- * Builder for the {@link RxSessionFactory}
+ * Mixin of {@link RxSessionFactoryBuilder} with {@link SessionFactoryBuilderImplementor}.
+ * This is needed in {@link org.hibernate.rx.boot.impl.RxSessionFactoryBuilderImpl} as a
+ * self type argument to {@code AbstractDelegatingSessionFactoryBuilderImplementor}.
+ *
+ * @see org.hibernate.rx.boot.impl.RxSessionFactoryBuilderImpl
  */
 public interface RxSessionFactoryBuilderImplementor
 		extends SessionFactoryBuilderImplementor, RxSessionFactoryBuilder {

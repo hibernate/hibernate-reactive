@@ -12,8 +12,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Implements the RxSession API. This delegating class is needed to
- * avoid name clashes when implementing both RxSession and Session.
+ * Implements the {@link RxSession} API. This delegating class is
+ * needed to avoid name clashes when implementing both
+ * {@code RxSession} and {@link org.hibernate.Session}.
  */
 public class RxSessionImpl implements RxSession {
 
@@ -72,7 +73,17 @@ public class RxSessionImpl implements RxSession {
 
 	@Override
 	public CompletionStage<RxSession> remove(Object entity) {
-		return delegate.rxRemove( entity ).thenApply(v-> this );
+		return delegate.rxRemove( entity ).thenApply( v-> this );
+	}
+
+	@Override
+	public <T> CompletionStage<T> merge(T entity) {
+		return delegate.rxMerge( entity );
+	}
+
+	@Override
+	public CompletionStage<RxSession> refresh(Object entity) {
+		return delegate.rxRefresh( entity ).thenApply( v-> this );
 	}
 
 	@Override

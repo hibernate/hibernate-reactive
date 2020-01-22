@@ -16,10 +16,12 @@ import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
 
 /**
- * A session action that may be cascaded from parent entity to its children
+ * A {@link org.hibernate.rx.RxSession reactive session} operation that may
+ * be cascaded from a parent entity to its children. A non-blocking counterpart
+ * to {@link org.hibernate.engine.spi.CascadingAction}.
  *
+ * @see CascadingActions
  * @author Gavin King
- * @author Steve Ebersole
  */
 public interface CascadingAction {
 

@@ -21,6 +21,18 @@ directory.
 The project is built with Gradle, but you do _not_ need to have Gradle
 installed on your machine.
 
+### Obtaining a snapshot build of Hibernate ORM
+
+Temporarily, you'll need a snapshot build of `hibernate-core-5.4.11.jar`.
+Clone the [hibernate-orm][] project from GitHub, and run:
+
+    ./gradlew hibernate-core:publishToMavenLocal
+
+from the `hibernate-orm` directory. This will publish the snapshot to your
+local Maven repository.
+
+[hibernate-orm]: https://github.com/hibernate/hibernate-orm
+
 ### Building
 
 To compile, navigate to this directory, and type:
@@ -41,6 +53,14 @@ From the command line, type the following commands:
 	create user "hibernate-rx" with password 'hibernate-rx';
 	grant all privileges on database "hibernate-rx" to "hibernate-rx";
 
+If you also want to run the MySQL tests, ensure that MySQL is installed, 
+and then type the following:
+
+    mysql -uroot
+    create database hibernaterx;
+    create user "hibernate-rx" identified by 'hibernate-rx';
+    grant all on hibernaterx.* to "hibernate-rx";
+
 Finally, run `./gradlew test` from this directory.
 
 ## Dependencies
@@ -49,8 +69,9 @@ The project has been tested with:
 
 - Java 8
 - PostgreSQL
-- [Hibernate ORM](https://hibernate.org/orm/) 5.4.10.Final
+- [Hibernate ORM](https://hibernate.org/orm/) 5.4.11-SNAPSHOT
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 0.0.12
+- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 0.0.12
 
 ## Usage
 
@@ -131,21 +152,21 @@ At this time, Hibernate RX does _not_ support the following features:
 - pessimistic locking via `LockMode`
 - `@ElementCollection` and `@ManyToMany`
 - `@OneToMany` without `mappedBy` 
-- `GenerationType.IDENTITY` (autoincrement columns), and custom id 
-  generation strategies
-- `@NamedEntityGraph`
 - transparent lazy loading
+- JPA's `@NamedEntityGraph`
 - eager select fetching, for example `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`
+- hi/lo optimization for id generation
+- custom id generation strategies
 - criteria queries
 
 Instead, use the following supported features:
 
 - optimistic locking with `@Version`
 - `@OneToMany(mappedBy=...)` together with `@ManyToOne`
-- `SEQUENCE` or `TABLE` id generation
-- `@FetchProfile`
 - explicit lazy loading via `RxSession.fetch(entity.association)`, which 
   returns a `CompletionStage`
+- `@FetchProfile`
+- JPA-standard `SEQUENCE`, `TABLE`, or `IDENTITY` id generation
 
 Note that you should not use Hibernate RX with a second-level cache 
 implementation which performs blocking IO, for example passivation to the

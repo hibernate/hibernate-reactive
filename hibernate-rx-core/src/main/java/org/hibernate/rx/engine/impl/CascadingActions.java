@@ -16,10 +16,13 @@ import org.hibernate.type.Type;
 import org.jboss.logging.Logger;
 
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
- * @author Steve Ebersole
+ * The possible {@link CascadingAction cascading actions} for
+ * a {@link org.hibernate.rx.RxSession reactive session}.
  */
 public class CascadingActions {
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger(
@@ -47,7 +50,8 @@ public class CascadingActions {
 				boolean isCascadeDeleteEnabled) {
 			LOG.tracev( "Cascading to delete: {0}", entityName );
 			return session.unwrap(RxSessionInternal.class).rxFetch(child)
-					.thenCompose( c -> session.unwrap(RxSessionInternal.class).rxRemove( c.get() ) );
+					.thenCompose( c -> session.unwrap(RxSessionInternal.class)
+							.rxRemove( c.get(), isCascadeDeleteEnabled, (Set) anything ) );
 		}
 	};
 
@@ -65,7 +69,7 @@ public class CascadingActions {
 				boolean isCascadeDeleteEnabled)
 				throws HibernateException {
 			LOG.tracev( "Cascading to persist: {0}", entityName );
-			return session.unwrap(RxSessionInternal.class).rxPersist( child );
+			return session.unwrap(RxSessionInternal.class).rxPersist( child, (Map) anything );
 		}
 	};
 
@@ -85,7 +89,44 @@ public class CascadingActions {
 				boolean isCascadeDeleteEnabled)
 				throws HibernateException {
 			LOG.tracev( "Cascading to persist on flush: {0}", entityName );
-			return session.unwrap(RxSessionInternal.class).rxPersistOnFlush( child );
+			return session.unwrap(RxSessionInternal.class).rxPersistOnFlush( child, (Map) anything );
+		}
+	};
+
+	/**
+	 * @see org.hibernate.Session#merge(Object)
+	 */
+	public static final CascadingAction MERGE =
+			new BaseCascadingAction(org.hibernate.engine.spi.CascadingActions.MERGE) {
+				@Override
+				public CompletionStage <?> cascade(
+						EventSource session,
+						Object child,
+						String entityName,
+						Object anything,
+						boolean isCascadeDeleteEnabled)
+						throws HibernateException {
+					LOG.tracev("Cascading to refresh: {0}", entityName);
+					return session.unwrap(RxSessionInternal.class).rxMerge( child, (Map) anything );
+				}
+			};
+
+
+	/**
+	 * @see org.hibernate.Session#refresh(Object)
+	 */
+	public static final CascadingAction REFRESH =
+			new BaseCascadingAction(org.hibernate.engine.spi.CascadingActions.REFRESH) {
+		@Override
+		public CompletionStage <?> cascade(
+				EventSource session,
+				Object child,
+				String entityName,
+				Object anything,
+				boolean isCascadeDeleteEnabled)
+				throws HibernateException {
+			LOG.tracev("Cascading to refresh: {0}", entityName);
+			return session.unwrap(RxSessionInternal.class).rxRefresh( child, (Map) anything );
 		}
 	};
 

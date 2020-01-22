@@ -20,12 +20,13 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Table;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.impl.RxQueryExecutor;
+import org.hibernate.rx.sql.impl.Parameters;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import static org.hibernate.id.enhanced.TableGenerator.*;
 
@@ -36,7 +37,7 @@ import static org.hibernate.id.enhanced.TableGenerator.*;
  * rows ("segments"), or as an emulated sequence generator with
  * just one row and one column.
  */
-public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
+public class TableRxIdentifierGenerator implements RxIdentifierGenerator<Long> {
 
 	private static final RxQueryExecutor queryExecutor = new RxQueryExecutor();
 
@@ -47,16 +48,18 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 	private String valueColumnName;
 	private final String renderedTableName;
 	private final boolean storeLastUsedValue;
-	private final int initialValue;
+	private final long initialValue;
 	private final String segmentValue;
 
+	private final SessionFactoryImplementor sessionFactory;
+
 	@Override
-	public CompletionStage<Optional<Integer>> generate(SessionFactoryImplementor factory) {
+	public CompletionStage<Optional<Long>> generate(SessionFactoryImplementor factory) {
 		Object[] param = segmentColumnName == null ? new Object[] {} : new Object[] {segmentValue};
-		return queryExecutor.selectInteger( selectQuery, param, factory )
+		return queryExecutor.selectLong( selectQuery, param, factory )
 				.thenCompose( result -> {
 					if ( !result.isPresent() ) {
-						int initializationValue = storeLastUsedValue ? initialValue - 1 : initialValue;
+						long initializationValue = storeLastUsedValue ? initialValue - 1 : initialValue;
 						Object[] params = segmentColumnName == null ?
 								new Object[] {initializationValue} :
 								new Object[] {segmentValue, initializationValue};
@@ -64,8 +67,8 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 								.thenApply( v -> Optional.of( initialValue ) );
 					}
 					else {
-						int currentValue = result.get();
-						int updatedValue = currentValue + 1;
+						long currentValue = result.get();
+						long updatedValue = currentValue + 1;
 						Object[] params = segmentColumnName == null ?
 								new Object[] {updatedValue, currentValue} :
 								new Object[] {updatedValue, currentValue, segmentValue};
@@ -78,7 +81,7 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 	TableRxIdentifierGenerator(PersistentClass persistentClass, PersisterCreationContext creationContext) {
 
 		MetadataImplementor metadata = creationContext.getMetadata();
-		SessionFactoryImplementor sessionFactory = creationContext.getSessionFactory();
+		sessionFactory = creationContext.getSessionFactory();
 		Database database = metadata.getDatabase();
 		JdbcEnvironment jdbcEnvironment = database.getJdbcEnvironment();
 		Dialect dialect = database.getJdbcEnvironment().getDialect();
@@ -121,9 +124,9 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 			);
 		}
 
-		this.selectQuery = buildSelectQuery( dialect );
-		this.updateQuery = buildUpdateQuery();
-		this.insertQuery = buildInsertQuery();
+		this.selectQuery = buildSelectQuery(sessionFactory);
+		this.updateQuery = buildUpdateQuery(sessionFactory);
+		this.insertQuery = buildInsertQuery(sessionFactory);
 
 		storeLastUsedValue = database.getServiceRegistry().getService( ConfigurationService.class )
 				.getSetting( AvailableSettings.TABLE_GENERATOR_STORE_LAST_USED, StandardConverters.BOOLEAN, true );
@@ -165,36 +168,43 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator {
 	protected int determineInitialValueForSequenceEmulation(Properties params) {
 		return ConfigurationHelper.getInt( SequenceStyleGenerator.INITIAL_PARAM, params, SequenceStyleGenerator.DEFAULT_INITIAL_VALUE );
 	}
-	protected String buildSelectQuery(Dialect dialect) {
+
+	protected String buildSelectQuery(SessionFactoryImplementor sessionFactory) {
+		Supplier<String> generator = Parameters.createDialectParameterGenerator(sessionFactory);
 		final String alias = "tbl";
 		String query = "select " + StringHelper.qualify( alias, valueColumnName ) +
 				" from " + renderedTableName + ' ' + alias;
 		if (segmentColumnName != null) {
-			query += " where " + StringHelper.qualify(alias, segmentColumnName) + "=$1";
+			query += " where " + StringHelper.qualify(alias, segmentColumnName) + "=" + generator.get();
 		}
-		final LockOptions lockOptions = new LockOptions( LockMode.PESSIMISTIC_WRITE );
-		lockOptions.setAliasSpecificLockMode( alias, LockMode.PESSIMISTIC_WRITE );
-		final Map updateTargetColumnsMap = Collections.singletonMap( alias, new String[] { valueColumnName } );
-		return dialect.applyLocksToSql( query, lockOptions, updateTargetColumnsMap );
+
+		return sessionFactory.getJdbcServices().getDialect()
+				.applyLocksToSql( query,
+						new LockOptions( LockMode.PESSIMISTIC_WRITE ).setAliasSpecificLockMode( alias, LockMode.PESSIMISTIC_WRITE ),
+						Collections.singletonMap( alias, new String[] { valueColumnName } ) );
 	}
 
-	protected String buildUpdateQuery() {
-		String update = "update " + renderedTableName +
-				" set " + valueColumnName + "=$1" +
-				" where " + valueColumnName + "=$2";
+	protected String buildUpdateQuery(SessionFactoryImplementor sessionFactory) {
+		Supplier<String> generator = Parameters.createDialectParameterGenerator(this.sessionFactory);
+		String update = "update " + renderedTableName
+				+ " set " + valueColumnName + "="  + generator.get()
+				+ " where " + valueColumnName + "="  + generator.get();
 		if (segmentColumnName != null) {
-			update += "and " + segmentColumnName + "=$3";
+			update += "and " + segmentColumnName + "=" + generator.get();
 		}
 		return update;
 	}
 
-	protected String buildInsertQuery() {
+	protected String buildInsertQuery(SessionFactoryImplementor sessionFactory) {
+		Supplier<String> generator = Parameters.createDialectParameterGenerator(this.sessionFactory);
 		String insert = "insert into " + renderedTableName;
 		if (segmentColumnName != null) {
-			insert += " (" + segmentColumnName + ", " + valueColumnName + ") " + " values (?,?)";
+			insert += " (" + segmentColumnName + ", " + valueColumnName + ") "
+					+ " values (" + generator.get() + ", " + generator.get() + ")";
 		}
 		else {
-			insert += " (" + valueColumnName + ") " + " values (?)";
+			insert += " (" + valueColumnName + ") "
+					+ " values (" + generator.get() + ")";
 		}
 		return insert;
 	}
