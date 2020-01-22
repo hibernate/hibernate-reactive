@@ -28,14 +28,15 @@ Clone the [hibernate-orm][] project from GitHub, and run:
 
     ./gradlew hibernate-core:publishToMavenLocal
 
-from the `hibernate-orm` directory. This will publish the snapshot to your
-local Maven repository.
+from the `hibernate-orm` directory. This will publish the snapshot to 
+your local Maven repository.
 
 [hibernate-orm]: https://github.com/hibernate/hibernate-orm
 
 ### Building
 
-To compile, navigate to this directory, and type:
+To compile this project, navigate to the `hibernate-rx` directory, and 
+type:
 
 	./gradlew compileJava
 
@@ -61,14 +62,15 @@ and then type the following:
     create user "hibernate-rx" identified by 'hibernate-rx';
     grant all on hibernaterx.* to "hibernate-rx";
 
-Finally, run `./gradlew test` from this directory.
+Finally, run `./gradlew test` from the `hibernate-rx` directory.
 
-## Dependencies
+## Compatibility
 
 The project has been tested with:
 
 - Java 8
-- PostgreSQL
+- PostgreSQL 12
+- MySQL 8
 - [Hibernate ORM](https://hibernate.org/orm/) 5.4.11-SNAPSHOT
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 0.0.12
 - [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 0.0.12
@@ -84,8 +86,9 @@ Add the following dependency to your project:
 
 	org.hibernate.rx:hibernate-rx-core:1.0.0-SNAPSHOT
 
-You'll also need to add Hibernate 5.4, the Vert.x reactive database
-driver, and a regular JDBC driver (which is used for schema export).
+You'll also need to add your Hibernate 5.4 snapshot, the Vert.x 
+reactive database driver, and a regular JDBC driver (which is 
+used for schema export).
 
 There is an example Gradle build included in the example program.
 
