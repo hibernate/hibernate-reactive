@@ -13,6 +13,7 @@ import org.hibernate.persister.entity.Loadable;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.impl.RxQueryExecutor;
+import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
@@ -51,14 +52,15 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 				persister,
 				lockOptions
 		).thenApply( list -> {
-			if ( list.size() == 1 ) {
-				return Optional.ofNullable( list.get( 0 ) );
-			}
-			if ( list.size() == 0 ) {
-				return Optional.empty();
-			}
-			if ( getCollectionOwners() != null ) {
-				return Optional.ofNullable( list.get( 0 ) );
+			switch ( list.size() ) {
+				case 1:
+					return Optional.ofNullable( list.get( 0 ) );
+				case 0:
+					return Optional.empty();
+				default:
+					if ( getCollectionOwners() != null ) {
+						return Optional.ofNullable( list.get( 0 ) );
+					}
 			}
 			throw new HibernateException(
 					"More than one row with the given identifier was found: " +
@@ -79,42 +81,42 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 			final EntityPersister persister,
 			LockOptions lockOptions) throws HibernateException {
 
-		CompletionStage<List<?>> result;
-		try {
-			QueryParameters qp = new QueryParameters();
-			qp.setPositionalParameterTypes( new Type[] { identifierType } );
-			qp.setPositionalParameterValues( new Object[] { id } );
-			qp.setOptionalObject( optionalObject );
-			qp.setOptionalEntityName( optionalEntityName );
-			qp.setOptionalId( optionalIdentifier );
-			qp.setLockOptions( lockOptions );
+		QueryParameters qp = new QueryParameters();
+		qp.setPositionalParameterTypes( new Type[] { identifierType } );
+		qp.setPositionalParameterValues( new Object[] { id } );
+		qp.setOptionalObject( optionalObject );
+		qp.setOptionalEntityName( optionalEntityName );
+		qp.setOptionalId( optionalIdentifier );
+		qp.setLockOptions( lockOptions );
 
-			result = doRxQueryAndInitializeNonLazyCollections( session, qp, false );
-
-			LOG.debug( "Done entity load" );
-			return result;
-		}
-		catch (SQLException sqle) {
-			final Loadable[] persisters = getEntityPersisters();
-			throw this.getFactory().getJdbcServices().getSqlExceptionHelper().convert(
-					sqle,
-					"could not load an entity: " +
-							MessageHelper.infoString(
-									persisters[persisters.length - 1],
-									id,
-									identifierType,
-									getFactory()
-							),
-					getSQLString()
-			);
-		}
+		return doRxQueryAndInitializeNonLazyCollections( session, qp, false )
+			.handle( (list, e) -> {
+				LOG.debug( "Done entity load" );
+				if (e instanceof SQLException) {
+					final Loadable[] persisters = getEntityPersisters();
+					throw this.getFactory().getJdbcServices().getSqlExceptionHelper().convert(
+							(SQLException) e,
+							"could not load an entity: " +
+									MessageHelper.infoString(
+											persisters[persisters.length - 1],
+											id,
+											identifierType,
+											getFactory()
+									),
+							getSQLString()
+					);
+				}
+				else if (e !=null ) {
+					RxUtil.rethrow(e);
+				}
+				return list;
+			});
 	}
 
 	protected CompletionStage<List<?>> doRxQueryAndInitializeNonLazyCollections(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
-			final boolean returnProxies)
-			throws HibernateException, SQLException {
+			final boolean returnProxies) {
 		return doRxQueryAndInitializeNonLazyCollections( session, queryParameters, returnProxies, null );
 	}
 
@@ -122,8 +124,7 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
-			final ResultTransformer forcedResultTransformer)
-			throws HibernateException, SQLException {
+			final ResultTransformer forcedResultTransformer) {
 		final PersistenceContext persistenceContext = session.getPersistenceContext();
 		boolean defaultReadOnlyOrig = persistenceContext.isDefaultReadOnly();
 		if ( queryParameters.isReadOnlyInitialized() ) {
@@ -137,21 +138,18 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 			queryParameters.setReadOnly( persistenceContext.isDefaultReadOnly() );
 		}
 		persistenceContext.beforeLoad();
-		try {
-			CompletionStage<List<?>>  result;
-			try {
-				result = doRxQuery( session, queryParameters, returnProxies, forcedResultTransformer );
-			}
-			finally {
-				persistenceContext.afterLoad();
-			}
-			persistenceContext.initializeNonLazyCollections();
-			return result;
-		}
-		finally {
-			// Restore the original default
-			persistenceContext.setDefaultReadOnly( defaultReadOnlyOrig );
-		}
+		return doRxQuery( session, queryParameters, returnProxies, forcedResultTransformer )
+				.handle( (list, e) -> {
+					persistenceContext.afterLoad();
+					if (e == null) {
+						persistenceContext.initializeNonLazyCollections();
+					}
+					persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig);
+					if (e != null) {
+						RxUtil.rethrow(e);
+					}
+					return list;
+				});
 	}
 
 	private CompletionStage<List<?>> doRxQuery(
