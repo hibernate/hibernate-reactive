@@ -17,9 +17,9 @@ import java.util.function.Supplier;
  * An {@link org.hibernate.loader.entity.EntityJoinWalker} that generates
  * SQL with the database-native bind variable syntax.
  */
-public class EntityJoinWalker extends org.hibernate.loader.entity.EntityJoinWalker {
+public class RxEntityJoinWalker extends org.hibernate.loader.entity.EntityJoinWalker {
 
-	public EntityJoinWalker(
+	public RxEntityJoinWalker(
 			OuterJoinLoadable persister,
 			String[] uniqueKey,
 			int batchSize,
@@ -29,7 +29,7 @@ public class EntityJoinWalker extends org.hibernate.loader.entity.EntityJoinWalk
 		super( persister, uniqueKey, batchSize, lockMode, factory, loadQueryInfluencers );
 	}
 
-	public EntityJoinWalker(
+	public RxEntityJoinWalker(
 			OuterJoinLoadable persister,
 			String[] uniqueKey,
 			int batchSize,

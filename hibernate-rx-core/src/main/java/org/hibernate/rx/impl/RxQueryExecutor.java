@@ -81,8 +81,7 @@ public class RxQueryExecutor {
 
 		return poolProvider.getConnection()
 				.preparedQuery( sql, asTuple( queryParameters, session ) )
-				.thenApply( rowset ->
-						transformer.apply( new ResultSetAdaptor(rowset) ) );
+				.thenApply( rowset -> transformer.apply( new ResultSetAdaptor(rowset) ) );
 	}
 
 	private Tuple asTuple(QueryParameters queryParameters, SessionImplementor session) {

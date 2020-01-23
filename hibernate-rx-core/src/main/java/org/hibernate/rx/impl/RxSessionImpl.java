@@ -7,6 +7,7 @@ import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionInternal;
 
 import javax.persistence.LockModeType;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -45,6 +46,11 @@ public class RxSessionImpl implements RxSession {
 	@Override
 	public <T> CompletionStage<Optional<T>> find(Class<T> entityClass, Object primaryKey) {
 		return delegate.rxFind( entityClass, primaryKey, null, null );
+	}
+
+	@Override
+	public <T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids) {
+		return delegate.rxFind( entityClass, ids );
 	}
 
 	public <T> CompletionStage<Optional<T>> find(

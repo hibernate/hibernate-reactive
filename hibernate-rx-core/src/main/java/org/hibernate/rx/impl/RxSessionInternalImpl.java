@@ -16,17 +16,20 @@ import org.hibernate.internal.SessionImpl;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.jpa.QueryHints;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.event.spi.*;
+import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
 
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.LockModeType;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -401,7 +404,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	@Override
 	public <T> CompletionStage<Optional<T>> rxFind(
 			Class<T> entityClass,
-			Object primaryKey,
+			Object id,
 			LockModeType lockModeType,
 			Map<String, Object> properties) {
 		checkOpen();
@@ -411,8 +414,9 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		Boolean readOnly = properties == null ? null : (Boolean) properties.get( QueryHints.HINT_READONLY );
 		getLoadQueryInfluencers().setReadOnly( readOnly );
 
-		final RxIdentifierLoadAccessImpl<T> loadAccess = new RxIdentifierLoadAccessImpl<>(entityClass);
-		loadAccess.with( determineAppropriateLocalCacheMode( properties ) );
+		final RxIdentifierLoadAccessImpl<T> loadAccess =
+				new RxIdentifierLoadAccessImpl<>(entityClass)
+						.with( determineAppropriateLocalCacheMode( properties ) );
 
 		LockOptions lockOptions;
 		if ( lockModeType != null ) {
@@ -426,14 +430,14 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 			lockOptions = null;
 		}
 
-		return loadAccess.load( (Serializable) primaryKey )
+		return loadAccess.load( (Serializable) id )
 				.handle( (result, e) -> {
 					if ( e instanceof EntityNotFoundException) {
 						// DefaultLoadEventListener.returnNarrowedProxy may throw ENFE (see HHH-7861 for details),
 						// which find() should not throw. Find() should return null if the entity was not found.
 						//			if ( log.isDebugEnabled() ) {
 						//				String entityName = entityClass != null ? entityClass.getName(): null;
-						//				String identifierValue = primaryKey != null ? primaryKey.toString() : null ;
+						//				String identifierValue = id != null ? id.toString() : null ;
 						//				log.ignoringEntityNotFound( entityName, identifierValue );
 						//			}
 						return Optional.<T>empty();
@@ -465,6 +469,12 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 					return result;
 				} )
 				.whenComplete( (v, e) -> getLoadQueryInfluencers().getEffectiveEntityGraph().clear() );
+	}
+
+	@Override
+	public <T> CompletionStage<List<T>> rxFind(Class<T> entityClass, Object... ids) {
+		return new RxMultiIdentifierLoadAccessImpl<T>(entityClass).multiLoad(ids);
+		//TODO: copy/paste the exception handling from immediately above?
 	}
 
 	@SuppressWarnings("unchecked")
@@ -658,6 +668,146 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 						}
 						return (Optional<T>) event.getResult();
 					} );
+		}
+	}
+
+	private class RxMultiIdentifierLoadAccessImpl<T> implements MultiLoadOptions {
+		private final EntityPersister entityPersister;
+
+		private LockOptions lockOptions;
+		private CacheMode cacheMode;
+
+		private RootGraphImplementor<T> rootGraph;
+		private GraphSemantic graphSemantic;
+
+		private Integer batchSize;
+		private boolean sessionCheckingEnabled;
+		private boolean returnOfDeletedEntitiesEnabled;
+		private boolean orderedReturnEnabled = true;
+
+		public RxMultiIdentifierLoadAccessImpl(EntityPersister entityPersister) {
+			this.entityPersister = entityPersister;
+		}
+
+		public RxMultiIdentifierLoadAccessImpl(Class<T> entityClass) {
+			this( getFactory().getMetamodel().locateEntityPersister( entityClass ) );
+		}
+
+		@Override
+		public LockOptions getLockOptions() {
+			return lockOptions;
+		}
+
+		public final RxMultiIdentifierLoadAccessImpl<T> with(LockOptions lockOptions) {
+			this.lockOptions = lockOptions;
+			return this;
+		}
+
+		public RxMultiIdentifierLoadAccessImpl<T> with(CacheMode cacheMode) {
+			this.cacheMode = cacheMode;
+			return this;
+		}
+
+		public RxMultiIdentifierLoadAccessImpl<T> with(RootGraph<T> graph, GraphSemantic semantic) {
+			this.rootGraph = (RootGraphImplementor<T>) graph;
+			this.graphSemantic = semantic;
+			return this;
+		}
+
+		@Override
+		public Integer getBatchSize() {
+			return batchSize;
+		}
+
+		public RxMultiIdentifierLoadAccessImpl<T> withBatchSize(int batchSize) {
+			if ( batchSize < 1 ) {
+				this.batchSize = null;
+			}
+			else {
+				this.batchSize = batchSize;
+			}
+			return this;
+		}
+
+		@Override
+		public boolean isSessionCheckingEnabled() {
+			return sessionCheckingEnabled;
+		}
+
+		@Override
+		public boolean isSecondLevelCacheCheckingEnabled() {
+			return cacheMode == CacheMode.NORMAL || cacheMode == CacheMode.GET;
+		}
+
+		public RxMultiIdentifierLoadAccessImpl<T> enableSessionCheck(boolean enabled) {
+			this.sessionCheckingEnabled = enabled;
+			return this;
+		}
+
+		@Override
+		public boolean isReturnOfDeletedEntitiesEnabled() {
+			return returnOfDeletedEntitiesEnabled;
+		}
+
+		public RxMultiIdentifierLoadAccessImpl<T> enableReturnOfDeletedEntities(boolean enabled) {
+			this.returnOfDeletedEntitiesEnabled = enabled;
+			return this;
+		}
+
+		@Override
+		public boolean isOrderReturnEnabled() {
+			return orderedReturnEnabled;
+		}
+
+		public RxMultiIdentifierLoadAccessImpl<T> enableOrderedReturn(boolean enabled) {
+			this.orderedReturnEnabled = enabled;
+			return this;
+		}
+
+		@SuppressWarnings("unchecked")
+		public CompletionStage<List<T>> multiLoad(Object... ids) {
+			Serializable[] sids = new Serializable[ids.length];
+			System.arraycopy(ids, 0, sids, 0, ids.length);
+			return perform( () -> (CompletionStage)
+					((RxEntityPersister) entityPersister).rxMultiLoad( sids, RxSessionInternalImpl.this, this ) );
+		}
+
+		public CompletionStage<List<T>> perform(Supplier<CompletionStage<List<T>>> executor) {
+			CacheMode sessionCacheMode = getCacheMode();
+			boolean cacheModeChanged = false;
+			if ( cacheMode != null ) {
+				// naive check for now...
+				// todo : account for "conceptually equal"
+				if ( cacheMode != sessionCacheMode ) {
+					setCacheMode( cacheMode );
+					cacheModeChanged = true;
+				}
+			}
+
+			if ( graphSemantic != null ) {
+				if ( rootGraph == null ) {
+					throw new IllegalArgumentException( "Graph semantic specified, but no RootGraph was supplied" );
+				}
+				getLoadQueryInfluencers().getEffectiveEntityGraph().applyGraph( rootGraph, graphSemantic );
+			}
+
+			boolean finalCacheModeChanged = cacheModeChanged;
+			return executor.get()
+				.whenComplete( (v, x) -> {
+						if ( graphSemantic != null ) {
+							getLoadQueryInfluencers().getEffectiveEntityGraph().clear();
+						}
+						if ( finalCacheModeChanged ) {
+							// change it back
+							setCacheMode( sessionCacheMode );
+						}
+					} );
+		}
+
+		@SuppressWarnings("unchecked")
+		public <K extends Serializable> CompletionStage<List<T>> multiLoad(List<K> ids) {
+			return perform( () -> (CompletionStage<List<T>>)
+					entityPersister.multiLoad( ids.toArray(new Serializable[0]), RxSessionInternalImpl.this, this ) );
 		}
 	}
 

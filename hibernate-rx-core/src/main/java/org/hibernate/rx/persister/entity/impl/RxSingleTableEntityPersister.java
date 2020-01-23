@@ -11,6 +11,7 @@ import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
+import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
@@ -21,6 +22,7 @@ import org.hibernate.rx.sql.impl.Parameters;
 import org.hibernate.rx.sql.impl.Update;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * An {@link RxEntityPersister} backed by {@link SingleTableEntityPersister}
@@ -176,6 +178,11 @@ public class RxSingleTableEntityPersister extends SingleTableEntityPersister imp
 			Object object,
 			Object rowId,
 			SharedSessionContractImplementor session) throws HibernateException {
+		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
+	}
+
+	@Override
+	public List multiLoad(Serializable[] ids, SharedSessionContractImplementor session, MultiLoadOptions loadOptions) {
 		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
 	}
 

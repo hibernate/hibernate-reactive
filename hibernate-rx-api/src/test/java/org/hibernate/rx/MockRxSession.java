@@ -3,6 +3,7 @@ package org.hibernate.rx;
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -66,6 +67,11 @@ public class MockRxSession implements RxSession {
 			}
 		};
 		return CompletableFuture.supplyAsync( supplier );
+	}
+
+	@Override
+	public <T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids) {
+		return null;
 	}
 
 	@Override

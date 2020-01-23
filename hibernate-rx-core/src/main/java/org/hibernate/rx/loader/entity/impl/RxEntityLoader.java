@@ -90,7 +90,7 @@ public class RxEntityLoader extends RxAbstractEntityLoader implements UniqueEnti
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
 		this( persister, uniqueKey, uniqueKeyType, batchSize, lockMode, factory, loadQueryInfluencers,
-				new EntityJoinWalker(
+				new RxEntityJoinWalker(
 						persister,
 						uniqueKey,
 						batchSize,
@@ -114,7 +114,7 @@ public class RxEntityLoader extends RxAbstractEntityLoader implements UniqueEnti
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
 		this( persister, uniqueKey, uniqueKeyType, batchSize, lockOptions.getLockMode(), factory, loadQueryInfluencers,
-				new EntityJoinWalker(
+				new RxEntityJoinWalker(
 						persister,
 						uniqueKey,
 						batchSize,

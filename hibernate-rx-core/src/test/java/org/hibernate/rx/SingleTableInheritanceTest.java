@@ -20,6 +20,30 @@ public class SingleTableInheritanceTest extends BaseRxTest {
 	}
 
 	@Test
+	public void testMultiLoad(TestContext context) {
+		final Book book1 = new Book( 6, "The Boy, The Mole, The Fox and The Horse", new Date());
+		final SpellBook book2 = new SpellBook( 3, "Necronomicon", true, new Date());
+		final Book book3 = new Book( 2, "Hibernate in Action", new Date());
+
+		test(
+				context,
+				openSession()
+						.thenCompose( s -> s.persist( book1 ) )
+						.thenCompose( s -> s.persist( book2 ) )
+						.thenCompose( s -> s.persist( book3 ) )
+						.thenCompose( s -> s.flush() )
+						.thenCompose( v -> openSession())
+						.thenCompose( s -> s.find(Book.class, book3.getId(), book1.getId(), book2.getId()) )
+						.thenAccept( list -> {
+							context.assertEquals(3, list.size());
+							context.assertEquals( book3.getTitle(), list.get(0).getTitle());
+							context.assertEquals( book1.getTitle(), list.get(1).getTitle());
+							context.assertEquals( book2.getTitle(), list.get(2).getTitle());
+						})
+		);
+	}
+
+	@Test
 	public void testRootClassViaAssociation(TestContext context) {
 		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse", new Date());
 		final Author author = new Author( "Charlie Mackesy", book );

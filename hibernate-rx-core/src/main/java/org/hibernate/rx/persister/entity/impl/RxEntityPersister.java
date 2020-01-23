@@ -1,10 +1,13 @@
 package org.hibernate.rx.persister.entity.impl;
 
 import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.persister.entity.MultiLoadOptions;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -66,4 +69,9 @@ public interface RxEntityPersister extends EntityPersister {
 			Object rowId,
 			SharedSessionContractImplementor session)
 					throws HibernateException;
+
+	 CompletionStage<List<?>> rxMultiLoad(
+	 		Serializable[] ids,
+			SessionImplementor session,
+			MultiLoadOptions loadOptions);
 }

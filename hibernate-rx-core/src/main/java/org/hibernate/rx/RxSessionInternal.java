@@ -7,6 +7,7 @@ import org.hibernate.rx.engine.spi.RxActionQueue;
 
 import javax.persistence.LockModeType;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -61,5 +62,9 @@ public interface RxSessionInternal extends Session {
 			Object primaryKey,
 			LockModeType lockModeType,
 			Map<String, Object> properties);
+
+	<T> CompletionStage<List<T>> rxFind(
+			Class<T> entityClass,
+			Object... primaryKey);
 
 }

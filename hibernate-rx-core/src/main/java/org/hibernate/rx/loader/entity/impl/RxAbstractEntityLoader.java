@@ -179,9 +179,16 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 								afterLoadActions
 						);
 					}
-					catch (SQLException ex) {
-						//never actually happens
-						throw new JDBCException( "error querying", ex );
+					catch (SQLException sqle) {
+						throw getFactory().getJdbcServices().getSqlExceptionHelper().convert(
+								sqle,
+								"could not load an entity batch: " + MessageHelper.infoString(
+										getEntityPersisters()[0],
+										queryParameters.getOptionalId(),
+										session.getFactory()
+								),
+								sql
+						);
 					}
 				}
 		);
@@ -199,9 +206,7 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 		queryParameters.processFilters( sqlStatement, session );
 
 		// Applying LIMIT clause.
-		final LimitHandler limitHandler = getLimitHandler(
-				queryParameters.getRowSelection()
-		);
+		final LimitHandler limitHandler = getLimitHandler( queryParameters.getRowSelection() );
 		String sql = limitHandler.processSql( queryParameters.getFilteredSQL(), queryParameters.getRowSelection() );
 
 		// Adding locks and comments.

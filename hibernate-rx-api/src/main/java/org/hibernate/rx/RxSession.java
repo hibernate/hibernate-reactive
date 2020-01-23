@@ -3,6 +3,7 @@ package org.hibernate.rx;
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
@@ -49,6 +50,17 @@ public interface RxSession {
 	 * @see javax.persistence.EntityManager#find(Class, Object) 
 	 */
 	<T> CompletionStage<Optional<T>> find(Class<T> entityClass, Object id);
+
+	/**
+	 * Asynchronously return the persistent instances of the given entity
+	 * class with the given identifiers, or null if there is no such
+	 * persistent instance.
+	 *
+	 * @param entityClass The entity type
+	 * @param ids the identifiers
+	 * @return a list of persistent instances and nulls via a {@code CompletionStage}
+	 */
+	<T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids);
 
 	/**
 	 * Return the persistent instance of the given entity class with the

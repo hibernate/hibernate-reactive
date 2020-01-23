@@ -13,9 +13,12 @@ import org.hibernate.jdbc.Expectation;
 import org.hibernate.jdbc.Expectations;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
+import org.hibernate.persister.entity.MultiLoadOptions;
+import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.rx.impl.RxQueryExecutor;
+import org.hibernate.rx.loader.entity.impl.RxDynamicBatchingEntityLoaderBuilder;
 import org.hibernate.rx.sql.impl.Parameters;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.sql.Delete;
@@ -26,6 +29,7 @@ import org.jboss.logging.Logger;
 import java.io.Serializable;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
@@ -47,7 +51,7 @@ import java.util.concurrent.CompletionStage;
  * @see RxUnionSubclassEntityPersister
  * @see RxSingleTableEntityPersister
  */
-public interface RxAbstractEntityPersister extends RxEntityPersister {
+public interface RxAbstractEntityPersister extends RxEntityPersister, OuterJoinLoadable {
 	Logger log = Logger.getLogger( JoinedSubclassEntityPersister.class );
 
 	RxQueryExecutor queryExecutor = new RxQueryExecutor();
@@ -763,5 +767,10 @@ public interface RxAbstractEntityPersister extends RxEntityPersister {
 		return byRowId ?
 				lazy ? delegate().getSQLLazyUpdateByRowIdStrings() : delegate().getSQLUpdateByRowIdStrings() :
 				lazy ? delegate().getSQLLazyUpdateStrings() : delegate().getSQLUpdateStrings();
+	}
+
+	@Override
+	default CompletionStage<List<?>> rxMultiLoad(Serializable[] ids, SessionImplementor session, MultiLoadOptions loadOptions) {
+		return RxDynamicBatchingEntityLoaderBuilder.INSTANCE.multiLoad(this, ids, session, loadOptions);
 	}
 }
