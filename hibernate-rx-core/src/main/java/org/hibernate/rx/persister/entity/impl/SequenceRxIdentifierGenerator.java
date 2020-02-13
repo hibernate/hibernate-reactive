@@ -8,6 +8,9 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.id.IntegralDataTypeHolder;
+import org.hibernate.id.enhanced.AccessCallback;
+import org.hibernate.id.enhanced.Optimizer;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.impl.RxQueryExecutor;
@@ -24,9 +27,13 @@ public class SequenceRxIdentifierGenerator implements RxIdentifierGenerator<Long
 
 	private static final RxQueryExecutor queryExecutor = new RxQueryExecutor();
 
+	private final RxOptimizer optimizer;
+
 	private final String sql;
 
-	SequenceRxIdentifierGenerator(PersistentClass persistentClass, PersisterCreationContext creationContext) {
+	SequenceRxIdentifierGenerator(PersistentClass persistentClass, PersisterCreationContext creationContext, RxOptimizer optimizer) {
+
+		this.optimizer = optimizer;
 
 		MetadataImplementor metadata = creationContext.getMetadata();
 		SessionFactoryImplementor sessionFactory = creationContext.getSessionFactory();
@@ -63,7 +70,19 @@ public class SequenceRxIdentifierGenerator implements RxIdentifierGenerator<Long
 
 	@Override
 	public CompletionStage<Optional<Long>> generate(SharedSessionContractImplementor session) {
-		return sql==null ? RxUtil.completedFuture(Optional.empty())
-				: queryExecutor.selectLong( sql, new Object[0], session.getFactory() );
+		return sql==null
+				? RxUtil.completedFuture(Optional.empty())
+				: optimizer.generate( new RxAccessCallback() {
+					@Override
+					public CompletionStage<Optional<Long>> getNextValue() {
+						return queryExecutor.selectLong( sql, new Object[0], session.getFactory() );
+					}
+
+					@Override
+					public String getTenantIdentifier() {
+						return session.getTenantIdentifier();
+					}
+				}
+		);
 	}
 }

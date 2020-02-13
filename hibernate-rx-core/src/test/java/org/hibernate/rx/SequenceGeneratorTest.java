@@ -1,17 +1,26 @@
 package org.hibernate.rx;
 
 import io.vertx.ext.unit.TestContext;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.id.enhanced.StandardOptimizerDescriptor;
 import org.junit.Test;
 
 import javax.persistence.*;
 import java.util.Objects;
 
+/**
+ * Tests a sequence using the "no-op" optimizer.
+ */
 public class SequenceGeneratorTest extends BaseRxTest {
 
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
+		configuration.setProperty(
+				AvailableSettings.PREFERRED_POOLED_OPTIMIZER,
+				StandardOptimizerDescriptor.NONE.getExternalName()
+		);
 		configuration.addAnnotatedClass( SequenceId.class );
 		return configuration;
 	}

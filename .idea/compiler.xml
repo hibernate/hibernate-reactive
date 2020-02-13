@@ -13,5 +13,13 @@
       <entry name="!?*.aj" />
       <entry name="!?*.ceylon" />
     </wildcardResourcePatterns>
+    <bytecodeTargetLevel>
+      <module name="hibernate-rx.example.main" target="1.8" />
+      <module name="hibernate-rx.example.test" target="1.8" />
+      <module name="hibernate-rx.hibernate-rx-api.main" target="1.8" />
+      <module name="hibernate-rx.hibernate-rx-api.test" target="1.8" />
+      <module name="hibernate-rx.hibernate-rx-core.main" target="1.8" />
+      <module name="hibernate-rx.hibernate-rx-core.test" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
 </project>

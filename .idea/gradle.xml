@@ -4,11 +4,10 @@
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
-        <option name="disableWrapperSourceDistributionNotification" value="true" />
         <option name="distributionType" value="DEFAULT_WRAPPED" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="gradleHome" value="/usr/local/Cellar/gradle/6.0.1/libexec" />
-        <option name="gradleJvm" value="1.8" />
+        <option name="gradleHome" value="$USER_HOME$/apps/gradle-2.2.1" />
+        <option name="gradleJvm" value="1.8 (1)" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
@@ -17,7 +16,6 @@
             <option value="$PROJECT_DIR$/hibernate-rx-core" />
           </set>
         </option>
-        <option name="useQualifiedModuleNames" value="true" />
       </GradleProjectSettings>
     </option>
   </component>

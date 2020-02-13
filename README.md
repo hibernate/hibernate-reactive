@@ -23,7 +23,7 @@ installed on your machine.
 
 ### Obtaining a snapshot build of Hibernate ORM
 
-Temporarily, you'll need a snapshot build of `hibernate-core-5.4.11.jar`.
+Temporarily, you'll need a snapshot build of `hibernate-core-5.4.12.jar`.
 Clone the [hibernate-orm][] project from GitHub, and run:
 
     ./gradlew hibernate-core:publishToMavenLocal
@@ -71,7 +71,7 @@ The project has been tested with:
 - Java 8
 - PostgreSQL 12
 - MySQL 8
-- [Hibernate ORM](https://hibernate.org/orm/) 5.4.11-SNAPSHOT
+- [Hibernate ORM](https://hibernate.org/orm/) 5.4.12-SNAPSHOT
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 0.0.12
 - [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 0.0.12
 

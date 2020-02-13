@@ -1,5 +1,6 @@
 package org.hibernate.rx.persister.entity.impl;
 
+import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.boot.model.relational.Database;
@@ -21,6 +22,7 @@ import org.hibernate.mapping.SimpleValue;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.util.impl.RxUtil;
 
+import javax.naming.OperationNotSupportedException;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -81,7 +83,13 @@ public class IdentifierGeneration {
 				return new TableRxIdentifierGenerator(persistentClass, creationContext);
 			}
 			else if (structure instanceof SequenceStructure) {
-				return new SequenceRxIdentifierGenerator(persistentClass, creationContext);
+				return new SequenceRxIdentifierGenerator(
+						persistentClass,
+						creationContext,
+						createRxOptimizer(
+								((SequenceStyleGenerator) identifierGenerator).getOptimizer()
+						)
+				);
 			}
 			throw new IllegalStateException("unknown structure type");
 		}
@@ -89,7 +97,8 @@ public class IdentifierGeneration {
 			return new TableRxIdentifierGenerator(persistentClass, creationContext);
 		}
 		else if (identifierGenerator instanceof SequenceGenerator) {
-			return new SequenceRxIdentifierGenerator(persistentClass, creationContext);
+			throw new UnsupportedOperationException(
+					identifierGenerator.getClass().getName() + " is no longer supported. Use " + SequenceStyleGenerator.class.getName() + " instead.");
 		}
 		else if (identifierGenerator instanceof SelectGenerator) {
 			throw new HibernateException("SelectGenerator is not yet supported");
@@ -195,5 +204,17 @@ public class IdentifierGeneration {
 			);
 		}
 		return qualifiedTableName;
+	}
+
+	static RxOptimizer createRxOptimizer(Optimizer optimizer) {
+		if ( optimizer instanceof NoopOptimizer ) {
+			return new NoopRxOptimizer();
+		}
+		else if ( optimizer instanceof HiLoOptimizer ) {
+			return new HiLoRxOptimizer( ((HiLoOptimizer) optimizer).getReturnClass(), optimizer.getIncrementSize() );
+		}
+		else {
+			throw new HibernateException( optimizer.getClass().getName() + " is not supported yet" );
+		}
 	}
 }
