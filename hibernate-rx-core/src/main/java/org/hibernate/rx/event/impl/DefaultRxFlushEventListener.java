@@ -118,22 +118,26 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 		// inside this block do not get updated - they
 		// are ignored until the next flush
 
-		return cascades.thenAccept( v -> {
+		return cascades.thenCompose( v -> {
 			persistenceContext.setFlushing(true);
-			try {
-				int entityCount = flushEntities(event, persistenceContext);
-				int collectionCount = flushCollections(session, persistenceContext);
+			return flushEntities(event, persistenceContext)
+					.handle((entityCount, err) -> {
+						try {
+							if ( err != null ) {
+								RxUtil.rethrow( err );
+							}
+							int collectionCount = flushCollections(session, persistenceContext);
 
-				event.setNumberOfEntitiesProcessed(entityCount);
-				event.setNumberOfCollectionsProcessed(collectionCount);
-			}
-			finally {
-				persistenceContext.setFlushing(false);
-			}
+							event.setNumberOfEntitiesProcessed(entityCount);
+							event.setNumberOfCollectionsProcessed(collectionCount);
+							return null;
+						} finally {
+							persistenceContext.setFlushing(false);
+						}
+						//some statistics
+						//		logFlushResults( event );
+					});
 		});
-
-		//some statistics
-//		logFlushResults( event );
 	}
 
 	/**
@@ -177,7 +181,7 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 	 * 2. schedule any entity updates
 	 * 3. search out any reachable collections
 	 */
-	private int flushEntities(final FlushEvent event, final PersistenceContext persistenceContext) throws HibernateException {
+	private CompletionStage<Integer> flushEntities(final FlushEvent event, final PersistenceContext persistenceContext) throws HibernateException {
 
 		LOG.trace( "Flushing entities and processing referenced collections" );
 
@@ -197,6 +201,7 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 		final Map.Entry<Object,EntityEntry>[] entityEntries = persistenceContext.reentrantSafeEntityEntries();
 		final int count = entityEntries.length;
 
+		CompletionStage<Void> stage = RxUtil.nullFuture();
 		for ( Map.Entry<Object,EntityEntry> me : entityEntries ) {
 
 			// Update the status of the object and if necessary, schedule an update
@@ -207,14 +212,16 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 			if ( status != Status.LOADING && status != Status.GONE ) {
 				final FlushEntityEvent entityEvent = new FlushEntityEvent( source, me.getKey(), entry );
 				for ( FlushEntityEventListener listener : flushListeners ) {
-					listener.onFlushEntity( entityEvent );
+					DefaultRxFlushEntityEventListener rxListener = (DefaultRxFlushEntityEventListener) listener;
+					stage = stage.thenCompose( v -> rxListener.onRxFlushEntity( entityEvent ) );
 				}
 			}
 		}
 
-		source.getActionQueue().sortActions();
-
-		return count;
+		return stage.thenApply( v -> {
+			source.getActionQueue().sortActions();
+			return count;
+		});
 	}
 
 	/**

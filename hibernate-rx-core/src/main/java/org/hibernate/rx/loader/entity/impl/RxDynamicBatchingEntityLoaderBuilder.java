@@ -649,7 +649,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 					session,
 					resultSet -> {
 						try {
-							return processResultSet(
+							return rxProcessResultSet(
 									resultSet,
 									queryParameters,
 									session,

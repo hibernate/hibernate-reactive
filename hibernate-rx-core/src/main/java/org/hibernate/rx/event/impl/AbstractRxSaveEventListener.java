@@ -277,7 +277,8 @@ abstract class AbstractRxSaveEventListener<C>
 		}
 
 		if ( substitute ) {
-			persister.setPropertyValues( entity, values );
+			cascadeBeforeSave = cascadeBeforeSave
+					.thenCompose( v ->  ((RxEntityPersister) persister).setRxPropertyValues(entity, values) );
 		}
 
 		TypeHelper.deepCopy(

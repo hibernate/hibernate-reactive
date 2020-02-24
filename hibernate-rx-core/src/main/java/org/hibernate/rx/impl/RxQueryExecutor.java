@@ -74,14 +74,14 @@ public class RxQueryExecutor {
 	 */
 	public CompletionStage<List<?>> execute(String sql, QueryParameters queryParameters,
 										 SessionImplementor session,
-										 Function<ResultSet, List<Object>> transformer) {
+										 Function<ResultSet, CompletionStage<List<?>>>  transformer) {
 		RxConnectionPoolProvider poolProvider = session.getSessionFactory()
 				.getServiceRegistry()
 				.getService( RxConnectionPoolProvider.class );
 
 		return poolProvider.getConnection()
 				.preparedQuery( sql, asTuple( queryParameters, session ) )
-				.thenApply( rowset -> transformer.apply( new ResultSetAdaptor(rowset) ) );
+				.thenCompose( rowset -> transformer.apply( new ResultSetAdaptor(rowset) ) );
 	}
 
 	private Tuple asTuple(QueryParameters queryParameters, SessionImplementor session) {

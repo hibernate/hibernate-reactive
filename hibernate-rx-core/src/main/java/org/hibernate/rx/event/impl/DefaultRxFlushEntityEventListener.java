@@ -22,11 +22,15 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.impl.RxEntityUpdateAction;
+import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.Type;
 
+import javax.swing.text.html.Option;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultFlushEntityEventListener}.
@@ -126,10 +130,19 @@ public class DefaultRxFlushEntityEventListener implements FlushEntityEventListen
 	}
 
 	/**
+	 * @deprecated use {@link #onRxFlushEntity(FlushEntityEvent)}
+	 */
+	@Override
+	@Deprecated
+	public void onFlushEntity(FlushEntityEvent event) throws HibernateException {
+		throw  new UnsupportedOperationException( "Use onRxFlushEntity(FlushEntityEvent)");
+	}
+
+	/**
 	 * Flushes a single entity's state to the database, by scheduling
 	 * an update action, if necessary
 	 */
-	public void onFlushEntity(FlushEntityEvent event) throws HibernateException {
+	public CompletionStage<Void> onRxFlushEntity(FlushEntityEvent event) throws HibernateException {
 		final Object entity = event.getEntity();
 		final EntityEntry entry = event.getEntityEntry();
 		final EventSource session = event.getSession();
@@ -139,53 +152,80 @@ public class DefaultRxFlushEntityEventListener implements FlushEntityEventListen
 
 		final boolean mightBeDirty = entry.requiresDirtyCheck( entity );
 
-		final Object[] values = getValues( entity, entry, mightBeDirty, session );
+		return getValues( entity, entry, mightBeDirty, session ).thenAccept( values -> {
+			event.setPropertyValues( values );
 
-		event.setPropertyValues( values );
+			//TODO: avoid this for non-new instances where mightBeDirty==false
+			boolean substitute = wrapCollections( session, persister, types, values );
 
-		//TODO: avoid this for non-new instances where mightBeDirty==false
-		boolean substitute = wrapCollections( session, persister, types, values );
-
-		if ( isUpdateNecessary( event, mightBeDirty ) ) {
-			substitute = scheduleUpdate( event ) || substitute;
-		}
-
-		if ( status != Status.DELETED ) {
-			// now update the object .. has to be outside the main if block above (because of collections)
-			if ( substitute ) {
-				persister.setPropertyValues( entity, values );
+			if ( isUpdateNecessary( event, mightBeDirty ) ) {
+				substitute = scheduleUpdate( event ) || substitute;
 			}
 
-			// Search for collections by reachability, updating their role.
-			// We don't want to touch collections reachable from a deleted object
-			if ( persister.hasCollections() ) {
-				new FlushVisitor( session, entity ).processEntityPropertyValues( values, types );
+			if ( status != Status.DELETED ) {
+				// now update the object .. has to be outside the main if block above (because of collections)
+				if ( substitute ) {
+					persister.setPropertyValues( entity, values );
+				}
+
+				// Search for collections by reachability, updating their role.
+				// We don't want to touch collections reachable from a deleted object
+				if ( persister.hasCollections() ) {
+					new FlushVisitor( session, entity ).processEntityPropertyValues( values, types );
+				}
 			}
-		}
+		});
+
 	}
 
-	private Object[] getValues(Object entity, EntityEntry entry, boolean mightBeDirty, SessionImplementor session) {
-		final Object[] loadedState = entry.getLoadedState();
+	private CompletionStage<Object[]> getValues(Object entity, EntityEntry entry, boolean mightBeDirty, SessionImplementor session) {
 		final Status status = entry.getStatus();
 		final EntityPersister persister = entry.getPersister();
 
-		final Object[] values;
-		if ( status == Status.DELETED ) {
-			//grab its state saved at deletion
-			values = entry.getDeletedState();
-		}
-		else if ( !mightBeDirty && loadedState != null ) {
-			values = loadedState;
-		}
-		else {
-			checkId( entity, persister, entry.getId(), session );
+		return completedLoadedState(entry).thenApply(loadedState -> {
+			final Object[] values;
+			if (status == Status.DELETED) {
+				//grab its state saved at deletion
+				values = entry.getDeletedState();
+			} else if (!mightBeDirty && loadedState != null) {
+				values = loadedState;
+			} else {
+				checkId(entity, persister, entry.getId(), session);
 
-			// grab its current state
-			values = persister.getPropertyValues( entity );
+				// grab its current state
+				values = persister.getPropertyValues(entity);
 
-			checkNaturalId( persister, entry, values, loadedState, session );
+				checkNaturalId(persister, entry, values, loadedState, session);
+			}
+			return values;
+		});
+	}
+
+	private CompletionStage<Object[]> completedLoadedState(final EntityEntry entry) {
+		final Object[] loadedState = entry.getLoadedState();
+		final Object[] results = new Object[loadedState.length];
+		CompletionStage<Object[]> stage = RxUtil.completedFuture(results);
+		for (int i = 0; i < loadedState.length; i++) {
+			if ( loadedState[i] instanceof CompletionStage ) {
+				final int index = i;
+				stage = stage.thenCompose( r -> {
+					CompletionStage<?> loadedStateStage = (CompletionStage<?>) loadedState[index];
+					return loadedStateStage.thenApply( obj ->  {
+						if (obj instanceof Optional ) {
+							r[index] = ( (Optional) obj ).orElse( null );
+						}
+						else {
+							r[index] = obj;
+						}
+						return  r;
+					});
+				});
+			}
+			else {
+				results[i] = loadedState[i];
+			}
 		}
-		return values;
+		return stage;
 	}
 
 	private boolean wrapCollections(
@@ -214,11 +254,11 @@ public class DefaultRxFlushEntityEventListener implements FlushEntityEventListen
 		}
 	}
 
-	private boolean isUpdateNecessary(final FlushEntityEvent event, final boolean mightBeDirty) {
+	private Boolean isUpdateNecessary(final FlushEntityEvent event, final boolean mightBeDirty) {
 		final Status status = event.getEntityEntry().getStatus();
 		if ( mightBeDirty || status == Status.DELETED ) {
 			// compare to cached state (ignoring collections unless versioned)
-			dirtyCheck( event );
+			dirtyCheck(event);
 			if ( isUpdateNecessary( event ) ) {
 				return true;
 			}
@@ -478,11 +518,20 @@ public class DefaultRxFlushEntityEventListener implements FlushEntityEventListen
 				persister.hasCollections();
 	}
 
-	/**
-	 * Perform a dirty check, and attach the results to the event
-	 */
-	protected void dirtyCheck(final FlushEntityEvent event) throws HibernateException {
+	private Object value(Object obj) {
+		if ( !( obj instanceof Optional<?>) ) {
+			return obj;
+		}
+		Optional optional = (Optional) obj;
+		if ( optional.isPresent() ) {
+			return optional.get();
+		}
+		else {
+			return null;
+		}
+	}
 
+	protected void dirtyCheck(final FlushEntityEvent event) throws HibernateException {
 		final Object entity = event.getEntity();
 		final Object[] values = event.getPropertyValues();
 		final SessionImplementor session = event.getSession();
@@ -605,7 +654,6 @@ public class DefaultRxFlushEntityEventListener implements FlushEntityEventListen
 		event.setDirtyProperties( dirtyProperties );
 		event.setDirtyCheckHandledByInterceptor( interceptorHandledDirtyCheck );
 		event.setDirtyCheckPossible( dirtyCheckPossible );
-
 	}
 
 	private class DirtyCheckAttributeInfoImpl implements CustomEntityDirtinessStrategy.AttributeInformation {
