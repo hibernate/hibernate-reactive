@@ -2,6 +2,7 @@ package org.hibernate.rx;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.persistence.*;
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+@Ignore
 public class CascadeTest extends BaseRxTest {
 
 	@Override
