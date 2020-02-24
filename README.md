@@ -64,6 +64,34 @@ and then type the following:
 
 Finally, run `./gradlew test` from the `hibernate-rx` directory.
 
+### Podman
+
+Alternatively, you can start Postgres and MySQL using podman:
+
+* Postgres
+
+```
+  sudo podman run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name HibernateTestingPGSQL -e POSTGRES_USER=hibernate-rx -e POSTGRES_PASSWORD=hibernate-rx -e POSTGRES_DB=hibernate-rx -p 5432:5432 postgres
+```
+
+* PSQL (Postgres client)
+
+```
+  sudo podman exec -it HibernateTestingPGSQL psql  -U hibernate-rx -W -d hibernate-rx
+```
+
+* MySQL
+
+```
+  sudo podman run --rm -it --name HibernateTestingMariaDB -e MYSQL_ROOT_PASSWORD=hibernate-rx -e MYSQL_DATABASE=hibernate-rx -e MYSQL_USER=hibernate-rx -e MYSQL_PASSWORD=hibernate-rx -p 3306:3306 mysql
+```
+
+* MySQL Client
+
+```
+  sudo podman exec -it HibernateTestingMariaDB mysql -U hibernate-rx -p
+```
+
 ## Compatibility
 
 The project has been tested with:
