@@ -111,12 +111,17 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 			}
 		}
 		assert ret != null;
-		return ret.thenAccept(event::setResult)
-				.whenComplete( (v, x) -> {
-					if ( x instanceof HibernateException ) {
-						LOG.unableToLoadCommand( (HibernateException) x );
-					}
-				} );
+		return ret.handle( (res, x) -> {
+			if ( x instanceof HibernateException ) {
+				LOG.unableToLoadCommand( (HibernateException) x);
+			}
+			if ( x != null ) {
+				RxUtil.rethrow( x );
+			}
+			event.setResult( res );
+			return null;
+		} );
+
 	}
 
 	private CompletionStage<Void> checkIdClass(
@@ -215,7 +220,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		return entityCs.thenApply( optional -> {
 			boolean isOptionalInstance = event.getInstanceToLoad() != null;
 
-			if ( optional.isPresent() && ( !options.isAllowNulls() || isOptionalInstance ) ) {
+			if ( !optional.isPresent() && ( !options.isAllowNulls() || isOptionalInstance ) ) {
 				session
 						.getFactory()
 						.getEntityNotFoundDelegate()
@@ -338,15 +343,17 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 					) );
 				}
 
-				if ( options.isAllowProxyCreation() ) {
-					return RxUtil.completedFuture( createProxyIfNecessary(
-							event,
-							persister,
-							keyToLoad,
-							options,
-							persistenceContext
-					) );
-				}
+				// FIXME: We are skipping proxies for now.
+				// 		  Maybe we should make this return false instead of commenting.
+//				if ( options.isAllowProxyCreation() ) {
+//					return RxUtil.completedFuture( createProxyIfNecessary(
+//							event,
+//							persister,
+//							keyToLoad,
+//							options,
+//							persistenceContext
+//					) );
+//				}
 			}
 		}
 
@@ -555,11 +562,11 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 				);
 			}
 			CompletionStage<Optional<Object>> entityStage = loadFromDatasource( event, persister );
-			return entityStage.thenCompose( optional -> {
+			return entityStage.thenApply( optional -> {
 				if ( optional.isPresent() ) {
 					cacheNaturalId( event, persister, session, optional.get() );
 				}
-				return RxUtil.completedFuture( optional );
+				return optional;
 			} );
 		}
 	}

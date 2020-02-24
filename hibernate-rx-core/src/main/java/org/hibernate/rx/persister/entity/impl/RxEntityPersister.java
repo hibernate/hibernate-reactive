@@ -74,4 +74,14 @@ public interface RxEntityPersister extends EntityPersister {
 	 		Serializable[] ids,
 			SessionImplementor session,
 			MultiLoadOptions loadOptions);
+
+	/**
+	 * Reactive {@link #setPropertyValues(Object, Object[])}
+	 * <p>
+	 *     If a value is a {@link CompletionStage} makes sure it completes before setting the value in the object.
+	 *     If a value is an {@link java.util.Optional} set the underlying value or null if one is not present.
+	 * </p>
+	 * @return A {@link CompletionStage} that completes when all values are set in the object
+	 */
+	CompletionStage<Void> setRxPropertyValues(Object object, Object[] values);
 }

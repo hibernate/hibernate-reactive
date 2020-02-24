@@ -3,6 +3,8 @@ package org.hibernate.rx.impl;
 import org.hibernate.*;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
+import org.hibernate.engine.spi.EffectiveEntityGraph;
+import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.service.spi.EventListenerRegistry;
@@ -10,6 +12,8 @@ import org.hibernate.event.spi.*;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.internal.EntityManagerMessageLogger;
+import org.hibernate.internal.HEMLogging;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
@@ -21,6 +25,7 @@ import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionInternal;
+import org.hibernate.rx.engine.impl.RxPersistenceContext;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.event.spi.*;
 import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
@@ -44,6 +49,7 @@ import java.util.function.Supplier;
  * Hibernate core compares the identity of session instances.
  */
 public class RxSessionInternalImpl extends SessionImpl implements RxSessionInternal, EventSource {
+	private static final EntityManagerMessageLogger log = HEMLogging.messageLogger( RxSessionInternalImpl.class );
 
 	private transient RxActionQueue rxActionQueue = new RxActionQueue( this );
 
@@ -143,6 +149,60 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 					}
 					return v;
 				});
+	}
+
+	@Override
+	public CompletionStage<Object> internalLoad (
+			String entityName,
+			Serializable id,
+			boolean eager,
+			boolean nullable) {
+		final EffectiveEntityGraph effectiveEntityGraph = getLoadQueryInfluencers().getEffectiveEntityGraph();
+		final GraphSemantic semantic = effectiveEntityGraph.getSemantic();
+		final RootGraphImplementor<?> graph = effectiveEntityGraph.getGraph();
+		final boolean clearedEffectiveGraph = semantic != null && !graph.appliesTo(entityName);
+		if ( clearedEffectiveGraph ) {
+			log.debug("Clearing effective entity graph for subsequent-select");
+			effectiveEntityGraph.clear();
+		}
+
+		final LoadEventListener.LoadType type = nullable
+				? LoadEventListener.INTERNAL_LOAD_NULLABLE
+				: eager
+					? LoadEventListener.INTERNAL_LOAD_EAGER
+					: LoadEventListener.INTERNAL_LOAD_LAZY;
+
+
+		// FIXME: SessionImpl actually cache the event because it's a performance hot spot
+		LoadEvent event = new LoadEvent( id, entityName, true, this, getReadOnlyFromLoadQueryInfluencers() );
+		return fireLoadNoChecks( event, type )
+				.thenApply( v -> {
+					Optional<?> result = (Optional<?>) event.getResult();
+
+					if ( !nullable ) {
+						Object value = result.isPresent() ? result.get() : null;
+						UnresolvableObjectException.throwIfNull (value, id, entityName );
+					}
+
+					return result.orElse( null );
+				})
+				.handle( (result, e) -> {
+					if ( e != null ) {
+						RxUtil.rethrow( e );
+					}
+					if ( clearedEffectiveGraph ) {
+						effectiveEntityGraph.applyGraph( graph, semantic );
+					}
+					return result;
+				});
+	}
+
+	private Boolean getReadOnlyFromLoadQueryInfluencers() {
+		Boolean readOnly = null;
+		if ( getLoadQueryInfluencers() != null ) {
+			readOnly = getLoadQueryInfluencers().getReadOnly();
+		}
+		return readOnly;
 	}
 
 	@Override
@@ -521,8 +581,10 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 
 	private CompletionStage<Void> fireLoadNoChecks(LoadEvent event, LoadEventListener.LoadType loadType) {
 		pulseTransactionCoordinator();
-
-		return fire(event, loadType, EventType.LOAD, (RxLoadEventListener l) -> l::rxOnLoad);
+		return fire(event, loadType, EventType.LOAD, (RxLoadEventListener l) -> l::rxOnLoad)
+				.exceptionally(e ->
+					RxUtil.rethrow(e)
+				);
 	}
 
 	@Override

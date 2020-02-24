@@ -23,6 +23,7 @@ import org.hibernate.rx.sql.impl.Parameters;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.sql.Delete;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
+import org.hibernate.tuple.entity.EntityTuplizer;
 import org.hibernate.type.Type;
 import org.jboss.logging.Logger;
 
@@ -772,5 +773,35 @@ public interface RxAbstractEntityPersister extends RxEntityPersister, OuterJoinL
 	@Override
 	default CompletionStage<List<?>> rxMultiLoad(Serializable[] ids, SessionImplementor session, MultiLoadOptions loadOptions) {
 		return RxDynamicBatchingEntityLoaderBuilder.INSTANCE.multiLoad(this, ids, session, loadOptions);
+	}
+
+	/**
+	 * @deprecated use {@link #setRxPropertyValues(Object, Object[])} instead
+	 */
+	@Override
+	@Deprecated
+	default void setPropertyValues(Object object, Object[] values) {
+		throw  new UnsupportedOperationException( "Use setRxPropertyValues instead");
+	}
+
+	default CompletionStage<Void> setRxPropertyValues(Object object, Object[] values) {
+		EntityTuplizer tuplizer = getEntityMetamodel().getTuplizer();
+		CompletionStage<Void> stage = RxUtil.nullFuture();
+		for (int i = 0; i < values.length; i++) {
+			if ( values[i] instanceof  CompletionStage ) {
+				int index = i;
+				final CompletionStage<?> valueStage = (CompletionStage<?>) values[i];
+				stage = stage.thenCompose( v -> valueStage.thenAccept( obj -> {
+					values[index] = read(obj);
+				}));
+			}
+		}
+		return stage.thenAccept( v ->  tuplizer.setPropertyValues( object, values ) );
+	}
+
+	default Object read(Object obj) {
+		return obj instanceof Optional
+				? ( (Optional) obj ).orElse( null )
+				: obj;
 	}
 }

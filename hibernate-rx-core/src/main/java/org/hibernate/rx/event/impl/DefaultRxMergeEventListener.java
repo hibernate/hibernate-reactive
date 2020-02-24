@@ -23,6 +23,7 @@ import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.impl.Cascade;
 import org.hibernate.rx.engine.impl.CascadingAction;
 import org.hibernate.rx.event.spi.RxMergeEventListener;
+import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.stat.spi.StatisticsImplementor;
@@ -196,10 +197,8 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 		copyCache.put( entity, entity, true );  //before cascade!
 
 		return cascadeOnMerge( source, persister, entity, copyCache )
-				.thenAccept(v -> {
-					copyValues(persister, entity, entity, source, copyCache);
-					event.setResult(entity);
-				});
+				.thenCompose( v -> copyValues(persister, entity, entity, source, copyCache) )
+				.thenAccept( v -> event.setResult (entity ) );
 	}
 
 	protected CompletionStage<Void> entityIsTransient(MergeEvent event, MergeContext copyCache) {
@@ -337,8 +336,8 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 						// cascade first, so that all unsaved objects get their
 						// copy created before we actually copy
 						return cascadeOnMerge(source, persister, entity, copyCache)
-								.thenAccept(v -> {
-									copyValues(persister, entity, target, source, copyCache);
+								.thenCompose( v -> copyValues(persister, entity, target, source, copyCache) )
+								.thenAccept( v -> {
 									//copyValues works by reflection, so explicitly mark the entity instance dirty
 									markInterceptorDirty(entity, target, persister);
 									event.setResult(result);
@@ -448,7 +447,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 		return entry != null && entry.isExistsInDatabase();
 	}
 
-	protected void copyValues(
+	protected CompletionStage<Void> copyValues(
 			final EntityPersister persister,
 			final Object entity,
 			final Object target,
@@ -463,7 +462,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 				copyCache
 		);
 
-		persister.setPropertyValues( target, copiedValues );
+		return ((RxEntityPersister) persister).setRxPropertyValues(target, copiedValues);
 	}
 
 	protected void copyValues(
