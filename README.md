@@ -58,9 +58,9 @@ If you also want to run the MySQL tests, ensure that MySQL is installed,
 and then type the following:
 
     mysql -uroot
-    create database hibernaterx;
-    create user "hibernate-rx" identified by 'hibernate-rx';
-    grant all on hibernaterx.* to "hibernate-rx";
+    create database `hibernate-rx`;
+    create user `hibernate-rx` identified by 'hibernate-rx';
+    grant all on `hibernate-rx`.* to `hibernate-rx`;
 
 Finally, run `./gradlew test` from the `hibernate-rx` directory.
 

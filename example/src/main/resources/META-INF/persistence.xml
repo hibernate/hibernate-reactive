@@ -9,7 +9,7 @@
 
         <properties>
             <property name="javax.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/hibernate-rx?user=hibernate-rx&amp;password=hibernate-rx"/>
-            <!--property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/hibernaterx?user=hibernate-rx&amp;password=hibernate-rx"/-->
+            <!--property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/hibernate-rx?user=hibernate-rx&amp;password=hibernate-rx"/-->
 
             <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
             <property name="hibernate.show_sql" value="true"/>
