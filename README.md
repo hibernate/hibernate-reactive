@@ -62,6 +62,10 @@ and then type the following:
     create user `hibernate-rx` identified by 'hibernate-rx';
     grant all on `hibernate-rx`.* to `hibernate-rx`;
 
+As an alternative, you can start the datastores using the instructions in the [podman.md] file.
+
+[podman.md]:podman.md
+
 Finally, run `./gradlew test` from the `hibernate-rx` directory.
 
 ## Compatibility
