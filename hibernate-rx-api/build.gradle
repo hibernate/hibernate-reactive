@@ -7,7 +7,7 @@ description = 'Hibernate RX API'
  
 dependencies {
     implementation 'org.reactivestreams:reactive-streams:1.0.2'
-    implementation 'org.hibernate:hibernate-core:5.4.11-SNAPSHOT'
+    implementation "org.hibernate:hibernate-core:${hibernateOrmVersion}"
 
     testImplementation 'org.assertj:assertj-core:3.11.1'
     testImplementation 'io.vertx:vertx-junit5:3.6.2'

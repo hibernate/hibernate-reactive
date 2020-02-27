@@ -13,6 +13,15 @@ subprojects {
     }
 }
 
+// Versions which need to be aligned across modules;
+// this also allows to override the build from a parameter,
+// which can be useful to monitor compatibility for upcoming versions on CI:
+// ./gradlew clean build -PhibernateOrmVersion=5.4.9-SNAPSHOT
+ext {
+    hibernateOrmVersion = '5.4.12.Final'
+}
+
+
 //allprojects {
 //    apply plugin: 'checkstyle'
 //
