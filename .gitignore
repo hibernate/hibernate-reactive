@@ -16,8 +16,10 @@
 
 # IntelliJ specific files/directories
 out
-.idea/uiDesigner.xml
-.idea/workspace.xml
+.idea
+*.ipr
+*.iws
+*.iml
 atlassian-ide-plugin.xml
 
 # Eclipse specific files/directories
