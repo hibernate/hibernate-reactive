@@ -267,45 +267,49 @@ abstract class AbstractRxSaveEventListener<C>
 
 		CompletionStage<Void> cascadeBeforeSave = rxCascadeBeforeSave(source, persister, entity, context);
 
-		Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap( context ), source );
-		Type[] types = persister.getPropertyTypes();
+		return cascadeBeforeSave.thenCompose(v -> {
+			// We have to do this after cascadeBeforeSave completes,
+			// since it could result in generation of parent ids,
+			// which we will need as foreign keys in the insert
 
-		boolean substitute = substituteValuesIfNecessary( entity, id, values, persister, source );
+			Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap( context ), source );
+			Type[] types = persister.getPropertyTypes();
 
-		if ( persister.hasCollections() ) {
-			substitute = substitute || visitCollectionsBeforeSave( entity, id, values, types, source );
-		}
+			boolean substitute = substituteValuesIfNecessary( entity, id, values, persister, source );
 
-		if ( substitute ) {
-			persister.setPropertyValues( entity, values );
-		}
-
-		TypeHelper.deepCopy(
-				values,
-				types,
-				persister.getPropertyUpdateability(),
-				values,
-				source
-		);
-
-		CompletionStage<AbstractEntityInsertAction> insert = addInsertAction(
-				values, id, entity, persister, useIdentityColumn, source, shouldDelayIdentityInserts
-		);
-
-		CompletionStage<Void> cascadeAfterSave = rxCascadeAfterSave(source, persister, entity, context);
-
-		EntityEntry newEntry = persistenceContext.getEntry( entity );
-
-		if ( newEntry != original ) {
-			EntityEntryExtraState extraState = newEntry.getExtraState( EntityEntryExtraState.class );
-			if ( extraState == null ) {
-				newEntry.addExtraState( original.getExtraState( EntityEntryExtraState.class ) );
+			if ( persister.hasCollections() ) {
+				substitute = substitute || visitCollectionsBeforeSave( entity, id, values, types, source );
 			}
-		}
 
-		return cascadeBeforeSave
-				.thenCompose(v -> insert)
-				.thenCompose(v -> cascadeAfterSave);
+			if ( substitute ) {
+				persister.setPropertyValues( entity, values );
+			}
+
+			TypeHelper.deepCopy(
+					values,
+					types,
+					persister.getPropertyUpdateability(),
+					values,
+					source
+			);
+
+			CompletionStage<AbstractEntityInsertAction> insert = addInsertAction(
+					values, id, entity, persister, useIdentityColumn, source, shouldDelayIdentityInserts
+			);
+
+			CompletionStage<Void> cascadeAfterSave = rxCascadeAfterSave(source, persister, entity, context);
+
+			EntityEntry newEntry = persistenceContext.getEntry( entity );
+
+			if ( newEntry != original ) {
+				EntityEntryExtraState extraState = newEntry.getExtraState( EntityEntryExtraState.class );
+				if ( extraState == null ) {
+					newEntry.addExtraState( original.getExtraState( EntityEntryExtraState.class ) );
+				}
+			}
+
+			return insert.thenCompose(vv -> cascadeAfterSave);
+		});
 //				.thenAccept( v -> {
 			// postpone initializing id in case the insert has non-nullable transient dependencies
 			// that are not resolved until cascadeAfterSave() is executed

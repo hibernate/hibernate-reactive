@@ -44,7 +44,7 @@ public class CascadeTest extends BaseRxTest {
 							Node node = option.get();
 							context.assertTrue( node.loaded );
 							context.assertEquals( node.string, basik.string);
-							context.assertEquals( node.version, 1 );
+							context.assertEquals( node.version, 0 );
 
 							node.string = "Adopted";
 							node.parent = new Node("New Parent");
@@ -54,7 +54,7 @@ public class CascadeTest extends BaseRxTest {
 										context.assertTrue( node.postUpdated && node.preUpdated );
 										context.assertFalse( node.postPersisted && node.prePersisted );
 										context.assertTrue( node.parent.postPersisted && node.parent.prePersisted );
-										context.assertEquals( node.version, 2 );
+										context.assertEquals( node.version, 1 );
 									});
 						}))
 						.thenCompose(v -> openSession())
@@ -63,7 +63,7 @@ public class CascadeTest extends BaseRxTest {
 										.thenCompose( option -> {
 											context.assertTrue( option.isPresent() );
 											Node node = option.get();
-											context.assertEquals( node.version, 2 );
+											context.assertEquals( node.version, 1 );
 											context.assertEquals( node.string, "Adopted");
 											return s2.fetch( node.parent )
 													.thenCompose( opt -> {
@@ -84,7 +84,7 @@ public class CascadeTest extends BaseRxTest {
 							Node node = option.get();
 							context.assertFalse( node.postUpdated && node.preUpdated );
 							context.assertFalse( node.postPersisted && node.prePersisted );
-							context.assertEquals( node.version, 2 );
+							context.assertEquals( node.version, 1 );
 							context.assertEquals( node.string, "ADOPTED");
 							basik.version = node.version;
 							basik.string = "Hello World!";
