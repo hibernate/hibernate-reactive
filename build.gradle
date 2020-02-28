@@ -18,7 +18,7 @@ subprojects {
 // which can be useful to monitor compatibility for upcoming versions on CI:
 // ./gradlew clean build -PhibernateOrmVersion=5.4.9-SNAPSHOT
 ext {
-    hibernateOrmVersion = '5.4.12.Final'
+    hibernateOrmVersion = '5.4.13-SNAPSHOT'
 }
 
 
