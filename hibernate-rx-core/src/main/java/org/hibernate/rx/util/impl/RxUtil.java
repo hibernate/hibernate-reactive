@@ -40,4 +40,9 @@ public class RxUtil {
 		throw (T) x;
 	}
 
+	public static <T extends Throwable, Ret> void rethrowIfNotNull(Throwable x) throws T {
+		if (x != null ) {
+			throw (T) x;
+		}
+	}
 }
