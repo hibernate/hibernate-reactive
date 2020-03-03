@@ -1,7 +1,6 @@
 package org.hibernate.rx.loader.entity.impl;
 
 import org.hibernate.HibernateException;
-import org.hibernate.JDBCException;
 import org.hibernate.LockOptions;
 import org.hibernate.dialect.pagination.LimitHandler;
 import org.hibernate.dialect.pagination.LimitHelper;
