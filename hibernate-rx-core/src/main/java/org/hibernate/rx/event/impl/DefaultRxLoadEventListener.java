@@ -216,7 +216,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		return entityCs.thenApply( optional -> {
 			boolean isOptionalInstance = event.getInstanceToLoad() != null;
 
-			if ( optional.isPresent() && ( !options.isAllowNulls() || isOptionalInstance ) ) {
+			if ( !optional.isPresent() && ( !options.isAllowNulls() || isOptionalInstance ) ) {
 				session
 						.getFactory()
 						.getEntityNotFoundDelegate()
