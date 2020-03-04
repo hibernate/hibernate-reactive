@@ -156,7 +156,11 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 
 		return fire(event, copiedAlready, EventType.PERSIST_ONFLUSH,
 				(RxPersistEventListener l) -> l::rxOnPersist)
-				.handle( (v, e) -> { delayedAfterCompletion(); return v; });
+				.handle( (v, e) -> {
+					delayedAfterCompletion();
+					RxUtil.rethrowIfNotNull( e );
+					return v;
+				} );
 	}
 
 	@Override
@@ -515,6 +519,9 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		return fireLoadNoChecks( event, loadType )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
+					// Before the exception was only thrown if it was of type ObjectNotFoundException.
+					// I've changed the behaviour because we don't want to loose the exception
+					RxUtil.rethrowIfNotNull( e );
 					return v;
 				} );
 	}
@@ -661,11 +668,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 			return fireLoad( event, loadType )
 					.handle( (v, t) -> {
 						afterOperation( t != null );
-						if ( t != null
-								// if session cache contains proxy for non-existing object
-								&& !( t instanceof ObjectNotFoundException ) ) {
-							RxUtil.rethrow( t );
-						}
+						RxUtil.rethrowIfNotNull( t );
 						return (Optional<T>) event.getResult();
 					} );
 		}

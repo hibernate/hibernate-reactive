@@ -116,6 +116,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 					if ( x instanceof HibernateException ) {
 						LOG.unableToLoadCommand( (HibernateException) x );
 					}
+					RxUtil.rethrowIfNotNull( x );
 				} );
 	}
 
