@@ -3,6 +3,7 @@ package org.hibernate.rx.impl;
 import org.hibernate.*;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
+import org.hibernate.engine.spi.EffectiveEntityGraph;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.service.spi.EventListenerRegistry;
@@ -10,6 +11,8 @@ import org.hibernate.event.spi.*;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.internal.EntityManagerMessageLogger;
+import org.hibernate.internal.HEMLogging;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
@@ -44,6 +47,7 @@ import java.util.function.Supplier;
  * Hibernate core compares the identity of session instances.
  */
 public class RxSessionInternalImpl extends SessionImpl implements RxSessionInternal, EventSource {
+	private static final EntityManagerMessageLogger log = HEMLogging.messageLogger( RxSessionInternalImpl.class );
 
 	private transient RxActionQueue rxActionQueue = new RxActionQueue( this );
 
@@ -143,6 +147,13 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 					}
 					return v;
 				});
+	}
+
+	private Boolean getReadOnlyFromLoadQueryInfluencers() {
+		if ( getLoadQueryInfluencers() != null ) {
+			return getLoadQueryInfluencers().getReadOnly();
+		}
+		return null;
 	}
 
 	@Override
