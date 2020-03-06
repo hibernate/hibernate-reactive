@@ -27,6 +27,7 @@ import org.hibernate.type.Type;
 import java.io.Serializable;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultLoadEventListener}.
@@ -43,7 +44,17 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 	public void onLoad(
 			final LoadEvent event,
 			final LoadEventListener.LoadType loadType) throws HibernateException {
-		throw new UnsupportedOperationException();
+		try {
+			rxOnLoad( event, loadType ).toCompletableFuture().get();
+			Object result = event.getResult();
+			if ( result instanceof Optional) {
+				Optional optResult = (Optional) event.getResult();
+				event.setResult( optResult.orElse(  null ) );
+			}
+		}
+		catch (Exception e) {
+			throw new HibernateException( e );
+		}
 	}
 
 	/**
