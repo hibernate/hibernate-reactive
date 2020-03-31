@@ -177,4 +177,4 @@ Note that you should not use Hibernate RX with a second-level cache
 implementation which performs blocking IO, for example passivation to the
 filesystem or distributed replication.
 
-Currently only PostgreSQL is supported. Support for MySQL is coming soon!
+Currently only PostgreSQL and MySQL are supported.
