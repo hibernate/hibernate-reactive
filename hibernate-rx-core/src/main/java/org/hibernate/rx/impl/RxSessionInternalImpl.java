@@ -1,13 +1,42 @@
 package org.hibernate.rx.impl;
 
-import org.hibernate.*;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import javax.persistence.EntityNotFoundException;
+import javax.persistence.LockModeType;
+
+import org.hibernate.CacheMode;
+import org.hibernate.HibernateException;
+import org.hibernate.JDBCException;
+import org.hibernate.LazyInitializationException;
+import org.hibernate.LockOptions;
+import org.hibernate.MappingException;
+import org.hibernate.ObjectDeletedException;
+import org.hibernate.ObjectNotFoundException;
+import org.hibernate.TypeMismatchException;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
-import org.hibernate.engine.spi.EffectiveEntityGraph;
+import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.service.spi.EventListenerRegistry;
-import org.hibernate.event.spi.*;
+import org.hibernate.event.spi.DeleteEvent;
+import org.hibernate.event.spi.EventSource;
+import org.hibernate.event.spi.EventType;
+import org.hibernate.event.spi.FlushEvent;
+import org.hibernate.event.spi.InitializeCollectionEvent;
+import org.hibernate.event.spi.InitializeCollectionEventListener;
+import org.hibernate.event.spi.LoadEvent;
+import org.hibernate.event.spi.LoadEventListener;
+import org.hibernate.event.spi.MergeEvent;
+import org.hibernate.event.spi.PersistEvent;
+import org.hibernate.event.spi.RefreshEvent;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
@@ -24,21 +53,17 @@ import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionInternal;
+import org.hibernate.rx.engine.impl.RxPersistenceContextAdapter;
 import org.hibernate.rx.engine.spi.RxActionQueue;
-import org.hibernate.rx.event.spi.*;
+import org.hibernate.rx.event.impl.DefaultRxInitializeCollectionEventListener;
+import org.hibernate.rx.event.spi.RxDeleteEventListener;
+import org.hibernate.rx.event.spi.RxFlushEventListener;
+import org.hibernate.rx.event.spi.RxLoadEventListener;
+import org.hibernate.rx.event.spi.RxMergeEventListener;
+import org.hibernate.rx.event.spi.RxPersistEventListener;
+import org.hibernate.rx.event.spi.RxRefreshEventListener;
 import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
-
-import javax.persistence.EntityNotFoundException;
-import javax.persistence.LockModeType;
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * An {@link RxSessionInternal} implemented by extension of
@@ -53,6 +78,16 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 
 	public RxSessionInternalImpl(SessionFactoryImpl delegate, SessionCreationOptions options) {
 		super( delegate, options );
+	}
+
+	@Override
+	public PersistenceContext getPersistenceContext() {
+		return new RxPersistenceContextAdapter( super.getPersistenceContext() );
+	}
+
+	@Override
+	public PersistenceContext getPersistenceContextInternal() {
+		return new RxPersistenceContextAdapter( super.getPersistenceContextInternal() );
 	}
 
 	@Override
@@ -88,10 +123,44 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 					} );
 		}
 		if ( association instanceof PersistentCollection ) {
-			//TODO: handle PersistentCollection (raise InitializeCollectionEvent)
-			throw new UnsupportedOperationException("fetch() is not yet implemented for collections");
+			PersistentCollection persistentCollection = (PersistentCollection) association;
+			return rxInitializeCollection( persistentCollection, false )
+					.thenApply( l -> Optional.ofNullable( (T) l ) );
 		}
 		return RxUtil.completedFuture( Optional.ofNullable(association) );
+	}
+
+	/**
+	 * @deprecated use {@link #rxInitializeCollection(PersistentCollection, boolean)} instead
+	 */
+	@Deprecated
+	@Override
+	public void initializeCollection(PersistentCollection collection, boolean writing) {
+		throw getExceptionConverter().convert( new UnsupportedOperationException( "RxSessionInternalImpl#initializeCollection not supported, use rxInitializeCollection instead" ) );
+	}
+
+	public <T> CompletionStage<T> rxInitializeCollection(PersistentCollection collection, boolean writing) {
+		checkOpenOrWaitingForAutoClose();
+		pulseTransactionCoordinator();
+		InitializeCollectionEvent event = new InitializeCollectionEvent( collection, this );
+		return fire( event, EventType.INIT_COLLECTION, (DefaultRxInitializeCollectionEventListener l) -> l::onRxInitializeCollection )
+				.handle( (v, e) -> {
+					delayedAfterCompletion();
+
+					if ( e instanceof MappingException ) {
+						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage() ) );
+					}
+					else if ( e instanceof RuntimeException ) {
+						throw getExceptionConverter().convert( (RuntimeException) e );
+					}
+					else if ( e != null ) {
+						return RxUtil.rethrow( e );
+					}
+					return v;
+				} ).thenApply( list -> {
+					delayedAfterCompletion();
+					return (T) list;
+				} );
 	}
 
 	@Override
@@ -189,7 +258,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 						null,
 						object,
 						isCascadeDeleteEnabled,
-						((StatefulPersistenceContext) getPersistenceContextInternal())
+						((RxPersistenceContextAdapter) getPersistenceContextInternal())
 								.isRemovingOrphanBeforeUpates(),
 						this
 				),
@@ -493,10 +562,12 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@SuppressWarnings("unchecked")
-	private <E,L,RL> CompletionStage<Void> fire(E event, EventType<L> eventType,
-												Function<RL,Function<E,CompletionStage<Void>>> fun) {
-		CompletionStage<Void> ret = RxUtil.nullFuture();
-		for ( L listener : eventListeners(eventType) ) {
+	private <E, L, RL, T> CompletionStage<T> fire(
+			E event,
+			EventType<L> eventType,
+			Function<RL, Function<E, CompletionStage<T>>> fun) {
+		CompletionStage<T> ret = RxUtil.nullFuture();
+		for ( L listener : eventListeners( eventType ) ) {
 			//to preserve atomicity of the RxSession methods
 			//call apply() from within the arg of thenCompose()
 			ret = ret.thenCompose( v -> fun.apply((RL) listener).apply(event) );
