@@ -40,6 +40,7 @@ public class RxIntegrator implements Integrator {
 		eventListenerRegistry.getEventListenerGroup( EventType.DELETE ).appendListener( new DefaultRxDeleteEventListener() );
 		eventListenerRegistry.getEventListenerGroup( EventType.REFRESH ).appendListener( new DefaultRxRefreshEventListener() );
 		eventListenerRegistry.getEventListenerGroup( EventType.LOAD ).appendListener( new DefaultRxLoadEventListener() );
+		eventListenerRegistry.getEventListenerGroup( EventType.INIT_COLLECTION ).appendListener( new DefaultRxInitializeCollectionEventListener() );
 	}
 
 }

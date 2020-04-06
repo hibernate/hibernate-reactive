@@ -9,6 +9,7 @@ import org.hibernate.persister.spi.PersisterClassResolver;
 import org.hibernate.rx.persister.entity.impl.RxJoinedSubclassEntityPersister;
 import org.hibernate.rx.persister.entity.impl.RxSingleTableEntityPersister;
 import org.hibernate.rx.persister.entity.impl.RxUnionSubclassEntityPersister;
+import org.hibernate.rx.persister.persister.collection.RxOneToManyPersister;
 
 public class RxPersisterClassResolver extends StandardPersisterClassResolver implements PersisterClassResolver {
 
@@ -29,6 +30,6 @@ public class RxPersisterClassResolver extends StandardPersisterClassResolver imp
 
 	@Override
 	public Class<? extends CollectionPersister> getCollectionPersisterClass(Collection metadata) {
-		return OneToManyPersister.class;
+		return RxOneToManyPersister.class;
 	}
 }

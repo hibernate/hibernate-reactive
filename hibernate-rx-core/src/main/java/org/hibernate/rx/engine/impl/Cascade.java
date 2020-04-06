@@ -395,17 +395,18 @@ public final class Cascade<C> {
 			cascadePoint = CascadePoint.AFTER_INSERT_BEFORE_DELETE_VIA_COLLECTION;
 		}
 
+		// TODO: Collection of elements is currently not supported
 		//cascade to current collection elements
-		if ( elemType.isEntityType() || elemType.isAnyType() || elemType.isComponentType() ) {
-			cascadeCollectionElements(
-				componentPathStackDepth,
-				child,
-				type,
-				style,
-				elemType,
-				persister.isCascadeDeleteEnabled()
-			);
-		}
+//		if ( elemType.isEntityType() || elemType.isAnyType() || elemType.isComponentType() ) {
+//			cascadeCollectionElements(
+//				componentPathStackDepth,
+//				child,
+//				type,
+//				style,
+//				elemType,
+//				persister.isCascadeDeleteEnabled()
+//			);
+//		}
 
 		cascadePoint = elementsCascadePoint;
 	}

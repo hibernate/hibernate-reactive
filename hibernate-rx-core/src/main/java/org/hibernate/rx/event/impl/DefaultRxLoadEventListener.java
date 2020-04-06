@@ -75,7 +75,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		}
 
 		Object checkId = checkId( event, loadType, persister );
-		if ( checkId instanceof CompletionStage) {
+		if ( checkId != null ) {
 			// This only happens if the object is loaded from the db
 			throw new UnsupportedOperationException( "Unexpected access to the db" );
 		}
@@ -113,10 +113,9 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 			throw new HibernateException( "Unable to locate persister: " + event.getEntityClassName() );
 		}
 
-		CompletionStage<?> checkIdStage = RxUtil.nullFuture();
-		Object checkId = checkId( event, loadType, persister );
-		if ( checkId instanceof CompletionStage) {
-			checkIdStage = (CompletionStage<?>) checkId;
+		CompletionStage<?> checkIdStage = checkId( event, loadType, persister );
+		if ( checkIdStage == null ) {
+			checkIdStage = RxUtil.nullFuture();
 		}
 		return checkIdStage.thenCompose( ignore -> {
 			Object loaded = doOnLoad( persister, event, loadType );
@@ -137,7 +136,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		} );
 	}
 
-	private Object checkId(LoadEvent event, LoadType loadType, EntityPersister persister) {
+	private CompletionStage<?> checkId(LoadEvent event, LoadType loadType, EntityPersister persister) {
 		final Class<?> idClass = persister.getIdentifierType().getReturnedClass();
 		if ( idClass != null &&
 				!idClass.isInstance( event.getEntityId() ) &&
@@ -180,7 +179,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		}
 	}
 
-	private Object checkIdClass(
+	private CompletionStage<?> checkIdClass(
 			final EntityPersister persister,
 			final LoadEvent event,
 			final LoadEventListener.LoadType loadType,
@@ -210,7 +209,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 				"Provided id of the wrong type for class " + persister.getEntityName() + ". Expected: " + idClass + ", got " + event.getEntityId().getClass() );
 	}
 
-	private Object loadByDerivedIdentitySimplePkValue(LoadEvent event, LoadEventListener.LoadType options,
+	private CompletionStage<?> loadByDerivedIdentitySimplePkValue(LoadEvent event, LoadEventListener.LoadType options,
 			EntityPersister dependentPersister, EmbeddedComponentType dependentIdType, EntityPersister parentPersister) {
 		final EventSource session = event.getSession();
 		final EntityKey parentEntityKey = session.generateEntityKey( event.getEntityId(), parentPersister );
@@ -234,7 +233,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 			Object loaded = doLoad( event, dependentPersister, dependentEntityKey, options );
 			if ( loaded instanceof CompletionStage ) {
 				CompletionStage loadedStage = (CompletionStage) loaded;
-				return loadedStage.thenAccept(event::setResult );
+				return loadedStage.thenAccept( event::setResult );
 			}
 			else {
 				event.setResult( loaded );
