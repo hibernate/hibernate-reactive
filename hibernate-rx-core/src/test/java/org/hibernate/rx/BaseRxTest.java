@@ -14,6 +14,7 @@ import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
@@ -41,11 +42,11 @@ public abstract class BaseRxTest {
 			}
 		} );
 	}
-
+	
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
 		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, "create-drop" );
-		configuration.setProperty( AvailableSettings.URL, "jdbc:postgresql://localhost:5432/hibernate-rx?user=hibernate-rx&password=hibernate-rx" );
+		configuration.setProperty( AvailableSettings.URL, TestConfiguration.getPostgreSQLURL() );
 		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
 		return configuration;
 	}

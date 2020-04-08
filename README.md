@@ -46,6 +46,11 @@ To publish Hibernate RX to your local Maven repository, run:
 
 ### Running tests
 
+Tests require an instance of the corresponding database to be running on your machine.
+You can start the database instances in any way you like:
+
+#### Starting bare-metal databases 
+
 To run the tests, ensure that PostgreSQL is installed on your machine.
 From the command line, type the following commands:
 
@@ -61,12 +66,26 @@ and then type the following:
     create database `hibernate-rx`;
     create user `hibernate-rx` identified by 'hibernate-rx';
     grant all on `hibernate-rx`.* to `hibernate-rx`;
+    
+Finally, run `./gradlew test` from the `hibernate-rx` directory.
 
-As an alternative, you can start the datastores using the instructions in the [podman.md] file.
+#### Starting database containers with podman
+
+You can start the datastores using the instructions in the [podman.md] file.
 
 [podman.md]:podman.md
 
 Finally, run `./gradlew test` from the `hibernate-rx` directory.
+
+#### Starting databases automatically with Testcontainers
+
+If you have Docker installed, the container instances will be automatically started
+by running the tests if you select the `-Pdocker` profile like so:
+
+    ./gradlew test -Pdocker
+    
+TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in
+a file located at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 
 ## Compatibility
 
