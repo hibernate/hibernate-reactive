@@ -18,7 +18,7 @@ public class MySQLAutoincrementTest extends BaseRxTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( AvailableSettings.URL, "jdbc:mysql://localhost:3306/hibernate-rx?user=hibernate-rx&password=hibernate-rx" );
+		configuration.setProperty( AvailableSettings.URL, TestConfiguration.getMySQLURL() );
 		configuration.setProperty( AvailableSettings.DIALECT, MySQL8Dialect.class.getName());
 		configuration.addAnnotatedClass( Basic.class );
 		return configuration;
