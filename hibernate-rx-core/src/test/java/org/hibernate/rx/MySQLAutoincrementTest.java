@@ -1,24 +1,50 @@
 package org.hibernate.rx;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.dialect.MySQL8Dialect;
-import org.junit.Test;
-
-import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.TimeZone;
+
+import javax.persistence.Column;
+import javax.persistence.Convert;
+import javax.persistence.Embeddable;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.PostLoad;
+import javax.persistence.PostPersist;
+import javax.persistence.PostRemove;
+import javax.persistence.PostUpdate;
+import javax.persistence.PrePersist;
+import javax.persistence.PreRemove;
+import javax.persistence.PreUpdate;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.persistence.Transient;
+import javax.persistence.Version;
+
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.dialect.MySQL8Dialect;
+import org.hibernate.rx.containers.MySQLDatabase;
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 public class MySQLAutoincrementTest extends BaseRxTest {
 
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( AvailableSettings.URL, "jdbc:mysql://localhost:3306/hibernate-rx?user=hibernate-rx&password=hibernate-rx&serverTimezone=UTC" );
+		configuration.setProperty( AvailableSettings.URL, MySQLDatabase.getJdbcUrl() );
 		configuration.setProperty( AvailableSettings.DIALECT, MySQL8Dialect.class.getName());
 		configuration.addAnnotatedClass( Basic.class );
 		return configuration;

@@ -1,14 +1,13 @@
 package org.hibernate.rx;
 
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.rx.containers.PostgreSQLDatabase;
 import org.hibernate.rx.service.RxConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.rx.util.impl.RxUtil;
@@ -17,7 +16,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
-import java.util.concurrent.CompletionStage;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Timeout;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 @RunWith(VertxUnitRunner.class)
 public abstract class BaseRxTest {
@@ -45,7 +47,7 @@ public abstract class BaseRxTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
 		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, "create-drop" );
-		configuration.setProperty( AvailableSettings.URL, "jdbc:postgresql://localhost:5432/hibernate-rx?user=hibernate-rx&password=hibernate-rx" );
+		configuration.setProperty( AvailableSettings.URL, PostgreSQLDatabase.getJdbcUrl() );
 		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
 		return configuration;
 	}
@@ -56,17 +58,17 @@ public abstract class BaseRxTest {
 				.applySettings( constructConfiguration().getProperties() )
 				.build();
 
-		sessionFactory = constructConfiguration().buildSessionFactory(registry);
-		poolProvider = registry.getService(RxConnectionPoolProvider.class);
+		sessionFactory = constructConfiguration().buildSessionFactory( registry );
+		poolProvider = registry.getService( RxConnectionPoolProvider.class );
 
-		//EITHER WAY WORKS:
-//		session = sessionFactory.openSession().unwrap(RxSession.class);
-		session = sessionFactory.unwrap(RxSessionFactory.class).openRxSession();
+		// EITHER WAY WORKS:
+		// session = sessionFactory.openSession().unwrap(RxSession.class);
+		session = sessionFactory.unwrap( RxSessionFactory.class ).openRxSession();
 	}
 
 	@After
 	public void after(TestContext context) {
-		if (session != null) {
+		if ( session != null ) {
 			session.close();
 		}
 
@@ -75,12 +77,12 @@ public abstract class BaseRxTest {
 
 	protected CompletionStage<RxSession> openSession() {
 		return RxUtil.nullFuture().thenApply( v -> {
-			if (session != null) {
+			if ( session != null ) {
 				session.close();
 			}
 			session = sessionFactory.unwrap( RxSessionFactory.class ).openRxSession();
 			return session;
-		});
+		} );
 	}
 
 	protected RxConnection connection() {
