@@ -21,6 +21,8 @@ public class MySQLDatabase {
 
 	public static String getJdbcUrl() {
 		if ( USE_DOCKER ) {
+			// Calling start() will start the container (if not already started)
+			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
 			mysql.start();
 			return buildJdbcUrlWithCredentials( mysql.getJdbcUrl() );
 		}
