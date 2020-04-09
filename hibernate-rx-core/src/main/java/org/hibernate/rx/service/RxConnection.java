@@ -4,11 +4,11 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
-import io.vertx.axle.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.Row;
 import org.hibernate.rx.RxSession;
 
-import io.vertx.axle.sqlclient.RowSet;
-import io.vertx.axle.sqlclient.Tuple;
+import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.mutiny.sqlclient.Tuple;
 
 /**
  * Abstracts over reactive connection pools.

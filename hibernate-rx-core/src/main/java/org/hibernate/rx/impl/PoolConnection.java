@@ -1,7 +1,7 @@
 package org.hibernate.rx.impl;
 
-import io.vertx.axle.mysqlclient.MySQLClient;
-import io.vertx.axle.sqlclient.*;
+import io.vertx.mutiny.mysqlclient.MySQLClient;
+import io.vertx.mutiny.sqlclient.*;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.service.RxConnection;
 
@@ -68,7 +68,7 @@ public class PoolConnection implements RxConnection {
 		if (showSQL) {
 			System.out.println(sql);
 		}
-		return pool.preparedQuery( sql, parameters );
+		return pool.preparedQuery( sql, parameters ).convert().toCompletionStage();
 	}
 
 	@Override
@@ -76,7 +76,7 @@ public class PoolConnection implements RxConnection {
 		if (showSQL) {
 			System.out.println(sql);
 		}
-		return pool.preparedQuery( sql );
+		return pool.preparedQuery( sql ).convert().toCompletionStage();
 	}
 
 	@Override

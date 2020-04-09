@@ -1,6 +1,6 @@
 package org.hibernate.rx;
 
-import io.vertx.axle.sqlclient.Tuple;
+import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
