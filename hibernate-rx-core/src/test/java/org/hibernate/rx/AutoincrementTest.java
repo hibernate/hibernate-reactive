@@ -162,7 +162,7 @@ public class AutoincrementTest extends BaseRxTest {
 	public static class Basic {
 
 		@Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-		Integer id;
+		Long id;
 		@Version Integer version;
 		String string;
 
@@ -215,7 +215,7 @@ public class AutoincrementTest extends BaseRxTest {
 			this.string = string;
 		}
 
-		public Basic(Integer id, String string) {
+		public Basic(Long id, String string) {
 			this.id = id;
 			this.string = string;
 		}
@@ -257,11 +257,11 @@ public class AutoincrementTest extends BaseRxTest {
 			loaded = true;
 		}
 
-		public Integer getId() {
+		public Long getId() {
 			return id;
 		}
 
-		public void setId(Integer id) {
+		public void setId(Long id) {
 			this.id = id;
 		}
 
