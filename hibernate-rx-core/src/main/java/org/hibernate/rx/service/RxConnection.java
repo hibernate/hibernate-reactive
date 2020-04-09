@@ -27,7 +27,7 @@ public interface RxConnection {
 
 	CompletionStage<RowSet<Row>> preparedQuery(String query);
 
-	CompletionStage<Optional<Integer>> updateReturning(String sql, Tuple parameters);
+	CompletionStage<Optional<Long>> updateReturning(String sql, Tuple parameters);
 
 	CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters);
 

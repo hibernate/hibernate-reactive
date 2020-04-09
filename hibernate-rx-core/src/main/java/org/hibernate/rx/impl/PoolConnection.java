@@ -58,7 +58,7 @@ public class PoolConnection implements RxConnection {
 	}
 
 	@Override
-	public CompletionStage<Optional<Integer>> updateReturning(String sql, Tuple parameters) {
+	public CompletionStage<Optional<Long>> updateReturning(String sql, Tuple parameters) {
 		return preparedQuery( sql, parameters )
 				.thenApply( rows -> Optional.ofNullable( rows.property(MySQLClient.LAST_INSERTED_ID) ) );
 	}

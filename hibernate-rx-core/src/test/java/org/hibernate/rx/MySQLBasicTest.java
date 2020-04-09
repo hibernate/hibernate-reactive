@@ -8,12 +8,9 @@ import org.junit.Test;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 public class MySQLBasicTest extends BaseRxTest {
@@ -21,7 +18,7 @@ public class MySQLBasicTest extends BaseRxTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( AvailableSettings.URL, "jdbc:mysql://localhost:3306/hibernate-rx?user=hibernate-rx&password=hibernate-rx" );
+		configuration.setProperty( AvailableSettings.URL, "jdbc:mysql://localhost:3306/hibernate-rx?user=hibernate-rx&password=hibernate-rx&serverTimezone=UTC" );
 		configuration.setProperty( AvailableSettings.DIALECT, MySQL8Dialect.class.getName());
 		configuration.addAnnotatedClass( Basic.class );
 		return configuration;

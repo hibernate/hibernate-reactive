@@ -18,7 +18,7 @@ public class MySQLAutoincrementTest extends BaseRxTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( AvailableSettings.URL, "jdbc:mysql://localhost:3306/hibernate-rx?user=hibernate-rx&password=hibernate-rx" );
+		configuration.setProperty( AvailableSettings.URL, "jdbc:mysql://localhost:3306/hibernate-rx?user=hibernate-rx&password=hibernate-rx&serverTimezone=UTC" );
 		configuration.setProperty( AvailableSettings.DIALECT, MySQL8Dialect.class.getName());
 		configuration.addAnnotatedClass( Basic.class );
 		return configuration;
@@ -159,7 +159,7 @@ public class MySQLAutoincrementTest extends BaseRxTest {
 	public static class Basic {
 
 		@Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-		Integer id;
+		Long id;
 		@Version Integer version;
 		String string;
 
@@ -214,7 +214,7 @@ public class MySQLAutoincrementTest extends BaseRxTest {
 			this.string = string;
 		}
 
-		public Basic(Integer id, String string) {
+		public Basic(Long id, String string) {
 			this.id = id;
 			this.string = string;
 		}
@@ -256,11 +256,11 @@ public class MySQLAutoincrementTest extends BaseRxTest {
 			loaded = true;
 		}
 
-		public Integer getId() {
+		public Long getId() {
 			return id;
 		}
 
-		public void setId(Integer id) {
+		public void setId(Long id) {
 			this.id = id;
 		}
 

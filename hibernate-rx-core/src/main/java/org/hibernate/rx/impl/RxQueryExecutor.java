@@ -39,7 +39,7 @@ public class RxQueryExecutor {
 				.preparedQuery( sql, asTuple(paramValues) ).thenApply(SqlResult::rowCount);
 	}
 
-	public CompletionStage<Optional<Integer>> updateReturning(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+	public CompletionStage<Optional<Long>> updateReturning(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService( RxConnectionPoolProvider.class );
@@ -48,8 +48,8 @@ public class RxQueryExecutor {
 				.preparedQuery( sql, asTuple(paramValues) )
 				.thenApply( rows -> {
 					RowIterator<Row> iterator = rows.iterator();
-					Integer id = iterator.hasNext() ?
-							iterator.next().getInteger(0) :
+					Long id = iterator.hasNext() ?
+							iterator.next().getLong(0) :
 							rows.property(MySQLClient.LAST_INSERTED_ID);
 					return Optional.ofNullable(id);
 				});
