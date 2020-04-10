@@ -7,7 +7,12 @@ Hibernate RX may be used in any plain Java program, but is especially
 targeted toward usage in reactive environments like 
 [Quarkus](https://quarkus.io/) and [Vert.x](https://vertx.io/).
 
-_This project is still at an experimental stage._
+Currently [PostgreSQL]() and [MySQL]() are supported.
+
+[PostgreSQL]: https://www.postgresql.org
+[MySQL]: https://www.mysql.com
+
+_This project is still at an experimental stage of development._
 
 ## Example program
 
@@ -34,21 +39,35 @@ To publish Hibernate RX to your local Maven repository, run:
 
 ### Running tests
 
-Tests require an instance of the corresponding database to be running on your machine.
-You can start the database instances in any way you like:
+To run the tests, you'll need to get the test databases running on your 
+machine. There are three ways to start the test databases. 
 
-#### Starting bare-metal databases 
+#### If you have Docker installed
 
-To run the tests, ensure that PostgreSQL is installed on your machine.
-From the command line, type the following commands:
+If you have Docker installed, running the tests is really easy. You
+don't need to create the test databases manually. Just type:
+
+    ./gradlew test -Pdocker
+    
+The tests will run faster if you reuse the same containers across 
+multiple test runs. To do this, set `testcontainers.reuse.enable=true` in 
+the file `$HOME/.testcontainers.properties`. (Just create the file if it 
+doesn't already exist.)
+
+#### If you already have PostgreSQL installed
+
+If you already have PostgreSQL installed on your machine, you'll just 
+need to create the test database. From the command line, type the 
+following commands:
 
 	psql
 	create database "hibernate-rx";
 	create user "hibernate-rx" with password 'hibernate-rx';
 	grant all privileges on database "hibernate-rx" to "hibernate-rx";
 
-If you also want to run the MySQL tests, ensure that MySQL is installed, 
-and then type the following:
+There are also tests for MySQL, so if you also have MySQL installed, 
+you can run these tests as well. Create the test database using the 
+following commands:
 
     mysql -uroot
     create database `hibernate-rx`;
@@ -57,23 +76,14 @@ and then type the following:
     
 Finally, run `./gradlew test` from the `hibernate-rx` directory.
 
-#### Starting database containers with podman
+#### If you have Podman
 
-You can start the datastores using the instructions in the [podman.md] file.
+If you use [Podman](), you can start the test database by following the 
+instructions in [podman.md](podman.md).
 
-[podman.md]:podman.md
+[Podman]: https://podman.io
 
-Finally, run `./gradlew test` from the `hibernate-rx` directory.
-
-#### Starting databases automatically with Testcontainers
-
-If you have Docker installed, the container instances will be automatically started
-by running the tests if you select the `-Pdocker` profile like so:
-
-    ./gradlew test -Pdocker
-    
-TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in
-a file located at `$HOME/.testcontainers.properties` (create the file if it does not exist).
+To run the tests, type `./gradlew test` from the `hibernate-rx` directory.
 
 ## Compatibility
 
@@ -184,5 +194,3 @@ Instead, use the following supported features:
 Note that you should not use Hibernate RX with a second-level cache 
 implementation which performs blocking IO, for example passivation to the
 filesystem or distributed replication.
-
-Currently only PostgreSQL and MySQL are supported.
