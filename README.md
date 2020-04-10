@@ -4,11 +4,13 @@ A reactive API for Hibernate ORM, supporting non-blocking database
 drivers and a reactive style of interaction with the database.
 
 Hibernate RX may be used in any plain Java program, but is especially
-targeted toward usage in reactive environments like 
-[Quarkus](https://quarkus.io/) and [Vert.x](https://vertx.io/).
+targeted toward usage in reactive environments like [Quarkus][] and 
+[Vert.x][].
 
-Currently [PostgreSQL](PostgreSQL) and [MySQL](MySQL) are supported.
+Currently [PostgreSQL][] and [MySQL][] are supported.
 
+[Quarkus]: https://quarkus.io
+[Vert.x]: https://vertx.io
 [PostgreSQL]: https://www.postgresql.org
 [MySQL]: https://www.mysql.com
 
@@ -78,7 +80,7 @@ Finally, run `./gradlew test` from the `hibernate-rx` directory.
 
 #### If you have Podman
 
-If you use [Podman](Podman), you can start the test database by following 
+If you use [Podman][], you can start the test database by following 
 the instructions in [podman.md](podman.md).
 
 [Podman]: https://podman.io
