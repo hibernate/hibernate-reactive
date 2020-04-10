@@ -45,6 +45,7 @@ public class CascadeTest extends BaseRxTest {
 							context.assertTrue( node.loaded );
 							context.assertEquals( node.string, basik.string);
 							context.assertEquals( node.version, 0 );
+							context.assertEquals( node.elements.size(), basik.elements.size() );
 
 							node.string = "Adopted";
 							node.parent = new Node("New Parent");
