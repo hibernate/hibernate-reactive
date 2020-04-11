@@ -40,7 +40,7 @@ test {
   //useJUnitPlatform()
   testLogging {
       displayGranularity 1
-      showStandardStreams = true
+      showStandardStreams = false
       showStackTraces = true
       exceptionFormat = 'full'
       events 'PASSED', 'FAILED', 'SKIPPED'
