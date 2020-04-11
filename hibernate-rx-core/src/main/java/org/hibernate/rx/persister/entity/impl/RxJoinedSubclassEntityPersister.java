@@ -9,10 +9,12 @@ import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.CascadingActions;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.loader.entity.AbstractEntityLoader;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
+import org.hibernate.rx.loader.entity.impl.RxAbstractEntityLoader;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
 import org.hibernate.rx.loader.entity.impl.RxCascadeEntityLoader;
 import org.hibernate.rx.sql.impl.Delete;
@@ -177,5 +179,10 @@ public class RxJoinedSubclassEntityPersister extends JoinedSubclassEntityPersist
 			Object rowId,
 			SharedSessionContractImplementor session) throws HibernateException {
 		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
+	}
+
+	@Override
+	public RxAbstractEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session) {
+		return (RxAbstractEntityLoader) super.getAppropriateLoader(lockOptions, session);
 	}
 }
