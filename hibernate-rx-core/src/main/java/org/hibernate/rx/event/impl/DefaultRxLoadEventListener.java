@@ -29,6 +29,7 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.rx.event.spi.RxLoadEventListener;
+import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.tuple.IdentifierProperty;
@@ -672,25 +673,24 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 	 *
 	 * @return The object loaded from the datasource, or null if not found.
 	 */
-	@SuppressWarnings("unchecked")
 	protected CompletionStage<Optional<Object>> loadFromDatasource(
 			final LoadEvent event,
 			final EntityPersister persister) {
 
-		Object entity = persister.load(
-				event.getEntityId(),
-				event.getInstanceToLoad(),
-				event.getLockOptions(),
-				event.getSession()
-		);
+		CompletionStage<Optional<Object>> entity =
+				( (RxEntityPersister) persister).rxLoad(
+						event.getEntityId(),
+						event.getInstanceToLoad(),
+						event.getLockOptions(),
+						event.getSession()
+				);
 
 		final StatisticsImplementor statistics = event.getSession().getFactory().getStatistics();
 		if ( event.isAssociationFetch() && statistics.isStatisticsEnabled() ) {
 			statistics.fetchEntity( event.getEntityClassName() );
 		}
 
-		// This should work because we are using the rx persister
-		return (CompletionStage<Optional<Object>>) entity;
+		return entity;
 	}
 
 }

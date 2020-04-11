@@ -26,6 +26,7 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.engine.impl.Cascade;
 import org.hibernate.rx.engine.impl.CascadingActions;
 import org.hibernate.rx.event.spi.RxRefreshEventListener;
+import org.hibernate.rx.persister.entity.impl.RxAbstractEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.CompositeType;
@@ -221,9 +222,8 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 			postRefreshLockMode = null;
 		}
 
-		@SuppressWarnings("unchecked")
-		final CompletionStage<Optional<Object>> stage = (CompletionStage<Optional<Object>>)
-						persister.load( id, object, lockOptionsToUse, source );
+		final CompletionStage<Optional<Object>> stage =
+				( (RxAbstractEntityPersister) persister ).rxLoad( id, object, lockOptionsToUse, source );
 
 		return cascade.thenCompose(v -> stage).thenAccept(option -> {
 			if ( option.isPresent() ) {

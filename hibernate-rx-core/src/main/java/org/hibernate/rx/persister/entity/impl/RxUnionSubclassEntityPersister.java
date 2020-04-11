@@ -13,6 +13,7 @@ import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.UnionSubclassEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
+import org.hibernate.rx.loader.entity.impl.RxAbstractEntityLoader;
 import org.hibernate.rx.loader.entity.impl.RxBatchingEntityLoaderBuilder;
 import org.hibernate.rx.loader.entity.impl.RxCascadeEntityLoader;
 import org.hibernate.rx.sql.impl.Delete;
@@ -179,5 +180,9 @@ public class RxUnionSubclassEntityPersister extends UnionSubclassEntityPersister
 		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
 	}
 
+	@Override
+	public RxAbstractEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session) {
+		return (RxAbstractEntityLoader) super.getAppropriateLoader(lockOptions, session);
+	}
 }
 
