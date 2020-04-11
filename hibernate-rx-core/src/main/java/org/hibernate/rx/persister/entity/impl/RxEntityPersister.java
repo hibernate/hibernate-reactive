@@ -1,13 +1,18 @@
 package org.hibernate.rx.persister.entity.impl;
 
 import org.hibernate.HibernateException;
+import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
+import org.hibernate.pretty.MessageHelper;
+import org.hibernate.rx.loader.entity.impl.RxAbstractEntityLoader;
+import org.jboss.logging.Logger;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -17,6 +22,7 @@ import java.util.concurrent.CompletionStage;
  * @see RxAbstractEntityPersister
  */
 public interface RxEntityPersister extends EntityPersister {
+	Logger log = Logger.getLogger( RxEntityPersister.class );
 
 	//TODO: we only support Long for now, but eventually
 	//      we need to do something more general
@@ -70,8 +76,22 @@ public interface RxEntityPersister extends EntityPersister {
 			SharedSessionContractImplementor session)
 					throws HibernateException;
 
-	 CompletionStage<List<?>> rxMultiLoad(
+	CompletionStage<List<?>> rxMultiLoad(
 	 		Serializable[] ids,
 			SessionImplementor session,
 			MultiLoadOptions loadOptions);
+
+	default CompletionStage<Optional<Object>> rxLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
+		return rxLoad( id, optionalObject, lockOptions, session, null );
+	}
+
+	default CompletionStage<Optional<Object>> rxLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
+		if ( log.isTraceEnabled() ) {
+			log.tracev( "Fetching entity: {0}", MessageHelper.infoString( this, id, getFactory() ) );
+		}
+
+		return getAppropriateLoader( lockOptions, session ).load( id, optionalObject, session, lockOptions, readOnly );
+	}
+
+	RxAbstractEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session);
 }
