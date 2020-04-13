@@ -217,8 +217,14 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		Object parentLoaded = doLoad( event, parentPersister, parentEntityKey, options );
 		if ( parentLoaded instanceof CompletionStage) {
 			CompletionStage<?> parentLoadedStage = (CompletionStage<?>) parentLoaded;
-			return parentLoadedStage.thenCompose( parent -> {
-				final EntityKey dependentEntityKey = prepareDependentEntityKey( event, dependentPersister, dependentIdType, session,	parent );
+			return parentLoadedStage.thenCompose( optionalParent -> {
+				final EntityKey dependentEntityKey = prepareDependentEntityKey(
+						event,
+						dependentPersister,
+						dependentIdType,
+						session,
+						( (Optional) optionalParent ).get()
+				);
 
 				Object loaded = doLoad( event, dependentPersister, dependentEntityKey, options );
 				CompletionStage loadedStage =  loaded instanceof  CompletionStage
