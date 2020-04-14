@@ -6,6 +6,7 @@
  */
 package org.hibernate.rx.engine.impl;
 
+import org.hibernate.Hibernate;
 import org.hibernate.HibernateException;
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
 import org.hibernate.collection.spi.PersistentCollection;
@@ -18,6 +19,7 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.type.*;
 
@@ -65,6 +67,28 @@ public final class Cascade<C> {
 		this.cascadePoint = cascadePoint;
 		this.eventSource = eventSource;
 		this.context = context;
+	}
+
+	public static CompletionStage<?> fetchLazyAssociationsBeforeCascade(
+			CascadingAction<?> action,
+			EntityPersister persister,
+			Object entity,
+			EventSource session) {
+
+		CompletionStage<?> beforeDelete = RxUtil.nullFuture();
+		if ( persister.hasCascades() ) {
+			CascadeStyle[] cascadeStyles = persister.getPropertyCascadeStyles();
+			Object[] state = persister.getPropertyValues( entity );
+			for (int i = 0; i < cascadeStyles.length; i++) {
+				if ( cascadeStyles[i].doCascade( action.delegate() ) ) {
+					Object fetchable = state[i];
+					if ( !Hibernate.isInitialized( fetchable ) ) {
+						beforeDelete = beforeDelete.thenCompose( v -> session.unwrap(RxSessionInternal.class).rxFetch( fetchable ) );
+					}
+				}
+			}
+		}
+		return beforeDelete;
 	}
 
 	/**
