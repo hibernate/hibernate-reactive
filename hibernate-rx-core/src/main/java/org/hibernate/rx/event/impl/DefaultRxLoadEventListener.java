@@ -77,6 +77,9 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 			throw new HibernateException( "Unable to locate persister: " + event.getEntityClassName() );
 		}
 
+		// Since this method is not reactive, we're not expecting to hit the
+		// database here (if we do, it's a bug) and so we can assume the
+		// returned CompletionStage is already completed
 		CompletionStage<Void> checkId = checkId( event, loadType, persister );
 		if ( !checkId.toCompletableFuture().isDone() ) {
 			// This only happens if the object is loaded from the db
@@ -84,6 +87,9 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		}
 
 		try {
+			// Since this method is not reactive, we're not expecting to hit the
+			// database here (if we do, it's a bug) and so we can assume the
+			// returned CompletionStage is already completed (a proxy, perhaps)
 			CompletionStage<Optional<Object>> loaded = doOnLoad( persister, event, loadType );
 			if ( !loaded.toCompletableFuture().isDone() ) {
 				// This only happens if the object is loaded from the db
