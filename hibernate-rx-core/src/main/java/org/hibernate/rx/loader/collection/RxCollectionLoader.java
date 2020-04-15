@@ -11,7 +11,6 @@ import org.hibernate.type.Type;
 
 import java.io.Serializable;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 public class RxCollectionLoader extends RxOuterJoinLoader implements CollectionInitializer {
@@ -76,9 +75,8 @@ public class RxCollectionLoader extends RxOuterJoinLoader implements CollectionI
 						RxUtil.rethrow(e);
 					}
 					LOG.debug("Done loading collection");
-					return list;
-				})
-				.thenCompose( list -> RxUtil.nullFuture() );
+					return null;
+				});
 	}
 
 	protected Type getKeyType() {
