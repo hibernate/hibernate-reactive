@@ -319,7 +319,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 					final EntityEntry entry = persistenceContext.getEntry( managed );
 					final Status status = entry.getStatus();
 					if ( status == Status.DELETED || status == Status.GONE ) {
-						return RxUtil.completedFuture( null );
+						return RxUtil.nullFuture();
 					}
 				}
 				return RxUtil.completedFuture( managed );
@@ -430,7 +430,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 					} );
 		}
 		else {
-			implStage = RxUtil.completedFuture( null );
+			implStage = RxUtil.nullFuture();
 		}
 
 		return implStage.thenApply( impl -> persistenceContext.narrowProxy( proxy, persister, keyToLoad, impl ) );

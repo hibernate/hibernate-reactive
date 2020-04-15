@@ -96,7 +96,7 @@ public interface RxAbstractEntityPersister extends RxEntityPersister, OuterJoinL
 		preInsertInMemoryValueGeneration( fields, object, session, delegate() );
 
 		final int span = delegate().getTableSpan();
-		CompletionStage<Serializable> stage = RxUtil.completedFuture(null);
+		CompletionStage<Serializable> stage = RxUtil.nullFuture();
 		if ( delegate().getEntityMetamodel().isDynamicInsert() ) {
 			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
 			boolean[] notNull = delegate().getPropertiesToInsert( fields );
