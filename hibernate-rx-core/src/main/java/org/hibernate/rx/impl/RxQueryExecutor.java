@@ -5,7 +5,6 @@ import io.vertx.axle.sqlclient.Row;
 import io.vertx.axle.sqlclient.RowIterator;
 import io.vertx.axle.sqlclient.SqlResult;
 import io.vertx.axle.sqlclient.Tuple;
-import io.vertx.sqlclient.impl.ArrayTuple;
 import org.hibernate.JDBCException;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -17,7 +16,6 @@ import org.hibernate.type.Type;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -36,7 +34,7 @@ public class RxQueryExecutor {
 				.getService( RxConnectionPoolProvider.class );
 
 		return poolProvider.getConnection()
-				.preparedQuery( sql, asTuple(paramValues) ).thenApply(SqlResult::rowCount);
+				.preparedQuery( sql, Tuple.wrap( paramValues ) ).thenApply(SqlResult::rowCount);
 	}
 
 	public CompletionStage<Optional<Long>> updateReturning(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
@@ -45,7 +43,7 @@ public class RxQueryExecutor {
 				.getService( RxConnectionPoolProvider.class );
 
 		return poolProvider.getConnection()
-				.preparedQuery( sql, asTuple(paramValues) )
+				.preparedQuery( sql, Tuple.wrap( paramValues ) )
 				.thenApply( rows -> {
 					RowIterator<Row> iterator = rows.iterator();
 					Long id = iterator.hasNext() ?
@@ -61,7 +59,7 @@ public class RxQueryExecutor {
 				.getService(RxConnectionPoolProvider.class);
 
 		return poolProvider.getConnection()
-				.preparedQuery( sql, asTuple( paramValues) ).thenApply(rowSet -> {
+				.preparedQuery( sql, Tuple.wrap( paramValues ) ).thenApply(rowSet -> {
 					for (Row row: rowSet) {
 						return Optional.ofNullable( row.getLong(0) );
 					}
@@ -101,15 +99,7 @@ public class RxQueryExecutor {
 				throw new JDBCException("error binding parameters", e);
 			}
 		}
-		return asTuple( adaptor.getParametersAsArray() );
-	}
-
-	private Tuple asTuple(Object[] values) {
-		// FIXME: report this bug to vertx, we get a CCE if we use Tuple.wrap here
-//	    return Tuple.wrap(values);
-		ArrayTuple ret = new ArrayTuple( values.length );
-		Collections.addAll( ret, values );
-		return Tuple.newInstance( ret );
+		return Tuple.wrap( adaptor.getParametersAsArray() );
 	}
 
 }

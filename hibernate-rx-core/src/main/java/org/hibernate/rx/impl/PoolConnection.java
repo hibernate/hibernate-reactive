@@ -68,7 +68,7 @@ public class PoolConnection implements RxConnection {
 		if (showSQL) {
 			System.out.println(sql);
 		}
-		return pool.preparedQuery( sql, parameters );
+		return pool.preparedQuery( sql ).execute( parameters );
 	}
 
 	@Override
@@ -76,7 +76,7 @@ public class PoolConnection implements RxConnection {
 		if (showSQL) {
 			System.out.println(sql);
 		}
-		return pool.preparedQuery( sql );
+		return pool.preparedQuery( sql ).execute();
 	}
 
 	@Override
