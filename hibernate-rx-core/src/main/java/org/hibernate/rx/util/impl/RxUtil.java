@@ -22,7 +22,7 @@ public class RxUtil {
 		return state.thenApply( v -> zipper.apply( results ) );
 	}
 
-	public static CompletionStage<Void> nullFuture() {
+	public static <T> CompletionStage<T> nullFuture() {
 		return completedFuture( null );
 	}
 
