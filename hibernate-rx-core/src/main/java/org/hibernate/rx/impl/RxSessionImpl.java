@@ -9,7 +9,6 @@ import org.hibernate.rx.RxSessionInternal;
 import javax.persistence.LockModeType;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -32,7 +31,7 @@ public class RxSessionImpl implements RxSession {
 	}
 
 	@Override
-	public <T> CompletionStage<Optional<T>> fetch(T association) {
+	public <T> CompletionStage<T> fetch(T association) {
 		return delegate.rxFetch(association);
 	}
 
@@ -44,7 +43,7 @@ public class RxSessionImpl implements RxSession {
 	}
 
 	@Override
-	public <T> CompletionStage<Optional<T>> find(Class<T> entityClass, Object primaryKey) {
+	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey) {
 		return delegate.rxFind( entityClass, primaryKey, null, null );
 	}
 
@@ -53,18 +52,18 @@ public class RxSessionImpl implements RxSession {
 		return delegate.rxFind( entityClass, ids );
 	}
 
-	public <T> CompletionStage<Optional<T>> find(
+	public <T> CompletionStage<T> find(
 			Class<T> entityClass,
 			Object primaryKey,
 			Map<String, Object> properties) {
 		return delegate.rxFind( entityClass, primaryKey, null, properties );
 	}
 
-	public <T> CompletionStage<Optional<T>> find(Class<T> entityClass, Object primaryKey, LockModeType lockModeType) {
+	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockModeType lockModeType) {
 		return delegate.rxFind( entityClass, primaryKey, lockModeType, null );
 	}
 
-	public <T> CompletionStage<Optional<T>> find(
+	public <T> CompletionStage<T> find(
 			Class<T> entityClass,
 			Object primaryKey,
 			LockModeType lockModeType,

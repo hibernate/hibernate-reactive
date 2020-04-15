@@ -31,7 +31,6 @@ import org.hibernate.type.TypeHelper;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -82,12 +81,11 @@ abstract class AbstractRxSaveEventListener<C>
 		);
 	}
 
-	private static Serializable assignIdIfNecessary(Optional<?> generatedId, Object entity, String entityName, EventSource source) {
+	private static Serializable assignIdIfNecessary(Object generatedId, Object entity, String entityName, EventSource source) {
 		EntityPersister persister = source.getEntityPersister(entityName, entity);
-		if ( generatedId.isPresent() ) {
-			Object id = generatedId.get();
-			if (id instanceof Long) {
-				Long longId = (Long) id;
+		if ( generatedId != null ) {
+			if (generatedId instanceof Long) {
+				Long longId = (Long) generatedId;
 				Type identifierType = persister.getIdentifierType();
 				if (identifierType == LongType.INSTANCE) {
 					return longId;
@@ -101,7 +99,7 @@ abstract class AbstractRxSaveEventListener<C>
 				}
 			}
 			else {
-				return (Serializable) id;
+				return (Serializable) generatedId;
 			}
 		}
 		else {

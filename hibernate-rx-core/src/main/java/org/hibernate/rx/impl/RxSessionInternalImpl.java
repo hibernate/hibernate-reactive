@@ -3,7 +3,6 @@ package org.hibernate.rx.impl;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -102,7 +101,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@Override
-	public <T> CompletionStage<Optional<T>> rxFetch(T association) {
+	public <T> CompletionStage<T> rxFetch(T association) {
 		checkOpen();
 		if ( association instanceof HibernateProxy ) {
 			LazyInitializer initializer = ((HibernateProxy) association).getHibernateLazyInitializer();
@@ -110,23 +109,25 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 			// SessionImpl doesn't use IdentifierLoadAccessImpl for initializing proxies
 			return new RxIdentifierLoadAccessImpl<T>( initializer.getEntityName() )
 					.fetch( initializer.getIdentifier() )
-					.thenApply( optional -> optional.orElseThrow(()
-							-> new ObjectNotFoundException( initializer.getIdentifier(), initializer.getEntityName() )) )
+					.thenApply( optional -> {
+						if ( optional==null ) {
+							throw new ObjectNotFoundException( initializer.getIdentifier(), initializer.getEntityName() );
+						}
+						return optional;
+					})
 					.thenApply( entity -> {
 						initializer.setSession( this );
 						initializer.setImplementation( entity );
 						return entity;
-					} )
-					.thenApply( Optional::of );
+					} );
 		}
 		else if ( association instanceof PersistentCollection ) {
 			PersistentCollection persistentCollection = (PersistentCollection) association;
 			return rxInitializeCollection( persistentCollection, false )
-					.thenApply( pc -> association )
-					.thenApply( Optional::of );
+					.thenApply( pc -> association );
 		}
 		else {
-			return RxUtil.completedFuture( association ).thenApply( Optional::ofNullable );
+			return RxUtil.completedFuture( association );
 		}
 	}
 
@@ -477,14 +478,14 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@Override
-	public <T> CompletionStage<Optional<T>> rxGet(
+	public <T> CompletionStage<T> rxGet(
 			Class<T> entityClass,
 			Serializable id) {
 		return new RxIdentifierLoadAccessImpl<>( entityClass ).load( id );
 	}
 
 	@Override
-	public <T> CompletionStage<Optional<T>> rxFind(
+	public <T> CompletionStage<T> rxFind(
 			Class<T> entityClass,
 			Object id,
 			LockModeType lockModeType,
@@ -522,11 +523,11 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 						//				String identifierValue = id != null ? id.toString() : null ;
 						//				log.ignoringEntityNotFound( entityName, identifierValue );
 						//			}
-						return Optional.<T>empty();
+						return null;
 					}
 					if ( e instanceof ObjectDeletedException) {
 						//the spec is silent about people doing remove() find() on the same PC
-						return Optional.<T>empty();
+						return null;
 					}
 					if ( e instanceof ObjectNotFoundException) {
 						//should not happen on the entity itself with get
@@ -540,7 +541,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 					if ( e instanceof JDBCException ) {
 //						if ( accessTransaction().getRollbackOnly() ) {
 //							// assume this is the similar to the WildFly / IronJacamar "feature" described under HHH-12472
-//							return Optional.<T>empty();
+//							return null;
 //						}
 						throw getExceptionConverter().convert( (JDBCException) e, lockOptions );
 					}
@@ -667,11 +668,11 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 			return this;
 		}
 
-		public final CompletionStage<Optional<T>> getReference(Serializable id) {
+		public final CompletionStage<T> getReference(Serializable id) {
 			return perform( () -> doGetReference( id ) );
 		}
 
-		protected CompletionStage<Optional<T>> perform(Supplier<CompletionStage<Optional<T>>> executor) {
+		protected CompletionStage<T> perform(Supplier<CompletionStage<T>> executor) {
 			if ( graphSemantic != null ) {
 				if ( rootGraph == null ) {
 					throw new IllegalArgumentException( "Graph semantic specified, but no RootGraph was supplied" );
@@ -706,10 +707,10 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		}
 
 		@SuppressWarnings("unchecked")
-		protected CompletionStage<Optional<T>> doGetReference(Serializable id) {
+		protected CompletionStage<T> doGetReference(Serializable id) {
 			if ( lockOptions != null ) {
 				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, RxSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
-				return fireLoad( event, LoadEventListener.LOAD ).thenApply( v -> (Optional<T>) event.getResult() );
+				return fireLoad( event, LoadEventListener.LOAD ).thenApply( v -> (T) event.getResult() );
 			}
 
 			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, RxSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
@@ -721,15 +722,15 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 									id
 							);
 						}
-						return (Optional<T>) event.getResult();
+						return (T) event.getResult();
 					} ).whenComplete( (v, x) -> afterOperation( x != null ) );
 		}
 
-		public final CompletionStage<Optional<T>> load(Serializable id) {
+		public final CompletionStage<T> load(Serializable id) {
 			return perform( () -> doLoad( id, LoadEventListener.GET) );
 		}
 
-		public final CompletionStage<Optional<T>> fetch(Serializable id) {
+		public final CompletionStage<T> fetch(Serializable id) {
 			return perform( () -> doLoad( id, LoadEventListener.IMMEDIATE_LOAD) );
 		}
 
@@ -738,10 +739,10 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		}
 
 		@SuppressWarnings("unchecked")
-		protected final CompletionStage<Optional<T>> doLoad(Serializable id, LoadEventListener.LoadType loadType) {
+		protected final CompletionStage<T> doLoad(Serializable id, LoadEventListener.LoadType loadType) {
 			if ( lockOptions != null ) {
 				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, RxSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
-				return fireLoad( event, loadType ).thenApply( v -> (Optional<T>) event.getResult() );
+				return fireLoad( event, loadType ).thenApply( v -> (T) event.getResult() );
 			}
 
 			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, RxSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
@@ -749,7 +750,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 					.handle( (v, t) -> {
 						afterOperation( t != null );
 						RxUtil.rethrowIfNotNull( t );
-						return (Optional<T>) event.getResult();
+						return (T) event.getResult();
 					} );
 		}
 	}

@@ -4,12 +4,10 @@ import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Depending of what we want to test, this session can be configured using the {@link Builder} to
@@ -20,12 +18,10 @@ import java.util.function.Supplier;
  */
 public class MockRxSession implements RxSession {
 
-	private BiFunction loadFunction = (type, id) -> {
-		return null;
-	};
+	private BiFunction loadFunction = (type, id) -> null;
 
 	private Consumer persistFunction = obj -> {};
-		private Consumer removeFunction = obj -> {};
+	private Consumer removeFunction = obj -> {};
 
 		/**
 		 * Assign the functions that simulate the access to a source for CRUD.
@@ -56,17 +52,8 @@ public class MockRxSession implements RxSession {
 		}
 
 	@Override
-	public <T> CompletionStage<Optional<T>> find(Class<T> entityClass, final Object id) {
-		Supplier<Optional<T>> supplier = () -> {
-			Object result = loadFunction.apply( entityClass, id );
-			if ( result == null ) {
-				return Optional.empty();
-			}
-			else {
-				return Optional.of( (T) result );
-			}
-		};
-		return CompletableFuture.supplyAsync( supplier );
+	public <T> CompletionStage<T> find(Class<T> entityClass, final Object id) {
+		return CompletableFuture.supplyAsync(() -> (T) loadFunction.apply( entityClass, id ));
 	}
 
 	@Override
@@ -120,8 +107,8 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
-	public <T> CompletionStage<Optional<T>> fetch(T association) {
-		return CompletableFuture.completedFuture( Optional.ofNullable(association) );
+	public <T> CompletionStage<T> fetch(T association) {
+		return CompletableFuture.completedFuture( association );
 	}
 
 	@Override

@@ -17,7 +17,6 @@ import org.hibernate.type.Type;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -37,7 +36,7 @@ public class RxQueryExecutor {
 				.preparedQuery( sql, Tuple.wrap( paramValues ) ).thenApply(SqlResult::rowCount);
 	}
 
-	public CompletionStage<Optional<Long>> updateReturning(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+	public CompletionStage<Long> updateReturning(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService( RxConnectionPoolProvider.class );
@@ -46,14 +45,13 @@ public class RxQueryExecutor {
 				.preparedQuery( sql, Tuple.wrap( paramValues ) )
 				.thenApply( rows -> {
 					RowIterator<Row> iterator = rows.iterator();
-					Long id = iterator.hasNext() ?
+					return iterator.hasNext() ?
 							iterator.next().getLong(0) :
 							rows.property(MySQLClient.LAST_INSERTED_ID);
-					return Optional.ofNullable(id);
 				});
 	}
 
-	public CompletionStage<Optional<Long>> selectLong(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+	public CompletionStage<Long> selectLong(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService(RxConnectionPoolProvider.class);
@@ -61,9 +59,9 @@ public class RxQueryExecutor {
 		return poolProvider.getConnection()
 				.preparedQuery( sql, Tuple.wrap( paramValues ) ).thenApply(rowSet -> {
 					for (Row row: rowSet) {
-						return Optional.ofNullable( row.getLong(0) );
+						return row.getLong(0);
 					}
-					return Optional.empty();
+					return null;
 				});
 	}
 

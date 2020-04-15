@@ -21,7 +21,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -33,7 +32,7 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 	}
 
 	@Override
-	protected CompletionStage<Optional<Object>> load(
+	protected CompletionStage<Object> load(
 			SharedSessionContractImplementor session,
 			Object id,
 			Object optionalObject,
@@ -53,12 +52,12 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 		).thenApply( list -> {
 			switch ( list.size() ) {
 				case 1:
-					return Optional.ofNullable( list.get( 0 ) );
+					return list.get( 0 );
 				case 0:
-					return Optional.empty();
+					return null;
 				default:
 					if ( getCollectionOwners() != null ) {
-						return Optional.ofNullable( list.get( 0 ) );
+						return list.get( 0 );
 					}
 			}
 			throw new HibernateException(
@@ -216,24 +215,24 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 
 
 	@Override
-	public CompletionStage<Optional<Object>> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session) {
+	public CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session) {
 		// this form is deprecated!
 		return load( id, optionalObject, session, LockOptions.NONE, null );
 	}
 
 	@Override
-	public CompletionStage<Optional<Object>> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, Boolean readOnly) {
+	public CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, Boolean readOnly) {
 		// this form is deprecated!
 		return load( id, optionalObject, session, LockOptions.NONE, readOnly );
 	}
 
 	@Override
-	public CompletionStage<Optional<Object>> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions) {
+	public CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions) {
 		return load( id, optionalObject, session, lockOptions, null );
 	}
 
 	@Override
-	public CompletionStage<Optional<Object>> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions, Boolean readOnly) {
+	public CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions, Boolean readOnly) {
 		return load( session, id, optionalObject, id, lockOptions, readOnly );
 	}
 }

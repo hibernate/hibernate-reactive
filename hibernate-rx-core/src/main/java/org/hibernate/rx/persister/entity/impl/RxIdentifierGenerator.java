@@ -2,7 +2,6 @@ package org.hibernate.rx.persister.entity.impl;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -18,5 +17,5 @@ public interface RxIdentifierGenerator<Id> {
 	/**
 	 * Returns a generated identifier, via a {@link CompletionStage}.
 	 */
-	CompletionStage<Optional<Id>> generate(SharedSessionContractImplementor session);
+	CompletionStage<Id> generate(SharedSessionContractImplementor session);
 }

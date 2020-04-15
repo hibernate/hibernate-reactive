@@ -9,7 +9,6 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 public class ReactiveSessionTest extends BaseRxTest {
@@ -115,7 +114,7 @@ public class ReactiveSessionTest extends BaseRxTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session ->
 							session.find( GuineaPig.class, 5 )
-								.thenCompose( aloi -> session.remove( aloi.get() ) )
+								.thenCompose( aloi -> session.remove( aloi ) )
 								.thenCompose( v -> session.flush() )
 								.thenCompose( v -> selectNameFromId( 5 ) )
 								.thenAccept( ret -> context.assertNull( ret ) ) )
@@ -131,8 +130,8 @@ public class ReactiveSessionTest extends BaseRxTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session ->
 							session.find( GuineaPig.class, 5 )
-								.thenAccept( o -> {
-									GuineaPig pig = o.orElseThrow( () -> new AssertionError( "Guinea pig not found" ) );
+								.thenAccept( pig -> {
+									context.assertNotNull( pig );
 									// Checking we are actually changing the name
 									context.assertNotEquals( pig.getName(), NEW_NAME );
 									pig.setName( NEW_NAME );
@@ -143,10 +142,10 @@ public class ReactiveSessionTest extends BaseRxTest {
 		);
 	}
 
-	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, Optional<GuineaPig> actual) {
-		context.assertTrue( actual.isPresent() );
-		context.assertEquals( expected.getId(), actual.get().getId() );
-		context.assertEquals( expected.getName(), actual.get().getName() );
+	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
+		context.assertNotNull( actual );
+		context.assertEquals( expected.getId(), actual.getId() );
+		context.assertEquals( expected.getName(), actual.getName() );
 	}
 
 	@Entity

@@ -24,7 +24,6 @@ import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.sql.impl.Parameters;
 
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
@@ -55,26 +54,26 @@ public class TableRxIdentifierGenerator implements RxIdentifierGenerator<Long> {
 	private final SessionFactoryImplementor sessionFactory;
 
 	@Override
-	public CompletionStage<Optional<Long>> generate(SharedSessionContractImplementor session) {
+	public CompletionStage<Long> generate(SharedSessionContractImplementor session) {
 		Object[] param = segmentColumnName == null ? new Object[] {} : new Object[] {segmentValue};
 		return queryExecutor.selectLong( selectQuery, param, session.getFactory() )
 				.thenCompose( result -> {
-					if ( !result.isPresent() ) {
+					if ( result == null ) {
 						long initializationValue = storeLastUsedValue ? initialValue - 1 : initialValue;
 						Object[] params = segmentColumnName == null ?
 								new Object[] {initializationValue} :
 								new Object[] {segmentValue, initializationValue};
 						return queryExecutor.update( insertQuery, params, session.getFactory() )
-								.thenApply( v -> Optional.of( initialValue ) );
+								.thenApply( v -> initialValue );
 					}
 					else {
-						long currentValue = result.get();
+						long currentValue = result;
 						long updatedValue = currentValue + 1;
 						Object[] params = segmentColumnName == null ?
 								new Object[] {updatedValue, currentValue} :
 								new Object[] {updatedValue, currentValue, segmentValue};
 						return queryExecutor.update( updateQuery, params, session.getFactory() )
-								.thenApply( v -> Optional.of( storeLastUsedValue ? updatedValue : currentValue ) );
+								.thenApply( v -> storeLastUsedValue ? updatedValue : currentValue );
 					}
 				});
 	}

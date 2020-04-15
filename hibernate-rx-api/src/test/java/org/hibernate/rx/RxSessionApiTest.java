@@ -2,7 +2,6 @@ package org.hibernate.rx;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,7 @@ public class RxSessionApiTest {
 		session.find( GuineaPig.class, 1 )
 				.whenComplete( (result, err) -> {
 					try {
-						assertThat( (Optional) result ).isNotPresent();
+						assertThat( result ).isNull();
 						testContext.completeNow();
 					}
 					catch (Throwable e) {
@@ -53,7 +52,7 @@ public class RxSessionApiTest {
 		session.find( GuineaPig.class, pig.getId() )
 				.whenComplete( (result, err) -> {
 					try {
-						assertThat( (Optional) result ).isPresent().hasValue( pig );
+						assertThat( result ).isNotNull().isEqualTo( pig );
 						testContext.completeNow();
 					}
 					catch (Throwable e) {

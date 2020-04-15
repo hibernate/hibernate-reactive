@@ -11,7 +11,6 @@ import javax.persistence.IdClass;
 import javax.persistence.Table;
 import java.io.Serializable;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 public class CompositeIdTest extends BaseRxTest {
@@ -135,7 +134,7 @@ public class CompositeIdTest extends BaseRxTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session ->
 							session.find( GuineaPig.class, new Pig(5, "Aloi") )
-								.thenCompose( aloi -> session.remove( aloi.get() ) )
+								.thenCompose( aloi -> session.remove( aloi ) )
 								.thenCompose( v -> session.flush() )
 								.thenCompose( v -> selectNameFromId( 5 ) )
 								.thenAccept( ret -> context.assertNull( ret ) ) )
@@ -151,8 +150,8 @@ public class CompositeIdTest extends BaseRxTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session ->
 							session.find( GuineaPig.class, new Pig(5, "Aloi") )
-								.thenAccept( o -> {
-									GuineaPig pig = o.orElseThrow( () -> new AssertionError( "Guinea pig not found" ) );
+								.thenAccept( pig -> {
+									context.assertNotNull( pig );
 									// Checking we are actually changing the name
 									context.assertNotEquals( pig.getWeight(), NEW_WEIGHT );
 									pig.setWeight( NEW_WEIGHT );
@@ -163,11 +162,11 @@ public class CompositeIdTest extends BaseRxTest {
 		);
 	}
 
-	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, Optional<GuineaPig> actual) {
-		context.assertTrue( actual.isPresent() );
-		context.assertEquals( expected.getId(), actual.get().getId() );
-		context.assertEquals( expected.getName(), actual.get().getName() );
-		context.assertEquals( expected.getWeight(), actual.get().getWeight() );
+	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
+		context.assertNotNull( actual );
+		context.assertEquals( expected.getId(), actual.getId() );
+		context.assertEquals( expected.getName(), actual.getName() );
+		context.assertEquals( expected.getWeight(), actual.getWeight() );
 	}
 
 	static final class Pig implements Serializable {

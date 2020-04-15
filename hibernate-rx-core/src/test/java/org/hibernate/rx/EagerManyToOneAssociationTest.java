@@ -31,15 +31,15 @@ public class EagerManyToOneAssociationTest extends BaseRxTest {
 						.thenCompose( v -> openSession())
 						.thenCompose( s -> s.find( Author.class, author.getId() ) )
 						.thenAccept( optionalAuthor -> {
-							context.assertTrue( optionalAuthor.isPresent() );
-							context.assertEquals( author, optionalAuthor.get() );
-							context.assertEquals( book, optionalAuthor.get().getBook()  );
+							context.assertNotNull( optionalAuthor );
+							context.assertEquals( author, optionalAuthor );
+							context.assertEquals( book, optionalAuthor.getBook()  );
 						} )
 						.thenCompose( v -> openSession())
 						.thenCompose( s -> s.find( Book.class, book.getId() ) )
 						.thenAccept( optionalBook -> {
-							context.assertTrue( optionalBook.isPresent() );
-							context.assertEquals( book, optionalBook.get() );
+							context.assertNotNull( optionalBook );
+							context.assertEquals( book, optionalBook );
 						})
 		);
 	}
@@ -60,9 +60,9 @@ public class EagerManyToOneAssociationTest extends BaseRxTest {
 						.thenCompose( v -> openSession())
 						.thenCompose( s -> s.find( Author.class, neilGaiman.getId() ) )
 						.thenAccept( optionalAuthor -> {
-							context.assertTrue( optionalAuthor.isPresent() );
-							context.assertEquals( neilGaiman, optionalAuthor.get() );
-							context.assertEquals( goodOmens, optionalAuthor.get().getBook()  );
+							context.assertNotNull( optionalAuthor );
+							context.assertEquals( neilGaiman, optionalAuthor );
+							context.assertEquals( goodOmens, optionalAuthor.getBook()  );
 						} )
 		);
 	}

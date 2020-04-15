@@ -9,7 +9,6 @@ import javax.persistence.LockModeType;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -31,7 +30,7 @@ public interface RxSessionInternal extends Session {
 
 	RxActionQueue getRxActionQueue();
 
-	<T> CompletionStage<Optional<T>> rxFetch(T association);
+	<T> CompletionStage<T> rxFetch(T association);
 
 	CompletionStage<Void> rxPersist(Object entity);
 
@@ -53,11 +52,11 @@ public interface RxSessionInternal extends Session {
 
 	CompletionStage<?> rxRefresh(Object child, IdentitySet refreshedAlready);
 
-	<T> CompletionStage<Optional<T>> rxGet(
+	<T> CompletionStage<T> rxGet(
 			Class<T> entityClass,
 			Serializable id);
 
-	<T> CompletionStage<Optional<T>> rxFind(
+	<T> CompletionStage<T> rxFind(
 			Class<T> entityClass,
 			Object primaryKey,
 			LockModeType lockModeType,

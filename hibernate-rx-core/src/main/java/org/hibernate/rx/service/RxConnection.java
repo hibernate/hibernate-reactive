@@ -1,6 +1,5 @@
 package org.hibernate.rx.service;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
@@ -27,7 +26,7 @@ public interface RxConnection {
 
 	CompletionStage<RowSet<Row>> preparedQuery(String query);
 
-	CompletionStage<Optional<Long>> updateReturning(String sql, Tuple parameters);
+	CompletionStage<Long> updateReturning(String sql, Tuple parameters);
 
 	CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters);
 

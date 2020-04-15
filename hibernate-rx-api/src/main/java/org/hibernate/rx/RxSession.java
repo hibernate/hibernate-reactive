@@ -4,7 +4,6 @@ import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -49,7 +48,7 @@ public interface RxSession {
 	 * 
 	 * @see javax.persistence.EntityManager#find(Class, Object) 
 	 */
-	<T> CompletionStage<Optional<T>> find(Class<T> entityClass, Object id);
+	<T> CompletionStage<T> find(Class<T> entityClass, Object id);
 
 	/**
 	 * Asynchronously return the persistent instances of the given entity
@@ -176,7 +175,7 @@ public interface RxSession {
 	 *
 	 * @return the fetched association, via a {@code CompletionStage}
 	 */
-	<T> CompletionStage<Optional<T>> fetch(T association);
+	<T> CompletionStage<T> fetch(T association);
 
 	/**
 	 * Create an instance of {@link RxQuery} for the given HQL/JPQL query
