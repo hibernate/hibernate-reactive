@@ -309,9 +309,8 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 
 		return source.unwrap(RxSessionInternal.class)
 				.rxGet( (Class<?>) persister.getMappedClass(), clonedIdentifier )
-				.thenCompose(option -> {
-					if ( option.isPresent() ) {
-						Object result = option.get();
+				.thenCompose(result -> {
+					if ( result!=null ) {
 						// before cascade!
 						copyCache.put(entity, result, true);
 

@@ -12,7 +12,6 @@ import org.jboss.logging.Logger;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -81,11 +80,11 @@ public interface RxEntityPersister extends EntityPersister {
 			SessionImplementor session,
 			MultiLoadOptions loadOptions);
 
-	default CompletionStage<Optional<Object>> rxLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
+	default CompletionStage<Object> rxLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
 		return rxLoad( id, optionalObject, lockOptions, session, null );
 	}
 
-	default CompletionStage<Optional<Object>> rxLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
+	default CompletionStage<Object> rxLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
 		if ( log.isTraceEnabled() ) {
 			log.tracev( "Fetching entity: {0}", MessageHelper.infoString( this, id, getFactory() ) );
 		}

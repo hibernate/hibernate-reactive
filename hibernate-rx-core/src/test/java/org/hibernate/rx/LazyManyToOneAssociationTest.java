@@ -33,15 +33,15 @@ public class LazyManyToOneAssociationTest extends BaseRxTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.enableFetchProfile("withBook").find( Author.class, author.getId() )
 								.thenAccept( optionalAuthor -> {
-									context.assertTrue( optionalAuthor.isPresent() );
-									context.assertEquals( author, optionalAuthor.get() );
-									context.assertEquals( book, optionalAuthor.get().getBook() );
+									context.assertNotNull( optionalAuthor );
+									context.assertEquals( author, optionalAuthor );
+									context.assertEquals( book, optionalAuthor.getBook() );
 								}))
 						.thenCompose( v -> openSession())
 						.thenCompose( s -> s.find( Book.class, book.getId() ) )
 						.thenAccept( optionalBook -> {
-							context.assertTrue( optionalBook.isPresent() );
-							context.assertEquals( book, optionalBook.get() );
+							context.assertNotNull( optionalBook );
+							context.assertEquals( book, optionalBook );
 						})
 		);
 	}
@@ -61,19 +61,19 @@ public class LazyManyToOneAssociationTest extends BaseRxTest {
 						.thenCompose( v -> openSession())
 						.thenCompose( s -> s.find( Author.class, author.getId() )
 								.thenCompose( optionalAuthor -> {
-									context.assertTrue( optionalAuthor.isPresent() );
-									context.assertEquals( author, optionalAuthor.get() );
-									return s.fetch( optionalAuthor.get().getBook() ).thenAccept(
+									context.assertNotNull( optionalAuthor );
+									context.assertEquals( author, optionalAuthor );
+									return s.fetch( optionalAuthor.getBook() ).thenAccept(
 											fetchedBook -> {
-												context.assertTrue( fetchedBook.isPresent() );
-												context.assertEquals( book, fetchedBook.get() );
+												context.assertNotNull( fetchedBook );
+												context.assertEquals( book, fetchedBook );
 											});
 								}))
 						.thenCompose( v -> openSession())
 						.thenCompose( s -> s.find( Book.class, book.getId() ) )
 						.thenAccept( optionalBook -> {
-							context.assertTrue( optionalBook.isPresent() );
-							context.assertEquals( book, optionalBook.get() );
+							context.assertNotNull( optionalBook );
+							context.assertEquals( book, optionalBook );
 						})
 		);
 	}
@@ -95,12 +95,12 @@ public class LazyManyToOneAssociationTest extends BaseRxTest {
 						.thenCompose( s ->
 							s.find( Author.class, neilGaiman.getId() )
 								.thenCompose( optionalAuthor -> {
-									context.assertTrue( optionalAuthor.isPresent() );
-									context.assertEquals( neilGaiman, optionalAuthor.get() );
-									return s.fetch( optionalAuthor.get().getBook() ).thenAccept(
+									context.assertNotNull( optionalAuthor );
+									context.assertEquals( neilGaiman, optionalAuthor );
+									return s.fetch( optionalAuthor.getBook() ).thenAccept(
 											fetchedBook -> {
-												context.assertTrue( fetchedBook.isPresent() );
-												context.assertEquals( goodOmens, fetchedBook.get() );
+												context.assertNotNull( fetchedBook );
+												context.assertEquals( goodOmens, fetchedBook );
 											});
 								}))
 		);

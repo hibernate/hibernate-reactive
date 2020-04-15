@@ -3,8 +3,6 @@ package org.hibernate.example.rx;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionFactory;
 
-import java.util.Optional;
-
 import static javax.persistence.Persistence.createEntityManagerFactory;
 
 public class Main {
@@ -31,7 +29,7 @@ public class Main {
 
 		RxSession session2 = sessionFactory.openRxSession();
 		//retrieve the Book and print its title
-		session2.find(Book.class, book.id).thenApply(Optional::get)
+		session2.find(Book.class, book.id)
 				.thenAccept( bOOk -> System.out.println(bOOk.title + " is a great book!") )
 				.thenAccept( $ -> session2.close() )
 				.toCompletableFuture()
@@ -39,7 +37,7 @@ public class Main {
 
 		RxSession session3 = sessionFactory.openRxSession();
 		//retrieve the Book and delete it
-		session3.find(Book.class, book.id).thenApply(Optional::get)
+		session3.find(Book.class, book.id)
 				.thenCompose( bOOk -> session3.remove(bOOk))
 				.thenCompose( $ -> session3.flush() )
 				.thenAccept( $ -> session2.close() )

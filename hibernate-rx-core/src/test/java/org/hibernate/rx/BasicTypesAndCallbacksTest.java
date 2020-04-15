@@ -54,9 +54,8 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 				.thenCompose(v -> openSession())
 				.thenCompose(s2 ->
 					s2.find( Basic.class, basik.getId() )
-						.thenCompose( option -> {
-							context.assertTrue( option.isPresent() );
-							Basic basic = option.get();
+						.thenCompose( basic -> {
+							context.assertNotNull( basic );
 							context.assertTrue( basic.loaded );
 							context.assertEquals( basic.string, basik.string);
 							context.assertEquals( basic.decimal.floatValue(), basik.decimal.floatValue());
@@ -81,7 +80,7 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 							return s2.persist(basic.parent)
 									.thenCompose( v -> s2.flush() )
 									.thenAccept(v -> {
-										context.assertTrue( option.isPresent() );
+										context.assertNotNull( basic );
 										context.assertTrue( basic.postUpdated && basic.preUpdated );
 										context.assertFalse( basic.postPersisted && basic.prePersisted );
 										context.assertTrue( basic.parent.postPersisted && basic.parent.prePersisted );
@@ -91,8 +90,7 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 				.thenCompose(v -> openSession())
 				.thenCompose(s3 ->
 					s3.find( Basic.class, basik.getId() )
-						.thenCompose( option -> {
-							Basic basic = option.get();
+						.thenCompose( basic -> {
 							context.assertFalse( basic.postUpdated && basic.preUpdated );
 							context.assertFalse( basic.postPersisted && basic.prePersisted );
 							context.assertEquals( basic.version, 1 );
@@ -114,7 +112,7 @@ public class BasicTypesAndCallbacksTest extends BaseRxTest {
 				.thenCompose(v -> openSession())
 				.thenCompose(s4 ->
 						s4.find( Basic.class, basik.getId() )
-							.thenAccept( option -> context.assertFalse( option.isPresent() ) ))
+							.thenAccept(context::assertNull))
 		);
 	}
 

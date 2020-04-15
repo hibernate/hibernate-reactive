@@ -31,9 +31,9 @@ public class OneToOneIdClassParentEmbeddedIdTest extends BaseRxTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( AnEntity.class, new OtherEntityId( 1 ) )
 								.thenAccept( optionalAnEntity -> {
-									context.assertTrue( optionalAnEntity.isPresent() );
-									context.assertEquals( anEntity, optionalAnEntity.get() );
-									context.assertEquals( otherEntity, optionalAnEntity.get().otherEntity );
+									context.assertNotNull( optionalAnEntity );
+									context.assertEquals( anEntity, optionalAnEntity );
+									context.assertEquals( otherEntity, optionalAnEntity.otherEntity );
 								})
 						)
 		);

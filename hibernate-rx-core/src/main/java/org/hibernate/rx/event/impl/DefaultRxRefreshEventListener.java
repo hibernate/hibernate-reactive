@@ -34,7 +34,6 @@ import org.hibernate.type.Type;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -222,12 +221,11 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 			postRefreshLockMode = null;
 		}
 
-		final CompletionStage<Optional<Object>> stage =
+		final CompletionStage<Object> stage =
 				( (RxAbstractEntityPersister) persister ).rxLoad( id, object, lockOptionsToUse, source );
 
-		return cascade.thenCompose(v -> stage).thenAccept(option -> {
-			if ( option.isPresent() ) {
-				Object result = option.get();
+		return cascade.thenCompose(v -> stage).thenAccept(result -> {
+			if ( result!=null ) {
 
 				// apply `postRefreshLockMode`, if needed
 				if (postRefreshLockMode != null) {
@@ -243,11 +241,11 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 					source.setReadOnly(result, true);
 				}
 				else {
-					source.setReadOnly(result, (e == null ? source.isDefaultReadOnly() : e.isReadOnly()));
+					source.setReadOnly(result, e == null ? source.isDefaultReadOnly() : e.isReadOnly());
 				}
 			}
 
-			UnresolvableObjectException.throwIfNull(option.get(), id, persister.getEntityName());
+			UnresolvableObjectException.throwIfNull(result, id, persister.getEntityName());
 		})
 		.whenComplete( (v,t) -> source.getLoadQueryInfluencers().setInternalFetchProfile(previousFetchProfile) );
 

@@ -36,12 +36,12 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseRxTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, goodOmens.getId() )
 								.thenCompose(
-										book -> s.fetch( book.get().getAuthors())
+										book -> s.fetch( book.getAuthors())
 								) )
 						.thenAccept( optionalAssociation -> {
-							context.assertTrue(optionalAssociation.isPresent());
-							context.assertTrue(optionalAssociation.get().contains(neilGaiman));
-							context.assertTrue(optionalAssociation.get().contains(terryPratchett));
+							context.assertNotNull(optionalAssociation);
+							context.assertTrue(optionalAssociation.contains(neilGaiman));
+							context.assertTrue(optionalAssociation.contains(terryPratchett));
 
 						} )
 		);

@@ -32,9 +32,9 @@ public class SecondaryTableTest extends BaseRxTest {
 						.thenCompose( v -> openSession())
 						.thenCompose( s2 -> s2.find( Author.class, author.getId() ) )
 						.thenAccept( auth -> {
-							context.assertTrue( auth.isPresent() );
-							context.assertEquals( author, auth.get() );
-							context.assertEquals( book.getTitle(), auth.get().getBook().getTitle()  );
+							context.assertNotNull( auth );
+							context.assertEquals( author, auth );
+							context.assertEquals( book.getTitle(), auth.getBook().getTitle()  );
 							context.assertFalse(book.isForbidden());
 						} )
 		);
@@ -53,9 +53,9 @@ public class SecondaryTableTest extends BaseRxTest {
 						.thenCompose( s -> s.flush() )
 						.thenCompose( s -> s.find( Author.class, author.getId() ) )
 						.thenAccept( auth -> {
-							context.assertTrue( auth.isPresent() );
-							context.assertEquals( author, auth.get() );
-							context.assertEquals( book.getTitle(), auth.get().getBook().getTitle()  );
+							context.assertNotNull( auth );
+							context.assertEquals( author, auth );
+							context.assertEquals( book.getTitle(), auth.getBook().getTitle()  );
 							context.assertTrue(book.isForbidden());
 						} )
 		);
@@ -75,9 +75,9 @@ public class SecondaryTableTest extends BaseRxTest {
 						.thenCompose( v -> openSession())
 						.thenCompose(s -> s.find(Book.class, 6))
 						.thenAccept(book -> {
-							context.assertTrue(book.isPresent());
-							context.assertFalse(book.get().isForbidden());
-							context.assertEquals(book.get().getTitle(), "The Boy, The Mole, The Fox and The Horse");
+							context.assertNotNull(book);
+							context.assertFalse(book.isForbidden());
+							context.assertEquals(book.getTitle(), "The Boy, The Mole, The Fox and The Horse");
 						}));
 	}
 
@@ -94,9 +94,9 @@ public class SecondaryTableTest extends BaseRxTest {
 						.thenCompose( v -> openSession())
 						.thenCompose(s -> s.find(Book.class, 6))
 						.thenAccept(book -> {
-							context.assertTrue(book.isPresent());
-							context.assertTrue(book.get().isForbidden());
-							context.assertEquals(book.get().getTitle(), "Necronomicon");
+							context.assertNotNull(book);
+							context.assertTrue(book.isForbidden());
+							context.assertEquals(book.getTitle(), "Necronomicon");
 						}));
 	}
 

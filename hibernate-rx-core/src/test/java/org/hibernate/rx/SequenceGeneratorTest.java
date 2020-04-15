@@ -29,9 +29,8 @@ public class SequenceGeneratorTest extends BaseRxTest {
 				.thenCompose( v -> openSession())
 				.thenCompose( s2 ->
 					s2.find( SequenceId.class, b.getId() )
-						.thenAccept( bt -> {
-							context.assertTrue( bt.isPresent() );
-							SequenceId bb = bt.get();
+						.thenAccept( bb -> {
+							context.assertNotNull( bb );
 							context.assertEquals( bb.id, 5 );
 							context.assertEquals( bb.string, b.string );
 							context.assertEquals( bb.version, 0 );
@@ -41,14 +40,13 @@ public class SequenceGeneratorTest extends BaseRxTest {
 						.thenCompose(vv -> s2.flush())
 						.thenCompose(vv -> s2.find( SequenceId.class, b.getId() ))
 						.thenAccept( bt -> {
-							context.assertEquals( bt.get().version, 1 );
+							context.assertEquals( bt.version, 1 );
 						}))
 				.thenCompose( v -> openSession())
 				.thenCompose( s3 -> s3.find( SequenceId.class, b.getId() ) )
-				.thenAccept( bt -> {
-					SequenceId bb = bt.get();
+				.thenAccept( bb -> {
 					context.assertEquals(bb.version, 1);
-					context.assertEquals( bb.string, "Goodbye");
+					context.assertEquals(bb.string, "Goodbye");
 				})
 		);
 	}

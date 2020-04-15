@@ -20,7 +20,6 @@ import org.hibernate.pretty.MessageHelper;
 
 import java.io.Serializable;
 import java.sql.SQLException;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -94,12 +93,12 @@ public class RxPaddedBatchingEntityLoaderBuilder extends RxBatchingEntityLoaderB
 		}
 
 		@Override
-		public CompletionStage<Optional<Object>> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions) {
+		public CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions) {
 			return load( id, optionalObject, session, lockOptions, null );
 		}
 
 		@Override
-		public CompletionStage<Optional<Object>> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions, Boolean readOnly) {
+		public CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions, Boolean readOnly) {
 			final Serializable[] batch = session.getPersistenceContextInternal()
 					.getBatchFetchQueue()
 					.getEntityBatch( persister(), id, batchSizes[0], persister().getEntityMode() );
@@ -109,7 +108,7 @@ public class RxPaddedBatchingEntityLoaderBuilder extends RxBatchingEntityLoaderB
 				return loaders[batchSizes.length-1]
 						.load( id, optionalObject, session )
 						.thenApply( optional -> {
-							if ( !optional.isPresent() ) {
+							if ( optional == null ) {
 								// There was no entity with the specified ID. Make sure the EntityKey does not remain
 								// in the batch to avoid including it in future batches that get executed.
 								BatchFetchQueueHelper.removeBatchLoadableEntityKey( id, persister(), session );
@@ -141,7 +140,7 @@ public class RxPaddedBatchingEntityLoaderBuilder extends RxBatchingEntityLoaderB
 		/**
 		 * @see BatchingEntityLoader#doBatchLoad(Serializable, Loader, SharedSessionContractImplementor, Serializable[], Object, LockOptions, Boolean)
 		 */
-		protected CompletionStage<Optional<Object>> doBatchLoad(
+		protected CompletionStage<Object> doBatchLoad(
 				Serializable id,
 				RxEntityLoader loaderToUse,
 				SharedSessionContractImplementor session,
@@ -160,7 +159,7 @@ public class RxPaddedBatchingEntityLoaderBuilder extends RxBatchingEntityLoaderB
 						// The EntityKey for any entity that is not found will remain in the batch.
 						// Explicitly remove the EntityKeys for entities that were not found to
 						// avoid including them in future batches that get executed.
-						Optional<Object> result = Optional.ofNullable(getObjectFromList(list, id, session));
+						Object result = getObjectFromList(list, id, session);
 
 						BatchFetchQueueHelper.removeNotFoundBatchLoadableEntityKeys(
 								ids,

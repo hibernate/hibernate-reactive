@@ -13,7 +13,6 @@ import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.util.impl.RxUtil;
 
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletionStage;
 
@@ -62,8 +61,8 @@ public class SequenceRxIdentifierGenerator implements RxIdentifierGenerator<Long
 	}
 
 	@Override
-	public CompletionStage<Optional<Long>> generate(SharedSessionContractImplementor session) {
-		return sql==null ? RxUtil.completedFuture(Optional.empty())
+	public CompletionStage<Long> generate(SharedSessionContractImplementor session) {
+		return sql==null ? RxUtil.nullFuture()
 				: queryExecutor.selectLong( sql, new Object[0], session.getFactory() );
 	}
 }

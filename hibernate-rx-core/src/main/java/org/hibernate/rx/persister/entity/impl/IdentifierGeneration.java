@@ -21,7 +21,6 @@ import org.hibernate.mapping.SimpleValue;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.rx.util.impl.RxUtil;
 
-import java.util.Optional;
 import java.util.Properties;
 
 import static org.hibernate.id.enhanced.SequenceStyleGenerator.CATALOG;
@@ -101,15 +100,15 @@ public class IdentifierGeneration {
 					.getIdentityColumnSupport().supportsInsertSelectIdentity() ) {
 				throw new HibernateException("getGeneratedKeys() is disabled");
 			}
-			return f -> RxUtil.completedFuture( Optional.empty() );
+			return f -> RxUtil.nullFuture();
 		}
 		else if (identifierGenerator instanceof Assigned
 				|| identifierGenerator instanceof CompositeNestedGeneratedValueGenerator) {
 			//TODO!
-			return f -> RxUtil.completedFuture( Optional.empty() );
+			return f -> RxUtil.nullFuture();
 		}
 		else {
-			return f -> RxUtil.completedFuture( Optional.of( identifierGenerator.generate(f, null) ) );
+			return f -> RxUtil.completedFuture( identifierGenerator.generate(f, null) );
 		}
 	}
 

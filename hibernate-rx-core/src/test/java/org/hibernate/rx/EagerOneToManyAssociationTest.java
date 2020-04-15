@@ -61,10 +61,10 @@ public class EagerOneToManyAssociationTest extends BaseRxTest {
 						.thenCompose( v -> openSession())
 						.thenCompose( s -> s.find( Book.class, goodOmens.getId() ) )
 						.thenAccept( optionalBook -> {
-							context.assertTrue( optionalBook.isPresent() );
-							context.assertEquals( 2, optionalBook.get().getAuthors().size() );
-							context.assertTrue( optionalBook.get().getAuthors().contains( neilGaiman )  );
-							context.assertTrue( optionalBook.get().getAuthors().contains( terryPratchett )  );
+							context.assertNotNull( optionalBook );
+							context.assertEquals( 2, optionalBook.getAuthors().size() );
+							context.assertTrue( optionalBook.getAuthors().contains( neilGaiman )  );
+							context.assertTrue( optionalBook.getAuthors().contains( terryPratchett )  );
 						} )
 		);
 	}

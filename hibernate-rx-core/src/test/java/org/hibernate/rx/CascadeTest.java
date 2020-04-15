@@ -39,9 +39,8 @@ public class CascadeTest extends BaseRxTest {
 				.thenCompose(v -> openSession())
 				.thenCompose(s2 ->
 					s2.find( Node.class, basik.getId() )
-						.thenCompose( option -> {
-							context.assertTrue( option.isPresent() );
-							Node node = option.get();
+						.thenCompose( node -> {
+							context.assertNotNull( node );
 							context.assertTrue( node.loaded );
 							context.assertEquals( node.string, basik.string);
 							context.assertEquals( node.version, 0 );
@@ -51,7 +50,7 @@ public class CascadeTest extends BaseRxTest {
 							node.parent = new Node("New Parent");
 							return s2.flush()
 									.thenAccept(v -> {
-										context.assertTrue( option.isPresent() );
+										context.assertNotNull( node );
 										context.assertTrue( node.postUpdated && node.preUpdated );
 										context.assertFalse( node.postPersisted && node.prePersisted );
 										context.assertTrue( node.parent.postPersisted && node.parent.prePersisted );
@@ -61,15 +60,13 @@ public class CascadeTest extends BaseRxTest {
 						.thenCompose(v -> openSession())
 						.thenCompose(s2 ->
 								s2.find( Node.class, basik.getId() )
-										.thenCompose( option -> {
-											context.assertTrue( option.isPresent() );
-											Node node = option.get();
+										.thenCompose( node -> {
+											context.assertNotNull( node );
 											context.assertEquals( node.version, 1 );
 											context.assertEquals( node.string, "Adopted");
 											return s2.fetch( node.parent )
-													.thenCompose( opt -> {
-														context.assertTrue( opt.isPresent() );
-														Node parent = opt.get();
+													.thenCompose( parent -> {
+														context.assertNotNull( parent );
 														return connection().preparedQuery("update Node set string = upper(string)")
 																.thenCompose(v -> s2.refresh(node))
 																.thenAccept(v -> {
@@ -81,8 +78,7 @@ public class CascadeTest extends BaseRxTest {
 				.thenCompose(v -> openSession())
 				.thenCompose(s3 ->
 					s3.find( Node.class, basik.getId() )
-						.thenCompose( option -> {
-							Node node = option.get();
+						.thenCompose( node -> {
 							context.assertFalse( node.postUpdated && node.preUpdated );
 							context.assertFalse( node.postPersisted && node.prePersisted );
 							context.assertEquals( node.version, 1 );
@@ -103,7 +99,7 @@ public class CascadeTest extends BaseRxTest {
 				.thenCompose(v -> openSession())
 				.thenCompose(s4 ->
 						s4.find( Node.class, basik.getId() )
-							.thenAccept( option -> context.assertFalse( option.isPresent() ) ))
+							.thenAccept(context::assertNull))
 		);
 	}
 

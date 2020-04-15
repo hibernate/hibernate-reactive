@@ -30,7 +30,6 @@ import java.io.Serializable;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -271,7 +270,7 @@ public interface RxAbstractEntityPersister extends RxEntityPersister, OuterJoinL
 				sql = sql + " returning " + identifierColumnName;
 			}
 			return queryExecutor().updateReturning( sql, insert.getParametersAsArray(), factory )
-					.thenApply(Optional::get);
+					.thenApply( id -> id );
 		}
 		else {
 			//use an extra round trip to fetch the id
@@ -281,9 +280,9 @@ public interface RxAbstractEntityPersister extends RxEntityPersister, OuterJoinL
 							identifierColumnName,
 							Types.INTEGER
 					);
-			return queryExecutor().update( sql, insert.getParametersAsArray(), factory)
+			return queryExecutor().update( sql, insert.getParametersAsArray(), factory )
 					.thenCompose( v -> queryExecutor().selectLong(selectIdSql, new Object[0], factory) )
-					.thenApply(Optional::get);
+					.thenApply( id -> id );
 		}
 
 	}

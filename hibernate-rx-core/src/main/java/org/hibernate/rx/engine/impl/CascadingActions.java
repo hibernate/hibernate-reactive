@@ -51,8 +51,7 @@ public class CascadingActions {
 			LOG.tracev( "Cascading to delete: {0}", entityName );
 			return session.unwrap(RxSessionInternal.class).rxFetch(child)
 					.thenCompose( c -> session.unwrap(RxSessionInternal.class)
-							.rxRemove( c.orElseThrow(AssertionError::new),
-									isCascadeDeleteEnabled, context ) );
+							.rxRemove( c, isCascadeDeleteEnabled, context ) );
 		}
 	};
 

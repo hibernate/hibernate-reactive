@@ -1,7 +1,6 @@
 package org.hibernate.rx.event.impl;
 
 import java.io.Serializable;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
@@ -90,14 +89,14 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 			// Since this method is not reactive, we're not expecting to hit the
 			// database here (if we do, it's a bug) and so we can assume the
 			// returned CompletionStage is already completed (a proxy, perhaps)
-			CompletionStage<Optional<Object>> loaded = doOnLoad( persister, event, loadType );
+			CompletionStage<Object> loaded = doOnLoad( persister, event, loadType );
 			if ( !loaded.toCompletableFuture().isDone() ) {
 				// This only happens if the object is loaded from the db
 				throw new AssertionFailure( "Unexpected access to the database" );
 			}
 			else {
 				// Proxy
-				loaded.toCompletableFuture().getNow( Optional.empty() ).ifPresent( event::setResult );
+				event.setResult( loaded.toCompletableFuture().getNow( null ) );
 			}
 		}
 		catch (HibernateException e) {
@@ -165,7 +164,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		}
 	}
 
-	private CompletionStage<Optional<Object>> doOnLoad(
+	private CompletionStage<Object> doOnLoad(
 			final EntityPersister persister,
 			final LoadEvent event,
 			final LoadEventListener.LoadType loadType) {
@@ -221,7 +220,12 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		EventSource session = event.getSession();
 		final EntityKey parentEntityKey = session.generateEntityKey( event.getEntityId(), parentPersister );
 		return doLoad( event, parentPersister, parentEntityKey, options )
-				.thenApply( result -> result.orElseThrow(() -> new ObjectNotFoundException( parentEntityKey, parentEntityKey.getEntityName() )) )
+				.thenApply( result -> {
+					if ( result == null ) {
+						throw new ObjectNotFoundException( parentEntityKey, parentEntityKey.getEntityName() );
+					}
+					return result;
+				} )
 				.thenApply( parent -> {
 					final Serializable dependent = (Serializable) dependentIdType.instantiate( parent, session );
 					dependentIdType.setPropertyValues( dependent, new Object[] {parent}, dependentPersister.getEntityMode() );
@@ -242,7 +246,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 	 *
 	 * @return The loaded entity.
 	 */
-	private CompletionStage<Optional<Object>> load( LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
+	private CompletionStage<Object> load( LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
 		final EventSource session = event.getSession();
 		if ( event.getInstanceToLoad() != null ) {
 			if ( session.getPersistenceContextInternal().getEntry( event.getInstanceToLoad() ) != null ) {
@@ -257,13 +261,13 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 				.thenApply(optional -> {
 					boolean isOptionalInstance = event.getInstanceToLoad() != null;
 
-					if ( !optional.isPresent()  && ( !options.isAllowNulls() || isOptionalInstance ) ) {
+					if ( optional==null && ( !options.isAllowNulls() || isOptionalInstance ) ) {
 						session
 								.getFactory()
 								.getEntityNotFoundDelegate()
 								.handleEntityNotFound( event.getEntityClassName(), event.getEntityId() );
 					}
-					else if ( isOptionalInstance && optional.orElse(null) != event.getInstanceToLoad() ) {
+					else if ( isOptionalInstance && optional != event.getInstanceToLoad() ) {
 						throw new NonUniqueObjectException( event.getEntityId(), event.getEntityClassName() );
 					}
 					return optional;
@@ -281,7 +285,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 	 *
 	 * @return The result of the proxy/load operation.
 	 */
-	private CompletionStage<Optional<Object>> proxyOrLoad(final LoadEvent event, final EntityPersister persister, final EntityKey keyToLoad, final LoadEventListener.LoadType options) {
+	private CompletionStage<Object> proxyOrLoad(final LoadEvent event, final EntityPersister persister, final EntityKey keyToLoad, final LoadEventListener.LoadType options) {
 		final EventSource session = event.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();
 		final boolean traceEnabled = LOG.isTraceEnabled();
@@ -318,7 +322,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 						return RxUtil.completedFuture( null );
 					}
 				}
-				return RxUtil.completedFuture( managed ).thenApply( Optional::of );
+				return RxUtil.completedFuture( managed );
 			}
 
 			// if the entity defines a HibernateProxy factory, see if there is an
@@ -336,16 +340,14 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 					}
 
 					return RxUtil.completedFuture(
-							persistenceContext.narrowProxy( proxy, persister, keyToLoad, null ) )
-							.thenApply( Optional::of );
+							persistenceContext.narrowProxy( proxy, persister, keyToLoad, null ) );
 				}
 
 				// specialized handling for entities with subclasses with a HibernateProxy factory
 				if ( entityMetamodel.hasSubclasses() ) {
 					// entities with subclasses that define a ProxyFactory can create a HibernateProxy
 					return RxUtil.completedFuture(
-							createProxy( event, persister, keyToLoad, persistenceContext ) )
-							.thenApply( Optional::of );
+							createProxy( event, persister, keyToLoad, persistenceContext ) );
 				}
 			}
 
@@ -358,8 +360,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 				// This is the crux of HHH-11147
 				// create the (uninitialized) entity instance - has only id set
 				return RxUtil.completedFuture(
-						persister.getBytecodeEnhancementMetadata().createEnhancedProxy( keyToLoad, true, session ) )
-						.thenApply( Optional::of );
+						persister.getBytecodeEnhancementMetadata().createEnhancedProxy( keyToLoad, true, session ) );
 			}
 
 			// If we get here, then the entity class has subclasses and there is no HibernateProxy factory.
@@ -398,7 +399,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 	 *
 	 * @return The created/existing proxy
 	 */
-	private CompletionStage<Optional<Object>> returnNarrowedProxy(
+	private CompletionStage<Object> returnNarrowedProxy(
 			final LoadEvent event,
 			final EntityPersister persister,
 			final EntityKey keyToLoad,
@@ -412,28 +413,27 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		LazyInitializer li = ( (HibernateProxy) proxy ).getHibernateLazyInitializer();
 
 		if ( li.isUnwrap() ) {
-			return RxUtil.completedFuture( li.getImplementation() ).thenApply( Optional::of );
+			return RxUtil.completedFuture( li.getImplementation() );
 		}
 
 		CompletionStage<Object> implStage;
 		if ( !options.isAllowProxyCreation() ) {
 			implStage = load( event, persister, keyToLoad, options )
 					.thenApply( optional -> {
-						if ( !optional.isPresent() ) {
+						if ( optional == null ) {
 							event.getSession()
 									.getFactory()
 									.getEntityNotFoundDelegate()
 									.handleEntityNotFound( persister.getEntityName(), keyToLoad.getIdentifier() );
 						}
-						return optional.orElse( null );
+						return optional;
 					} );
 		}
 		else {
 			implStage = RxUtil.completedFuture( null );
 		}
 
-		return implStage.thenApply( impl -> persistenceContext.narrowProxy( proxy, persister, keyToLoad, impl ) )
-				.thenApply( Optional::ofNullable );
+		return implStage.thenApply( impl -> persistenceContext.narrowProxy( proxy, persister, keyToLoad, impl ) );
 	}
 
 	/**
@@ -449,7 +449,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 	 *
 	 * @return The created/existing proxy
 	 */
-	private Optional<Object> createProxyIfNecessary(
+	private Object createProxyIfNecessary(
 			final LoadEvent event,
 			final EntityPersister persister,
 			final EntityKey keyToLoad,
@@ -466,10 +466,10 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 				EntityEntry entry = persistenceContext.getEntry( existing );
 				Status status = entry.getStatus();
 				if ( status == Status.DELETED || status == Status.GONE ) {
-					return Optional.empty();
+					return null;
 				}
 			}
-			return Optional.of( existing );
+			return existing;
 		}
 		if ( traceEnabled ) {
 			LOG.trace( "Creating new proxy for entity" );
@@ -477,7 +477,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		return createProxy( event, persister, keyToLoad, persistenceContext );
 	}
 
-	private Optional<Object> createProxy(
+	private Object createProxy(
 			LoadEvent event,
 			EntityPersister persister,
 			EntityKey keyToLoad,
@@ -486,7 +486,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		Object proxy = persister.createProxy( event.getEntityId(), event.getSession() );
 		persistenceContext.getBatchFetchQueue().addBatchLoadableEntityKey( keyToLoad );
 		persistenceContext.addProxy( keyToLoad, proxy );
-		return Optional.of( proxy );
+		return proxy;
 	}
 
 	/**
@@ -501,7 +501,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 	 *
 	 * @return The loaded entity
 	 */
-	private CompletionStage<Optional<Object>> lockAndLoad(
+	private CompletionStage<Object> lockAndLoad(
 			final LoadEvent event,
 			final EntityPersister persister,
 			final EntityKey keyToLoad,
@@ -532,8 +532,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 							cache.unlockItem( source, ck, lock );
 						}
 					} )
-					.thenApply( entity -> source.getPersistenceContextInternal().proxyFor( persister, keyToLoad, entity ) )
-					.thenApply( Optional::of );
+					.thenApply( entity -> source.getPersistenceContextInternal().proxyFor( persister, keyToLoad, entity ) );
 		}
 		catch (HibernateException he) {
 			//in case load() throws an exception
@@ -558,7 +557,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 	 *
 	 * @return The loaded entity, or null.
 	 */
-	private CompletionStage<Optional<Object>> doLoad(
+	private CompletionStage<Object> doLoad(
 			final LoadEvent event,
 			final EntityPersister persister,
 			final EntityKey keyToLoad,
@@ -580,7 +579,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		);
 		Object entity = persistenceContextEntry.getEntity();
 		if ( entity != null ) {
-			Optional<Object> managed = persistenceContextEntry.isManaged() ? Optional.of( entity ) : Optional.empty();
+			Object managed = persistenceContextEntry.isManaged() ? entity : null;
 			return  RxUtil.completedFuture( managed );
 		}
 
@@ -593,7 +592,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 				);
 			}
 			cacheNaturalId( event, persister, session, entity );
-			return RxUtil.completedFuture( entity ).thenApply( Optional::of );
+			return RxUtil.completedFuture( entity );
 		}
 		else {
 			if ( traceEnabled ) {
@@ -604,7 +603,9 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 			}
 			return loadFromDatasource( event, persister )
 					.thenApply(optional -> {
-						optional.ifPresent( loaded -> cacheNaturalId( event, persister, session, loaded ) );
+						if ( optional!=null ) {
+							cacheNaturalId( event, persister, session, optional );
+						}
 						return optional;
 					} );
 		}
@@ -634,11 +635,11 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 	 *
 	 * @return The object loaded from the datasource, or null if not found.
 	 */
-	protected CompletionStage<Optional<Object>> loadFromDatasource(
+	protected CompletionStage<Object> loadFromDatasource(
 			final LoadEvent event,
 			final EntityPersister persister) {
 
-		CompletionStage<Optional<Object>> entity =
+		CompletionStage<Object> entity =
 				( (RxEntityPersister) persister).rxLoad(
 						event.getEntityId(),
 						event.getInstanceToLoad(),

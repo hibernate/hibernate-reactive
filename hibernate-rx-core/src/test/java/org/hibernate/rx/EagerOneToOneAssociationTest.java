@@ -32,7 +32,7 @@ public class EagerOneToOneAssociationTest extends BaseRxTest {
 						.thenCompose( s -> s.flush() )
 						.thenCompose( v -> openSession())
 						.thenCompose( s -> s.find( Book.class, 5 ) )
-						.thenAccept( optionalBook -> context.assertTrue( optionalBook.isPresent() ) )
+						.thenAccept(context::assertNotNull)
 		);
 	}
 
