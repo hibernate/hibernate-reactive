@@ -21,7 +21,6 @@ import org.hibernate.ObjectDeletedException;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.collection.spi.PersistentCollection;
-import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.internal.MergeContext;
@@ -31,7 +30,6 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.EventType;
 import org.hibernate.event.spi.FlushEvent;
 import org.hibernate.event.spi.InitializeCollectionEvent;
-import org.hibernate.event.spi.InitializeCollectionEventListener;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
 import org.hibernate.event.spi.MergeEvent;
@@ -40,8 +38,6 @@ import org.hibernate.event.spi.RefreshEvent;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
-import org.hibernate.internal.EntityManagerMessageLogger;
-import org.hibernate.internal.HEMLogging;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
@@ -72,7 +68,6 @@ import org.hibernate.rx.util.impl.RxUtil;
  * Hibernate core compares the identity of session instances.
  */
 public class RxSessionInternalImpl extends SessionImpl implements RxSessionInternal, EventSource {
-	private static final EntityManagerMessageLogger log = HEMLogging.messageLogger( RxSessionInternalImpl.class );
 
 	private transient RxActionQueue rxActionQueue = new RxActionQueue( this );
 
@@ -115,19 +110,24 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 			// SessionImpl doesn't use IdentifierLoadAccessImpl for initializing proxies
 			return new RxIdentifierLoadAccessImpl<T>( initializer.getEntityName() )
 					.fetch( initializer.getIdentifier() )
-					.thenApply(Optional::get)
-					.thenApply( result -> {
+					.thenApply( optional -> optional.orElseThrow(()
+							-> new ObjectNotFoundException( initializer.getIdentifier(), initializer.getEntityName() )) )
+					.thenApply( entity -> {
 						initializer.setSession( this );
-						initializer.setImplementation(result);
-						return Optional.ofNullable(result);
-					} );
+						initializer.setImplementation( entity );
+						return entity;
+					} )
+					.thenApply( Optional::of );
 		}
-		if ( association instanceof PersistentCollection ) {
+		else if ( association instanceof PersistentCollection ) {
 			PersistentCollection persistentCollection = (PersistentCollection) association;
 			return rxInitializeCollection( persistentCollection, false )
-					.thenApply( l -> Optional.ofNullable( (T) l ) );
+					.thenApply( pc -> association )
+					.thenApply( Optional::of );
 		}
-		return RxUtil.completedFuture( Optional.ofNullable(association) );
+		else {
+			return RxUtil.completedFuture( association ).thenApply( Optional::ofNullable );
+		}
 	}
 
 	/**
@@ -139,11 +139,12 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		throw getExceptionConverter().convert( new UnsupportedOperationException( "RxSessionInternalImpl#initializeCollection not supported, use rxInitializeCollection instead" ) );
 	}
 
-	public <T> CompletionStage<T> rxInitializeCollection(PersistentCollection collection, boolean writing) {
+	public CompletionStage<Void> rxInitializeCollection(PersistentCollection collection, boolean writing) {
 		checkOpenOrWaitingForAutoClose();
 		pulseTransactionCoordinator();
 		InitializeCollectionEvent event = new InitializeCollectionEvent( collection, this );
-		return fire( event, EventType.INIT_COLLECTION, (DefaultRxInitializeCollectionEventListener l) -> l::onRxInitializeCollection )
+		return fire( event, EventType.INIT_COLLECTION,
+				(DefaultRxInitializeCollectionEventListener l) -> l::onRxInitializeCollection )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -157,9 +158,6 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 						return RxUtil.rethrow( e );
 					}
 					return v;
-				} ).thenApply( list -> {
-					delayedAfterCompletion();
-					return (T) list;
 				} );
 	}
 

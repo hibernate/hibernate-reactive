@@ -23,7 +23,7 @@ public class RxOneToManyPersister extends OneToManyPersister {
 		super( collectionBinding, cacheAccessStrategy, creationContext );
 	}
 
-	public CompletionStage<List<?>> rxInitialize(Serializable key, SharedSessionContractImplementor session)
+	public CompletionStage<Void> rxInitialize(Serializable key, SharedSessionContractImplementor session)
 			throws HibernateException {
 		return ( (RxCollectionLoader) getAppropriateInitializer( key, session ) ).rxInitialize( key, session );
 	}

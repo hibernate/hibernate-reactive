@@ -129,7 +129,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		return checkId( event, loadType, persister ).thenCompose(
 				vd -> doOnLoad( persister, event, loadType )
 						.thenAccept( event::setResult )
-						.whenComplete( (v, x) -> {
+						.handle( (v, x) -> {
 							if ( x instanceof HibernateException ) {
 								LOG.unableToLoadCommand( (HibernateException) x );
 							}
@@ -138,6 +138,8 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 							if ( event.getResult() instanceof CompletionStage ) {
 								throw new AssertionFailure( "Unexpected CompletionStage" );
 							}
+
+							return v;
 						} ));
 	}
 

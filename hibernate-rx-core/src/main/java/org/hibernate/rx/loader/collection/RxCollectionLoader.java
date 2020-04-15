@@ -43,14 +43,14 @@ public class RxCollectionLoader extends RxOuterJoinLoader implements CollectionI
 		throw new UnsupportedOperationException( "Use the reactive method instead: rxInitialize");
 	}
 
-	public CompletionStage<List<?>> rxInitialize(Serializable id, SharedSessionContractImplementor session) throws HibernateException {
+	public CompletionStage<Void> rxInitialize(Serializable id, SharedSessionContractImplementor session) throws HibernateException {
 		return rxLoadCollection( (SessionImplementor) session, id, getKeyType() );
 	}
 
 	/**
 	 * Called by subclasses that initialize collections
 	 */
-	public CompletionStage<List<?>> rxLoadCollection(
+	public CompletionStage<Void> rxLoadCollection(
 			final SessionImplementor session,
 			final Serializable id,
 			final Type type) throws HibernateException {
@@ -77,7 +77,8 @@ public class RxCollectionLoader extends RxOuterJoinLoader implements CollectionI
 					}
 					LOG.debug("Done loading collection");
 					return list;
-				});
+				})
+				.thenCompose( list -> RxUtil.nullFuture() );
 	}
 
 	protected Type getKeyType() {

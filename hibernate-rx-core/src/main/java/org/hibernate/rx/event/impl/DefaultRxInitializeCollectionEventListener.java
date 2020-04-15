@@ -38,7 +38,7 @@ public class DefaultRxInitializeCollectionEventListener implements InitializeCol
 	/**
 	 * called by a collection that wants to initialize itself
 	 */
-	public CompletionStage<PersistentCollection> onRxInitializeCollection(InitializeCollectionEvent event) throws HibernateException {
+	public CompletionStage<Void> onRxInitializeCollection(InitializeCollectionEvent event) throws HibernateException {
 		PersistentCollection collection = event.getCollection();
 		SessionImplementor source = event.getSession();
 
@@ -49,7 +49,8 @@ public class DefaultRxInitializeCollectionEventListener implements InitializeCol
 		if ( !collection.wasInitialized() ) {
 			final CollectionPersister ceLoadedPersister = ce.getLoadedPersister();
 			if ( LOG.isTraceEnabled() ) {
-				LOG.tracev( "Initializing collection {0}", MessageHelper.collectionInfoString( ceLoadedPersister, collection, ce.getLoadedKey(), source ) );
+				LOG.tracev( "Initializing collection {0}",
+						MessageHelper.collectionInfoString( ceLoadedPersister, collection, ce.getLoadedKey(), source ) );
 				LOG.trace( "Checking second-level cache" );
 			}
 
@@ -59,14 +60,14 @@ public class DefaultRxInitializeCollectionEventListener implements InitializeCol
 				if ( LOG.isTraceEnabled() ) {
 					LOG.trace( "Collection initialized from cache" );
 				}
-				return RxUtil.completedFuture( collection );
+				return RxUtil.nullFuture();
 			}
 			else {
 				if ( LOG.isTraceEnabled() ) {
 					LOG.trace( "Collection not cached" );
 				}
 				return ( (RxOneToManyPersister) ceLoadedPersister ).rxInitialize( ce.getLoadedKey(), source )
-						.thenApply( list -> {
+						.thenAccept( list -> {
 							if ( LOG.isTraceEnabled() ) {
 								LOG.trace( "Collection initialized" );
 							}
@@ -75,8 +76,7 @@ public class DefaultRxInitializeCollectionEventListener implements InitializeCol
 							if ( statistics.isStatisticsEnabled() ) {
 								statistics.fetchCollection( ceLoadedPersister.getRole() );
 							}
-							return new PersistentList( (SharedSessionContractImplementor) event.getSession(), list );
-						});
+						} );
 			}
 		}
 		throw new AssertionError("Shouldn't be here");
