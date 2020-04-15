@@ -1,3 +1,5 @@
+![Hibernate logo][]
+
 # Hibernate RX
 
 A reactive API for Hibernate ORM, supporting non-blocking database
@@ -13,6 +15,8 @@ Currently [PostgreSQL][] and [MySQL][] are supported.
 [Vert.x]: https://vertx.io
 [PostgreSQL]: https://www.postgresql.org
 [MySQL]: https://www.mysql.com
+
+[Hibernate logo]: http://static.jboss.org/hibernate/images/hibernate_logo_whitebkg_200px.png
 
 _This project is still at an experimental stage of development._
 
