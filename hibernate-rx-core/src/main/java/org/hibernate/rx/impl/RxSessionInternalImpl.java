@@ -107,14 +107,11 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 			LazyInitializer initializer = ((HibernateProxy) association).getHibernateLazyInitializer();
 			//TODO: is this correct?
 			// SessionImpl doesn't use IdentifierLoadAccessImpl for initializing proxies
-			return new RxIdentifierLoadAccessImpl<T>( initializer.getEntityName() )
-					.fetch( initializer.getIdentifier() )
-					.thenApply( optional -> {
-						if ( optional==null ) {
-							throw new ObjectNotFoundException( initializer.getIdentifier(), initializer.getEntityName() );
-						}
-						return optional;
-					})
+			String entityName = initializer.getEntityName();
+			Serializable identifier = initializer.getIdentifier();
+			return new RxIdentifierLoadAccessImpl<T>( entityName )
+					.fetch( identifier )
+					.thenApply( SessionUtil.checkEntityFound( this, entityName, identifier ) )
 					.thenApply( entity -> {
 						initializer.setSession( this );
 						initializer.setImplementation( entity );

@@ -7,7 +7,6 @@ import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.NonUniqueObjectException;
-import org.hibernate.ObjectNotFoundException;
 import org.hibernate.PersistentObjectException;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.action.internal.DelayedPostInsertIdentifier;
@@ -38,6 +37,9 @@ import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.EmbeddedComponentType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
+
+import static org.hibernate.rx.impl.SessionUtil.checkEntityFound;
+import static org.hibernate.rx.impl.SessionUtil.throwEntityNotFound;
 
 /**
  * A reactive {@link org.hibernate.event.internal.DefaultLoadEventListener}.
@@ -220,12 +222,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		EventSource session = event.getSession();
 		final EntityKey parentEntityKey = session.generateEntityKey( event.getEntityId(), parentPersister );
 		return doLoad( event, parentPersister, parentEntityKey, options )
-				.thenApply( result -> {
-					if ( result == null ) {
-						throw new ObjectNotFoundException( parentEntityKey, parentEntityKey.getEntityName() );
-					}
-					return result;
-				} )
+				.thenApply( checkEntityFound( session, parentEntityKey.getEntityName(), parentEntityKey ) )
 				.thenApply( parent -> {
 					final Serializable dependent = (Serializable) dependentIdType.instantiate( parent, session );
 					dependentIdType.setPropertyValues( dependent, new Object[] {parent}, dependentPersister.getEntityMode() );
@@ -260,12 +257,8 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		return doLoad( event, persister, keyToLoad, options )
 				.thenApply(optional -> {
 					boolean isOptionalInstance = event.getInstanceToLoad() != null;
-
 					if ( optional==null && ( !options.isAllowNulls() || isOptionalInstance ) ) {
-						session
-								.getFactory()
-								.getEntityNotFoundDelegate()
-								.handleEntityNotFound( event.getEntityClassName(), event.getEntityId() );
+						throwEntityNotFound( session, event.getEntityClassName(), event.getEntityId() );
 					}
 					else if ( isOptionalInstance && optional != event.getInstanceToLoad() ) {
 						throw new NonUniqueObjectException( event.getEntityId(), event.getEntityClassName() );
