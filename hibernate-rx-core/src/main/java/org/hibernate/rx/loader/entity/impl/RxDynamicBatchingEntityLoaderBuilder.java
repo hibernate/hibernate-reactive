@@ -21,6 +21,7 @@ import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.pretty.MessageHelper;
+import org.hibernate.rx.engine.impl.RxPersistenceContextAdapter;
 import org.hibernate.rx.sql.impl.Parameters;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.type.Type;
@@ -609,13 +610,14 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 				}
 				persistenceContext.beforeLoad();
 				return doTheLoad( sql, queryParameters, session, ids)
+						.whenComplete( (list, e) -> persistenceContext.afterLoad() )
+						.thenCompose(list ->
+								// only initialize non-lazy collections after everything else has been refreshed
+								((RxPersistenceContextAdapter) persistenceContext ).rxInitializeNonLazyCollections()
+										.thenApply(v -> list)
+						)
+						.whenComplete( (list, e) -> persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig) )
 						.handle( (results, e) -> {
-							persistenceContext.afterLoad();
-							if (e==null) {
-								persistenceContext.initializeNonLazyCollections();
-								log.debug( "Done batch load" );
-							}
-							persistenceContext.setDefaultReadOnly( defaultReadOnlyOrig );
 							if (e instanceof SQLException) {
 								throw jdbcServices.getSqlExceptionHelper().convert(
 										(SQLException) e,
@@ -625,10 +627,10 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 												session.getFactory()
 										),
 										sql
-								);
+									);
 							}
 							return results;
-				});
+						});
 		}
 
 		private CompletionStage<List<Object>> doTheLoad(

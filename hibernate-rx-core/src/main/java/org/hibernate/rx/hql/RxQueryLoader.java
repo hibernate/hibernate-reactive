@@ -27,6 +27,7 @@ import org.hibernate.hql.internal.ast.tree.SelectClause;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.pretty.MessageHelper;
+import org.hibernate.rx.engine.impl.RxPersistenceContextAdapter;
 import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
@@ -184,17 +185,13 @@ public class RxQueryLoader extends QueryLoader {
 		}
 		persistenceContext.beforeLoad();
 		return doRxQuery( session, queryParameters, returnProxies, forcedResultTransformer )
-				.handle( (list, e) -> {
-					persistenceContext.afterLoad();
-					if ( e == null ) {
-						persistenceContext.initializeNonLazyCollections();
-					}
-					persistenceContext.setDefaultReadOnly( defaultReadOnlyOrig );
-					if ( e != null ) {
-						RxUtil.rethrow( e );
-					}
-					return list;
-				} );
+				.whenComplete( (list, e) -> persistenceContext.afterLoad() )
+				.thenCompose( list ->
+						// only initialize non-lazy collections after everything else has been refreshed
+						((RxPersistenceContextAdapter) persistenceContext ).rxInitializeNonLazyCollections()
+								.thenApply(v -> list)
+				)
+				.whenComplete( (list, e) -> persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig) );
 	}
 
 	private CompletionStage<List<Object>> doRxQuery(

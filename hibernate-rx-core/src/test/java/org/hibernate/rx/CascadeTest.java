@@ -1,6 +1,7 @@
 package org.hibernate.rx;
 
 import io.vertx.ext.unit.TestContext;
+import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
@@ -92,6 +93,8 @@ public class CascadeTest extends BaseRxTest {
 											context.assertNotNull( node );
 											context.assertEquals( node.version, 1 );
 											context.assertEquals( node.string, "Adopted");
+											context.assertTrue(Hibernate.isInitialized(node.elements));
+											context.assertFalse(Hibernate.isInitialized(node.parent));
 											return s2.fetch( node.parent )
 													.thenCompose( parent -> {
 														context.assertNotNull( parent );
@@ -100,6 +103,8 @@ public class CascadeTest extends BaseRxTest {
 																.thenAccept(v -> {
 																	context.assertEquals( node.getString(), "ADOPTED" );
 																	context.assertEquals( parent.getString(), "NEW PARENT" );
+																	context.assertTrue( Hibernate.isInitialized( node.elements ) );
+																	context.assertTrue( Hibernate.isInitialized( parent.elements ) );
 																});
 													});
 										}))
