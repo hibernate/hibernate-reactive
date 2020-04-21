@@ -20,8 +20,11 @@ import org.hibernate.ObjectDeletedException;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.internal.StatefulPersistenceContext;
+import org.hibernate.engine.spi.ActionQueue;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.DeleteEvent;
@@ -75,13 +78,8 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@Override
-	public PersistenceContext getPersistenceContext() {
-		return new RxPersistenceContextAdapter( super.getPersistenceContext() );
-	}
-
-	@Override
-	public PersistenceContext getPersistenceContextInternal() {
-		return new RxPersistenceContextAdapter( super.getPersistenceContextInternal() );
+	protected StatefulPersistenceContext createPersistenceContext() {
+		return new RxPersistenceContextAdapter( this );
 	}
 
 	@Override
