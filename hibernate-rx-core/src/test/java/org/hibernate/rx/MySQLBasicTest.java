@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
@@ -64,7 +65,7 @@ public class MySQLBasicTest extends BaseRxTest {
 		basik.localDate = LocalDate.now();
 		basik.localDateTime = LocalDateTime.now();
 //		basik.localTime = LocalTime.now();
-		basik.date = new Date(2000,1,1);
+		basik.date = new Date(2000, Calendar.JANUARY,1);
 		basik.thing = new String[] {"hello", "world"};
 		basik.embed = new Embed("one", "two");
 

@@ -97,12 +97,12 @@ public class ReactiveSessionTest extends BaseRxTest {
 				context,
 				populateDB()
 						.thenCompose( v -> selectNameFromId( 5 ) )
-						.thenAccept( name -> context.assertNotNull( name ) )
+						.thenAccept( context::assertNotNull )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
 						.thenCompose( session -> session.flush() )
 						.thenCompose( v -> selectNameFromId( 5 ) )
-						.thenAccept( ret -> context.assertNull( ret ) )
+						.thenAccept( context::assertNull )
 		);
 	}
 
@@ -117,7 +117,7 @@ public class ReactiveSessionTest extends BaseRxTest {
 								.thenCompose( aloi -> session.remove( aloi ) )
 								.thenCompose( v -> session.flush() )
 								.thenCompose( v -> selectNameFromId( 5 ) )
-								.thenAccept( ret -> context.assertNull( ret ) ) )
+								.thenAccept( context::assertNull ) )
 		);
 	}
 

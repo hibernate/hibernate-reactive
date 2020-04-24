@@ -135,7 +135,7 @@ public class CascadeTest extends BaseRxTest {
 				cascade = {CascadeType.PERSIST,
 						CascadeType.REMOVE},
 				mappedBy = "node")
-		List<Element> elements = new ArrayList<Element>();
+		List<Element> elements = new ArrayList<>();
 
 		@Transient boolean prePersisted;
 		@Transient boolean postPersisted;
