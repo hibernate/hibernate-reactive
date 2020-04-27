@@ -1,5 +1,8 @@
 ![Hibernate logo][]
 
+[![GitHub Actions Status](<https://img.shields.io/github/workflow/status/hibernate/hibernate-rx/Gradle%20Build%20and%20Test?logo=GitHub>)](https://github.com/hibernate/hibernate-rx/actions?query=workflow%3A%22Gradle+Build+and+Test%22)
+[![License](https://img.shields.io/badge/License-LGPL%202.1-green.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt)
+
 # Hibernate RX
 
 A reactive API for Hibernate ORM, supporting non-blocking database
