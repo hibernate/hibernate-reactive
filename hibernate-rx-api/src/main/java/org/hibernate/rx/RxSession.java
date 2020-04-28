@@ -84,7 +84,7 @@ public interface RxSession {
 	/**
 	 * Asynchronously persist the given transient instance, first assigning
 	 * a generated identifier. (Or using the current value of the identifier
-	 * property if the <tt>assigned</tt> generator is used.) This operation
+	 * property if the <code>assigned</code> generator is used.) This operation
 	 * cascades to associated instances if the association is mapped with
 	 * {@code cascade="save-update"}
 	 *
@@ -140,7 +140,7 @@ public interface RxSession {
 	 * <ul>
 	 * <li>where a database trigger alters the object state upon insert or update
 	 * <li>after executing direct SQL (eg. a mass update) in the same session
-	 * <li>after inserting a <tt>Blob</tt> or <tt>Clob</tt>
+	 * <li>after inserting a <code>Blob</code> or <code>Clob</code>
 	 * </ul>
 	 *
 	 * @param entity a persistent or detached instance
@@ -214,7 +214,7 @@ public interface RxSession {
 	 * Remove this instance from the session cache. Changes to the instance
 	 * will not be synchronized with the database. This operation cascades
 	 * to associated instances if the association is mapped with
-	 * <tt>cascade="evict"</tt>.
+	 * <code>cascade="evict"</code>.
 	 *
 	 * @param entity The entity to evict
 	 *
@@ -271,7 +271,7 @@ public interface RxSession {
 
 	/**
 	 * Set the cache mode.
-	 * <p/>
+	 * <p>
 	 * Cache mode determines the manner in which this session can interact with
 	 * the second level cache.
 	 *

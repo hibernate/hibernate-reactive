@@ -232,7 +232,7 @@ public interface RxAbstractEntityPersister extends RxEntityPersister, OuterJoinL
 
 	/**
 	 * Perform an SQL INSERT, and then retrieve a generated identifier.
-	 * <p/>
+	 * <p>
 	 * This form is used for PostInsertIdentifierGenerator-style ids (IDENTITY,
 	 * select, etc).
 	 */

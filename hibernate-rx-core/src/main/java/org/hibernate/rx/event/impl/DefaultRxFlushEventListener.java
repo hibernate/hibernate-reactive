@@ -309,7 +309,7 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 	}
 
 	/**
-	 * 1. Recreate the collection key -> collection map
+	 * 1. Recreate the collection key to collection map
 	 * 2. rebuild the collection entries
 	 * 3. call Interceptor.postFlush()
 	 */
