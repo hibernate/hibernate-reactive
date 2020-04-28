@@ -1,0 +1,47 @@
+apply plugin: 'maven-publish'
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier = 'sources'
+}
+
+task javadocJar(type: Jar) {
+    from javadoc
+    archiveClassifier = 'javadoc'
+}
+
+publishing {
+    repositories {
+        mavenLocal()
+    }
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = project.name
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            pom {
+                name = project.properties.title
+                description = project.description
+                url = 'https://github.com/hibernate/hibernate-rx'
+                licenses {
+                    license {
+                        name = 'GNU Lesser General Public License, version 2.1'
+                        url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:ssh://git@github.com/hibernate/hibernate-rx.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/hibernate/hibernate-rx.git'
+                    url = 'https://github.com/hibernate/hibernate-rx.git'
+                }
+            }
+        }
+    }
+}
+
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+}

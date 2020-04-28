@@ -1,7 +1,7 @@
 plugins {
-    // Apply the java-library plugin to add support for Java Library
     id 'java-library'
 }
+apply from: publishScript
 
 description = 'Hibernate Rx Core'
 
@@ -37,7 +37,6 @@ dependencies {
 
 test {
   defaultCharacterEncoding = "UTF-8"
-  //useJUnitPlatform()
   testLogging {
       displayGranularity 1
       showStandardStreams = false

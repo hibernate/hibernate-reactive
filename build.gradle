@@ -11,6 +11,8 @@ subprojects {
         jcenter()
         mavenCentral()
     }
+    
+    ext.publishScript = rootProject.rootDir.absolutePath + '/publish.gradle'
 }
 
 // Versions which need to be aligned across modules;
