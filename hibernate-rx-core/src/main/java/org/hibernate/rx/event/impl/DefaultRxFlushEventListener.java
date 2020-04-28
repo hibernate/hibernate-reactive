@@ -152,8 +152,7 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 			EntityEntry entry = me.getValue();
 			Status status = entry.getStatus();
 			if ( status == Status.MANAGED || status == Status.SAVING || status == Status.READ_ONLY ) {
-				CompletionStage<Void> cascade = cascadeOnFlush(session, entry.getPersister(), me.getKey(), copiedAlready);
-				stage = stage.thenCompose(v -> cascade);
+				stage = stage.thenCompose( v -> cascadeOnFlush( session, entry.getPersister(), me.getKey(), copiedAlready ) );
 			}
 		}
 		return stage;
@@ -294,18 +293,17 @@ public class DefaultRxFlushEventListener implements RxFlushEventListener, FlushE
 		return count;
 	}
 
-	private CompletionStage<Void> cascadeOnFlush(EventSource session, EntityPersister persister, Object object, IdentitySet copiedAlready)
+	private CompletionStage<Void> cascadeOnFlush(
+			EventSource session,
+			EntityPersister persister,
+			Object object,
+			IdentitySet copiedAlready)
 			throws HibernateException {
-		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-		persistenceContext.incrementCascadeLevel();
-		try {
-			return new Cascade<>( CascadingActions.PERSIST_ON_FLUSH, CascadePoint.BEFORE_FLUSH,
-					persister, object, copiedAlready, session )
-					.cascade();
-		}
-		finally {
-			persistenceContext.decrementCascadeLevel();
-		}
+		return new Cascade<>(
+				CascadingActions.PERSIST_ON_FLUSH,
+				CascadePoint.BEFORE_FLUSH,
+				persister, object, copiedAlready, session
+		).cascade();
 	}
 
 	/**

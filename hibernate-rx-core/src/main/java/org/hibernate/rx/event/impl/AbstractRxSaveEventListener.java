@@ -263,51 +263,50 @@ abstract class AbstractRxSaveEventListener<C>
 				false
 		);
 
-		CompletionStage<Void> cascadeBeforeSave = rxCascadeBeforeSave(source, persister, entity, context);
+		return cascadeBeforeSave( source, persister, entity, context )
+				.thenCompose(v -> {
+					// We have to do this after cascadeBeforeSave completes,
+					// since it could result in generation of parent ids,
+					// which we will need as foreign keys in the insert
 
-		return cascadeBeforeSave.thenCompose(v -> {
-			// We have to do this after cascadeBeforeSave completes,
-			// since it could result in generation of parent ids,
-			// which we will need as foreign keys in the insert
+					Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap( context ), source );
+					Type[] types = persister.getPropertyTypes();
 
-			Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap( context ), source );
-			Type[] types = persister.getPropertyTypes();
+					boolean substitute = substituteValuesIfNecessary( entity, id, values, persister, source );
 
-			boolean substitute = substituteValuesIfNecessary( entity, id, values, persister, source );
+					if ( persister.hasCollections() ) {
+						substitute = substitute || visitCollectionsBeforeSave( entity, id, values, types, source );
+					}
 
-			if ( persister.hasCollections() ) {
-				substitute = substitute || visitCollectionsBeforeSave( entity, id, values, types, source );
-			}
+					if ( substitute ) {
+						persister.setPropertyValues( entity, values );
+					}
 
-			if ( substitute ) {
-				persister.setPropertyValues( entity, values );
-			}
+					TypeHelper.deepCopy(
+							values,
+							types,
+							persister.getPropertyUpdateability(),
+							values,
+							source
+					);
 
-			TypeHelper.deepCopy(
-					values,
-					types,
-					persister.getPropertyUpdateability(),
-					values,
-					source
-			);
+					CompletionStage<AbstractEntityInsertAction> insert = addInsertAction(
+							values, id, entity, persister, useIdentityColumn, source, shouldDelayIdentityInserts
+					);
 
-			CompletionStage<AbstractEntityInsertAction> insert = addInsertAction(
-					values, id, entity, persister, useIdentityColumn, source, shouldDelayIdentityInserts
-			);
+					EntityEntry newEntry = persistenceContext.getEntry( entity );
 
-			CompletionStage<Void> cascadeAfterSave = rxCascadeAfterSave(source, persister, entity, context);
+					if ( newEntry != original ) {
+						EntityEntryExtraState extraState = newEntry.getExtraState( EntityEntryExtraState.class );
+						if ( extraState == null ) {
+							newEntry.addExtraState( original.getExtraState( EntityEntryExtraState.class ) );
+						}
+					}
 
-			EntityEntry newEntry = persistenceContext.getEntry( entity );
+					return insert;
+				} )
+				.thenCompose( vv -> cascadeAfterSave( source, persister, entity, context ) );
 
-			if ( newEntry != original ) {
-				EntityEntryExtraState extraState = newEntry.getExtraState( EntityEntryExtraState.class );
-				if ( extraState == null ) {
-					newEntry.addExtraState( original.getExtraState( EntityEntryExtraState.class ) );
-				}
-			}
-
-			return insert.thenCompose(vv -> cascadeAfterSave);
-		});
 //				.thenAccept( v -> {
 			// postpone initializing id in case the insert has non-nullable transient dependencies
 			// that are not resolved until cascadeAfterSave() is executed
@@ -367,28 +366,17 @@ abstract class AbstractRxSaveEventListener<C>
 	 * @param entity The entity to be saved.
 	 * @param context Generally cascade-specific data
 	 */
-	protected CompletionStage<Void> rxCascadeBeforeSave(
+	protected CompletionStage<Void> cascadeBeforeSave(
 			EventSource source,
 			EntityPersister persister,
 			Object entity,
 			C context) {
-
 		// cascade-save to many-to-one BEFORE the parent is saved
-		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
-		persistenceContext.incrementCascadeLevel();
-		try {
-			return new Cascade<>(
-					getCascadeRxAction(),
-					CascadePoint.BEFORE_INSERT_AFTER_DELETE,
-					persister,
-					entity,
-					context,
-					source)
-					.cascade();
-		}
-		finally {
-			persistenceContext.decrementCascadeLevel();
-		}
+		return new Cascade<>(
+				getCascadeRxAction(),
+				CascadePoint.BEFORE_INSERT_AFTER_DELETE,
+				persister, entity, context, source
+		).cascade();
 	}
 
 	/**
@@ -399,24 +387,17 @@ abstract class AbstractRxSaveEventListener<C>
 	 * @param entity The entity beng saved.
 	 * @param context Generally cascade-specific data
 	 */
-	protected CompletionStage<Void> rxCascadeAfterSave(
+	protected CompletionStage<Void> cascadeAfterSave(
 			EventSource source,
 			EntityPersister persister,
 			Object entity,
 			C context) {
-
-		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		// cascade-save to collections AFTER the collection owner was saved
-		persistenceContext.incrementCascadeLevel();
-		try {
-			return new Cascade<>(getCascadeRxAction(),
-					CascadePoint.AFTER_INSERT_BEFORE_DELETE,
-					persister, entity, context, source)
-					.cascade();
-		}
-		finally {
-			persistenceContext.decrementCascadeLevel();
-		}
+		return new Cascade<>(
+				getCascadeRxAction(),
+				CascadePoint.AFTER_INSERT_BEFORE_DELETE,
+				persister, entity, context, source
+		).cascade();
 	}
 
 	protected abstract CascadingAction<C> getCascadeRxAction();

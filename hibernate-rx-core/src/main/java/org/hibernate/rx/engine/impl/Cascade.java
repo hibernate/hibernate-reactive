@@ -6,6 +6,7 @@
  */
 package org.hibernate.rx.engine.impl;
 
+import org.hibernate.CacheMode;
 import org.hibernate.Hibernate;
 import org.hibernate.HibernateException;
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
@@ -97,6 +98,24 @@ public final class Cascade<C> {
 	 * which is specific to each CascadingAction type
 	 */
 	public CompletionStage<Void> cascade() throws HibernateException {
+		return RxUtil.nullFuture().thenCompose( v -> {
+			CacheMode cacheMode = eventSource.getCacheMode();
+			if (action==CascadingActions.DELETE) {
+				eventSource.setCacheMode( CacheMode.GET );
+			}
+			final PersistenceContext persistenceContext = eventSource.getPersistenceContextInternal();
+			persistenceContext.incrementCascadeLevel();
+			try {
+				return cascadeInternal();
+			}
+			finally {
+				persistenceContext.decrementCascadeLevel();
+				eventSource.setCacheMode( cacheMode );
+			}
+		} );
+	}
+
+	private CompletionStage<Void> cascadeInternal() throws HibernateException {
 
 		if ( persister.hasCascades() || action.requiresNoCascadeChecking() ) { // performance opt
 			final boolean traceEnabled = LOG.isTraceEnabled();
