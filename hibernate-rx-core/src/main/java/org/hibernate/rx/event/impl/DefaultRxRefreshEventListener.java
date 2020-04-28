@@ -136,119 +136,126 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 
 		// cascade the refresh prior to refreshing this entity
 		refreshedAlready.add( object );
-		CompletionStage<Void> cascade =
-				new Cascade<>(CascadingActions.REFRESH,
-						CascadePoint.BEFORE_REFRESH,
-						persister,
-						object,
-						refreshedAlready,
-						source)
-						.cascade();
 
-		if ( e != null ) {
-			final EntityKey key = source.generateEntityKey( id, persister );
-			persistenceContext.removeEntity( key );
-			if ( persister.hasCollections() ) {
-				new EvictVisitor( source, object ).process( object, persister );
-			}
-		}
+		return cascadeMerge( source, persister, object, refreshedAlready )
+				.thenCompose(v -> {
 
-		if ( persister.canWriteToCache() ) {
-			Object previousVersion = null;
-			if ( persister.isVersionPropertyGenerated() ) {
-				// we need to grab the version value from the entity, otherwise
-				// we have issues with generated-version entities that may have
-				// multiple actions queued during the same flush
-				previousVersion = persister.getVersion( object );
-			}
-			final EntityDataAccess cache = persister.getCacheAccessStrategy();
-			final Object ck = cache.generateCacheKey(
-					id,
-					persister,
-					source.getFactory(),
-					source.getTenantIdentifier()
-			);
-			final SoftLock lock = cache.lockItem( source, ck, previousVersion );
-			cache.remove( source, ck );
-			source.getActionQueue().registerProcess( (success, session) -> cache.unlockItem( session, ck, lock ) );
-		}
+					if ( e != null ) {
+						final EntityKey key = source.generateEntityKey( id, persister );
+						persistenceContext.removeEntity( key );
+						if ( persister.hasCollections() ) {
+							new EvictVisitor( source, object ).process( object, persister );
+						}
+					}
 
-		evictCachedCollections( persister, id, source );
+					if ( persister.canWriteToCache() ) {
+						Object previousVersion = null;
+						if ( persister.isVersionPropertyGenerated() ) {
+							// we need to grab the version value from the entity, otherwise
+							// we have issues with generated-version entities that may have
+							// multiple actions queued during the same flush
+							previousVersion = persister.getVersion( object );
+						}
+						final EntityDataAccess cache = persister.getCacheAccessStrategy();
+						final Object ck = cache.generateCacheKey(
+								id,
+								persister,
+								source.getFactory(),
+								source.getTenantIdentifier()
+						);
+						final SoftLock lock = cache.lockItem( source, ck, previousVersion );
+						cache.remove( source, ck );
+						source.getActionQueue().registerProcess( (success, session) -> cache.unlockItem( session, ck, lock ) );
+					}
 
-		String previousFetchProfile = source.getLoadQueryInfluencers().getInternalFetchProfile();
-		source.getLoadQueryInfluencers().setInternalFetchProfile( "refresh" );
+					evictCachedCollections( persister, id, source );
 
+					String previousFetchProfile = source.getLoadQueryInfluencers().getInternalFetchProfile();
+					source.getLoadQueryInfluencers().setInternalFetchProfile( "refresh" );
 
-		// Handle the requested lock-mode (if one) in relation to the entry's (if one) current lock-mode
+					// Handle the requested lock-mode (if one) in relation to the entry's (if one) current lock-mode
 
-		LockOptions lockOptionsToUse = event.getLockOptions();
+					LockOptions lockOptionsToUse = event.getLockOptions();
 
-		final LockMode requestedLockMode = lockOptionsToUse.getLockMode();
-		final LockMode postRefreshLockMode;
+					final LockMode requestedLockMode = lockOptionsToUse.getLockMode();
+					final LockMode postRefreshLockMode;
 
-		if ( e != null ) {
-			final LockMode currentLockMode = e.getLockMode();
-			if ( currentLockMode.greaterThan( requestedLockMode ) ) {
-				// the requested lock-mode is less restrictive than the current one
-				//		- pass along the current lock-mode (after accounting for WRITE)
-				lockOptionsToUse = LockOptions.copy( event.getLockOptions(), new LockOptions() );
-				if ( currentLockMode == LockMode.WRITE ||
-						currentLockMode == LockMode.PESSIMISTIC_WRITE ||
-						currentLockMode == LockMode.PESSIMISTIC_READ ) {
-					// our transaction should already hold the exclusive lock on
-					// the underlying row - so READ should be sufficient.
-					//
-					// in fact, this really holds true for any current lock-mode that indicates we
-					// hold an exclusive lock on the underlying row - but we *need* to handle
-					// WRITE specially because the Loader/Locker mechanism does not allow for WRITE
-					// locks
-					lockOptionsToUse.setLockMode( LockMode.READ );
+					if ( e != null ) {
+						final LockMode currentLockMode = e.getLockMode();
+						if ( currentLockMode.greaterThan( requestedLockMode ) ) {
+							// the requested lock-mode is less restrictive than the current one
+							//		- pass along the current lock-mode (after accounting for WRITE)
+							lockOptionsToUse = LockOptions.copy( event.getLockOptions(), new LockOptions() );
+							if ( currentLockMode == LockMode.WRITE ||
+									currentLockMode == LockMode.PESSIMISTIC_WRITE ||
+									currentLockMode == LockMode.PESSIMISTIC_READ ) {
+								// our transaction should already hold the exclusive lock on
+								// the underlying row - so READ should be sufficient.
+								//
+								// in fact, this really holds true for any current lock-mode that indicates we
+								// hold an exclusive lock on the underlying row - but we *need* to handle
+								// WRITE specially because the Loader/Locker mechanism does not allow for WRITE
+								// locks
+								lockOptionsToUse.setLockMode( LockMode.READ );
 
-					// and prepare to reset the entry lock-mode to the previous lock mode after
-					// the refresh completes
-					postRefreshLockMode = currentLockMode;
-				}
-				else {
-					lockOptionsToUse.setLockMode( currentLockMode );
-					postRefreshLockMode = null;
-				}
-			}
-			else {
-				postRefreshLockMode = null;
-			}
-		}
-		else {
-			postRefreshLockMode = null;
-		}
+								// and prepare to reset the entry lock-mode to the previous lock mode after
+								// the refresh completes
+								postRefreshLockMode = currentLockMode;
+							}
+							else {
+								lockOptionsToUse.setLockMode( currentLockMode );
+								postRefreshLockMode = null;
+							}
+						}
+						else {
+							postRefreshLockMode = null;
+						}
+					}
+					else {
+						postRefreshLockMode = null;
+					}
 
-		final CompletionStage<Object> stage =
-				( (RxAbstractEntityPersister) persister ).rxLoad( id, object, lockOptionsToUse, source );
+					return ( (RxAbstractEntityPersister) persister ).rxLoad( id, object, lockOptionsToUse, source )
+							.thenAccept(result -> {
+								if ( result!=null ) {
 
-		return cascade.thenCompose(v -> stage).thenAccept(result -> {
-			if ( result!=null ) {
+									// apply `postRefreshLockMode`, if needed
+									if (postRefreshLockMode != null) {
+										// if we get here, there was a previous entry and we need to re-set its lock-mode
+										//		- however, the refresh operation actually creates a new entry, so get it
+										persistenceContext.getEntry(result).setLockMode(postRefreshLockMode);
+									}
 
-				// apply `postRefreshLockMode`, if needed
-				if (postRefreshLockMode != null) {
-					// if we get here, there was a previous entry and we need to re-set its lock-mode
-					//		- however, the refresh operation actually creates a new entry, so get it
-					persistenceContext.getEntry(result).setLockMode(postRefreshLockMode);
-				}
+									// Keep the same read-only/modifiable setting for the entity that it had before refreshing;
+									// If it was transient, then set it to the default for the source.
+									if (!persister.isMutable()) {
+										// this is probably redundant; it should already be read-only
+										source.setReadOnly(result, true);
+									}
+									else {
+										source.setReadOnly(result, e == null ? source.isDefaultReadOnly() : e.isReadOnly());
+									}
+								}
 
-				// Keep the same read-only/modifiable setting for the entity that it had before refreshing;
-				// If it was transient, then set it to the default for the source.
-				if (!persister.isMutable()) {
-					// this is probably redundant; it should already be read-only
-					source.setReadOnly(result, true);
-				}
-				else {
-					source.setReadOnly(result, e == null ? source.isDefaultReadOnly() : e.isReadOnly());
-				}
-			}
+								UnresolvableObjectException.throwIfNull(result, id, persister.getEntityName());
+							})
+							.whenComplete( (vv,t) -> source.getLoadQueryInfluencers().setInternalFetchProfile(previousFetchProfile) );
+				} );
+	}
 
-			UnresolvableObjectException.throwIfNull(result, id, persister.getEntityName());
-		})
-		.whenComplete( (v,t) -> source.getLoadQueryInfluencers().setInternalFetchProfile(previousFetchProfile) );
-
+	private CompletionStage<Void> cascadeMerge(
+			EventSource source,
+			EntityPersister persister,
+			Object object,
+			IdentitySet refreshedAlready) {
+		return new Cascade<>(
+				CascadingActions.REFRESH,
+				CascadePoint.BEFORE_REFRESH,
+				persister,
+				object,
+				refreshedAlready,
+				source
+		).cascade();
 	}
 
 	private void evictCachedCollections(EntityPersister persister, Serializable id, EventSource source) {

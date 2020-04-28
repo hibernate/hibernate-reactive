@@ -36,7 +36,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultMergeEventListener}.
  */
-public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener implements RxMergeEventListener, MergeEventListener {
+public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener<MergeContext> implements RxMergeEventListener, MergeEventListener {
 
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultRxMergeEventListener.class );
 
@@ -232,17 +232,10 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 		// cascade first, so that all unsaved objects get their
 		// copy created before we actually copy
 		//cascadeOnMerge(event, persister, entity, copyCache, Cascades.CASCADE_BEFORE_MERGE);
-		CompletionStage<Void> cascadeBefore = super.rxCascadeBeforeSave( session, persister, entity, copyCache );
-		copyValues( persister, entity, copy, session, copyCache, ForeignKeyDirection.FROM_PARENT );
-
-		CompletionStage<Void> save = saveTransientEntity( copy, entityName, event.getRequestedId(), session, copyCache );
-
-		// cascade first, so that all unsaved objects get their
-		// copy created before we actually copy
-		CompletionStage<Void> cascadeAfter = super.rxCascadeAfterSave(session, persister, entity, copyCache);
-		return cascadeBefore
-				.thenCompose(v -> save)
-				.thenCompose(v -> cascadeAfter)
+		return super.cascadeBeforeSave( session, persister, entity, copyCache )
+				.thenAccept( v -> copyValues( persister, entity, copy, session, copyCache, ForeignKeyDirection.FROM_PARENT ) )
+				.thenCompose( v -> saveTransientEntity( copy, entityName, event.getRequestedId(), session, copyCache ) )
+				.thenCompose( v -> super.cascadeAfterSave( session, persister, entity, copyCache ) )
 				.thenAccept( v -> {
 					copyValues(persister, entity, copy, session, copyCache, ForeignKeyDirection.TO_PARENT);
 
@@ -335,7 +328,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 
 						// cascade first, so that all unsaved objects get their
 						// copy created before we actually copy
-						return cascadeOnMerge(source, persister, entity, copyCache)
+						return cascadeOnMerge( source, persister, entity, copyCache )
 								.thenAccept(v -> {
 									copyValues(persister, entity, target, source, copyCache);
 									//copyValues works by reflection, so explicitly mark the entity instance dirty
@@ -517,21 +510,14 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 			final Object entity,
 			final MergeContext copyCache
 	) {
-		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
-		persistenceContext.incrementCascadeLevel();
-		try {
-			return new Cascade<>(
-					getCascadeRxAction(),
-					CascadePoint.BEFORE_MERGE,
-					persister,
-					entity,
-					copyCache,
-					source)
-					.cascade();
-		}
-		finally {
-			persistenceContext.decrementCascadeLevel();
-		}
+		return new Cascade<>(
+				getCascadeRxAction(),
+				CascadePoint.BEFORE_MERGE,
+				persister,
+				entity,
+				copyCache,
+				source
+		).cascade();
 	}
 
 
@@ -544,7 +530,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 	 * Cascade behavior is redefined by this subclass, disable superclass behavior
 	 */
 	@Override
-	protected CompletionStage<Void> rxCascadeAfterSave(EventSource source, EntityPersister persister, Object entity, Object anything)
+	protected CompletionStage<Void> cascadeAfterSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything)
 			throws HibernateException {
 		return RxUtil.nullFuture();
 	}
@@ -553,7 +539,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener imp
 	 * Cascade behavior is redefined by this subclass, disable superclass behavior
 	 */
 	@Override
-	protected CompletionStage<Void> rxCascadeBeforeSave(EventSource source, EntityPersister persister, Object entity, Object anything)
+	protected CompletionStage<Void> cascadeBeforeSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything)
 			throws HibernateException {
 		return RxUtil.nullFuture();
 	}

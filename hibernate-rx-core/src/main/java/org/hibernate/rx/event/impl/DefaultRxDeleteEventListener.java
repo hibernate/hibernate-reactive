@@ -231,9 +231,8 @@ public class DefaultRxDeleteEventListener
 			return RxUtil.nullFuture();
 		}
 		transientEntities.add( entity );
-		CompletionStage<?> beforeDelete = cascadeBeforeDelete(session, persister, entity, null, transientEntities);
-		CompletionStage<Void> afterDelete = cascadeAfterDelete(session, persister, entity, transientEntities);
-		return beforeDelete.thenCompose(v -> afterDelete);
+		return cascadeBeforeDelete( session, persister, entity, null, transientEntities )
+				.thenCompose( v -> cascadeAfterDelete( session, persister, entity, transientEntities ) );
 	}
 
 	/**
@@ -292,57 +291,56 @@ public class DefaultRxDeleteEventListener
 		persistenceContext.setEntryStatus( entityEntry, Status.DELETED );
 		final EntityKey key = session.generateEntityKey( entityEntry.getId(), persister );
 
-		CompletionStage<?> beforeDelete = cascadeBeforeDelete( session, persister, entity, entityEntry, transientEntities );
+		return cascadeBeforeDelete( session, persister, entity, entityEntry, transientEntities )
+				.thenAccept( v -> {
 
-		new ForeignKeys.Nullifier(
-				entity,
-				true,
-				false,
-				session,
-				persister
-		).nullifyTransientReferences( entityEntry.getDeletedState() );
-		new Nullability( session ).checkNullability(
-				entityEntry.getDeletedState(),
-				persister,
-				Nullability.NullabilityCheckType.DELETE
-		);
-		persistenceContext.registerNullifiableEntityKey( key );
-
-		RxActionQueue actionQueue = actionQueue( session );
-
-		if ( isOrphanRemovalBeforeUpdates ) {
-			// TODO: The removeOrphan concept is a temporary "hack" for HHH-6484.  This should be removed once action/task
-			// ordering is improved.
-			actionQueue.addAction(
-					new OrphanRemovalAction(
-							entityEntry.getId(),
-							deletedState,
-							version,
+					new ForeignKeys.Nullifier(
 							entity,
+							true,
+							false,
+							session,
+							persister
+					).nullifyTransientReferences( entityEntry.getDeletedState() );
+					new Nullability( session ).checkNullability(
+							entityEntry.getDeletedState(),
 							persister,
-							isCascadeDeleteEnabled,
-							session
-					)
-			);
-		}
-		else {
-			// Ensures that containing deletions happen before sub-deletions
-			actionQueue.addAction(
-					new RxEntityDeleteAction(
-							entityEntry.getId(),
-							deletedState,
-							version,
-							entity,
-							persister,
-							isCascadeDeleteEnabled,
-							session
-					)
-			);
-		}
+							Nullability.NullabilityCheckType.DELETE
+					);
+					persistenceContext.registerNullifiableEntityKey( key );
 
-		CompletionStage<Void> afterDelete = cascadeAfterDelete(session, persister, entity, transientEntities);
+					RxActionQueue actionQueue = actionQueue( session );
 
-		return beforeDelete.thenCompose(v -> afterDelete);
+					if ( isOrphanRemovalBeforeUpdates ) {
+						// TODO: The removeOrphan concept is a temporary "hack" for HHH-6484.  This should be removed once action/task
+						// ordering is improved.
+						actionQueue.addAction(
+								new OrphanRemovalAction(
+										entityEntry.getId(),
+										deletedState,
+										version,
+										entity,
+										persister,
+										isCascadeDeleteEnabled,
+										session
+								)
+						);
+					}
+					else {
+						// Ensures that containing deletions happen before sub-deletions
+						actionQueue.addAction(
+								new RxEntityDeleteAction(
+										entityEntry.getId(),
+										deletedState,
+										version,
+										entity,
+										persister,
+										isCascadeDeleteEnabled,
+										session
+								)
+						);
+					}
+				} )
+				.thenCompose( v -> cascadeAfterDelete( session, persister, entity, transientEntities ) );
 
 	}
 
@@ -366,21 +364,15 @@ public class DefaultRxDeleteEventListener
 			Object entity,
 			EntityEntry entityEntry,
 			IdentitySet transientEntities) throws HibernateException {
-
-		CompletionStage<?> beforeDelete = fetchLazyAssociationsBeforeCascade( CascadingActions.DELETE, persister, entity, session );
-
-		CacheMode cacheMode = session.getCacheMode();
-		session.setCacheMode( CacheMode.GET );
-		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-		persistenceContext.incrementCascadeLevel();
-		try {
-			// cascade-delete to collections BEFORE the collection owner is deleted
-			return beforeDelete.thenCompose( v -> new Cascade<>(CascadingActions.DELETE, CascadePoint.AFTER_INSERT_BEFORE_DELETE, persister, entity, transientEntities, session).cascade() );
-		}
-		finally {
-			persistenceContext.decrementCascadeLevel();
-			session.setCacheMode( cacheMode );
-		}
+		// cascade-delete to collections BEFORE the collection owner is deleted
+		return fetchLazyAssociationsBeforeCascade( CascadingActions.DELETE, persister, entity, session )
+				.thenCompose(
+						v -> new Cascade<>(
+								CascadingActions.DELETE,
+								CascadePoint.AFTER_INSERT_BEFORE_DELETE,
+								persister, entity, transientEntities, session
+						).cascade()
+				);
 	}
 
 	protected CompletionStage<Void> cascadeAfterDelete(
@@ -388,21 +380,12 @@ public class DefaultRxDeleteEventListener
 			EntityPersister persister,
 			Object entity,
 			IdentitySet transientEntities) throws HibernateException {
-
-		CacheMode cacheMode = session.getCacheMode();
-		session.setCacheMode( CacheMode.GET );
-		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-		persistenceContext.incrementCascadeLevel();
-		try {
-			// cascade-delete to many-to-one AFTER the parent was deleted
-			return new Cascade<>(CascadingActions.DELETE, CascadePoint.BEFORE_INSERT_AFTER_DELETE,
-					persister, entity, transientEntities, session)
-					.cascade();
-		}
-		finally {
-			persistenceContext.decrementCascadeLevel();
-			session.setCacheMode( cacheMode );
-		}
+		// cascade-delete to many-to-one AFTER the parent was deleted
+		return new Cascade<>(
+				CascadingActions.DELETE,
+				CascadePoint.BEFORE_INSERT_AFTER_DELETE,
+				persister, entity, transientEntities, session
+		).cascade();
 	}
 
 }

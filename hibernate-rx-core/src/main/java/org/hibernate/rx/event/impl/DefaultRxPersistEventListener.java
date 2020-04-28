@@ -158,9 +158,8 @@ public class DefaultRxPersistEventListener
 
 	private CompletionStage<Void> justCascade(IdentitySet createCache, EventSource source, Object entity, EntityPersister persister) {
 		//TODO: merge into one method!
-		CompletionStage<Void> beforeSave = rxCascadeBeforeSave(source, persister, entity, createCache);
-		CompletionStage<Void> afterSave = rxCascadeAfterSave(source, persister, entity, createCache);
-		return beforeSave.thenCompose( v -> afterSave);
+		return cascadeBeforeSave( source, persister, entity, createCache )
+				.thenCompose( v -> cascadeAfterSave( source, persister, entity, createCache ) );
 	}
 
 	/**
