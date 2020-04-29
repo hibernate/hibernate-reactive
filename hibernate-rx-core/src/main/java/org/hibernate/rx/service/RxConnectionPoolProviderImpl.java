@@ -1,9 +1,9 @@
 package org.hibernate.rx.service;
 
-import io.vertx.axle.core.Vertx;
-import io.vertx.axle.mysqlclient.MySQLPool;
-import io.vertx.axle.pgclient.PgPool;
-import io.vertx.axle.sqlclient.Pool;
+import io.vertx.core.Vertx;
+import io.vertx.mysqlclient.MySQLPool;
+import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.Pool;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.sqlclient.PoolOptions;
