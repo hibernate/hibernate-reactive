@@ -1,10 +1,10 @@
 package org.hibernate.rx.impl;
 
-import io.vertx.axle.mysqlclient.MySQLClient;
-import io.vertx.axle.sqlclient.Row;
-import io.vertx.axle.sqlclient.RowIterator;
-import io.vertx.axle.sqlclient.SqlResult;
-import io.vertx.axle.sqlclient.Tuple;
+import io.vertx.mysqlclient.MySQLClient;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowIterator;
+import io.vertx.sqlclient.SqlResult;
+import io.vertx.sqlclient.Tuple;
 import org.hibernate.JDBCException;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;

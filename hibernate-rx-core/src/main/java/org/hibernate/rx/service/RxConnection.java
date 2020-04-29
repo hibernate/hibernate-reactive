@@ -3,11 +3,11 @@ package org.hibernate.rx.service;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
-import io.vertx.axle.sqlclient.Row;
+import io.vertx.sqlclient.Row;
 import org.hibernate.rx.RxSession;
 
-import io.vertx.axle.sqlclient.RowSet;
-import io.vertx.axle.sqlclient.Tuple;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.Tuple;
 
 /**
  * Abstracts over reactive connection pools.

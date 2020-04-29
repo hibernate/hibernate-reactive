@@ -1,9 +1,9 @@
 package org.hibernate.rx.adaptor.impl;
 
-import io.vertx.axle.core.buffer.Buffer;
-import io.vertx.axle.sqlclient.Row;
-import io.vertx.axle.sqlclient.RowIterator;
-import io.vertx.axle.sqlclient.RowSet;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowIterator;
+import io.vertx.sqlclient.RowSet;
 import org.hibernate.cfg.NotYetImplementedException;
 
 import java.io.InputStream;

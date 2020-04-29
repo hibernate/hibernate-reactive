@@ -1,12 +1,19 @@
 package org.hibernate.rx.impl;
 
-import io.vertx.axle.mysqlclient.MySQLClient;
-import io.vertx.axle.sqlclient.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.mysqlclient.MySQLClient;
+import io.vertx.sqlclient.*;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.service.RxConnection;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+
+import static io.vertx.core.Future.failedFuture;
+import static io.vertx.core.Future.succeededFuture;
 
 /**
  * A reactive connection based on Vert.x's {@link Pool}.
@@ -67,7 +74,12 @@ public class PoolConnection implements RxConnection {
 		if (showSQL) {
 			System.out.println(sql);
 		}
-		return pool.preparedQuery( sql ).execute( parameters );
+		return toCompletionStage(
+				handler -> pool.preparedQuery( sql ).execute(
+						parameters,
+						ar -> handler.handle( toFuture(ar) )
+				)
+		);
 	}
 
 	@Override
@@ -75,7 +87,35 @@ public class PoolConnection implements RxConnection {
 		if (showSQL) {
 			System.out.println(sql);
 		}
-		return pool.preparedQuery( sql ).execute();
+		return toCompletionStage(
+				handler -> pool.preparedQuery( sql ).execute(
+						ar -> handler.handle( toFuture(ar) )
+				)
+		);
+	}
+
+	private static <T> CompletionStage<T> toCompletionStage(
+			Consumer<Handler<AsyncResult<T>>> completionConsumer) {
+		CompletableFuture<T> cs = new CompletableFuture<>();
+		try {
+			completionConsumer.accept( ar -> {
+				if ( ar.succeeded() ) {
+					cs.complete( ar.result() );
+				}
+				else {
+					cs.completeExceptionally( ar.cause() );
+				}
+			} );
+		}
+		catch (Exception e) {
+			// unsure we need this ?
+			cs.completeExceptionally( e );
+		}
+		return cs;
+	}
+
+	private static Future<RowSet<Row>> toFuture(AsyncResult<RowSet<Row>> ar) {
+		return ar.succeeded() ? succeededFuture( ar.result() ) : failedFuture( ar.cause() );
 	}
 
 	@Override
