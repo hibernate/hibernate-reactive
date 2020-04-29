@@ -628,11 +628,11 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 							}
 							return results;
 						})
-						.thenCompose(list -> {
-							// only initialize non-lazy collections after everything else has been refreshed
-							return ((RxPersistenceContextAdapter) persistenceContext ).rxInitializeNonLazyCollections()
-									.thenApply(v -> list);
-						})
+						.thenCompose(list ->
+								// only initialize non-lazy collections after everything else has been refreshed
+								((RxPersistenceContextAdapter) persistenceContext ).rxInitializeNonLazyCollections()
+										.thenApply(v -> list)
+						)
 						.handle( (results, e) -> {
 							persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig);
 							if (e != null) {
