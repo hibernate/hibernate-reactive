@@ -27,6 +27,7 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.Loadable;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.rx.engine.impl.RxPersistenceContextAdapter;
 import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.transform.ResultTransformer;
@@ -72,9 +73,18 @@ public class RxOuterJoinLoader extends OuterJoinLoader {
 		return doRxQuery( session, queryParameters, returnProxies, forcedResultTransformer )
 				.handle( (list, e) -> {
 					persistenceContext.afterLoad();
-					if (e == null) {
-						persistenceContext.initializeNonLazyCollections();
+					if (e != null) {
+						persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig);
+						RxUtil.rethrow(e);
 					}
+					return list;
+				})
+				.thenCompose(list -> {
+					// only initialize non-lazy collections after everything else has been refreshed
+					return ((RxPersistenceContextAdapter) persistenceContext ).rxInitializeNonLazyCollections()
+							.thenApply(v -> list);
+				})
+				.handle( (list, e) -> {
 					persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig);
 					if (e != null) {
 						RxUtil.rethrow(e);

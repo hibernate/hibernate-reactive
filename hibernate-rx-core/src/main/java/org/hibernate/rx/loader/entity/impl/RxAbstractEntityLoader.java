@@ -11,6 +11,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.Loadable;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.pretty.MessageHelper;
+import org.hibernate.rx.engine.impl.RxPersistenceContextAdapter;
 import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.transform.ResultTransformer;
@@ -139,9 +140,18 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 		return doRxQuery( session, queryParameters, returnProxies, forcedResultTransformer )
 				.handle( (list, e) -> {
 					persistenceContext.afterLoad();
-					if (e == null) {
-						persistenceContext.initializeNonLazyCollections();
+					if (e != null) {
+						persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig);
+						RxUtil.rethrow(e);
 					}
+					return list;
+				})
+				.thenCompose(list -> {
+					// only initialize non-lazy collections after everything else has been refreshed
+					return ((RxPersistenceContextAdapter) persistenceContext ).rxInitializeNonLazyCollections()
+							.thenApply(v -> list);
+				})
+				.handle( (list, e) -> {
 					persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig);
 					if (e != null) {
 						RxUtil.rethrow(e);
