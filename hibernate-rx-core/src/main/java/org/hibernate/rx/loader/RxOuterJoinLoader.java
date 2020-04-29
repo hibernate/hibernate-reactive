@@ -79,11 +79,11 @@ public class RxOuterJoinLoader extends OuterJoinLoader {
 					}
 					return list;
 				})
-				.thenCompose(list -> {
+				.thenCompose(list ->
 					// only initialize non-lazy collections after everything else has been refreshed
-					return ((RxPersistenceContextAdapter) persistenceContext ).rxInitializeNonLazyCollections()
-							.thenApply(v -> list);
-				})
+					 ((RxPersistenceContextAdapter) persistenceContext ).rxInitializeNonLazyCollections()
+							.thenApply(v -> list)
+				)
 				.handle( (list, e) -> {
 					persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig);
 					if (e != null) {

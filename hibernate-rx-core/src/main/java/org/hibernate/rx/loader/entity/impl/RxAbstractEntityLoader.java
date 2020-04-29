@@ -146,11 +146,11 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 					}
 					return list;
 				})
-				.thenCompose(list -> {
-					// only initialize non-lazy collections after everything else has been refreshed
-					return ((RxPersistenceContextAdapter) persistenceContext ).rxInitializeNonLazyCollections()
-							.thenApply(v -> list);
-				})
+				.thenCompose(list ->
+						// only initialize non-lazy collections after everything else has been refreshed
+						((RxPersistenceContextAdapter) persistenceContext ).rxInitializeNonLazyCollections()
+								.thenApply(v -> list)
+				)
 				.handle( (list, e) -> {
 					persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig);
 					if (e != null) {
