@@ -1,6 +1,3 @@
-plugins {
-    id 'java-library'
-}
 apply from: publishScript
 
 description = 'Hibernate RX API'
