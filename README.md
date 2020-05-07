@@ -114,7 +114,7 @@ Hibernate or JPA.
 
 Add the following dependency to your project:
 
-	org.hibernate.rx:hibernate-rx-core:1.0.0-SNAPSHOT
+	org.hibernate.reactive:hibernate-rx-core:1.0.0-SNAPSHOT
 
 You'll also need to add your Hibernate 5.4 snapshot, the Vert.x 
 reactive database driver, and a regular JDBC driver (which is 
