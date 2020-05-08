@@ -68,6 +68,8 @@ public class CascadeComplicatedTest extends BaseRxTest {
 	private F f;
 	private G g;
 
+	private Long bId;
+
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
@@ -86,6 +88,10 @@ public class CascadeComplicatedTest extends BaseRxTest {
 				context,
 				openSession()
 						.thenCompose(s -> s.persist(b))
+						.thenApply( s -> {
+							bId = b.id;
+							return s;
+						})
 						.thenCompose(s -> s.flush())
 						.thenCompose(ignore -> check( openSession(), context ))
 		);
@@ -97,7 +103,10 @@ public class CascadeComplicatedTest extends BaseRxTest {
 				context,
 				openSession()
 						.thenCompose(s -> s.merge(b)
-								.thenApply(bMerged -> s)
+								.thenApply(bMerged -> {
+									this.bId = bMerged.id;
+									return s;
+								})
 						)
 						.thenCompose(s -> s.flush())
 						.thenCompose(v -> check(openSession(), context))
@@ -110,6 +119,10 @@ public class CascadeComplicatedTest extends BaseRxTest {
 				context,
 				openSession()
 						.thenCompose(s -> s.persist(b))
+						.thenApply( s -> {
+							bId = b.id;
+							return s;
+						})
 						.thenCompose(s -> s.flush())
 						.thenCompose(ignore -> openSession()
 								.thenCompose(s2 -> s2.merge(b))
@@ -126,6 +139,10 @@ public class CascadeComplicatedTest extends BaseRxTest {
 				context,
 				openSession()
 						.thenCompose(s -> s.persist(b))
+						.thenApply( s -> {
+							bId = b.id;
+							return s;
+						})
 						.thenCompose(s -> s.flush())
 						.thenCompose(ignore -> check( openSession(), context ))
 						.thenAccept(ignore -> {
@@ -193,7 +210,7 @@ public class CascadeComplicatedTest extends BaseRxTest {
 	}
 
 	private CompletionStage<Object> check(CompletionStage<RxSession> sessionStage, TestContext context) {
-		return  sessionStage.thenCompose(sCheck -> sCheck.find(B.class, b.id)
+		return  sessionStage.thenCompose(sCheck -> sCheck.find(B.class, bId)
 				.thenApply(bCheck -> {
 					context.assertEquals(b, bCheck);
 					context.assertTrue(Hibernate.isInitialized(bCheck.c));
@@ -267,6 +284,9 @@ public class CascadeComplicatedTest extends BaseRxTest {
 	@Before
 	public void before() {
 		super.before();
+
+		bId = null;
+
 		b = new B();
 		c = new C();
 		d = new D();
