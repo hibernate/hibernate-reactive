@@ -102,8 +102,8 @@ The project has been tested with:
 - PostgreSQL 12
 - MySQL 8
 - [Hibernate ORM](https://hibernate.org/orm/) 5.4.11-SNAPSHOT
-- [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 0.0.12
-- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 0.0.12
+- [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 3.9.0
+- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 3.9.0
 
 ## Usage
 
