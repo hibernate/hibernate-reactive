@@ -64,13 +64,16 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener<Mer
 	public CompletionStage<Void> rxOnMerge(MergeEvent event) throws HibernateException {
 		final EntityCopyObserver entityCopyObserver = createEntityCopyObserver( event.getSession().getFactory() );
 		final MergeContext mergeContext = new MergeContext( event.getSession(), entityCopyObserver );
-		try {
-			return rxOnMerge( event, mergeContext ).thenAccept( v -> entityCopyObserver.topLevelMergeComplete( event.getSession() ) );
-		}
-		finally {
-			entityCopyObserver.clear();
-			mergeContext.clear();
-		}
+		return rxOnMerge(event, mergeContext)
+				.thenAccept(v -> entityCopyObserver.topLevelMergeComplete(event.getSession()))
+				.handle((v, e) -> {
+					entityCopyObserver.clear();
+					mergeContext.clear();
+					if (e != null) {
+						return RxUtil.rethrow(e);
+					}
+					return v;
+				});
 	}
 
 	private EntityCopyObserver createEntityCopyObserver(SessionFactoryImplementor sessionFactory) {
