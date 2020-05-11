@@ -8,7 +8,9 @@ import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.sqlclient.PoolOptions;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.rx.cfg.AvailableRxSettings;
 import org.hibernate.rx.impl.PoolConnection;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.rx.util.impl.JdbcUrlParser;
@@ -19,8 +21,7 @@ import java.net.URI;
 import java.util.Map;
 
 /**
- * A pool of reactive connections backed by a
- * Vert.x {@link PgPool} or {@link MySQLPool}.
+ * A pool of reactive connections backed by a Vert.x {@link Pool}.
  */
 public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, Configurable, Stoppable {
 
@@ -34,6 +35,22 @@ public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, C
 
 	@Override
 	public void configure(Map configurationValues) {
+		Object o = configurationValues.get( AvailableRxSettings.VERTX_POOL );
+		if (o != null) {
+			if (!(o instanceof Pool)) {
+				throw new ConfigurationException("Setting " + AvailableRxSettings.VERTX_POOL + " must be configured with an instance of " +
+						Pool.class.getCanonicalName() + " but was configured with " + o);
+			} else {
+				pool = (Pool) o;
+			}
+		} else {
+			pool = configurePool( configurationValues );
+		}
+
+		showSQL = "true".equals( configurationValues.get( AvailableSettings.SHOW_SQL ) );
+	}
+	
+	private Pool configurePool(Map configurationValues) {
 		// FIXME: Check which values can be null
 		String username = ConfigurationHelper.getString(AvailableSettings.USER, configurationValues);
 		String password = ConfigurationHelper.getString(AvailableSettings.PASS, configurationValues);
@@ -71,8 +88,7 @@ public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, C
 				if (password != null) {
 					pgOptions.setPassword( password );
 				}
-				this.pool = PgPool.pool(Vertx.vertx(), pgOptions, poolOptions);
-				break;
+				return PgPool.pool(Vertx.vertx(), pgOptions, poolOptions);
 			case "mysql":
 				MySQLConnectOptions mysqlOptions = new MySQLConnectOptions()
 						.setPort( uri.getPort() )
@@ -82,11 +98,10 @@ public class RxConnectionPoolProviderImpl implements RxConnectionPoolProvider, C
 				if (password != null) {
 					mysqlOptions.setPassword( password );
 				}
-				this.pool = MySQLPool.pool(Vertx.vertx(), mysqlOptions, poolOptions);
-				break;
+				return MySQLPool.pool(Vertx.vertx(), mysqlOptions, poolOptions);
+			default:
+				throw new ConfigurationException( "Unrecognized URI scheme: " + uri.getScheme() );	
 		}
-
-		showSQL = "true".equals( configurationValues.get( AvailableSettings.SHOW_SQL ) );
 	}
 
 	@Override
