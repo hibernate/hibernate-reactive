@@ -5,6 +5,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 public class PostgreSQLDatabase {
 
 	private static final boolean USE_DOCKER = Boolean.getBoolean( "docker" );
+	
+	public static final String USERNAME = "hibernate-rx";
+	public static final String PASSWORD = "hibernate-rx";
+	public static final String DB_NAME = "hibernate-rx";
 
 	/**
 	 * Holds configuration for the PostgreSQL database contianer. If the build is run with <code>-Pdocker</code> then
@@ -14,9 +18,9 @@ public class PostgreSQLDatabase {
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
 	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>()
-			.withUsername( "hibernate-rx" )
-			.withPassword( "hibernate-rx" )
-			.withDatabaseName( "hibernate-rx" )
+			.withUsername( USERNAME )
+			.withPassword( PASSWORD )
+			.withDatabaseName( DB_NAME )
 			.withReuse( true );
 
 	public static String getJdbcUrl() {
