@@ -4,12 +4,6 @@ import org.testcontainers.containers.PostgreSQLContainer;
 
 public class PostgreSQLDatabase {
 
-	private static final boolean USE_DOCKER = Boolean.getBoolean( "docker" );
-	
-	public static final String USERNAME = "hibernate-rx";
-	public static final String PASSWORD = "hibernate-rx";
-	public static final String DB_NAME = "hibernate-rx";
-
 	/**
 	 * Holds configuration for the PostgreSQL database contianer. If the build is run with <code>-Pdocker</code> then
 	 * Testcontianers+Docker will be used.
@@ -18,13 +12,13 @@ public class PostgreSQLDatabase {
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
 	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>()
-			.withUsername( USERNAME )
-			.withPassword( PASSWORD )
-			.withDatabaseName( DB_NAME )
+			.withUsername( DatabaseConfiguration.USERNAME )
+			.withPassword( DatabaseConfiguration.PASSWORD )
+			.withDatabaseName( DatabaseConfiguration.DB_NAME )
 			.withReuse( true );
 
 	public static String getJdbcUrl() {
-		if ( USE_DOCKER ) {
+		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
 			postgresql.start();

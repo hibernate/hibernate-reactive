@@ -4,8 +4,6 @@ import org.testcontainers.containers.MySQLContainer;
 
 public class MySQLDatabase {
 
-	private static final boolean USE_DOCKER = Boolean.getBoolean( "docker" );
-
 	/**
 	 * Holds configuration for the MySQL database contianer. If the build is run with <code>-Pdocker</code> then
 	 * Testcontianers+Docker will be used.
@@ -14,13 +12,13 @@ public class MySQLDatabase {
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
 	public static final MySQLContainer<?> mysql = new MySQLContainer<>()
-			.withUsername( "hibernate-rx" )
-			.withPassword( "hibernate-rx" )
-			.withDatabaseName( "hibernate-rx" )
+			.withUsername( DatabaseConfiguration.USERNAME )
+			.withPassword( DatabaseConfiguration.PASSWORD )
+			.withDatabaseName( DatabaseConfiguration.DB_NAME )
 			.withReuse( true );
 
 	public static String getJdbcUrl() {
-		if ( USE_DOCKER ) {
+		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
 			mysql.start();
