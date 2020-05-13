@@ -94,12 +94,12 @@ public class IdentifierGeneration {
 			throw new HibernateException("SelectGenerator is not yet supported");
 		}
 		else if (identifierGenerator instanceof IdentityGenerator) {
-			if (!creationContext.getSessionFactory().getSessionFactoryOptions()
-					.isGetGeneratedKeysEnabled()
-				&& !creationContext.getSessionFactory().getJdbcServices().getDialect()
-					.getIdentityColumnSupport().supportsInsertSelectIdentity() ) {
-				throw new HibernateException("getGeneratedKeys() is disabled");
-			}
+//			if (!creationContext.getSessionFactory().getSessionFactoryOptions()
+//					.isGetGeneratedKeysEnabled()
+//				&& !creationContext.getSessionFactory().getJdbcServices().getDialect()
+//					.getIdentityColumnSupport().supportsInsertSelectIdentity() ) {
+//				throw new HibernateException("getGeneratedKeys() is disabled");
+//			}
 			return f -> RxUtil.nullFuture();
 		}
 		else if (identifierGenerator instanceof Assigned
