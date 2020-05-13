@@ -3,14 +3,14 @@
 [![GitHub Actions Status](<https://img.shields.io/github/workflow/status/hibernate/hibernate-rx/Gradle%20Build%20and%20Test?logo=GitHub>)](https://github.com/hibernate/hibernate-rx/actions?query=workflow%3A%22Gradle+Build+and+Test%22)
 [![License](https://img.shields.io/badge/License-LGPL%202.1-green.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt)
 
-# Hibernate RX
+# Hibernate Reactive
 
 A reactive API for Hibernate ORM, supporting non-blocking database
 drivers and a reactive style of interaction with the database.
 
-Hibernate RX may be used in any plain Java program, but is especially
-targeted toward usage in reactive environments like [Quarkus][] and 
-[Vert.x][].
+Hibernate Reactive may be used in any plain Java program, but is 
+especially targeted toward usage in reactive environments like 
+[Quarkus][] and [Vert.x][].
 
 Currently [PostgreSQL][] and [MySQL][] are supported.
 
@@ -28,7 +28,7 @@ _This project is still at an experimental stage of development._
 There is a very simple example program in the [`example`][example] 
 directory.
 
-[example]: https://github.com/hibernate/hibernate-rx/tree/master/example 
+[example]: https://github.com/hibernate/hibernate-reactive/tree/master/example 
 
 ## Gradle build
 
@@ -37,12 +37,12 @@ installed on your machine.
 
 ### Building
 
-To compile this project, navigate to the `hibernate-rx` directory, and 
-type:
+To compile this project, navigate to the `hibernate-reactive` directory, 
+and type:
 
 	./gradlew compileJava
 
-To publish Hibernate RX to your local Maven repository, run:
+To publish Hibernate Reactive to your local Maven repository, run:
 
 	./gradlew publishToMavenLocal
 
@@ -83,7 +83,7 @@ following commands:
     create user `hibernate-rx` identified by 'hibernate-rx';
     grant all on `hibernate-rx`.* to `hibernate-rx`;
     
-Finally, run `./gradlew test` from the `hibernate-rx` directory.
+Finally, run `./gradlew test` from the `hibernate-reactive` directory.
 
 #### If you have Podman
 
@@ -92,7 +92,8 @@ the instructions in [podman.md](podman.md).
 
 [Podman]: https://podman.io
 
-To run the tests, type `./gradlew test` from the `hibernate-rx` directory.
+To run the tests, type `./gradlew test` from the `hibernate-reactive` 
+directory.
 
 ## Compatibility
 
@@ -110,7 +111,7 @@ The project has been tested with:
 Usage is very straightforward for anyone with any prior experience with
 Hibernate or JPA. 
 
-### Including Hibernate RX in your project
+### Including Hibernate Reactive in your project
 
 Add the following dependency to your project:
 
@@ -128,8 +129,8 @@ Use the regular JPA mapping annotations defined in the package
 `javax.persistence`, and/or the Hibernate mapping annotations in
 `org.hibernate.annotations`.
 
-Most mapping annotations are already supported in Hibernate RX. The
-annotations which are not yet supported are listed in _Limitations_,
+Most mapping annotations are already supported in Hibernate Reactive. 
+The annotations which are not yet supported are listed in _Limitations_,
 below.
 
 ### Configuration
@@ -141,7 +142,7 @@ exactly as you normally would, for example by providing a
 An example [`persistence.xml`][xml] file is included in the example 
 program.
 
-[xml]: https://github.com/hibernate/hibernate-rx/blob/master/example/src/main/resources/META-INF/persistence.xml
+[xml]: https://github.com/hibernate/hibernate-reactive/blob/master/example/src/main/resources/META-INF/persistence.xml
 
 ### Obtaining a reactive session factory
 
@@ -179,7 +180,7 @@ Note that `find()` also wraps its result in `Optional`:
 
 ## Limitations
 
-At this time, Hibernate RX does _not_ support the following features:
+At this time, Hibernate Reactive does _not_ support the following features:
 
 - transactions
 - pessimistic locking via `LockMode`
