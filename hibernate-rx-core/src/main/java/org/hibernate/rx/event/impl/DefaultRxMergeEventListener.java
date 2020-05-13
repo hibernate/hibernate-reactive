@@ -199,10 +199,8 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener<Mer
 		copyCache.put( entity, entity, true );  //before cascade!
 
 		return cascadeOnMerge( source, persister, entity, copyCache )
-				.thenCompose(v -> fetchAndCopyValues(persister, entity, entity, source, copyCache))
-				.thenAccept(v -> {
-					event.setResult(entity);
-				});
+				.thenCompose( v -> fetchAndCopyValues( persister, entity, entity, source, copyCache ) )
+				.thenAccept( v -> event.setResult( entity ) );
 	}
 
 	protected CompletionStage<Void> entityIsTransient(MergeEvent event, MergeContext copyCache) {
@@ -332,7 +330,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener<Mer
 						// cascade first, so that all unsaved objects get their
 						// copy created before we actually copy
 						return cascadeOnMerge( source, persister, entity, copyCache )
-								.thenCompose(v -> fetchAndCopyValues(persister, entity, target, source, copyCache))
+								.thenCompose( v -> fetchAndCopyValues( persister, entity, target, source, copyCache ) )
 								.thenAccept(v -> {
 									// copyValues() (called by fetchAndCopyValues) works by reflection,
 									// so explicitly mark the entity instance dirty
@@ -453,6 +451,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener<Mer
 		CompletionStage<Void> stage = RxUtil.nullFuture();
 		// If entity == target, then nothing needs to be fetched.
 		if ( entity != target ) {
+			RxSessionInternal session = source.unwrap(RxSessionInternal.class);
 			final Object[] mergeState = persister.getPropertyValues(entity);
 			final Object[] managedState = persister.getPropertyValues(target);
 			for (int i = 0; i < mergeState.length; i++) {
@@ -461,18 +460,12 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener<Mer
 				// The value only needs to be fetched if the incoming value (mergeState[i])
 				// is initialized, but its corresponding managed state is not initialized.
 				// Initialization must be done before copyValues executes.
-				if (Hibernate.isInitialized(mergeState[i]) && !Hibernate.isInitialized(managedState[i])) {
-					stage = stage.thenCompose(v -> source.unwrap(RxSessionInternal.class)
-							.rxFetch(fetchable)
-							.thenApply(ignore -> null)
-					);
+				if ( Hibernate.isInitialized( mergeState[i] ) && !Hibernate.isInitialized( managedState[i] ) ) {
+					stage = stage.thenCompose( v -> session.rxFetch(fetchable) ).thenApply(ignore -> null);
 				}
 			}
 		}
-		return stage.thenApply(v -> {
-			copyValues(persister, entity, target, source, mergeContext);
-			return null;
-		});
+		return stage.thenAccept( v -> copyValues( persister, entity, target, source, mergeContext ) );
 	}
 
 	protected void copyValues(
