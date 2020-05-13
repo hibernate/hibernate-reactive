@@ -103,15 +103,11 @@ public final class Cascade<C> {
 			if (action==CascadingActions.DELETE) {
 				eventSource.setCacheMode( CacheMode.GET );
 			}
-			final PersistenceContext persistenceContext = eventSource.getPersistenceContextInternal();
-			persistenceContext.incrementCascadeLevel();
-			try {
-				return cascadeInternal();
-			}
-			finally {
-				persistenceContext.decrementCascadeLevel();
+			eventSource.getPersistenceContextInternal().incrementCascadeLevel();
+			return cascadeInternal().whenComplete( (vv, e) -> {
+				eventSource.getPersistenceContextInternal().decrementCascadeLevel();
 				eventSource.setCacheMode( cacheMode );
-			}
+			} );
 		} );
 	}
 
