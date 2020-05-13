@@ -94,9 +94,9 @@ public class PoolConnection implements RxConnection {
 		);
 	}
 
-	private static <T> CompletionStage<T> toCompletionStage(
-			Consumer<Handler<AsyncResult<T>>> completionConsumer) {
-		CompletableFuture<T> cs = new CompletableFuture<>();
+	private static CompletionStage<RowSet<Row>> toCompletionStage(
+			Consumer<Handler<AsyncResult<RowSet<Row>>>> completionConsumer) {
+		CompletableFuture<RowSet<Row>> cs = new CompletableFuture<>();
 		try {
 			completionConsumer.accept( ar -> {
 				if ( ar.succeeded() ) {
