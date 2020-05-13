@@ -137,7 +137,7 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 		// cascade the refresh prior to refreshing this entity
 		refreshedAlready.add( object );
 
-		return cascadeMerge( source, persister, object, refreshedAlready )
+		return cascadeRefresh( source, persister, object, refreshedAlready )
 				.thenCompose(v -> {
 
 					if ( e != null ) {
@@ -243,7 +243,7 @@ public class DefaultRxRefreshEventListener implements RefreshEventListener, RxRe
 				} );
 	}
 
-	private CompletionStage<Void> cascadeMerge(
+	private CompletionStage<Void> cascadeRefresh(
 			EventSource source,
 			EntityPersister persister,
 			Object object,
