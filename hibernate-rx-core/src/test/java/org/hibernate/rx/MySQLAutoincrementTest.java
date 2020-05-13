@@ -46,7 +46,7 @@ public class MySQLAutoincrementTest extends BaseRxTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.setProperty( AvailableSettings.URL, MySQLDatabase.getJdbcUrl() );
-		configuration.setProperty( AvailableSettings.DIALECT, MySQL8Dialect.class.getName());
+		configuration.setProperty( AvailableSettings.DIALECT, MySQL8Dialect.class.getName() );
 		configuration.addAnnotatedClass( Basic.class );
 		return configuration;
 	}

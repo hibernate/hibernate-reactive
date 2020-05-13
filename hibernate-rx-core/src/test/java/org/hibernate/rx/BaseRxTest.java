@@ -7,10 +7,15 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.dialect.PostgreSQL81Dialect;
+import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.rx.containers.PostgreSQLDatabase;
 import org.hibernate.rx.service.RxConnection;
+import org.hibernate.rx.service.RxGenerationTarget;
 import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
+import org.hibernate.rx.service.RxDummyConnectionProvider;
 import org.hibernate.rx.util.impl.RxUtil;
+import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,6 +54,7 @@ public abstract class BaseRxTest {
 		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, "create-drop" );
 		configuration.setProperty( AvailableSettings.URL, PostgreSQLDatabase.getJdbcUrl() );
 		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
+		configuration.setProperty( AvailableSettings.DIALECT, PostgreSQL81Dialect.class.getName() );
 		return configuration;
 	}
 
@@ -56,7 +62,11 @@ public abstract class BaseRxTest {
 	public void before() {
 		StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
 				.applySettings( constructConfiguration().getProperties() )
+				.addService( ConnectionProvider.class, new RxDummyConnectionProvider() )
 				.build();
+
+		registry.getService( SchemaManagementTool.class )
+				.setCustomDatabaseGenerationTarget( new RxGenerationTarget(registry) );
 
 		sessionFactory = constructConfiguration().buildSessionFactory( registry );
 		poolProvider = registry.getService( RxConnectionPoolProvider.class );
