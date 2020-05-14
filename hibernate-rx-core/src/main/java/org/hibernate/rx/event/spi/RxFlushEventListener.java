@@ -14,7 +14,7 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * Defines the contract for handling of session flush events.
- *
+ *default
  * @author Steve Ebersole
  */
 public interface RxFlushEventListener extends Serializable {
