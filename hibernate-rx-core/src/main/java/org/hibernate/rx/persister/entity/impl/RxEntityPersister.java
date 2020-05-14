@@ -93,4 +93,6 @@ public interface RxEntityPersister extends EntityPersister {
 	}
 
 	RxAbstractEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session);
+
+	CompletionStage<Boolean> rxIsTransient(Object entity, SessionImplementor session);
 }

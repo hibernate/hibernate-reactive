@@ -5,12 +5,14 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.TransientObjectException;
 import org.hibernate.action.internal.OrphanRemovalAction;
+import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.ForeignKeys;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.OnUpdateVisitor;
 import org.hibernate.event.service.spi.JpaBootstrapSensitive;
@@ -30,6 +32,7 @@ import org.hibernate.rx.engine.impl.CascadingActions;
 import org.hibernate.rx.engine.impl.RxEntityDeleteAction;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.event.spi.RxDeleteEventListener;
+import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
@@ -106,49 +109,66 @@ public class DefaultRxDeleteEventListener
 		Object entity = persistenceContext.unproxyAndReassociate( event.getObject() );
 
 		EntityEntry entityEntry = persistenceContext.getEntry( entity );
-		final EntityPersister persister;
-		final Serializable id;
-		final Object version;
 
 		if ( entityEntry == null ) {
 			LOG.trace( "Entity was not persistent in delete processing" );
 
-			persister = source.getEntityPersister( event.getEntityName(), entity );
+			final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
 
-			if ( ForeignKeys.isTransient( persister.getEntityName(), entity, null, source ) ) {
-				// EARLY EXIT!!!
-				return deleteTransientEntity( source, entity, event.isCascadeDeleteEnabled(), persister, transientEntities );
-			}
-			performDetachedEntityDeletionCheck( event );
+			return isTransient( persister.getEntityName(), entity, source.getSession() )
+					.thenCompose( trans -> {
+						if ( trans ) {
+							// EARLY EXIT!!!
+							return deleteTransientEntity( source, entity, event.isCascadeDeleteEnabled(), persister, transientEntities );
+						}
+						performDetachedEntityDeletionCheck( event );
 
-			id = persister.getIdentifier( entity, source );
+						final Serializable id = persister.getIdentifier( entity, source );
 
-			if ( id == null ) {
-				throw new TransientObjectException(
-						"the detached instance passed to delete() had a null identifier"
-				);
-			}
+						if ( id == null ) {
+							throw new TransientObjectException(
+									"the detached instance passed to delete() had a null identifier"
+							);
+						}
 
-			final EntityKey key = source.generateEntityKey( id, persister );
+						final EntityKey key = source.generateEntityKey( id, persister );
 
-			persistenceContext.checkUniqueness( key, entity );
+						persistenceContext.checkUniqueness( key, entity );
 
-			new OnUpdateVisitor( source, id, entity ).process( entity, persister );
+						new OnUpdateVisitor( source, id, entity ).process( entity, persister );
 
-			version = persister.getVersion( entity );
+						final Object version = persister.getVersion( entity );
 
-			entityEntry = persistenceContext.addEntity(
-					entity,
-					( persister.isMutable() ? Status.MANAGED : Status.READ_ONLY ),
-					persister.getPropertyValues( entity ),
-					key,
-					version,
-					LockMode.NONE,
-					true,
-					persister,
-					false
-			);
-			persister.afterReassociate( entity, source );
+						EntityEntry entry = persistenceContext.addEntity(
+								entity,
+								( persister.isMutable() ? Status.MANAGED : Status.READ_ONLY ),
+								persister.getPropertyValues( entity ),
+								key,
+								version,
+								LockMode.NONE,
+								true,
+								persister,
+								false
+						);
+						persister.afterReassociate( entity, source );
+
+						callbackRegistry.preRemove( entity );
+
+						return deleteEntity(
+								source,
+								entity,
+								entry,
+								event.isCascadeDeleteEnabled(),
+								event.isOrphanRemovalBeforeUpdates(),
+								persister,
+								transientEntities
+						)
+						.thenAccept( v -> {
+							if ( source.getFactory().getSessionFactoryOptions().isIdentifierRollbackEnabled() ) {
+								persister.resetIdentifier( entity, id, version, source );
+							}
+						} );
+					} );
 		}
 		else {
 			LOG.trace( "Deleting a persistent instance" );
@@ -157,26 +177,27 @@ public class DefaultRxDeleteEventListener
 				LOG.trace( "Object was already deleted" );
 				return RxUtil.nullFuture();
 			}
-			persister = entityEntry.getPersister();
-			id = entityEntry.getId();
-			version = entityEntry.getVersion();
+			final EntityPersister persister = entityEntry.getPersister();
+			Serializable id = entityEntry.getId();
+			Object version = entityEntry.getVersion();
+
+			callbackRegistry.preRemove( entity );
+
+			return deleteEntity(
+					source,
+					entity,
+					entityEntry,
+					event.isCascadeDeleteEnabled(),
+					event.isOrphanRemovalBeforeUpdates(),
+					persister,
+					transientEntities
+			)
+			.thenAccept( v -> {
+				if ( source.getFactory().getSessionFactoryOptions().isIdentifierRollbackEnabled() ) {
+					persister.resetIdentifier( entity, id, version, source );
+				}
+			} );
 		}
-
-		callbackRegistry.preRemove( entity );
-
-		return deleteEntity(
-				source,
-				entity,
-				entityEntry,
-				event.isCascadeDeleteEnabled(),
-				event.isOrphanRemovalBeforeUpdates(),
-				persister,
-				transientEntities
-		).thenAccept( v -> {
-			if ( source.getFactory().getSessionFactoryOptions().isIdentifierRollbackEnabled() ) {
-				persister.resetIdentifier( entity, id, version, source );
-			}
-		} );
 	}
 
 	/**
@@ -386,6 +407,38 @@ public class DefaultRxDeleteEventListener
 				CascadePoint.BEFORE_INSERT_AFTER_DELETE,
 				persister, entity, transientEntities, session
 		).cascade();
+	}
+
+	/**
+	 * Is this instance, which we know is not persistent, actually transient?
+	 * <p/>
+	 * If <tt>assumed</tt> is non-null, don't hit the database to make the determination, instead assume that
+	 * value; the client code must be prepared to "recover" in the case that this assumed result is incorrect.
+	 *
+	 * @param entityName The name of the entity
+	 * @param entity The entity instance
+	 * @param session The session
+	 *
+	 * @return {@code true} if the given entity is transient (unsaved)
+	 */
+	public static CompletionStage<Boolean> isTransient(String entityName, Object entity,
+									  SessionImplementor session) {
+		if ( entity == LazyPropertyInitializer.UNFETCHED_PROPERTY ) {
+			// an unfetched association can only point to
+			// an entity that already exists in the db
+			return RxUtil.completedFuture(false);
+		}
+
+		// let the interceptor inspect the instance to decide
+		Boolean isUnsaved = session.getInterceptor().isTransient( entity );
+		if ( isUnsaved != null ) {
+			return RxUtil.completedFuture(isUnsaved);
+		}
+
+		// let the persister inspect the instance to decide
+		return ( (RxEntityPersister) session.getEntityPersister( entityName, entity ) )
+				.rxIsTransient( entity, session );
+
 	}
 
 }
