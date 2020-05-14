@@ -66,13 +66,6 @@ public class RxQueryTranslatorImpl extends QueryTranslatorImpl {
 		throw new UnsupportedOperationException("Use #rxList instead");
 	}
 
-	// TODO: Change scope of the method in super class
-	private void errorIfDML() throws HibernateException {
-		if ( getSqlAST().needsExecutor() ) {
-			throw new QueryExecutionRequestException( "Not supported for DML operations", getQueryString() );
-		}
-	}
-
 	public CompletionStage<List<?>> rxList(SharedSessionContractImplementor session, QueryParameters queryParameters) throws HibernateException {
 		// Delegate to the QueryLoader...
 		errorIfDML();

@@ -34,12 +34,15 @@ import org.hibernate.rx.util.impl.RxUtil;
 
 import org.jboss.logging.Logger;
 
+/**
+ * Collects commons methods needed during the management of flush events.
+ *
+ * @see org.hibernate.event.internal.AbstractFlushingEventListener
+ */
 public abstract class AbstractRxFlushingEventListener {
 
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger( CoreMessageLogger.class, AbstractRxFlushingEventListener.class.getName() );
 
-
-	//	@Override
 	protected CompletionStage<Void> performExecutions(EventSource session) {
 		LOG.trace( "Executing flush" );
 

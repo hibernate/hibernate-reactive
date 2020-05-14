@@ -234,8 +234,8 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 
 		return rxAutoFlushIfRequired( plan.getQuerySpaces() )
 				.thenCompose( v ->  {
-					// FIXME: Can I take take care of these counters later?
-					//	dontFlushFromFind++;   //stops flush being called multiple times if this method is recursively called
+					// FIXME: I guess I can fix this as a separate issue
+//					dontFlushFromFind++;   //stops flush being called multiple times if this method is recursively called
 					return rxPlan.perfomRxList( queryParameters, this )
 							.handle( (list, x) -> {
 								//	dontFlushFromFind--;
