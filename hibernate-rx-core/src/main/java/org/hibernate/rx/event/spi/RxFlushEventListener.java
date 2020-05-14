@@ -13,9 +13,7 @@ import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Defines the contract for handling of session flush events.
- *default
- * @author Steve Ebersole
+ * Defines the contract for handling of reactive session flush events.
  */
 public interface RxFlushEventListener extends Serializable {
 	/**

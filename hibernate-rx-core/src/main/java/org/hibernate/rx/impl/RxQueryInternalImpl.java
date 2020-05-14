@@ -54,9 +54,7 @@ public class RxQueryInternalImpl<R> extends QueryImpl<R> implements RxQueryInter
 		beforeQuery();
 		return doRxList().handle( (list, err) -> {
 			afterQuery();
-			if ( err != null ) {
-				RxUtil.rethrow( err );
-			}
+			RxUtil.rethrowIfNotNull( err );
 			return list;
 		});
 	}
