@@ -8,6 +8,7 @@ package org.hibernate.rx.configuration;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.cfg.AvailableSettings;
@@ -102,6 +103,19 @@ public class RxConnectionPoolTest {
 		verifyConnectivity( context, rxPool );
 	}
 
+	@Test
+	public void configureWithWrongCredentials(TestContext context) {
+		thrown.expect( CompletionException.class );
+		thrown.expectMessage( "io.vertx.pgclient.PgException: password authentication failed for user \"bogus\"" );
+
+		String url = PostgreSQLDatabase.getJdbcUrl();
+		Map<String,Object> config = new HashMap<>();
+		config.put( AvailableSettings.URL, url );
+		config.put( AvailableSettings.USER, "bogus" );
+		config.put( AvailableSettings.PASS, "bogus" );
+		RxConnectionPoolProvider rxPool = new RxConnectionPoolProviderImpl( config );
+		verifyConnectivity( context, rxPool );
+	}
 
 	private void verifyConnectivity(TestContext context, RxConnectionPoolProvider rxPool) {
 		test( context, rxPool.getConnection()
