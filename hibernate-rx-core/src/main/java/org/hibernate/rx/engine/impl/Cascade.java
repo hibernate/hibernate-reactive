@@ -107,6 +107,7 @@ public final class Cascade<C> {
 			return cascadeInternal().whenComplete( (vv, e) -> {
 				eventSource.getPersistenceContextInternal().decrementCascadeLevel();
 				eventSource.setCacheMode( cacheMode );
+				RxUtil.rethrowIfNotNull( e );
 			} );
 		} );
 	}
@@ -465,7 +466,10 @@ public final class Cascade<C> {
 			final PersistenceContext persistenceContext = eventSource.getPersistenceContextInternal();
 			persistenceContext.addChildParent( child, parent );
 			stage = stage.thenCompose( v -> action.cascade( eventSource, child, entityName, context, isCascadeDeleteEnabled ) )
-					.whenComplete( (vv, e) -> persistenceContext.removeChildParent( child ) )
+					.whenComplete( (vv, e) -> {
+						persistenceContext.removeChildParent( child );
+						RxUtil.rethrowIfNotNull( e );
+					} )
 					.thenAccept( vv -> {} );
 		}
 	}
