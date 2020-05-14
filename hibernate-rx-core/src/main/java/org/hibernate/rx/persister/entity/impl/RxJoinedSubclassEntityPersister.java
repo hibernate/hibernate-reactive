@@ -9,7 +9,6 @@ import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.CascadingActions;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.loader.entity.AbstractEntityLoader;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;

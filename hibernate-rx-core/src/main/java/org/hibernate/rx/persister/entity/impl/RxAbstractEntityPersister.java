@@ -29,6 +29,7 @@ import org.jboss.logging.Logger;
 import java.io.Serializable;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -771,5 +772,28 @@ public interface RxAbstractEntityPersister extends RxEntityPersister, OuterJoinL
 	@Override
 	default CompletionStage<List<?>> rxMultiLoad(Serializable[] ids, SessionImplementor session, MultiLoadOptions loadOptions) {
 		return RxDynamicBatchingEntityLoaderBuilder.INSTANCE.multiLoad(this, ids, session, loadOptions);
+	}
+
+	@Override
+	default CompletionStage<Boolean> rxIsTransient(Object entity, SessionImplementor session) {
+		Boolean unsaved = delegate().isTransient( entity, session );
+		if ( unsaved!=null ) {
+			return RxUtil.completedFuture( unsaved );
+		}
+		return queryExecutor().execute(
+				Parameters.processParameters( delegate().getSQLSnapshotSelectString(), session ),
+				new QueryParameters( getIdentifierType(),
+						delegate().getIdentifier( entity, session ) ),
+				session,
+				//TODO: need a new execute() method to get rid of this mess
+				resultSet -> {
+					try {
+						return Collections.singletonList( !resultSet.next() );
+					}
+					catch (SQLException sqle) {
+						return Collections.singletonList( true );
+					}
+				}
+		).thenApply( list -> (Boolean) list.get(0) );
 	}
 }
