@@ -48,6 +48,6 @@ public class RxSessionFactoryBuilderImpl
 	@Override
 	public RxSessionFactory build() {
 		RxSessionFactoryOptions options = new RxSessionFactoryOptions( delegate.buildSessionFactoryOptions() );
-		return new RxSessionFactoryImpl( new SessionFactoryImpl( metadata, options ) );
+		return new RxSessionFactoryImpl( metadata, options );
 	}
 }

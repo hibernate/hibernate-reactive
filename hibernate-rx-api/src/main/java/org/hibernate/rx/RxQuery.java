@@ -1,8 +1,7 @@
 package org.hibernate.rx;
 
+import java.util.List;
 import java.util.concurrent.CompletionStage;
-
-import org.reactivestreams.Publisher;
 
 public interface RxQuery<R> {
 
@@ -20,7 +19,9 @@ public interface RxQuery<R> {
 	 */
 	CompletionStage<R> getSingleResult();
 
-	Publisher<R> resultsPublisher();
+	CompletionStage<List<R>> getResultList();
+
+	 <T> T unwrap(Class<T> type);
 
 	/**
 

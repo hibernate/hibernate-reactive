@@ -3,6 +3,7 @@ package org.hibernate.rx.impl;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -20,10 +21,14 @@ import org.hibernate.ObjectDeletedException;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.query.spi.HQLQueryPlan;
+import org.hibernate.engine.query.spi.QueryPlanCache;
 import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.service.spi.EventListenerRegistry;
+import org.hibernate.event.spi.AutoFlushEvent;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.EventType;
@@ -46,10 +51,14 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.query.Query;
+import org.hibernate.rx.RxQueryInternal;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.engine.impl.RxPersistenceContextAdapter;
+import org.hibernate.rx.engine.query.spi.RxHQLQueryPlan;
 import org.hibernate.rx.engine.spi.RxActionQueue;
+import org.hibernate.rx.event.impl.DefaultRxAutoFlushEventListener;
 import org.hibernate.rx.event.impl.DefaultRxInitializeCollectionEventListener;
 import org.hibernate.rx.event.spi.RxDeleteEventListener;
 import org.hibernate.rx.event.spi.RxFlushEventListener;
@@ -128,6 +137,42 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		}
 	}
 
+	@Override
+	public <R> RxQueryInternal<R> createRxQuery(String queryString) {
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			final RxQueryInternal query = new RxQueryInternalImpl( this, getQueryPlan( queryString, false )
+					.getParameterMetadata(), queryString );
+			applyQuerySettingsAndHints( query );
+			query.setComment( queryString );
+			return query;
+		}
+		catch (RuntimeException e) {
+			markForRollbackOnly();
+			throw getExceptionConverter().convert( e );
+		}
+	}
+
+	@Override
+	public <R> RxQueryInternal<R> createRxQuery(String queryString, Class<R> resultType) {
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			// do the translation
+			final RxQueryInternal<R> query = createRxQuery( queryString );
+			resultClassChecking( resultType, query.unwrap( Query.class ) );
+			return query;
+		}
+		catch (RuntimeException e) {
+			throw getExceptionConverter().convert( e );
+		}
+	}
+
 	/**
 	 * @deprecated use {@link #rxInitializeCollection(PersistentCollection, boolean)} instead
 	 */
@@ -157,6 +202,50 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 					}
 					return v;
 				} );
+	}
+
+	@Override
+	protected HQLQueryPlan getQueryPlan(String query, boolean shallow) throws HibernateException {
+		QueryPlanCache queryPlanCache = getFactory().getQueryPlanCache();
+		return queryPlanCache.getHQLQueryPlan( query, shallow, getLoadQueryInfluencers().getEnabledFilters() );
+	}
+
+	protected CompletionStage<Void> rxAutoFlushIfRequired(Set querySpaces) throws HibernateException {
+		checkOpen();
+		if ( !isTransactionInProgress() ) {
+			// do not auto-flush while outside a transaction
+			return RxUtil.nullFuture();
+		}
+		AutoFlushEvent event = new AutoFlushEvent( querySpaces, this );
+		return fire( event, EventType.AUTO_FLUSH, (DefaultRxAutoFlushEventListener l) -> l::rxOnAutoFlush );
+	}
+
+	@Override
+	public CompletionStage<List<?>> rxList(String query, QueryParameters queryParameters) throws HibernateException {
+		checkOpenOrWaitingForAutoClose();
+		pulseTransactionCoordinator();
+		queryParameters.validateParameters();
+
+		HQLQueryPlan plan = queryParameters.getQueryPlan();
+		if ( plan == null ) {
+			plan = getQueryPlan( query, false );
+		}
+		RxHQLQueryPlan rxPlan = (RxHQLQueryPlan) plan;
+
+		return rxAutoFlushIfRequired( plan.getQuerySpaces() )
+				.thenCompose( v ->  {
+					// FIXME: Can I take take care of these counters later?
+					//	dontFlushFromFind++;   //stops flush being called multiple times if this method is recursively called
+					return rxPlan.perfomRxList( queryParameters, this )
+							.handle( (list, x) -> {
+								//	dontFlushFromFind--;
+								boolean success = x == null;
+								afterOperation( success );
+								delayedAfterCompletion();
+								RxUtil.rethrowIfNotNull( x );
+								return list;
+							} );
+				});
 	}
 
 	@Override
