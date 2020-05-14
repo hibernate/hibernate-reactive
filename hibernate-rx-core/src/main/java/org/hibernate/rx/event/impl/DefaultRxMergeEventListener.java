@@ -69,9 +69,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener<Mer
 				.handle((v, e) -> {
 					entityCopyObserver.clear();
 					mergeContext.clear();
-					if (e != null) {
-						return RxUtil.rethrow(e);
-					}
+					RxUtil.rethrowIfNotNull(e);
 					return v;
 				});
 	}
