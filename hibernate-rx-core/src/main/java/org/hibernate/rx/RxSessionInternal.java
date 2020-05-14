@@ -1,15 +1,17 @@
 package org.hibernate.rx;
 
-import org.hibernate.Session;
-import org.hibernate.event.internal.MergeContext;
-import org.hibernate.internal.util.collections.IdentitySet;
-import org.hibernate.rx.engine.spi.RxActionQueue;
-
-import javax.persistence.LockModeType;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import javax.persistence.LockModeType;
+
+import org.hibernate.Session;
+import org.hibernate.engine.spi.QueryParameters;
+import org.hibernate.event.internal.MergeContext;
+import org.hibernate.internal.util.collections.IdentitySet;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.rx.engine.spi.RxActionQueue;
 
 /**
  * A Hibernate {@link Session} backing the user-visible
@@ -52,6 +54,10 @@ public interface RxSessionInternal extends Session {
 
 	CompletionStage<?> rxRefresh(Object child, IdentitySet refreshedAlready);
 
+	<T> RxQueryInternal<T> createRxQuery(String queryString);
+
+	<T> RxQueryInternal<T> createRxQuery(String queryString, Class<T> resultType);
+
 	<T> CompletionStage<T> rxGet(
 			Class<T> entityClass,
 			Serializable id);
@@ -66,4 +72,5 @@ public interface RxSessionInternal extends Session {
 			Class<T> entityClass,
 			Object... primaryKey);
 
+	<T> CompletionStage<List<T>> rxList(String query, QueryParameters queryParameters);
 }

@@ -167,15 +167,8 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 				getSQLString(), queryParameters, false, afterLoadActions, session,
 				resultSet -> {
 					try {
-						return processResultSet(
-								resultSet,
-								queryParameters,
-								session,
-								returnProxies,
-								forcedResultTransformer,
-								maxRows,
-								afterLoadActions
-						);
+						return processResultSet( resultSet, queryParameters, session, returnProxies,
+								forcedResultTransformer, maxRows, afterLoadActions );
 					}
 					catch (SQLException sqle) {
 						throw getFactory().getJdbcServices().getSqlExceptionHelper().convert(

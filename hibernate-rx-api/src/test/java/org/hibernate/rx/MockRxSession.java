@@ -87,11 +87,6 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
-	public <R> RxQuery<R> createQuery(Class<R> resultType, String jpql) {
-		throw new UnsupportedOperationException( "not implemented" );
-	}
-
-	@Override
 	public RxSession setFlushMode(FlushMode flushMode) {
 		throw new UnsupportedOperationException();
 	}
@@ -109,6 +104,16 @@ public class MockRxSession implements RxSession {
 	@Override
 	public <T> CompletionStage<T> fetch(T association) {
 		return CompletableFuture.completedFuture( association );
+	}
+
+	@Override
+	public <R> RxQuery<R> createQuery(String queryString) {
+		throw new UnsupportedOperationException( "not implemented" );
+	}
+
+	@Override
+	public <R> RxQuery<R> createQuery(String queryString, Class<R> resultType) {
+		throw new UnsupportedOperationException( "not implemented" );
 	}
 
 	@Override

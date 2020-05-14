@@ -2,6 +2,7 @@ package org.hibernate.rx;
 
 import org.hibernate.SessionBuilder;
 import org.hibernate.SessionFactory;
+import org.hibernate.engine.query.spi.QueryPlanCache;
 import org.hibernate.rx.engine.spi.RxSessionBuilderImplementor;
 
 /**
@@ -17,6 +18,8 @@ public interface RxSessionFactory extends SessionFactory {
 	 * Hibernate RX.
 	 */
 	RxSession openRxSession();
+
+	QueryPlanCache getQueryPlanCache();
 
 	@Override
 	RxSessionBuilderImplementor withOptions();

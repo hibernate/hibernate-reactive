@@ -2,6 +2,7 @@ package org.hibernate.rx;
 
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
+import org.hibernate.query.NativeQuery;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -177,6 +178,9 @@ public interface RxSession {
 	 */
 	<T> CompletionStage<T> fetch(T association);
 
+
+	<R> RxQuery<R> createQuery(String queryString);
+
 	/**
 	 * Create an instance of {@link RxQuery} for the given HQL/JPQL query
 	 * string.
@@ -187,7 +191,7 @@ public interface RxSession {
 	 *
 	 * @see javax.persistence.EntityManager#createQuery(String)
 	 */
-	<R> RxQuery<R> createQuery(Class<R> resultType, String queryString);
+	<R> RxQuery<R> createQuery(String queryString, Class<R> resultType);
 
 	/**
 	 * Set the flush mode for this session.
@@ -316,5 +320,4 @@ public interface RxSession {
 	 * Close the reactive session.
 	 */
 	void close();
-
 }

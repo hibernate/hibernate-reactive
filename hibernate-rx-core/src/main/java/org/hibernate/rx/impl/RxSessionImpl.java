@@ -1,15 +1,16 @@
 package org.hibernate.rx.impl;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+import javax.persistence.LockModeType;
+
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.rx.RxQuery;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionInternal;
-
-import javax.persistence.LockModeType;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.rx.query.impl.RxQueryImpl;
 
 /**
  * Implements the {@link RxSession} API. This delegating class is
@@ -92,8 +93,13 @@ public class RxSessionImpl implements RxSession {
 	}
 
 	@Override
-	public <R> RxQuery<R> createQuery(Class<R> resultType, String jpql) {
-		return null;
+	public <R> RxQuery<R> createQuery(String jpql, Class<R> resultType) {
+		return new RxQueryImpl<>( delegate.createRxQuery( jpql, resultType ) );
+	}
+
+	@Override
+	public <R> RxQuery<R> createQuery(String jpql) {
+		return new RxQueryImpl<>( delegate.createRxQuery( jpql ) );
 	}
 
 	@Override
