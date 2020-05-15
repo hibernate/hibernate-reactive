@@ -26,6 +26,13 @@ public class RxUtil {
 		return completedFuture( null );
 	}
 
+	public static CompletionStage<Boolean> trueFuture() {
+		return completedFuture( true );
+	}
+	public static CompletionStage<Boolean> falseFuture() {
+		return completedFuture( false );
+	}
+
 	public static <T> CompletionStage<T> completedFuture(T value) {
 		return CompletableFuture.completedFuture( value );
 	}

@@ -343,9 +343,7 @@ public class RxActionQueue {
 
 		return ret.thenCompose( v -> {
 			if ( !insert.isVeto() ) {
-				insert.makeEntityManaged();
-
-				CompletionStage<Void> comp = RxUtil.nullFuture();
+				CompletionStage<Void> comp = insert.rxMakeEntityManaged();
 				if ( unresolvedInsertions != null ) {
 					for ( AbstractEntityInsertAction resolvedAction : unresolvedInsertions.resolveDependentActions(
 							insert.getInstance(),

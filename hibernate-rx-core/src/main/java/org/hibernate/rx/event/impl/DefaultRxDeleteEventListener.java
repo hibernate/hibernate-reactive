@@ -1,18 +1,15 @@
 package org.hibernate.rx.event.impl;
 
-import org.hibernate.CacheMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.TransientObjectException;
 import org.hibernate.action.internal.OrphanRemovalAction;
-import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.engine.internal.CascadePoint;
-import org.hibernate.engine.internal.ForeignKeys;
+import org.hibernate.rx.engine.impl.ForeignKeys;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.OnUpdateVisitor;
 import org.hibernate.event.service.spi.JpaBootstrapSensitive;
@@ -32,7 +29,6 @@ import org.hibernate.rx.engine.impl.CascadingActions;
 import org.hibernate.rx.engine.impl.RxEntityDeleteAction;
 import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.event.spi.RxDeleteEventListener;
-import org.hibernate.rx.persister.entity.impl.RxEntityPersister;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
@@ -115,7 +111,7 @@ public class DefaultRxDeleteEventListener
 
 			final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
 
-			return isTransient( persister.getEntityName(), entity, source.getSession() )
+			return ForeignKeys.isTransient( persister.getEntityName(), entity, null, source.getSession() )
 					.thenCompose( trans -> {
 						if ( trans ) {
 							// EARLY EXIT!!!
@@ -312,16 +308,16 @@ public class DefaultRxDeleteEventListener
 		persistenceContext.setEntryStatus( entityEntry, Status.DELETED );
 		final EntityKey key = session.generateEntityKey( entityEntry.getId(), persister );
 
-		return cascadeBeforeDelete( session, persister, entity, entityEntry, transientEntities )
-				.thenAccept( v -> {
+		CompletionStage<?> beforeDelete = cascadeBeforeDelete( session, persister, entity, entityEntry, transientEntities );
 
-					new ForeignKeys.Nullifier(
-							entity,
-							true,
-							false,
-							session,
-							persister
-					).nullifyTransientReferences( entityEntry.getDeletedState() );
+		CompletionStage<Void> nullifyAndAction = new ForeignKeys.Nullifier(
+				entity,
+				true,
+				false,
+				session,
+				persister
+		).nullifyTransientReferences( entityEntry.getDeletedState() )
+				.thenAccept( v -> {
 					new Nullability( session ).checkNullability(
 							entityEntry.getDeletedState(),
 							persister,
@@ -360,9 +356,11 @@ public class DefaultRxDeleteEventListener
 								)
 						);
 					}
-				} )
-				.thenCompose( v -> cascadeAfterDelete( session, persister, entity, transientEntities ) );
+				} );
 
+		CompletionStage<Void> afterDelete = cascadeAfterDelete( session, persister, entity, transientEntities );
+
+		return beforeDelete.thenCompose( v -> nullifyAndAction ).thenCompose( v -> afterDelete );
 	}
 
 	private RxActionQueue actionQueue(EventSource session) {
@@ -407,38 +405,6 @@ public class DefaultRxDeleteEventListener
 				CascadePoint.BEFORE_INSERT_AFTER_DELETE,
 				persister, entity, transientEntities, session
 		).cascade();
-	}
-
-	/**
-	 * Is this instance, which we know is not persistent, actually transient?
-	 * <p/>
-	 * If <tt>assumed</tt> is non-null, don't hit the database to make the determination, instead assume that
-	 * value; the client code must be prepared to "recover" in the case that this assumed result is incorrect.
-	 *
-	 * @param entityName The name of the entity
-	 * @param entity The entity instance
-	 * @param session The session
-	 *
-	 * @return {@code true} if the given entity is transient (unsaved)
-	 */
-	public static CompletionStage<Boolean> isTransient(String entityName, Object entity,
-									  SessionImplementor session) {
-		if ( entity == LazyPropertyInitializer.UNFETCHED_PROPERTY ) {
-			// an unfetched association can only point to
-			// an entity that already exists in the db
-			return RxUtil.completedFuture(false);
-		}
-
-		// let the interceptor inspect the instance to decide
-		Boolean isUnsaved = session.getInterceptor().isTransient( entity );
-		if ( isUnsaved != null ) {
-			return RxUtil.completedFuture(isUnsaved);
-		}
-
-		// let the persister inspect the instance to decide
-		return ( (RxEntityPersister) session.getEntityPersister( entityName, entity ) )
-				.rxIsTransient( entity, session );
-
 	}
 
 }
