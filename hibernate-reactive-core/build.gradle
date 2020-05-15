@@ -15,15 +15,21 @@ dependencies {
         exclude group: 'org.jboss.spec.javax.transaction', module: 'jboss-transaction-api_1.2_spec'
     }
     testCompile ("org.hibernate:hibernate-testing:${hibernateOrmVersion}")
-    compile 'io.vertx:vertx-pg-client:3.9.0'
-    compile 'io.vertx:vertx-mysql-client:3.9.0'
+    compile 'io.vertx:vertx-pg-client:3.9.1'
+    compile 'io.vertx:vertx-mysql-client:3.9.1'
+    compile 'io.vertx:vertx-db2-client:3.9.1'
 
     runtimeOnly 'org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.1.1.Final'
 
     testImplementation 'org.assertj:assertj-core:3.13.2'
     testImplementation 'io.vertx:vertx-unit:3.8.1'
+    testImplementation 'org.postgresql:postgresql:42.2.12'
+    testImplementation 'mysql:mysql-connector-java:8.0.19'
+    testImplementation 'com.ibm.db2:jcc:11.1.4.4'
+    // Testcontainers
     testImplementation 'org.testcontainers:postgresql:1.13.0'
     testImplementation 'org.testcontainers:mysql:1.13.0'
+    testImplementation 'org.testcontainers:db2:1.13.0'
     testImplementation 'org.slf4j:slf4j-log4j12:1.7.30'
 }
 
