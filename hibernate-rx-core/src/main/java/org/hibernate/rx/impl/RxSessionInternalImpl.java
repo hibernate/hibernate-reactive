@@ -212,10 +212,10 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 
 	protected CompletionStage<Void> rxAutoFlushIfRequired(Set querySpaces) throws HibernateException {
 		checkOpen();
-		if ( !isTransactionInProgress() ) {
+//		if ( !isTransactionInProgress() ) {
 			// do not auto-flush while outside a transaction
-			return RxUtil.nullFuture();
-		}
+//			return RxUtil.nullFuture();
+//		}
 		AutoFlushEvent event = new AutoFlushEvent( querySpaces, this );
 		return fire( event, EventType.AUTO_FLUSH, (DefaultRxAutoFlushEventListener l) -> l::rxOnAutoFlush );
 	}
