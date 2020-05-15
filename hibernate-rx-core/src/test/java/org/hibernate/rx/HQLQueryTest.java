@@ -50,36 +50,28 @@ public class HQLQueryTest extends BaseRxTest {
 
 	@Test
 	public void testAutoFlushOnSingleResult(TestContext context) {
-		Flour semolina = new Flour( 678, "Semolinat", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
+		Flour semolina = new Flour( 678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
 		test(
 				context,
 				openSession()
 						.thenCompose( s -> s.persist( semolina ) )
-						.thenAccept( s -> {
-							s.createQuery( "select count(id) from Flour" ).getSingleResult()
-									.thenAccept( found -> context.assertEquals( 3L, found ) )
-
-									.thenRun( () -> s.createQuery( "from Flour where name = ?1" ).setParameter( 1, semolina.getName() ).getSingleResult() )
+						.thenCompose( s -> s.createQuery( "from Flour where id = " + semolina.getId() ).getSingleResult()
 									.thenAccept( found -> context.assertEquals( semolina, found ) )
 
 									.thenCompose( v -> s.remove( semolina ) )
-									.thenAccept( ss -> ss.flush() );
-						} )
+									.thenAccept( ss -> ss.flush() )
+						)
 		);
 	}
 
 	@Test
 	public void testAutoFlushOnResultList(TestContext context) {
-		Flour semolina = new Flour( 678, "Semolinat", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
+		Flour semolina = new Flour( 678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
 		test(
 				context,
 				openSession()
 						.thenCompose( s -> s.persist( semolina ) )
-						.thenAccept( s -> {
-							s.createQuery( "select count(id) from Flour" ).getSingleResult()
-									.thenAccept( found -> context.assertEquals( 3L, found ) )
-
-									.thenCompose( v -> s.createQuery( "from Flour order by name" ).getResultList() )
+						.thenCompose( s -> s.createQuery( "from Flour order by name" ).getResultList()
 									.thenAccept( results -> {
 										context.assertNotNull( results );
 										context.assertEquals( 4, results.size() );
@@ -90,8 +82,8 @@ public class HQLQueryTest extends BaseRxTest {
 									} )
 
 									.thenCompose( v -> s.remove( semolina ) )
-									.thenAccept( ss -> ss.flush() );
-						} )
+									.thenAccept( ss -> ss.flush() )
+						)
 		);
 	}
 

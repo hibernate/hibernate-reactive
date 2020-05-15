@@ -11,6 +11,8 @@ import org.hibernate.event.spi.AutoFlushEvent;
 import org.hibernate.event.spi.AutoFlushEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.internal.CoreMessageLogger;
+import org.hibernate.rx.RxSessionInternal;
+import org.hibernate.rx.engine.spi.RxActionQueue;
 import org.hibernate.rx.event.spi.RxAutoFlushEventListener;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
@@ -27,7 +29,7 @@ public class DefaultRxAutoFlushEventListener extends AbstractRxFlushingEventList
 		final SessionEventListenerManager eventListenerManager = source.getEventListenerManager();
 
 		eventListenerManager.partialFlushStart();
-		CompletionStage<Void> autoFlushStage = null;
+		CompletionStage<Void> autoFlushStage = RxUtil.nullFuture();
 		if ( flushMightBeNeeded( source ) ) {
 			// Need to get the number of collection removals before flushing to executions
 			// (because flushing to executions can add collection removal actions to the action queue).
@@ -67,10 +69,13 @@ public class DefaultRxAutoFlushEventListener extends AbstractRxFlushingEventList
 		return autoFlushStage;
 	}
 
-
 	private boolean flushIsReallyNeeded(AutoFlushEvent event, final EventSource source) {
 		return source.getHibernateFlushMode() == FlushMode.ALWAYS
-				|| source.getActionQueue().areTablesToBeUpdated( event.getQuerySpaces() );
+				|| rxActionQueue( source ).areTablesToBeUpdated( event.getQuerySpaces() );
+	}
+
+	private RxActionQueue rxActionQueue(EventSource source) {
+		return source.unwrap( RxSessionInternal.class ).getRxActionQueue();
 	}
 
 	private boolean flushMightBeNeeded(final EventSource source) {
