@@ -31,7 +31,7 @@ public class RxQueryInternalImpl<R> extends QueryImpl<R> implements RxQueryInter
 
 	@Override
 	public CompletionStage<R> getRxSingleResult() {
-		return getRxResultList().thenApply( l -> uniqueResult( l ) );
+		return getRxResultList().thenApply( this::uniqueResult );
 	}
 
 	private R uniqueResult(List<R> list) {
@@ -84,12 +84,13 @@ public class RxQueryInternalImpl<R> extends QueryImpl<R> implements RxQueryInter
 		return doRxList().handle( (list, err) -> {
 			afterQuery();
 			RxUtil.rethrowIfNotNull( err );
-			return list;
+			//TODO: this typecast is rubbish!
+			return (List<R>) list;
 		});
 	}
 
 	@SuppressWarnings("unchecked")
-	protected CompletionStage<List<R>> doRxList() {
+	protected CompletionStage<List<Object>> doRxList() {
 		if ( getMaxResults() == 0 ) {
 			return RxUtil.completedFuture( Collections.EMPTY_LIST );
 		}

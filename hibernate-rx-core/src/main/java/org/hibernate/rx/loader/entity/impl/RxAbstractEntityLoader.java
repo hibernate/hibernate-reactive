@@ -69,7 +69,7 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 		} );
 	}
 
-	protected CompletionStage<List<?>> loadRxEntity(
+	protected CompletionStage<List<Object>> loadRxEntity(
 			final SessionImplementor session,
 			final Object id,
 			final Type identifierType,
@@ -111,14 +111,14 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 			});
 	}
 
-	protected CompletionStage<List<?>> doRxQueryAndInitializeNonLazyCollections(
+	protected CompletionStage<List<Object>> doRxQueryAndInitializeNonLazyCollections(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies) {
 		return doRxQueryAndInitializeNonLazyCollections( session, queryParameters, returnProxies, null );
 	}
 
-	protected CompletionStage<List<?>> doRxQueryAndInitializeNonLazyCollections(
+	protected CompletionStage<List<Object>> doRxQueryAndInitializeNonLazyCollections(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
@@ -150,7 +150,7 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 				});
 	}
 
-	private CompletionStage<List<?>> doRxQuery(
+	private CompletionStage<List<Object>> doRxQuery(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
@@ -185,7 +185,7 @@ public class RxAbstractEntityLoader extends AbstractEntityLoader {
 		);
 	}
 
-	protected CompletionStage<List<?>> executeRxQueryStatement(
+	protected CompletionStage<List<Object>> executeRxQueryStatement(
 			String sqlStatement,
 			QueryParameters queryParameters,
 			boolean scroll,

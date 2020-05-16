@@ -12,7 +12,6 @@ import java.util.function.Function;
 
 import org.hibernate.HibernateException;
 import org.hibernate.QueryException;
-import org.hibernate.cache.spi.FilterKey;
 import org.hibernate.cache.spi.QueryKey;
 import org.hibernate.cache.spi.QueryResultsCache;
 import org.hibernate.dialect.pagination.LimitHandler;
@@ -23,19 +22,15 @@ import org.hibernate.engine.spi.RowSelection;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.hql.internal.HolderInstantiator;
 import org.hibernate.hql.internal.ast.QueryTranslatorImpl;
 import org.hibernate.hql.internal.ast.tree.SelectClause;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
-import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.util.impl.RxUtil;
 import org.hibernate.stat.spi.StatisticsImplementor;
-import org.hibernate.transform.CacheableResultTransformer;
 import org.hibernate.transform.ResultTransformer;
-import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
 
 public class RxQueryLoader extends QueryLoader {
@@ -54,7 +49,7 @@ public class RxQueryLoader extends QueryLoader {
 		this.selectClause = selectClause;
 	}
 
-	public CompletionStage<List<?>> rxList(
+	public CompletionStage<List<Object>> rxList(
 			SessionImplementor session,
 			QueryParameters queryParameters) throws HibernateException {
 		checkQuery( queryParameters );
@@ -66,7 +61,7 @@ public class RxQueryLoader extends QueryLoader {
 	 * by subclasses that implement cacheable queries
 	 * @see QueryLoader#list(SharedSessionContractImplementor, QueryParameters, Set, Type[]) 
 	 */
-	protected CompletionStage<List<?>> rxList(
+	protected CompletionStage<List<Object>> rxList(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final Set<Serializable> querySpaces,
@@ -82,12 +77,17 @@ public class RxQueryLoader extends QueryLoader {
 		}
 	}
 
-	private CompletionStage<List<?>> listIgnoreQueryCache(SharedSessionContractImplementor session, QueryParameters queryParameters) {
+	private CompletionStage<List<Object>> listIgnoreQueryCache(SharedSessionContractImplementor session, QueryParameters queryParameters) {
 		return doRxList( (SessionImplementor) session, queryParameters, null )
 				.thenApply( result -> getResultList( result, queryParameters.getResultTransformer() ) );
 	}
 
-	private CompletionStage<List<?>> listUsingQueryCache(
+	@Override @SuppressWarnings("unchecked")
+	protected List<Object> getResultList(List results, ResultTransformer resultTransformer) throws QueryException {
+		return super.getResultList(results, resultTransformer);
+	}
+
+	private CompletionStage<List<Object>> listUsingQueryCache(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final Set<Serializable> querySpaces,
@@ -104,8 +104,8 @@ public class RxQueryLoader extends QueryLoader {
 			LOG.tracev( "querySpaces is {0}", querySpaces );
 		}
 
-		List<?> resultFromCache = getResultFromQueryCache( session, queryParameters, querySpaces, resultTypes, queryCache, key );
-		CompletionStage<List<?>> resultStage = RxUtil.completedFuture( resultFromCache )
+		List<Object> resultFromCache = getResultFromQueryCache( session, queryParameters, querySpaces, resultTypes, queryCache, key );
+		CompletionStage<List<Object>> resultStage = RxUtil.completedFuture( resultFromCache )
 				.thenCompose( result -> {
 					if ( result == null ) {
 						return doRxList( session, queryParameters, key.getResultTransformer() )
@@ -119,19 +119,23 @@ public class RxQueryLoader extends QueryLoader {
 
 		return resultStage.thenApply( result -> {
 			ResultTransformer resolvedTransformer = resolveResultTransformer( queryParameters.getResultTransformer() );
-			if ( resolvedTransformer != null ) {
-				result = areResultSetRowsTransformedImmediately()
-						? key.getResultTransformer().retransformResults( result, getResultRowAliases(), queryParameters.getResultTransformer(), includeInResultRow() )
-						: key.getResultTransformer().untransformToTuples( result );
+			List<?> resultList;
+			if (resolvedTransformer == null) {
+				resultList = result;
 			}
-			return getResultList( result, queryParameters.getResultTransformer() );
+			else {
+				resultList = areResultSetRowsTransformedImmediately()
+						? key.getResultTransformer().retransformResults( result, getResultRowAliases(), queryParameters.getResultTransformer(), includeInResultRow() )
+						: key.getResultTransformer().untransformToTuples( result) ;
+			}
+			return getResultList( resultList, queryParameters.getResultTransformer() );
 		} );
 	}
 
 	/**
 	 * @see QueryLoader#doList(SharedSessionContractImplementor, QueryParameters, ResultTransformer)
 	 */
-	private CompletionStage<List<?>> doRxList(
+	private CompletionStage<List<Object>> doRxList(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final ResultTransformer forcedResultTransformer)
@@ -160,7 +164,7 @@ public class RxQueryLoader extends QueryLoader {
 				} );
 	}
 
-	public CompletionStage<List<?>> doRxQueryAndInitializeNonLazyCollections(
+	public CompletionStage<List<Object>> doRxQueryAndInitializeNonLazyCollections(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
@@ -193,7 +197,7 @@ public class RxQueryLoader extends QueryLoader {
 				} );
 	}
 
-	private CompletionStage<List<?>> doRxQuery(
+	private CompletionStage<List<Object>> doRxQuery(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
@@ -204,7 +208,7 @@ public class RxQueryLoader extends QueryLoader {
 				? selection.getMaxRows()
 				: Integer.MAX_VALUE;
 
-		final List<AfterLoadAction> afterLoadActions = new ArrayList<AfterLoadAction>();
+		final List<AfterLoadAction> afterLoadActions = new ArrayList<>();
 
 		return executeRxQueryStatement( getSQLString(), queryParameters, false, afterLoadActions, session,
 				resultSet -> {
@@ -231,7 +235,7 @@ public class RxQueryLoader extends QueryLoader {
 	 * Process query string by applying filters, LIMIT clause, locks and comments if necessary.
 	 * Finally execute SQL statement and advance to the first row.
 	 */
-	protected CompletionStage<List<?>> executeRxQueryStatement(
+	protected CompletionStage<List<Object>> executeRxQueryStatement(
 			String sqlStatement,
 			QueryParameters queryParameters,
 			boolean scroll,
