@@ -13,7 +13,6 @@ import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
@@ -73,15 +72,8 @@ public final class ForeignKeys {
 		 * @param values The entity attribute values
 		 */
 		public CompletionStage<Void> nullifyTransientReferences(final Object[] values) {
-			final String[] propertyNames = persister.getPropertyNames();
-			final Type[] types = persister.getPropertyTypes();
-			CompletionStage<Void> stage = RxUtil.nullFuture();
-			for ( int i = 0; i < types.length; i++ ) {
-				int ii = i;
-				stage = stage.thenCompose( v -> nullifyTransientReferences( values[ii], propertyNames[ii], types[ii] )
-						.thenAccept( val -> values[ii] = val ) );
-			}
-			return stage;
+			CompletionStage<Void> result = nullifyTransientReferences(null, values, persister.getPropertyTypes(), persister.getPropertyNames());
+			return result==null ? RxUtil.nullFuture() : result;
 		}
 
 		/**
@@ -94,75 +86,85 @@ public final class ForeignKeys {
 		 *
 		 * @return {@code null} if the argument is an unsaved entity; otherwise return the argument.
 		 */
-		private CompletionStage<Object> nullifyTransientReferences(final Object value, final String propertyName, final Type type) {
+		private CompletionStage<Object> nullifyTransientReferences(Object value, String propertyName, Type type) {
 			final CompletionStage<Object> result;
 			if ( value == null ) {
-				result = RxUtil.nullFuture();
+				return null;
 			}
 			else if ( type.isEntityType() ) {
 				final EntityType entityType = (EntityType) type;
 				if ( entityType.isOneToOne() ) {
-					result = RxUtil.completedFuture( value );
+					return null;
 				}
 				else {
-					// If value is lazy, it may need to be initialized to
-					// determine if the value is nullifiable.
-					result = initializeIfNecessary( value, propertyName, entityType )
-							.thenCompose( possiblyInitializedValue -> {
-						if ( possiblyInitializedValue == null ) {
+					// if we're dealing with a lazy property, it may need to be
+					// initialized to determine if the value is nullifiable
+					CompletionStage<Object> fetcher;
+					if ( isDelete
+							&& value == LazyPropertyInitializer.UNFETCHED_PROPERTY
+							&& !session.getPersistenceContextInternal().isNullifiableEntityKeysEmpty() ) {
+						throw new UnsupportedOperationException("lazy property initialization not supported");
+		//				fetcher = ( (LazyPropertyInitializer) persister ).initializeLazyProperty( propertyName, self, session );
+					}
+					else {
+						fetcher = RxUtil.completedFuture( value );
+					}
+					result = fetcher.thenCompose( fetchedValue -> {
+						if ( fetchedValue == null ) {
 							// The uninitialized value was initialized to null
 							return RxUtil.nullFuture();
 						}
 						else {
 							// If the value is not nullifiable, make sure that the
 							// possibly initialized value is returned.
-							return isNullifiable( entityType.getAssociatedEntityName(), possiblyInitializedValue )
-									.thenApply( trans -> trans ? null : possiblyInitializedValue );
+							return isNullifiable( entityType.getAssociatedEntityName(), fetchedValue )
+									.thenApply( trans -> trans ? null : fetchedValue );
 						}
-						//TODO: do we need to worry about SelfDirtinessTracker like below???
 					} );
 				}
 			}
 			else if ( type.isAnyType() ) {
-				result = isNullifiable( null, value )
-						.thenApply( trans -> trans  ? null : value );
+				result = isNullifiable( null, value ).thenApply( trans -> trans  ? null : value );
 			}
 			else if ( type.isComponentType() ) {
 				final CompositeType actype = (CompositeType) type;
-				final Object[] subvalues = actype.getPropertyValues( value, session );
-				final Type[] subtypes = actype.getSubtypes();
-				final String[] subPropertyNames = actype.getPropertyNames();
-//				boolean substitute = false;
-				CompletionStage<Void> nullified = RxUtil.nullFuture();
-				for ( int i = 0; i < subvalues.length; i++ ) {
-					int ii = i;
-					nullified = nullified.thenCompose(
-							v-> nullifyTransientReferences(
-									subvalues[ii],
-									StringHelper.qualify( propertyName, subPropertyNames[ii] ),
-									subtypes[ii]
-							) )
-							.thenAccept( replacement -> {
-								if ( replacement != subvalues[ii] ) {
-//									substitute = true;
-									subvalues[ii] = replacement;
-								}
-							} );
+				final Object[] values = actype.getPropertyValues( value, session );
+				CompletionStage<Void> nullifier = nullifyTransientReferences(
+						propertyName,
+						values,
+						actype.getSubtypes(),
+						actype.getPropertyNames()
+				);
+				if ( nullifier == null ) {
+					return null;
 				}
-//				if ( substitute ) {
-					// todo : need to account for entity mode on the CompositeType interface :(
-				result = nullified.thenAccept( v -> actype.setPropertyValues( value, subvalues, EntityMode.POJO ) )
-						.thenApply( v -> value );
-//				}
+				else {
+					result = nullifier.thenAccept( v -> actype.setPropertyValues( value, values, EntityMode.POJO ) )
+							.thenApply( v -> value );
+				}
 			}
 			else {
-				result = RxUtil.completedFuture( value );
+				return null;
 			}
 
 			return result.thenApply( returnedValue -> {
 				trackDirt( value, propertyName, returnedValue );
 				return returnedValue;
 			} );
+		}
+
+		private CompletionStage<Void> nullifyTransientReferences(String propertyName, Object[] values, Type[] types, String[] names) {
+			CompletionStage<Void> nullifiers = null;
+			for ( int i = 0; i < values.length; i++ ) {
+				int ii = i;
+				String name = propertyName==null ? names[ii] : StringHelper.qualify( propertyName, names[ii] );
+				CompletionStage<Object> nullifier = nullifyTransientReferences( values[ii], name, types[ii] );
+				if ( nullifier != null ) {
+					nullifiers = ( nullifiers == null ? nullifier : nullifiers.thenCompose( v-> nullifier ) )
+							.thenAccept( replacement -> values[ii] = replacement );
+				}
+			}
+			return nullifiers;
 		}
 
 		private void trackDirt(Object value, String propertyName, Object returnedValue) {
@@ -174,38 +176,6 @@ public final class ForeignKeys {
 			if ( value != returnedValue && returnedValue == null
 					&& SelfDirtinessTracker.class.isInstance( self ) ) {
 				( (SelfDirtinessTracker) self ).$$_hibernate_trackChange( propertyName );
-			}
-		}
-
-		private CompletionStage<Object> initializeIfNecessary(
-				final Object value,
-				final String propertyName,
-				final Type type) {
-			if ( isDelete &&
-					value == LazyPropertyInitializer.UNFETCHED_PROPERTY &&
-					type.isEntityType() &&
-					!session.getPersistenceContextInternal().isNullifiableEntityKeysEmpty() ) {
-				// IMPLEMENTATION NOTE: If cascade-remove was mapped for the attribute,
-				// then value should have been initialized previously, when the remove operation was
-				// cascaded to the property (because CascadingAction.DELETE.performOnLazyProperty()
-				// returns true). This particular situation can only arise when cascade-remove is not
-				// mapped for the association.
-
-				// There is at least one nullifiable entity. We don't know if the lazy
-				// associated entity is one of the nullifiable entities. If it is, and
-				// the property is not nullified, then a constraint violation will result.
-				// The only way to find out if the associated entity is nullifiable is
-				// to initialize it.
-				// TODO: there may be ways to fine-tune when initialization is necessary
-				//       (e.g., only initialize when the associated entity type is a
-				//       superclass or the same as the entity type of a nullifiable entity).
-				//       It is unclear if a more complicated check would impact performance
-				//       more than just initializing the associated entity.
-				throw new UnsupportedOperationException("lazy property initialization not supported");
-//				return ( (LazyPropertyInitializer) persister ).initializeLazyProperty( propertyName, self, session );
-			}
-			else {
-				return RxUtil.completedFuture( value );
 			}
 		}
 
