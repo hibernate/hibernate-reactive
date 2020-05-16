@@ -17,6 +17,7 @@ import org.hibernate.type.Type;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -28,6 +29,7 @@ import java.util.function.Function;
 public class RxQueryExecutor {
 
 	public CompletionStage<Integer> update(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+		Objects.requireNonNull( "Query for update cannot be null" );
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService( RxConnectionPoolProvider.class );
@@ -37,6 +39,7 @@ public class RxQueryExecutor {
 	}
 
 	public CompletionStage<Long> updateReturning(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+		Objects.requireNonNull( sql, "Query for update cannot be null" );
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService( RxConnectionPoolProvider.class );
@@ -52,6 +55,7 @@ public class RxQueryExecutor {
 	}
 
 	public CompletionStage<Long> selectLong(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+		Objects.requireNonNull( "Select query for cannot be null" );
 		RxConnectionPoolProvider poolProvider = factory
 				.getServiceRegistry()
 				.getService(RxConnectionPoolProvider.class);
@@ -71,6 +75,8 @@ public class RxQueryExecutor {
 	public CompletionStage<List<?>> execute(String sql, QueryParameters queryParameters,
 										 SessionImplementor session,
 										 Function<ResultSet, List<Object>> transformer) {
+		Objects.requireNonNull( "Select query for cannot be null" );
+
 		RxConnectionPoolProvider poolProvider = session.getSessionFactory()
 				.getServiceRegistry()
 				.getService( RxConnectionPoolProvider.class );
