@@ -154,12 +154,12 @@ public class RxEntityLoader extends RxAbstractEntityLoader implements UniqueEnti
 	}
 
 	@Override
-	public List<?> doQueryAndInitializeNonLazyCollections(SharedSessionContractImplementor session, QueryParameters queryParameters, boolean returnProxies) throws HibernateException, SQLException {
+	public List<Object> doQueryAndInitializeNonLazyCollections(SharedSessionContractImplementor session, QueryParameters queryParameters, boolean returnProxies) throws HibernateException, SQLException {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public List<?> doQueryAndInitializeNonLazyCollections(SharedSessionContractImplementor session, QueryParameters queryParameters, boolean returnProxies, ResultTransformer forcedResultTransformer) throws HibernateException, SQLException {
+	public List<Object> doQueryAndInitializeNonLazyCollections(SharedSessionContractImplementor session, QueryParameters queryParameters, boolean returnProxies, ResultTransformer forcedResultTransformer) throws HibernateException, SQLException {
 		throw new UnsupportedOperationException();
 	}
 }

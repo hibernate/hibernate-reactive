@@ -43,7 +43,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 
 	public static final RxDynamicBatchingEntityLoaderBuilder INSTANCE = new RxDynamicBatchingEntityLoaderBuilder();
 
-	public CompletionStage<List<?>> multiLoad(
+	public CompletionStage<List<Object>> multiLoad(
 			OuterJoinLoadable persister,
 			Serializable[] ids,
 			SessionImplementor session,
@@ -97,7 +97,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 		}
 	}
 
-	private CompletionStage<List<?>> performOrderedBatchLoad(
+	private CompletionStage<List<Object>> performOrderedBatchLoad(
 			List<Serializable> idsInBatch,
 			LockOptions lockOptions,
 			OuterJoinLoadable persister,
@@ -113,12 +113,12 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 
 		final Serializable[] idsInBatchArray = idsInBatch.toArray(new Serializable[0]);
 		QueryParameters qp = buildMultiLoadQueryParameters( persister, idsInBatchArray, lockOptions );
-		CompletionStage<List<?>> result = batchingLoader.doEntityBatchFetch(session, qp, idsInBatchArray);
+		CompletionStage<List<Object>> result = batchingLoader.doEntityBatchFetch(session, qp, idsInBatchArray);
 		idsInBatch.clear();
 		return result;
 	}
 
-	protected CompletionStage<List<?>> performUnorderedMultiLoad(
+	protected CompletionStage<List<Object>> performUnorderedMultiLoad(
 			OuterJoinLoadable persister,
 			Serializable[] ids,
 			SessionImplementor session,
@@ -394,7 +394,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 		}
 	}
 
-	private CompletionStage<List<?>> performOrderedMultiLoad(
+	private CompletionStage<List<Object>> performOrderedMultiLoad(
 			OuterJoinLoadable persister,
 			Serializable[] ids,
 			SessionImplementor session,
@@ -479,7 +479,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			idsInBatch.add( ids[i] );
 
 			if ( idsInBatch.size() >= maxBatchSize ) {
-				CompletionStage<List<?>> load = performOrderedBatchLoad(idsInBatch, lockOptions, persister, session);
+				CompletionStage<List<Object>> load = performOrderedBatchLoad(idsInBatch, lockOptions, persister, session);
 				stage = stage.thenCompose( v -> load );
 			}
 
@@ -489,7 +489,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 		}
 
 		if ( !idsInBatch.isEmpty() ) {
-			CompletionStage<List<?>> load = performOrderedBatchLoad(idsInBatch, lockOptions, persister, session);
+			CompletionStage<List<Object>> load = performOrderedBatchLoad(idsInBatch, lockOptions, persister, session);
 			stage = stage.thenCompose( v -> load );
 		}
 
@@ -580,7 +580,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			return persister.hasSubselectLoadableCollections();
 		}
 
-		public CompletionStage<List<?>> doEntityBatchFetch(
+		public CompletionStage<List<Object>> doEntityBatchFetch(
 				SessionImplementor session,
 				QueryParameters queryParameters,
 				Serializable[] ids) {
@@ -631,7 +631,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 				});
 		}
 
-		private CompletionStage<List<?>> doTheLoad(
+		private CompletionStage<List<Object>> doTheLoad(
 				String sql,
 				QueryParameters queryParameters,
 				SessionImplementor session,

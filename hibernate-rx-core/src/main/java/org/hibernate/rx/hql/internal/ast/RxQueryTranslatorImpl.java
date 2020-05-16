@@ -62,12 +62,12 @@ public class RxQueryTranslatorImpl extends QueryTranslatorImpl {
 	 */
 	@Deprecated
 	@Override
-	public List list(SharedSessionContractImplementor session, QueryParameters queryParameters)
+	public List<Object> list(SharedSessionContractImplementor session, QueryParameters queryParameters)
 			throws HibernateException {
 		throw new UnsupportedOperationException("Use #rxList instead");
 	}
 
-	public CompletionStage<List<?>> rxList(SharedSessionContractImplementor session, QueryParameters queryParameters) throws HibernateException {
+	public CompletionStage<List<Object>> rxList(SharedSessionContractImplementor session, QueryParameters queryParameters) throws HibernateException {
 		// Delegate to the QueryLoader...
 		errorIfDML();
 
@@ -96,8 +96,8 @@ public class RxQueryTranslatorImpl extends QueryTranslatorImpl {
 		else {
 			queryParametersToUse = queryParameters;
 		}
-		CompletionStage<List<?>> resultsStage = queryLoader.rxList( (SessionImplementor) session, queryParametersToUse );
-		return resultsStage.thenApply( results -> {
+		return queryLoader.rxList( (SessionImplementor) session, queryParametersToUse )
+				.thenApply(results -> {
 					if ( needsDistincting ) {
 						int includedCount = -1;
 						// NOTE : firstRow is zero-based
@@ -107,7 +107,7 @@ public class RxQueryTranslatorImpl extends QueryTranslatorImpl {
 						int max = !hasLimit || queryParameters.getRowSelection().getMaxRows() == null
 								? -1
 								: queryParameters.getRowSelection().getMaxRows();
-						List tmp = new ArrayList();
+						List<Object> tmp = new ArrayList<>();
 						IdentitySet distinction = new IdentitySet();
 						for ( final Object result : results ) {
 							if ( !distinction.add( result ) ) {

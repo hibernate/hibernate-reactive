@@ -144,7 +144,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		delayedAfterCompletion();
 
 		try {
-			final RxQueryInternal query = new RxQueryInternalImpl( this, getQueryPlan( queryString, false )
+			final RxQueryInternal<R> query = new RxQueryInternalImpl<>( this, getQueryPlan( queryString, false )
 					.getParameterMetadata(), queryString );
 			applyQuerySettingsAndHints( query );
 			query.setComment( queryString );
@@ -210,7 +210,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		return queryPlanCache.getHQLQueryPlan( query, shallow, getLoadQueryInfluencers().getEnabledFilters() );
 	}
 
-	protected CompletionStage<Void> rxAutoFlushIfRequired(Set querySpaces) throws HibernateException {
+	protected CompletionStage<Void> rxAutoFlushIfRequired(Set<?> querySpaces) throws HibernateException {
 		checkOpen();
 //		if ( !isTransactionInProgress() ) {
 			// do not auto-flush while outside a transaction
@@ -221,7 +221,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@Override
-	public CompletionStage<List<?>> rxList(String query, QueryParameters queryParameters) throws HibernateException {
+	public CompletionStage<List<Object>> rxList(String query, QueryParameters queryParameters) throws HibernateException {
 		checkOpenOrWaitingForAutoClose();
 		pulseTransactionCoordinator();
 		queryParameters.validateParameters();

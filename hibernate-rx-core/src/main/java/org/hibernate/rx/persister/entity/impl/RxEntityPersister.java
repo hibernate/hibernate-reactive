@@ -75,7 +75,7 @@ public interface RxEntityPersister extends EntityPersister {
 			SharedSessionContractImplementor session)
 					throws HibernateException;
 
-	CompletionStage<List<?>> rxMultiLoad(
+	CompletionStage<List<Object>> rxMultiLoad(
 	 		Serializable[] ids,
 			SessionImplementor session,
 			MultiLoadOptions loadOptions);

@@ -770,7 +770,7 @@ public interface RxAbstractEntityPersister extends RxEntityPersister, OuterJoinL
 	}
 
 	@Override
-	default CompletionStage<List<?>> rxMultiLoad(Serializable[] ids, SessionImplementor session, MultiLoadOptions loadOptions) {
+	default CompletionStage<List<Object>> rxMultiLoad(Serializable[] ids, SessionImplementor session, MultiLoadOptions loadOptions) {
 		return RxDynamicBatchingEntityLoaderBuilder.INSTANCE.multiLoad(this, ids, session, loadOptions);
 	}
 
@@ -785,15 +785,14 @@ public interface RxAbstractEntityPersister extends RxEntityPersister, OuterJoinL
 				new QueryParameters( getIdentifierType(),
 						delegate().getIdentifier( entity, session ) ),
 				session,
-				//TODO: need a new execute() method to get rid of this mess
 				resultSet -> {
 					try {
-						return Collections.singletonList( !resultSet.next() );
+						return !resultSet.next();
 					}
 					catch (SQLException sqle) {
-						return Collections.singletonList( true );
+						return true;
 					}
 				}
-		).thenApply( list -> (Boolean) list.get(0) );
+		);
 	}
 }

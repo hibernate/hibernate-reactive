@@ -1,7 +1,6 @@
 package org.hibernate.rx.engine.query.spi;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -20,7 +19,6 @@ import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.rx.hql.internal.ast.RxQueryTranslatorImpl;
-import org.hibernate.rx.impl.RxSessionInternalImpl;
 import org.hibernate.rx.util.impl.RxUtil;
 
 public class RxHQLQueryPlan extends HQLQueryPlan {
@@ -57,7 +55,7 @@ public class RxHQLQueryPlan extends HQLQueryPlan {
 	 */
 	@Deprecated
 	@Override
-	public List performList(
+	public List<Object> performList(
 			QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
 		throw new UnsupportedOperationException( "Use performRxList instead" );
 	}
@@ -66,7 +64,7 @@ public class RxHQLQueryPlan extends HQLQueryPlan {
 	 * @see HQLQueryPlan#performList(QueryParameters, SharedSessionContractImplementor)
 	 * @throws HibernateException
 	 */
-	public CompletionStage<List<?>> perfomRxList(QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
+	public CompletionStage<List<Object>> perfomRxList(QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracev( "Find: {0}", getSourceQuery() );
 			queryParameters.traceParameters( session.getFactory() );
@@ -99,7 +97,7 @@ public class RxHQLQueryPlan extends HQLQueryPlan {
 			return rxTranslator.rxList( session, queryParametersToUse );
 		}
 		final int guessedResultSize = guessResultSize( rowSelection );
-		final List<?> combinedResults = new ArrayList( guessedResultSize );
+		final List<Object> combinedResults = new ArrayList<>( guessedResultSize );
 		final IdentitySet distinction;
 		if ( needsLimit ) {
 			distinction = new IdentitySet( guessedResultSize );
@@ -117,14 +115,14 @@ public class RxHQLQueryPlan extends HQLQueryPlan {
 							needsLimitLoop( queryParameters, combinedResults, distinction, includedCount, tmpList );
 						}
 						else {
-							combinedResults.addAll( (Collection) tmpList );
+							combinedResults.addAll( tmpList );
 						}
 					} );
 		}
 		return combinedStage.thenApply( ignore -> combinedResults );
 	}
 
-	private void needsLimitLoop(QueryParameters queryParameters, List combinedResults, IdentitySet distinction, AtomicInteger includedCount, List<?> tmpList) {
+	private void needsLimitLoop(QueryParameters queryParameters, List<Object> combinedResults, IdentitySet distinction, AtomicInteger includedCount, List<Object> tmpList) {
 		// NOTE : firstRow is zero-based
 		final int first = queryParameters.getRowSelection().getFirstRow() == null ? 0 : queryParameters.getRowSelection().getFirstRow();
 		final int max = queryParameters.getRowSelection().getMaxRows() == null ? -1 : queryParameters.getRowSelection().getMaxRows();

@@ -44,14 +44,14 @@ public class RxOuterJoinLoader extends OuterJoinLoader {
 		super(factory, loadQueryInfluencers);
 	}
 
-	public CompletionStage<List<?>> doRxQueryAndInitializeNonLazyCollections(
+	public CompletionStage<List<Object>> doRxQueryAndInitializeNonLazyCollections(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies) {
 		return doRxQueryAndInitializeNonLazyCollections( session, queryParameters, returnProxies, null );
 	}
 
-	protected CompletionStage<List<?>> doRxQueryAndInitializeNonLazyCollections(
+	protected CompletionStage<List<Object>> doRxQueryAndInitializeNonLazyCollections(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
@@ -83,7 +83,7 @@ public class RxOuterJoinLoader extends OuterJoinLoader {
 				});
 	}
 
-	private CompletionStage<List<?>> doRxQuery(
+	private CompletionStage<List<Object>> doRxQuery(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
@@ -94,7 +94,7 @@ public class RxOuterJoinLoader extends OuterJoinLoader {
 				selection.getMaxRows() :
 				Integer.MAX_VALUE;
 
-		final List<AfterLoadAction> afterLoadActions = new ArrayList<AfterLoadAction>();
+		final List<AfterLoadAction> afterLoadActions = new ArrayList<>();
 
 		return executeRxQueryStatement(
 				getSQLString(), queryParameters, false, afterLoadActions, session,
@@ -290,7 +290,7 @@ public class RxOuterJoinLoader extends OuterJoinLoader {
 		return RxUtil.completedFuture( object );
 	}
 
-	protected CompletionStage<List<?>> executeRxQueryStatement(
+	protected CompletionStage<List<Object>> executeRxQueryStatement(
 			String sqlStatement,
 			QueryParameters queryParameters,
 			boolean scroll,
