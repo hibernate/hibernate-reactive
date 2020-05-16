@@ -246,7 +246,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			idPosition += batchSize;
 		}
 
-		return stage.thenApply( v -> result  );
+		return stage.thenApply( v -> result );
 	}
 
 	public static QueryParameters buildMultiLoadQueryParameters(
@@ -346,14 +346,14 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 			QueryParameters qp = buildQueryParameters( id, idsToLoad, optionalObject, lockOptions, false );
 
 			return dynamicLoader.doEntityBatchFetch( (SessionImplementor) session, qp, idsToLoad )
-					.thenApply(results -> {
+					.thenApply( results -> {
 						// The EntityKey for any entity that is not found will remain in the batch.
 						// Explicitly remove the EntityKeys for entities that were not found to
 						// avoid including them in future batches that get executed.
 						BatchFetchQueueHelper.removeNotFoundBatchLoadableEntityKeys( idsToLoad, results, persister(), session );
 
 						return getObjectFromList(results, id, session);
-					});
+					} );
 		}
 	}
 

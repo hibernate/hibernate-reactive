@@ -345,7 +345,7 @@ abstract class AbstractRxSaveEventListener<C>
 			);
 			return ( (RxSessionInternal) source ).getRxActionQueue()
 					.addAction( insert )
-					.thenApply(v -> insert );
+					.thenApply( v -> insert );
 		}
 		else {
 			Object version = Versioning.getVersion( values, persister );
@@ -354,7 +354,7 @@ abstract class AbstractRxSaveEventListener<C>
 			);
 			return ( (RxSessionInternal) source ).getRxActionQueue()
 					.addAction( insert )
-					.thenApply(v -> insert );
+					.thenApply( v -> insert );
 		}
 	}
 

@@ -255,7 +255,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 		}
 
 		return doLoad( event, persister, keyToLoad, options )
-				.thenApply(optional -> {
+				.thenApply( optional -> {
 					boolean isOptionalInstance = event.getInstanceToLoad() != null;
 					if ( optional==null && ( !options.isAllowNulls() || isOptionalInstance ) ) {
 						throwEntityNotFound( session, event.getEntityClassName(), event.getEntityId() );
@@ -595,7 +595,7 @@ public class DefaultRxLoadEventListener implements LoadEventListener, RxLoadEven
 				);
 			}
 			return loadFromDatasource( event, persister )
-					.thenApply(optional -> {
+					.thenApply( optional -> {
 						if ( optional!=null ) {
 							cacheNaturalId( event, persister, session, optional );
 						}

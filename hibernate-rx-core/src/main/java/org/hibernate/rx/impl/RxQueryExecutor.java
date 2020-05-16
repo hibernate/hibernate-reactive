@@ -61,12 +61,12 @@ public class RxQueryExecutor {
 				.getService(RxConnectionPoolProvider.class);
 
 		return poolProvider.getConnection()
-				.preparedQuery( sql, Tuple.wrap( paramValues ) ).thenApply(rowSet -> {
+				.preparedQuery( sql, Tuple.wrap( paramValues ) ).thenApply( rowSet -> {
 					for (Row row: rowSet) {
 						return row.getLong(0);
 					}
 					return null;
-				});
+				} );
 	}
 
 	/**
