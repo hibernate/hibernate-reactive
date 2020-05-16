@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.query.spi.EntityGraphQueryHint;
@@ -15,12 +16,12 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.hql.internal.QueryExecutionRequestException;
 import org.hibernate.hql.internal.ast.HqlSqlWalker;
 import org.hibernate.hql.internal.ast.QueryTranslatorImpl;
-import org.hibernate.hql.internal.ast.exec.StatementExecutor;
 import org.hibernate.hql.internal.ast.tree.QueryNode;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.rx.hql.RxQueryLoader;
+import org.hibernate.rx.impl.RxQueryExecutor;
 import org.hibernate.rx.util.impl.RxUtil;
 
 import org.jboss.logging.Logger;
@@ -126,5 +127,34 @@ public class RxQueryTranslatorImpl extends QueryTranslatorImpl {
 					}
 					return results;
 				});
+	}
+
+	public CompletionStage<Integer> executeRxUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) {
+		final AtomicInteger atomicCounter = new AtomicInteger( 0 );
+		CompletionStage<Void> updateStage = RxUtil.nullFuture();
+		String[] sqlStatements = getSqlStatements();
+		for ( String sql : sqlStatements ) {
+			updateStage = updateStage
+					.thenCompose( v -> new RxQueryExecutor().update( sql, queryParameters.getPositionalParameterValues(), session.getFactory() )
+					.thenAccept( updateCount -> atomicCounter.addAndGet( updateCount ) )
+			);
+		}
+		return updateStage.thenApply( v -> atomicCounter.get() );
+	}
+
+	/**
+	 * @deprecated Use {@link #executeRxUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session)}
+	 */
+	@Deprecated
+	@Override
+	public int executeUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
+		throw new UnsupportedOperationException("Use executeRxUpdate instead ");
+	}
+
+	//TODO: Change scope in ORM
+	private void errorIfSelect() throws HibernateException {
+		if ( !getSqlAST().needsExecutor() ) {
+			throw new QueryExecutionRequestException( "Not supported for select queries", getQueryString() );
+		}
 	}
 }

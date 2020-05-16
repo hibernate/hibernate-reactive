@@ -73,4 +73,6 @@ public interface RxSessionInternal extends Session {
 			Object... primaryKey);
 
 	<T> CompletionStage<List<T>> rxList(String query, QueryParameters queryParameters);
+
+	CompletionStage<Integer> executeRxUpdate(String expandedQuery, QueryParameters queryParameters);
 }

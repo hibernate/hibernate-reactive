@@ -249,6 +249,25 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@Override
+	public CompletionStage<Integer> executeRxUpdate(String query, QueryParameters queryParameters) {
+		checkOpenOrWaitingForAutoClose();
+		pulseTransactionCoordinator();
+		queryParameters.validateParameters();
+
+		RxHQLQueryPlan rxPlan = (RxHQLQueryPlan) getQueryPlan( query, false );
+		return rxAutoFlushIfRequired( rxPlan.getQuerySpaces() )
+				.thenAccept( v -> verifyImmutableEntityUpdate( rxPlan ) )
+				.thenCompose( v -> rxPlan.performExecuteRxUpdate( queryParameters, this ) )
+				.handle( (count, x) -> {
+					boolean success = x == null;
+					afterOperation( success );
+					delayedAfterCompletion();
+					RxUtil.rethrowIfNotNull( x );
+					return count;
+				} );
+	}
+
+	@Override
 	public CompletionStage<Void> rxPersist(Object entity) {
 		checkOpen();
 		return firePersist( new PersistEvent( null, entity, this ) );

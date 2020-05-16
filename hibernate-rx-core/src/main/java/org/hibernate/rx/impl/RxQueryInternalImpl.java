@@ -8,10 +8,12 @@ import javax.persistence.TransactionRequiredException;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
+import org.hibernate.TypeMismatchException;
 import org.hibernate.engine.query.spi.EntityGraphQueryHint;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.hql.internal.QueryExecutionRequestException;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.internal.QueryImpl;
 import org.hibernate.rx.RxQueryInternal;
@@ -45,6 +47,33 @@ public class RxQueryInternalImpl<R> extends QueryImpl<R> implements RxQueryInter
 	}
 
 	@Override
+	public CompletionStage<Integer> executeRxUpdate() {
+		getProducer().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
+
+		beforeQuery();
+		return doExecuteRxUpdate()
+				.handle( (count, e) -> {
+					afterQuery();
+					if ( e instanceof QueryExecutionRequestException ) {
+						RxUtil.rethrow( new IllegalStateException( e ) );
+					}
+					if ( e instanceof TypeMismatchException ) {
+						RxUtil.rethrow( new IllegalStateException( e ) );
+					}
+					if ( e instanceof HibernateException ) {
+						RxUtil.rethrow( getExceptionConverter().convert( (HibernateException) e ) );
+					}
+					RxUtil.rethrowIfNotNull( e );
+					return count;
+				} );
+	}
+
+	protected CompletionStage<Integer> doExecuteRxUpdate() {
+		final String expandedQuery = getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() );
+		return rxProducer().executeRxUpdate( expandedQuery, makeQueryParametersForExecution( expandedQuery ) );
+	}
+
+	@Override
 	public CompletionStage<List<R>> getRxResultList() {
 		return rxList();
 	}
@@ -71,8 +100,12 @@ public class RxQueryInternalImpl<R> extends QueryImpl<R> implements RxQueryInter
 		}
 
 		final String expandedQuery = getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() );
-		RxSessionInternal producer = (RxSessionInternal) getProducer();
+		RxSessionInternal producer = rxProducer();
 		return producer.rxList( expandedQuery, makeRxQueryParametersForExecution( expandedQuery ) );
+	}
+
+	private RxSessionInternal rxProducer() {
+		return (RxSessionInternal) getProducer();
 	}
 
 	/**

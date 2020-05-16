@@ -35,6 +35,11 @@ public class RxQueryImpl<R> implements RxQuery<R> {
 	}
 
 	@Override
+	public CompletionStage<Integer> executeUpdate() {
+		return delegate.executeRxUpdate();
+	}
+
+	@Override
 	public CompletionStage<R> getSingleResult() {
 		return delegate.getRxSingleResult();
 	}

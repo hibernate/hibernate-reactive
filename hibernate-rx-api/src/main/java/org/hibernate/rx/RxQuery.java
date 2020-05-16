@@ -21,6 +21,8 @@ public interface RxQuery<R> {
 
 	CompletionStage<List<R>> getResultList();
 
+	CompletionStage<Integer> executeUpdate();
+
 	 <T> T unwrap(Class<T> type);
 
 	/**

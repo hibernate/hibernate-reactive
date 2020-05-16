@@ -11,5 +11,7 @@ public interface RxQueryInternal<R> extends Query<R> {
 
 	CompletionStage<List<R>> getRxResultList();
 
+	CompletionStage<Integer> executeRxUpdate();
+
 	CompletionStage<List<R>> rxList();
 }
