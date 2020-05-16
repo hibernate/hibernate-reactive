@@ -174,7 +174,6 @@ a `CompletionStage`, for example:
 Note that `find()` also wraps its result in `Optional`:
 
 	session2.find(Book.class, book.id)
-		.thenApply(Optional::get)
 		.thenAccept( bOOk -> System.out.println(bOOk.title + " is a great book!") )
 		.thenAccept( $ -> session2.close() )
 
