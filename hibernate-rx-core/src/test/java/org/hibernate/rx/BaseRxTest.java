@@ -60,9 +60,6 @@ public abstract class BaseRxTest {
 				.applySettings( constructConfiguration().getProperties() )
 				.build();
 
-		registry.getService( SchemaManagementTool.class )
-				.setCustomDatabaseGenerationTarget( new RxGenerationTarget(registry) );
-
 		sessionFactory = constructConfiguration().buildSessionFactory( registry );
 		poolProvider = registry.getService( RxConnectionPoolProvider.class );
 

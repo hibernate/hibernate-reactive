@@ -6,6 +6,7 @@ import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.ServiceRegistryAwareService;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.service.spi.Stoppable;
+import org.hibernate.tool.schema.spi.SchemaManagementTool;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -21,6 +22,7 @@ import java.util.Map;
 public class RxDummyConnectionProvider implements ConnectionProvider, Configurable, Stoppable, ServiceRegistryAwareService {
 	private boolean noJDBC;
 	private ConnectionProvider delegate;
+	private ServiceRegistryImplementor registry;
 
 	public RxDummyConnectionProvider(ConnectionProvider delegate) {
 		this.delegate = delegate;
@@ -54,12 +56,15 @@ public class RxDummyConnectionProvider implements ConnectionProvider, Configurab
 			}
 			catch (JDBCConnectionException e) {
 				noJDBC = true;
+				registry.getService( SchemaManagementTool.class )
+						.setCustomDatabaseGenerationTarget( new RxGenerationTarget(registry) );
 			}
 		}
 	}
 
 	@Override
 	public void injectServices(ServiceRegistryImplementor serviceRegistry) {
+		this.registry = serviceRegistry;
 		if (delegate instanceof ServiceRegistryAwareService) {
 			((ServiceRegistryAwareService) delegate).injectServices(serviceRegistry);
 		}
@@ -67,7 +72,7 @@ public class RxDummyConnectionProvider implements ConnectionProvider, Configurab
 
 	@Override
 	public void stop() {
-		if (delegate instanceof Stoppable) {
+		if (!noJDBC && delegate instanceof Stoppable) {
 			((Stoppable) delegate).stop();
 		}
 	}
