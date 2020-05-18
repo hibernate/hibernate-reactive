@@ -8,6 +8,13 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 import java.util.Map;
 
+/**
+ * A Hibernate {@link StandardServiceInitiator service initiator} that
+ * wraps the Hibernate {@link ConnectionProvider} in an instance of
+ * {@link RxDummyConnectionProvider}.
+ *
+ * @author Gavin King
+ */
 public class RxDummyConnectionProviderInitiator implements StandardServiceInitiator<ConnectionProvider> {
 
 	public static final RxDummyConnectionProviderInitiator INSTANCE = new RxDummyConnectionProviderInitiator();

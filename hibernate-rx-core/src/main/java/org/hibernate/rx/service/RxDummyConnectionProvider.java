@@ -11,6 +11,13 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
 
+/**
+ * A wrapper for the Hibernate {@link ConnectionProvider} that simply
+ * squashes any errors that happen at startup time if there is no
+ * JDBC driver available.
+ *
+ * @author Gavin King
+ */
 public class RxDummyConnectionProvider implements ConnectionProvider, Configurable, Stoppable, ServiceRegistryAwareService {
 	private boolean noJDBC;
 	private ConnectionProvider delegate;
