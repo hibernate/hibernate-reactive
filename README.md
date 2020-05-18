@@ -167,15 +167,23 @@ The `RxSession` interface has methods with the same names as methods of the
 JPA `EntityManager`. However, each of these methods returns its result via
 a `CompletionStage`, for example:
 
-	session1.persist(book)
-		.thenCompose( $ -> session1.flush() )
+	session1.find(Book.class, book.id)
+		.thenAccept( bOOk -> System.out.println(bOOk.title + " is a great book!") )
 		.thenAccept( $ -> session1.close() )
 
-Note that `find()` also wraps its result in `Optional`:
-
-	session2.find(Book.class, book.id)
-		.thenAccept( bOOk -> System.out.println(bOOk.title + " is a great book!") )
+Methods with no meaningful return value return a reference to the `RxSession`:
+	
+	session2.persist(book)
+		.thenCompose( $ -> session2.flush() )
 		.thenAccept( $ -> session2.close() )
+
+That `createQuery()` method produces an `RxQuery`, allowing HQL / JPQL queries
+to be executed asynchronously, returning their results via a `CompletionStage`:
+
+	session3.createQuery("select title from Book order by title desc")
+	    .getResultList()
+		.thenAccept(System.out::println)
+		.thenAccept( $ -> session3.close() )
 
 ## Limitations
 
