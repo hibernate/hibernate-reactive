@@ -1,6 +1,7 @@
 package org.hibernate.rx;
 
 import org.hibernate.CacheMode;
+import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 
 import java.util.List;
@@ -316,31 +317,30 @@ public interface RxSession {
 	 */
 	CacheMode getCacheMode();
 
-	//Filters can't be tested until we have HQL
-//	/**
-//	 * Enable the named filter for this current session.
-//	 *
-//	 * @param filterName The name of the filter to be enabled.
-//	 *
-//	 * @return The Filter instance representing the enabled filter.
-//	 */
-//	Filter enableFilter(String filterName);
-//
-//	/**
-//	 * Disable the named filter for the current session.
-//	 *
-//	 * @param filterName The name of the filter to be disabled.
-//	 */
-//	void disableFilter(String filterName);
-//
-//	/**
-//	 * Retrieve a currently enabled filter by name.
-//	 *
-//	 * @param filterName The name of the filter to be retrieved.
-//	 *
-//	 * @return The Filter instance representing the enabled filter.
-//	 */
-//	Filter getEnabledFilter(String filterName);
+	/**
+	 * Enable the named filter for this current session.
+	 *
+	 * @param filterName The name of the filter to be enabled.
+	 *
+	 * @return The Filter instance representing the enabled filter.
+	 */
+	Filter enableFilter(String filterName);
+
+	/**
+	 * Disable the named filter for the current session.
+	 *
+	 * @param filterName The name of the filter to be disabled.
+	 */
+	void disableFilter(String filterName);
+
+	/**
+	 * Retrieve a currently enabled filter by name.
+	 *
+	 * @param filterName The name of the filter to be retrieved.
+	 *
+	 * @return The Filter instance representing the enabled filter.
+	 */
+	Filter getEnabledFilter(String filterName);
 
 	/**
 	 * Close the reactive session.

@@ -1,6 +1,7 @@
 package org.hibernate.rx;
 
 import org.hibernate.CacheMode;
+import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 
 import java.util.List;
@@ -157,6 +158,22 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
-	public void close() {}
+	public Filter enableFilter(String filterName) {
+		return null;
+	}
+
+	@Override
+	public void disableFilter(String filterName) {
+
+	}
+
+	@Override
+	public Filter getEnabledFilter(String filterName) {
+		return null;
+	}
+
+	@Override
+	public void close() {
+	}
 
 }

@@ -6,6 +6,7 @@ import java.util.concurrent.CompletionStage;
 import javax.persistence.LockModeType;
 
 import org.hibernate.CacheMode;
+import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.rx.RxQuery;
 import org.hibernate.rx.RxSession;
@@ -180,8 +181,7 @@ public class RxSessionImpl implements RxSession {
 		return delegate.isFetchProfileEnabled(name);
 	}
 
-	//Filters can't be tested until we have HQL
-	/*@Override
+	@Override
 	public Filter enableFilter(String filterName) {
 		return delegate.enableFilter(filterName);
 	}
@@ -194,7 +194,7 @@ public class RxSessionImpl implements RxSession {
 	@Override
 	public Filter getEnabledFilter(String filterName) {
 		return delegate.getEnabledFilter(filterName);
-	}*/
+	}
 
 	@Override
 	public void close() {
