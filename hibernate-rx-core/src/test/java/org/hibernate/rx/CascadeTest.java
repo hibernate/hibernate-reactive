@@ -20,6 +20,34 @@ public class CascadeTest extends BaseRxTest {
 	}
 
 	@Test
+	public void testQuery(TestContext context) {
+
+		Node basik = new Node("Child");
+		basik.parent = new Node("Parent");
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+
+		test( context,
+				openSession()
+						.thenCompose(s -> s.persist(basik))
+						.thenCompose(s -> s.flush())
+						.thenCompose(v -> openSession())
+						.thenCompose( s -> s.createQuery("select distinct n from Node n left join fetch n.elements").getResultList())
+						.thenAccept( list -> context.assertEquals( list.size(), 2 ) )
+						.thenCompose(v -> openSession())
+						.thenCompose( s -> s.createQuery("select distinct n, e from Node n join n.elements e").getResultList())
+						.thenAccept( list -> context.assertEquals( list.size(), 3 ) )
+						.thenCompose(v -> openSession())
+						.thenCompose( s -> s.createQuery("select distinct n.id, e.id from Node n join n.elements e").getResultList())
+						.thenAccept( list -> context.assertEquals( list.size(), 3 ) )
+						.thenCompose(v -> openSession())
+						.thenCompose( s -> s.createQuery("select max(e.id), min(e.id), sum(e.id) from Node n join n.elements e group by n.id order by n.id").getResultList())
+						.thenAccept( list -> context.assertEquals( list.size(), 1 ) )
+		);
+	}
+
+	@Test
 	public void testCascade(TestContext context) {
 
 		Node basik = new Node("Child");
@@ -103,7 +131,7 @@ public class CascadeTest extends BaseRxTest {
 		);
 	}
 
-	@Entity @Table(name="Element")
+	@Entity(name = "Element") @Table(name="Element")
 	public static class Element {
 		@Id @GeneratedValue Integer id;
 
@@ -117,7 +145,7 @@ public class CascadeTest extends BaseRxTest {
 		Element() {}
 	}
 
-	@Entity @Table(name="Node")
+	@Entity(name = "Node") @Table(name="Node")
 	public static class Node {
 
 		@Id @GeneratedValue Integer id;
