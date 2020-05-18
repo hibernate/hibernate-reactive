@@ -14,9 +14,6 @@ subprojects {
 
     repositories {
         mavenLocal()
-        maven {
-			url "https://oss.sonatype.org/content/repositories/iovertx-3875"
-		}
         jcenter()
         mavenCentral()
     }

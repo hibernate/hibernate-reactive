@@ -73,7 +73,7 @@ public class DB2BasicTest extends BaseRxTest {
 				.thenApply(s -> { context.assertTrue(basik.prePersisted && !basik.postPersisted); return s; } )
 				.thenApply(s -> { context.assertTrue(basik.parent.prePersisted && !basik.parent.postPersisted); return s; } )
 				.thenCompose(s -> s.flush())
-				.thenApply(s -> { context.assertTrue(basik.postPersisted && basik.postPersisted); return s; } )
+				.thenApply(s -> { context.assertTrue(basik.prePersisted && basik.postPersisted); return s; } )
 				.thenApply(s -> { context.assertTrue(basik.parent.prePersisted && basik.parent.postPersisted); return s; } )
 				.thenCompose(v -> openSession())
 				.thenCompose(s2 ->
