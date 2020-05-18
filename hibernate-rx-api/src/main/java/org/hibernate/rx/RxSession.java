@@ -165,7 +165,6 @@ public interface RxSession {
 
 	/**
 	 * Asynchronously fetch an association that's configured for lazy loading.
-	 * (Currently only works for to-one associations, not for collections.)
 	 *
 	 * <pre>
 	 * {@code session.fetch(author.getBook()).thenAccept(book -> print(book.getTitle()));}
@@ -174,9 +173,26 @@ public interface RxSession {
 	 * @param association a lazy-loaded association
 	 *
 	 * @return the fetched association, via a {@code CompletionStage}
+	 *
+	 * @see org.hibernate.Hibernate#initialize(Object)
 	 */
 	<T> CompletionStage<T> fetch(T association);
 
+	/**
+	 * Asynchronously fetch an association that's configured for lazy loading,
+	 * and unwrap the underlying entity implementation from any proxy.
+	 *
+	 * <pre>
+	 * {@code session.unproxy(author.getBook()).thenAccept(book -> print(book.getTitle()));}
+	 * </pre>
+	 *
+	 * @param association a lazy-loaded association
+	 *
+	 * @return the fetched association, via a {@code CompletionStage}
+	 *
+	 * @see org.hibernate.Hibernate#unproxy(Object)
+	 */
+	<T> CompletionStage<T> unproxy(T association);
 
 	/**
 	 * Create an instance of {@link RxQuery} for the given HQL/JPQL query

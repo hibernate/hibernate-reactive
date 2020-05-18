@@ -32,7 +32,7 @@ public interface RxSessionInternal extends Session {
 
 	RxActionQueue getRxActionQueue();
 
-	<T> CompletionStage<T> rxFetch(T association);
+	<T> CompletionStage<T> rxFetch(T association, boolean unproxy);
 
 	CompletionStage<Void> rxPersist(Object entity);
 

@@ -84,7 +84,7 @@ public final class Cascade<C> {
 				if ( cascadeStyles[i].doCascade( action.delegate() ) ) {
 					Object fetchable = state[i];
 					if ( !Hibernate.isInitialized( fetchable ) ) {
-						beforeDelete = beforeDelete.thenCompose( v -> session.unwrap(RxSessionInternal.class).rxFetch( fetchable ) );
+						beforeDelete = beforeDelete.thenCompose( v -> session.unwrap(RxSessionInternal.class).rxFetch( fetchable, true ) );
 					}
 				}
 			}

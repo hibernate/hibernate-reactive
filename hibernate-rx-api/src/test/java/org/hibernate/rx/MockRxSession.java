@@ -107,6 +107,11 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
+	public <T> CompletionStage<T> unproxy(T association) {
+		return CompletableFuture.completedFuture( association );
+	}
+
+	@Override
 	public <R> RxQuery<R> createQuery(String queryString) {
 		throw new UnsupportedOperationException( "not implemented" );
 	}

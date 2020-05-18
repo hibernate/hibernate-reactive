@@ -49,7 +49,7 @@ public class CascadingActions {
 				IdentitySet context,
 				boolean isCascadeDeleteEnabled) {
 			LOG.tracev( "Cascading to delete: {0}", entityName );
-			return session.unwrap(RxSessionInternal.class).rxFetch(child)
+			return session.unwrap(RxSessionInternal.class).rxFetch( child, true )
 					.thenCompose( c -> session.unwrap(RxSessionInternal.class)
 							.rxRemove( c, isCascadeDeleteEnabled, context ) );
 		}

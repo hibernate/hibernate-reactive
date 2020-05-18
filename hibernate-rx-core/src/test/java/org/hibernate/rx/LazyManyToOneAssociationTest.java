@@ -144,16 +144,16 @@ public class LazyManyToOneAssociationTest extends BaseRxTest {
 			if ( this == o ) {
 				return true;
 			}
-			if ( o == null || getClass() != o.getClass() ) {
+			if ( !(o instanceof Book) ) {
 				return false;
 			}
 			Book book = (Book) o;
-			return Objects.equals( title, book.title );
+			return Objects.equals( getTitle(), book.getTitle() );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash( title );
+			return Objects.hash( getTitle() );
 		}
 	}
 
@@ -211,16 +211,16 @@ public class LazyManyToOneAssociationTest extends BaseRxTest {
 			if ( this == o ) {
 				return true;
 			}
-			if ( o == null || getClass() != o.getClass() ) {
+			if ( !(o instanceof Author) ) {
 				return false;
 			}
 			Author author = (Author) o;
-			return Objects.equals( name, author.name );
+			return Objects.equals( getName(), author.getName() );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash( name );
+			return Objects.hash( getName() );
 		}
 	}
 }

@@ -461,7 +461,7 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener<Mer
 				// is initialized, but its corresponding managed state is not initialized.
 				// Initialization must be done before copyValues executes.
 				if ( Hibernate.isInitialized( mergeState[i] ) && !Hibernate.isInitialized( managedState[i] ) ) {
-					stage = stage.thenCompose( v -> session.rxFetch(fetchable) ).thenApply(ignore -> null);
+					stage = stage.thenCompose( v -> session.rxFetch( fetchable, true ) ).thenApply(ignore -> null);
 				}
 			}
 		}

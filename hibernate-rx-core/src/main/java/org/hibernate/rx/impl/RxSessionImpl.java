@@ -33,7 +33,12 @@ public class RxSessionImpl implements RxSession {
 
 	@Override
 	public <T> CompletionStage<T> fetch(T association) {
-		return delegate.rxFetch(association);
+		return delegate.rxFetch(association, false);
+	}
+
+	@Override
+	public <T> CompletionStage<T> unproxy(T association) {
+		return delegate.rxFetch(association, true);
 	}
 
 	@Override

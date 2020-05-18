@@ -110,7 +110,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 	}
 
 	@Override
-	public <T> CompletionStage<T> rxFetch(T association) {
+	public <T> CompletionStage<T> rxFetch(T association, boolean unproxy) {
 		checkOpen();
 		if ( association instanceof HibernateProxy ) {
 			LazyInitializer initializer = ((HibernateProxy) association).getHibernateLazyInitializer();
@@ -124,7 +124,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 					.thenApply( entity -> {
 						initializer.setSession( this );
 						initializer.setImplementation( entity );
-						return entity;
+						return unproxy ? entity : association;
 					} );
 		}
 		else if ( association instanceof PersistentCollection ) {
