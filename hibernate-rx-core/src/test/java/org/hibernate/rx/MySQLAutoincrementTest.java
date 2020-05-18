@@ -34,7 +34,6 @@ import javax.persistence.Version;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.dialect.MySQL8Dialect;
 import org.hibernate.rx.containers.MySQLDatabase;
 import org.junit.Test;
 
@@ -46,7 +45,6 @@ public class MySQLAutoincrementTest extends BaseRxTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.setProperty( AvailableSettings.URL, MySQLDatabase.getJdbcUrl() );
-		configuration.setProperty( AvailableSettings.DIALECT, MySQL8Dialect.class.getName() );
 		configuration.addAnnotatedClass( Basic.class );
 		return configuration;
 	}

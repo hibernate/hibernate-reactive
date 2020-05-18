@@ -549,7 +549,7 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 					return buildBatchFetchRestrictionFragment(
 							alias,
 							columnNames,
-							getFactory().getDialect(),
+							getDialect(),
 							Parameters.createDialectParameterGenerator(getFactory())
 					);
 				}
