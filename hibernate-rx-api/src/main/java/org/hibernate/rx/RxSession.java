@@ -301,6 +301,34 @@ public interface RxSession {
 	boolean isFetchProfileEnabled(String name);
 
 	/**
+	 * Change the default for entities and proxies loaded into this session
+	 * from modifiable to read-only mode, or from modifiable to read-only mode.
+	 *
+	 * Read-only entities are not dirty-checked and snapshots of persistent
+	 * state are not maintained. Read-only entities can be modified, but
+	 * changes are not persisted.
+	 *
+	 * @see org.hibernate.Session#setDefaultReadOnly(boolean)
+	 */
+	 RxSession setDefaultReadOnly(boolean readOnly);
+
+	/**
+	 * Set an unmodified persistent object to read-only mode, or a read-only
+	 * object to modifiable mode. In read-only mode, no snapshot is maintained,
+	 * the instance is never dirty checked, and changes are not persisted.
+	 *
+	 * @see org.hibernate.Session#setReadOnly(Object, boolean)
+	 */
+	 RxSession setReadOnly(Object entityOrProxy, boolean readOnly);
+
+	/**
+	 * Is the specified entity or proxy read-only?
+	 *
+	 * @see org.hibernate.Session#isReadOnly(Object)
+	 */
+	boolean isReadOnly(Object entityOrProxy);
+
+	/**
 	 * Set the cache mode.
 	 * <p>
 	 * Cache mode determines the manner in which this session can interact with

@@ -173,6 +173,21 @@ public class MockRxSession implements RxSession {
 	}
 
 	@Override
+	public RxSession setDefaultReadOnly(boolean readOnly) {
+		return this;
+	}
+
+	@Override
+	public RxSession setReadOnly(Object entityOrProxy, boolean readOnly) {
+		return this;
+	}
+
+	@Override
+	public boolean isReadOnly(Object entityOrProxy) {
+		return false;
+	}
+
+	@Override
 	public void close() {
 	}
 

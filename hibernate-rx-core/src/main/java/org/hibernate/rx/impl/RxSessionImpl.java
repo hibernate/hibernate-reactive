@@ -143,6 +143,23 @@ public class RxSessionImpl implements RxSession {
 		return this;
 	}
 
+	@Override
+	public RxSession setDefaultReadOnly(boolean readOnly) {
+		delegate.setDefaultReadOnly(readOnly);
+		return this;
+	}
+
+	@Override
+	public RxSession setReadOnly(Object entityOrProxy, boolean readOnly) {
+		delegate.setReadOnly(entityOrProxy, readOnly);
+		return this;
+	}
+
+	@Override
+	public boolean isReadOnly(Object entityOrProxy) {
+		return delegate.isReadOnly(entityOrProxy);
+	}
+
 	public CacheMode getCacheMode() {
 		return delegate.getCacheMode();
 	}

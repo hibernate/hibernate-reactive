@@ -1,5 +1,7 @@
 package org.hibernate.rx;
 
+import org.hibernate.CacheMode;
+
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -19,9 +21,9 @@ public interface RxQuery<R> {
 
 	RxQuery<R> setParameter(int var1, Object var2);
 
-	RxQuery<R> setMaxResults(int var1);
+	RxQuery<R> setMaxResults(int maxResults);
 
-	RxQuery<R> setFirstResult(int var1);
+	RxQuery<R> setFirstResult(int firstResult);
 
 	/**
 	 * Asynchronously Execute this query, returning a single row
@@ -56,7 +58,35 @@ public interface RxQuery<R> {
 	 */
 	CompletionStage<Integer> executeUpdate();
 
-	 <T> T unwrap(Class<T> type);
+	/**
+	 * Set the read-only/modifiable mode for entities and proxies
+	 * loaded by this Query. This setting overrides the default setting
+	 * for the persistence context.
+	 *
+	 * @see RxSession#setDefaultReadOnly(boolean)
+	 */
+	RxQuery<R> setReadOnly(boolean readOnly);
+
+	/**
+	 * Set the comment for this query.
+	 *
+	 * @param comment The human-readable comment
+	 */
+	RxQuery<R> setComment(String comment);
+
+	/**
+	 * (Re)set the current {@link CacheMode} in effect for this query.
+	 */
+	RxQuery<R> setCacheMode(CacheMode cacheMode);
+
+	/**
+	 * Obtain the {@link CacheMode} in effect for this query.  By default,
+	 * the query inherits the {@code CacheMode} of the {@link RxSession}
+	 * from which is originates.
+	 *
+	 * @see RxSession#getCacheMode()
+	 */
+	CacheMode getCacheMode();
 
 	/**
 
@@ -68,15 +98,9 @@ public interface RxQuery<R> {
 
 	RxQuery<R> setCacheRegion(String var1);
 
-	RxQuery<R> setCacheMode(CacheMode var1);
-
 	RxQuery<R> setTimeout(int var1);
 
 	RxQuery<R> setFetchSize(int var1);
-
-	RxQuery<R> setReadOnly(boolean var1);
-
-	RxQuery<R> setComment(String var1);
 
 	RxQuery<R> setLockMode(String var1, LockMode var2);
 

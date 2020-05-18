@@ -3,8 +3,7 @@ package org.hibernate.rx.query.impl;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.AssertionFailure;
-import org.hibernate.query.Query;
+import org.hibernate.CacheMode;
 import org.hibernate.rx.RxQuery;
 import org.hibernate.rx.RxQueryInternal;
 
@@ -23,15 +22,38 @@ public class RxQueryImpl<R> implements RxQuery<R> {
 	}
 
 	@Override
-	public RxQuery setMaxResults(int var1) {
-		delegate.setMaxResults( var1 );
+	public RxQuery setMaxResults(int maxResults) {
+		delegate.setMaxResults( maxResults );
 		return this;
 	}
 
 	@Override
-	public RxQuery setFirstResult(int var1) {
-		delegate.setFirstResult( var1 );
+	public RxQuery setFirstResult(int firstResult) {
+		delegate.setFirstResult( firstResult );
 		return this;
+	}
+
+	@Override
+	public RxQuery<R> setReadOnly(boolean readOnly) {
+		delegate.setReadOnly( readOnly );
+		return this;
+	}
+
+	@Override
+	public RxQuery<R> setComment(String comment) {
+		delegate.setComment( comment );
+		return this;
+	}
+
+	@Override
+	public RxQuery<R> setCacheMode(CacheMode cacheMode) {
+		delegate.setCacheMode( cacheMode );
+		return this;
+	}
+
+	@Override
+	public CacheMode getCacheMode() {
+		return delegate.getCacheMode();
 	}
 
 	@Override
@@ -49,14 +71,4 @@ public class RxQueryImpl<R> implements RxQuery<R> {
 		return delegate.getRxResultList();
 	}
 
-	@Override
-	public <T> T unwrap(Class<T> type) {
-		if ( RxQueryImpl.class.isAssignableFrom( type ) ) {
-			return (T) this;
-		}
-		if ( Query.class.isAssignableFrom( type ) ) {
-			return (T) delegate;
-		}
-		throw new AssertionFailure( type + " not recognized" );
-	}
 }
