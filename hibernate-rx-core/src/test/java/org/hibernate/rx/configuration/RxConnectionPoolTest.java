@@ -106,7 +106,8 @@ public class RxConnectionPoolTest {
 	@Test
 	public void configureWithWrongCredentials(TestContext context) {
 		thrown.expect( CompletionException.class );
-		thrown.expectMessage( "io.vertx.pgclient.PgException: password authentication failed for user \"bogus\"" );
+		thrown.expectMessage( "io.vertx.pgclient.PgException:" );
+		thrown.expectMessage( "\"bogus\"" );
 
 		String url = PostgreSQLDatabase.getJdbcUrl();
 		Map<String,Object> config = new HashMap<>();
