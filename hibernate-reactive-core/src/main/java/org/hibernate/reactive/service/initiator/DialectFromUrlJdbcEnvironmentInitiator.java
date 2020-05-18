@@ -2,6 +2,7 @@ package org.hibernate.reactive.service.initiator;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
 import org.hibernate.dialect.PostgreSQL10Dialect;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
@@ -32,6 +33,9 @@ public class DialectFromUrlJdbcEnvironmentInitiator extends JdbcEnvironmentIniti
 			}
 			if (url.startsWith("jdbc:postgresql:")) {
 				configurationValues.put( AvailableSettings.DIALECT, PostgreSQL10Dialect.class.getName() );
+			}
+			if (url.startsWith( "jdbc:db2:" )) {
+				configurationValues.put( AvailableSettings.DIALECT, DB297Dialect.class.getName() );
 			}
 			//TODO etc
 		}

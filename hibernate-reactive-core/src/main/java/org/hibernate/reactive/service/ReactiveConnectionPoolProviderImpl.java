@@ -69,6 +69,7 @@ public class ReactiveConnectionPoolProviderImpl implements ReactiveConnectionPoo
 
 		if (username==null || password==null) {
 			String[] params = {};
+			// DB2 URLs are a bit odd and have the format: jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
 			if (uri.getScheme().equals("db2")) {
 			    int queryIndex = uri.getPath().indexOf(':') + 1;
 			    if (queryIndex > 0) {
