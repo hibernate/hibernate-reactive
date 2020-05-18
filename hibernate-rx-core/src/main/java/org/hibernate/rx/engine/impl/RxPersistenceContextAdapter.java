@@ -8,19 +8,12 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.rx.RxSessionInternal;
 import org.hibernate.rx.impl.RxSessionInternalImpl;
 import org.hibernate.rx.util.impl.RxUtil;
 
 /**
  * Add reactive methods to a {@link PersistenceContext}.
- */
- /*
- * <p>
- *     This doesn't extend {@link StatefulPersistenceContext} because {@link org.hibernate.rx.impl.RxSessionInternalImpl}
- *     extends {@link org.hibernate.internal.SessionImpl} and it's not possible to pass a {@link PersistenceContext} to
- *     the super class. The result is that we would have to override all the methods in SessionImpl using the persistence context.
- * </p>
- * <p>We could solve this by adding a constructor in SessionImpl that receives a {@link PersistenceContext}.</p>
  */
 public class RxPersistenceContextAdapter extends StatefulPersistenceContext {
 
@@ -45,8 +38,8 @@ public class RxPersistenceContextAdapter extends StatefulPersistenceContext {
 
 		@Override
 		public void accept(PersistentCollection nonLazyCollection) {
-			stage = stage.thenCompose(v -> ((RxSessionInternalImpl) getSession()).unwrap(RxSessionInternalImpl.class)
-					.rxFetch( nonLazyCollection )
+			stage = stage.thenCompose(v -> ((RxSessionInternalImpl) getSession()).unwrap(RxSessionInternal.class)
+					.rxFetch( nonLazyCollection, true )
 					.thenAccept(vv -> {}));
 		}
 	}
