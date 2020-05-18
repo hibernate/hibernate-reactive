@@ -35,6 +35,13 @@ public class Main {
 				.toCompletableFuture()
 				.join();
 
+		RxSession session4 = sessionFactory.openRxSession();
+		//query the Book titles
+		session4.createQuery("select title from Book order by title desc").getResultList()
+				.thenAccept(System.out::println)
+				.toCompletableFuture()
+				.join();
+
 		RxSession session3 = sessionFactory.openRxSession();
 		//retrieve the Book and delete it
 		session3.find(Book.class, book.id)
