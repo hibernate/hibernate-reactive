@@ -23,25 +23,25 @@ public class JdbcUrlParserTest {
 
 	@Test
 	public void uriCreation() {
-		URI uri = JdbcUrlParser.parse( "jdbc:postgresql://localhost:5432/hibernate-rx" );
-		assertThat( uri ).isNotNull();
+		URI uri = JdbcUrlParser.parse("jdbc:postgresql://localhost:5432/hreactive");
+		assertThat(uri).isNotNull();
 	}
 
 	@Test
 	public void parsePort() {
-		URI uri = JdbcUrlParser.parse( "jdbc:postgresql://localhost:5432/hibernate-rx" );
-		assertThat( uri ).hasPort( 5432 );
+		URI uri = JdbcUrlParser.parse("jdbc:postgresql://localhost:5432/hreactive");
+		assertThat(uri).hasPort(5432);
 	}
 
 	@Test
 	public void parseHost() {
-		URI uri = JdbcUrlParser.parse( "jdbc:postgresql://localhost:5432/hibernate-rx" );
-		assertThat( uri ).hasHost( "localhost" );
+		URI uri = JdbcUrlParser.parse("jdbc:postgresql://localhost:5432/hreactive");
+		assertThat(uri).hasHost("localhost");
 	}
 
 	@Test
 	public void parseScheme() {
-		URI uri = JdbcUrlParser.parse( "jdbc:postgresql://localhost:5432/hibernate-rx" );
-		assertThat( uri ).hasScheme( "postgresql" );
+		URI uri = JdbcUrlParser.parse("jdbc:postgresql://localhost:5432/hreactive");
+		assertThat(uri).hasScheme("postgresql");
 	}
 }

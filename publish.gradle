@@ -23,7 +23,7 @@ publishing {
             pom {
                 name = project.properties.title
                 description = project.description
-                url = 'https://github.com/hibernate/hibernate-rx'
+                url = 'https://github.com/hibernate/hibernate-reactive'
                 licenses {
                     license {
                         name = 'GNU Lesser General Public License, version 2.1'
@@ -31,9 +31,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection = 'scm:git:ssh://git@github.com/hibernate/hibernate-rx.git'
-                    developerConnection = 'scm:git:ssh://git@github.com/hibernate/hibernate-rx.git'
-                    url = 'https://github.com/hibernate/hibernate-rx.git'
+                    connection = 'scm:git:ssh://git@github.com/hibernate/hibernate-reactive.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/hibernate/hibernate-reactive.git'
+                    url = 'https://github.com/hibernate/hibernate-reactive.git'
                 }
             }
         }

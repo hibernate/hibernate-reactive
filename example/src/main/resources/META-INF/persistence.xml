@@ -8,8 +8,9 @@
         <class>org.hibernate.example.rx.Book</class>
 
         <properties>
-            <property name="javax.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/hibernate-rx?user=hibernate-rx&amp;password=hibernate-rx"/>
-            <!--property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/hibernate-rx?user=hibernate-rx&amp;password=hibernate-rx"/-->
+            <property name="javax.persistence.jdbc.url"
+                      value="jdbc:postgresql://localhost:5432/hreactive?user=hreactive&amp;password=hreactive"/>
+            <!--property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/hreactive?user=hreactive&amp;password=hreactive"/-->
 
             <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
             <property name="hibernate.show_sql" value="true"/>

@@ -1,6 +1,6 @@
 apply from: publishScript
 
-description = 'Hibernate RX API'
+description = 'Hibernate Reactive API'
  
 dependencies {
     implementation 'org.reactivestreams:reactive-streams:1.0.2'

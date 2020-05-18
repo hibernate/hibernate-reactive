@@ -7,7 +7,7 @@ import org.hibernate.resource.transaction.spi.TransactionCoordinatorOwner;
 
 /**
  * An implementation of the Hibernate {@link TransactionCoordinatorBuilder}
- * service for Hibernate RX.
+ * service for Hibernate Reactive.
  */
 public class RxTransactionCoordinatorBuilder implements TransactionCoordinatorBuilder {
 

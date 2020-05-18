@@ -5,11 +5,11 @@ package org.hibernate.rx.containers;
  * during tests.
  */
 public interface DatabaseConfiguration {
-	
-	boolean USE_DOCKER = Boolean.getBoolean( "docker" );
 
-	String USERNAME = "hibernate-rx";
-	String PASSWORD = "hibernate-rx";
-	String DB_NAME = "hibernate-rx";
+	boolean USE_DOCKER = Boolean.getBoolean("docker");
+
+	String USERNAME = "hreactive";
+	String PASSWORD = "hreactive";
+	String DB_NAME = "hreactive";
 
 }

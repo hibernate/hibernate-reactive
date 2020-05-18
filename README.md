@@ -1,6 +1,6 @@
 ![Hibernate logo][]
 
-[![GitHub Actions Status](<https://img.shields.io/github/workflow/status/hibernate/hibernate-rx/Gradle%20Build%20and%20Test?logo=GitHub>)](https://github.com/hibernate/hibernate-rx/actions?query=workflow%3A%22Gradle+Build+and+Test%22)
+[![GitHub Actions Status](<https://img.shields.io/github/workflow/status/hibernate/hibernate-reactive/Gradle%20Build%20and%20Test?logo=GitHub>)](https://github.com/hibernate/hibernate-reactive/actions?query=workflow%3A%22Gradle+Build+and+Test%22)
 [![License](https://img.shields.io/badge/License-LGPL%202.1-green.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt)
 
 # Hibernate Reactive
@@ -70,18 +70,18 @@ need to create the test database. From the command line, type the
 following commands:
 
 	psql
-	create database "hibernate-rx";
-	create user "hibernate-rx" with password 'hibernate-rx';
-	grant all privileges on database "hibernate-rx" to "hibernate-rx";
+	create database "hreactive";
+	create user "hreactive" with password 'hreactive';
+	grant all privileges on database "hreactive" to "hreactive";
 
 There are also tests for MySQL, so if you also have MySQL installed, 
 you can run these tests as well. Create the test database using the 
 following commands:
 
     mysql -uroot
-    create database `hibernate-rx`;
-    create user `hibernate-rx` identified by 'hibernate-rx';
-    grant all on `hibernate-rx`.* to `hibernate-rx`;
+    create database `hreactive`;
+    create user `hreactive` identified by 'hreactive';
+    grant all on `hreactive`.* to `hreactive`;
     
 Finally, run `./gradlew test` from the `hibernate-reactive` directory.
 
@@ -115,7 +115,7 @@ Hibernate or JPA.
 
 Add the following dependency to your project:
 
-	org.hibernate.reactive:hibernate-rx-core:1.0.0-SNAPSHOT
+	org.hibernate.reactive:hibernate-reactive-core:1.0.0-SNAPSHOT
 
 You'll also need to add your Hibernate 5.4 snapshot, the Vert.x 
 reactive database driver, and a regular JDBC driver (which is 
@@ -208,6 +208,6 @@ Instead, use the following supported features:
   returns a `CompletionStage`
 - `@FetchProfile`
 
-Note that you should not use Hibernate RX with a second-level cache 
+Note that you should not use Hibernate Reactive with a second-level cache 
 implementation which performs blocking IO, for example passivation to the
 filesystem or distributed replication.
