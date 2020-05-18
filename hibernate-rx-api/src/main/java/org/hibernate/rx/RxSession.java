@@ -2,7 +2,6 @@ package org.hibernate.rx;
 
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
-import org.hibernate.query.NativeQuery;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -179,8 +178,6 @@ public interface RxSession {
 	<T> CompletionStage<T> fetch(T association);
 
 
-	<R> RxQuery<R> createQuery(String queryString);
-
 	/**
 	 * Create an instance of {@link RxQuery} for the given HQL/JPQL query
 	 * string.
@@ -190,6 +187,19 @@ public interface RxSession {
 	 * @return The {@link RxQuery} instance for manipulation and execution
 	 *
 	 * @see javax.persistence.EntityManager#createQuery(String)
+	 */
+	<R> RxQuery<R> createQuery(String queryString);
+
+	/**
+	 * Create an instance of {@link RxQuery} for the given HQL/JPQL query
+	 * string.
+	 *
+	 * @param queryString The HQL/JPQL query
+	 * @param resultType the Java type returned in each row of query results
+	 *
+	 * @return The {@link RxQuery} instance for manipulation and execution
+	 *
+	 * @see javax.persistence.EntityManager#createQuery(String, Class)
 	 */
 	<R> RxQuery<R> createQuery(String queryString, Class<R> resultType);
 
