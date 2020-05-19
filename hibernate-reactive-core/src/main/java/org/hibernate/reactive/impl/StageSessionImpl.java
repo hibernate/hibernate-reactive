@@ -3,6 +3,7 @@ package org.hibernate.reactive.impl;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import javax.persistence.LockModeType;
 
 import org.hibernate.CacheMode;
@@ -10,6 +11,7 @@ import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.reactive.query.impl.StageQueryImpl;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 /**
  * Implements the {@link Stage.Session} API. This delegating class is
@@ -78,12 +80,22 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public CompletionStage<Stage.Session> persist(Object entity) {
-		return delegate.reactivePersist( entity ).thenApply( v-> this );
+		return delegate.reactivePersist( entity ).thenApply( v -> this );
+	}
+
+	@Override
+	public CompletionStage<Stage.Session> persist(Object... entity) {
+		return applyToAll( delegate::reactivePersist, entity ).thenApply( v -> this );
 	}
 
 	@Override
 	public CompletionStage<Stage.Session> remove(Object entity) {
-		return delegate.reactiveRemove( entity ).thenApply( v-> this );
+		return delegate.reactiveRemove( entity ).thenApply( v -> this );
+	}
+
+	@Override
+	public CompletionStage<Stage.Session> remove(Object... entity) {
+		return applyToAll( delegate::reactiveRemove, entity ).thenApply( v -> this );
 	}
 
 	@Override
@@ -92,8 +104,18 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public <T> CompletionStage<Void> merge(T... entity) {
+		return applyToAll( delegate::reactiveMerge, entity ).thenApply( v -> null );
+	}
+
+	@Override
 	public CompletionStage<Stage.Session> refresh(Object entity) {
-		return delegate.reactiveRefresh( entity ).thenApply( v-> this );
+		return delegate.reactiveRefresh( entity ).thenApply( v -> this );
+	}
+
+	@Override
+	public CompletionStage<Stage.Session> refresh(Object... entity) {
+		return applyToAll( delegate::reactiveRefresh, entity ).thenApply( v -> this );
 	}
 
 	@Override
@@ -214,6 +236,23 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public void close() {
 		delegate.close();
+	}
+
+	private <T> CompletionStage<T> applyToAll(
+			Function<Object, CompletionStage<T>> op,
+			Object[] entity) {
+		if ( entity.length==0 ) {
+			return CompletionStages.nullFuture();
+		}
+		else if ( entity.length==1 ) {
+			return op.apply( entity[0] );
+		}
+
+		CompletionStage<T> stage = CompletionStages.nullFuture();
+		for (Object e: entity) {
+			stage = stage.thenCompose( v -> op.apply(e) );
+		}
+		return stage;
 	}
 
 }

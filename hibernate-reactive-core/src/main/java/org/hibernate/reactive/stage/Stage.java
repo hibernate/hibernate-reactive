@@ -205,6 +205,13 @@ public interface Stage {
 		CompletionStage<Session> persist(Object entity);
 
 		/**
+		 * Persist multiple entities.
+		 *
+		 * @see #persist(Object)
+		 */
+		CompletionStage<Session> persist(Object... entities);
+
+		/**
 		 * Asynchronously remove a persistent instance from the datastore. The
 		 * argument may be an instance associated with the receiving session or
 		 * a transient instance with an identifier associated with existing
@@ -222,6 +229,13 @@ public interface Stage {
 		CompletionStage<Session> remove(Object entity);
 
 		/**
+		 * Remove multiple entities.
+		 *
+		 * @see #remove(Object)
+		 */
+		CompletionStage<Session> remove(Object... entities);
+
+		/**
 		 * Copy the state of the given object onto the persistent object with the same
 		 * identifier. If there is no persistent instance currently associated with
 		 * the session, it will be loaded. Return the persistent instance. If the
@@ -230,13 +244,20 @@ public interface Stage {
 		 * This operation cascades to associated instances if the association is mapped
 		 * with {@code cascade="merge"}
 		 *
-		 * @param object a detached instance with state to be copied
+		 * @param entity a detached instance with state to be copied
 		 *
 		 * @return an updated persistent instance
 		 *
 		 * @see javax.persistence.EntityManager#merge(Object)
 		 */
-		<T> CompletionStage<T> merge(T object);
+		<T> CompletionStage<T> merge(T entity);
+
+		/**
+		 * Merge multiple entities.
+		 *
+		 * @see #merge(Object)
+		 */
+		<T> CompletionStage<Void> merge(T... entities);
 
 		/**
 		 * Re-read the state of the given instance from the underlying database. It is
@@ -254,6 +275,13 @@ public interface Stage {
 		 * @see javax.persistence.EntityManager#refresh(Object)
 		 */
 		CompletionStage<Session> refresh(Object entity);
+
+		/**
+		 * Refresh multiple entities.
+		 *
+		 * @see #refresh(Object)
+		 */
+		CompletionStage<Session> refresh(Object... entities);
 
 		/**
 		 * Force this session to flush asynchronously. Must be called at the

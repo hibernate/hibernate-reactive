@@ -21,8 +21,7 @@ public class Main {
 		//obtain a reactive session
 		Session session1 = sessionFactory.openReactiveSession();
 		//persist the Books
-		session1.persist(book1)
-				.thenCompose( $ -> session1.persist(book2) )
+		session1.persist(book1, book2)
 				.thenCompose( $ -> session1.flush() )
 				.thenAccept( $ -> session1.close() )
 				.toCompletableFuture()
