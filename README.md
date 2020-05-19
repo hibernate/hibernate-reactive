@@ -40,11 +40,11 @@ installed on your machine.
 To compile this project, navigate to the `hibernate-reactive` directory, 
 and type:
 
-	./gradlew compileJava
+    ./gradlew compileJava
 
 To publish Hibernate Reactive to your local Maven repository, run:
 
-	./gradlew publishToMavenLocal
+    ./gradlew publishToMavenLocal
 
 ### Running tests
 
@@ -69,10 +69,10 @@ If you already have PostgreSQL installed on your machine, you'll just
 need to create the test database. From the command line, type the 
 following commands:
 
-	psql
-	create database "hreactive";
-	create user "hreactive" with password 'hreactive';
-	grant all privileges on database "hreactive" to "hreactive";
+    psql
+    create database "hreactive";
+    create user "hreactive" with password 'hreactive';
+    grant all privileges on database "hreactive" to "hreactive";
 
 There are also tests for MySQL, so if you also have MySQL installed, 
 you can run these tests as well. Create the test database using the 
@@ -115,15 +115,17 @@ Hibernate or JPA.
 
 Add the following dependency to your project:
 
-	org.hibernate.reactive:hibernate-reactive-core:1.0.0-SNAPSHOT
+    org.hibernate.reactive:hibernate-reactive-core:1.0.0-SNAPSHOT
 
 You'll also need to add dependencies to:
 
-- Hibernate ORM: `org.hibernate:hibernate-core`, and
-- the Vert.x reactive database driver for your database, for example
+- Hibernate ORM, `org.hibernate:hibernate-core`, and
+- the Vert.x reactive database driver for your database, for example,
   `io.vertx:vertx-pg-client` or `io.vertx:vertx-mysql-client`.
 
-There's an example Gradle build included in the example program.
+There's an example Gradle [build][] included in the example program.
+
+[build]: https://github.com/hibernate/hibernate-reactive/blob/master/example/build.gradle
 
 ### Mapping entity classes
 
@@ -151,17 +153,17 @@ program.
 Obtain a Hibernate `SessionFactory` or JPA `EntityManagerFactory` 
 just as you normally would, for example, by calling:
 
-	EntityManagerFactory emf = createEntityManagerFactory("example");
+    EntityManagerFactory emf = createEntityManagerFactory("example");
 
  Now, `unwrap()` the reactive `SessionFactory`:
  
-	Stage.SessionFactory sessionFactory = emf.unwrap(Stage.SessionFactory.class);
+    Stage.SessionFactory sessionFactory = emf.unwrap(Stage.SessionFactory.class);
 
 ### Obtaining a reactive session
 
 To obtain a reactive `Session` from the `SessionFactory`, use `openReactiveSession()`:
 
-	Stage.Session session = sessionFactory.openReactiveSession();
+    Stage.Session session = sessionFactory.openReactiveSession();
 
 ### Using the reactive session
 
@@ -169,24 +171,28 @@ The `Session` interface has methods with the same names as methods of the
 JPA `EntityManager`. However, each of these methods returns its result via
 a `CompletionStage`, for example:
 
-	session1.find(Book.class, book.id)
-		.thenAccept( bOOk -> System.out.println(bOOk.title + " is a great book!") )
-		.thenAccept( $ -> session1.close() )
+    session1.find(Book.class, book.id)
+            .thenAccept( bOOk -> System.out.println(bOOk.title + " is a great book!") )
+            .thenAccept( $ -> session1.close() )
 
 Methods with no meaningful return value return a reference to the `Session`:
-	
-	session2.persist(book)
-		.thenCompose( $ -> session2.flush() )
-		.thenAccept( $ -> session2.close() )
+    
+    session2.persist(book)
+            .thenCompose( $ -> session2.flush() )
+            .thenAccept( $ -> session2.close() )
 
 That `createQuery()` method produces a reactive `Query`, allowing HQL / JPQL 
 queries to be executed asynchronously, always returning their results via a 
 `CompletionStage`:
 
-	session3.createQuery("select title from Book order by title desc")
-	    .getResultList()
-		.thenAccept(System.out::println)
-		.thenAccept( $ -> session3.close() )
+    session3.createQuery("select title from Book order by title desc")
+            .getResultList()
+            .thenAccept(System.out::println)
+            .thenAccept( $ -> session3.close() )
+
+If you already know Hibernate, and if you already have some experience with 
+reactive programming, there's not much new to learn here: you should 
+immediately feel right at home. 
 
 ## Limitations
 
@@ -202,6 +208,7 @@ At this time, Hibernate Reactive does _not_ support the following features:
   (eager join fetching *is* supported)
 - optimizers for `SEQUENCE` and `TABLE` id generation
 - criteria queries
+- native SQL queries
 
 Instead, use the following supported features:
 
@@ -210,6 +217,7 @@ Instead, use the following supported features:
 - explicit lazy loading via `Session.fetch(entity.association)`, which 
   returns a `CompletionStage`
 - `@FetchProfile`
+- HQL queries
 
 Note that you should not use Hibernate Reactive with a second-level cache 
 implementation which performs blocking IO, for example passivation to the
