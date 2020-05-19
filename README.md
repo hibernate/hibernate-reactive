@@ -102,7 +102,7 @@ The project has been tested with:
 - Java 8
 - PostgreSQL 12
 - MySQL 8
-- [Hibernate ORM](https://hibernate.org/orm/) 5.4.14.Final
+- [Hibernate ORM](https://hibernate.org/orm/) 5.4.16.Final
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 3.9.0
 - [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 3.9.0
 
@@ -117,11 +117,13 @@ Add the following dependency to your project:
 
 	org.hibernate.reactive:hibernate-reactive-core:1.0.0-SNAPSHOT
 
-You'll also need to add your Hibernate 5.4 snapshot, the Vert.x 
-reactive database driver, and a regular JDBC driver (which is 
-used for schema export).
+You'll also need to add dependencies to:
 
-There is an example Gradle build included in the example program.
+- Hibernate ORM: `org.hibernate:hibernate-core`, and
+- the Vert.x reactive database driver for your database, for example
+  `io.vertx:vertx-pg-client` or `io.vertx:vertx-mysql-client`.
+
+There's an example Gradle build included in the example program.
 
 ### Mapping entity classes
 
