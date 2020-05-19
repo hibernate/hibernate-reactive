@@ -233,19 +233,14 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		RxHQLQueryPlan rxPlan = (RxHQLQueryPlan) plan;
 
 		return rxAutoFlushIfRequired( plan.getQuerySpaces() )
-				.thenCompose( v ->  {
-					// FIXME: I guess I can fix this as a separate issue
-//					dontFlushFromFind++;   //stops flush being called multiple times if this method is recursively called
-					return rxPlan.perfomRxList( queryParameters, this )
-							.handle( (list, x) -> {
-								//	dontFlushFromFind--;
-								boolean success = x == null;
-								afterOperation( success );
-								delayedAfterCompletion();
-								RxUtil.rethrowIfNotNull( x );
-								return list;
-							} );
-				});
+				// FIXME: I guess I can fix this as a separate issue
+//				dontFlushFromFind++;   //stops flush being called multiple times if this method is recursively called
+				.thenCompose( v -> rxPlan.perfomRxList( queryParameters, this ) )
+				.whenComplete( (list, x) -> {
+//					dontFlushFromFind--;
+					afterOperation( x == null );
+					delayedAfterCompletion();
+				} );
 	}
 
 	@Override
@@ -258,12 +253,9 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		return rxAutoFlushIfRequired( rxPlan.getQuerySpaces() )
 				.thenAccept( v -> verifyImmutableEntityUpdate( rxPlan ) )
 				.thenCompose( v -> rxPlan.performExecuteRxUpdate( queryParameters, this ) )
-				.handle( (count, x) -> {
-					boolean success = x == null;
-					afterOperation( success );
+				.whenComplete( (count, x) -> {
+					afterOperation( x == null );
 					delayedAfterCompletion();
-					RxUtil.rethrowIfNotNull( x );
-					return count;
 				} );
 	}
 
@@ -340,11 +332,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 
 		return fire(event, copiedAlready, EventType.PERSIST_ONFLUSH,
 				(RxPersistEventListener l) -> l::rxOnPersist)
-				.handle( (v, e) -> {
-					delayedAfterCompletion();
-					RxUtil.rethrowIfNotNull( e );
-					return v;
-				} );
+				.whenComplete( (v, e) -> delayedAfterCompletion() );
 	}
 
 	@Override
@@ -703,13 +691,7 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 		checkOpenOrWaitingForAutoClose();
 
 		return fireLoadNoChecks( event, loadType )
-				.handle( (v, e) -> {
-					delayedAfterCompletion();
-					// Before the exception was only thrown if it was of type ObjectNotFoundException.
-					// I've changed the behaviour because we don't want to loose the exception
-					RxUtil.rethrowIfNotNull( e );
-					return v;
-				} );
+				.whenComplete( (v, e) -> delayedAfterCompletion() );
 	}
 
 	private CompletionStage<Void> fireLoadNoChecks(LoadEvent event, LoadEventListener.LoadType loadType) {
@@ -852,11 +834,8 @@ public class RxSessionInternalImpl extends SessionImpl implements RxSessionInter
 
 			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, RxSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
 			return fireLoad( event, loadType )
-					.handle( (v, t) -> {
-						afterOperation( t != null );
-						RxUtil.rethrowIfNotNull( t );
-						return (T) event.getResult();
-					} );
+					.whenComplete( (v, t) -> afterOperation( t != null ) )
+					.thenApply( v -> (T) event.getResult() );
 		}
 	}
 
