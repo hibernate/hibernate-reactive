@@ -12,8 +12,6 @@ Hibernate Reactive may be used in any plain Java program, but is
 especially targeted toward usage in reactive environments like 
 [Quarkus][] and [Vert.x][].
 
-Currently [PostgreSQL][] and [MySQL][] are supported.
-
 [Quarkus]: https://quarkus.io
 [Vert.x]: https://vertx.io
 [PostgreSQL]: https://www.postgresql.org
@@ -21,83 +19,11 @@ Currently [PostgreSQL][] and [MySQL][] are supported.
 
 [Hibernate logo]: http://static.jboss.org/hibernate/images/hibernate_logo_whitebkg_200px.png
 
-_This project is still at an experimental stage of development._
-
-## Example program
-
-There is a very simple example program in the [`example`][example] 
-directory.
-
-[example]: https://github.com/hibernate/hibernate-reactive/tree/master/example 
-
-## Gradle build
-
-The project is built with Gradle, but you do _not_ need to have Gradle
-installed on your machine.
-
-### Building
-
-To compile this project, navigate to the `hibernate-reactive` directory, 
-and type:
-
-    ./gradlew compileJava
-
-To publish Hibernate Reactive to your local Maven repository, run:
-
-    ./gradlew publishToMavenLocal
-
-### Running tests
-
-To run the tests, you'll need to get the test databases running on your 
-machine. There are three ways to start the test databases. 
-
-#### If you have Docker installed
-
-If you have Docker installed, running the tests is really easy. You
-don't need to create the test databases manually. Just type:
-
-    ./gradlew test -Pdocker
-    
-The tests will run faster if you reuse the same containers across 
-multiple test runs. To do this, set `testcontainers.reuse.enable=true` in 
-the file `$HOME/.testcontainers.properties`. (Just create the file if it 
-doesn't already exist.)
-
-#### If you already have PostgreSQL installed
-
-If you already have PostgreSQL installed on your machine, you'll just 
-need to create the test database. From the command line, type the 
-following commands:
-
-    psql
-    create database "hreactive";
-    create user "hreactive" with password 'hreactive';
-    grant all privileges on database "hreactive" to "hreactive";
-
-There are also tests for MySQL, so if you also have MySQL installed, 
-you can run these tests as well. Create the test database using the 
-following commands:
-
-    mysql -uroot
-    create database `hreactive`;
-    create user `hreactive` identified by 'hreactive';
-    grant all on `hreactive`.* to `hreactive`;
-    
-Finally, run `./gradlew test` from the `hibernate-reactive` directory.
-
-#### If you have Podman
-
-If you use [Podman][], you can start the test database by following 
-the instructions in [podman.md](podman.md).
-
-[Podman]: https://podman.io
-
-To run the tests, type `./gradlew test` from the `hibernate-reactive` 
-directory.
-
 ## Compatibility
 
-The project has been tested with:
+Currently [PostgreSQL][] and [MySQL][] are supported.
+
+Hibernate Reactive has been tested with:
 
 - Java 8
 - PostgreSQL 12
@@ -105,6 +31,11 @@ The project has been tested with:
 - [Hibernate ORM](https://hibernate.org/orm/) 5.4.16.Final
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 3.9.0
 - [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 3.9.0
+
+Support for DB2 and SQL Server is coming soon.
+
+Integration with Quarkus has been developed and tested but has not yet 
+been released.
 
 ## Usage
 
@@ -193,6 +124,78 @@ queries to be executed asynchronously, always returning their results via a
 If you already know Hibernate, and if you already have some experience with 
 reactive programming, there's not much new to learn here: you should 
 immediately feel right at home. 
+
+## Example program
+
+There is a very simple example program in the [`example`][example] 
+directory.
+
+[example]: https://github.com/hibernate/hibernate-reactive/tree/master/example 
+
+## Gradle build
+
+The project is built with Gradle, but you do _not_ need to have Gradle
+installed on your machine.
+
+### Building
+
+To compile this project, navigate to the `hibernate-reactive` directory, 
+and type:
+
+    ./gradlew compileJava
+
+To publish Hibernate Reactive to your local Maven repository, run:
+
+    ./gradlew publishToMavenLocal
+
+### Running tests
+
+To run the tests, you'll need to get the test databases running on your 
+machine. There are three ways to start the test databases. 
+
+#### If you have Docker installed
+
+If you have Docker installed, running the tests is really easy. You
+don't need to create the test databases manually. Just type:
+
+    ./gradlew test -Pdocker
+    
+The tests will run faster if you reuse the same containers across 
+multiple test runs. To do this, set `testcontainers.reuse.enable=true` in 
+the file `$HOME/.testcontainers.properties`. (Just create the file if it 
+doesn't already exist.)
+
+#### If you already have PostgreSQL installed
+
+If you already have PostgreSQL installed on your machine, you'll just 
+need to create the test database. From the command line, type the 
+following commands:
+
+    psql
+    create database "hreactive";
+    create user "hreactive" with password 'hreactive';
+    grant all privileges on database "hreactive" to "hreactive";
+
+There are also tests for MySQL, so if you also have MySQL installed, 
+you can run these tests as well. Create the test database using the 
+following commands:
+
+    mysql -uroot
+    create database `hreactive`;
+    create user `hreactive` identified by 'hreactive';
+    grant all on `hreactive`.* to `hreactive`;
+    
+Finally, run `./gradlew test` from the `hibernate-reactive` directory.
+
+#### If you have Podman
+
+If you use [Podman][], you can start the test database by following 
+the instructions in [podman.md](podman.md).
+
+[Podman]: https://podman.io
+
+To run the tests, type `./gradlew test` from the `hibernate-reactive` 
+directory.
 
 ## Limitations
 
