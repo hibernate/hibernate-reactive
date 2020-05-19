@@ -71,26 +71,13 @@ public class RxOuterJoinLoader extends OuterJoinLoader {
 		}
 		persistenceContext.beforeLoad();
 		return doRxQuery( session, queryParameters, returnProxies, forcedResultTransformer )
-				.handle( (list, e) -> {
-					persistenceContext.afterLoad();
-					if (e != null) {
-						persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig);
-						RxUtil.rethrow(e);
-					}
-					return list;
-				})
-				.thenCompose(list ->
+				.whenComplete( (list, e) -> persistenceContext.afterLoad() )
+				.thenCompose( list ->
 					// only initialize non-lazy collections after everything else has been refreshed
 					 ((RxPersistenceContextAdapter) persistenceContext ).rxInitializeNonLazyCollections()
 							.thenApply(v -> list)
 				)
-				.handle( (list, e) -> {
-					persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig);
-					if (e != null) {
-						RxUtil.rethrow(e);
-					}
-					return list;
-				});
+				.whenComplete( (list, e) -> persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig) );
 	}
 
 	private CompletionStage<List<Object>> doRxQuery(

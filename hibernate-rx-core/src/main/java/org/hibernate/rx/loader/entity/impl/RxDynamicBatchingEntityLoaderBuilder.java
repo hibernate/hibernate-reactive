@@ -610,43 +610,24 @@ public class RxDynamicBatchingEntityLoaderBuilder extends RxBatchingEntityLoader
 				}
 				persistenceContext.beforeLoad();
 				return doTheLoad( sql, queryParameters, session, ids)
-						.handle( (results, e) -> {
-							persistenceContext.afterLoad();
-							if (e != null) {
-								persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig);
-								if (e instanceof SQLException) {
-									throw jdbcServices.getSqlExceptionHelper().convert(
-											(SQLException) e,
-											"could not load an entity batch: " + MessageHelper.infoString(
-													getEntityPersisters()[0],
-													ids,
-													session.getFactory()
-											),
-											sql
-									);
-								}
-							}
-							return results;
-						})
+						.whenComplete( (list, e) -> persistenceContext.afterLoad() )
 						.thenCompose(list ->
 								// only initialize non-lazy collections after everything else has been refreshed
 								((RxPersistenceContextAdapter) persistenceContext ).rxInitializeNonLazyCollections()
 										.thenApply(v -> list)
 						)
+						.whenComplete( (list, e) -> persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig) )
 						.handle( (results, e) -> {
-							persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig);
-							if (e != null) {
-								if (e instanceof SQLException) {
-									throw jdbcServices.getSqlExceptionHelper().convert(
-											(SQLException) e,
-											"could not load an entity batch: " + MessageHelper.infoString(
-													getEntityPersisters()[0],
-													ids,
-													session.getFactory()
-											),
-											sql
+							if (e instanceof SQLException) {
+								throw jdbcServices.getSqlExceptionHelper().convert(
+										(SQLException) e,
+										"could not load an entity batch: " + MessageHelper.infoString(
+												getEntityPersisters()[0],
+												ids,
+												session.getFactory()
+										),
+										sql
 									);
-								}
 							}
 							return results;
 						});
