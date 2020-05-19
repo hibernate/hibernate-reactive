@@ -39,7 +39,7 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-public class MySQLAutoincrementTest extends BaseRxTest {
+public class MySQLAutoincrementTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {

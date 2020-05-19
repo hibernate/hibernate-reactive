@@ -13,7 +13,7 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-public class HQLQueryTest extends BaseRxTest {
+public class HQLQueryTest extends BaseReactiveTest {
 
 	Flour spelt = new Flour( 1, "Spelt", "An ancient grain, is a hexaploid species of wheat.", "Wheat flour" );
 	Flour rye = new Flour( 2, "Rye", "Used to bake the traditional sourdough breads of Germany.", "Wheat flour" );

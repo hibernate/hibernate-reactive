@@ -5,8 +5,8 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.PostgreSQL9Dialect;
-import org.hibernate.reactive.boot.RxSessionFactoryBuilder;
-import org.hibernate.reactive.stage.RxSessionFactory;
+import org.hibernate.reactive.boot.ReactiveSessionFactoryBuilder;
+import org.hibernate.reactive.stage.Stage;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,12 +20,12 @@ public class StandAloneReactiveTest {
 				.applySetting( AvailableSettings.DIALECT, PostgreSQL9Dialect.class.getName() )
 				.build();
 
-		RxSessionFactory rxf = new MetadataSources( registry )
+		Stage.SessionFactory factory = new MetadataSources( registry )
 				.buildMetadata()
 				.getSessionFactoryBuilder()
-				.unwrap( RxSessionFactoryBuilder.class )
+				.unwrap( ReactiveSessionFactoryBuilder.class )
 				.build();
 
-		assertThat( rxf ).isNotNull();
+		assertThat( factory ).isNotNull();
 	}
 }

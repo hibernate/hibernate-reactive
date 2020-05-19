@@ -20,8 +20,8 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.reactive.internal.RxSessionInternal;
-import org.hibernate.reactive.util.impl.RxUtil;
+import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.*;
 
 import java.io.Serializable;
@@ -50,7 +50,7 @@ public final class Cascade<C> {
 	private final C context;
 	private CascadePoint cascadePoint;
 
-	private CompletionStage<Void> stage = RxUtil.nullFuture();
+	private CompletionStage<Void> stage = CompletionStages.nullFuture();
 
 	/**
 	 * 	@param persister The parent's entity persister
@@ -76,7 +76,7 @@ public final class Cascade<C> {
 			Object entity,
 			EventSource session) {
 
-		CompletionStage<?> beforeDelete = RxUtil.nullFuture();
+		CompletionStage<?> beforeDelete = CompletionStages.nullFuture();
 		if ( persister.hasCascades() ) {
 			CascadeStyle[] cascadeStyles = persister.getPropertyCascadeStyles();
 			Object[] state = persister.getPropertyValues( entity );
@@ -84,7 +84,7 @@ public final class Cascade<C> {
 				if ( cascadeStyles[i].doCascade( action.delegate() ) ) {
 					Object fetchable = state[i];
 					if ( !Hibernate.isInitialized( fetchable ) ) {
-						beforeDelete = beforeDelete.thenCompose( v -> session.unwrap(RxSessionInternal.class).rxFetch( fetchable, true ) );
+						beforeDelete = beforeDelete.thenCompose( v -> session.unwrap(ReactiveSessionInternal.class).reactiveFetch( fetchable, true ) );
 					}
 				}
 			}
@@ -98,7 +98,7 @@ public final class Cascade<C> {
 	 * which is specific to each CascadingAction type
 	 */
 	public CompletionStage<Void> cascade() throws HibernateException {
-		return RxUtil.nullFuture().thenCompose( v -> {
+		return CompletionStages.nullFuture().thenCompose(v -> {
 			CacheMode cacheMode = eventSource.getCacheMode();
 			if (action==CascadingActions.DELETE) {
 				eventSource.setCacheMode( CacheMode.GET );

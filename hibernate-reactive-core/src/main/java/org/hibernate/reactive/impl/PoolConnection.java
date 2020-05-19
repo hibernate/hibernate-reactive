@@ -5,8 +5,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.sqlclient.*;
-import org.hibernate.reactive.stage.RxSession;
-import org.hibernate.reactive.service.RxConnection;
+import org.hibernate.reactive.service.ReactiveConnection;
+import org.hibernate.reactive.stage.Stage;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -18,7 +18,7 @@ import static io.vertx.core.Future.succeededFuture;
 /**
  * A reactive connection based on Vert.x's {@link Pool}.
  */
-public class PoolConnection implements RxConnection {
+public class PoolConnection implements ReactiveConnection {
 
 	private final Pool pool;
 	private final boolean showSQL;
@@ -30,8 +30,8 @@ public class PoolConnection implements RxConnection {
 
 	@Override
 	public CompletionStage<Void> inTransaction(
-			Consumer<RxSession> consumer,
-			RxSession delegate) {
+			Consumer<Stage.Session> consumer,
+			Stage.Session delegate) {
 		// Not used at the moment
 		// Just an idea
 //		return CompletableFuture.runAsync( () -> {

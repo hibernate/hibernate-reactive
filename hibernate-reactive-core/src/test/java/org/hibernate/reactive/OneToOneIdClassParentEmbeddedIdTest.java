@@ -8,7 +8,7 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class OneToOneIdClassParentEmbeddedIdTest extends BaseRxTest {
+public class OneToOneIdClassParentEmbeddedIdTest extends BaseReactiveTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();

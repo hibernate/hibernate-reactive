@@ -10,7 +10,7 @@ import javax.persistence.OneToOne;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class OneToOneNoIdClassTest extends BaseRxTest {
+public class OneToOneNoIdClassTest extends BaseReactiveTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();

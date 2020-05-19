@@ -7,7 +7,7 @@ import org.junit.Test;
 import javax.persistence.*;
 import java.util.Objects;
 
-public class EagerOneToOneAssociationTest extends BaseRxTest {
+public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {

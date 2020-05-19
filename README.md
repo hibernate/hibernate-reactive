@@ -151,19 +151,19 @@ just as you normally would, for example, by calling:
 
 	EntityManagerFactory emf = createEntityManagerFactory("example");
 
- Now, `unwrap()` the `RxSessionFactory`:
+ Now, `unwrap()` the reactive `SessionFactory`:
  
-	RxSessionFactory sessionFactory = emf.unwrap(RxSessionFactory.class);
+	Stage.SessionFactory sessionFactory = emf.unwrap(Stage.SessionFactory.class);
 
 ### Obtaining a reactive session
 
-To obtain an `RxSession` from the `RxSessionFactory`, use `openRxSession()`:
+To obtain a reactive `Session` from the `SessionFactory`, use `openReactiveSession()`:
 
-	RxSession session = sessionFactory.openRxSession();
+	Stage.Session session = sessionFactory.openReactiveSession();
 
 ### Using the reactive session
 
-The `RxSession` interface has methods with the same names as methods of the
+The `Session` interface has methods with the same names as methods of the
 JPA `EntityManager`. However, each of these methods returns its result via
 a `CompletionStage`, for example:
 
@@ -171,14 +171,15 @@ a `CompletionStage`, for example:
 		.thenAccept( bOOk -> System.out.println(bOOk.title + " is a great book!") )
 		.thenAccept( $ -> session1.close() )
 
-Methods with no meaningful return value return a reference to the `RxSession`:
+Methods with no meaningful return value return a reference to the `Session`:
 	
 	session2.persist(book)
 		.thenCompose( $ -> session2.flush() )
 		.thenAccept( $ -> session2.close() )
 
-That `createQuery()` method produces an `RxQuery`, allowing HQL / JPQL queries
-to be executed asynchronously, returning their results via a `CompletionStage`:
+That `createQuery()` method produces a reactive `Query`, allowing HQL / JPQL 
+queries to be executed asynchronously, always returning their results via a 
+`CompletionStage`:
 
 	session3.createQuery("select title from Book order by title desc")
 	    .getResultList()
@@ -204,7 +205,7 @@ Instead, use the following supported features:
 
 - optimistic locking with `@Version`
 - `@OneToMany(mappedBy=...)` together with `@ManyToOne`
-- explicit lazy loading via `RxSession.fetch(entity.association)`, which 
+- explicit lazy loading via `Session.fetch(entity.association)`, which 
   returns a `CompletionStage`
 - `@FetchProfile`
 

@@ -17,8 +17,8 @@ import org.hibernate.internal.util.StringHelper;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.reactive.persister.entity.impl.RxEntityPersister;
-import org.hibernate.reactive.util.impl.RxUtil;
+import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
@@ -73,7 +73,7 @@ public final class ForeignKeys {
 		 */
 		public CompletionStage<Void> nullifyTransientReferences(final Object[] values) {
 			CompletionStage<Void> result = nullifyTransientReferences(null, values, persister.getPropertyTypes(), persister.getPropertyNames());
-			return result==null ? RxUtil.nullFuture() : result;
+			return result==null ? CompletionStages.nullFuture() : result;
 		}
 
 		/**
@@ -107,12 +107,12 @@ public final class ForeignKeys {
 		//				fetcher = ( (LazyPropertyInitializer) persister ).initializeLazyProperty( propertyName, self, session );
 					}
 					else {
-						fetcher = RxUtil.completedFuture( value );
+						fetcher = CompletionStages.completedFuture( value );
 					}
 					result = fetcher.thenCompose( fetchedValue -> {
 						if ( fetchedValue == null ) {
 							// The uninitialized value was initialized to null
-							return RxUtil.nullFuture();
+							return CompletionStages.nullFuture();
 						}
 						else {
 							// If the value is not nullifiable, make sure that the
@@ -190,14 +190,14 @@ public final class ForeignKeys {
 				throws HibernateException {
 			if ( object == LazyPropertyInitializer.UNFETCHED_PROPERTY ) {
 				// this is the best we can do...
-				return RxUtil.falseFuture();
+				return CompletionStages.falseFuture();
 			}
 
 			if ( object instanceof HibernateProxy ) {
 				// if its an uninitialized proxy it can't be transient
 				final LazyInitializer li = ( (HibernateProxy) object ).getHibernateLazyInitializer();
 				if ( li.getImplementation( session ) == null ) {
-					return RxUtil.falseFuture();
+					return CompletionStages.falseFuture();
 					// ie. we never have to null out a reference to
 					// an uninitialized proxy
 				}
@@ -211,7 +211,7 @@ public final class ForeignKeys {
 			// unless we are using native id generation, in which
 			// case we definitely need to nullify
 			if ( object == self ) {
-				return RxUtil.completedFuture( isEarlyInsert
+				return CompletionStages.completedFuture( isEarlyInsert
 						|| isDelete && session.getJdbcServices().getDialect().hasSelfReferentialForeignKeyBug() );
 			}
 
@@ -225,7 +225,7 @@ public final class ForeignKeys {
 				return isTransient( entityName, object, null, session );
 			}
 			else {
-				return RxUtil.completedFuture( entityEntry.isNullifiable( isEarlyInsert, session ) );
+				return CompletionStages.completedFuture( entityEntry.isNullifiable( isEarlyInsert, session ) );
 			}
 		}
 	}
@@ -246,11 +246,11 @@ public final class ForeignKeys {
 	@SuppressWarnings("SimplifiableIfStatement")
 	public static CompletionStage<Boolean> isNotTransient(String entityName, Object entity, Boolean assumed, SessionImplementor session) {
 		if ( entity instanceof HibernateProxy ) {
-			return RxUtil.trueFuture();
+			return CompletionStages.trueFuture();
 		}
 
 		if ( session.getPersistenceContextInternal().isEntryFor( entity ) ) {
-			return RxUtil.trueFuture();
+			return CompletionStages.trueFuture();
 		}
 
 		// todo : shouldnt assumed be revered here?
@@ -276,29 +276,29 @@ public final class ForeignKeys {
 		if ( entity == LazyPropertyInitializer.UNFETCHED_PROPERTY ) {
 			// an unfetched association can only point to
 			// an entity that already exists in the db
-			return RxUtil.falseFuture();
+			return CompletionStages.falseFuture();
 		}
 
 		// let the interceptor inspect the instance to decide
 		Boolean isUnsaved = session.getInterceptor().isTransient( entity );
 		if ( isUnsaved != null ) {
-			return RxUtil.completedFuture( isUnsaved );
+			return CompletionStages.completedFuture( isUnsaved );
 		}
 
 		// let the persister inspect the instance to decide
 		final EntityPersister persister = session.getEntityPersister( entityName, entity );
 		isUnsaved = persister.isTransient( entity, session );
 		if ( isUnsaved != null ) {
-			return RxUtil.completedFuture( isUnsaved );
+			return CompletionStages.completedFuture( isUnsaved );
 		}
 
 		// we use the assumed value, if there is one, to avoid hitting
 		// the database
 		if ( assumed != null ) {
-			return RxUtil.completedFuture( assumed );
+			return CompletionStages.completedFuture( assumed );
 		}
 
-		return ((RxEntityPersister) persister).rxIsTransient( entity, session );
+		return ((ReactiveEntityPersister) persister).reactiveIsTransient( entity, session );
 
 		//TODO: reactive snapshot fetching!!!!
 
@@ -307,7 +307,7 @@ public final class ForeignKeys {
 //				persister.getIdentifier( entity, session ),
 //				persister
 //		);
-//		return RxUtil.completedFuture(snapshot == null);
+//		return CompletionStages.completedFuture(snapshot == null);
 
 	}
 
@@ -333,7 +333,7 @@ public final class ForeignKeys {
 			final Object object,
 			final SessionImplementor session) throws TransientObjectException {
 		if ( object == null ) {
-			return RxUtil.nullFuture();
+			return CompletionStages.nullFuture();
 		}
 		else {
 			Serializable id = session.getContextEntityIdentifier( object );
@@ -354,7 +354,7 @@ public final class ForeignKeys {
 						} );
 			}
 			else {
-				return RxUtil.completedFuture( id );
+				return CompletionStages.completedFuture( id );
 			}
 		}
 	}

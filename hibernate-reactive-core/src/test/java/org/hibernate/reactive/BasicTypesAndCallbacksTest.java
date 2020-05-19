@@ -14,7 +14,7 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-public class BasicTypesAndCallbacksTest extends BaseRxTest {
+public class BasicTypesAndCallbacksTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {

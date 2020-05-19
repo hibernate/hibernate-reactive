@@ -9,7 +9,7 @@ package org.hibernate.reactive.engine.impl;
 import org.hibernate.HibernateException;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.reactive.stage.RxSession;
+import org.hibernate.reactive.stage.Stage;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.Type;
 
@@ -17,7 +17,7 @@ import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
 
 /**
- * A {@link RxSession reactive session} operation that may
+ * A {@link Stage.Session reactive session} operation that may
  * be cascaded from a parent entity to its children. A non-blocking counterpart
  * to {@link org.hibernate.engine.spi.CascadingAction}.
  *

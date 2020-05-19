@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class FilterTest extends BaseRxTest {
+public class FilterTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {

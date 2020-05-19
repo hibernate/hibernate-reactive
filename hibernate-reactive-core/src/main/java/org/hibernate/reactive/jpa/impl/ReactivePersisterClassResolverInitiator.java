@@ -1,0 +1,22 @@
+package org.hibernate.reactive.jpa.impl;
+
+import java.util.Map;
+
+import org.hibernate.boot.registry.StandardServiceInitiator;
+import org.hibernate.persister.spi.PersisterClassResolver;
+import org.hibernate.service.spi.ServiceRegistryImplementor;
+
+public class ReactivePersisterClassResolverInitiator implements StandardServiceInitiator<PersisterClassResolver> {
+	public static final ReactivePersisterClassResolverInitiator INSTANCE = new ReactivePersisterClassResolverInitiator();
+
+	@Override
+	public Class<PersisterClassResolver> getServiceInitiated() {
+		return PersisterClassResolver.class;
+	}
+
+	@Override
+	public PersisterClassResolver initiateService(
+			Map configurationValues, ServiceRegistryImplementor registry) {
+		return new ReactivePersisterClassResolver();
+	}
+}

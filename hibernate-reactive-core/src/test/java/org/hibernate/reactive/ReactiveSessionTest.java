@@ -11,7 +11,7 @@ import javax.persistence.Table;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
-public class ReactiveSessionTest extends BaseRxTest {
+public class ReactiveSessionTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class LazyOneToManyAssociationWithFetchTest extends BaseRxTest {
+public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();

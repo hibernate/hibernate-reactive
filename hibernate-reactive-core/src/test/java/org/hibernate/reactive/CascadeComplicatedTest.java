@@ -3,7 +3,7 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.Hibernate;
-import org.hibernate.reactive.stage.RxSession;
+import org.hibernate.reactive.stage.Stage;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -62,7 +62,7 @@ import java.util.concurrent.CompletionStage;
  * Entities are inserted in the following order:
  * c, e, d, b, g, f.
  */
-public class CascadeComplicatedTest extends BaseRxTest {
+public class CascadeComplicatedTest extends BaseReactiveTest {
 
 	private B b;
 	private C c;
@@ -234,7 +234,7 @@ public class CascadeComplicatedTest extends BaseRxTest {
 		g.fCollection.remove(f);
 	}
 
-	private CompletionStage<Object> check(CompletionStage<RxSession> sessionStage, TestContext context) {
+	private CompletionStage<Object> check(CompletionStage<Stage.Session> sessionStage, TestContext context) {
 		return  sessionStage.thenCompose(sCheck -> sCheck.find(B.class, bId)
 				.thenApply(bCheck -> {
 					context.assertEquals(b, bCheck);

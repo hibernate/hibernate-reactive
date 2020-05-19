@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class EagerOneToManyAssociationTest extends BaseRxTest {
+public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();

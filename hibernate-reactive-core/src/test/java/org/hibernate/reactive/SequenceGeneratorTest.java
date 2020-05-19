@@ -7,7 +7,7 @@ import org.junit.Test;
 import javax.persistence.*;
 import java.util.Objects;
 
-public class SequenceGeneratorTest extends BaseRxTest {
+public class SequenceGeneratorTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {

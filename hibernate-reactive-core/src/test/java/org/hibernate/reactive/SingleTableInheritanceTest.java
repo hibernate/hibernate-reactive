@@ -8,7 +8,7 @@ import javax.persistence.*;
 import java.util.Date;
 import java.util.Objects;
 
-public class SingleTableInheritanceTest extends BaseRxTest {
+public class SingleTableInheritanceTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {

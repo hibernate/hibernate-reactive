@@ -13,7 +13,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
-public class CompositeIdTest extends BaseRxTest {
+public class CompositeIdTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {

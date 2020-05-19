@@ -19,7 +19,7 @@ import org.hibernate.mapping.Column;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.SimpleValue;
 import org.hibernate.persister.spi.PersisterCreationContext;
-import org.hibernate.reactive.util.impl.RxUtil;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.Properties;
 
@@ -73,22 +73,22 @@ public class IdentifierGeneration {
 		return params;
 	}
 
-	static RxIdentifierGenerator<?> asRxGenerator(PersistentClass persistentClass, PersisterCreationContext creationContext, IdentifierGenerator identifierGenerator) {
+	static ReactiveIdentifierGenerator<?> asReactiveGenerator(PersistentClass persistentClass, PersisterCreationContext creationContext, IdentifierGenerator identifierGenerator) {
 		if (identifierGenerator instanceof SequenceStyleGenerator) {
 			DatabaseStructure structure = ((SequenceStyleGenerator) identifierGenerator).getDatabaseStructure();
 			if (structure instanceof TableStructure) {
-				return new TableRxIdentifierGenerator(persistentClass, creationContext);
+				return new TableReactiveIdentifierGenerator(persistentClass, creationContext);
 			}
 			else if (structure instanceof SequenceStructure) {
-				return new SequenceRxIdentifierGenerator(persistentClass, creationContext);
+				return new SequenceReactiveIdentifierGenerator(persistentClass, creationContext);
 			}
 			throw new IllegalStateException("unknown structure type");
 		}
 		else if (identifierGenerator instanceof TableGenerator) {
-			return new TableRxIdentifierGenerator(persistentClass, creationContext);
+			return new TableReactiveIdentifierGenerator(persistentClass, creationContext);
 		}
 		else if (identifierGenerator instanceof SequenceGenerator) {
-			return new SequenceRxIdentifierGenerator(persistentClass, creationContext);
+			return new SequenceReactiveIdentifierGenerator(persistentClass, creationContext);
 		}
 		else if (identifierGenerator instanceof SelectGenerator) {
 			throw new HibernateException("SelectGenerator is not yet supported");
@@ -100,15 +100,15 @@ public class IdentifierGeneration {
 //					.getIdentityColumnSupport().supportsInsertSelectIdentity() ) {
 //				throw new HibernateException("getGeneratedKeys() is disabled");
 //			}
-			return f -> RxUtil.nullFuture();
+			return f -> CompletionStages.nullFuture();
 		}
 		else if (identifierGenerator instanceof Assigned
 				|| identifierGenerator instanceof CompositeNestedGeneratedValueGenerator) {
 			//TODO!
-			return f -> RxUtil.nullFuture();
+			return f -> CompletionStages.nullFuture();
 		}
 		else {
-			return f -> RxUtil.completedFuture( identifierGenerator.generate(f, null) );
+			return f -> CompletionStages.completedFuture( identifierGenerator.generate(f, null) );
 		}
 	}
 

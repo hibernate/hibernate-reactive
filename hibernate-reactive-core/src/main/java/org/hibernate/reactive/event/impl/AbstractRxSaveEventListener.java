@@ -17,13 +17,13 @@ import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
-import org.hibernate.reactive.internal.RxSessionInternal;
+import org.hibernate.reactive.impl.ReactiveSessionInternal;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingAction;
-import org.hibernate.reactive.engine.impl.RxEntityIdentityInsertAction;
-import org.hibernate.reactive.engine.impl.RxEntityRegularInsertAction;
-import org.hibernate.reactive.persister.entity.impl.RxEntityPersister;
-import org.hibernate.reactive.util.impl.RxUtil;
+import org.hibernate.reactive.engine.impl.ReactiveEntityIdentityInsertAction;
+import org.hibernate.reactive.engine.impl.ReactiveEntityRegularInsertAction;
+import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.IntegerType;
 import org.hibernate.type.LongType;
 import org.hibernate.type.Type;
@@ -36,14 +36,14 @@ import java.util.concurrent.CompletionStage;
 /**
  * Functionality common to persist and merge event listeners.
  *
- * @see DefaultRxPersistEventListener
- * @see DefaultRxPersistOnFlushEventListener
- * @see DefaultRxMergeEventListener
+ * @see DefaultReactivePersistEventListener
+ * @see DefaultReactivePersistOnFlushEventListener
+ * @see DefaultReactiveMergeEventListener
  */
-abstract class AbstractRxSaveEventListener<C>
+abstract class AbstractReactiveSaveEventListener<C>
 		implements CallbackRegistryConsumer {
 
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( AbstractRxSaveEventListener.class );
+	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( AbstractReactiveSaveEventListener.class );
 
 	private CallbackRegistry callbackRegistry;
 
@@ -62,7 +62,7 @@ abstract class AbstractRxSaveEventListener<C>
 	 *
 	 * @return The id used to save the entity.
 	 */
-	protected CompletionStage<Void> rxSaveWithRequestedId(
+	protected CompletionStage<Void> reactiveSaveWithRequestedId(
 			Object entity,
 			Serializable requestedId,
 			String entityName,
@@ -70,7 +70,7 @@ abstract class AbstractRxSaveEventListener<C>
 			EventSource source) {
 		callbackRegistry.preCreate( entity );
 
-		return rxPerformSave(
+		return reactivePerformSave(
 				entity,
 				requestedId,
 				source.getEntityPersister( entityName, entity ),
@@ -126,7 +126,7 @@ abstract class AbstractRxSaveEventListener<C>
 	 * @return The id used to save the entity; may be null depending on the
 	 * type of id generator used and the requiresImmediateIdAccess value
 	 */
-	protected CompletionStage<Void> rxSaveWithGeneratedId(
+	protected CompletionStage<Void> reactiveSaveWithGeneratedId(
 			Object entity,
 			String entityName,
 			C context,
@@ -140,11 +140,11 @@ abstract class AbstractRxSaveEventListener<C>
 
 		EntityPersister persister = source.getEntityPersister( entityName, entity );
 		boolean autoincrement = persister.isIdentifierAssignedByInsert();
-		return ((RxEntityPersister) persister)
-				.getRxIdentifierGenerator()
+		return ((ReactiveEntityPersister) persister)
+				.getReactiveIdentifierGenerator()
 				.generate( source )
 				.thenCompose( id ->
-						rxPerformSave(
+						reactivePerformSave(
 								entity,
 								autoincrement ? null : assignIdIfNecessary( id, entity, entityName, source ),
 								persister,
@@ -173,7 +173,7 @@ abstract class AbstractRxSaveEventListener<C>
 	 * @return The id used to save the entity; may be null depending on the
 	 * type of id generator used and the requiresImmediateIdAccess value
 	 */
-	protected CompletionStage<Void> rxPerformSave(
+	protected CompletionStage<Void> reactivePerformSave(
 			Object entity,
 			Serializable id,
 			EntityPersister persister,
@@ -196,7 +196,7 @@ abstract class AbstractRxSaveEventListener<C>
 					source.forceFlush( persistenceContext.getEntry( old ) );
 				}
 				else {
-					return RxUtil.failedFuture( new NonUniqueObjectException( id, persister.getEntityName() ) );
+					return CompletionStages.failedFuture( new NonUniqueObjectException( id, persister.getEntityName() ) );
 				}
 			}
 			persister.setIdentifier( entity, id, source );
@@ -205,7 +205,7 @@ abstract class AbstractRxSaveEventListener<C>
 			key = null;
 		}
 
-		return rxPerformSaveOrReplicate(
+		return reactivePerformSaveOrReplicate(
 				entity,
 				key,
 				persister,
@@ -232,7 +232,7 @@ abstract class AbstractRxSaveEventListener<C>
 	 * @return The id used to save the entity; may be null depending on the
 	 * type of id generator used and the requiresImmediateIdAccess value
 	 */
-	protected CompletionStage<Void> rxPerformSaveOrReplicate(
+	protected CompletionStage<Void> reactivePerformSaveOrReplicate(
 			Object entity,
 			EntityKey key,
 			EntityPersister persister,
@@ -243,8 +243,8 @@ abstract class AbstractRxSaveEventListener<C>
 
 		Serializable id = key == null ? null : key.getIdentifier();
 
-		boolean inTrx = source.isTransactionInProgress();
-		boolean shouldDelayIdentityInserts = !inTrx && !requiresImmediateIdAccess;
+		boolean inTreactive = source.isTransactionInProgress();
+		boolean shouldDelayIdentityInserts = !inTreactive && !requiresImmediateIdAccess;
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 
 		// Put a placeholder in entries, so we don't recurse back and try to save() the
@@ -340,19 +340,19 @@ abstract class AbstractRxSaveEventListener<C>
 			EventSource source,
 			boolean shouldDelayIdentityInserts) {
 		if ( useIdentityColumn ) {
-			RxEntityIdentityInsertAction insert = new RxEntityIdentityInsertAction(
+			ReactiveEntityIdentityInsertAction insert = new ReactiveEntityIdentityInsertAction(
 					values, entity, persister, false, source, shouldDelayIdentityInserts
 			);
-			return ( (RxSessionInternal) source ).getRxActionQueue()
+			return ( (ReactiveSessionInternal) source ).getReactiveActionQueue()
 					.addAction( insert )
 					.thenApply( v -> insert );
 		}
 		else {
 			Object version = Versioning.getVersion( values, persister );
-			RxEntityRegularInsertAction insert = new RxEntityRegularInsertAction(
+			ReactiveEntityRegularInsertAction insert = new ReactiveEntityRegularInsertAction(
 					id, values, entity, version, persister, false, source
 			);
-			return ( (RxSessionInternal) source ).getRxActionQueue()
+			return ( (ReactiveSessionInternal) source ).getReactiveActionQueue()
 					.addAction( insert )
 					.thenApply( v -> insert );
 		}
@@ -373,7 +373,7 @@ abstract class AbstractRxSaveEventListener<C>
 			C context) {
 		// cascade-save to many-to-one BEFORE the parent is saved
 		return new Cascade<>(
-				getCascadeRxAction(),
+				getCascadeReactiveAction(),
 				CascadePoint.BEFORE_INSERT_AFTER_DELETE,
 				persister, entity, context, source
 		).cascade();
@@ -394,13 +394,13 @@ abstract class AbstractRxSaveEventListener<C>
 			C context) {
 		// cascade-save to collections AFTER the collection owner was saved
 		return new Cascade<>(
-				getCascadeRxAction(),
+				getCascadeReactiveAction(),
 				CascadePoint.AFTER_INSERT_BEFORE_DELETE,
 				persister, entity, context, source
 		).cascade();
 	}
 
-	protected abstract CascadingAction<C> getCascadeRxAction();
+	protected abstract CascadingAction<C> getCascadeReactiveAction();
 
 	/**
 	 * Perform any property value substitution that is necessary

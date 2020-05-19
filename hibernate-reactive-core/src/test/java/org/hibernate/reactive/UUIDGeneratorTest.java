@@ -11,7 +11,7 @@ import javax.persistence.Version;
 import java.util.Objects;
 import java.util.UUID;
 
-public class UUIDGeneratorTest extends BaseRxTest {
+public class UUIDGeneratorTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {

@@ -9,7 +9,7 @@ import org.junit.Test;
 import javax.persistence.*;
 import java.util.Objects;
 
-public class LazyManyToOneAssociationTest extends BaseRxTest {
+public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {

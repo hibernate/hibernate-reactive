@@ -7,7 +7,7 @@ import org.junit.Test;
 import javax.persistence.*;
 import java.util.Objects;
 
-public class TableGeneratorTest extends BaseRxTest {
+public class TableGeneratorTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {

@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class CascadeTest extends BaseRxTest {
+public class CascadeTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {

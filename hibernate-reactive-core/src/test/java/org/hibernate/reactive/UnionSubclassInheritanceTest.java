@@ -8,7 +8,7 @@ import javax.persistence.*;
 import java.util.Date;
 import java.util.Objects;
 
-public class UnionSubclassInheritanceTest extends BaseRxTest {
+public class UnionSubclassInheritanceTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {

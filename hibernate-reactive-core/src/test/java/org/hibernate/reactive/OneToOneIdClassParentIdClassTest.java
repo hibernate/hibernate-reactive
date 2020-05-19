@@ -11,7 +11,7 @@ import javax.persistence.OneToOne;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class OneToOneIdClassParentIdClassTest extends BaseRxTest {
+public class OneToOneIdClassParentIdClassTest extends BaseReactiveTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
