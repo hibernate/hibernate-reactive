@@ -66,13 +66,9 @@ public class DefaultRxMergeEventListener extends AbstractRxSaveEventListener<Mer
 		final MergeContext mergeContext = new MergeContext( event.getSession(), entityCopyObserver );
 		return rxOnMerge(event, mergeContext)
 				.thenAccept(v -> entityCopyObserver.topLevelMergeComplete(event.getSession()))
-				.handle((v, e) -> {
+				.whenComplete((v, e) -> {
 					entityCopyObserver.clear();
 					mergeContext.clear();
-					if (e != null) {
-						return RxUtil.rethrow(e);
-					}
-					return v;
 				});
 	}
 
