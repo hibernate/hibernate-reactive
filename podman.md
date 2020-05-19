@@ -16,12 +16,12 @@ These are the credentials used to connect to the dbs:
 
 * Server
 ```
-  sudo podman run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name HibernateTestingPGSQL -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact -p 5432:5432 postgres:12
+podman run -it --rm=true --memory-swappiness=0 --name HibernateTestingPGSQL -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact -p 5432:5432 postgres:12
 ```
 
 * CLI
 ```
-  sudo podman exec -it HibernateTestingPGSQL psql  -U hreact -W -d hreact
+podman exec -it HibernateTestingPGSQL psql -U hreact -W -d hreact
 ```
 
 ## [MySQL]
@@ -30,12 +30,12 @@ These are the credentials used to connect to the dbs:
 
 * Server
 ```
-  sudo podman run --rm -it --name HibernateTestingMariaDB -e MYSQL_ROOT_PASSWORD=hreact -e MYSQL_DATABASE=hreact -e MYSQL_USER=hreact -e MYSQL_PASSWORD=hreact -p 3306:3306 mysql:8
+podman run --rm -it --name HibernateTestingMariaDB -e MYSQL_ROOT_PASSWORD=hreact -e MYSQL_DATABASE=hreact -e MYSQL_USER=hreact -e MYSQL_PASSWORD=hreact -p 3306:3306 mysql:8.0.20
 ```
 
 * CLI
 ```
-  sudo podman exec -it HibernateTestingMariaDB mysql -U hreact -p
+podman exec -it HibernateTestingMariaDB mysql -U hreact -phreact
 ```
 
 ## [DB2]
@@ -44,10 +44,10 @@ These are the credentials used to connect to the dbs:
 
 * Server
 ```
-sudo podman run --rm -it -e LICENSE=accept --privileged=true --name HibernateTestingDB2 -e DBNAME=hreact -e DB2INSTANCE=hreact -e DB2INST1_PASSWORD=hreact -p 50000:50000 ibmcom/db2:1.5.0.0a
+sudo podman run --rm -it -e LICENSE=accept --privileged=true --name HibernateTestingDB2 -e DBNAME=hreact -e DB2INSTANCE=hreact -e DB2INST1_PASSWORD=hreact -e PERSISTENT_HOME=false -e ARCHIVE_LOGS=false -e AUTOCONFIG=false -p 50000:50000 ibmcom/db2:11.5.0.0a
 ```
 
 * CLI
 ```
-  sudo podman exec -ti HibernateTestingDB2 bash -c "su - ${DB2INSTANCE}"
+sudo podman exec -ti HibernateTestingDB2 bash -c "su - hreact -c db2 connect"
 ```
