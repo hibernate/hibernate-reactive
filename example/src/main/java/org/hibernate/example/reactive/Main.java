@@ -60,7 +60,7 @@ public class Main {
 		Session session5 = sessionFactory.openReactiveSession();
 		//retrieve a Book and delete it
 		session5.find(Book.class, book2.id)
-				.thenCompose( bOOk -> session5.remove(bOOk) )
+				.thenCompose( book -> session5.remove(book) )
 				.thenCompose( $ -> session5.flush() )
 				.thenAccept( $ -> session5.close() )
 				.toCompletableFuture()
