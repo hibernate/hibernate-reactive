@@ -1,9 +1,7 @@
-description = 'Hibernate Rx Example'
+description = 'Hibernate Reactive Example'
 
 dependencies {
-    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
-    compile project(':hibernate-rx-api')
-    compile project(':hibernate-rx-core')
+    compile project(':hibernate-reactive-core')
 
     runtimeOnly 'org.postgresql:postgresql:42.1.1'
     runtimeOnly 'mysql:mysql-connector-java:8.0.19'
