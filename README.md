@@ -28,8 +28,9 @@ Hibernate Reactive has been tested with:
 - MySQL 8
 - DB2 11.5
 - [Hibernate ORM](https://hibernate.org/orm/) 5.4.16.Final
-- [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 3.9.0
-- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 3.9.0
+- [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 3.9.1
+- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 3.9.1
+- Vert.x Reactive DB2 Client 3.9.1
 
 Support for SQL Server is coming soon.
 
