@@ -79,12 +79,10 @@ public class ReactiveQueryInternalImpl<R> extends QueryImpl<R> implements Reacti
 	@Override
 	public CompletionStage<List<R>> reactiveList() {
 		beforeQuery();
-		return doReactiveList().handle( (list, err) -> {
-			afterQuery();
-			CompletionStages.rethrowIfNotNull( err );
-			//TODO: this typecast is rubbish!
-			return (List<R>) list;
-		});
+		return doReactiveList()
+				.whenComplete( (list, err) -> afterQuery() )
+				//TODO: this typecast is rubbish!
+				.thenApply( list -> (List<R>) list );
 	}
 
 	@SuppressWarnings("unchecked")
