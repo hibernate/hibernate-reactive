@@ -14,28 +14,31 @@ especially targeted toward usage in reactive environments like
 
 [Quarkus]: https://quarkus.io
 [Vert.x]: https://vertx.io
-[PostgreSQL]: https://www.postgresql.org
-[MySQL]: https://www.mysql.com
 
 [Hibernate logo]: http://static.jboss.org/hibernate/images/hibernate_logo_whitebkg_200px.png
 
 ## Compatibility
 
-Currently [PostgreSQL][] and [MySQL][] are supported.
+Currently [PostgreSQL][], [MySQL][], and [DB2][] are supported.
 
 Hibernate Reactive has been tested with:
 
 - Java 8
 - PostgreSQL 12
 - MySQL 8
+- DB2 11.5
 - [Hibernate ORM](https://hibernate.org/orm/) 5.4.16.Final
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 3.9.0
 - [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 3.9.0
 
-Support for DB2 and SQL Server is coming soon.
+Support for SQL Server is coming soon.
 
 Integration with Quarkus has been developed and tested but has not yet 
 been released.
+
+[PostgreSQL]: https://www.postgresql.org
+[MySQL]: https://www.mysql.com
+[DB2]: https://www.ibm.com/analytics/db2
 
 ## Usage
 
@@ -52,7 +55,8 @@ You'll also need to add dependencies to:
 
 - Hibernate ORM, `org.hibernate:hibernate-core`, and
 - the Vert.x reactive database driver for your database, for example,
-  `io.vertx:vertx-pg-client` or `io.vertx:vertx-mysql-client`.
+  `io.vertx:vertx-pg-client`, `io.vertx:vertx-mysql-client`, or
+  `io.vertx:vertx-db2-client`.
 
 There's an example Gradle [build][] included in the example program.
 
