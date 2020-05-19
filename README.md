@@ -195,18 +195,18 @@ need to create the test database. From the command line, type the
 following commands:
 
     psql
-    create database "hreactive";
-    create user "hreactive" with password 'hreactive';
-    grant all privileges on database "hreactive" to "hreactive";
+    create database "hreact";
+    create user "hreact" with password 'hreact';
+    grant all privileges on database "hreact" to "hreact";
 
 There are also tests for MySQL, so if you also have MySQL installed, 
 you can run these tests as well. Create the test database using the 
 following commands:
 
     mysql -uroot
-    create database `hreactive`;
-    create user `hreactive` identified by 'hreactive';
-    grant all on `hreactive`.* to `hreactive`;
+    create database `hreact`;
+    create user `hreact` identified by 'hreact';
+    grant all on `hreact`.* to `hreact`;
 
 Finally, run `./gradlew test` from the `hibernate-reactive` directory.
 

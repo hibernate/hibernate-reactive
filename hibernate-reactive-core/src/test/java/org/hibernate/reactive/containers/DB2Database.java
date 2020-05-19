@@ -12,9 +12,9 @@ public class DB2Database {
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
 	  static final Db2Container db2 = new Db2Container()
-		      .withUsername("hib_rx")
-		      .withPassword("hibernate-rx")
-		      .withDatabaseName("hib_rx")
+		      .withUsername(DatabaseConfiguration.USERNAME)
+		      .withPassword(DatabaseConfiguration.PASSWORD)
+		      .withDatabaseName(DatabaseConfiguration.DB_NAME)
 		      .acceptLicense()
 		      .withReuse(true);
 

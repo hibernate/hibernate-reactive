@@ -8,8 +8,8 @@ public interface DatabaseConfiguration {
 
 	boolean USE_DOCKER = Boolean.getBoolean("docker");
 
-	String USERNAME = "hreactive";
-	String PASSWORD = "hreactive";
-	String DB_NAME = "hreactive";
+	String USERNAME = "hreact";
+	String PASSWORD = "hreact";
+	String DB_NAME = "hreact";
 
 }

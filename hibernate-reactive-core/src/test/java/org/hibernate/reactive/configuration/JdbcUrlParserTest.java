@@ -23,25 +23,25 @@ public class JdbcUrlParserTest {
 
 	@Test
 	public void uriCreation() {
-		URI uri = JdbcUrlParser.parse("jdbc:postgresql://localhost:5432/hreactive");
+		URI uri = JdbcUrlParser.parse("jdbc:postgresql://localhost:5432/hreact");
 		assertThat(uri).isNotNull();
 	}
 
 	@Test
 	public void parsePort() {
-		URI uri = JdbcUrlParser.parse("jdbc:postgresql://localhost:5432/hreactive");
+		URI uri = JdbcUrlParser.parse("jdbc:postgresql://localhost:5432/hreact");
 		assertThat(uri).hasPort(5432);
 	}
 
 	@Test
 	public void parseHost() {
-		URI uri = JdbcUrlParser.parse("jdbc:postgresql://localhost:5432/hreactive");
+		URI uri = JdbcUrlParser.parse("jdbc:postgresql://localhost:5432/hreact");
 		assertThat(uri).hasHost("localhost");
 	}
 
 	@Test
 	public void parseScheme() {
-		URI uri = JdbcUrlParser.parse("jdbc:postgresql://localhost:5432/hreactive");
+		URI uri = JdbcUrlParser.parse("jdbc:postgresql://localhost:5432/hreact");
 		assertThat(uri).hasScheme("postgresql");
 	}
 }
