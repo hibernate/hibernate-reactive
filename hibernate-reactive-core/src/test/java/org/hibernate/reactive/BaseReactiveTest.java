@@ -46,7 +46,7 @@ public abstract class BaseReactiveTest {
 
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
-		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, "create-drop" );
+		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, "create" );
 		configuration.setProperty( AvailableSettings.URL, PostgreSQLDatabase.getJdbcUrl() );
 		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
 		return configuration;
