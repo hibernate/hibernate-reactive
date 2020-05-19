@@ -130,6 +130,15 @@ If you already know Hibernate, and if you already have some experience with
 reactive programming, there's not much new to learn here: you should 
 immediately feel right at home. 
 
+## Transactions
+
+The `transact()` method performs work within the scope of a database 
+transaction. 
+
+    session.transact( tx -> session.persist(book) )
+
+The session is automatically flushed at the end of the transaction.
+
 ## Example program
 
 There is a very simple example program in the [`example`][example] 
@@ -210,7 +219,6 @@ directory.
 
 At this time, Hibernate Reactive does _not_ support the following features:
 
-- transactions
 - `@ElementCollection` and `@ManyToMany`
 - `@OneToMany` without `mappedBy` 
 - transparent lazy loading
