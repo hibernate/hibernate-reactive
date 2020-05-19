@@ -3,6 +3,7 @@ package org.hibernate.reactive.service.initiator;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.DB297Dialect;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
 import org.hibernate.dialect.PostgreSQL10Dialect;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
@@ -28,16 +29,20 @@ public class DialectFromUrlJdbcEnvironmentInitiator extends JdbcEnvironmentIniti
 	public JdbcEnvironment initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
 		if ( !configurationValues.containsKey( AvailableSettings.DIALECT ) ) {
 			String url = configurationValues.getOrDefault( AvailableSettings.URL, "" ).toString();
+			Class<? extends Dialect> dialectClass = null;
 			if (url.startsWith("jdbc:mysql:")) {
-				configurationValues.put( AvailableSettings.DIALECT, MySQL8Dialect.class.getName() );
+				dialectClass = MySQL8Dialect.class;
 			}
-			if (url.startsWith("jdbc:postgresql:")) {
-				configurationValues.put( AvailableSettings.DIALECT, PostgreSQL10Dialect.class.getName() );
+			else if (url.startsWith("jdbc:postgresql:")) {
+				dialectClass = PostgreSQL10Dialect.class;
 			}
-			if (url.startsWith( "jdbc:db2:" )) {
-				configurationValues.put( AvailableSettings.DIALECT, DB297Dialect.class.getName() );
+			else if (url.startsWith( "jdbc:db2:" )) {
+				dialectClass =  DB297Dialect.class;
 			}
 			//TODO etc
+			if ( dialectClass != null ) {
+				configurationValues.put( AvailableSettings.DIALECT, dialectClass.getName() );
+			}
 		}
 		return super.initiateService( configurationValues, registry );
 	}
