@@ -118,8 +118,8 @@ public class ReactiveConnectionPoolTest {
 	}
 
 	private void verifyConnectivity(TestContext context, ReactiveConnectionPoolProvider reactivePool) {
-		test( context, reactivePool.getConnection()
-				.preparedQuery( "SELECT 1" )
+		test( context, reactivePool.getConnection().thenCompose(
+				connection -> connection.preparedQuery( "SELECT 1" ) )
 				.thenAccept( rows -> {
 					context.assertNotNull( rows );
 					context.assertEquals( 1, rows.size() );

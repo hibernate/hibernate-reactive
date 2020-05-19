@@ -56,14 +56,14 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 	@Override
 	public CompletionStage<Long> generate(SharedSessionContractImplementor session) {
 		Object[] param = segmentColumnName == null ? new Object[] {} : new Object[] {segmentValue};
-		return queryExecutor.selectLong( selectQuery, param, session.getFactory() )
+		return queryExecutor.selectLong( selectQuery, param, session )
 				.thenCompose( result -> {
 					if ( result == null ) {
 						long initializationValue = storeLastUsedValue ? initialValue - 1 : initialValue;
 						Object[] params = segmentColumnName == null ?
 								new Object[] {initializationValue} :
 								new Object[] {segmentValue, initializationValue};
-						return queryExecutor.update( insertQuery, params, session.getFactory() )
+						return queryExecutor.update( insertQuery, params, session )
 								.thenApply( v -> initialValue );
 					}
 					else {
@@ -72,7 +72,7 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 						Object[] params = segmentColumnName == null ?
 								new Object[] {updatedValue, currentValue} :
 								new Object[] {updatedValue, currentValue, segmentValue};
-						return queryExecutor.update( updateQuery, params, session.getFactory() )
+						return queryExecutor.update( updateQuery, params, session )
 								.thenApply( v -> storeLastUsedValue ? updatedValue : currentValue );
 					}
 				});

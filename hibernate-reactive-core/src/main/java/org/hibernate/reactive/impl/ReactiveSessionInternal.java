@@ -10,6 +10,7 @@ import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
+import org.hibernate.reactive.service.ReactiveConnection;
 import org.hibernate.reactive.stage.Stage;
 
 /**
@@ -49,6 +50,8 @@ public interface ReactiveSessionInternal extends org.hibernate.Session {
 
 	CompletionStage<Void> reactiveFlush();
 
+	CompletionStage<Void> reactiveAutoflush();
+
 	CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode);
 
 	CompletionStage<?> reactiveRefresh(Object child, IdentitySet refreshedAlready);
@@ -74,4 +77,6 @@ public interface ReactiveSessionInternal extends org.hibernate.Session {
 	<T> CompletionStage<List<Object>> reactiveList(String query, QueryParameters queryParameters);
 
 	CompletionStage<Integer> executeReactiveUpdate(String expandedQuery, QueryParameters queryParameters);
+
+	ReactiveConnection getReactiveConnection();
 }

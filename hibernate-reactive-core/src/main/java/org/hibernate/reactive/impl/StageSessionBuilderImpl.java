@@ -6,7 +6,11 @@ import org.hibernate.engine.spi.SessionBuilderImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionFactoryImpl.SessionBuilderImpl;
+import org.hibernate.reactive.service.ReactiveConnection;
+import org.hibernate.reactive.service.initiator.ReactiveConnectionPoolProvider;
 import org.hibernate.reactive.stage.Stage;
+
+import java.util.concurrent.CompletionStage;
 
 public class StageSessionBuilderImpl
 		extends AbstractDelegatingSessionBuilderImplementor<SessionBuilderImplementor<Stage.SessionBuilder>>
@@ -25,12 +29,21 @@ public class StageSessionBuilderImpl
 
 	@Override
 	public ReactiveSessionInternal openSession() {
-		return new ReactiveSessionInternalImpl(factory, options);
+		ReactiveConnection reactiveConnection = factory.getServiceRegistry()
+				.getService( ReactiveConnectionPoolProvider.class )
+				.getConnection()
+				.toCompletableFuture()
+				.join();
+		return new ReactiveSessionInternalImpl( factory, options, reactiveConnection );
 	}
 
 	@Override
-	public Stage.Session openReactiveSession() {
-		return openSession().reactive();
+	public CompletionStage<Stage.Session> openReactiveSession() {
+		return factory.getServiceRegistry()
+				.getService( ReactiveConnectionPoolProvider.class )
+				.getConnection()
+				.thenApply( reactiveConnection -> new ReactiveSessionInternalImpl( factory, options, reactiveConnection )
+						.reactive() );
 	}
 
 }

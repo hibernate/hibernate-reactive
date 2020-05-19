@@ -8,6 +8,7 @@ import org.hibernate.engine.spi.SessionBuilderImplementor;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 /**
  * An API for Hibernate Reactive where non-blocking operations are
@@ -536,9 +537,39 @@ public interface Stage {
 		Filter getEnabledFilter(String filterName);
 
 		/**
-		 * Close the reactive session.
+		 * Performs the given work within the scope of a database transaction,
+		 * automatically flushing the session. The transaction will be rolled
+		 * back if the work completes with an uncaught exception, or if
+		 * {@link Transaction#markForRollback()} is called.
+		 *
+		 * @param work a function which accepts {@link Transaction} and returns
+		 *             the result of the work as a {@link CompletionStage}.
+		 */
+		<T> CompletionStage<T> withTransaction(Function<Transaction, CompletionStage<T>> work);
+
+		/**
+		 * Close the reactive session and release the underlying database
+		 * connection.
 		 */
 		void close();
+
+		boolean isOpen();
+	}
+
+	/**
+	 * Allows code within {@link Session#withTransaction(Function)} to mark a
+	 * transaction for rollback. A transaction marked for rollback will
+	 * never be committed.
+	 */
+	interface Transaction {
+		/**
+		 * Mark the current transaction for rollback.
+		 */
+		void markForRollback();
+		/**
+		 * Is the current transaction marked for rollback.
+		 */
+		boolean isMarkedForRollback();
 	}
 
 	/**
@@ -550,8 +581,20 @@ public interface Stage {
 		 * Obtain a new {@link Session reactive session}, the
 		 * main interaction point between the user's program and
 		 * Hibernate Reactive.
+		 *
+		 * The client must close the session using {@link Session#close()}.
 		 */
-		Session openReactiveSession();
+		CompletionStage<Session> openReactiveSession();
+
+		/**
+		 * Perform work using a {@link Session reactive session}.
+		 *
+		 * The session will be closed automatically.
+		 *
+		 * @param work a function which accepts the session and returns
+		 *             the result of the work as a {@link CompletionStage}.
+		 */
+		<T> CompletionStage<T> withReactiveSession(Function<Session, CompletionStage<T>> work);
 
 		@Override
 		SessionBuilder withOptions();
@@ -567,7 +610,7 @@ public interface Stage {
 		 * Obtain a new {@link Session reactive session}
 		 * with these options.
 		 */
-		Session openReactiveSession();
+		CompletionStage<Session> openReactiveSession();
 
 		//TODO: Hibernate Reactive-specific options go here
 	}

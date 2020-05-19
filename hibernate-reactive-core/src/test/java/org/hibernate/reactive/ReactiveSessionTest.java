@@ -22,11 +22,11 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<Integer> populateDB() {
-		return connection().update( "INSERT INTO Pig (id, name) VALUES (5, 'Aloi')" );
+		return connection().thenCompose( connection -> connection.update( "INSERT INTO Pig (id, name) VALUES (5, 'Aloi')" ) );
 	}
 
 	private CompletionStage<Integer> cleanDB() {
-		return connection().update( "DELETE FROM Pig" );
+		return connection().thenCompose( connection -> connection.update( "DELETE FROM Pig" ) );
 	}
 
 	public void after(TestContext context) {
@@ -49,7 +49,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<String> selectNameFromId(Integer id) {
-		return connection().preparedQuery(
+		return connection().thenCompose( connection -> connection.preparedQuery(
 				"SELECT name FROM Pig WHERE id = $1", Tuple.of( id ) ).thenApply(
 				rowSet -> {
 					if ( rowSet.size() == 1 ) {
@@ -63,7 +63,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						// Size 0
 						return null;
 					}
-				} );
+				} ) );
 	}
 
 	@Test
@@ -141,6 +141,59 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( s -> s.flush() )
 						.thenCompose( v -> selectNameFromId( 10 ) )
 						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
+		);
+	}
+
+	@Test
+	public void reactivePersistInTx(TestContext context) {
+		test(
+				context,
+				openSession()
+						.thenCompose(
+								s -> s.withTransaction(
+										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
+//												.thenCompose( vv -> s.flush() )
+								)
+						)
+						.thenCompose( vv -> selectNameFromId( 10 ) )
+						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
+		);
+	}
+
+	@Test
+	public void reactiveRollbackTx(TestContext context) {
+		test(
+				context,
+				openSession()
+						.thenCompose(
+								s -> s.withTransaction(
+										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
+												.thenCompose( vv -> s.flush() )
+												.thenAccept( vv -> {
+													throw new RuntimeException();
+												})
+								)
+						)
+						.handle( (v, e) -> null )
+						.thenCompose( vv -> selectNameFromId( 10 ) )
+						.thenAccept( context::assertNull )
+		);
+	}
+
+	@Test
+	public void reactiveMarkedRollbackTx(TestContext context) {
+		test(
+				context,
+				openSession()
+						.thenCompose(
+								s -> s.withTransaction(
+										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
+												.thenCompose( vv -> s.flush() )
+												.thenAccept( vv -> t.markForRollback() )
+								)
+						)
+						.thenCompose( vv -> selectNameFromId( 10 ) )
+						.thenAccept( context::assertNull )
 		);
 	}
 

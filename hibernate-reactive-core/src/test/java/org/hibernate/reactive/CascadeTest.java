@@ -98,7 +98,8 @@ public class CascadeTest extends BaseReactiveTest {
 											return s2.fetch( node.parent )
 													.thenCompose( parent -> {
 														context.assertNotNull( parent );
-														return connection().preparedQuery("update Node set string = upper(string)")
+														return connection()
+																.thenCompose( connection -> connection.preparedQuery("update Node set string = upper(string)") )
 																.thenCompose(v -> s2.refresh(node))
 																.thenAccept(v -> {
 																	context.assertEquals( node.getString(), "ADOPTED" );

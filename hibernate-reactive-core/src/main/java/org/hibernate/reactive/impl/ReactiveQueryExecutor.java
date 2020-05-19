@@ -1,14 +1,11 @@
 package org.hibernate.reactive.impl;
 
-import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowIterator;
-import io.vertx.sqlclient.SqlResult;
 import io.vertx.sqlclient.Tuple;
 import org.hibernate.JDBCException;
 import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.reactive.service.ReactiveConnection;
@@ -28,40 +25,29 @@ import java.util.function.Function;
  */
 public class ReactiveQueryExecutor {
 
-	public CompletionStage<Integer> update(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+	public CompletionStage<Integer> update(String sql, Object[] paramValues,
+										   SharedSessionContractImplementor session) {
 		Objects.requireNonNull( sql, "Query for update cannot be null" );
-		ReactiveConnectionPoolProvider poolProvider = factory
-				.getServiceRegistry()
-				.getService( ReactiveConnectionPoolProvider.class );
 
-		return poolProvider.getConnection()
-				.preparedQuery( sql, Tuple.wrap( paramValues ) ).thenApply(SqlResult::rowCount);
+		return ( (ReactiveSessionInternal) session ).getReactiveConnection()
+				.update( sql, Tuple.wrap( paramValues ) );
 	}
 
-	public CompletionStage<Long> updateReturning(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+	public CompletionStage<Long> updateReturning(String sql, Object[] paramValues,
+												 SharedSessionContractImplementor session) {
 		Objects.requireNonNull( sql, "Query for update cannot be null" );
-		ReactiveConnectionPoolProvider poolProvider = factory
-				.getServiceRegistry()
-				.getService( ReactiveConnectionPoolProvider.class );
 
-		return poolProvider.getConnection()
-				.preparedQuery( sql, Tuple.wrap( paramValues ) )
-				.thenApply( rows -> {
-					RowIterator<Row> iterator = rows.iterator();
-					return iterator.hasNext() ?
-							iterator.next().getLong(0) :
-							rows.property(MySQLClient.LAST_INSERTED_ID);
-				});
+		return ( (ReactiveSessionInternal) session ).getReactiveConnection()
+				.updateReturning( sql, Tuple.wrap( paramValues ) );
 	}
 
-	public CompletionStage<Long> selectLong(String sql, Object[] paramValues, SessionFactoryImplementor factory) {
+	public CompletionStage<Long> selectLong(String sql, Object[] paramValues,
+											SharedSessionContractImplementor session) {
 		Objects.requireNonNull( sql, "Select query for cannot be null" );
-		ReactiveConnectionPoolProvider poolProvider = factory
-				.getServiceRegistry()
-				.getService(ReactiveConnectionPoolProvider.class);
 
-		return poolProvider.getConnection()
-				.preparedQuery( sql, Tuple.wrap( paramValues ) ).thenApply( rowSet -> {
+		return ( (ReactiveSessionInternal) session ).getReactiveConnection()
+				.preparedQuery( sql, Tuple.wrap( paramValues ) )
+				.thenApply( rowSet -> {
 					for (Row row: rowSet) {
 						return row.getLong(0);
 					}
@@ -73,14 +59,11 @@ public class ReactiveQueryExecutor {
 	 * @param transformer Convert the result of the query to a list of entities
 	 */
 	public <T> CompletionStage<T> execute(String sql, QueryParameters queryParameters,
-										 SessionImplementor session,
+										  SessionImplementor session,
 										  Function<ResultSet, T> transformer) {
 		Objects.requireNonNull( sql, "Select query for cannot be null" );
-		ReactiveConnectionPoolProvider poolProvider = session.getSessionFactory()
-				.getServiceRegistry()
-				.getService( ReactiveConnectionPoolProvider.class );
 
-		return poolProvider.getConnection()
+		return ( (ReactiveSessionInternal) session ).getReactiveConnection()
 				.preparedQuery( sql, asTuple( queryParameters, session ) )
 				.thenApply( rowset -> transformer.apply( new ResultSetAdaptor(rowset) ) );
 	}

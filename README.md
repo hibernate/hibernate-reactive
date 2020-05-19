@@ -97,9 +97,20 @@ just as you normally would, for example, by calling:
 
 ### Obtaining a reactive session
 
-To obtain a reactive `Session` from the `SessionFactory`, use `openReactiveSession()`:
+To obtain a reactive `Session` from the `SessionFactory`, use `withReactiveSession()`:
 
-    Stage.Session session = sessionFactory.openReactiveSession();
+    sessionFactory.withReactiveSession(
+            session -> ... //do some work
+    );
+
+Alternatively, you can use `openReactiveSession()`, but you must remember to
+`close()` the session when you're done.
+
+    sessionFactory.openReactiveSession()
+            .thenCompose(
+                session -> ... //do some work
+                        .thenAccept( $ -> session.close() ) 
+            );
 
 ### Using the reactive session
 
@@ -109,7 +120,6 @@ a `CompletionStage`, for example:
 
     session1.find(Book.class, book.id)
             .thenAccept( bOOk -> System.out.println(bOOk.title + " is a great book!") )
-            .thenAccept( $ -> session1.close() )
 
 Methods with no meaningful return value return a reference to the `Session`:
     
@@ -124,11 +134,19 @@ queries to be executed asynchronously, always returning their results via a
     session3.createQuery("select title from Book order by title desc")
             .getResultList()
             .thenAccept(System.out::println)
-            .thenAccept( $ -> session3.close() )
 
 If you already know Hibernate, and if you already have some experience with 
 reactive programming, there's not much new to learn here: you should 
 immediately feel right at home. 
+
+### Transactions
+
+The `withTransaction()` method performs work within the scope of a database 
+transaction. 
+
+    session.withTransaction( tx -> session.persist(book) )
+
+The session is automatically flushed at the end of the transaction.
 
 ## Example program
 
@@ -210,7 +228,6 @@ directory.
 
 At this time, Hibernate Reactive does _not_ support the following features:
 
-- transactions
 - `@ElementCollection` and `@ManyToMany`
 - `@OneToMany` without `mappedBy` 
 - transparent lazy loading

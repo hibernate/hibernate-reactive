@@ -218,7 +218,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			//can't actually occur!
 			throw new JDBCException( "error while binding parameters", e );
 		}
-		return queryExecutor().update( sql, insert.getParametersAsArray(), delegate().getFactory() )
+		return queryExecutor().update( sql, insert.getParametersAsArray(), session )
 				.thenAccept( count -> {
 					try {
 						expectation.verifyOutcome(count, insert, -1);
@@ -269,7 +269,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			if ( dialect instanceof PostgreSQL81Dialect) {
 				sql = sql + " returning " + identifierColumnName;
 			}
-			return queryExecutor().updateReturning( sql, insert.getParametersAsArray(), factory )
+			return queryExecutor().updateReturning( sql, insert.getParametersAsArray(), session )
 					.thenApply( id -> id );
 		}
 		else {
@@ -280,8 +280,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 							identifierColumnName,
 							Types.INTEGER
 					);
-			return queryExecutor().update( sql, insert.getParametersAsArray(), factory )
-					.thenCompose( v -> queryExecutor().selectLong(selectIdSql, new Object[0], factory) )
+			return queryExecutor().update( sql, insert.getParametersAsArray(), session )
+					.thenCompose( v -> queryExecutor().selectLong(selectIdSql, new Object[0], session) )
 					.thenApply( id -> id );
 		}
 
@@ -361,7 +361,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			throw new HibernateException( e );
 		}
 
-		return queryExecutor().update( sql, delete.getParametersAsArray(), delegate().getFactory() )
+		return queryExecutor().update( sql, delete.getParametersAsArray(), session )
 				.thenAccept( count -> {
 					try {
 						expectation.verifyOutcome(count, delete, -1);
@@ -565,7 +565,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 //					return true;
 //				}
 //				else {
-				return queryExecutor().update( sql, update.getParametersAsArray(), delegate().getFactory() )
+				return queryExecutor().update( sql, update.getParametersAsArray(), session )
 						.thenApply( count -> {
 							try {
 								expectation.verifyOutcome(count, update, -1);

@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 import javax.persistence.EntityNotFoundException;
 
 import org.hibernate.CacheMode;
+import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
 import org.hibernate.LazyInitializationException;
@@ -65,6 +66,7 @@ import org.hibernate.reactive.event.spi.ReactiveMergeEventListener;
 import org.hibernate.reactive.event.spi.ReactivePersistEventListener;
 import org.hibernate.reactive.event.spi.ReactiveRefreshEventListener;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.service.ReactiveConnection;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
@@ -77,9 +79,12 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 public class ReactiveSessionInternalImpl extends SessionImpl implements ReactiveSessionInternal, EventSource {
 
 	private transient ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
+	private final ReactiveConnection reactiveConnection;
 
-	public ReactiveSessionInternalImpl(SessionFactoryImpl delegate, SessionCreationOptions options) {
+	public ReactiveSessionInternalImpl(SessionFactoryImpl delegate, SessionCreationOptions options,
+									   ReactiveConnection connection) {
 		super( delegate, options );
+		reactiveConnection = connection;
 	}
 
 	@Override
@@ -473,6 +478,13 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 	public CompletionStage<Void> reactiveFlush() {
 		checkOpen();
 		return doFlush();
+	}
+
+	@Override
+	public CompletionStage<Void> reactiveAutoflush() {
+		return getHibernateFlushMode().lessThan( FlushMode.COMMIT )
+				? CompletionStages.nullFuture()
+				: doFlush();
 	}
 
 	private CompletionStage<Void> doFlush() {
@@ -985,6 +997,18 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 			return clazz.cast( reactive() );
 		}
 		return super.unwrap( clazz );
+	}
+
+	public ReactiveConnection getReactiveConnection() {
+		return reactiveConnection;
+	}
+
+	@Override
+	public void close() throws HibernateException {
+		if ( reactiveConnection != null ) {
+			reactiveConnection.close();
+		}
+		super.close();
 	}
 }
 
