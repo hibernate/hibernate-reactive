@@ -3,6 +3,9 @@
 name: Gradle Build and Test
 
 on:
+  push:
+    branches:
+      - master
   pull_request:
     branches: master
 
