@@ -32,7 +32,6 @@ import javax.persistence.Version;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.rx.containers.DB2Database;
 import org.junit.Test;
 
@@ -44,7 +43,6 @@ public class DB2BasicTest extends BaseRxTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.setProperty( AvailableSettings.URL, DB2Database.getJdbcUrl() );
-		configuration.setProperty( AvailableSettings.DIALECT, DB297Dialect.class.getName());
 		configuration.addAnnotatedClass( Basic.class );
 		return configuration;
 	}

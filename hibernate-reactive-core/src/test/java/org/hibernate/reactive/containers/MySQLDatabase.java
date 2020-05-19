@@ -1,7 +1,5 @@
 package org.hibernate.reactive.containers;
 
-import org.testcontainers.containers.MySQLContainer;
-
 public class MySQLDatabase {
 
 	/**
@@ -11,7 +9,7 @@ public class MySQLDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final MySQLContainer<?> mysql = new MySQLContainer<>()
+	public static final VertxMySqlContainer mysql = new VertxMySqlContainer()
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
@@ -22,14 +20,14 @@ public class MySQLDatabase {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
 			mysql.start();
-			return buildJdbcUrlWithCredentials( mysql.getJdbcUrl() );
+			return buildUrlWithCredentials( mysql.getJdbcUrl() );
 		}
 		else {
-			return buildJdbcUrlWithCredentials( "jdbc:mysql://localhost:3306/" + mysql.getDatabaseName() );
+			return buildUrlWithCredentials( "jdbc:mysql://localhost:3306/" + mysql.getDatabaseName() );
 		}
 	}
 
-	private static String buildJdbcUrlWithCredentials(String jdbcUrl) {
+	static String buildUrlWithCredentials(String jdbcUrl) {
 		return jdbcUrl + "?user=" + mysql.getUsername() + "&password=" + mysql.getPassword() + "&serverTimezone=UTC";
 	}
 
