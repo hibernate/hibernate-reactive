@@ -8,6 +8,14 @@ import org.hibernate.engine.spi.SessionBuilderImplementor;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * An API for Hibernate Reactive where non-blocking operations are
+ * represented by a Java {@link CompletionStage}.
+ *
+ * The {@link Query}, {@link Session}, and {@link SessionFactory}
+ * interfaces declared here are simply non-blocking counterparts to
+ * the similarly-named interfaces in Hibernate ORM.
+ */
 public interface Stage {
 	/**
 	 * A non-blocking counterpart to the Hibernate
