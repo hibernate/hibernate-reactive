@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
-import javax.persistence.LockModeType;
 
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
+import org.hibernate.LockMode;
 import org.hibernate.reactive.query.impl.StageQueryImpl;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -50,6 +50,11 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public LockMode getLockMode(Object entity) {
+		return delegate.getCurrentLockMode( entity );
+	}
+
+	@Override
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey) {
 		return delegate.reactiveFind( entityClass, primaryKey, null, null );
 	}
@@ -66,16 +71,8 @@ public class StageSessionImpl implements Stage.Session {
 		return delegate.reactiveFind( entityClass, primaryKey, null, properties );
 	}
 
-	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockModeType lockModeType) {
-		return delegate.reactiveFind( entityClass, primaryKey, lockModeType, null );
-	}
-
-	public <T> CompletionStage<T> find(
-			Class<T> entityClass,
-			Object primaryKey,
-			LockModeType lockModeType,
-			Map<String, Object> properties) {
-		return delegate.reactiveFind(entityClass, primaryKey, lockModeType, properties);
+	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockMode lockMode) {
+		return delegate.reactiveFind( entityClass, primaryKey, lockMode, null );
 	}
 
 	@Override
@@ -110,12 +107,17 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public CompletionStage<Stage.Session> refresh(Object entity) {
-		return delegate.reactiveRefresh( entity ).thenApply( v -> this );
+		return delegate.reactiveRefresh( entity, LockMode.NONE ).thenApply( v -> this );
+	}
+
+	@Override
+	public CompletionStage<Stage.Session> refresh(Object entity, LockMode lockMode) {
+		return delegate.reactiveRefresh( entity, lockMode ).thenApply( v -> this );
 	}
 
 	@Override
 	public CompletionStage<Stage.Session> refresh(Object... entity) {
-		return applyToAll( delegate::reactiveRefresh, entity ).thenApply( v -> this );
+		return applyToAll( e -> delegate.reactiveRefresh( e, LockMode.NONE ), entity ).thenApply( v -> this );
 	}
 
 	@Override

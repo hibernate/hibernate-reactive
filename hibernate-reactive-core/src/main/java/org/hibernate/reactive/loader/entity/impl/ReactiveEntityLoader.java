@@ -26,8 +26,9 @@ public class ReactiveEntityLoader extends ReactiveAbstractEntityLoader implement
 	public ReactiveEntityLoader(
 			OuterJoinLoadable persister,
 			SessionFactoryImplementor factory,
+			LockMode lockMode,
 			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
-		this( persister, 1, LockMode.NONE, factory, loadQueryInfluencers );
+		this( persister, 1, lockMode, factory, loadQueryInfluencers );
 	}
 //
 //	// We don't use all the parameters but I kept them for symmetry with EntityLoader

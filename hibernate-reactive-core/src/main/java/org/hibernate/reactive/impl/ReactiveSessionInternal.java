@@ -4,8 +4,8 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-import javax.persistence.LockModeType;
 
+import org.hibernate.LockMode;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
@@ -49,7 +49,7 @@ public interface ReactiveSessionInternal extends org.hibernate.Session {
 
 	CompletionStage<Void> reactiveFlush();
 
-	CompletionStage<Void> reactiveRefresh(Object entity);
+	CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode);
 
 	CompletionStage<?> reactiveRefresh(Object child, IdentitySet refreshedAlready);
 
@@ -64,7 +64,7 @@ public interface ReactiveSessionInternal extends org.hibernate.Session {
 	<T> CompletionStage<T> reactiveFind(
 			Class<T> entityClass,
 			Object primaryKey,
-			LockModeType lockModeType,
+			LockMode lockMode,
 			Map<String, Object> properties);
 
 	<T> CompletionStage<List<T>> reactiveFind(

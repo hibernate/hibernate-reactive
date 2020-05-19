@@ -2,6 +2,7 @@ package org.hibernate.reactive;
 
 import io.vertx.sqlclient.Tuple;
 import io.vertx.ext.unit.TestContext;
+import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
@@ -72,10 +73,62 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				context,
 				populateDB()
 						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
-						.thenAccept( actualPig -> {
-							assertThatPigsAreEqual( context, expectedPig, actualPig );
-						} )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() )
+							.thenAccept( actualPig -> {
+								assertThatPigsAreEqual( context, expectedPig, actualPig );
+								context.assertEquals( session.getLockMode( actualPig ), LockMode.READ );
+							} )
+						)
+		);
+	}
+
+	@Test
+	public void reactiveFindWithLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId(), LockMode.PESSIMISTIC_WRITE )
+							.thenAccept( actualPig -> {
+								assertThatPigsAreEqual( context, expectedPig, actualPig );
+								context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+							} )
+						)
+		);
+	}
+
+	@Test
+	public void reactiveFindRefreshWithLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.thenCompose( pig -> session.refresh(pig, LockMode.PESSIMISTIC_WRITE).thenApply( v -> pig ) )
+								.thenAccept( actualPig -> {
+									assertThatPigsAreEqual( context, expectedPig, actualPig );
+									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+								} )
+						)
+		);
+	}
+
+	@Test
+	public void reactiveQueryWithLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createQuery( "from GuineaPig pig", GuineaPig.class).setLockMode("pig", LockMode.PESSIMISTIC_WRITE )
+								.getSingleResult()
+								.thenAccept( actualPig -> {
+									assertThatPigsAreEqual( context, expectedPig, actualPig );
+									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+								} )
+						)
 		);
 	}
 
@@ -148,7 +201,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		context.assertEquals( expected.getName(), actual.getName() );
 	}
 
-	@Entity
+	@Entity(name="GuineaPig")
 	@Table(name="Pig")
 	public static class GuineaPig {
 		@Id

@@ -3,6 +3,7 @@ package org.hibernate.reactive.stage;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
+import org.hibernate.LockMode;
 import org.hibernate.engine.spi.SessionBuilderImplementor;
 
 import java.util.List;
@@ -101,6 +102,14 @@ public interface Stage {
 		CacheMode getCacheMode();
 
 		/**
+		 * Set the {@link LockMode} to use for specified alias (as defined in
+		 * the query's <tt>FROM</tt> clause).
+		 *
+		 * @see org.hibernate.query.Query#setLockMode(String,LockMode)
+		 */
+		Query<R> setLockMode(String alias, LockMode lockMode);
+
+		/**
 
 		Some examples of additional useful methods to add here:
 
@@ -109,12 +118,6 @@ public interface Stage {
 		Query<R> setCacheable(boolean var1);
 
 		Query<R> setCacheRegion(String var1);
-
-		Query<R> setTimeout(int var1);
-
-		Query<R> setFetchSize(int var1);
-
-		Query<R> setLockMode(String var1, LockMode var2);
 
 		*/
 
@@ -163,6 +166,14 @@ public interface Stage {
 		 * @see javax.persistence.EntityManager#find(Class, Object)
 		 */
 		<T> CompletionStage<T> find(Class<T> entityClass, Object id);
+
+		/**
+		 * Asynchronously return the persistent instance of the given entity
+		 * class with the given identifier, requesting the given {@link LockMode}.
+		 *
+		 * @see #find(Class,Object)
+		 */
+		<T> CompletionStage<T> find(Class<T> entityClass, Object id, LockMode lockMode);
 
 		/**
 		 * Asynchronously return the persistent instances of the given entity
@@ -285,6 +296,14 @@ public interface Stage {
 		CompletionStage<Session> refresh(Object entity);
 
 		/**
+		 * Re-read the state of the given instance from the underlying database,
+		 * requesting the given {@link LockMode}.
+		 *
+		 * @see #refresh(Object)
+		 */
+		CompletionStage<Session> refresh(Object entity, LockMode lockMode);
+
+		/**
 		 * Refresh multiple entities.
 		 *
 		 * @see #refresh(Object)
@@ -335,6 +354,11 @@ public interface Stage {
 		 * @see org.hibernate.Hibernate#unproxy(Object)
 		 */
 		<T> CompletionStage<T> unproxy(T association);
+
+		/**
+		 * Determine the current lock mode of the given entity.
+		 */
+		LockMode getLockMode(Object entity);
 
 		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query

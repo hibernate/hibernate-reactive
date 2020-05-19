@@ -9,12 +9,12 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.persistence.EntityNotFoundException;
-import javax.persistence.LockModeType;
 
 import org.hibernate.CacheMode;
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
 import org.hibernate.LazyInitializationException;
+import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
 import org.hibernate.ObjectDeletedException;
@@ -45,6 +45,7 @@ import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
+import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.jpa.QueryHints;
 import org.hibernate.persister.entity.EntityPersister;
@@ -498,9 +499,9 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRefresh(Object entity) {
+	public CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode) {
 		checkOpen();
-		return fireRefresh( new RefreshEvent(null, entity, this) );
+		return fireRefresh( new RefreshEvent( entity, lockMode, this ) );
 	}
 
 	@Override
@@ -574,7 +575,7 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 	public <T> CompletionStage<T> reactiveFind(
 			Class<T> entityClass,
 			Object id,
-			LockModeType lockModeType,
+			LockMode lockMode,
 			Map<String, Object> properties) {
 		checkOpen();
 
@@ -588,11 +589,14 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 						.with( determineAppropriateLocalCacheMode( properties ) );
 
 		LockOptions lockOptions;
-		if ( lockModeType != null ) {
+		if ( lockMode != null ) {
 //			if ( !LockModeType.NONE.equals( lockModeType) ) {
 //					checkTransactionNeededForUpdateOperation();
 //			}
-			lockOptions = buildLockOptions( lockModeType, properties );
+			lockOptions = buildLockOptions(
+					LockModeConverter.convertToLockModeType(lockMode),
+					properties
+			);
 			loadAccess.with( lockOptions );
 		}
 		else {

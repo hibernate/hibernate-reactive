@@ -59,7 +59,7 @@ public class ReactiveBatchingEntityLoaderBuilder {
 			LockMode lockMode,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers influencers) {
-		return new ReactiveEntityLoader( persister, factory, influencers);
+		return new ReactiveEntityLoader( persister, factory, lockMode, influencers);
 	}
 
 	/**
@@ -91,7 +91,7 @@ public class ReactiveBatchingEntityLoaderBuilder {
 			LockOptions lockOptions,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers influencers) {
-		return new ReactiveEntityLoader( persister, factory, influencers);
+		return new ReactiveEntityLoader( persister, factory, lockOptions.getLockMode(), influencers);
 	}
 
 	protected UniqueEntityLoader buildBatchingLoader(
@@ -100,7 +100,7 @@ public class ReactiveBatchingEntityLoaderBuilder {
 			LockMode lockMode,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers influencers) {
-		return new ReactiveEntityLoader( persister, factory, influencers);
+		return new ReactiveEntityLoader( persister, factory, lockMode, influencers);
 	}
 
 	protected UniqueEntityLoader buildBatchingLoader(
@@ -109,6 +109,6 @@ public class ReactiveBatchingEntityLoaderBuilder {
 			LockOptions lockOptions,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers influencers) {
-		return new ReactiveEntityLoader( persister, factory, influencers);
+		return new ReactiveEntityLoader( persister, factory, lockOptions.getLockMode(), influencers);
 	}
 }

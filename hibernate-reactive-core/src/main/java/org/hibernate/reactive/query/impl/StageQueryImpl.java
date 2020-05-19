@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.CacheMode;
+import org.hibernate.LockMode;
 import org.hibernate.reactive.impl.ReactiveQueryInternal;
 import org.hibernate.reactive.stage.Stage;
 
@@ -42,6 +43,12 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 	@Override
 	public Stage.Query<R> setComment(String comment) {
 		delegate.setComment( comment );
+		return this;
+	}
+
+	@Override
+	public Stage.Query<R> setLockMode(String alias, LockMode lockMode) {
+		delegate.setLockMode( alias, lockMode );
 		return this;
 	}
 
