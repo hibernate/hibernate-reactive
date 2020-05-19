@@ -211,7 +211,6 @@ directory.
 At this time, Hibernate Reactive does _not_ support the following features:
 
 - transactions
-- pessimistic locking via `LockMode`
 - `@ElementCollection` and `@ManyToMany`
 - `@OneToMany` without `mappedBy` 
 - transparent lazy loading
@@ -224,7 +223,6 @@ At this time, Hibernate Reactive does _not_ support the following features:
 
 Instead, use the following supported features:
 
-- optimistic locking with `@Version`
 - `@OneToMany(mappedBy=...)` together with `@ManyToOne`
 - explicit lazy loading via `Session.fetch(entity.association)`, which 
   returns a `CompletionStage`
