@@ -145,6 +145,59 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void reactivePersistInTx(TestContext context) {
+		test(
+				context,
+				openSession()
+						.thenCompose(
+								s -> s.transact(
+										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
+//												.thenCompose( vv -> s.flush() )
+								)
+						)
+						.thenCompose( vv -> selectNameFromId( 10 ) )
+						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
+		);
+	}
+
+	@Test
+	public void reactiveRollbackTx(TestContext context) {
+		test(
+				context,
+				openSession()
+						.thenCompose(
+								s -> s.transact(
+										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
+												.thenCompose( vv -> s.flush() )
+												.thenAccept( vv -> {
+													throw new RuntimeException();
+												})
+								)
+						)
+						.handle( (v, e) -> null )
+						.thenCompose( vv -> selectNameFromId( 10 ) )
+						.thenAccept( context::assertNull )
+		);
+	}
+
+	@Test
+	public void reactiveMarkedRollbackTx(TestContext context) {
+		test(
+				context,
+				openSession()
+						.thenCompose(
+								s -> s.transact(
+										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
+												.thenCompose( vv -> s.flush() )
+												.thenAccept( vv -> t.markForRollback() )
+								)
+						)
+						.thenCompose( vv -> selectNameFromId( 10 ) )
+						.thenAccept( context::assertNull )
+		);
+	}
+
+	@Test
 	public void reactiveRemoveTransientEntity(TestContext context) {
 		test(
 				context,

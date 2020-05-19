@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 import javax.persistence.EntityNotFoundException;
 
 import org.hibernate.CacheMode;
+import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
 import org.hibernate.LazyInitializationException;
@@ -65,6 +66,8 @@ import org.hibernate.reactive.event.spi.ReactiveMergeEventListener;
 import org.hibernate.reactive.event.spi.ReactivePersistEventListener;
 import org.hibernate.reactive.event.spi.ReactiveRefreshEventListener;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.service.ReactiveConnection;
+import org.hibernate.reactive.service.initiator.ReactiveConnectionPoolProvider;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
@@ -985,6 +988,52 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 			return clazz.cast( reactive() );
 		}
 		return super.unwrap( clazz );
+	}
+
+	@Override
+	public CompletionStage<Void> beginReactiveTransaction() {
+		return currentReactiveConnection().beginTransaction();
+	}
+
+	@Override
+	public CompletionStage<Void> endReactiveTransaction(boolean rollback) {
+		if (rollback) {
+			return currentReactiveConnection().rollbackTransaction();
+		}
+		else if ( getHibernateFlushMode().lessThan( FlushMode.COMMIT ) ) {
+			return currentReactiveConnection().commitTransaction();
+		}
+		else {
+			return doFlush()
+					.handle( (v, e) -> e == null ? null : new HibernateException(e) )
+					.thenCompose( error -> error == null
+							? currentReactiveConnection().commitTransaction()
+							: currentReactiveConnection().rollbackTransaction()
+									.thenAccept( v -> { throw error; } )
+					);
+		}
+	}
+
+	public ReactiveConnectionPoolProvider poolProvider() {
+		return getFactory().getServiceRegistry().getService( ReactiveConnectionPoolProvider.class );
+	}
+
+	private ReactiveConnection reactiveConnection;
+
+	public ReactiveConnection currentReactiveConnection() {
+		if ( reactiveConnection == null ) {
+			reactiveConnection = poolProvider().getTransactionalConnection();
+		}
+		return reactiveConnection;
+	}
+
+	@Override
+	public void close() throws HibernateException {
+		if ( reactiveConnection != null ) {
+			reactiveConnection.close();
+			reactiveConnection = null;
+		}
+		super.close();
 	}
 }
 

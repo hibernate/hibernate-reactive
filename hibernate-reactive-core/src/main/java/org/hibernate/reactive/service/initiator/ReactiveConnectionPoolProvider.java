@@ -17,5 +17,7 @@ public interface ReactiveConnectionPoolProvider extends Service {
 	 */
 	ReactiveConnection getConnection();
 
+	ReactiveConnection getTransactionalConnection();
+
 	void close();
 }

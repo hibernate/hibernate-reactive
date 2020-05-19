@@ -35,6 +35,12 @@ public abstract class BaseReactiveTest {
 		// this will be added to TestContext in the next vert.x release
 		Async async = context.async();
 		cs.whenComplete( (res, err) -> {
+			if ( res instanceof Stage.Session ) {
+				Stage.Session s = (Stage.Session) res;
+				if ( s.isOpen() ) {
+					s.close();
+				}
+			}
 			if ( err != null ) {
 				context.fail( err );
 			}

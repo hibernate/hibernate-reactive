@@ -7,7 +7,8 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.cfg.ReactiveSettings;
-import org.hibernate.reactive.impl.PoolConnection;
+import org.hibernate.reactive.impl.SqlClientConnection;
+import org.hibernate.reactive.impl.TransactionalSqlClientConnection;
 import org.hibernate.reactive.service.initiator.ReactiveConnectionPoolProvider;
 import org.hibernate.reactive.util.impl.JdbcUrlParser;
 import org.hibernate.service.spi.Configurable;
@@ -58,7 +59,7 @@ public class ReactiveConnectionPoolProviderImpl implements ReactiveConnectionPoo
 		String username = ConfigurationHelper.getString(AvailableSettings.USER, configurationValues);
 		String password = ConfigurationHelper.getString(AvailableSettings.PASS, configurationValues);
 
-		final Integer poolSize = ConfigurationHelper.getInt(AvailableSettings.POOL_SIZE, configurationValues, DEFAULT_POOL_SIZE);
+		final int poolSize = ConfigurationHelper.getInt(AvailableSettings.POOL_SIZE, configurationValues, DEFAULT_POOL_SIZE);
 
 		final String url = ConfigurationHelper.getString(AvailableSettings.URL, configurationValues);
 		final URI uri = JdbcUrlParser.parse( url );
@@ -131,7 +132,12 @@ public class ReactiveConnectionPoolProviderImpl implements ReactiveConnectionPoo
 
 	@Override
 	public ReactiveConnection getConnection() {
-		return new PoolConnection( pool, showSQL );
+		return new SqlClientConnection( pool, showSQL );
+	}
+
+	@Override
+	public ReactiveConnection getTransactionalConnection() {
+		return new TransactionalSqlClientConnection( pool, showSQL );
 	}
 
 	@Override

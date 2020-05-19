@@ -135,7 +135,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 		String[] sqlStatements = getSqlStatements();
 		for ( String sql : sqlStatements ) {
 			updateStage = updateStage
-					.thenCompose( v -> new ReactiveQueryExecutor().update( sql, queryParameters.getPositionalParameterValues(), session.getFactory() )
+					.thenCompose( v -> new ReactiveQueryExecutor().update( sql, queryParameters.getPositionalParameterValues(), session )
 					.thenAccept( updateCount -> atomicCounter.addAndGet( updateCount ) )
 			);
 		}

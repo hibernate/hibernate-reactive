@@ -8,6 +8,7 @@ import org.hibernate.engine.spi.SessionBuilderImplementor;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 /**
  * An API for Hibernate Reactive where non-blocking operations are
@@ -536,9 +537,35 @@ public interface Stage {
 		Filter getEnabledFilter(String filterName);
 
 		/**
+		 * Performs the given work within the scope of a database transaction,
+		 * automatically flushing the session. The transaction will be rolled
+		 * back if the work completes with an uncaught exception, or if
+		 * {@link Transaction#markForRollback()} is called.
+		 */
+		<T> CompletionStage<T> transact(Function<Transaction, CompletionStage<T>> work);
+
+		/**
 		 * Close the reactive session.
 		 */
 		void close();
+
+		boolean isOpen();
+	}
+
+	/**
+	 * Allows code within {@link Session#transact(Function)} to mark a
+	 * transaction for rollback. A transaction marked for rollback will
+	 * never be committed.
+	 */
+	interface Transaction {
+		/**
+		 * Mark the current transaction for rollback.
+		 */
+		void markForRollback();
+		/**
+		 * Is the current transaction marked for rollback.
+		 */
+		boolean isMarkedForRollback();
 	}
 
 	/**

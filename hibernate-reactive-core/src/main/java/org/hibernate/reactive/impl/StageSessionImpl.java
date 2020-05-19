@@ -236,8 +236,34 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public <T> CompletionStage<T> transact(Function<Stage.Transaction, CompletionStage<T>> work) {
+		Stage.Transaction tx = new Stage.Transaction() {
+			boolean rollback;
+
+			@Override
+			public void markForRollback() {
+				rollback = true;
+			}
+
+			@Override
+			public boolean isMarkedForRollback() {
+				return rollback;
+			}
+		};
+		return delegate.beginReactiveTransaction()
+				.thenCompose( v -> work.apply(tx) )
+				.whenComplete( (t, e) -> delegate.endReactiveTransaction(
+						tx.isMarkedForRollback() || e != null ) );
+	}
+
+	@Override
 	public void close() {
 		delegate.close();
+	}
+
+	@Override
+	public boolean isOpen() {
+		return delegate.isOpen();
 	}
 
 	private <T> CompletionStage<T> applyToAll(

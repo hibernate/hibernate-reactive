@@ -63,6 +63,6 @@ public class SequenceReactiveIdentifierGenerator implements ReactiveIdentifierGe
 	@Override
 	public CompletionStage<Long> generate(SharedSessionContractImplementor session) {
 		return sql==null ? CompletionStages.nullFuture()
-				: queryExecutor.selectLong( sql, new Object[0], session.getFactory() );
+				: queryExecutor.selectLong( sql, new Object[0], session );
 	}
 }
