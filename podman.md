@@ -37,3 +37,17 @@ These are the credentials used to connect to the dbs:
 ```
   sudo podman exec -it HibernateTestingMariaDB mysql -U hreactive -p
 ```
+
+## [DB2]
+
+[DB2]:https://www.ibm.com/analytics/db2
+
+* Server
+```
+sudo podman run --rm -it -e LICENSE=accept --privileged=true --name HibernateTestingDB2 -e DBNAME=hib-rx -e DB2INSTANCE=hib_rx -e DB2INST1_PASSWORD=hibernate-rx -p 50000:50000 ibmcom/db2
+```
+
+* CLI
+```
+  sudo podman exec -ti HibernateTestingDB2 bash -c "su - ${DB2INSTANCE}"
+```
