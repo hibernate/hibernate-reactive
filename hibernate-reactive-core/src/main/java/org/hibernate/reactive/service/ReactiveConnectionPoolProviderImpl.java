@@ -2,6 +2,8 @@ package org.hibernate.reactive.service;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.cfg.AvailableSettings;
@@ -15,14 +17,10 @@ import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.Stoppable;
 
 import io.vertx.core.Vertx;
-import io.vertx.db2client.DB2ConnectOptions;
-import io.vertx.db2client.DB2Pool;
-import io.vertx.mysqlclient.MySQLConnectOptions;
-import io.vertx.mysqlclient.MySQLPool;
-import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.SqlConnectOptions;
+import io.vertx.sqlclient.spi.Driver;
 
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
@@ -92,43 +90,46 @@ public class ReactiveConnectionPoolProviderImpl implements ReactiveConnectionPoo
 			}
 		}
 
-		PoolOptions poolOptions = new PoolOptions()
-				.setMaxSize( poolSize );
-		switch ( uri.getScheme() ) {
-			case "postgresql":
-				PgConnectOptions pgOptions = new PgConnectOptions()
-						.setPort( uri.getPort() )
-						.setHost( uri.getHost() )
-						.setDatabase( database )
-						.setUser( username );
-				if (password != null) {
-					pgOptions.setPassword( password );
-				}
-				return PgPool.pool(Vertx.vertx(), pgOptions, poolOptions);
-			case "mysql":
-				MySQLConnectOptions mysqlOptions = new MySQLConnectOptions()
-						.setPort( uri.getPort() )
-						.setHost( uri.getHost() )
-						.setDatabase( database )
-						.setUser( username );
-				if (password != null) {
-					mysqlOptions.setPassword( password );
-				}
-				return MySQLPool.pool(Vertx.vertx(), mysqlOptions, poolOptions);
-			case "db2":
-			    DB2ConnectOptions db2Options = new DB2ConnectOptions()
-			            .setPort( uri.getPort() )
-			            .setHost( uri.getHost() )
-			            .setDatabase( database )
-			            .setUser( username );
-			    if (password != null) {
-			        db2Options.setPassword( password );
-			    }
-			    return DB2Pool.pool(Vertx.vertx(), db2Options, poolOptions);
-			default:
-				throw new ConfigurationException( "Unrecognized URI scheme: " + uri.getScheme() );	
-		}
-	}
+        PoolOptions poolOptions = new PoolOptions()
+                .setMaxSize( poolSize );
+        SqlConnectOptions connectOptions = new SqlConnectOptions()
+                .setHost( uri.getHost() )
+                .setPort( uri.getPort() )
+                .setDatabase( database )
+                .setUser( username );
+        if (password != null) {
+            connectOptions.setPassword( password );
+        }
+        
+        // First try to load the Pool using the standard ServiceLoader pattern
+        // This only works if exactly 1 Driver is on the classpath.
+        ServiceConfigurationError originalError;
+        try {
+            return Pool.pool( Vertx.vertx(), connectOptions, poolOptions );
+        } catch (ServiceConfigurationError e) {
+            originalError = e;
+        }
+        
+        // Backup option if multiple drivers are on the classpath. 
+        // We will be able to remove this once Vertx 3.9.2 is available
+        String scheme = uri.getScheme(); // "postgresql", "mysql", "db2", etc
+        for (Driver d : ServiceLoader.load( Driver.class )) {
+            String driverName = d.getClass().getCanonicalName();
+            if ("io.vertx.db2client.spi.DB2Driver".equals( driverName ) && "db2".equalsIgnoreCase( scheme )) {
+                return d.createPool( Vertx.vertx(), connectOptions, poolOptions );
+            }
+            if ("io.vertx.mysqlclient.spi.MySQLDriver".equals( driverName ) && "mysql".equalsIgnoreCase( scheme )) {
+                return d.createPool( Vertx.vertx(), connectOptions, poolOptions );
+            }
+            if ("io.vertx.pgclient.spi.PgDriver".equals( driverName ) && 
+                    ("postgre".equalsIgnoreCase( scheme ) ||
+                     "postgres".equalsIgnoreCase( scheme ) ||
+                     "postgresql".equalsIgnoreCase( scheme ))) {
+                return d.createPool( Vertx.vertx(), connectOptions, poolOptions );
+            }
+        }
+        throw new ConfigurationException( "No suitable drivers found for URI scheme: " + scheme, originalError );
+    }
 
 	@Override
 	public CompletionStage<ReactiveConnection> getConnection() {
