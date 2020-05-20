@@ -10,6 +10,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
+import static io.vertx.core.Future.failedFuture;
+import static io.vertx.core.Future.succeededFuture;
+
 /**
  * A reactive connection based on Vert.x's {@link Pool}.
  */
@@ -18,28 +21,12 @@ public class SqlClientConnection implements ReactiveConnection {
 	protected final Pool pool;
 	private final boolean showSQL;
 
-	protected SqlClient client() {
-		return pool;
-	}
+	private SqlConnection connection;
+	private Transaction transaction;
 
 	public SqlClientConnection(Pool pool, boolean showSQL) {
 		this.showSQL = showSQL;
 		this.pool = pool;
-	}
-
-	@Override
-	public CompletionStage<Void> beginTransaction() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public CompletionStage<Void> commitTransaction() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public CompletionStage<Void> rollbackTransaction() {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -88,6 +75,65 @@ public class SqlClientConnection implements ReactiveConnection {
 		);
 	}
 
+
+	private SqlClient client() {
+		return transaction != null ? transaction : pool;
+	}
+
+	@Override
+	public CompletionStage<Void> beginTransaction() {
+		return toCompletionStage(
+				handler -> pool.getConnection(
+						ar -> {
+							if ( ar.succeeded() ) {
+								connection = ar.result();
+								transaction = connection.begin();
+								handler.handle( succeededFuture() );
+							}
+							else {
+								handler.handle( failedFuture( ar.cause() ) );
+							}
+						}
+				)
+		);
+//		return execute("begin");
+	}
+
+	@Override
+	public CompletionStage<Void> commitTransaction() {
+		return toCompletionStage(
+				handler -> transaction.commit(
+						ar -> {
+							close();
+							handler.handle( ar );
+						}
+				)
+		);
+//		return execute("commit");
+	}
+
+	@Override
+	public CompletionStage<Void> rollbackTransaction() {
+		return toCompletionStage(
+				handler -> transaction.rollback(
+						ar -> {
+							close();
+							handler.handle( ar );
+						}
+				)
+		);
+//		return execute("rollback");
+	}
+
+	@Override
+	public void close() {
+		if ( connection != null ) {
+			connection.close();
+			connection = null;
+			transaction = null;
+		}
+	}
+
 	protected static <T> CompletionStage<T> toCompletionStage(
 			Consumer<Handler<AsyncResult<T>>> completionConsumer) {
 		CompletableFuture<T> cs = new CompletableFuture<>();
@@ -107,6 +153,4 @@ public class SqlClientConnection implements ReactiveConnection {
 		return cs;
 	}
 
-	@Override
-	public void close() {}
 }

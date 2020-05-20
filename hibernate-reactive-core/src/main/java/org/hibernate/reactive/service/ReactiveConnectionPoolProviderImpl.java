@@ -8,7 +8,6 @@ import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.cfg.ReactiveSettings;
 import org.hibernate.reactive.impl.SqlClientConnection;
-import org.hibernate.reactive.impl.TransactionalSqlClientConnection;
 import org.hibernate.reactive.service.initiator.ReactiveConnectionPoolProvider;
 import org.hibernate.reactive.util.impl.JdbcUrlParser;
 import org.hibernate.service.spi.Configurable;
@@ -133,11 +132,6 @@ public class ReactiveConnectionPoolProviderImpl implements ReactiveConnectionPoo
 	@Override
 	public ReactiveConnection getConnection() {
 		return new SqlClientConnection( pool, showSQL );
-	}
-
-	@Override
-	public ReactiveConnection getTransactionalConnection() {
-		return new TransactionalSqlClientConnection( pool, showSQL );
 	}
 
 	@Override

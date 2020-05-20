@@ -80,6 +80,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 public class ReactiveSessionInternalImpl extends SessionImpl implements ReactiveSessionInternal, EventSource {
 
 	private transient ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
+	private ReactiveConnection reactiveConnection;
 
 	public ReactiveSessionInternalImpl(SessionFactoryImpl delegate, SessionCreationOptions options) {
 		super( delegate, options );
@@ -1014,15 +1015,11 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 		}
 	}
 
-	public ReactiveConnectionPoolProvider poolProvider() {
-		return getFactory().getServiceRegistry().getService( ReactiveConnectionPoolProvider.class );
-	}
-
-	private ReactiveConnection reactiveConnection;
-
 	public ReactiveConnection currentReactiveConnection() {
 		if ( reactiveConnection == null ) {
-			reactiveConnection = poolProvider().getTransactionalConnection();
+			reactiveConnection = getFactory().getServiceRegistry()
+					.getService( ReactiveConnectionPoolProvider.class )
+					.getConnection();
 		}
 		return reactiveConnection;
 	}
