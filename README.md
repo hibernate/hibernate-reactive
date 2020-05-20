@@ -207,10 +207,6 @@ following commands:
     create database `hreactive`;
     create user `hreactive` identified by 'hreactive';
     grant all on `hreactive`.* to `hreactive`;
-    
-    create database `hibernate-rx`;
-    create user `hibernate-rx` identified by 'hibernate-rx';
-    grant all on `hibernate-rx`.* to `hibernate-rx`;
 
 Finally, run `./gradlew test` from the `hibernate-reactive` directory.
 
