@@ -2,6 +2,8 @@ package org.hibernate.reactive.containers;
 
 public class MySQLDatabase {
 
+	public final static String IMAGE_NAME = "mysql:8";
+
 	/**
 	 * Holds configuration for the MySQL database contianer. If the build is run with <code>-Pdocker</code> then
 	 * Testcontianers+Docker will be used.
@@ -9,7 +11,7 @@ public class MySQLDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final VertxMySqlContainer mysql = new VertxMySqlContainer()
+	public static final VertxMySqlContainer mysql = new VertxMySqlContainer( IMAGE_NAME )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )

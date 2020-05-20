@@ -4,6 +4,8 @@ import org.testcontainers.containers.Db2Container;
 
 public class DB2Database {
 
+	public final static String IMAGE_NAME = "ibmcom/db2:11.5.0.0a";
+
 	/**
 	 * Holds configuration for the DB2 database contianer. If the build is run with <code>-Pdocker</code> then
 	 * Testcontianers+Docker will be used.
@@ -11,7 +13,7 @@ public class DB2Database {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	  static final Db2Container db2 = new Db2Container()
+	static final Db2Container db2 = new Db2Container( IMAGE_NAME )
 		      .withUsername(DatabaseConfiguration.USERNAME)
 		      .withPassword(DatabaseConfiguration.PASSWORD)
 		      .withDatabaseName(DatabaseConfiguration.DB_NAME)

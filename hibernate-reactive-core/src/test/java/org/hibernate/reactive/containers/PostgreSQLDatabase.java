@@ -4,6 +4,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 
 public class PostgreSQLDatabase {
 
+	public final static String IMAGE_NAME = "postgres:12-alpine";
+
 	/**
 	 * Holds configuration for the PostgreSQL database contianer. If the build is run with <code>-Pdocker</code> then
 	 * Testcontianers+Docker will be used.
@@ -11,7 +13,7 @@ public class PostgreSQLDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>("postgres:12-alpine")
+	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>( IMAGE_NAME )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
