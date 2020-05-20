@@ -91,9 +91,19 @@ just as you normally would, for example, by calling:
 
     EntityManagerFactory emf = createEntityManagerFactory("example");
 
- Now, `unwrap()` the reactive `SessionFactory`:
+Now, `unwrap()` the reactive `SessionFactory`:
  
     Stage.SessionFactory sessionFactory = emf.unwrap(Stage.SessionFactory.class);
+
+The type `Stage.SessionFactory` gives access to reactive APIs based on 
+Java's `CompletionStage`.
+
+If you prefer to use the [Mutiny][]-based API, `unwrap()` the type 
+`Mutiny.SessionFactory`:
+
+    Mutiny.SessionFactory sessionFactory = emf.unwrap(Mutiny.SessionFactory.class);
+
+[Mutiny]: https://smallrye.io/smallrye-mutiny/
 
 ### Obtaining a reactive session
 

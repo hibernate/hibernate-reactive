@@ -1,10 +1,10 @@
-package org.hibernate.reactive.impl;
+package org.hibernate.reactive.stage.impl;
 
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
-import org.hibernate.reactive.query.impl.StageQueryImpl;
+import org.hibernate.reactive.impl.ReactiveSessionInternal;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.util.impl.CompletionStages;
 

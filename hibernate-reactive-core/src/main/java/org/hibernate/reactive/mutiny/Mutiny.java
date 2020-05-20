@@ -1,23 +1,23 @@
-package org.hibernate.reactive.stage;
+package org.hibernate.reactive.mutiny;
 
+import io.smallrye.mutiny.Uni;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 /**
  * An API for Hibernate Reactive where non-blocking operations are
- * represented by a Java {@link CompletionStage}.
+ * represented by a Mutiny {@link Uni}.
  *
  * The {@link Query}, {@link Session}, and {@link SessionFactory}
  * interfaces declared here are simply non-blocking counterparts to
  * the similarly-named interfaces in Hibernate ORM.
  */
-public interface Stage {
+public interface Mutiny {
 	/**
 	 * A non-blocking counterpart to the Hibernate
 	 * {@link org.hibernate.query.Query} interface, allowing reactive
@@ -26,7 +26,7 @@ public interface Stage {
 	 * The semantics of operations on this interface are identical to the
 	 * semantics of the similarly-named operations of {@code Query}, except
 	 * that the operations are performed asynchronously, returning a
-	 * {@link CompletionStage} without blocking the calling thread.
+	 * {@link Uni} without blocking the calling thread.
 	 *
 	 * @see javax.persistence.Query
 	 */
@@ -48,7 +48,7 @@ public interface Stage {
 		 *
 		 * @see javax.persistence.Query#getSingleResult()
 		 */
-		CompletionStage<R> getSingleResult();
+		Uni<R> getSingleResult();
 
 		/**
 		 * Asynchronously execute this query, return the query results
@@ -59,7 +59,7 @@ public interface Stage {
 		 *
 		 * @see javax.persistence.Query#getResultList()
 		 */
-		CompletionStage<List<R>> getResultList();
+		Uni<List<R>> getResultList();
 
 		/**
 		 * Asynchronously execute this delete, update, or insert query,
@@ -69,7 +69,7 @@ public interface Stage {
 		 *
 		 * @see javax.persistence.Query#executeUpdate()
 		 */
-		CompletionStage<Integer> executeUpdate();
+		Uni<Integer> executeUpdate();
 
 		/**
 		 * Set the read-only/modifiable mode for entities and proxies
@@ -130,7 +130,7 @@ public interface Stage {
 	 * The semantics of operations on this interface are identical to the
 	 * semantics of the similarly-named operations of {@code Session}, except
 	 * that the operations are performed asynchronously, returning a
-	 * {@link CompletionStage} without blocking the calling thread.
+	 * {@link Uni} without blocking the calling thread.
 	 *
 	 * Entities associated with an {@code Session} do not support transparent
 	 * lazy association fetching. Instead, {@link #fetch} should be used to
@@ -165,7 +165,7 @@ public interface Stage {
 		 *
 		 * @see javax.persistence.EntityManager#find(Class, Object)
 		 */
-		<T> CompletionStage<T> find(Class<T> entityClass, Object id);
+		<T> Uni<T> find(Class<T> entityClass, Object id);
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
@@ -173,7 +173,7 @@ public interface Stage {
 		 *
 		 * @see #find(Class,Object)
 		 */
-		<T> CompletionStage<T> find(Class<T> entityClass, Object id, LockMode lockMode);
+		<T> Uni<T> find(Class<T> entityClass, Object id, LockMode lockMode);
 
 		/**
 		 * Asynchronously return the persistent instances of the given entity
@@ -184,7 +184,7 @@ public interface Stage {
 		 * @param ids the identifiers
 		 * @return a list of persistent instances and nulls via a {@code CompletionStage}
 		 */
-		<T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids);
+		<T> Uni<List<T>> find(Class<T> entityClass, Object... ids);
 
 		/**
 		 * Return the persistent instance of the given entity class with the
@@ -221,14 +221,14 @@ public interface Stage {
 		 *
 		 * @see javax.persistence.EntityManager#persist(Object)
 		 */
-		CompletionStage<Session> persist(Object entity);
+		Uni<Session> persist(Object entity);
 
 		/**
 		 * Persist multiple entities.
 		 *
 		 * @see #persist(Object)
 		 */
-		CompletionStage<Session> persist(Object... entities);
+		Uni<Session> persist(Object... entities);
 
 		/**
 		 * Asynchronously remove a persistent instance from the datastore. The
@@ -245,14 +245,14 @@ public interface Stage {
 		 *
 		 * @see javax.persistence.EntityManager#remove(Object)
 		 */
-		CompletionStage<Session> remove(Object entity);
+		Uni<Session> remove(Object entity);
 
 		/**
 		 * Remove multiple entities.
 		 *
 		 * @see #remove(Object)
 		 */
-		CompletionStage<Session> remove(Object... entities);
+		Uni<Session> remove(Object... entities);
 
 		/**
 		 * Copy the state of the given object onto the persistent object with the same
@@ -269,14 +269,14 @@ public interface Stage {
 		 *
 		 * @see javax.persistence.EntityManager#merge(Object)
 		 */
-		<T> CompletionStage<T> merge(T entity);
+		<T> Uni<T> merge(T entity);
 
 		/**
 		 * Merge multiple entities.
 		 *
 		 * @see #merge(Object)
 		 */
-		<T> CompletionStage<Void> merge(T... entities);
+		<T> Uni<Void> merge(T... entities);
 
 		/**
 		 * Re-read the state of the given instance from the underlying database. It is
@@ -293,7 +293,7 @@ public interface Stage {
 		 *
 		 * @see javax.persistence.EntityManager#refresh(Object)
 		 */
-		CompletionStage<Session> refresh(Object entity);
+		Uni<Session> refresh(Object entity);
 
 		/**
 		 * Re-read the state of the given instance from the underlying database,
@@ -301,14 +301,14 @@ public interface Stage {
 		 *
 		 * @see #refresh(Object)
 		 */
-		CompletionStage<Session> refresh(Object entity, LockMode lockMode);
+		Uni<Session> refresh(Object entity, LockMode lockMode);
 
 		/**
 		 * Refresh multiple entities.
 		 *
 		 * @see #refresh(Object)
 		 */
-		CompletionStage<Session> refresh(Object... entities);
+		Uni<Session> refresh(Object... entities);
 
 		/**
 		 * Force this session to flush asynchronously. Must be called at the
@@ -322,7 +322,7 @@ public interface Stage {
 		 *
 		 * @see javax.persistence.EntityManager#flush()
 		 */
-		CompletionStage<Session> flush();
+		Uni<Session> flush();
 
 		/**
 		 * Asynchronously fetch an association that's configured for lazy loading.
@@ -337,7 +337,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.Hibernate#initialize(Object)
 		 */
-		<T> CompletionStage<T> fetch(T association);
+		<T> Uni<T> fetch(T association);
 
 		/**
 		 * Asynchronously fetch an association that's configured for lazy loading,
@@ -353,7 +353,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.Hibernate#unproxy(Object)
 		 */
-		<T> CompletionStage<T> unproxy(T association);
+		<T> Uni<T> unproxy(T association);
 
 		/**
 		 * Determine the current lock mode of the given entity.
@@ -542,9 +542,9 @@ public interface Stage {
 		 * {@link Transaction#markForRollback()} is called.
 		 *
 		 * @param work a function which accepts {@link Transaction} and returns
-		 *             the result of the work as a {@link CompletionStage}.
+		 *             the result of the work as a {@link Uni}.
 		 */
-		<T> CompletionStage<T> withTransaction(Function<Transaction, CompletionStage<T>> work);
+		<T> Uni<T> withTransaction(Function<Transaction, Uni<T>> work);
 
 		/**
 		 * Close the reactive session and release the underlying database
@@ -583,7 +583,7 @@ public interface Stage {
 		 *
 		 * The client must close the session using {@link Session#close()}.
 		 */
-		CompletionStage<Session> openReactiveSession();
+		Uni<Session> openReactiveSession();
 
 		/**
 		 * Perform work using a {@link Session reactive session}.
@@ -591,9 +591,9 @@ public interface Stage {
 		 * The session will be closed automatically.
 		 *
 		 * @param work a function which accepts the session and returns
-		 *             the result of the work as a {@link CompletionStage}.
+		 *             the result of the work as a {@link Uni}.
 		 */
-		<T> CompletionStage<T> withReactiveSession(Function<Session, CompletionStage<T>> work);
+		<T> Uni<T> withReactiveSession(Function<Session, Uni<T>> work);
 
 	}
 }

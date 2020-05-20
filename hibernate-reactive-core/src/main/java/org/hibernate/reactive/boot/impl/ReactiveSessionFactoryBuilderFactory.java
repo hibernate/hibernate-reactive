@@ -14,7 +14,8 @@ import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
 public class ReactiveSessionFactoryBuilderFactory implements SessionFactoryBuilderFactory {
 
 	@Override
-	public SessionFactoryBuilder getSessionFactoryBuilder(MetadataImplementor metadata, SessionFactoryBuilderImplementor defaultBuilder) {
-		return new ReactiveSessionFactoryBuilderImpl( metadata, defaultBuilder );
+	public SessionFactoryBuilder getSessionFactoryBuilder(MetadataImplementor metadata,
+														  SessionFactoryBuilderImplementor defaultBuilder) {
+		return new ReactiveSessionFactoryBuilder( metadata, defaultBuilder );
 	}
 }

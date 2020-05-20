@@ -25,11 +25,6 @@ import org.hibernate.reactive.stage.Stage;
  */
 public interface ReactiveSessionInternal extends org.hibernate.Session {
 
-	/**
-	 * @return a reactive session backed by this object
-	 */
-	Stage.Session reactive();
-
 	ReactiveActionQueue getReactiveActionQueue();
 
 	<T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
