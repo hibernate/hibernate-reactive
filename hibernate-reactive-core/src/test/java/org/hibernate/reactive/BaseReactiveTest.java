@@ -10,7 +10,6 @@ import org.hibernate.reactive.containers.PostgreSQLDatabase;
 import org.hibernate.reactive.service.ReactiveConnection;
 import org.hibernate.reactive.service.initiator.ReactiveConnectionPoolProvider;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,6 +27,7 @@ public abstract class BaseReactiveTest {
 	public Timeout rule = Timeout.seconds( 3600 );
 
 	private Stage.Session session;
+	private ReactiveConnection connection;
 	private org.hibernate.SessionFactory sessionFactory;
 	private ReactiveConnectionPoolProvider poolProvider;
 
@@ -70,8 +70,18 @@ public abstract class BaseReactiveTest {
 
 	@After
 	public void after(TestContext context) {
-		if ( session != null ) {
+		if ( session != null && session.isOpen() ) {
 			session.close();
+			session = null;
+		}
+		if ( connection != null ) {
+			try {
+				connection.close();
+			}
+			catch (Exception e) {}
+			finally {
+				connection = null;
+			}
 		}
 
 		sessionFactory.close();
@@ -86,7 +96,8 @@ public abstract class BaseReactiveTest {
 	}
 
 	protected CompletionStage<ReactiveConnection> connection() {
-		return poolProvider.getConnection();
+		return poolProvider.getConnection()
+				.thenApply( c -> connection = c );
 	}
 
 }
