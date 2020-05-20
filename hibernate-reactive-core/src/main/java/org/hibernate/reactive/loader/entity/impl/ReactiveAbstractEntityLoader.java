@@ -12,7 +12,7 @@ import org.hibernate.persister.entity.Loadable;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
-import org.hibernate.reactive.impl.ReactiveQueryExecutor;
+import org.hibernate.reactive.impl.ReactiveSessionInternal;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+
+import static org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor.toParameterArray;
 
 public class ReactiveAbstractEntityLoader extends AbstractEntityLoader {
 
@@ -200,7 +202,9 @@ public class ReactiveAbstractEntityLoader extends AbstractEntityLoader {
 		// Adding locks and comments.
 		sql = preprocessSQL( sql, queryParameters, getFactory(), afterLoadActions );
 
-		return new ReactiveQueryExecutor().execute( sql, queryParameters, session, transformer );
+		return ((ReactiveSessionInternal) session).getReactiveConnection()
+				.selectJdbc( sql, toParameterArray(queryParameters, session) )
+				.thenApply( transformer );
 	}
 
 

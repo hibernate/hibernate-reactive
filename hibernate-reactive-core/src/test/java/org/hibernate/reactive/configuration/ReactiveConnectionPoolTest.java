@@ -30,7 +30,6 @@ import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Pool;
-import io.vertx.sqlclient.Row;
 
 @RunWith(VertxUnitRunner.class)
 public class ReactiveConnectionPoolTest {
@@ -119,13 +118,14 @@ public class ReactiveConnectionPoolTest {
 
 	private void verifyConnectivity(TestContext context, ReactiveConnectionPoolProvider reactivePool) {
 		test( context, reactivePool.getConnection().thenCompose(
-				connection -> connection.preparedQuery( "SELECT 1" ) )
-				.thenAccept( rows -> {
-					context.assertNotNull( rows );
-					context.assertEquals( 1, rows.size() );
-					Row row = rows.iterator().next();
-					context.assertEquals( 1, row.getInteger( 0 ) );
-				} ) );
+				connection -> connection.select( "SELECT 1")
+						.thenApply( rows -> {
+							context.assertNotNull( rows );
+							context.assertEquals( 1, rows.size() );
+							Object[] row = rows.next();
+							context.assertEquals( 1, row[0] );
+							return null;
+						} ) ) );
 	}
 
 }

@@ -29,7 +29,7 @@ public class ReactiveGenerationTarget implements GenerationTarget {
 	@Override
 	public void accept(String command) {
 		commands = commands.thenCompose(
-				connection -> connection.preparedQuery( command )
+				connection -> connection.execute( command )
 						.handle( (r, e) -> {
 							if ( e != null ) {
 								System.out.println( e.getMessage() );
