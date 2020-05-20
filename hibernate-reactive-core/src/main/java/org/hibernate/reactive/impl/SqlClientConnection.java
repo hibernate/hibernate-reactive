@@ -1,19 +1,14 @@
 package org.hibernate.reactive.impl;
 
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.sqlclient.*;
 import org.hibernate.reactive.service.ReactiveConnection;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
-
-import static io.vertx.core.Future.failedFuture;
-import static io.vertx.core.Future.succeededFuture;
 
 /**
  * A reactive connection based on Vert.x's {@link Pool}.
@@ -23,8 +18,8 @@ public class SqlClientConnection implements ReactiveConnection {
 	protected final Pool pool;
 	private final boolean showSQL;
 
-	protected CompletionStage<? extends SqlClient> connection() {
-		return CompletionStages.completedFuture( pool );
+	protected SqlClient client() {
+		return pool;
 	}
 
 	public SqlClientConnection(Pool pool, boolean showSQL) {
@@ -78,13 +73,8 @@ public class SqlClientConnection implements ReactiveConnection {
 		if (showSQL) {
 			System.out.println(sql);
 		}
-		return connection().thenCompose(
-				client -> toCompletionStage(
-						handler -> client.preparedQuery( sql ).execute(
-								parameters,
-								ar -> handler.handle( toFuture(ar) )
-						)
-				)
+		return toCompletionStage(
+				handler -> client().preparedQuery( sql ).execute( parameters, handler )
 		);
 	}
 
@@ -93,19 +83,15 @@ public class SqlClientConnection implements ReactiveConnection {
 		if (showSQL) {
 			System.out.println(sql);
 		}
-		return connection().thenCompose(
-				client -> toCompletionStage(
-						handler -> client.preparedQuery( sql ).execute(
-								ar -> handler.handle( toFuture(ar) )
-						)
-				)
+		return toCompletionStage(
+				handler -> client().preparedQuery( sql ).execute( handler )
 		);
 	}
 
 	protected static <T> CompletionStage<T> toCompletionStage(
 			Consumer<Handler<AsyncResult<T>>> completionConsumer) {
 		CompletableFuture<T> cs = new CompletableFuture<>();
-		try {
+//		try {
 			completionConsumer.accept( ar -> {
 				if ( ar.succeeded() ) {
 					cs.complete( ar.result() );
@@ -114,16 +100,11 @@ public class SqlClientConnection implements ReactiveConnection {
 					cs.completeExceptionally( ar.cause() );
 				}
 			} );
-		}
-		catch (Exception e) {
-			// unsure we need this ?
-			cs.completeExceptionally( e );
-		}
+//		}
+//		catch (Exception e) {
+//			cs.completeExceptionally( e );
+//		}
 		return cs;
-	}
-
-	protected static <T> Future<T> toFuture(AsyncResult<T> ar) {
-		return ar.succeeded() ? succeededFuture( ar.result() ) : failedFuture( ar.cause() );
 	}
 
 	@Override
