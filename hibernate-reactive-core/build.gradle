@@ -14,18 +14,16 @@ dependencies {
         exclude group: 'org.hibernate.common', module: 'hibernate-commons-annotations'
         exclude group: 'org.jboss.spec.javax.transaction', module: 'jboss-transaction-api_1.2_spec'
     }
-    testCompile ("org.hibernate:hibernate-testing:${hibernateOrmVersion}")
+    compile 'io.vertx:vertx-sql-client:3.9.1'
     
-    // TODO: Once we restructure our tests we can change these driver dependencies
-    // to the generic vertx-sql-client artifact so that core no longer depends on all drivers
-    compile 'io.vertx:vertx-pg-client:3.9.1'
-    compile 'io.vertx:vertx-mysql-client:3.9.1'
-    compile 'io.vertx:vertx-db2-client:3.9.1'
-
     runtimeOnly 'org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.1.1.Final'
 
+    testCompile ("org.hibernate:hibernate-testing:${hibernateOrmVersion}")
     testImplementation 'org.assertj:assertj-core:3.13.2'
     testImplementation 'io.vertx:vertx-unit:3.9.1'
+    testImplementation 'io.vertx:vertx-pg-client:3.9.1'
+    testImplementation 'io.vertx:vertx-mysql-client:3.9.1'
+    testImplementation 'io.vertx:vertx-db2-client:3.9.1'
     // Testcontainers
     testImplementation 'org.testcontainers:postgresql:1.13.0'
     testImplementation 'org.testcontainers:mysql:1.13.0'

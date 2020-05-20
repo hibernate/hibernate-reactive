@@ -2,7 +2,6 @@ package org.hibernate.reactive.impl;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.sqlclient.*;
 import org.hibernate.reactive.service.ReactiveConnection;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -18,12 +17,14 @@ import static io.vertx.core.Future.succeededFuture;
  * A reactive connection based on Vert.x's {@link Pool}.
  */
 public class SqlClientConnection implements ReactiveConnection {
+	
+	private static PropertyKind<Long> mySqlLastInsertedId;
 
 	private final boolean showSQL;
 
 	private final SqlConnection connection;
 	private Transaction transaction;
-
+	
 	private SqlClientConnection(SqlConnection connection, boolean showSQL) {
 		this.showSQL = showSQL;
 		this.connection = connection;
@@ -63,7 +64,7 @@ public class SqlClientConnection implements ReactiveConnection {
 					RowIterator<Row> iterator = rows.iterator();
 					return iterator.hasNext() ?
 							iterator.next().getLong(0) :
-							rows.property(MySQLClient.LAST_INSERTED_ID);
+							rows.property(getMySqlLastInsertedId());
 				} );
 	}
 
@@ -148,5 +149,22 @@ public class SqlClientConnection implements ReactiveConnection {
 //		}
 		return cs;
 	}
+	
+	/**
+	 * Loads MySQLClient.LAST_INSERTED_ID via reflection to avoid a hard
+	 * dependency on the MySQL driver 
+	 */
+	@SuppressWarnings("unchecked")
+	private static PropertyKind<Long> getMySqlLastInsertedId() {
+	    if (mySqlLastInsertedId == null) {
+            try {
+                Class<?> MySQLClient = Class.forName( "io.vertx.mysqlclient.MySQLClient" );
+                mySqlLastInsertedId = (PropertyKind<Long>) MySQLClient.getField( "LAST_INSERTED_ID" ).get( null );
+            } catch (ClassNotFoundException | NoSuchFieldException | IllegalArgumentException | IllegalAccessException | SecurityException e) {
+                throw new RuntimeException( "Unable to obtain MySQLClient.LAST_INSERTED_ID field", e );
+            }
+        }
+        return mySqlLastInsertedId;
+    }
 
 }
