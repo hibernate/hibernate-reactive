@@ -78,9 +78,5 @@ public interface ReactiveSessionInternal extends org.hibernate.Session {
 
 	CompletionStage<Integer> executeReactiveUpdate(String expandedQuery, QueryParameters queryParameters);
 
-	CompletionStage<Void> beginReactiveTransaction();
-
-	CompletionStage<Void> endReactiveTransaction(boolean rollback);
-
 	ReactiveConnection getReactiveConnection();
 }

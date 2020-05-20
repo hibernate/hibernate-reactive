@@ -47,9 +47,17 @@ public class CompletionStages {
 		throw (T) x;
 	}
 
-	public static <T extends Throwable, Ret> void rethrowIfNotNull(Throwable x) throws T {
+	public static <T extends Throwable, Ret> Ret rethrowIfNotNull(Throwable x) throws T {
 		if (x != null ) {
 			throw (T) x;
 		}
+		return null;
+	}
+
+	public static <T extends Throwable, Ret> Ret returnOrRethrow(Throwable x, Ret result) throws T {
+		if (x != null ) {
+			throw (T) x;
+		}
+		return result;
 	}
 }

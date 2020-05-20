@@ -1,10 +1,5 @@
 package org.hibernate.reactive.impl;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -12,6 +7,13 @@ import org.hibernate.LockMode;
 import org.hibernate.reactive.query.impl.StageQueryImpl;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.util.impl.CompletionStages;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
 /**
  * Implements the {@link Stage.Session} API. This delegating class is
@@ -237,24 +239,66 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
-		Stage.Transaction tx = new Stage.Transaction() {
-			boolean rollback;
+		return new Transaction<T>().execute( work );
+	}
 
-			@Override
-			public void markForRollback() {
+	private class Transaction<T> implements Stage.Transaction {
+		boolean rollback;
+		Throwable error;
+
+		CompletionStage<T> execute(Function<Stage.Transaction, CompletionStage<T>> work) {
+			return begin()
+					.thenCompose( v -> work.apply( this ) )
+					// only flush() if the work completed with no exception
+					.thenCompose( t -> delegate.reactiveAutoflush().thenApply( v -> t ) )
+					// have to capture the error here and pass it along,
+					// since we can't just return a CompletionStage that
+					// rolls back the transaction from the handle() function
+					.handle( this::processError )
+					// finally, commit or rollback the transaction, and
+					// then rethrow the caught error if necessary
+					.thenCompose(
+							t -> end()
+									// make sure that if rollback() throws,
+									// the original error doesn't get swallowed
+									.handle( this::processError )
+									// finally rethrow the original error, if any
+									.thenApply( v -> returnOrRethrow( error, t ) )
+					);
+		}
+
+		CompletionStage<Void> begin() {
+			return delegate.getReactiveConnection().beginTransaction();
+		}
+
+		CompletionStage<Void> end() {
+			return rollback
+					? delegate.getReactiveConnection().rollbackTransaction()
+					: delegate.getReactiveConnection().commitTransaction();
+		}
+
+		<R> R processError(R result, Throwable e) {
+			if ( e!=null ) {
 				rollback = true;
+				if (error == null) {
+					error = e;
+				}
+				else {
+					error.addSuppressed(e);
+				}
 			}
+			return result;
+		}
 
-			@Override
-			public boolean isMarkedForRollback() {
-				return rollback;
-			}
-		};
-		return delegate.beginReactiveTransaction()
-				.thenCompose( v -> work.apply(tx) )
-				.thenCompose( t -> delegate.reactiveAutoflush().thenApply( v -> t ) )
-				.whenComplete( (t, e) -> delegate.endReactiveTransaction(
-						tx.isMarkedForRollback() || e != null ) );
+		@Override
+		public void markForRollback() {
+			rollback = true;
+		}
+
+		@Override
+		public boolean isMarkedForRollback() {
+			return rollback;
+		}
 	}
 
 	@Override

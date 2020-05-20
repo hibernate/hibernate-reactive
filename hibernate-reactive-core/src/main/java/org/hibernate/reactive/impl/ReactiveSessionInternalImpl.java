@@ -999,18 +999,6 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 		return super.unwrap( clazz );
 	}
 
-	@Override
-	public CompletionStage<Void> beginReactiveTransaction() {
-		return getReactiveConnection().beginTransaction();
-	}
-
-	@Override
-	public CompletionStage<Void> endReactiveTransaction(boolean rollback) {
-		return rollback
-				? getReactiveConnection().rollbackTransaction()
-				: getReactiveConnection().commitTransaction();
-	}
-
 	public ReactiveConnection getReactiveConnection() {
 		return reactiveConnection;
 	}
