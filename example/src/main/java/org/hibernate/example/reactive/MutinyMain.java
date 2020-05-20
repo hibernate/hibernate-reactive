@@ -1,15 +1,14 @@
 package org.hibernate.example.reactive;
 
-import static org.hibernate.reactive.stage.Stage.*;
-import static javax.persistence.Persistence.*;
 import static java.lang.System.out;
+import static javax.persistence.Persistence.createEntityManagerFactory;
+import static org.hibernate.reactive.mutiny.Mutiny.SessionFactory;
 
 /**
  * Demonstrates the use of Hibernate Reactive with the
- * {@link java.util.concurrent.CompletionStage}-based
- * API.
+ * {@link io.smallrye.mutiny.Uni Mutiny}-based API.
  */
-public class Main {
+public class MutinyMain {
 
 	public static void main(String[] args) {
 
@@ -30,54 +29,54 @@ public class Main {
 				session5 -> session5.withTransaction(tx1 -> session5.persist(book1, book2) )
 		)
 				//wait for it to finish
-				.toCompletableFuture().join();
+				.await().indefinitely();
 
 		//retrieve a Book and print its title
 		sessionFactory.withReactiveSession(
 				//retrieve a Book and print its title
 				session4 -> session4.find(Book.class, book1.id)
-						.thenAccept(book3 -> out.println(book3.title + " is a great book!") )
+						.onItem().invoke( book3 -> out.println(book3.title + " is a great book!") )
 		)
-				.toCompletableFuture().join();
+				.await().indefinitely();
 
 		//query the Book titles
 		sessionFactory.withReactiveSession(
 				//query the Book titles
 				session3 -> session3.createQuery("select title, author from Book order by title desc", Object[].class)
 						.getResultList()
-						.thenAccept( rows -> rows.forEach(
+						.onItem().invoke( rows -> rows.forEach(
 								row -> out.printf("%s (%s)\n", row[0], row[1])
 						) )
 		)
-				.toCompletableFuture().join();
+				.await().indefinitely();
 
 		//query the entire Book entities
 		sessionFactory.withReactiveSession(
 				//query the entire Book entities
 				session2 -> session2.createQuery("from Book order by title desc", Book.class)
 						.getResultList()
-						.thenAccept( books -> books.forEach(
+						.onItem().invoke( books -> books.forEach(
 								b -> out.printf("%s: %s (%s)\n", b.isbn, b.title, b.author)
 						) )
 		)
-				.toCompletableFuture().join();
+				.await().indefinitely();
 
 		//retrieve a Book and delete it
 		sessionFactory.withReactiveSession(
 				//retrieve a Book and delete it
 				session1 -> session1.withTransaction(
 						tx -> session1.find(Book.class, book2.id)
-								.thenCompose( book -> session1.remove(book) )
+								.onItem().produceUni( book -> session1.remove(book) )
 				)
 		)
-				.toCompletableFuture().join();
+				.await().indefinitely();
 
 		//delete all the Books
 		sessionFactory.withReactiveSession(
 				//delete all the Books
 				session -> session.createQuery("delete Book").executeUpdate()
 		)
-				.toCompletableFuture().join();
+				.await().indefinitely();
 
 		System.exit(0);
 	}

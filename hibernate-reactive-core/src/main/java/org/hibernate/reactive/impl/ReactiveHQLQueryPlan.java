@@ -23,7 +23,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 /**
  * A reactific {@link HQLQueryPlan}
  */
-public class ReactiveHQLQueryPlan extends HQLQueryPlan {
+class ReactiveHQLQueryPlan extends HQLQueryPlan {
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( ReactiveHQLQueryPlan.class );
 
 	public ReactiveHQLQueryPlan(

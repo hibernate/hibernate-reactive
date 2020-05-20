@@ -1,4 +1,4 @@
-package org.hibernate.reactive.query.impl;
+package org.hibernate.reactive.stage.impl;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -8,6 +8,9 @@ import org.hibernate.LockMode;
 import org.hibernate.reactive.impl.ReactiveQueryInternal;
 import org.hibernate.reactive.stage.Stage;
 
+/**
+ * Implementation of {@link Stage.Query}.
+ */
 public class StageQueryImpl<R> implements Stage.Query<R> {
 
 	private final ReactiveQueryInternal<R> delegate;
@@ -17,19 +20,19 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 	}
 
 	@Override
-	public Stage.Query setParameter(int var1, Object var2) {
+	public Stage.Query<R> setParameter(int var1, Object var2) {
 		delegate.setParameter( var1, var2 );
 		return this;
 	}
 
 	@Override
-	public Stage.Query setMaxResults(int maxResults) {
+	public Stage.Query<R> setMaxResults(int maxResults) {
 		delegate.setMaxResults( maxResults );
 		return this;
 	}
 
 	@Override
-	public Stage.Query setFirstResult(int firstResult) {
+	public Stage.Query<R> setFirstResult(int firstResult) {
 		delegate.setFirstResult( firstResult );
 		return this;
 	}

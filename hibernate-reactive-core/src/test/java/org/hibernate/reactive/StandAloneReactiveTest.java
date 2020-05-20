@@ -5,7 +5,6 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.PostgreSQL9Dialect;
-import org.hibernate.reactive.boot.ReactiveSessionFactoryBuilder;
 import org.hibernate.reactive.stage.Stage;
 import org.junit.Test;
 
@@ -23,8 +22,8 @@ public class StandAloneReactiveTest {
 		Stage.SessionFactory factory = new MetadataSources( registry )
 				.buildMetadata()
 				.getSessionFactoryBuilder()
-				.unwrap( ReactiveSessionFactoryBuilder.class )
-				.build();
+				.build()
+				.unwrap( Stage.SessionFactory.class );
 
 		assertThat( factory ).isNotNull();
 	}

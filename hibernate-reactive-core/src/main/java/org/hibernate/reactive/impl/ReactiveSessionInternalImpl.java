@@ -64,9 +64,12 @@ import org.hibernate.reactive.event.spi.ReactiveLoadEventListener;
 import org.hibernate.reactive.event.spi.ReactiveMergeEventListener;
 import org.hibernate.reactive.event.spi.ReactivePersistEventListener;
 import org.hibernate.reactive.event.spi.ReactiveRefreshEventListener;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.service.ReactiveConnection;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 /**
@@ -94,11 +97,6 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 	@Override
 	public ReactiveActionQueue getReactiveActionQueue() {
 		return reactiveActionQueue;
-	}
-
-	@Override
-	public Stage.Session reactive() {
-		return new StageSessionImpl( this );
 	}
 
 	@Override
@@ -993,7 +991,10 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 			return clazz.cast(this);
 		}
 		if ( Stage.Session.class.isAssignableFrom( clazz ) ) {
-			return clazz.cast( reactive() );
+			return clazz.cast( new StageSessionImpl( this ) );
+		}
+		if ( Mutiny.Session.class.isAssignableFrom( clazz ) ) {
+			return clazz.cast( new MutinySessionImpl( this ) );
 		}
 		return super.unwrap( clazz );
 	}
