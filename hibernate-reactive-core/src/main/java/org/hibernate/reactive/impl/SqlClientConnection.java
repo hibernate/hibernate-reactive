@@ -4,9 +4,12 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.sqlclient.*;
+import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.reactive.service.ReactiveConnection;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import java.sql.ResultSet;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -15,7 +18,7 @@ import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 
 /**
- * A reactive connection based on Vert.x's {@link Pool}.
+ * A reactive connection based on Vert.x's {@link SqlConnection}.
  */
 public class SqlClientConnection implements ReactiveConnection {
 
@@ -42,6 +45,42 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	@Override
+	public CompletionStage<Integer> update(String sql, Object[] paramValues) {
+		return update( sql, Tuple.wrap( paramValues ) );
+	}
+
+	@Override
+	public CompletionStage<Long> updateReturning(String sql, Object[] paramValues) {
+		return updateReturning( sql, Tuple.wrap( paramValues ) );
+	}
+
+	@Override
+	public CompletionStage<Long> selectLong(String sql, Object[] paramValues) {
+		return preparedQuery( sql, Tuple.wrap( paramValues ) )
+				.thenApply( rowSet -> {
+					for (Row row: rowSet) {
+						return row.getLong(0);
+					}
+					return null;
+				} );
+	}
+
+	@Override
+	public CompletionStage<Result> select(String sql) {
+		return preparedQuery( sql ).thenApply(RowSetResult::new);
+	}
+
+	@Override
+	public CompletionStage<Result> select(String sql, Object[] paramValues) {
+		return preparedQuery( sql, Tuple.wrap( paramValues ) ).thenApply(RowSetResult::new);
+	}
+
+	@Override
+	public CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues) {
+		return preparedQuery( sql, Tuple.wrap( paramValues ) ).thenApply(ResultSetAdaptor::new);
+	}
+
+	@Override
 	public CompletionStage<Void> execute(String sql) {
 		return preparedQuery( sql ).thenApply( ignore -> null );
 	}
@@ -51,12 +90,10 @@ public class SqlClientConnection implements ReactiveConnection {
 		return preparedQuery( sql ).thenApply(SqlResult::rowCount);
 	}
 
-	@Override
 	public CompletionStage<Integer> update(String sql, Tuple parameters) {
 		return preparedQuery( sql, parameters ).thenApply(SqlResult::rowCount);
 	}
 
-	@Override
 	public CompletionStage<Long> updateReturning(String sql, Tuple parameters) {
 		return preparedQuery( sql, parameters )
 				.thenApply( rows -> {
@@ -67,8 +104,8 @@ public class SqlClientConnection implements ReactiveConnection {
 				} );
 	}
 
-	@Override
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters) {
+		Objects.requireNonNull( sql, "SQL query cannot be null" );
 		if (showSQL) {
 			System.out.println(sql);
 		}
@@ -77,8 +114,8 @@ public class SqlClientConnection implements ReactiveConnection {
 		);
 	}
 
-	@Override
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql) {
+		Objects.requireNonNull( sql, "SQL query cannot be null" );
 		if (showSQL) {
 			System.out.println(sql);
 		}
@@ -149,4 +186,33 @@ public class SqlClientConnection implements ReactiveConnection {
 		return cs;
 	}
 
+	private static class RowSetResult implements Result {
+		private final RowSet<Row> rowset;
+		private final RowIterator<Row> it;
+
+		public RowSetResult(RowSet<Row> rowset) {
+			this.rowset = rowset;
+			it = rowset.iterator();
+		}
+
+		@Override
+		public int size() {
+			return rowset.size();
+		}
+
+		@Override
+		public boolean hasNext() {
+			return it.hasNext();
+		}
+
+		@Override
+		public Object[] next() {
+			Row row = it.next();
+			Object[] result = new Object[ row.size() ];
+			for (int i=0; i<result.length; i++) {
+				result[i] = row.getValue(i);
+			}
+			return result;
+		}
+	}
 }

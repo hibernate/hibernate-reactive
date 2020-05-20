@@ -20,7 +20,8 @@ import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Table;
 import org.hibernate.persister.spi.PersisterCreationContext;
-import org.hibernate.reactive.impl.ReactiveQueryExecutor;
+import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.service.ReactiveConnection;
 import org.hibernate.reactive.sql.impl.Parameters;
 
 import java.util.Collections;
@@ -39,8 +40,6 @@ import static org.hibernate.id.enhanced.TableGenerator.*;
  */
 public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGenerator<Long> {
 
-	private static final ReactiveQueryExecutor queryExecutor = new ReactiveQueryExecutor();
-
 	private final String selectQuery;
 	private final String updateQuery;
 	private final String insertQuery;
@@ -53,17 +52,19 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 
 	private final SessionFactoryImplementor sessionFactory;
 
+
 	@Override
 	public CompletionStage<Long> generate(SharedSessionContractImplementor session) {
 		Object[] param = segmentColumnName == null ? new Object[] {} : new Object[] {segmentValue};
-		return queryExecutor.selectLong( selectQuery, param, session )
+		ReactiveConnection connection = ((ReactiveSessionInternal) session).getReactiveConnection();
+		return connection.selectLong( selectQuery, param )
 				.thenCompose( result -> {
 					if ( result == null ) {
 						long initializationValue = storeLastUsedValue ? initialValue - 1 : initialValue;
 						Object[] params = segmentColumnName == null ?
 								new Object[] {initializationValue} :
 								new Object[] {segmentValue, initializationValue};
-						return queryExecutor.update( insertQuery, params, session )
+						return connection.update( insertQuery, params )
 								.thenApply( v -> initialValue );
 					}
 					else {
@@ -72,7 +73,7 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 						Object[] params = segmentColumnName == null ?
 								new Object[] {updatedValue, currentValue} :
 								new Object[] {updatedValue, currentValue, segmentValue};
-						return queryExecutor.update( updateQuery, params, session )
+						return connection.update( updateQuery, params )
 								.thenApply( v -> storeLastUsedValue ? updatedValue : currentValue );
 					}
 				});

@@ -28,11 +28,13 @@ import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
-import org.hibernate.reactive.impl.ReactiveQueryExecutor;
+import org.hibernate.reactive.impl.ReactiveSessionInternal;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
+
+import static org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor.toParameterArray;
 
 public class ReactiveQueryLoader extends QueryLoader {
 
@@ -250,6 +252,8 @@ public class ReactiveQueryLoader extends QueryLoader {
 		// Adding locks and comments.
 		sql = preprocessSQL( sql, queryParameters, getFactory(), afterLoadActions );
 
-		return new ReactiveQueryExecutor().execute( sql, queryParameters, session, transformer );
+		return ((ReactiveSessionInternal) session).getReactiveConnection()
+				.selectJdbc( sql, toParameterArray(queryParameters, session) )
+				.thenApply( transformer );
 	}
 }

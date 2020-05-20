@@ -10,7 +10,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.spi.PersisterCreationContext;
-import org.hibernate.reactive.impl.ReactiveQueryExecutor;
+import org.hibernate.reactive.impl.ReactiveSessionInternal;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.Properties;
@@ -20,8 +20,6 @@ import java.util.concurrent.CompletionStage;
  * Support for JPA's {@link javax.persistence.SequenceGenerator}.
  */
 public class SequenceReactiveIdentifierGenerator implements ReactiveIdentifierGenerator<Long> {
-
-	private static final ReactiveQueryExecutor queryExecutor = new ReactiveQueryExecutor();
 
 	private final String sql;
 
@@ -63,6 +61,6 @@ public class SequenceReactiveIdentifierGenerator implements ReactiveIdentifierGe
 	@Override
 	public CompletionStage<Long> generate(SharedSessionContractImplementor session) {
 		return sql==null ? CompletionStages.nullFuture()
-				: queryExecutor.selectLong( sql, new Object[0], session );
+				: ((ReactiveSessionInternal) session).getReactiveConnection().selectLong( sql, new Object[0] );
 	}
 }

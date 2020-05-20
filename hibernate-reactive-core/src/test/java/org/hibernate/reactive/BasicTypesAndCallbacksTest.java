@@ -96,7 +96,7 @@ public class BasicTypesAndCallbacksTest extends BaseReactiveTest {
 							context.assertEquals( basic.version, 1 );
 							context.assertEquals( basic.string, "Goodbye");
 							return connection()
-									.thenCompose( connection -> connection.preparedQuery("update Basic set string = 'Goodnight'") )
+									.thenCompose( connection -> connection.execute("update Basic set string = 'Goodnight'") )
 									.thenCompose(v -> s3.refresh(basic))
 									.thenAccept(v -> context.assertEquals(basic.getString(), "Goodnight"))
 									.thenCompose(v -> {

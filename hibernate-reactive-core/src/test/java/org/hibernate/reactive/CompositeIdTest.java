@@ -1,6 +1,5 @@
 package org.hibernate.reactive;
 
-import io.vertx.sqlclient.Tuple;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
@@ -50,12 +49,12 @@ public class CompositeIdTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<String> selectNameFromId(Integer id) {
-		return connection().thenCompose( connection -> connection.preparedQuery(
-				"SELECT name FROM Pig WHERE id = $1", Tuple.of( id ) ).thenApply(
+		return connection().thenCompose( connection -> connection.select(
+				"SELECT name FROM Pig WHERE id = $1", new Object[]{id} ).thenApply(
 				rowSet -> {
 					if ( rowSet.size() == 1 ) {
 						// Only one result
-						return rowSet.iterator().next().getString( 0 );
+						return (String) rowSet.next()[0];
 					}
 					else if ( rowSet.size() > 1 ) {
 						throw new AssertionError( "More than one result returned: " + rowSet.size() );
@@ -68,12 +67,12 @@ public class CompositeIdTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<Double> selectWeightFromId(Integer id) {
-		return connection().thenCompose( connection -> connection.preparedQuery(
-				"SELECT weight FROM Pig WHERE id = $1", Tuple.of( id ) ).thenApply(
+		return connection().thenCompose( connection -> connection.select(
+				"SELECT weight FROM Pig WHERE id = $1", new Object[]{id} ).thenApply(
 				rowSet -> {
 					if ( rowSet.size() == 1 ) {
 						// Only one result
-						return rowSet.iterator().next().getDouble( 0 );
+						return (Double) rowSet.next()[0];
 					}
 					else if ( rowSet.size() > 1 ) {
 						throw new AssertionError( "More than one result returned: " + rowSet.size() );

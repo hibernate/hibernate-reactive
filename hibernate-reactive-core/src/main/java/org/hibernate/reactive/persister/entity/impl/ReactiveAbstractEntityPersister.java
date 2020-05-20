@@ -17,8 +17,9 @@ import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
-import org.hibernate.reactive.impl.ReactiveQueryExecutor;
+import org.hibernate.reactive.impl.ReactiveSessionInternal;
 import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLoaderBuilder;
+import org.hibernate.reactive.service.ReactiveConnection;
 import org.hibernate.reactive.sql.impl.Parameters;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.Delete;
@@ -31,6 +32,8 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor.toParameterArray;
 
 /**
  * An abstract implementation of {@link ReactiveEntityPersister} whose
@@ -53,8 +56,6 @@ import java.util.concurrent.CompletionStage;
 public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister, OuterJoinLoadable {
 	Logger log = Logger.getLogger( JoinedSubclassEntityPersister.class );
 
-	ReactiveQueryExecutor queryExecutor = new ReactiveQueryExecutor();
-
 	/**
 	 * This is a copy of a
 	 * {@link AbstractEntityPersister#preInsertInMemoryValueGeneration(Object[], Object, SharedSessionContractImplementor) private method}
@@ -76,10 +77,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 	}
 
-	default ReactiveQueryExecutor queryExecutor() {
-		return queryExecutor;
-	}
-
 	/**
 	 * A self-reference of type {@code AbstractEntityPersister}.
 	 *
@@ -87,6 +84,10 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	 */
 	default AbstractEntityPersister delegate() {
 		return (AbstractEntityPersister) this;
+	}
+
+	default ReactiveConnection getReactiveConnection(SharedSessionContractImplementor session) {
+		return ((ReactiveSessionInternal) session).getReactiveConnection();
 	}
 
 	@Override
@@ -218,7 +219,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			//can't actually occur!
 			throw new JDBCException( "error while binding parameters", e );
 		}
-		return queryExecutor().update( sql, insert.getParametersAsArray(), session )
+		return getReactiveConnection(session)
+				.update( sql, insert.getParametersAsArray() )
 				.thenAccept( count -> {
 					try {
 						expectation.verifyOutcome(count, insert, -1);
@@ -264,12 +266,13 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		SessionFactoryImplementor factory = session.getFactory();
 		Dialect dialect = factory.getJdbcServices().getDialect();
 		String identifierColumnName = delegate().getIdentifierColumnNames()[0];
+		ReactiveConnection connection = getReactiveConnection(session);
 		if ( factory.getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
 			//TODO: wooooo this is awful ... I believe the problem is fixed in Hibernate 6
 			if ( dialect instanceof PostgreSQL81Dialect) {
 				sql = sql + " returning " + identifierColumnName;
 			}
-			return queryExecutor().updateReturning( sql, insert.getParametersAsArray(), session )
+			return connection.updateReturning( sql, insert.getParametersAsArray() )
 					.thenApply( id -> id );
 		}
 		else {
@@ -280,8 +283,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 							identifierColumnName,
 							Types.INTEGER
 					);
-			return queryExecutor().update( sql, insert.getParametersAsArray(), session )
-					.thenCompose( v -> queryExecutor().selectLong(selectIdSql, new Object[0], session) )
+			return connection.update( sql, insert.getParametersAsArray() )
+					.thenCompose( v -> connection.selectLong( selectIdSql, new Object[0] ) )
 					.thenApply( id -> id );
 		}
 
@@ -361,7 +364,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			throw new HibernateException( e );
 		}
 
-		return queryExecutor().update( sql, delete.getParametersAsArray(), session )
+		return getReactiveConnection(session)
+				.update( sql, delete.getParametersAsArray() )
 				.thenAccept( count -> {
 					try {
 						expectation.verifyOutcome(count, delete, -1);
@@ -565,7 +569,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 //					return true;
 //				}
 //				else {
-				return queryExecutor().update( sql, update.getParametersAsArray(), session )
+				return getReactiveConnection(session)
+						.update( sql, update.getParametersAsArray() )
 						.thenApply( count -> {
 							try {
 								expectation.verifyOutcome(count, update, -1);
@@ -779,19 +784,10 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		if ( unsaved!=null ) {
 			return CompletionStages.completedFuture( unsaved );
 		}
-		return queryExecutor().execute(
-				Parameters.processParameters( delegate().getSQLSnapshotSelectString(), session ),
-				new QueryParameters( getIdentifierType(),
-						delegate().getIdentifier( entity, session ) ),
-				session,
-				resultSet -> {
-					try {
-						return !resultSet.next();
-					}
-					catch (SQLException sqle) {
-						return true;
-					}
-				}
-		);
+		String sql = Parameters.processParameters( delegate().getSQLSnapshotSelectString(), session );
+		Serializable id = delegate().getIdentifier( entity, session );
+		Object[] params = toParameterArray( new QueryParameters( getIdentifierType(), id ), session );
+		return getReactiveConnection(session).select( sql, params )
+				.thenApply( resultSet -> !resultSet.hasNext() );
 	}
 }
