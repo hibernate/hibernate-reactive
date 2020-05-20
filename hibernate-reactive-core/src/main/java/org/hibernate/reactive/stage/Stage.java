@@ -542,7 +542,7 @@ public interface Stage {
 		 * back if the work completes with an uncaught exception, or if
 		 * {@link Transaction#markForRollback()} is called.
 		 */
-		<T> CompletionStage<T> transact(Function<Transaction, CompletionStage<T>> work);
+		<T> CompletionStage<T> withTransaction(Function<Transaction, CompletionStage<T>> work);
 
 		/**
 		 * Close the reactive session.
@@ -553,7 +553,7 @@ public interface Stage {
 	}
 
 	/**
-	 * Allows code within {@link Session#transact(Function)} to mark a
+	 * Allows code within {@link Session#withTransaction(Function)} to mark a
 	 * transaction for rollback. A transaction marked for rollback will
 	 * never be committed.
 	 */
@@ -578,7 +578,9 @@ public interface Stage {
 		 * main interaction point between the user's program and
 		 * Hibernate Reactive.
 		 */
-		Session openReactiveSession();
+		CompletionStage<Session> openReactiveSession();
+
+		<T> CompletionStage<T> withReactiveSession(Function<Session, CompletionStage<T>> work);
 
 		@Override
 		SessionBuilder withOptions();
@@ -594,7 +596,7 @@ public interface Stage {
 		 * Obtain a new {@link Session reactive session}
 		 * with these options.
 		 */
-		Session openReactiveSession();
+		CompletionStage<Session> openReactiveSession();
 
 		//TODO: Hibernate Reactive-specific options go here
 	}

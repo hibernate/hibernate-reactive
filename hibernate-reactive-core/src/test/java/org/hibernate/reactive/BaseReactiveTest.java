@@ -66,10 +66,6 @@ public abstract class BaseReactiveTest {
 
 		sessionFactory = constructConfiguration().buildSessionFactory( registry );
 		poolProvider = registry.getService( ReactiveConnectionPoolProvider.class );
-
-		// EITHER WAY WORKS:
-		// session = sessionFactory.openSession().unwrap(Session.class);
-		session = sessionFactory.unwrap( Stage.SessionFactory.class ).openReactiveSession();
 	}
 
 	@After
@@ -82,16 +78,14 @@ public abstract class BaseReactiveTest {
 	}
 
 	protected CompletionStage<Stage.Session> openSession() {
-		return CompletionStages.nullFuture().thenApply(v -> {
-			if ( session != null ) {
-				session.close();
-			}
-			session = sessionFactory.unwrap( Stage.SessionFactory.class ).openReactiveSession();
-			return session;
-		} );
+		if ( session != null ) {
+			session.close();
+		}
+		return sessionFactory.unwrap( Stage.SessionFactory.class ).openReactiveSession()
+				.thenApply( s -> session = s );
 	}
 
-	protected ReactiveConnection connection() {
+	protected CompletionStage<ReactiveConnection> connection() {
 		return poolProvider.getConnection();
 	}
 

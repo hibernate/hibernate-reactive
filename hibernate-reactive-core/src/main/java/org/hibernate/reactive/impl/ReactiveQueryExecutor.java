@@ -29,7 +29,7 @@ public class ReactiveQueryExecutor {
 										   SharedSessionContractImplementor session) {
 		Objects.requireNonNull( sql, "Query for update cannot be null" );
 
-		return ( (ReactiveSessionInternal) session ).currentReactiveConnection()
+		return ( (ReactiveSessionInternal) session ).getReactiveConnection()
 				.update( sql, Tuple.wrap( paramValues ) );
 	}
 
@@ -37,7 +37,7 @@ public class ReactiveQueryExecutor {
 												 SharedSessionContractImplementor session) {
 		Objects.requireNonNull( sql, "Query for update cannot be null" );
 
-		return ( (ReactiveSessionInternal) session ).currentReactiveConnection()
+		return ( (ReactiveSessionInternal) session ).getReactiveConnection()
 				.updateReturning( sql, Tuple.wrap( paramValues ) );
 	}
 
@@ -45,7 +45,7 @@ public class ReactiveQueryExecutor {
 											SharedSessionContractImplementor session) {
 		Objects.requireNonNull( sql, "Select query for cannot be null" );
 
-		return ( (ReactiveSessionInternal) session ).currentReactiveConnection()
+		return ( (ReactiveSessionInternal) session ).getReactiveConnection()
 				.preparedQuery( sql, Tuple.wrap( paramValues ) )
 				.thenApply( rowSet -> {
 					for (Row row: rowSet) {
@@ -63,7 +63,7 @@ public class ReactiveQueryExecutor {
 										  Function<ResultSet, T> transformer) {
 		Objects.requireNonNull( sql, "Select query for cannot be null" );
 
-		return ( (ReactiveSessionInternal) session ).currentReactiveConnection()
+		return ( (ReactiveSessionInternal) session ).getReactiveConnection()
 				.preparedQuery( sql, asTuple( queryParameters, session ) )
 				.thenApply( rowset -> transformer.apply( new ResultSetAdaptor(rowset) ) );
 	}

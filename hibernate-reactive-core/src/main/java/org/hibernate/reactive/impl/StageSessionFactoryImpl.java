@@ -14,6 +14,9 @@ import org.hibernate.internal.SessionFactoryRegistry.ObjectFactoryImpl;
 import org.hibernate.reactive.engine.query.spi.ReactiveHQLQueryPlan;
 import org.hibernate.reactive.stage.Stage;
 
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+
 /**
  * Implementation of {@link Stage.SessionFactory}.
  *
@@ -29,8 +32,16 @@ public class StageSessionFactoryImpl extends SessionFactoryImpl
 	}
 
 	@Override
-	public Stage.Session openReactiveSession() throws HibernateException {
+	public CompletionStage<Stage.Session> openReactiveSession() throws HibernateException {
 		return withOptions().openReactiveSession();
+	}
+
+	@Override
+	public <T> CompletionStage<T> withReactiveSession(Function<Stage.Session, CompletionStage<T>> work) {
+		return openReactiveSession().thenCompose(
+				session -> work.apply(session)
+						.whenComplete( (r, e) -> session.close() )
+		);
 	}
 
 	@Override

@@ -2,6 +2,7 @@ package org.hibernate.reactive.service;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.internal.util.config.ConfigurationException;
@@ -130,8 +131,8 @@ public class ReactiveConnectionPoolProviderImpl implements ReactiveConnectionPoo
 	}
 
 	@Override
-	public ReactiveConnection getConnection() {
-		return new SqlClientConnection( pool, showSQL );
+	public CompletionStage<ReactiveConnection> getConnection() {
+		return SqlClientConnection.create( pool, showSQL );
 	}
 
 	@Override

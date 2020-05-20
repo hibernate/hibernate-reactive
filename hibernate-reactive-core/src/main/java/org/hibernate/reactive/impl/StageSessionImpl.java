@@ -236,7 +236,7 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <T> CompletionStage<T> transact(Function<Stage.Transaction, CompletionStage<T>> work) {
+	public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
 		Stage.Transaction tx = new Stage.Transaction() {
 			boolean rollback;
 
@@ -252,6 +252,7 @@ public class StageSessionImpl implements Stage.Session {
 		};
 		return delegate.beginReactiveTransaction()
 				.thenCompose( v -> work.apply(tx) )
+				.thenCompose( t -> delegate.reactiveAutoflush().thenApply( v -> t ) )
 				.whenComplete( (t, e) -> delegate.endReactiveTransaction(
 						tx.isMarkedForRollback() || e != null ) );
 	}

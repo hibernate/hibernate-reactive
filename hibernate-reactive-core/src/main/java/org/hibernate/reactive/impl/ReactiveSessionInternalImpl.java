@@ -67,7 +67,6 @@ import org.hibernate.reactive.event.spi.ReactivePersistEventListener;
 import org.hibernate.reactive.event.spi.ReactiveRefreshEventListener;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.service.ReactiveConnection;
-import org.hibernate.reactive.service.initiator.ReactiveConnectionPoolProvider;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
@@ -80,10 +79,12 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 public class ReactiveSessionInternalImpl extends SessionImpl implements ReactiveSessionInternal, EventSource {
 
 	private transient ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
-	private ReactiveConnection reactiveConnection;
+	private final ReactiveConnection reactiveConnection;
 
-	public ReactiveSessionInternalImpl(SessionFactoryImpl delegate, SessionCreationOptions options) {
+	public ReactiveSessionInternalImpl(SessionFactoryImpl delegate, SessionCreationOptions options,
+									   ReactiveConnection connection) {
 		super( delegate, options );
+		reactiveConnection = connection;
 	}
 
 	@Override
@@ -477,6 +478,13 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 	public CompletionStage<Void> reactiveFlush() {
 		checkOpen();
 		return doFlush();
+	}
+
+	@Override
+	public CompletionStage<Void> reactiveAutoflush() {
+		return getHibernateFlushMode().lessThan( FlushMode.COMMIT )
+				? CompletionStages.nullFuture()
+				: doFlush();
 	}
 
 	private CompletionStage<Void> doFlush() {
@@ -993,34 +1001,17 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 
 	@Override
 	public CompletionStage<Void> beginReactiveTransaction() {
-		return currentReactiveConnection().beginTransaction();
+		return getReactiveConnection().beginTransaction();
 	}
 
 	@Override
 	public CompletionStage<Void> endReactiveTransaction(boolean rollback) {
-		if (rollback) {
-			return currentReactiveConnection().rollbackTransaction();
-		}
-		else if ( getHibernateFlushMode().lessThan( FlushMode.COMMIT ) ) {
-			return currentReactiveConnection().commitTransaction();
-		}
-		else {
-			return doFlush()
-					.handle( (v, e) -> e == null ? null : new HibernateException(e) )
-					.thenCompose( error -> error == null
-							? currentReactiveConnection().commitTransaction()
-							: currentReactiveConnection().rollbackTransaction()
-									.thenAccept( v -> { throw error; } )
-					);
-		}
+		return rollback
+				? getReactiveConnection().rollbackTransaction()
+				: getReactiveConnection().commitTransaction();
 	}
 
-	public ReactiveConnection currentReactiveConnection() {
-		if ( reactiveConnection == null ) {
-			reactiveConnection = getFactory().getServiceRegistry()
-					.getService( ReactiveConnectionPoolProvider.class )
-					.getConnection();
-		}
+	public ReactiveConnection getReactiveConnection() {
 		return reactiveConnection;
 	}
 
@@ -1028,7 +1019,6 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 	public void close() throws HibernateException {
 		if ( reactiveConnection != null ) {
 			reactiveConnection.close();
-			reactiveConnection = null;
 		}
 		super.close();
 	}

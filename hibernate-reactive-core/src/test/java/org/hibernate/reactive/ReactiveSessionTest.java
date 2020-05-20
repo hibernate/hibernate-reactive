@@ -22,11 +22,11 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<Integer> populateDB() {
-		return connection().update( "INSERT INTO Pig (id, name) VALUES (5, 'Aloi')" );
+		return connection().thenCompose( connection -> connection.update( "INSERT INTO Pig (id, name) VALUES (5, 'Aloi')" ) );
 	}
 
 	private CompletionStage<Integer> cleanDB() {
-		return connection().update( "DELETE FROM Pig" );
+		return connection().thenCompose( connection -> connection.update( "DELETE FROM Pig" ) );
 	}
 
 	public void after(TestContext context) {
@@ -49,7 +49,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<String> selectNameFromId(Integer id) {
-		return connection().preparedQuery(
+		return connection().thenCompose( connection -> connection.preparedQuery(
 				"SELECT name FROM Pig WHERE id = $1", Tuple.of( id ) ).thenApply(
 				rowSet -> {
 					if ( rowSet.size() == 1 ) {
@@ -63,7 +63,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						// Size 0
 						return null;
 					}
-				} );
+				} ) );
 	}
 
 	@Test
@@ -150,7 +150,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				context,
 				openSession()
 						.thenCompose(
-								s -> s.transact(
+								s -> s.withTransaction(
 										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
 //												.thenCompose( vv -> s.flush() )
 								)
@@ -166,7 +166,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				context,
 				openSession()
 						.thenCompose(
-								s -> s.transact(
+								s -> s.withTransaction(
 										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
 												.thenCompose( vv -> s.flush() )
 												.thenAccept( vv -> {
@@ -186,7 +186,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				context,
 				openSession()
 						.thenCompose(
-								s -> s.transact(
+								s -> s.withTransaction(
 										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
 												.thenCompose( vv -> s.flush() )
 												.thenAccept( vv -> t.markForRollback() )

@@ -50,6 +50,8 @@ public interface ReactiveSessionInternal extends org.hibernate.Session {
 
 	CompletionStage<Void> reactiveFlush();
 
+	CompletionStage<Void> reactiveAutoflush();
+
 	CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode);
 
 	CompletionStage<?> reactiveRefresh(Object child, IdentitySet refreshedAlready);
@@ -80,5 +82,5 @@ public interface ReactiveSessionInternal extends org.hibernate.Session {
 
 	CompletionStage<Void> endReactiveTransaction(boolean rollback);
 
-	ReactiveConnection currentReactiveConnection();
+	ReactiveConnection getReactiveConnection();
 }

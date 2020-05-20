@@ -23,11 +23,11 @@ public class CompositeIdTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<Integer> populateDB() {
-		return connection().update( "INSERT INTO Pig (id, name, weight) VALUES (5, 'Aloi', 100)" );
+		return connection().thenCompose( connection -> connection.update( "INSERT INTO Pig (id, name, weight) VALUES (5, 'Aloi', 100)" ) );
 	}
 
 	private CompletionStage<Integer> cleanDB() {
-		return connection().update( "DELETE FROM Pig" );
+		return connection().thenCompose( connection -> connection.update( "DELETE FROM Pig" ) );
 	}
 
 	public void after(TestContext context) {
@@ -50,7 +50,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<String> selectNameFromId(Integer id) {
-		return connection().preparedQuery(
+		return connection().thenCompose( connection -> connection.preparedQuery(
 				"SELECT name FROM Pig WHERE id = $1", Tuple.of( id ) ).thenApply(
 				rowSet -> {
 					if ( rowSet.size() == 1 ) {
@@ -64,11 +64,11 @@ public class CompositeIdTest extends BaseReactiveTest {
 						// Size 0
 						return null;
 					}
-				} );
+				} ) );
 	}
 
 	private CompletionStage<Double> selectWeightFromId(Integer id) {
-		return connection().preparedQuery(
+		return connection().thenCompose( connection -> connection.preparedQuery(
 				"SELECT weight FROM Pig WHERE id = $1", Tuple.of( id ) ).thenApply(
 				rowSet -> {
 					if ( rowSet.size() == 1 ) {
@@ -82,7 +82,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 						// Size 0
 						return null;
 					}
-				} );
+				} ) );
 	}
 
 	@Test

@@ -14,9 +14,8 @@ import java.util.concurrent.CompletionStage;
  * @author Gavin King
  */
 public class ReactiveGenerationTarget implements GenerationTarget {
-	private ReactiveConnection connection;
 	private ServiceRegistry registry;
-	private CompletionStage<Void> commands;
+	private CompletionStage<ReactiveConnection> commands;
 
 	public ReactiveGenerationTarget(ServiceRegistry registry) {
 		this.registry = registry;
@@ -24,26 +23,29 @@ public class ReactiveGenerationTarget implements GenerationTarget {
 
 	@Override
 	public void prepare() {
-		connection = registry.getService( ReactiveConnectionPoolProvider.class ).getConnection();
-		commands = CompletionStages.nullFuture();
+		commands = registry.getService( ReactiveConnectionPoolProvider.class ).getConnection();
 	}
 
 	@Override
 	public void accept(String command) {
-		commands = commands.thenCompose( v -> connection.preparedQuery(command) )
-				.handle( (r, e) -> {
-					if ( e != null ) {
-						System.out.println( e.getMessage() );
-					}
-					return null;
-				} );
+		commands = commands.thenCompose(
+				connection -> connection.preparedQuery( command )
+						.handle( (r, e) -> {
+							if ( e != null ) {
+								System.out.println( e.getMessage() );
+							}
+							return null;
+						} )
+						.thenApply( v -> connection )
+		);
 	}
 
 	@Override
 	public void release() {
 		if ( commands != null ) {
-			commands.toCompletableFuture().join();
+			commands.whenComplete( (c, e) -> c.close() )
+					.toCompletableFuture()
+					.join();
 		}
-		connection = null;
 	}
 }

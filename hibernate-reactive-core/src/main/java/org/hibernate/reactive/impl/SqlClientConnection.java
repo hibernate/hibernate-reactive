@@ -5,6 +5,7 @@ import io.vertx.core.Handler;
 import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.sqlclient.*;
 import org.hibernate.reactive.service.ReactiveConnection;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -18,15 +19,26 @@ import static io.vertx.core.Future.succeededFuture;
  */
 public class SqlClientConnection implements ReactiveConnection {
 
-	protected final Pool pool;
 	private final boolean showSQL;
 
-	private SqlConnection connection;
+	private final SqlConnection connection;
 	private Transaction transaction;
 
-	public SqlClientConnection(Pool pool, boolean showSQL) {
+	private SqlClientConnection(SqlConnection connection, boolean showSQL) {
 		this.showSQL = showSQL;
-		this.pool = pool;
+		this.connection = connection;
+	}
+
+	public static CompletionStage<ReactiveConnection> create(Pool pool, boolean showSQL) {
+		return toCompletionStage(
+				handler -> pool.getConnection(
+						ar -> handler.handle(
+								ar.succeeded()
+										? succeededFuture( new SqlClientConnection( ar.result(), showSQL ) )
+										: failedFuture( ar.cause() )
+						)
+				)
+		);
 	}
 
 	@Override
@@ -77,25 +89,13 @@ public class SqlClientConnection implements ReactiveConnection {
 
 
 	private SqlClient client() {
-		return transaction != null ? transaction : pool;
+		return transaction != null ? transaction : connection;
 	}
 
 	@Override
 	public CompletionStage<Void> beginTransaction() {
-		return toCompletionStage(
-				handler -> pool.getConnection(
-						ar -> {
-							if ( ar.succeeded() ) {
-								connection = ar.result();
-								transaction = connection.begin();
-								handler.handle( succeededFuture() );
-							}
-							else {
-								handler.handle( failedFuture( ar.cause() ) );
-							}
-						}
-				)
-		);
+		transaction = connection.begin();
+		return CompletionStages.nullFuture();
 //		return execute("begin");
 	}
 
@@ -104,7 +104,7 @@ public class SqlClientConnection implements ReactiveConnection {
 		return toCompletionStage(
 				handler -> transaction.commit(
 						ar -> {
-							close();
+							transaction = null;
 							handler.handle( ar );
 						}
 				)
@@ -117,7 +117,7 @@ public class SqlClientConnection implements ReactiveConnection {
 		return toCompletionStage(
 				handler -> transaction.rollback(
 						ar -> {
-							close();
+							transaction = null;
 							handler.handle( ar );
 						}
 				)
@@ -127,11 +127,7 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public void close() {
-		if ( connection != null ) {
-			connection.close();
-			connection = null;
-			transaction = null;
-		}
+		connection.close();
 	}
 
 	protected static <T> CompletionStage<T> toCompletionStage(

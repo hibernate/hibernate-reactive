@@ -1,5 +1,7 @@
 package org.hibernate.example.reactive;
 
+import java.util.concurrent.CompletionStage;
+
 import static org.hibernate.reactive.stage.Stage.*;
 import static javax.persistence.Persistence.*;
 import static java.lang.System.out;
@@ -19,62 +21,53 @@ public class Main {
 		Book book2 = new Book("0-380-97346-4", "Cryptonomicon", "Neal Stephenson");
 
 		//obtain a reactive session
-		Session session1 = sessionFactory.openReactiveSession();
-		//persist the Books
-		session1.persist(book1, book2)
-				.thenCompose( $ -> session1.flush() )
-				.thenAccept( $ -> session1.close() )
-				.toCompletableFuture()
-				.join();
+		join( sessionFactory.withReactiveSession(
+				//persist the Books
+				session -> session.withTransaction( tx -> session.persist(book1, book2) )
+		) );
 
-		Session session2 = sessionFactory.openReactiveSession();
-		//retrieve a Book and print its title
-		session2.find(Book.class, book1.id)
-				.thenAccept( book -> out.println(book.title + " is a great book!") )
-				.thenAccept( $ -> session2.close() )
-				.toCompletableFuture()
-				.join();
+		join( sessionFactory.withReactiveSession(
+				//retrieve a Book and print its title
+				session -> session.find(Book.class, book1.id)
+						.thenAccept( book -> out.println(book.title + " is a great book!") )
+		) );
 
-		Session session3 = sessionFactory.openReactiveSession();
-		//query the Book titles
-		session3.createQuery("select title, author from Book order by title desc", Object[].class)
-				.getResultList()
-				.thenAccept( rows -> rows.forEach(
-						row -> out.printf("%s (%s)\n", row[0], row[1])
-				) )
-				.thenAccept( $ -> session3.close() )
-				.toCompletableFuture()
-				.join();
+		join( sessionFactory.withReactiveSession(
+				//query the Book titles
+				session -> session.createQuery("select title, author from Book order by title desc", Object[].class)
+						.getResultList()
+						.thenAccept( rows -> rows.forEach(
+								row -> out.printf("%s (%s)\n", row[0], row[1])
+						) )
+		) );
 
-		Session session4 = sessionFactory.openReactiveSession();
-		//query the entire Book entities
-		session4.createQuery("from Book order by title desc", Book.class)
-				.getResultList()
-				.thenAccept( books -> books.forEach(
-						b -> out.printf("%s: %s (%s)\n", b.isbn, b.title, b.author)
-				) )
-				.thenAccept( $ -> session4.close() )
-				.toCompletableFuture()
-				.join();
+		join( sessionFactory.withReactiveSession(
+				//query the entire Book entities
+				session -> session.createQuery("from Book order by title desc", Book.class)
+						.getResultList()
+						.thenAccept( books -> books.forEach(
+								b -> out.printf("%s: %s (%s)\n", b.isbn, b.title, b.author)
+						) )
+		) );
 
-		Session session5 = sessionFactory.openReactiveSession();
-		//retrieve a Book and delete it
-		session5.find(Book.class, book2.id)
-				.thenCompose( book -> session5.remove(book) )
-				.thenCompose( $ -> session5.flush() )
-				.thenAccept( $ -> session5.close() )
-				.toCompletableFuture()
-				.join();
+		join( sessionFactory.withReactiveSession(
+				//retrieve a Book and delete it
+				session -> session.withTransaction(
+						tx -> session.find(Book.class, book2.id)
+								.thenCompose( book -> session.remove(book) )
+				)
+		) );
 
-		Session session6 = sessionFactory.openReactiveSession();
-		//delete all the Books
-		session6.createQuery("delete Book")
-				.executeUpdate()
-				.thenAccept( $ -> session6.close() )
-				.toCompletableFuture()
-				.join();
+		join( sessionFactory.withReactiveSession(
+				//delete all the Books
+				session -> session.createQuery("delete Book").executeUpdate()
+		) );
 
 		System.exit(0);
+	}
+
+	private static void join(CompletionStage<?> stage) {
+		stage.toCompletableFuture().join();
 	}
 
 }
