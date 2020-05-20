@@ -21,8 +21,14 @@ import io.vertx.sqlclient.SqlConnection;
  * by default.
  */
 public class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
-	
-    @Override
+
+	public final static String IMAGE_NAME = "mysql:8";
+
+	public VertxMySqlContainer(String dockerImageName) {
+		super( dockerImageName );
+	}
+
+	@Override
     protected void waitUntilContainerStarted() {
         logger().info( "Waiting for database connection to become available at {} using query '{}'", getVertxUrl(), getTestQueryString());
 
