@@ -13,8 +13,9 @@ subprojects {
     compileJava.options.encoding = 'UTF-8'
 
     repositories {
-        mavenLocal()
-        jcenter()
+        // Only enable these for local development, never push it:
+        // mavenLocal()
+        // jcenter()
         mavenCentral()
     }
     
