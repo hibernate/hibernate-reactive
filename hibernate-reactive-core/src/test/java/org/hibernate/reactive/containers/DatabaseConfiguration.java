@@ -25,13 +25,15 @@ public class DatabaseConfiguration {
 	public static DBType dbType() {
 		if (dbType == null) {
 			String dbTypeString = System.getProperty( "db", DBType.POSTGRESQL.name() ).toUpperCase();
-			if ("PG".equals( dbTypeString ) || "POSTGRES".equals( dbTypeString ))
+			if ( "PG".equals( dbTypeString ) || "POSTGRES".equals( dbTypeString ) ) {
 				dbType = DBType.POSTGRESQL;
-			try {
-				dbType = DBType.valueOf( dbTypeString );
-			} catch (IllegalArgumentException e) {
-				throw new IllegalArgumentException( "Unknown DB type '" + dbTypeString + 
-						"' specified. Allowed values are: " + Arrays.toString( DBType.values() ), e );
+			} else {
+				try {
+					dbType = DBType.valueOf( dbTypeString );
+				} catch (IllegalArgumentException e) {
+					throw new IllegalArgumentException( "Unknown DB type '" + dbTypeString + 
+							"' specified. Allowed values are: " + Arrays.toString( DBType.values() ), e );
+				}
 			}
 			System.out.println( "Using database type: " + dbType );
 		}

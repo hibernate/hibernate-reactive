@@ -3,6 +3,7 @@ package org.hibernate.reactive;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -33,7 +34,8 @@ public class MutinySessionTest extends BaseMutinyTest {
 		return connection().flatMap(
 				connection -> Uni.createFrom().completionStage(
 						connection.select(
-								"SELECT name FROM Pig WHERE id = $1", new Object[]{id})
+								DatabaseConfiguration.statement( "SELECT name FROM Pig WHERE id = ", "" ), 
+								new Object[]{id})
 								.thenApply(
 										rowSet -> {
 											if (rowSet.size() == 1) {

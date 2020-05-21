@@ -9,7 +9,7 @@ on:
 
 jobs:
   test_postgresql:
-    name: Build and Test with PostgreSQL 12
+    name: Test with PostgreSQL
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -19,11 +19,11 @@ jobs:
         java-version: 1.8
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
-    - name: Build and Test with PostgreSQL 12
-      run: ./gradlew build -Pdocker
+    - name: Build and Test with PostgreSQL
+      run: ./gradlew build -Pdocker -Pdb=pg
 
   test_db2:      
-    name: Build and Test with DB2 11.5
+    name: Test with DB2
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -33,11 +33,11 @@ jobs:
         java-version: 1.8
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
-    - name: Build and Test with DB2 11.5
+    - name: Build and Test with DB2
       run: ./gradlew build -Pdocker -Pdb=db2
       
   build_package:      
-    name: Create maven package
+    name: Build and create maven package
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -48,7 +48,7 @@ jobs:
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
     - name: Create maven package
-      run: ./gradlew publishToMavenLocal 
+      run: ./gradlew assemble publishToMavenLocal 
 
     # The USERNAME and TOKEN need to correspond to the credentials environment variables used in
     # the publishing section of your build.gradle
