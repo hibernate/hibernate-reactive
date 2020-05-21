@@ -140,9 +140,6 @@ public interface Mutiny {
 	 * {@code Session} does not support JPA entity graphs, but Hibernate fetch
 	 * profiles may be used instead.
 	 *
-	 * {@code Session} does not (yet) support pessimistic locking, but
-	 * optimistic locking via {@code @Version} properties is supported.
-	 *
 	 * @see org.hibernate.Session
 	 */
 	interface Session {
@@ -573,6 +570,34 @@ public interface Mutiny {
 
 	/**
 	 * Factory for {@link Session reactive sessions}.
+	 *
+	 * A {@code Mutiny.SessionFactory} may be obtained from an instance of
+	 * {@link javax.persistence.EntityManagerFactory} as follows:
+	 *
+	 * <pre>
+	 * Mutiny.SessionFactory sessionFactory =
+	 * 			createEntityManagerFactory("example")
+	 * 				.unwrap(Mutiny.SessionFactory.class);
+	 * </pre>
+	 *
+	 * Here, configuration properties must be specified in
+	 * {@code persistence.xml}.
+	 *
+	 * Alternatively, a {@code Mutiny.SessionFactory} may be obtained via
+	 * programmatic configuration of Hibernate using:
+	 *
+	 * <pre>
+	 * Configuration configuration = new Configuration();
+	 * ...
+	 * Mutiny.SessionFactory sessionFactory =
+	 * 		configuration.buildSessionFactory(
+	 * 			new StandardServiceRegistryBuilder()
+	 * 				.applySettings( configuration.getProperties() )
+	 * 				.build()
+	 * 		)
+	 * 		.unwrap(Mutiny.SessionFactory.class);
+	 * </pre>
+	 *
 	 */
 	interface SessionFactory {
 
