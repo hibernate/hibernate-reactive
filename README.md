@@ -1,6 +1,6 @@
 ![Hibernate logo][]
 
-[![GitHub Actions Status](<https://img.shields.io/github/workflow/status/hibernate/hibernate-reactive/Gradle%20Build%20and%20Test?logo=GitHub>)](https://github.com/hibernate/hibernate-reactive/actions?query=workflow%3A%22Gradle+Build+and+Test%22)
+[![CI Status](https://github.com/hibernate/hibernate-reactive/workflows/Hibernate%20Reactive%20CI/badge.svg)](https://github.com/hibernate/hibernate-reactive/actions?query=workflow%3A%22Hibernate+Reactive+CI%22)
 [![License](https://img.shields.io/badge/License-LGPL%202.1-green.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt)
 
 # Hibernate Reactive
@@ -184,9 +184,14 @@ To publish Hibernate Reactive to your local Maven repository, run:
 ### Running tests
 
 To run the tests, you'll need to get the test databases running on your 
-machine. There are three ways to start the test databases. 
+machine. There are three ways to start the test databases.
 
-#### If you have Docker installed
+By default (almost) all of the tests will run with PostgreSQL. To use a different database
+such as DB2, you can specify `-Pdb=<DBType>`, for example:
+
+    ./gradlew test -Pdb=db2
+    
+#### A) If you have Docker installed
 
 If you have Docker installed, running the tests is really easy. You
 don't need to create the test databases manually. Just type:
@@ -198,7 +203,7 @@ multiple test runs. To do this, set `testcontainers.reuse.enable=true` in
 the file `$HOME/.testcontainers.properties`. (Just create the file if it 
 doesn't already exist.)
 
-#### If you already have PostgreSQL installed
+#### B) If you already have PostgreSQL installed
 
 If you already have PostgreSQL installed on your machine, you'll just 
 need to create the test database. From the command line, type the 
@@ -220,7 +225,7 @@ following commands:
 
 Finally, run `./gradlew test` from the `hibernate-reactive` directory.
 
-#### If you have Podman
+#### C) If you have Podman
 
 If you use [Podman][], you can start the test database by following 
 the instructions in [podman.md](podman.md).

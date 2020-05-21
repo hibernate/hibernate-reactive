@@ -1,6 +1,4 @@
-# This workflow will build a package using Gradle and then publish it to GitHub packages when a release is created
-# For more information see: https://github.com/actions/setup-java#publishing-using-gradle
-name: Gradle Build and Test
+name: Hibernate Reactive CI
 
 on:
   push:
@@ -10,7 +8,8 @@ on:
     branches: master
 
 jobs:
-  build:
+  test_postgresql:
+    name: Build and Test with PostgreSQL 12
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -20,11 +19,35 @@ jobs:
         java-version: 1.8
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
-
-    - name: Build and Test
+    - name: Build and Test with PostgreSQL 12
       run: ./gradlew build -Pdocker
+
+  test_db2:      
+    name: Build and Test with DB2 11.5
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+        server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
+        settings-path: ${{ github.workspace }} # location for the settings.xml file
+    - name: Build and Test with DB2 11.5
+      run: ./gradlew build -Pdocker -Pdb=db2
       
-    - name: Create package
+  build_package:      
+    name: Create maven package
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+        server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
+        settings-path: ${{ github.workspace }} # location for the settings.xml file
+    - name: Create maven package
       run: ./gradlew publishToMavenLocal 
 
     # The USERNAME and TOKEN need to correspond to the credentials environment variables used in
