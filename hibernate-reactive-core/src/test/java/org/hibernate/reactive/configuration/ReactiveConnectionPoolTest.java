@@ -19,6 +19,9 @@ import org.hibernate.reactive.containers.PostgreSQLDatabase;
 import org.hibernate.reactive.pool.impl.SqlClientPool;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
+import org.hibernate.reactive.testing.TestingRegistryRule;
+import org.hibernate.service.spi.ServiceRegistryImplementor;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -40,6 +43,9 @@ public class ReactiveConnectionPoolTest {
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
+	@Rule
+	public TestingRegistryRule registryRule = new TestingRegistryRule();
+
 	protected static void test(TestContext context, CompletionStage<?> cs) {
 		// this will be added to TestContext in the next vert.x release
 		Async async = context.async();
@@ -59,8 +65,16 @@ public class ReactiveConnectionPoolTest {
 		Pool pgPool = PgPool.pool( url );
 		Map<String,Object> config = new HashMap<>();
 		config.put( ReactiveSettings.VERTX_POOL, pgPool );
-		ReactiveConnectionPool reactivePool = new SqlClientPool( config );
+		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
 		verifyConnectivity( context, reactivePool );
+	}
+
+	private ReactiveConnectionPool configureAndStartPool(Map<String, Object> config) {
+		SqlClientPool reactivePool = new SqlClientPool();
+		reactivePool.injectServices( registryRule.getServiceRegistry() );
+		reactivePool.configure( config );
+		reactivePool.start();
+		return reactivePool;
 	}
 
 	@Test
@@ -71,7 +85,7 @@ public class ReactiveConnectionPoolTest {
 		Map<String,Object> config = new HashMap<>();
 		config.put( ReactiveSettings.VERTX_POOL, "I'm a pool!" );
 
-		new SqlClientPool( config );
+		configureAndStartPool( config );
 	}
 	
 	@Test
@@ -79,7 +93,7 @@ public class ReactiveConnectionPoolTest {
 		String url = PostgreSQLDatabase.getJdbcUrl();
 		Map<String,Object> config = new HashMap<>();
 		config.put( AvailableSettings.URL, url );
-		ReactiveConnectionPool reactivePool = new SqlClientPool( config );
+		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
 		verifyConnectivity( context, reactivePool );
 	}
 	
@@ -97,7 +111,7 @@ public class ReactiveConnectionPoolTest {
 		config.put( AvailableSettings.URL, url );
 		config.put( AvailableSettings.USER, DatabaseConfiguration.USERNAME );
 		config.put( AvailableSettings.PASS, DatabaseConfiguration.PASSWORD );
-		ReactiveConnectionPool reactivePool = new SqlClientPool( config );
+		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
 		verifyConnectivity( context, reactivePool );
 	}
 
@@ -112,7 +126,7 @@ public class ReactiveConnectionPoolTest {
 		config.put( AvailableSettings.URL, url );
 		config.put( AvailableSettings.USER, "bogus" );
 		config.put( AvailableSettings.PASS, "bogus" );
-		ReactiveConnectionPool reactivePool = new SqlClientPool( config );
+		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
 		verifyConnectivity( context, reactivePool );
 	}
 

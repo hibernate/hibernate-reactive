@@ -50,7 +50,8 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 
 	@Override
 	public void configure(Map configurationValues) {
-		this.showSQL = "true".equals(configurationValues.get(AvailableSettings.SHOW_SQL));
+		this.showSQL = "true".equals( configurationValues.get( AvailableSettings.SHOW_SQL ) );
+		//TODO: actually extract the configuration values we need rather than keeping a reference to the whole map.
 		this.configurationValues = configurationValues;
 	}
 
