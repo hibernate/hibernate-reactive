@@ -8,6 +8,7 @@ import org.hibernate.service.Service;
  * This is a service so to allow injecting an external instance,
  * or allow Hibernate Reactive to manage its own instance.
  */
+@FunctionalInterface
 public interface VertxService extends Service {
 
     Vertx getVertx();
