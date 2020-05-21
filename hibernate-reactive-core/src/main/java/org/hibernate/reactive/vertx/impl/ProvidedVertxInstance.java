@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * An implementation of {@link VertxInstance} which allows the client
  * to provide an instance of {@link Vertx} whose lifecyle is managed
- * extrenally to Hibernate Reactive. The {@code ProvidedVertxInstance}
+ * externally to Hibernate Reactive. The {@code ProvidedVertxInstance}
  * must be registered with explicitly Hibernate by calling
  * {@link org.hibernate.boot.registry.StandardServiceRegistryBuilder#addService}.
  * Hibernate will destroy the {@code Vertx} instance on shutdown.

@@ -595,5 +595,10 @@ public interface Mutiny {
 		 */
 		<T> Uni<T> withReactiveSession(Function<Session, Uni<T>> work);
 
+		/**
+		 * Destroy the session factory and clean up its connection
+		 * pool.
+		 */
+		void close();
 	}
 }

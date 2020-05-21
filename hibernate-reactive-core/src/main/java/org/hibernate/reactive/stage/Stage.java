@@ -595,5 +595,10 @@ public interface Stage {
 		 */
 		<T> CompletionStage<T> withReactiveSession(Function<Session, CompletionStage<T>> work);
 
+		/**
+		 * Destroy the session factory and clean up its connection
+		 * pool.
+		 */
+		void close();
 	}
 }

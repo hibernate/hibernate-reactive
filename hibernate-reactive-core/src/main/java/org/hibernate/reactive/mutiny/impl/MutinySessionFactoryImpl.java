@@ -39,4 +39,8 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		);
 	}
 
+	@Override
+	public void close() {
+		delegate.close();
+	}
 }
