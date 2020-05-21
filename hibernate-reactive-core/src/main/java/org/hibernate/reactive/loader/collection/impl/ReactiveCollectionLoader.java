@@ -1,8 +1,8 @@
 package org.hibernate.reactive.loader.collection.impl;
 
 import org.hibernate.HibernateException;
+import org.hibernate.JDBCException;
 import org.hibernate.engine.spi.*;
-import org.hibernate.loader.collection.CollectionInitializer;
 import org.hibernate.persister.collection.QueryableCollection;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.loader.ReactiveOuterJoinLoader;
@@ -10,10 +10,11 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
-import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 
-public class ReactiveCollectionLoader extends ReactiveOuterJoinLoader implements CollectionInitializer {
+public class ReactiveCollectionLoader extends ReactiveOuterJoinLoader
+		implements ReactiveCollectionInitializer {
 	private final QueryableCollection collectionPersister;
 
 	public ReactiveCollectionLoader(
@@ -42,6 +43,7 @@ public class ReactiveCollectionLoader extends ReactiveOuterJoinLoader implements
 		throw new UnsupportedOperationException( "Use the reactive method instead: reactiveInitialize");
 	}
 
+	@Override
 	public CompletionStage<Void> reactiveInitialize(Serializable id, SharedSessionContractImplementor session) throws HibernateException {
 		return reactiveLoadCollection( (SessionImplementor) session, id, getKeyType() );
 	}
@@ -61,12 +63,12 @@ public class ReactiveCollectionLoader extends ReactiveOuterJoinLoader implements
 		}
 
 		Serializable[] ids = new Serializable[]{id};
-		QueryParameters qp = new QueryParameters(new Type[]{type}, ids, ids);
-		return doReactiveQueryAndInitializeNonLazyCollections(session, qp, true)
-				.handle((list, e) -> {
-					if (e instanceof SQLException) {
+		QueryParameters parameters = new QueryParameters( new Type[]{type}, ids, ids );
+		return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, true )
+				.handle( (list, e) -> {
+					if (e instanceof JDBCException) {
 						throw getFactory().getJdbcServices().getSqlExceptionHelper().convert(
-								(SQLException) e,
+								((JDBCException) e).getSQLException(),
 								"could not initialize a collection: " +
 										MessageHelper.collectionInfoString(collectionPersister(), id, getFactory()),
 								getSQLString()
@@ -76,7 +78,41 @@ public class ReactiveCollectionLoader extends ReactiveOuterJoinLoader implements
 					}
 					LOG.debug("Done loading collection");
 					return null;
-				});
+				} );
+	}
+
+	/**
+	 * Called by wrappers that batch initialize collections
+	 */
+	public final CompletionStage<Void> reactiveLoadCollectionBatch(
+			final SessionImplementor session,
+			final Serializable[] ids,
+			final Type type) throws HibernateException {
+		if ( LOG.isDebugEnabled() ) {
+			LOG.debugf(
+					"Batch loading collection: %s",
+					MessageHelper.collectionInfoString( getCollectionPersisters()[0], ids, getFactory() )
+			);
+		}
+
+		Type[] idTypes = new Type[ids.length];
+		Arrays.fill( idTypes, type );
+		QueryParameters parameters = new QueryParameters( idTypes, ids, ids );
+		return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, true )
+				.handle( (list, e) -> {
+					if (e instanceof JDBCException) {
+						throw getFactory().getJdbcServices().getSqlExceptionHelper().convert(
+								((JDBCException) e).getSQLException(),
+								"could not initialize a collection batch: " +
+										MessageHelper.collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
+								getSQLString()
+						);
+					} else if (e != null) {
+						CompletionStages.rethrow(e);
+					}
+					LOG.debug("Done batch load");
+					return null;
+				} );
 	}
 
 	protected Type getKeyType() {
