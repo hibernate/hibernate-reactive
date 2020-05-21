@@ -1,6 +1,7 @@
 package org.hibernate.reactive.pool;
 
 import org.hibernate.service.Service;
+import org.hibernate.service.spi.Stoppable;
 
 import java.util.concurrent.CompletionStage;
 
@@ -21,5 +22,4 @@ public interface ReactiveConnectionPool extends Service {
 	 */
 	CompletionStage<ReactiveConnection> getConnection();
 
-	void close();
 }

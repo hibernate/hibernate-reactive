@@ -14,6 +14,8 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.util.impl.JdbcUrlParser;
 import org.hibernate.service.spi.Configurable;
+import org.hibernate.service.spi.ServiceRegistryAwareService;
+import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.service.spi.Stoppable;
 
 import io.vertx.core.Vertx;
@@ -28,14 +30,20 @@ import static io.vertx.core.Future.succeededFuture;
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
  */
-public class SqlClientPool implements ReactiveConnectionPool, Configurable, Stoppable {
+public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwareService, Configurable, Stoppable {
 
 	public static final int DEFAULT_POOL_SIZE = 5;
 	private Pool pool;
 	private boolean showSQL;
+	private ServiceRegistryImplementor serviceRegistry;
 
 	public SqlClientPool(Map configurationValues) {
 		configure( configurationValues );
+	}
+
+	@Override
+	public void injectServices(ServiceRegistryImplementor serviceRegistry) {
+		this.serviceRegistry = serviceRegistry;
 	}
 
 	@Override
@@ -148,12 +156,8 @@ public class SqlClientPool implements ReactiveConnectionPool, Configurable, Stop
 	}
 
 	@Override
-	public void close() {
+	public void stop() {
 		this.pool.close();
 	}
 
-	@Override
-	public void stop() {
-		close();
-	}
 }
