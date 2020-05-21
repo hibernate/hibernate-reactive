@@ -1,5 +1,7 @@
 package org.hibernate.reactive;
 
+import static org.junit.Assume.assumeTrue;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.time.LocalDate;
@@ -32,7 +34,8 @@ import javax.persistence.Version;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.containers.DB2Database;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -42,13 +45,17 @@ public class DB2BasicTest extends BaseReactiveTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( AvailableSettings.URL, DB2Database.getJdbcUrl() );
+		configuration.setProperty( AvailableSettings.URL, DatabaseConfiguration.getJdbcUrl() );
 		configuration.addAnnotatedClass( Basic.class );
 		return configuration;
 	}
 	
 	@Test
 	public void testBasicTypes(TestContext context) {
+		// This test is specifically for DB2, and can be removed one DB2 supports
+		// all of the data types in the common BasicTypesAndCallbacksTest 
+		// (namely BigInteger, BigDecimal, and LocalTime)
+		assumeTrue( DatabaseConfiguration.dbType() == DBType.DB2 );
 
 		Basic basik = new Basic("Hello World");
 		basik.bytes =  "hello world".getBytes();

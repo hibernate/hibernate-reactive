@@ -27,8 +27,6 @@ public class AutoincrementTest extends BaseReactiveTest {
 	public void testBasicTypes(TestContext context) {
 
 		Basic basik = new Basic("Hello World");
-		basik.decimal = new BigDecimal(12.12d);
-		basik.integer = BigInteger.valueOf(123L);
 		basik.bytes =  "hello world".getBytes();
 		basik.thing = Locale.getDefault();
 		basik.timeZone = TimeZone.getDefault();
@@ -37,7 +35,6 @@ public class AutoincrementTest extends BaseReactiveTest {
 		basik.parent = new Basic("Parent");
 		basik.localDate = LocalDate.now();
 		basik.localDateTime = LocalDateTime.now();
-		basik.localTime = LocalTime.now();
 		basik.date = new Date(2000,Calendar.JANUARY,1);
 		basik.thing = new String[] {"hello", "world"};
 		basik.embed = new Embed("one", "two");
@@ -58,8 +55,6 @@ public class AutoincrementTest extends BaseReactiveTest {
 							context.assertNotNull( basic );
 							context.assertTrue( basic.loaded );
 							context.assertEquals( basic.string, basik.string);
-							context.assertEquals( basic.decimal.floatValue(), basik.decimal.floatValue());
-							context.assertEquals( basic.integer, basik.integer);
 							context.assertTrue( Arrays.equals(basic.bytes, basik.bytes) );
 							context.assertEquals( basic.timeZone, basik.timeZone);
 							context.assertEquals( basic.cover, basik.cover);
@@ -67,8 +62,6 @@ public class AutoincrementTest extends BaseReactiveTest {
 							context.assertEquals( basic.date, basik.date );
 							context.assertEquals( basic.localDate, basik.localDate );
 							context.assertEquals( basic.localDateTime, basik.localDateTime );
-							context.assertEquals( basic.localTime.truncatedTo(ChronoUnit.MINUTES),
-									basik.localTime.truncatedTo(ChronoUnit.MINUTES) );
 							context.assertTrue( basic.thing instanceof String[] );
 							context.assertTrue( Objects.deepEquals(basic.thing, basik.thing) );
 							context.assertEquals( basic.embed, basik.embed );
@@ -178,8 +171,6 @@ public class AutoincrementTest extends BaseReactiveTest {
 		Double nullDouble;
 		Byte nullByte;
 
-		BigDecimal decimal;
-		BigInteger integer;
 		byte[] bytes;
 		Cover cover;
 		@javax.persistence.Basic
@@ -187,12 +178,10 @@ public class AutoincrementTest extends BaseReactiveTest {
 		TimeZone timeZone;
 		@Temporal(TemporalType.DATE)
 		private Date date;
-		@Column(name="_localDate")
+		@Column(name="alocalDate")
 		private LocalDate localDate;
-		@Column(name="_localDateTime")
+		@Column(name="alocalDateTime")
 		private LocalDateTime localDateTime;
-		@Column(name="_localTime")
-		private LocalTime localTime;
 		@Convert(converter = BinInteger.class)
 		private BigInteger binInteger;
 

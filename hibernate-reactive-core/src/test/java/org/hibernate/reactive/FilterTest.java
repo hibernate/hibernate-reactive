@@ -4,9 +4,14 @@ import io.vertx.ext.unit.TestContext;
 import org.hibernate.annotations.Filter;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.junit.Test;
 
 import javax.persistence.*;
+
+import static org.junit.Assume.assumeTrue;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -25,6 +30,8 @@ public class FilterTest extends BaseReactiveTest {
 
 	@Test
 	public void testFilter(TestContext context) {
+		// TODO: @AGG get this test working with DB2
+		assumeTrue( DatabaseConfiguration.dbType() != DBType.DB2 );
 
 		Node basik = new Node("Child");
 		basik.parent = new Node("Parent");

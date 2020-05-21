@@ -6,6 +6,8 @@
  */
 package org.hibernate.reactive.configuration;
 
+import static org.junit.Assume.assumeTrue;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
@@ -15,13 +17,11 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.reactive.cfg.ReactiveSettings;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
-import org.hibernate.reactive.containers.PostgreSQLDatabase;
 import org.hibernate.reactive.pool.impl.SqlClientPool;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
 import org.hibernate.reactive.testing.TestingRegistryRule;
-import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.jetbrains.annotations.NotNull;
+import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -61,7 +61,10 @@ public class ReactiveConnectionPoolTest {
 
 	@Test
 	public void configureWithPool(TestContext context) {
-		String url = PostgreSQLDatabase.getJdbcUrl().substring( "jdbc:".length() );
+		// This test doesn't need to rotate across all DBs and has PG-specific logic in it
+		assumeTrue( DatabaseConfiguration.dbType() == DBType.POSTGRESQL );
+		
+		String url = DatabaseConfiguration.getJdbcUrl().substring( "jdbc:".length() );
 		Pool pgPool = PgPool.pool( url );
 		Map<String,Object> config = new HashMap<>();
 		config.put( ReactiveSettings.VERTX_POOL, pgPool );
@@ -90,7 +93,10 @@ public class ReactiveConnectionPoolTest {
 	
 	@Test
 	public void configureWithJdbcUrl(TestContext context) {
-		String url = PostgreSQLDatabase.getJdbcUrl();
+		// This test doesn't need to rotate across all DBs and has PG-specific logic in it
+		assumeTrue( DatabaseConfiguration.dbType() == DBType.POSTGRESQL );
+		
+		String url = DatabaseConfiguration.getJdbcUrl();
 		Map<String,Object> config = new HashMap<>();
 		config.put( AvailableSettings.URL, url );
 		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
@@ -99,9 +105,12 @@ public class ReactiveConnectionPoolTest {
 	
 	@Test
 	public void configureWithCredentials(TestContext context) {
+		// This test doesn't need to rotate across all DBs and has PG-specific logic in it
+		assumeTrue( DatabaseConfiguration.dbType() == DBType.POSTGRESQL );
+		
 		// Set up URL with invalid credentials so we can ensure that
 		// explicit USER and PASS settings take precedence over credentials in the URL
-		String url = PostgreSQLDatabase.getJdbcUrl();
+		String url = DatabaseConfiguration.getJdbcUrl();
 		url = url.replace( "user=" + DatabaseConfiguration.USERNAME, "user=bogus" );
 		url = url.replace( "password=" + DatabaseConfiguration.PASSWORD, "password=bogus" );
 		
@@ -117,11 +126,14 @@ public class ReactiveConnectionPoolTest {
 
 	@Test
 	public void configureWithWrongCredentials(TestContext context) {
+		// This test doesn't need to rotate across all DBs and has PG-specific logic in it
+		assumeTrue( DatabaseConfiguration.dbType() == DBType.POSTGRESQL );
+		
 		thrown.expect( CompletionException.class );
 		thrown.expectMessage( "io.vertx.pgclient.PgException:" );
 		thrown.expectMessage( "\"bogus\"" );
 
-		String url = PostgreSQLDatabase.getJdbcUrl();
+		String url = DatabaseConfiguration.getJdbcUrl();
 		Map<String,Object> config = new HashMap<>();
 		config.put( AvailableSettings.URL, url );
 		config.put( AvailableSettings.USER, "bogus" );
