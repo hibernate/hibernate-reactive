@@ -247,7 +247,6 @@ At this time, Hibernate Reactive does _not_ support the following features:
 - JPA's `@NamedEntityGraph`
 - eager select fetching, for example `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`
   (eager join fetching *is* supported)
-- subselect fetching, `@Fetch(FetchMode.SUBSELECT)`
 - optimizers for `SEQUENCE` and `TABLE` id generation
 - criteria queries
 - native SQL queries
