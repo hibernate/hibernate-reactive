@@ -9,12 +9,14 @@ import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.loader.collection.CollectionInitializer;
+import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.OneToManyPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.loader.collection.impl.ReactiveBatchingCollectionInitializerBuilder;
+import org.hibernate.reactive.loader.collection.impl.ReactiveCollectionInitializer;
 import org.hibernate.reactive.loader.collection.impl.ReactiveCollectionLoader;
+import org.hibernate.reactive.loader.collection.impl.ReactiveSubselectOneToManyLoader;
 
 public class ReactiveOneToManyPersister extends OneToManyPersister {
 	public ReactiveOneToManyPersister(Collection collectionBinding, CollectionDataAccess cacheAccessStrategy, PersisterCreationContext creationContext) throws MappingException, CacheException {
@@ -27,9 +29,22 @@ public class ReactiveOneToManyPersister extends OneToManyPersister {
 	}
 
 	@Override
-	protected CollectionInitializer createCollectionInitializer(LoadQueryInfluencers loadQueryInfluencers)
+	protected ReactiveCollectionInitializer createCollectionInitializer(LoadQueryInfluencers loadQueryInfluencers)
 			throws MappingException {
 		return ReactiveBatchingCollectionInitializerBuilder.getBuilder( getFactory() )
 				.createBatchingOneToManyInitializer( this, batchSize, getFactory(), loadQueryInfluencers );
+	}
+
+	@Override
+	protected ReactiveCollectionInitializer createSubselectInitializer(SubselectFetch subselect, SharedSessionContractImplementor session) {
+		return new ReactiveSubselectOneToManyLoader(
+				this,
+				subselect.toSubselectString( getCollectionType().getLHSPropertyName() ),
+				subselect.getResult(),
+				subselect.getQueryParameters(),
+				subselect.getNamedParameterLocMap(),
+				session.getFactory(),
+				session.getLoadQueryInfluencers()
+		);
 	}
 }

@@ -211,8 +211,7 @@ public class ReactiveDynamicBatchingCollectionInitializerBuilder extends Reactiv
 						}
 						LOG.debug("Done batch load");
 						return null;
-					} )
-					.thenApply( list -> null );
+					} );
 
 		}
 
