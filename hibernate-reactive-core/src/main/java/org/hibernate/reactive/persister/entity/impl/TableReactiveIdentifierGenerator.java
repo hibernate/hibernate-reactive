@@ -21,7 +21,7 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Table;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.impl.ReactiveSessionInternal;
-import org.hibernate.reactive.service.ReactiveConnection;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.sql.impl.Parameters;
 
 import java.util.Collections;

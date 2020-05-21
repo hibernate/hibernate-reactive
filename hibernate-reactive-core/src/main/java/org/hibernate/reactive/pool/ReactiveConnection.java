@@ -1,13 +1,15 @@
-package org.hibernate.reactive.service;
+package org.hibernate.reactive.pool;
 
 import java.sql.ResultSet;
 import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Abstracts over reactive connection pools.
+ * Abstracts over reactive database connections, defining
+ * operations that allow queries to be executed asynchronously
+ * via {@link CompletionStage}.
  *
- * @see SqlClientConnection for the Vert.x-based implementation
+ * @see ReactiveConnectionPool
  */
 public interface ReactiveConnection {
 

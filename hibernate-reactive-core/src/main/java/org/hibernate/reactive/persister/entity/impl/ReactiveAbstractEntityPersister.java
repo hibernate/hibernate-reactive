@@ -19,7 +19,7 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.impl.ReactiveSessionInternal;
 import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLoaderBuilder;
-import org.hibernate.reactive.service.ReactiveConnection;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.sql.impl.Parameters;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.Delete;

@@ -5,7 +5,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.impl.ReactiveSessionInternalImpl;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.service.ReactiveConnectionPool;
+import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
 import java.util.function.Function;
 

@@ -1,4 +1,4 @@
-package org.hibernate.reactive.service;
+package org.hibernate.reactive.pool.impl;
 
 import java.net.URI;
 import java.util.Map;
@@ -10,6 +10,8 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.cfg.ReactiveSettings;
+import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.util.impl.JdbcUrlParser;
 import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.Stoppable;
@@ -19,6 +21,9 @@ import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnectOptions;
 import io.vertx.sqlclient.spi.Driver;
+
+import static io.vertx.core.Future.failedFuture;
+import static io.vertx.core.Future.succeededFuture;
 
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
@@ -131,7 +136,15 @@ public class SqlClientPool implements ReactiveConnectionPool, Configurable, Stop
 
 	@Override
 	public CompletionStage<ReactiveConnection> getConnection() {
-		return SqlClientConnection.create( pool, showSQL );
+		return Handlers.toCompletionStage(
+				handler -> pool.getConnection(
+						ar -> handler.handle(
+								ar.succeeded()
+										? succeededFuture( new SqlClientConnection( ar.result(), showSQL) )
+										: failedFuture( ar.cause() )
+						)
+				)
+		);
 	}
 
 	@Override

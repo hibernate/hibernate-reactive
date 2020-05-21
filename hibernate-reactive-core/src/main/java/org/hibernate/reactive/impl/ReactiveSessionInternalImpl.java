@@ -67,7 +67,7 @@ import org.hibernate.reactive.event.spi.ReactiveRefreshEventListener;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
-import org.hibernate.reactive.service.ReactiveConnection;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;

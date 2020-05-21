@@ -3,7 +3,7 @@ package org.hibernate.reactive.stage.impl;
 import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.impl.ReactiveSessionInternalImpl;
-import org.hibernate.reactive.service.ReactiveConnectionPool;
+import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.stage.Stage;
 
 import java.util.concurrent.CompletionStage;

@@ -10,7 +10,7 @@ import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
-import org.hibernate.reactive.service.ReactiveConnection;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.stage.Stage;
 
 /**

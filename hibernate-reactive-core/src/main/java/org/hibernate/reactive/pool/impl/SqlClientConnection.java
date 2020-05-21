@@ -1,16 +1,13 @@
-package org.hibernate.reactive.service;
+package org.hibernate.reactive.pool.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.sqlclient.*;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.sql.ResultSet;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
@@ -27,21 +24,9 @@ public class SqlClientConnection implements ReactiveConnection {
 	private final SqlConnection connection;
 	private Transaction transaction;
 	
-	private SqlClientConnection(SqlConnection connection, boolean showSQL) {
+	SqlClientConnection(SqlConnection connection, boolean showSQL) {
 		this.showSQL = showSQL;
 		this.connection = connection;
-	}
-
-	public static CompletionStage<ReactiveConnection> create(Pool pool, boolean showSQL) {
-		return toCompletionStage(
-				handler -> pool.getConnection(
-						ar -> handler.handle(
-								ar.succeeded()
-										? succeededFuture( new SqlClientConnection( ar.result(), showSQL ) )
-										: failedFuture( ar.cause() )
-						)
-				)
-		);
 	}
 
 	@Override
@@ -109,7 +94,7 @@ public class SqlClientConnection implements ReactiveConnection {
 		if (showSQL) {
 			System.out.println(sql);
 		}
-		return toCompletionStage(
+		return Handlers.toCompletionStage(
 				handler -> client().preparedQuery( sql ).execute( parameters, handler )
 		);
 	}
@@ -119,7 +104,7 @@ public class SqlClientConnection implements ReactiveConnection {
 		if (showSQL) {
 			System.out.println(sql);
 		}
-		return toCompletionStage(
+		return Handlers.toCompletionStage(
 				handler -> client().preparedQuery( sql ).execute( handler )
 		);
 	}
@@ -138,7 +123,7 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> commitTransaction() {
-		return toCompletionStage(
+		return Handlers.toCompletionStage(
 				handler -> transaction.commit(
 						ar -> {
 							transaction = null;
@@ -151,7 +136,7 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> rollbackTransaction() {
-		return toCompletionStage(
+		return Handlers.toCompletionStage(
 				handler -> transaction.rollback(
 						ar -> {
 							transaction = null;
@@ -167,25 +152,6 @@ public class SqlClientConnection implements ReactiveConnection {
 		connection.close();
 	}
 
-	protected static <T> CompletionStage<T> toCompletionStage(
-			Consumer<Handler<AsyncResult<T>>> completionConsumer) {
-		CompletableFuture<T> cs = new CompletableFuture<>();
-//		try {
-			completionConsumer.accept( ar -> {
-				if ( ar.succeeded() ) {
-					cs.complete( ar.result() );
-				}
-				else {
-					cs.completeExceptionally( ar.cause() );
-				}
-			} );
-//		}
-//		catch (Exception e) {
-//			cs.completeExceptionally( e );
-//		}
-		return cs;
-	}
-	
 	/**
 	 * Loads MySQLClient.LAST_INSERTED_ID via reflection to avoid a hard
 	 * dependency on the MySQL driver 

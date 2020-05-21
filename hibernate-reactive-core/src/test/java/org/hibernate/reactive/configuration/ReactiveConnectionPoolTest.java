@@ -16,8 +16,8 @@ import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.reactive.cfg.ReactiveSettings;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.PostgreSQLDatabase;
-import org.hibernate.reactive.service.SqlClientPool;
-import org.hibernate.reactive.service.ReactiveConnectionPool;
+import org.hibernate.reactive.pool.impl.SqlClientPool;
+import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
 import org.junit.Rule;
 import org.junit.Test;
