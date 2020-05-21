@@ -1,7 +1,7 @@
 package org.hibernate.reactive.testing;
 
 import io.vertx.core.Vertx;
-import org.hibernate.reactive.service.ManagedVertxService;
+import org.hibernate.reactive.service.ExternallyProvidedVertxService;
 import org.hibernate.reactive.service.VertxService;
 import org.hibernate.service.Service;
 import org.hibernate.service.ServiceRegistry;
@@ -35,10 +35,10 @@ public class TestingRegistryRule extends ExternalResource {
     //TODO extract into its own class and evolve as necessary?
     private static class Registry implements ServiceRegistryImplementor {
 
-        private final ManagedVertxService vertxService;
+        private final ExternallyProvidedVertxService vertxService;
 
         public Registry(Vertx vertx) {
-            this.vertxService = new ManagedVertxService( vertx );
+            this.vertxService = new ExternallyProvidedVertxService( vertx );
         }
 
         @Override
