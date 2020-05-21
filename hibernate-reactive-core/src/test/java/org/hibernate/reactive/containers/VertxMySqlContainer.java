@@ -20,7 +20,7 @@ import io.vertx.sqlclient.SqlConnection;
  * This is not an issue for other containers (PostgreSQL and DB2) because they use container log scraping
  * by default.
  */
-public class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
+class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
 
 	public final static String IMAGE_NAME = "mysql:8";
 

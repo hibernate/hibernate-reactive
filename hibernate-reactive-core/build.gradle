@@ -42,4 +42,5 @@ test {
       events 'PASSED', 'FAILED', 'SKIPPED'
   }
   systemProperty 'docker', project.hasProperty('docker') ? 'true' : 'false'
+  systemProperty 'db', project.hasProperty('db') ? project.getProperty('db') : 'postgresql'
 }

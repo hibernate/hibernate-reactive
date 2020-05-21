@@ -2,7 +2,7 @@ package org.hibernate.reactive.containers;
 
 import org.testcontainers.containers.PostgreSQLContainer;
 
-public class PostgreSQLDatabase {
+class PostgreSQLDatabase {
 
 	public final static String IMAGE_NAME = "postgres:12-alpine";
 
