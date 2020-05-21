@@ -13,9 +13,9 @@ import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
-import org.hibernate.reactive.loader.entity.impl.ReactiveAbstractEntityLoader;
 import org.hibernate.reactive.loader.entity.impl.ReactiveBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.loader.entity.impl.ReactiveCascadeEntityLoader;
+import org.hibernate.reactive.loader.entity.impl.ReactiveUniqueEntityLoader;
 import org.hibernate.reactive.sql.impl.Delete;
 import org.hibernate.reactive.sql.impl.Insert;
 import org.hibernate.reactive.sql.impl.Parameters;
@@ -181,7 +181,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public ReactiveAbstractEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session) {
-		return (ReactiveAbstractEntityLoader) super.getAppropriateLoader(lockOptions, session);
+	public ReactiveUniqueEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session) {
+		return (ReactiveUniqueEntityLoader) super.getAppropriateLoader(lockOptions, session);
 	}
 }

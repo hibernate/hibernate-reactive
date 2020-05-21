@@ -7,7 +7,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.pretty.MessageHelper;
-import org.hibernate.reactive.loader.entity.impl.ReactiveAbstractEntityLoader;
+import org.hibernate.reactive.loader.entity.impl.ReactiveUniqueEntityLoader;
 import org.jboss.logging.Logger;
 
 import java.io.Serializable;
@@ -92,7 +92,7 @@ public interface ReactiveEntityPersister extends EntityPersister {
 		return getAppropriateLoader( lockOptions, session ).load( id, optionalObject, session, lockOptions, readOnly );
 	}
 
-	ReactiveAbstractEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session);
+	ReactiveUniqueEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session);
 
 	CompletionStage<Boolean> reactiveIsTransient(Object entity, SessionImplementor session);
 }

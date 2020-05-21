@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * @see org.hibernate.loader.entity.EntityLoader
  */
-public class ReactiveEntityLoader extends ReactiveAbstractEntityLoader implements UniqueEntityLoader {
+public class ReactiveEntityLoader extends ReactiveAbstractEntityLoader {
 
 	private final int[][] compositeKeyManyToOneTargetIndices;
 
