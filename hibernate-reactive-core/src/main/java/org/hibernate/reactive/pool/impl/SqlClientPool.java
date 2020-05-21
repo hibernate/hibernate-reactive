@@ -12,10 +12,12 @@ import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.cfg.ReactiveSettings;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.service.VertxService;
 import org.hibernate.reactive.util.impl.JdbcUrlParser;
 import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.ServiceRegistryAwareService;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
+import org.hibernate.service.spi.Startable;
 import org.hibernate.service.spi.Stoppable;
 
 import io.vertx.core.Vertx;
@@ -30,15 +32,15 @@ import static io.vertx.core.Future.succeededFuture;
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
  */
-public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwareService, Configurable, Stoppable {
+public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwareService, Configurable, Stoppable, Startable {
 
 	public static final int DEFAULT_POOL_SIZE = 5;
 	private Pool pool;
 	private boolean showSQL;
 	private ServiceRegistryImplementor serviceRegistry;
+	private Map configurationValues;
 
-	public SqlClientPool(Map configurationValues) {
-		configure( configurationValues );
+	public SqlClientPool() {
 	}
 
 	@Override
@@ -48,6 +50,12 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 
 	@Override
 	public void configure(Map configurationValues) {
+		this.showSQL = "true".equals(configurationValues.get(AvailableSettings.SHOW_SQL));
+		this.configurationValues = configurationValues;
+	}
+
+	@Override
+	public void start() {
 		Object o = configurationValues.get( ReactiveSettings.VERTX_POOL );
 		if (o != null) {
 			if (!(o instanceof Pool)) {
@@ -57,13 +65,14 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 				pool = (Pool) o;
 			}
 		} else {
-			pool = configurePool( configurationValues );
+			final VertxService vertxService = serviceRegistry.getService( VertxService.class );
+			Vertx vertx = vertxService.getVertx();
+			pool = configurePool( configurationValues, vertx );
 		}
 
-		showSQL = "true".equals( configurationValues.get( AvailableSettings.SHOW_SQL ) );
 	}
-	
-	private Pool configurePool(Map configurationValues) {
+
+	private Pool configurePool(Map configurationValues, Vertx vertx) {
 		// FIXME: Check which values can be null
 		String username = ConfigurationHelper.getString(AvailableSettings.USER, configurationValues);
 		String password = ConfigurationHelper.getString(AvailableSettings.PASS, configurationValues);
@@ -116,7 +125,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
         // This only works if exactly 1 Driver is on the classpath.
         ServiceConfigurationError originalError;
         try {
-            return Pool.pool( Vertx.vertx(), connectOptions, poolOptions );
+            return Pool.pool( vertx, connectOptions, poolOptions );
         } catch (ServiceConfigurationError e) {
             originalError = e;
         }
@@ -127,16 +136,16 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
         for (Driver d : ServiceLoader.load( Driver.class )) {
             String driverName = d.getClass().getCanonicalName();
             if ("io.vertx.db2client.spi.DB2Driver".equals( driverName ) && "db2".equalsIgnoreCase( scheme )) {
-                return d.createPool( Vertx.vertx(), connectOptions, poolOptions );
+                return d.createPool( vertx, connectOptions, poolOptions );
             }
             if ("io.vertx.mysqlclient.spi.MySQLDriver".equals( driverName ) && "mysql".equalsIgnoreCase( scheme )) {
-                return d.createPool( Vertx.vertx(), connectOptions, poolOptions );
+                return d.createPool( vertx, connectOptions, poolOptions );
             }
             if ("io.vertx.pgclient.spi.PgDriver".equals( driverName ) && 
                     ("postgre".equalsIgnoreCase( scheme ) ||
                      "postgres".equalsIgnoreCase( scheme ) ||
                      "postgresql".equalsIgnoreCase( scheme ))) {
-                return d.createPool( Vertx.vertx(), connectOptions, poolOptions );
+                return d.createPool( vertx, connectOptions, poolOptions );
             }
         }
         throw new ConfigurationException( "No suitable drivers found for URI scheme: " + scheme, originalError );

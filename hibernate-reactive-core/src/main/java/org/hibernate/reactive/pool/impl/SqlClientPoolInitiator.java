@@ -22,7 +22,7 @@ public class SqlClientPoolInitiator implements StandardServiceInitiator<Reactive
 
 	@Override
 	public ReactiveConnectionPool initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-		return new SqlClientPool( configurationValues );
+		return new SqlClientPool();
 	}
 
 	@Override
