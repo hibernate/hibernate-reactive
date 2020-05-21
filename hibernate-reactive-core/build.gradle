@@ -4,27 +4,31 @@ description = 'Hibernate Reactive Core'
 
 dependencies {
 
-    compile ("org.hibernate:hibernate-core:${hibernateOrmVersion}") {
+    api ("org.hibernate:hibernate-core:${hibernateOrmVersion}") {
+        //We don't need any of these:
         exclude group: 'org.javassist', module: 'javassist'
-        exclude group: 'net.bytebuddy', module: 'byte-buddy'
-        exclude group: 'org.dom4j', module: 'dom4j'
         exclude group: 'javax.activation', module: 'javax.activation-api'
-        exclude group: 'org.glassfish.jaxb', module: 'jaxb-runtime'
-        exclude group: 'javax.xml.bind', module: 'jaxb-api'
-        exclude group: 'org.hibernate.common', module: 'hibernate-commons-annotations'
-        exclude group: 'org.jboss.spec.javax.transaction', module: 'jboss-transaction-api_1.2_spec'
     }
-    compile 'io.vertx:vertx-sql-client:3.9.1'
-    compile 'io.smallrye.reactive:mutiny:0.5.0'
 
-    runtimeOnly 'org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.1.1.Final'
+    //Logging
+    implementation 'org.jboss.logging:jboss-logging:3.3.2.Final'
+    compileOnly 'org.jboss.logging:jboss-logging-annotations:2.1.0.Final'
+    annotationProcessor 'org.jboss.logging:jboss-logging-processor:2.1.0.Final'
 
-    testCompile ("org.hibernate:hibernate-testing:${hibernateOrmVersion}")
+    //Specific implementation details of Hibernate Reactive:
+    implementation 'io.vertx:vertx-sql-client:3.9.1'
+
+    //Mutiny is also exposed as API
+    api 'io.smallrye.reactive:mutiny:0.5.0'
+
+    // Testing
+    testImplementation "org.hibernate:hibernate-testing:${hibernateOrmVersion}"
     testImplementation 'org.assertj:assertj-core:3.13.2'
     testImplementation 'io.vertx:vertx-unit:3.9.1'
     testImplementation 'io.vertx:vertx-pg-client:3.9.1'
     testImplementation 'io.vertx:vertx-mysql-client:3.9.1'
     testImplementation 'io.vertx:vertx-db2-client:3.9.1'
+
     // Testcontainers
     testImplementation 'org.testcontainers:postgresql:1.13.0'
     testImplementation 'org.testcontainers:mysql:1.13.0'

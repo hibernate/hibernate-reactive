@@ -1,8 +1,7 @@
 description = 'Hibernate Reactive Example'
 
 dependencies {
-    compile project(':hibernate-reactive-core')
-    compile 'org.hibernate:hibernate-core'
+    implementation project(':hibernate-reactive-core')
     runtimeOnly 'io.vertx:vertx-pg-client:3.9.1'
     runtimeOnly 'io.vertx:vertx-mysql-client:3.9.1'
 }
