@@ -20,6 +20,9 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+/**
+ * A reactific {@link HQLQueryPlan}
+ */
 public class ReactiveHQLQueryPlan extends HQLQueryPlan {
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( ReactiveHQLQueryPlan.class );
 
@@ -63,7 +66,7 @@ public class ReactiveHQLQueryPlan extends HQLQueryPlan {
 	 * @see HQLQueryPlan#performList(QueryParameters, SharedSessionContractImplementor)
 	 * @throws HibernateException
 	 */
-	public CompletionStage<List<Object>> perfomReactiveList(QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
+	public CompletionStage<List<Object>> performReactiveList(QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracev( "Find: {0}", getSourceQuery() );
 			queryParameters.traceParameters( session.getFactory() );

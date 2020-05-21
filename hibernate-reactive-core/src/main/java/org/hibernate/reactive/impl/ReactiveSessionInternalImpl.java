@@ -233,7 +233,7 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 		return reactiveAutoFlushIfRequired( plan.getQuerySpaces() )
 				// FIXME: I guess I can fix this as a separate issue
 //				dontFlushFromFind++;   //stops flush being called multiple times if this method is recursively called
-				.thenCompose( v -> reactivePlan.perfomReactiveList( queryParameters, this ) )
+				.thenCompose( v -> reactivePlan.performReactiveList( queryParameters, this ) )
 				.whenComplete( (list, x) -> {
 //					dontFlushFromFind--;
 					afterOperation( x == null );
