@@ -40,4 +40,8 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		);
 	}
 
+	@Override
+	public void close() {
+		delegate.close();
+	}
 }

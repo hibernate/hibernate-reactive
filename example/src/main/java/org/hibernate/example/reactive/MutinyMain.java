@@ -78,7 +78,7 @@ public class MutinyMain {
 		)
 				.await().indefinitely();
 
-		System.exit(0);
+		sessionFactory.close();
 	}
 
 }

@@ -79,7 +79,7 @@ public class Main {
 		)
 				.toCompletableFuture().join();
 
-		System.exit(0);
+		sessionFactory.close();
 	}
 
 }
