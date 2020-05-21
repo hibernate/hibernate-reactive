@@ -6,14 +6,22 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.pagination.LimitHelper;
 import org.hibernate.engine.internal.BatchFetchQueueHelper;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.QueryParameters;
+import org.hibernate.engine.spi.RowSelection;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.Status;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.internal.util.collections.CollectionHelper;
-import org.hibernate.loader.entity.BatchingEntityLoader;
 import org.hibernate.loader.entity.CacheEntityLoaderHelper;
 import org.hibernate.loader.entity.EntityJoinWalker;
 import org.hibernate.loader.entity.UniqueEntityLoader;
@@ -274,7 +282,7 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 			LockMode lockMode,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers influencers) {
-		return new DynamicBatchingEntityLoader( persister, batchSize, lockMode, factory, influencers );
+		return new ReactiveDynamicBatchingEntityLoader( persister, batchSize, lockMode, factory, influencers );
 	}
 
 	@Override
@@ -284,15 +292,15 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 			LockOptions lockOptions,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers influencers) {
-		return new DynamicBatchingEntityLoader( persister, batchSize, lockOptions, factory, influencers );
+		return new ReactiveDynamicBatchingEntityLoader( persister, batchSize, lockOptions, factory, influencers );
 	}
 
-	public static class DynamicBatchingEntityLoader extends BatchingEntityLoader {
+	public static class ReactiveDynamicBatchingEntityLoader extends ReactiveBatchingEntityLoader {
 		private final int maxBatchSize;
 		private final UniqueEntityLoader singleKeyLoader;
 		private final ReactiveDynamicEntityLoader dynamicLoader;
 
-		public DynamicBatchingEntityLoader(
+		public ReactiveDynamicBatchingEntityLoader(
 				OuterJoinLoadable persister,
 				int maxBatchSize,
 				LockMode lockMode,
@@ -304,7 +312,7 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 			this.dynamicLoader = new ReactiveDynamicEntityLoader( persister, maxBatchSize, lockMode, factory, loadQueryInfluencers );
 		}
 
-		public DynamicBatchingEntityLoader(
+		public ReactiveDynamicBatchingEntityLoader(
 				OuterJoinLoadable persister,
 				int maxBatchSize,
 				LockOptions lockOptions,
@@ -322,6 +330,16 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 				Object optionalObject,
 				SharedSessionContractImplementor session,
 				LockOptions lockOptions) {
+			return load (id, optionalObject, session, lockOptions, null );
+		}
+
+		@Override
+		public CompletionStage<Object> load(
+				Serializable id,
+				Object optionalObject,
+				SharedSessionContractImplementor session,
+				LockOptions lockOptions,
+				Boolean readOnly) {
 			final Serializable[] batch = session.getPersistenceContextInternal()
 					.getBatchFetchQueue()
 					.getEntityBatch( persister(), id, maxBatchSize, persister().getEntityMode() );

@@ -27,7 +27,7 @@ import java.util.function.Function;
 
 import static org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor.toParameterArray;
 
-public class ReactiveAbstractEntityLoader extends AbstractEntityLoader {
+public class ReactiveAbstractEntityLoader extends AbstractEntityLoader implements ReactiveUniqueEntityLoader {
 
 	public ReactiveAbstractEntityLoader(OuterJoinLoadable persister, Type uniqueKeyType, SessionFactoryImplementor factory,
 										LoadQueryInfluencers loadQueryInfluencers) {
@@ -118,10 +118,11 @@ public class ReactiveAbstractEntityLoader extends AbstractEntityLoader {
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies) {
-		return doReactiveQueryAndInitializeNonLazyCollections( session, queryParameters, returnProxies, null );
+		return doReactiveQueryAndInitializeNonLazyCollections( getSQLString(), session, queryParameters, returnProxies, null );
 	}
 
 	protected CompletionStage<List<Object>> doReactiveQueryAndInitializeNonLazyCollections(
+			final String sql,
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
@@ -139,7 +140,7 @@ public class ReactiveAbstractEntityLoader extends AbstractEntityLoader {
 			queryParameters.setReadOnly( persistenceContext.isDefaultReadOnly() );
 		}
 		persistenceContext.beforeLoad();
-		return doReactiveQuery( session, queryParameters, returnProxies, forcedResultTransformer )
+		return doReactiveQuery( sql, session, queryParameters, returnProxies, forcedResultTransformer )
 				.whenComplete( (list, e) -> persistenceContext.afterLoad() )
 				.thenCompose( list ->
 						// only initialize non-lazy collections after everything else has been refreshed
@@ -150,6 +151,7 @@ public class ReactiveAbstractEntityLoader extends AbstractEntityLoader {
 	}
 
 	private CompletionStage<List<Object>> doReactiveQuery(
+			String sql,
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
@@ -163,7 +165,7 @@ public class ReactiveAbstractEntityLoader extends AbstractEntityLoader {
 		final List<AfterLoadAction> afterLoadActions = new ArrayList<AfterLoadAction>();
 
 		return executeReactiveQueryStatement(
-				getSQLString(), queryParameters, false, afterLoadActions, session,
+				sql, queryParameters, false, afterLoadActions, session,
 				resultSet -> {
 					try {
 						return processResultSet( resultSet, queryParameters, session, returnProxies,

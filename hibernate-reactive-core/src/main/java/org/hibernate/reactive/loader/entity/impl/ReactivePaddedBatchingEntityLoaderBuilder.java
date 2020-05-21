@@ -10,16 +10,14 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.internal.BatchFetchQueueHelper;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
-import org.hibernate.loader.Loader;
-import org.hibernate.loader.entity.BatchingEntityLoader;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.OuterJoinLoadable;
-import org.hibernate.pretty.MessageHelper;
 
 import java.io.Serializable;
-import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -48,7 +46,7 @@ public class ReactivePaddedBatchingEntityLoaderBuilder extends ReactiveBatchingE
 		return new ReactivePaddedBatchingEntityLoader( persister, batchSize, lockOptions, factory, influencers );
 	}
 
-	public static class ReactivePaddedBatchingEntityLoader extends BatchingEntityLoader {
+	public static class ReactivePaddedBatchingEntityLoader extends ReactiveBatchingEntityLoader {
 		private final int[] batchSizes;
 		private final ReactiveEntityLoader[] loaders;
 
@@ -82,6 +80,11 @@ public class ReactivePaddedBatchingEntityLoaderBuilder extends ReactiveBatchingE
 			validate( maxBatchSize );
 		}
 
+		@Override
+		public CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions) {
+			return load( id, optionalObject, session, lockOptions, null );
+		}
+
 		private void validate(int max) {
 			// these are more indicative of internal problems then user error...
 			if ( batchSizes[0] != max ) {
@@ -90,11 +93,6 @@ public class ReactivePaddedBatchingEntityLoaderBuilder extends ReactiveBatchingE
 			if ( batchSizes[batchSizes.length-1] != 1 ) {
 				throw new HibernateException( "Unexpected batch size spread" );
 			}
-		}
-
-		@Override
-		public CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions) {
-			return load( id, optionalObject, session, lockOptions, null );
 		}
 
 		@Override
@@ -135,47 +133,6 @@ public class ReactivePaddedBatchingEntityLoaderBuilder extends ReactiveBatchingE
 			}
 
 			return doBatchLoad( id, loaders[indexToUse], session, idsToLoad, optionalObject, lockOptions, readOnly );
-		}
-
-		/**
-		 * @see BatchingEntityLoader#doBatchLoad(Serializable, Loader, SharedSessionContractImplementor, Serializable[], Object, LockOptions, Boolean)
-		 */
-		protected CompletionStage<Object> doBatchLoad(
-				Serializable id,
-				ReactiveEntityLoader loaderToUse,
-				SharedSessionContractImplementor session,
-				Serializable[] ids,
-				Object optionalObject,
-				LockOptions lockOptions,
-				Boolean readOnly) {
-//			if ( log.isDebugEnabled() ) {
-//				log.debugf( "Batch loading entity: %s", MessageHelper.infoString( persister, ids, session.getFactory() ) );
-//			}
-
-			QueryParameters qp = buildQueryParameters(id, ids, optionalObject, lockOptions, readOnly);
-			return loaderToUse.doReactiveQueryAndInitializeNonLazyCollections((SessionImplementor) session, qp, false)
-					.handle((list, e) -> {
-//						log.debug( "Done entity batch load" );
-						// The EntityKey for any entity that is not found will remain in the batch.
-						// Explicitly remove the EntityKeys for entities that were not found to
-						// avoid including them in future batches that get executed.
-						Object result = getObjectFromList(list, id, session);
-
-						BatchFetchQueueHelper.removeNotFoundBatchLoadableEntityKeys(
-								ids,
-								list,
-								persister(),
-								session
-						);
-						if (e instanceof SQLException) {
-							throw session.getJdbcServices().getSqlExceptionHelper().convert(
-									(SQLException) e,
-									"could not load an entity batch: " + MessageHelper.infoString(persister(), ids, session.getFactory()),
-									loaderToUse.getSQLString()
-							);
-						}
-						return result;
-					});
 		}
 	}
 
