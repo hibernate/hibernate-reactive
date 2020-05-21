@@ -2,7 +2,7 @@ package org.hibernate.reactive.containers;
 
 import org.testcontainers.containers.Db2Container;
 
-public class DB2Database {
+class DB2Database {
 
 	public final static String IMAGE_NAME = "ibmcom/db2:11.5.0.0a";
 

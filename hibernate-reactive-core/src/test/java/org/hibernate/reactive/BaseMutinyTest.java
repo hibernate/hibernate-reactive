@@ -9,7 +9,7 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.containers.PostgreSQLDatabase;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
@@ -25,7 +25,7 @@ import java.util.concurrent.CompletionStage;
 public abstract class BaseMutinyTest {
 
 	@Rule
-	public Timeout rule = Timeout.seconds( 3600 );
+	public Timeout rule = Timeout.seconds( 5 * 60 );
 
 	private Mutiny.Session session;
 	private ReactiveConnection connection;
@@ -54,7 +54,7 @@ public abstract class BaseMutinyTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
 		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, "create" );
-		configuration.setProperty( AvailableSettings.URL, PostgreSQLDatabase.getJdbcUrl() );
+		configuration.setProperty( AvailableSettings.URL, DatabaseConfiguration.getJdbcUrl() );
 		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
 		return configuration;
 	}

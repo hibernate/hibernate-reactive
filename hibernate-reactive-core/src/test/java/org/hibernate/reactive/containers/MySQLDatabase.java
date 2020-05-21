@@ -1,6 +1,6 @@
 package org.hibernate.reactive.containers;
 
-public class MySQLDatabase {
+class MySQLDatabase {
 
 	public final static String IMAGE_NAME = "mysql:8";
 
