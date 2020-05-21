@@ -10,7 +10,9 @@ import java.util.concurrent.CompletionStage;
  *
  * A program may integrate a custom {@link ReactiveConnectionPool}
  * with Hibernate Reactive by contributing a new service using a
- * {@link org.hibernate.boot.registry.StandardServiceInitiator}.
+ * {@link org.hibernate.boot.registry.StandardServiceInitiator}
+ * or from code-based Hibernate configuration by calling
+ * {@link org.hibernate.boot.registry.StandardServiceRegistryBuilder#addService}.
  */
 public interface ReactiveConnectionPool extends Service {
 
