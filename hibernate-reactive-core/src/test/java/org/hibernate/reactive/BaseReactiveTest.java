@@ -8,7 +8,7 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.containers.PostgreSQLDatabase;
 import org.hibernate.reactive.service.ReactiveConnection;
-import org.hibernate.reactive.service.ReactiveConnectionPoolProvider;
+import org.hibernate.reactive.service.ReactiveConnectionPool;
 import org.hibernate.reactive.stage.Stage;
 import org.junit.After;
 import org.junit.Before;
@@ -29,7 +29,7 @@ public abstract class BaseReactiveTest {
 	private Stage.Session session;
 	private ReactiveConnection connection;
 	private org.hibernate.SessionFactory sessionFactory;
-	private ReactiveConnectionPoolProvider poolProvider;
+	private ReactiveConnectionPool poolProvider;
 
 	protected static void test(TestContext context, CompletionStage<?> cs) {
 		// this will be added to TestContext in the next vert.x release
@@ -65,7 +65,7 @@ public abstract class BaseReactiveTest {
 				.build();
 
 		sessionFactory = constructConfiguration().buildSessionFactory( registry );
-		poolProvider = registry.getService( ReactiveConnectionPoolProvider.class );
+		poolProvider = registry.getService( ReactiveConnectionPool.class );
 	}
 
 	@After

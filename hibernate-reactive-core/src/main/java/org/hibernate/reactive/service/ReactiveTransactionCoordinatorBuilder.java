@@ -1,4 +1,4 @@
-package org.hibernate.reactive.service.initiator;
+package org.hibernate.reactive.service;
 
 import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode;
 import org.hibernate.resource.transaction.spi.TransactionCoordinator;

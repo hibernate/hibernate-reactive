@@ -1,10 +1,9 @@
-package org.hibernate.reactive.impl;
+package org.hibernate.reactive.service;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.sqlclient.*;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
-import org.hibernate.reactive.service.ReactiveConnection;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.sql.ResultSet;

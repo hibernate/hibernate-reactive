@@ -21,7 +21,7 @@ public class ReactiveGenerationTarget implements GenerationTarget {
 
 	@Override
 	public void prepare() {
-		commands = registry.getService( ReactiveConnectionPoolProvider.class ).getConnection();
+		commands = registry.getService( ReactiveConnectionPool.class ).getConnection();
 	}
 
 	@Override

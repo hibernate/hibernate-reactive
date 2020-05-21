@@ -3,15 +3,6 @@ package org.hibernate.reactive.service;
 import java.sql.ResultSet;
 import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-
-import io.vertx.sqlclient.Row;
-
-import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.Tuple;
-import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.reactive.impl.SqlClientConnection;
 
 /**
  * Abstracts over reactive connection pools.

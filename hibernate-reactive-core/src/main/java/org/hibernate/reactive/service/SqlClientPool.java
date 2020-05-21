@@ -10,7 +10,6 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.cfg.ReactiveSettings;
-import org.hibernate.reactive.impl.SqlClientConnection;
 import org.hibernate.reactive.util.impl.JdbcUrlParser;
 import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.Stoppable;
@@ -24,13 +23,13 @@ import io.vertx.sqlclient.spi.Driver;
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
  */
-public class ReactiveConnectionPoolProviderImpl implements ReactiveConnectionPoolProvider, Configurable, Stoppable {
+public class SqlClientPool implements ReactiveConnectionPool, Configurable, Stoppable {
 
 	public static final int DEFAULT_POOL_SIZE = 5;
 	private Pool pool;
 	private boolean showSQL;
 
-	public ReactiveConnectionPoolProviderImpl(Map configurationValues) {
+	public SqlClientPool(Map configurationValues) {
 		configure( configurationValues );
 	}
 

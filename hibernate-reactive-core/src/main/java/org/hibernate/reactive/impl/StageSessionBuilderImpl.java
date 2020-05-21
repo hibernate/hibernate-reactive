@@ -7,7 +7,7 @@ import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionFactoryImpl.SessionBuilderImpl;
 import org.hibernate.reactive.service.ReactiveConnection;
-import org.hibernate.reactive.service.ReactiveConnectionPoolProvider;
+import org.hibernate.reactive.service.ReactiveConnectionPool;
 import org.hibernate.reactive.stage.Stage;
 
 import java.util.concurrent.CompletionStage;
@@ -30,7 +30,7 @@ public class StageSessionBuilderImpl
 	@Override
 	public ReactiveSessionInternal openSession() {
 		ReactiveConnection reactiveConnection = factory.getServiceRegistry()
-				.getService( ReactiveConnectionPoolProvider.class )
+				.getService( ReactiveConnectionPool.class )
 				.getConnection()
 				.toCompletableFuture()
 				.join();
@@ -40,7 +40,7 @@ public class StageSessionBuilderImpl
 	@Override
 	public CompletionStage<Stage.Session> openReactiveSession() {
 		return factory.getServiceRegistry()
-				.getService( ReactiveConnectionPoolProvider.class )
+				.getService( ReactiveConnectionPool.class )
 				.getConnection()
 				.thenApply( reactiveConnection -> new ReactiveSessionInternalImpl( factory, options, reactiveConnection )
 						.reactive() );
