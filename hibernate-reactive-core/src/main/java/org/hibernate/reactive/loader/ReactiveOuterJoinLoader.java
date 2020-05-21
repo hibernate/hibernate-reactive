@@ -33,6 +33,7 @@ import static org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor.toParam
  * </p>
  */
 public class ReactiveOuterJoinLoader extends OuterJoinLoader {
+
 	public ReactiveOuterJoinLoader(SessionFactoryImplementor factory, LoadQueryInfluencers loadQueryInfluencers) {
 		super(factory, loadQueryInfluencers);
 	}
@@ -41,15 +42,14 @@ public class ReactiveOuterJoinLoader extends OuterJoinLoader {
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies) {
-		return doReactiveQueryAndInitializeNonLazyCollections( getSQLString(), session, queryParameters, returnProxies, null );
+		return doReactiveQueryAndInitializeNonLazyCollections( getSQLString(), session, queryParameters, returnProxies );
 	}
 
 	protected CompletionStage<List<Object>> doReactiveQueryAndInitializeNonLazyCollections(
 			final String sql,
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
-			final boolean returnProxies,
-			final ResultTransformer forcedResultTransformer) {
+			final boolean returnProxies) {
 		final PersistenceContext persistenceContext = session.getPersistenceContext();
 		boolean defaultReadOnlyOrig = persistenceContext.isDefaultReadOnly();
 		if ( queryParameters.isReadOnlyInitialized() ) {
@@ -63,7 +63,7 @@ public class ReactiveOuterJoinLoader extends OuterJoinLoader {
 			queryParameters.setReadOnly( persistenceContext.isDefaultReadOnly() );
 		}
 		persistenceContext.beforeLoad();
-		return doReactiveQuery( sql, session, queryParameters, returnProxies, forcedResultTransformer )
+		return doReactiveQuery( sql, session, queryParameters, returnProxies )
 				.whenComplete( (list, e) -> persistenceContext.afterLoad() )
 				.thenCompose( list ->
 					// only initialize non-lazy collections after everything else has been refreshed
@@ -77,8 +77,7 @@ public class ReactiveOuterJoinLoader extends OuterJoinLoader {
 			String sql,
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
-			final boolean returnProxies,
-			final ResultTransformer forcedResultTransformer) throws HibernateException {
+			final boolean returnProxies) throws HibernateException {
 
 		final RowSelection selection = queryParameters.getRowSelection();
 		final int maxRows = LimitHelper.hasMaxRows( selection ) ?
@@ -88,7 +87,11 @@ public class ReactiveOuterJoinLoader extends OuterJoinLoader {
 		final List<AfterLoadAction> afterLoadActions = new ArrayList<>();
 
 		return executeReactiveQueryStatement(
-				sql, queryParameters, false, afterLoadActions, session,
+				sql,
+				queryParameters,
+				false,
+				afterLoadActions,
+				session,
 				resultSet -> {
 					try {
 						return processResultSet(
@@ -96,7 +99,7 @@ public class ReactiveOuterJoinLoader extends OuterJoinLoader {
 								queryParameters,
 								session,
 								returnProxies,
-								forcedResultTransformer,
+								null,
 								maxRows,
 								afterLoadActions
 						);
@@ -275,7 +278,8 @@ public class ReactiveOuterJoinLoader extends OuterJoinLoader {
 		// Adding locks and comments.
 		sql = preprocessSQL( sql, queryParameters, getFactory(), afterLoadActions );
 
-		return ((ReactiveSessionInternal) session).getReactiveConnection()
+		return session.unwrap(ReactiveSessionInternal.class)
+				.getReactiveConnection()
 				.selectJdbc( sql, toParameterArray(queryParameters, session) )
 				.thenApply( transformer );
 	}

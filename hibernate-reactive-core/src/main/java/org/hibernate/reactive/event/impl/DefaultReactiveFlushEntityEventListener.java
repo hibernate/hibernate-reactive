@@ -295,7 +295,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 
 		// schedule the update
 		// note that we intentionally do _not_ pass in currentPersistentState!
-		( (ReactiveSessionInternal) session ).getReactiveActionQueue().addAction(
+		session.unwrap(ReactiveSessionInternal.class).getReactiveActionQueue().addAction(
 				new ReactiveEntityUpdateAction(
 						entry.getId(),
 						values,

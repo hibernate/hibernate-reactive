@@ -10,6 +10,7 @@ import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
+import org.hibernate.loader.collection.CollectionInitializer;
 import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.OneToManyPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
@@ -25,7 +26,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister {
 
 	public CompletionStage<Void> reactiveInitialize(Serializable key, SharedSessionContractImplementor session)
 			throws HibernateException {
-		return ( (ReactiveCollectionLoader) getAppropriateInitializer( key, session ) ).reactiveInitialize( key, session );
+		return getAppropriateInitializer( key, session ).reactiveInitialize( key, session );
 	}
 
 	@Override
@@ -46,5 +47,9 @@ public class ReactiveOneToManyPersister extends OneToManyPersister {
 				session.getFactory(),
 				session.getLoadQueryInfluencers()
 		);
+	}
+
+	protected ReactiveCollectionInitializer getAppropriateInitializer(Serializable key, SharedSessionContractImplementor session) {
+		return (ReactiveCollectionInitializer) super.getAppropriateInitializer(key, session);
 	}
 }

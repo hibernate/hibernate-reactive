@@ -167,6 +167,9 @@ public class ReactiveQueryLoader extends QueryLoader {
 				} );
 	}
 
+	/**
+	 * dupe of {@link org.hibernate.reactive.loader.ReactiveOuterJoinLoader#doReactiveQueryAndInitializeNonLazyCollections}
+	 */
 	public CompletionStage<List<Object>> doReactiveQueryAndInitializeNonLazyCollections(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
@@ -196,6 +199,9 @@ public class ReactiveQueryLoader extends QueryLoader {
 				.whenComplete( (list, e) -> persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig) );
 	}
 
+	/**
+	 * dupe of {@link org.hibernate.reactive.loader.ReactiveOuterJoinLoader#doReactiveQuery}
+	 */
 	private CompletionStage<List<Object>> doReactiveQuery(
 			final SessionImplementor session,
 			final QueryParameters queryParameters,
@@ -218,11 +224,7 @@ public class ReactiveQueryLoader extends QueryLoader {
 					catch (SQLException sqle) {
 						throw getFactory().getJdbcServices().getSqlExceptionHelper().convert(
 								sqle,
-								"could not load an entity batch: " + MessageHelper.infoString(
-										getEntityPersisters()[0],
-										queryParameters.getOptionalId(),
-										session.getFactory()
-								),
+								"could not execute query",
 								getSQLString()
 						);
 					}
@@ -252,7 +254,8 @@ public class ReactiveQueryLoader extends QueryLoader {
 		// Adding locks and comments.
 		sql = preprocessSQL( sql, queryParameters, getFactory(), afterLoadActions );
 
-		return ((ReactiveSessionInternal) session).getReactiveConnection()
+		return session.unwrap(ReactiveSessionInternal.class)
+				.getReactiveConnection()
 				.selectJdbc( sql, toParameterArray(queryParameters, session) )
 				.thenApply( transformer );
 	}

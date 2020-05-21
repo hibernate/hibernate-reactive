@@ -55,6 +55,9 @@ public class ReactiveDynamicBatchingCollectionInitializerBuilder extends Reactiv
 		return new ReactiveDynamicBatchingCollectionInitializer( persister, maxBatchSize, factory, influencers );
 	}
 
+	/**
+	 * @see org.hibernate.loader.collection.DynamicBatchingCollectionInitializerBuilder.DynamicBatchingCollectionInitializer
+	 */
 	public static class ReactiveDynamicBatchingCollectionInitializer extends ReactiveCollectionLoader {
 		private final int maxBatchSize;
 		private final ReactiveCollectionLoader singleKeyLoader;
@@ -116,6 +119,9 @@ public class ReactiveDynamicBatchingCollectionInitializerBuilder extends Reactiv
 		}
 	}
 
+	/**
+	 * @see org.hibernate.loader.collection.DynamicBatchingCollectionInitializerBuilder.DynamicBatchingCollectionLoader
+	 */
 	private static class ReactiveDynamicBatchingCollectionLoader extends ReactiveCollectionLoader {
 
 		private final String sqlTemplate;
@@ -197,7 +203,7 @@ public class ReactiveDynamicBatchingCollectionInitializerBuilder extends Reactiv
 					session.getJdbcServices().getJdbcEnvironment().getDialect()
 			);
 
-			return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters, false, null )
+			return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters, false )
 					.handle( (list, e) -> {
 						if (e instanceof JDBCException) {
 							throw getFactory().getJdbcServices().getSqlExceptionHelper().convert(
