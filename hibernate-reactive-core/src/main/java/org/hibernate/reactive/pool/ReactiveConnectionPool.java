@@ -14,6 +14,13 @@ import java.util.concurrent.CompletionStage;
  * {@link org.hibernate.boot.registry.StandardServiceInitiator}
  * or from code-based Hibernate configuration by calling
  * {@link org.hibernate.boot.registry.StandardServiceRegistryBuilder#addService}.
+ *
+ * <pre>
+ * new StandardServiceRegistryBuilder()
+ *     .applySettings( properties )
+ *     .addService( ReactiveConnectionPool.class, new MyReactiveConnectionPool() )
+ *     .build();
+ * </pre>
  */
 public interface ReactiveConnectionPool extends Service {
 

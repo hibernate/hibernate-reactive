@@ -1,18 +1,20 @@
-package org.hibernate.reactive.service;
+package org.hibernate.reactive.vertx.impl;
 
 import io.vertx.core.Vertx;
+import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.Startable;
 import org.hibernate.service.spi.Stoppable;
 
 /**
- * This will start a new Vertx instance on demand, then ensure it's closed when
- * the SessionFactory is closed.
- * To use an external Vertx instance you can inject an alternative implementation
- * in the bootstrap registry.
+ * A singleton instance of {@link Vertx} that is created on
+ * demand and destroyed automatically along with the Hibernate
+ * {@link org.hibernate.SessionFactory#close() session factory}.
+ *
+ * @see ProvidedVertxInstance if you need to a different instance
  *
  * @author Sanne Grinovero <sanne@hibernate.org>
  */
-public final class SelfmanagingVertxService implements VertxService, Stoppable, Startable {
+public final class DefaultVertxInstance implements VertxInstance, Stoppable, Startable {
 
     private Vertx vertx;
 
