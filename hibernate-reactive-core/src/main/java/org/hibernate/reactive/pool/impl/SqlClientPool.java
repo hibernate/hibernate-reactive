@@ -12,7 +12,7 @@ import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.cfg.ReactiveSettings;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.service.VertxService;
+import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.reactive.util.impl.JdbcUrlParser;
 import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.ServiceRegistryAwareService;
@@ -31,6 +31,8 @@ import static io.vertx.core.Future.succeededFuture;
 
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
+ * The {@code Pool} itself is backed by an instance of {@link Vertx}
+ * obtained via the {@link VertxInstance} service.
  */
 public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwareService, Configurable, Stoppable, Startable {
 
@@ -66,8 +68,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 				pool = (Pool) o;
 			}
 		} else {
-			final VertxService vertxService = serviceRegistry.getService( VertxService.class );
-			Vertx vertx = vertxService.getVertx();
+			Vertx vertx = serviceRegistry.getService( VertxInstance.class ).getVertx();
 			pool = configurePool( configurationValues, vertx );
 		}
 

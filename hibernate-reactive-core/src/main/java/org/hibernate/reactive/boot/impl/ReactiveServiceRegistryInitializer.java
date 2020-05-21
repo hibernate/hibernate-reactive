@@ -7,7 +7,7 @@ import org.hibernate.reactive.service.initiator.DummyConnectionProviderInitiator
 import org.hibernate.reactive.service.initiator.ReactiveJdbcEnvironmentInitiator;
 import org.hibernate.reactive.service.initiator.ReactiveQueryTranslatorFactoryInitiator;
 import org.hibernate.reactive.service.initiator.ReactiveTransactionCoordinatorBuilderInitiator;
-import org.hibernate.reactive.service.initiator.VertxInitiator;
+import org.hibernate.reactive.vertx.impl.VertxInstanceInitiator;
 import org.hibernate.service.spi.ServiceContributor;
 
 /**
@@ -19,7 +19,7 @@ public class ReactiveServiceRegistryInitializer implements ServiceContributor {
 
 	@Override
 	public void contribute(StandardServiceRegistryBuilder serviceRegistryBuilder) {
-		serviceRegistryBuilder.addInitiator( VertxInitiator.INSTANCE );
+		serviceRegistryBuilder.addInitiator( VertxInstanceInitiator.INSTANCE );
 		serviceRegistryBuilder.addInitiator( DummyConnectionProviderInitiator.INSTANCE );
 		serviceRegistryBuilder.addInitiator( ReactiveJdbcEnvironmentInitiator.INSTANCE );
 		serviceRegistryBuilder.addInitiator( ReactiveTransactionCoordinatorBuilderInitiator.INSTANCE );

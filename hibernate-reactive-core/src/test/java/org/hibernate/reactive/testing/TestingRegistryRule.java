@@ -1,8 +1,8 @@
 package org.hibernate.reactive.testing;
 
 import io.vertx.core.Vertx;
-import org.hibernate.reactive.service.ExternallyProvidedVertxService;
-import org.hibernate.reactive.service.VertxService;
+import org.hibernate.reactive.vertx.VertxInstance;
+import org.hibernate.reactive.vertx.impl.ProvidedVertxInstance;
 import org.hibernate.service.Service;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.ServiceBinding;
@@ -35,10 +35,10 @@ public class TestingRegistryRule extends ExternalResource {
     //TODO extract into its own class and evolve as necessary?
     private static class Registry implements ServiceRegistryImplementor {
 
-        private final ExternallyProvidedVertxService vertxService;
+        private final ProvidedVertxInstance vertxService;
 
         public Registry(Vertx vertx) {
-            this.vertxService = new ExternallyProvidedVertxService( vertx );
+            this.vertxService = new ProvidedVertxInstance( vertx );
         }
 
         @Override
@@ -68,7 +68,7 @@ public class TestingRegistryRule extends ExternalResource {
 
         @Override
         public <R extends Service> R getService(Class<R> serviceRole) {
-            if ( serviceRole == VertxService.class )
+            if ( serviceRole == VertxInstance.class )
                 return (R) vertxService;
             else {
                 throw new IllegalArgumentException( "This is a mock service - need to explicitly handle any service we might need during testing" );
