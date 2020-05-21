@@ -52,12 +52,12 @@ Add the following dependency to your project:
 
     org.hibernate.reactive:hibernate-reactive-core:1.0.0-SNAPSHOT
 
-You'll also need to add dependencies to:
+You'll also need to add a dependency for the Vert.x reactive database 
+driver for your database, for example:
 
-- Hibernate ORM, `org.hibernate:hibernate-core`, and
-- the Vert.x reactive database driver for your database, for example,
-  `io.vertx:vertx-pg-client`, `io.vertx:vertx-mysql-client`, or
-  `io.vertx:vertx-db2-client`.
+- `io.vertx:vertx-pg-client` for Postgres,
+- `io.vertx:vertx-mysql-client` for MySQL, or
+- `io.vertx:vertx-db2-client` for DB2.
 
 There's an example Gradle [build][] included in the example program.
 
