@@ -343,7 +343,8 @@ abstract class AbstractReactiveSaveEventListener<C>
 			ReactiveEntityIdentityInsertAction insert = new ReactiveEntityIdentityInsertAction(
 					values, entity, persister, false, source, shouldDelayIdentityInserts
 			);
-			return ( (ReactiveSessionInternal) source ).getReactiveActionQueue()
+			return source.unwrap(ReactiveSessionInternal.class)
+					.getReactiveActionQueue()
 					.addAction( insert )
 					.thenApply( v -> insert );
 		}
@@ -352,7 +353,8 @@ abstract class AbstractReactiveSaveEventListener<C>
 			ReactiveEntityRegularInsertAction insert = new ReactiveEntityRegularInsertAction(
 					id, values, entity, version, persister, false, source
 			);
-			return ( (ReactiveSessionInternal) source ).getReactiveActionQueue()
+			return source.unwrap(ReactiveSessionInternal.class)
+					.getReactiveActionQueue()
 					.addAction( insert )
 					.thenApply( v -> insert );
 		}

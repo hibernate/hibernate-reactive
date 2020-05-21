@@ -6,6 +6,7 @@
  */
 package org.hibernate.reactive.loader.entity.impl;
 
+import org.hibernate.JDBCException;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.internal.BatchFetchQueueHelper;
 import org.hibernate.engine.spi.QueryParameters;
@@ -129,9 +130,9 @@ public abstract class ReactiveBatchingEntityLoader implements ReactiveUniqueEnti
 							persister(),
 							session
 					);
-					if (e instanceof SQLException) {
+					if (e instanceof JDBCException) {
 						throw session.getJdbcServices().getSqlExceptionHelper().convert(
-								(SQLException) e,
+								((JDBCException) e).getSQLException(),
 								"could not load an entity batch: " + MessageHelper.infoString(persister(), ids, session.getFactory()),
 								loaderToUse.getSQLString()
 						);

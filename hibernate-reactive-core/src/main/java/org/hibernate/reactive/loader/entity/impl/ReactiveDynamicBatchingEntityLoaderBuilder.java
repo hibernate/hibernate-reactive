@@ -1,9 +1,9 @@
 package org.hibernate.reactive.loader.entity.impl;
 
+import org.hibernate.JDBCException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.pagination.LimitHelper;
 import org.hibernate.engine.internal.BatchFetchQueueHelper;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.EntityEntry;
@@ -11,7 +11,6 @@ import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.RowSelection;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -25,7 +24,6 @@ import org.hibernate.internal.util.collections.CollectionHelper;
 import org.hibernate.loader.entity.CacheEntityLoaderHelper;
 import org.hibernate.loader.entity.EntityJoinWalker;
 import org.hibernate.loader.entity.UniqueEntityLoader;
-import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.pretty.MessageHelper;
@@ -37,7 +35,6 @@ import org.jboss.logging.Logger;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -295,6 +292,9 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 		return new ReactiveDynamicBatchingEntityLoader( persister, batchSize, lockOptions, factory, influencers );
 	}
 
+	/**
+	 * @see org.hibernate.loader.entity.DynamicBatchingEntityLoaderBuilder.DynamicBatchingEntityLoader
+	 */
 	public static class ReactiveDynamicBatchingEntityLoader extends ReactiveBatchingEntityLoader {
 		private final int maxBatchSize;
 		private final UniqueEntityLoader singleKeyLoader;
@@ -533,8 +533,10 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 		});
 	}
 
+	/**
+	 * @see org.hibernate.loader.entity.DynamicBatchingEntityLoaderBuilder.DynamicEntityLoader
+	 */
 	private static class ReactiveDynamicEntityLoader extends ReactiveEntityLoader {
-		// todo : see the discussion on org.hibernate.loader.collection.DynamicBatchingCollectionInitializerBuilder.DynamicBatchingCollectionLoader
 
 		private final String sqlTemplate;
 		private final String alias;
@@ -613,85 +615,22 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 					Parameters.createDialectParameterGenerator(getFactory())
 			);
 
-//			try {
-				final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-				boolean defaultReadOnlyOrig = persistenceContext.isDefaultReadOnly();
-				if ( queryParameters.isReadOnlyInitialized() ) {
-					// The read-only/modifiable mode for the query was explicitly set.
-					// Temporarily set the default read-only/modifiable setting to the query's setting.
-					persistenceContext.setDefaultReadOnly( queryParameters.isReadOnly() );
-				}
-				else {
-					// The read-only/modifiable setting for the query was not initialized.
-					// Use the default read-only/modifiable from the persistence context instead.
-					queryParameters.setReadOnly( persistenceContext.isDefaultReadOnly() );
-				}
-				persistenceContext.beforeLoad();
-				return doTheLoad( sql, queryParameters, session, ids)
-						.whenComplete( (list, e) -> persistenceContext.afterLoad() )
-						.thenCompose(list ->
-								// only initialize non-lazy collections after everything else has been refreshed
-								((ReactivePersistenceContextAdapter) persistenceContext ).reactiveInitializeNonLazyCollections()
-										.thenApply(v -> list)
-						)
-						.whenComplete( (list, e) -> persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig) )
-						.handle( (results, e) -> {
-							if (e instanceof SQLException) {
-								throw jdbcServices.getSqlExceptionHelper().convert(
-										(SQLException) e,
-										"could not load an entity batch: " + MessageHelper.infoString(
-												getEntityPersisters()[0],
-												ids,
-												session.getFactory()
-										),
-										sql
-									);
-							}
-							return results;
-						});
-		}
-
-		private CompletionStage<List<Object>> doTheLoad(
-				String sql,
-				QueryParameters queryParameters,
-				SessionImplementor session,
-				Object ids) {
-			final RowSelection selection = queryParameters.getRowSelection();
-			final int maxRows = LimitHelper.hasMaxRows( selection ) ?
-					selection.getMaxRows() :
-					Integer.MAX_VALUE;
-
-			final List<AfterLoadAction> afterLoadActions = new ArrayList<>();
-			return executeReactiveQueryStatement( sql,
-					queryParameters,
-					false,
-					afterLoadActions,
-					session,
-					resultSet -> {
-						try {
-							return processResultSet(
-									resultSet,
-									queryParameters,
-									session,
-									false,
-									null,
-									maxRows,
-									afterLoadActions
-							);
-						}
-						catch (SQLException sqle) {
-							throw getFactory().getJdbcServices().getSqlExceptionHelper().convert(
-									sqle,
+			return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters, false )
+					.handle( (results, e) -> {
+						if (e instanceof JDBCException) {
+							throw jdbcServices.getSqlExceptionHelper().convert(
+									((JDBCException) e).getSQLException(),
 									"could not load an entity batch: " + MessageHelper.infoString(
 											getEntityPersisters()[0],
 											ids,
 											session.getFactory()
 									),
 									sql
-							);
+								);
 						}
-					}
-			);
+						return results;
+					});
 		}
+
 	}
 }
