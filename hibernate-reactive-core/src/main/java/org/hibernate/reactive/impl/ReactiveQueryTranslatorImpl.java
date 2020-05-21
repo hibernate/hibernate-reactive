@@ -1,4 +1,4 @@
-package org.hibernate.reactive.hql.internal.ast;
+package org.hibernate.reactive.impl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,8 +20,7 @@ import org.hibernate.hql.internal.ast.tree.QueryNode;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.loader.hql.QueryLoader;
-import org.hibernate.reactive.hql.ReactiveQueryLoader;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.loader.hql.impl.ReactiveQueryLoader;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.jboss.logging.Logger;

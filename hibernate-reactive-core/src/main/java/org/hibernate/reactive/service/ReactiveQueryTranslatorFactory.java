@@ -1,4 +1,4 @@
-package org.hibernate.reactive.hql.spi;
+package org.hibernate.reactive.service;
 
 import java.util.Map;
 
@@ -7,9 +7,9 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.hql.spi.FilterTranslator;
 import org.hibernate.hql.spi.QueryTranslator;
 import org.hibernate.hql.spi.QueryTranslatorFactory;
-import org.hibernate.reactive.hql.internal.ast.ReactiveQueryTranslatorImpl;
+import org.hibernate.reactive.impl.ReactiveQueryTranslatorImpl;
 
-public class ReactiveASTQueryTranslatorFactory implements QueryTranslatorFactory {
+public class ReactiveQueryTranslatorFactory implements QueryTranslatorFactory {
 
 	@Override
 	public QueryTranslator createQueryTranslator(

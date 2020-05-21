@@ -56,7 +56,6 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.Query;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
-import org.hibernate.reactive.engine.query.spi.ReactiveHQLQueryPlan;
 import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveInitializeCollectionEventListener;
 import org.hibernate.reactive.event.spi.ReactiveDeleteEventListener;

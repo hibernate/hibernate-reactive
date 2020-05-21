@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.hql.spi.QueryTranslatorFactory;
-import org.hibernate.reactive.hql.spi.ReactiveASTQueryTranslatorFactory;
+import org.hibernate.reactive.service.ReactiveQueryTranslatorFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 public class ReactiveQueryTranslatorFactoryInitiator implements StandardServiceInitiator<QueryTranslatorFactory> {
@@ -12,7 +12,7 @@ public class ReactiveQueryTranslatorFactoryInitiator implements StandardServiceI
 
 	@Override
 	public QueryTranslatorFactory initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-		return new ReactiveASTQueryTranslatorFactory();
+		return new ReactiveQueryTranslatorFactory();
 	}
 
 	@Override

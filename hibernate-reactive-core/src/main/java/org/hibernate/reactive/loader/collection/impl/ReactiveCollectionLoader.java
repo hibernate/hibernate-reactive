@@ -1,4 +1,4 @@
-package org.hibernate.reactive.loader.collection;
+package org.hibernate.reactive.loader.collection.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.*;

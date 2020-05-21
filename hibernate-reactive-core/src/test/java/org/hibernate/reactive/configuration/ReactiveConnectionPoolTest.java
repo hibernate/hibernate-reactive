@@ -17,7 +17,7 @@ import org.hibernate.reactive.cfg.ReactiveSettings;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.PostgreSQLDatabase;
 import org.hibernate.reactive.service.ReactiveConnectionPoolProviderImpl;
-import org.hibernate.reactive.service.initiator.ReactiveConnectionPoolProvider;
+import org.hibernate.reactive.service.ReactiveConnectionPoolProvider;
 
 import org.junit.Rule;
 import org.junit.Test;

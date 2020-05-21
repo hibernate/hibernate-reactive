@@ -16,7 +16,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.hql.internal.QueryExecutionRequestException;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.internal.QueryImpl;
-import org.hibernate.reactive.engine.query.spi.ReactiveHQLQueryPlan;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 public class ReactiveQueryInternalImpl<R> extends QueryImpl<R> implements ReactiveQueryInternal<R> {

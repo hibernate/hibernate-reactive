@@ -1,4 +1,4 @@
-package org.hibernate.reactive.hql;
+package org.hibernate.reactive.loader.hql.impl;
 
 import java.io.Serializable;
 import java.sql.ResultSet;

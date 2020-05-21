@@ -19,7 +19,7 @@ import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.pretty.MessageHelper;
-import org.hibernate.reactive.persister.persister.collection.ReactiveOneToManyPersister;
+import org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 

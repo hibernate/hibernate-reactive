@@ -1,6 +1,7 @@
 package org.hibernate.reactive.service.initiator;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
+import org.hibernate.reactive.service.ReactiveConnectionPoolProvider;
 import org.hibernate.reactive.service.ReactiveConnectionPoolProviderImpl;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 

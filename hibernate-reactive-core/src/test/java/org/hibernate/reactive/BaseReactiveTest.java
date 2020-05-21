@@ -8,7 +8,7 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.containers.PostgreSQLDatabase;
 import org.hibernate.reactive.service.ReactiveConnection;
-import org.hibernate.reactive.service.initiator.ReactiveConnectionPoolProvider;
+import org.hibernate.reactive.service.ReactiveConnectionPoolProvider;
 import org.hibernate.reactive.stage.Stage;
 import org.junit.After;
 import org.junit.Before;

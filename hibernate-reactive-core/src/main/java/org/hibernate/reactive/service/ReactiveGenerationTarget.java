@@ -1,7 +1,5 @@
 package org.hibernate.reactive.service;
 
-import org.hibernate.reactive.service.initiator.ReactiveConnectionPoolProvider;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.tool.schema.internal.exec.GenerationTarget;
 

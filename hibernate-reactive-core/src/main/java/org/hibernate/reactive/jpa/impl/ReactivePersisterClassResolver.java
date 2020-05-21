@@ -8,7 +8,7 @@ import org.hibernate.persister.spi.PersisterClassResolver;
 import org.hibernate.reactive.persister.entity.impl.ReactiveJoinedSubclassEntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveSingleTableEntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveUnionSubclassEntityPersister;
-import org.hibernate.reactive.persister.persister.collection.ReactiveOneToManyPersister;
+import org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister;
 
 public class ReactivePersisterClassResolver extends StandardPersisterClassResolver implements PersisterClassResolver {
 

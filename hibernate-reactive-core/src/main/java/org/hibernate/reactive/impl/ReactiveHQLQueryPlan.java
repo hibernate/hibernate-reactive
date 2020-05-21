@@ -1,4 +1,4 @@
-package org.hibernate.reactive.engine.query.spi;
+package org.hibernate.reactive.impl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +18,6 @@ import org.hibernate.hql.spi.QueryTranslator;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
-import org.hibernate.reactive.hql.internal.ast.ReactiveQueryTranslatorImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 public class ReactiveHQLQueryPlan extends HQLQueryPlan {

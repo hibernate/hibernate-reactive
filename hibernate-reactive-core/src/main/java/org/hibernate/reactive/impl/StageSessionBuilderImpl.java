@@ -7,7 +7,7 @@ import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionFactoryImpl.SessionBuilderImpl;
 import org.hibernate.reactive.service.ReactiveConnection;
-import org.hibernate.reactive.service.initiator.ReactiveConnectionPoolProvider;
+import org.hibernate.reactive.service.ReactiveConnectionPoolProvider;
 import org.hibernate.reactive.stage.Stage;
 
 import java.util.concurrent.CompletionStage;

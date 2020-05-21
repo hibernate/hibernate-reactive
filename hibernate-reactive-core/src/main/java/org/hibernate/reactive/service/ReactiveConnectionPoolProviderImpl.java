@@ -11,7 +11,6 @@ import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.cfg.ReactiveSettings;
 import org.hibernate.reactive.impl.SqlClientConnection;
-import org.hibernate.reactive.service.initiator.ReactiveConnectionPoolProvider;
 import org.hibernate.reactive.util.impl.JdbcUrlParser;
 import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.Stoppable;

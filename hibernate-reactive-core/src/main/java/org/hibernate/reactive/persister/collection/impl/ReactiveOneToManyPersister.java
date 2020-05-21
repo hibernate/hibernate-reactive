@@ -1,4 +1,4 @@
-package org.hibernate.reactive.persister.persister.collection;
+package org.hibernate.reactive.persister.collection.impl;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
@@ -14,8 +14,8 @@ import org.hibernate.loader.collection.CollectionInitializer;
 import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.OneToManyPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
-import org.hibernate.reactive.loader.collection.ReactiveCollectionLoader;
-import org.hibernate.reactive.loader.collection.ReactiveOneToManyLoader;
+import org.hibernate.reactive.loader.collection.impl.ReactiveCollectionLoader;
+import org.hibernate.reactive.loader.collection.impl.ReactiveOneToManyLoader;
 
 public class ReactiveOneToManyPersister extends OneToManyPersister {
 	public ReactiveOneToManyPersister(Collection collectionBinding, CollectionDataAccess cacheAccessStrategy, PersisterCreationContext creationContext) throws MappingException, CacheException {

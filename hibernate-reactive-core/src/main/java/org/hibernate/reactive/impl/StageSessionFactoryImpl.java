@@ -11,7 +11,6 @@ import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionFactoryRegistry.ObjectFactoryImpl;
-import org.hibernate.reactive.engine.query.spi.ReactiveHQLQueryPlan;
 import org.hibernate.reactive.stage.Stage;
 
 import java.util.concurrent.CompletionStage;
