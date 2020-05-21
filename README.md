@@ -191,7 +191,9 @@ such as DB2, you can specify `-Pdb=<DBType>`, for example:
 
     ./gradlew test -Pdb=db2
     
-#### A) If you have Docker installed
+Possible values are (case insensitive): `db2`, `mysql`, `pg` (or `postgresql`)
+    
+#### If you have Docker installed
 
 If you have Docker installed, running the tests is really easy. You
 don't need to create the test databases manually. Just type:
@@ -203,7 +205,7 @@ multiple test runs. To do this, set `testcontainers.reuse.enable=true` in
 the file `$HOME/.testcontainers.properties`. (Just create the file if it 
 doesn't already exist.)
 
-#### B) If you already have PostgreSQL installed
+#### If you already have PostgreSQL installed
 
 If you already have PostgreSQL installed on your machine, you'll just 
 need to create the test database. From the command line, type the 
@@ -225,7 +227,7 @@ following commands:
 
 Finally, run `./gradlew test` from the `hibernate-reactive` directory.
 
-#### C) If you have Podman
+#### If you have Podman
 
 If you use [Podman][], you can start the test database by following 
 the instructions in [podman.md](podman.md).
