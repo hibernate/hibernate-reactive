@@ -1,5 +1,7 @@
 package org.hibernate.reactive;
 
+import static org.junit.Assume.assumeTrue;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.time.LocalDate;
@@ -31,25 +33,28 @@ import javax.persistence.TemporalType;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 
-import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.containers.MySQLDatabase;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
+@Ignore
 public class MySQLBasicTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( AvailableSettings.URL, MySQLDatabase.getJdbcUrl() );
 		configuration.addAnnotatedClass( Basic.class );
 		return configuration;
 	}
 
 	@Test
 	public void testBasicTypes(TestContext context) {
+		// TODO: Remove this entire class once all tests have been exercised with MySQL
+		assumeTrue( DatabaseConfiguration.dbType() == DBType.MYSQL );
 
 		Basic basik = new Basic("Hello World");
 //		basik.decimal = new BigDecimal(12.12d);

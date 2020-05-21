@@ -2,9 +2,15 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.junit.Test;
 
 import javax.persistence.*;
+
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -25,6 +31,10 @@ public class BasicTypesAndCallbacksTest extends BaseReactiveTest {
 
 	@Test
 	public void testBasicTypes(TestContext context) {
+		// TODO @AGG
+		// The DB2 driver does not yet support a few types (BigDecimal, BigInteger, LocalTime)
+		// so we need to keep a separate copy around for testing DB2 (DB2BasicTest)
+		assumeTrue( DatabaseConfiguration.dbType() != DBType.DB2 );
 
 		Basic basik = new Basic("Hello World");
 		basik.decimal = new BigDecimal(12.12d);

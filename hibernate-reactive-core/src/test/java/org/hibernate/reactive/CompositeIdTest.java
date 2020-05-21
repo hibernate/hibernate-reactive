@@ -2,6 +2,7 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -50,7 +51,8 @@ public class CompositeIdTest extends BaseReactiveTest {
 
 	private CompletionStage<String> selectNameFromId(Integer id) {
 		return connection().thenCompose( connection -> connection.select(
-				"SELECT name FROM Pig WHERE id = $1", new Object[]{id} ).thenApply(
+				DatabaseConfiguration.statement("SELECT name FROM Pig WHERE id = ",""), 
+				new Object[]{id} ).thenApply(
 				rowSet -> {
 					if ( rowSet.size() == 1 ) {
 						// Only one result
@@ -68,7 +70,8 @@ public class CompositeIdTest extends BaseReactiveTest {
 
 	private CompletionStage<Double> selectWeightFromId(Integer id) {
 		return connection().thenCompose( connection -> connection.select(
-				"SELECT weight FROM Pig WHERE id = $1", new Object[]{id} ).thenApply(
+				DatabaseConfiguration.statement("SELECT weight FROM Pig WHERE id = ", ""), 
+				new Object[]{id} ).thenApply(
 				rowSet -> {
 					if ( rowSet.size() == 1 ) {
 						// Only one result
