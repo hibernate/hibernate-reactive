@@ -5,6 +5,7 @@
 
     <persistence-unit name="example">
 
+        <class>org.hibernate.example.reactive.Author</class>
         <class>org.hibernate.example.reactive.Book</class>
 
         <properties>
