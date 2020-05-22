@@ -13,9 +13,10 @@ import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.internal.util.config.ConfigurationException;
-import org.hibernate.reactive.cfg.ReactiveSettings;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.pool.impl.SqlClientPool;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
@@ -59,36 +60,12 @@ public class ReactiveConnectionPoolTest {
 		} );
 	}
 
-	@Test
-	public void configureWithPool(TestContext context) {
-		// This test doesn't need to rotate across all DBs and has PG-specific logic in it
-		assumeTrue( DatabaseConfiguration.dbType() == DBType.POSTGRESQL );
-		
-		String url = DatabaseConfiguration.getJdbcUrl().substring( "jdbc:".length() );
-		Pool pgPool = PgPool.pool( url );
-		Map<String,Object> config = new HashMap<>();
-		config.put( ReactiveSettings.VERTX_POOL, pgPool );
-		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
-		verifyConnectivity( context, reactivePool );
-	}
-
 	private ReactiveConnectionPool configureAndStartPool(Map<String, Object> config) {
 		SqlClientPool reactivePool = new SqlClientPool();
 		reactivePool.injectServices( registryRule.getServiceRegistry() );
 		reactivePool.configure( config );
 		reactivePool.start();
 		return reactivePool;
-	}
-
-	@Test
-	public void configureWithIncorrectPoolType() {
-		thrown.expect( ConfigurationException.class );
-		thrown.expectMessage( "Setting " + ReactiveSettings.VERTX_POOL + " must be configured with an instance of io.vertx.sqlclient.Pool but was configured with I'm a pool!" );
-
-		Map<String,Object> config = new HashMap<>();
-		config.put( ReactiveSettings.VERTX_POOL, "I'm a pool!" );
-
-		configureAndStartPool( config );
 	}
 	
 	@Test
