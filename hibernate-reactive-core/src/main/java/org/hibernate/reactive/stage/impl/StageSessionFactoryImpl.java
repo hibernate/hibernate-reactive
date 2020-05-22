@@ -23,7 +23,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> openReactiveSession() throws HibernateException {
+	public CompletionStage<Stage.Session> openSession() throws HibernateException {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return pool.getConnection()
@@ -33,8 +33,8 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	}
 
 	@Override
-	public <T> CompletionStage<T> withReactiveSession(Function<Stage.Session, CompletionStage<T>> work) {
-		return openReactiveSession().thenCompose(
+	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
+		return openSession().thenCompose(
 				session -> work.apply(session)
 						.whenComplete( (r, e) -> session.close() )
 		);

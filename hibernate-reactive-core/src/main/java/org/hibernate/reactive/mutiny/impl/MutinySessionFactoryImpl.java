@@ -23,7 +23,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	}
 
 	@Override
-	public Uni<Mutiny.Session> openReactiveSession() throws HibernateException {
+	public Uni<Mutiny.Session> openSession() throws HibernateException {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return Uni.createFrom().completionStage( pool.getConnection() )
@@ -33,8 +33,8 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	}
 
 	@Override
-	public <T> Uni<T> withReactiveSession(Function<Mutiny.Session, Uni<T>> work) {
-		return openReactiveSession().flatMap(
+	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
+		return openSession().flatMap(
 				session -> work.apply( session ).on().termination( session::close )
 		);
 	}

@@ -608,7 +608,7 @@ public interface Mutiny {
 		 *
 		 * The client must close the session using {@link Session#close()}.
 		 */
-		Uni<Session> openReactiveSession();
+		Uni<Session> openSession();
 
 		/**
 		 * Perform work using a {@link Session reactive session}.
@@ -618,7 +618,7 @@ public interface Mutiny {
 		 * @param work a function which accepts the session and returns
 		 *             the result of the work as a {@link Uni}.
 		 */
-		<T> Uni<T> withReactiveSession(Function<Session, Uni<T>> work);
+		<T> Uni<T> withSession(Function<Session, Uni<T>> work);
 
 		/**
 		 * Destroy the session factory and clean up its connection

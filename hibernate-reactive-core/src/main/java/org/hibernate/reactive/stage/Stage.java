@@ -608,7 +608,7 @@ public interface Stage {
 		 *
 		 * The client must close the session using {@link Session#close()}.
 		 */
-		CompletionStage<Session> openReactiveSession();
+		CompletionStage<Session> openSession();
 
 		/**
 		 * Perform work using a {@link Session reactive session}.
@@ -618,7 +618,7 @@ public interface Stage {
 		 * @param work a function which accepts the session and returns
 		 *             the result of the work as a {@link CompletionStage}.
 		 */
-		<T> CompletionStage<T> withReactiveSession(Function<Session, CompletionStage<T>> work);
+		<T> CompletionStage<T> withSession(Function<Session, CompletionStage<T>> work);
 
 		/**
 		 * Destroy the session factory and clean up its connection
