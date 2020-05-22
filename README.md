@@ -126,10 +126,10 @@ the session when you're done.
 
 The `Session` interface has methods with the same names as methods of the
 JPA `EntityManager`. However, each of these methods returns its result via
-a `CompletionStage`, for example:
+a `CompletionStage` (or Mutiny `Uni`), for example:
 
     session1.find(Book.class, book.id)
-            .thenAccept( bOOk -> System.out.println(bOOk.title + " is a great book!") )
+            .thenAccept( book -> System.out.println(book.title + " is a great book!") )
 
 Methods with no meaningful return value return a reference to the `Session`:
     
@@ -148,6 +148,22 @@ queries to be executed asynchronously, always returning their results via a
 If you already know Hibernate, and if you already have some experience with 
 reactive programming, there's not much new to learn here: you should 
 immediately feel right at home. 
+
+### Fetching lazy associations
+
+In Hibernate ORM, lazy associations are fetched transparently when the
+association is fist accessed within a session. In Hibernate Reactive, 
+association fetching is an asynchronous process that produces a result
+via a `CompletionStage` (or Mutiny `Uni`).
+
+Therefore, lazy fetching is an explicit operation named `fetch()` of 
+the reactive session:
+
+    session4.find(Author.class, author.id)
+            .thenCompose( author -> session1.fetch(author.books) )
+            .thenAccept( books -> ... )
+
+Of course, this isn't necessary if you fetch the association eagerly.
 
 ### Transactions
 
@@ -243,7 +259,6 @@ At this time, Hibernate Reactive does _not_ support the following features:
 
 - `@ElementCollection` and `@ManyToMany`
 - `@OneToMany` without `mappedBy` 
-- transparent lazy loading
 - JPA's `@NamedEntityGraph`
 - eager select fetching, for example `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`
   (eager join fetching *is* supported)
@@ -254,8 +269,6 @@ At this time, Hibernate Reactive does _not_ support the following features:
 Instead, use the following supported features:
 
 - `@OneToMany(mappedBy=...)` together with `@ManyToOne`
-- explicit lazy loading via `Session.fetch(entity.association)`, which 
-  returns a `CompletionStage`
 - `@FetchProfile`
 - HQL queries
 
