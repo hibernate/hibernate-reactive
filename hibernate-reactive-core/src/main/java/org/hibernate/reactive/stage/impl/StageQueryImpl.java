@@ -5,7 +5,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.CacheMode;
 import org.hibernate.LockMode;
-import org.hibernate.reactive.impl.ReactiveQueryInternal;
+import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.stage.Stage;
 
 /**
@@ -13,9 +13,9 @@ import org.hibernate.reactive.stage.Stage;
  */
 public class StageQueryImpl<R> implements Stage.Query<R> {
 
-	private final ReactiveQueryInternal<R> delegate;
+	private final ReactiveQuery<R> delegate;
 
-	public StageQueryImpl(ReactiveQueryInternal<R> delegate) {
+	public StageQueryImpl(ReactiveQuery<R> delegate) {
 		this.delegate = delegate;
 	}
 

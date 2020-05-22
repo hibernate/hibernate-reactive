@@ -8,8 +8,7 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
-import org.hibernate.reactive.impl.ReactiveSessionInternalImpl;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 /**
@@ -39,7 +38,7 @@ public class ReactivePersistenceContextAdapter extends StatefulPersistenceContex
 		@Override
 		public void accept(PersistentCollection nonLazyCollection) {
 			stage = stage.thenCompose(
-					v -> ( (ReactiveSessionInternal) getSession() )
+					v -> ( (ReactiveSession) getSession() )
 							.reactiveFetch( nonLazyCollection, true )
 							.thenAccept(vv -> {})
 			);

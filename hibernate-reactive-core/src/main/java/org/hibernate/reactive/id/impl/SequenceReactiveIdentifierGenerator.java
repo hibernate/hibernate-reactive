@@ -10,7 +10,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.Properties;
@@ -59,7 +59,7 @@ public class SequenceReactiveIdentifierGenerator implements ReactiveIdentifierGe
 	}
 
 	@Override
-	public CompletionStage<Long> generate(ReactiveSessionInternal session, Object entity) {
+	public CompletionStage<Long> generate(ReactiveSession session, Object entity) {
 		return sql==null ? CompletionStages.nullFuture()
 				: session.getReactiveConnection().selectLong( sql, new Object[0] );
 	}

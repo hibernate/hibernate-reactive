@@ -4,7 +4,7 @@ import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
@@ -22,9 +22,9 @@ import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
  */
 public class StageSessionImpl implements Stage.Session {
 
-	private final ReactiveSessionInternal delegate;
+	private final ReactiveSession delegate;
 
-	public StageSessionImpl(ReactiveSessionInternal session) {
+	public StageSessionImpl(ReactiveSession session) {
 		this.delegate = session;
 	}
 

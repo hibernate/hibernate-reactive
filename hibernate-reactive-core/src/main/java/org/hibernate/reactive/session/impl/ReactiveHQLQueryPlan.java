@@ -1,4 +1,4 @@
-package org.hibernate.reactive.impl;
+package org.hibernate.reactive.session.impl;
 
 import java.util.ArrayList;
 import java.util.List;

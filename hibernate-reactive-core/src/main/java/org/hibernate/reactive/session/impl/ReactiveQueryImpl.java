@@ -1,4 +1,4 @@
-package org.hibernate.reactive.impl;
+package org.hibernate.reactive.session.impl;
 
 import java.util.Collections;
 import java.util.List;
@@ -16,13 +16,15 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.hql.internal.QueryExecutionRequestException;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.internal.QueryImpl;
+import org.hibernate.reactive.session.ReactiveQuery;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
-public class ReactiveQueryInternalImpl<R> extends QueryImpl<R> implements ReactiveQueryInternal<R> {
+public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<R> {
 
 	private EntityGraphQueryHint entityGraphQueryHint;
 
-	public ReactiveQueryInternalImpl(SharedSessionContractImplementor producer, ParameterMetadata parameterMetadata, String queryString) {
+	public ReactiveQueryImpl(SharedSessionContractImplementor producer, ParameterMetadata parameterMetadata, String queryString) {
 		super( producer, parameterMetadata, queryString );
 	}
 
@@ -96,12 +98,12 @@ public class ReactiveQueryInternalImpl<R> extends QueryImpl<R> implements Reacti
 		}
 
 		final String expandedQuery = getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() );
-		ReactiveSessionInternal producer = reactiveProducer();
+		ReactiveSession producer = reactiveProducer();
 		return producer.reactiveList( expandedQuery, makeReactiveQueryParametersForExecution( expandedQuery ) );
 	}
 
-	private ReactiveSessionInternal reactiveProducer() {
-		return (ReactiveSessionInternal) getProducer();
+	private ReactiveSession reactiveProducer() {
+		return (ReactiveSession) getProducer();
 	}
 
 	/**

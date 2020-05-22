@@ -17,7 +17,7 @@ import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.sql.impl.Parameters;
@@ -87,7 +87,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	default ReactiveConnection getReactiveConnection(SharedSessionContractImplementor session) {
-		return ((ReactiveSessionInternal) session).getReactiveConnection();
+		return ((ReactiveSession) session).getReactiveConnection();
 	}
 
 	@Override

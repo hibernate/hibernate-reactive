@@ -20,7 +20,7 @@ import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.impl.ReactiveEntityUpdateAction;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.Type;
@@ -295,7 +295,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 
 		// schedule the update
 		// note that we intentionally do _not_ pass in currentPersistentState!
-		session.unwrap(ReactiveSessionInternal.class).getReactiveActionQueue().addAction(
+		session.unwrap(ReactiveSession.class).getReactiveActionQueue().addAction(
 				new ReactiveEntityUpdateAction(
 						entry.getId(),
 						values,

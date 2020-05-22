@@ -26,9 +26,8 @@ import org.hibernate.hql.internal.ast.QueryTranslatorImpl;
 import org.hibernate.hql.internal.ast.tree.SelectClause;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
-import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.transform.ResultTransformer;
@@ -254,7 +253,7 @@ public class ReactiveQueryLoader extends QueryLoader {
 		// Adding locks and comments.
 		sql = preprocessSQL( sql, queryParameters, getFactory(), afterLoadActions );
 
-		return session.unwrap(ReactiveSessionInternal.class)
+		return session.unwrap(ReactiveSession.class)
 				.getReactiveConnection()
 				.selectJdbc( sql, toParameterArray(queryParameters, session) )
 				.thenApply( transformer );

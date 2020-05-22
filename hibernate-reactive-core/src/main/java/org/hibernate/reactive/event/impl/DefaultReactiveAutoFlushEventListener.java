@@ -11,7 +11,7 @@ import org.hibernate.event.spi.AutoFlushEvent;
 import org.hibernate.event.spi.AutoFlushEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.internal.CoreMessageLogger;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
 import org.hibernate.reactive.event.spi.ReactiveAutoFlushEventListener;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -75,7 +75,7 @@ public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlush
 	}
 
 	private ReactiveActionQueue reactiveActionQueue(EventSource source) {
-		return source.unwrap( ReactiveSessionInternal.class ).getReactiveActionQueue();
+		return source.unwrap( ReactiveSession.class ).getReactiveActionQueue();
 	}
 
 	private boolean flushMightBeNeeded(final EventSource source) {

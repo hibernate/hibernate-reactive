@@ -20,7 +20,7 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.*;
 
@@ -84,7 +84,7 @@ public final class Cascade<C> {
 				if ( cascadeStyles[i].doCascade( action.delegate() ) ) {
 					Object fetchable = state[i];
 					if ( !Hibernate.isInitialized( fetchable ) ) {
-						beforeDelete = beforeDelete.thenCompose( v -> session.unwrap(ReactiveSessionInternal.class).reactiveFetch( fetchable, true ) );
+						beforeDelete = beforeDelete.thenCompose( v -> session.unwrap(ReactiveSession.class).reactiveFetch( fetchable, true ) );
 					}
 				}
 			}

@@ -2,7 +2,7 @@ package org.hibernate.reactive.stage.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionFactoryImpl;
-import org.hibernate.reactive.impl.ReactiveSessionInternalImpl;
+import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.stage.Stage;
 
@@ -27,7 +27,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return pool.getConnection()
-				.thenApply( reactiveConnection -> new ReactiveSessionInternalImpl( delegate,
+				.thenApply( reactiveConnection -> new ReactiveSessionImpl( delegate,
 						new SessionFactoryImpl.SessionBuilderImpl<>(delegate), reactiveConnection ) )
 				.thenApply( StageSessionImpl::new );
 	}

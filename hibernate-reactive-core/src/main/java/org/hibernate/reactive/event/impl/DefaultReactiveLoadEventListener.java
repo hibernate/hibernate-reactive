@@ -38,8 +38,8 @@ import org.hibernate.type.EmbeddedComponentType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
 
-import static org.hibernate.reactive.impl.SessionUtil.checkEntityFound;
-import static org.hibernate.reactive.impl.SessionUtil.throwEntityNotFound;
+import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
+import static org.hibernate.reactive.session.impl.SessionUtil.throwEntityNotFound;
 
 /**
  * A reactive {@link org.hibernate.event.internal.DefaultLoadEventListener}.

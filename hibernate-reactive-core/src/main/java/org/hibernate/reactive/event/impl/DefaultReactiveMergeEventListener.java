@@ -19,7 +19,7 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingAction;
 import org.hibernate.reactive.event.spi.ReactiveMergeEventListener;
@@ -297,7 +297,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		final Serializable clonedIdentifier = (Serializable)
 				persister.getIdentifierType().deepCopy( id, source.getFactory() );
 
-		return source.unwrap(ReactiveSessionInternal.class)
+		return source.unwrap(ReactiveSession.class)
 				.reactiveGet( (Class<?>) persister.getMappedClass(), clonedIdentifier )
 				.thenCompose(result -> {
 					if ( result!=null ) {
@@ -447,7 +447,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		CompletionStage<Void> stage = CompletionStages.nullFuture();
 		// If entity == target, then nothing needs to be fetched.
 		if ( entity != target ) {
-			ReactiveSessionInternal session = source.unwrap(ReactiveSessionInternal.class);
+			ReactiveSession session = source.unwrap(ReactiveSession.class);
 			final Object[] mergeState = persister.getPropertyValues(entity);
 			final Object[] managedState = persister.getPropertyValues(target);
 			for (int i = 0; i < mergeState.length; i++) {

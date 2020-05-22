@@ -1,4 +1,4 @@
-package org.hibernate.reactive.impl;
+package org.hibernate.reactive.session.impl;
 
 import java.io.Serializable;
 import java.util.List;
@@ -68,23 +68,25 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.session.ReactiveQuery;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 /**
- * An {@link ReactiveSessionInternal} implemented by extension of
+ * An {@link ReactiveSession} implemented by extension of
  * the {@link SessionImpl} in Hibernate core. Extension was
  * preferred to delegation because there are places where
  * Hibernate core compares the identity of session instances.
  */
-public class ReactiveSessionInternalImpl extends SessionImpl implements ReactiveSessionInternal, EventSource {
+public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession, EventSource {
 
 	private transient ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
 	private final ReactiveConnection reactiveConnection;
 
-	public ReactiveSessionInternalImpl(SessionFactoryImpl delegate, SessionCreationOptions options,
-									   ReactiveConnection connection) {
+	public ReactiveSessionImpl(SessionFactoryImpl delegate, SessionCreationOptions options,
+							   ReactiveConnection connection) {
 		super( delegate, options );
 		reactiveConnection = connection;
 	}
@@ -134,13 +136,13 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 	}
 
 	@Override
-	public <R> ReactiveQueryInternal<R> createReactiveQuery(String queryString) {
+	public <R> ReactiveQuery<R> createReactiveQuery(String queryString) {
 		checkOpen();
 		pulseTransactionCoordinator();
 		delayedAfterCompletion();
 
 		try {
-			final ReactiveQueryInternal<R> query = new ReactiveQueryInternalImpl<>( this, getQueryPlan( queryString, false )
+			final ReactiveQuery<R> query = new ReactiveQueryImpl<>( this, getQueryPlan( queryString, false )
 					.getParameterMetadata(), queryString );
 			applyQuerySettingsAndHints( query );
 			query.setComment( queryString );
@@ -153,14 +155,14 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 	}
 
 	@Override
-	public <R> ReactiveQueryInternal<R> createReactiveQuery(String queryString, Class<R> resultType) {
+	public <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType) {
 		checkOpen();
 		pulseTransactionCoordinator();
 		delayedAfterCompletion();
 
 		try {
 			// do the translation
-			final ReactiveQueryInternal<R> query = createReactiveQuery( queryString );
+			final ReactiveQuery<R> query = createReactiveQuery( queryString );
 			resultClassChecking( resultType, query.unwrap( Query.class ) );
 			return query;
 		}
@@ -175,7 +177,7 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 	@Deprecated
 	@Override
 	public void initializeCollection(PersistentCollection collection, boolean writing) {
-		throw getExceptionConverter().convert( new UnsupportedOperationException( "ReactiveSessionInternalImpl#initializeCollection not supported, use reactiveInitializeCollection instead" ) );
+		throw getExceptionConverter().convert( new UnsupportedOperationException( "ReactiveSessionImpl#initializeCollection not supported, use reactiveInitializeCollection instead" ) );
 	}
 
 	public CompletionStage<Void> reactiveInitializeCollection(PersistentCollection collection, boolean writing) {
@@ -802,11 +804,11 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 		@SuppressWarnings("unchecked")
 		protected CompletionStage<T> doGetReference(Serializable id) {
 			if ( lockOptions != null ) {
-				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, ReactiveSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
+				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
 				return fireLoad( event, LoadEventListener.LOAD ).thenApply( v -> (T) event.getResult() );
 			}
 
-			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, ReactiveSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
+			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
 			return fireLoad( event, LoadEventListener.LOAD )
 					.thenApply( v -> {
 						if ( event.getResult() == null ) {
@@ -834,11 +836,11 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 		@SuppressWarnings("unchecked")
 		protected final CompletionStage<T> doLoad(Serializable id, LoadEventListener.LoadType loadType) {
 			if ( lockOptions != null ) {
-				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, ReactiveSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
+				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
 				return fireLoad( event, loadType ).thenApply( v -> (T) event.getResult() );
 			}
 
-			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, ReactiveSessionInternalImpl.this, getReadOnlyFromLoadQueryInfluencers());
+			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
 			return fireLoad( event, loadType )
 					.whenComplete( (v, t) -> afterOperation( t != null ) )
 					.thenApply( v -> (T) event.getResult() );
@@ -943,7 +945,7 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 			Serializable[] sids = new Serializable[ids.length];
 			System.arraycopy(ids, 0, sids, 0, ids.length);
 			return perform( () -> (CompletionStage)
-					((ReactiveEntityPersister) entityPersister).reactiveMultiLoad( sids, ReactiveSessionInternalImpl.this, this ) );
+					((ReactiveEntityPersister) entityPersister).reactiveMultiLoad( sids, ReactiveSessionImpl.this, this ) );
 		}
 
 		public CompletionStage<List<T>> perform(Supplier<CompletionStage<List<T>>> executor) {
@@ -981,13 +983,13 @@ public class ReactiveSessionInternalImpl extends SessionImpl implements Reactive
 		@SuppressWarnings("unchecked")
 		public <K extends Serializable> CompletionStage<List<T>> multiLoad(List<K> ids) {
 			return perform( () -> (CompletionStage<List<T>>)
-					entityPersister.multiLoad( ids.toArray(new Serializable[0]), ReactiveSessionInternalImpl.this, this ) );
+					entityPersister.multiLoad( ids.toArray(new Serializable[0]), ReactiveSessionImpl.this, this ) );
 		}
 	}
 
 	@Override
 	public <T> T unwrap(Class<T> clazz) {
-		if ( ReactiveSessionInternal.class.isAssignableFrom( clazz ) ) {
+		if ( ReactiveSession.class.isAssignableFrom( clazz ) ) {
 			return clazz.cast(this);
 		}
 		if ( Stage.Session.class.isAssignableFrom( clazz ) ) {
