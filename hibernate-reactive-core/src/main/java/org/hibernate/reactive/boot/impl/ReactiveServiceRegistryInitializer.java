@@ -4,6 +4,7 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.reactive.jpa.impl.ReactivePersisterClassResolverInitiator;
 import org.hibernate.reactive.pool.impl.SqlClientPoolInitiator;
 import org.hibernate.reactive.service.initiator.DummyConnectionProviderInitiator;
+import org.hibernate.reactive.service.initiator.NoJtaPlatformInitiator;
 import org.hibernate.reactive.service.initiator.ReactiveJdbcEnvironmentInitiator;
 import org.hibernate.reactive.service.initiator.ReactiveQueryTranslatorFactoryInitiator;
 import org.hibernate.reactive.service.initiator.ReactiveTransactionCoordinatorBuilderInitiator;
@@ -20,6 +21,7 @@ public class ReactiveServiceRegistryInitializer implements ServiceContributor {
 	@Override
 	public void contribute(StandardServiceRegistryBuilder serviceRegistryBuilder) {
 		serviceRegistryBuilder.addInitiator( VertxInstanceInitiator.INSTANCE );
+		serviceRegistryBuilder.addInitiator( NoJtaPlatformInitiator.INSTANCE );
 		serviceRegistryBuilder.addInitiator( DummyConnectionProviderInitiator.INSTANCE );
 		serviceRegistryBuilder.addInitiator( ReactiveJdbcEnvironmentInitiator.INSTANCE );
 		serviceRegistryBuilder.addInitiator( ReactiveTransactionCoordinatorBuilderInitiator.INSTANCE );
