@@ -11,8 +11,19 @@ import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.id.*;
-import org.hibernate.id.enhanced.*;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.id.Assigned;
+import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
+import org.hibernate.id.IdentifierGenerator;
+import org.hibernate.id.IdentityGenerator;
+import org.hibernate.id.PersistentIdentifierGenerator;
+import org.hibernate.id.SelectGenerator;
+import org.hibernate.id.SequenceGenerator;
+import org.hibernate.id.enhanced.DatabaseStructure;
+import org.hibernate.id.enhanced.SequenceStructure;
+import org.hibernate.id.enhanced.SequenceStyleGenerator;
+import org.hibernate.id.enhanced.TableGenerator;
+import org.hibernate.id.enhanced.TableStructure;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.mapping.Column;
@@ -108,7 +119,9 @@ public class IdentifierGeneration {
 			return f -> CompletionStages.nullFuture();
 		}
 		else {
-			return f -> CompletionStages.completedFuture( identifierGenerator.generate(f, null) );
+			return f -> CompletionStages.completedFuture(
+					identifierGenerator.generate((SharedSessionContractImplementor) f, null)
+			);
 		}
 	}
 

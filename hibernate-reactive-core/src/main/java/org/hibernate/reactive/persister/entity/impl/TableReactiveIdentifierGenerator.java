@@ -12,7 +12,6 @@ import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.internal.util.StringHelper;
@@ -29,7 +28,12 @@ import java.util.Properties;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-import static org.hibernate.id.enhanced.TableGenerator.*;
+import static org.hibernate.id.enhanced.TableGenerator.CONFIG_PREFER_SEGMENT_PER_ENTITY;
+import static org.hibernate.id.enhanced.TableGenerator.DEF_SEGMENT_COLUMN;
+import static org.hibernate.id.enhanced.TableGenerator.DEF_SEGMENT_VALUE;
+import static org.hibernate.id.enhanced.TableGenerator.SEGMENT_COLUMN_PARAM;
+import static org.hibernate.id.enhanced.TableGenerator.SEGMENT_VALUE_PARAM;
+import static org.hibernate.id.enhanced.TableGenerator.TABLE;
 
 /**
  * Support for JPA's {@link javax.persistence.TableGenerator}. This
@@ -54,9 +58,9 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 
 
 	@Override
-	public CompletionStage<Long> generate(SharedSessionContractImplementor session) {
+	public CompletionStage<Long> generate(ReactiveSessionInternal session) {
 		Object[] param = segmentColumnName == null ? new Object[] {} : new Object[] {segmentValue};
-		ReactiveConnection connection = ((ReactiveSessionInternal) session).getReactiveConnection();
+		ReactiveConnection connection = session.getReactiveConnection();
 		return connection.selectLong( selectQuery, param )
 				.thenCompose( result -> {
 					if ( result == null ) {
