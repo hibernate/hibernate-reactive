@@ -7,6 +7,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.pretty.MessageHelper;
+import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.loader.entity.impl.ReactiveUniqueEntityLoader;
 import org.jboss.logging.Logger;
 

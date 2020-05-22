@@ -1,4 +1,4 @@
-package org.hibernate.reactive.persister.entity.impl;
+package org.hibernate.reactive.id.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.boot.model.naming.Identifier;
@@ -30,6 +30,7 @@ import org.hibernate.mapping.Column;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.SimpleValue;
 import org.hibernate.persister.spi.PersisterCreationContext;
+import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.Properties;
@@ -84,7 +85,9 @@ public class IdentifierGeneration {
 		return params;
 	}
 
-	static ReactiveIdentifierGenerator<?> asReactiveGenerator(PersistentClass persistentClass, PersisterCreationContext creationContext, IdentifierGenerator identifierGenerator) {
+	public static ReactiveIdentifierGenerator<?> asReactiveGenerator(PersistentClass persistentClass,
+																	 PersisterCreationContext creationContext,
+																	 IdentifierGenerator identifierGenerator) {
 		if (identifierGenerator instanceof SequenceStyleGenerator) {
 			DatabaseStructure structure = ((SequenceStyleGenerator) identifierGenerator).getDatabaseStructure();
 			if (structure instanceof TableStructure) {
@@ -111,15 +114,15 @@ public class IdentifierGeneration {
 //					.getIdentityColumnSupport().supportsInsertSelectIdentity() ) {
 //				throw new HibernateException("getGeneratedKeys() is disabled");
 //			}
-			return f -> CompletionStages.nullFuture();
+			return (f, entity) -> CompletionStages.nullFuture();
 		}
 		else if (identifierGenerator instanceof Assigned
 				|| identifierGenerator instanceof CompositeNestedGeneratedValueGenerator) {
 			//TODO!
-			return f -> CompletionStages.nullFuture();
+			return (f, entity) -> CompletionStages.nullFuture();
 		}
 		else {
-			return f -> CompletionStages.completedFuture(
+			return (f, entity) -> CompletionStages.completedFuture(
 					identifierGenerator.generate((SharedSessionContractImplementor) f, null)
 			);
 		}

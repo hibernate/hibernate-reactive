@@ -13,6 +13,7 @@ import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.UnionSubclassEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
+import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.loader.entity.impl.ReactiveBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.loader.entity.impl.ReactiveCascadeEntityLoader;
 import org.hibernate.reactive.loader.entity.impl.ReactiveUniqueEntityLoader;
@@ -22,6 +23,8 @@ import org.hibernate.reactive.sql.impl.Parameters;
 import org.hibernate.reactive.sql.impl.Update;
 
 import java.io.Serializable;
+
+import static org.hibernate.reactive.id.impl.IdentifierGeneration.asReactiveGenerator;
 
 /**
  * An {@link ReactiveEntityPersister} backed by {@link UnionSubclassEntityPersister}
@@ -43,7 +46,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 			PersisterCreationContext creationContext) throws HibernateException {
 		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext );
 
-		identifierGenerator = IdentifierGeneration.asReactiveGenerator( persistentClass, creationContext, getIdentifierGenerator() );
+		identifierGenerator = asReactiveGenerator( persistentClass, creationContext, getIdentifierGenerator() );
 	}
 
 	@Override
