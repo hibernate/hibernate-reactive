@@ -5,6 +5,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventType;
 import org.hibernate.integrator.spi.Integrator;
+import org.hibernate.internal.CoreLogging;
 import org.hibernate.reactive.event.impl.*;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 
@@ -29,6 +30,9 @@ public class ReactiveIntegrator implements Integrator {
 	}
 
 	private void attachEventContextManagingListenersIfRequired(SessionFactoryServiceRegistry serviceRegistry) {
+
+		CoreLogging.messageLogger(ReactiveIntegrator.class).info("HRX000001: Hibernate Reactive Preview");
+
 		EventListenerRegistry eventListenerRegistry = serviceRegistry.getService( EventListenerRegistry.class );
 		eventListenerRegistry.addDuplicationStrategy( ReplacementDuplicationStrategy.INSTANCE );
 
