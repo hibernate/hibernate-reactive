@@ -16,7 +16,8 @@ publishing {
     }
     publications {
         mavenJava(MavenPublication) {
-            artifactId = project.name
+            groupId = project.group
+            version = project.version
             from components.java
             artifact sourcesJar
             artifact javadocJar
@@ -24,19 +25,53 @@ publishing {
                 name = project.properties.title
                 description = project.description
                 url = 'https://github.com/hibernate/hibernate-reactive'
+                organization {
+                    name = 'Hibernate.org'
+                    url = 'http://hibernate.org'
+                }
                 licenses {
                     license {
-                        name = 'GNU Lesser General Public License, version 2.1'
-                        url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
+                        name = 'GNU Library General Public License v2.1 or later'
+                        url = 'http://www.opensource.org/licenses/LGPL-2.1'
+                        comments = 'See discussion at http://hibernate.org/community/license/ for more details.'
+                        distribution = 'repo'
                     }
+                }
+                issueManagement {
+                    system = 'github'
+                    url = 'https://github.com/hibernate/hibernate-reactive/issues'
                 }
                 scm {
                     connection = 'scm:git:ssh://git@github.com/hibernate/hibernate-reactive.git'
                     developerConnection = 'scm:git:ssh://git@github.com/hibernate/hibernate-reactive.git'
                     url = 'https://github.com/hibernate/hibernate-reactive.git'
                 }
+                developers {
+                    developer {
+                        id = 'hibernate-team'
+                        name = 'The Hibernate Development Team'
+                        organization = 'Hibernate.org'
+                        organizationUrl = 'http://hibernate.org'
+                    }
+                }
             }
         }
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+                // Basic JAR manifest attributes
+                'Specification-Title': project.name,
+                'Specification-Version': project.version,
+                'Specification-Vendor': 'Hibernate.org',
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version,
+                'Implementation-Vendor': 'Hibernate.org',
+                'Implementation-Vendor-Id': 'org.hibernate',
+                'Implementation-Url': 'http://hibernate.org/reactive',
+        )
     }
 }
 

@@ -1,13 +1,12 @@
 plugins {
+    id 'java-library'
     id 'maven-publish'
 }
 
 subprojects {
     apply plugin: 'java-library'
-
     group = 'org.hibernate.reactive'
     version = '1.0.0-SNAPSHOT'
-
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
     compileJava.options.encoding = 'UTF-8'
