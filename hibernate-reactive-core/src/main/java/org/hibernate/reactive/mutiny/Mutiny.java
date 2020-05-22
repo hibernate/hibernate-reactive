@@ -4,6 +4,7 @@ import io.smallrye.mutiny.Uni;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
+import org.hibernate.LazyInitializationException;
 import org.hibernate.LockMode;
 import org.hibernate.collection.internal.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
@@ -660,6 +661,9 @@ public interface Mutiny {
 		}
 		else {
 			return Uni.createFrom().item( association );
+		}
+		if (session==null) {
+			throw new LazyInitializationException("session closed");
 		}
 		return Uni.createFrom().completionStage(
 				( (ReactiveSession) session ).reactiveFetch( association, false )
