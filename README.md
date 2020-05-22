@@ -255,22 +255,57 @@ directory.
 
 ## Limitations
 
-At this time, Hibernate Reactive does _not_ support the following features:
+We're working hard to support the full feature set of Hibernate ORM. At
+present a few limitations remain.
 
-- `@ElementCollection` and `@ManyToMany`
-- `@OneToMany` without `mappedBy` 
-- JPA's `@NamedEntityGraph`
-- eager select fetching, for example `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`
-  (eager join fetching *is* supported)
-- optimizers for `SEQUENCE` and `TABLE` id generation
-- criteria queries
-- native SQL queries
+### Association mappings
 
-Instead, use the following supported features:
+At this time, Hibernate Reactive does not support the following mapping
+features:
 
-- `@OneToMany(mappedBy=...)` together with `@ManyToOne`
-- `@FetchProfile`
-- HQL queries
+- `@ElementCollection`s,
+- `@ManyToMany` associations, and
+- one-sided `@OneToMany` associations without `mappedBy`.
+
+Instead, use `@OneToMany(mappedBy=...)` together with `@ManyToOne` for all
+associations.
+
+### Eager association fetching
+
+Hibernate Reactive does support eager association fetching via subsequent 
+SQL select, for example, `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`
+or `@ManyToOne(fetch=EAGER) @Fetch(SUBSELECT)`. So you must choose between:
+
+- lazy fetching, for example, `@ManyToOne @Fetch(SELECT)` or
+  `@ManyToOne @Fetch(SUBSELECT)`, or
+- eager fetching via outer join, `@ManyToOne(fetch=EAGER)`.
+
+As usual, we recommend that all association mappings be declared lazy.
+
+### Queries
+
+Currently there is no support for:
+
+- criteria queries, or
+- native SQL queries.
+
+Use HQL, or native SQL executed directly against the Vert.x `SqlClient`.
+
+### Fetch profiles
+
+JPA `@NamedEntityGraph`s are not supported, but Hibernate `@FetchProfile`s
+_are_.
+
+### Identifier generation
+
+There is built-in support for sequence, table, and `UUID` id generation,
+but there is no block optimization for the `SEQUENCE` and `TABLE` id 
+generators.
+
+Hibernate Reactive does not yet offer a facility for integrating custom 
+identifier generators.
+
+### Caching
 
 Note that you should not use Hibernate Reactive with a second-level cache 
 implementation which performs blocking IO, for example passivation to the
