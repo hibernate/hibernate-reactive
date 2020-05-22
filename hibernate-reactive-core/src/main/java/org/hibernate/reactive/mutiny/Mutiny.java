@@ -5,6 +5,11 @@ import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
+import org.hibernate.collection.internal.AbstractPersistentCollection;
+import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.reactive.session.ReactiveSession;
 
 import java.util.List;
 import java.util.function.Function;
@@ -332,6 +337,7 @@ public interface Mutiny {
 		 *
 		 * @return the fetched association, via a {@code CompletionStage}
 		 *
+		 * @see Mutiny#fetch(Object)
 		 * @see org.hibernate.Hibernate#initialize(Object)
 		 */
 		<T> Uni<T> fetch(T association);
@@ -625,5 +631,38 @@ public interface Mutiny {
 		 * pool.
 		 */
 		void close();
+	}
+
+	/**
+	 * Asynchronously fetch an association that's configured for lazy loading.
+	 *
+	 * <pre>
+	 * {@code Mutiny.fetch(author.getBook()).thenAccept(book -> print(book.getTitle()));}
+	 * </pre>
+	 *
+	 * @param association a lazy-loaded association
+	 *
+	 * @return the fetched association, via a {@code CompletionStage}
+	 *
+	 * @see org.hibernate.Hibernate#initialize(Object)
+	 */
+	static <T> Uni<T> fetch(T association) {
+		if ( association == null ) {
+			return Uni.createFrom().nullItem();
+		}
+
+		SharedSessionContractImplementor session;
+		if ( association instanceof HibernateProxy) {
+			session = ( (HibernateProxy) association ).getHibernateLazyInitializer().getSession();
+		}
+		else if ( association instanceof PersistentCollection) {
+			session = ( (AbstractPersistentCollection) association ).getSession();
+		}
+		else {
+			return Uni.createFrom().item( association );
+		}
+		return Uni.createFrom().completionStage(
+				( (ReactiveSession) session ).reactiveFetch( association, false )
+		);
 	}
 }

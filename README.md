@@ -156,11 +156,11 @@ association is fist accessed within a session. In Hibernate Reactive,
 association fetching is an asynchronous process that produces a result
 via a `CompletionStage` (or Mutiny `Uni`).
 
-Therefore, lazy fetching is an explicit operation named `fetch()` of 
-the reactive session:
+Therefore, lazy fetching is an explicit operation named `fetch()`,
+a static method of `Stage` and `Mutiny`:
 
     session4.find(Author.class, author.id)
-            .thenCompose( author -> session1.fetch(author.books) )
+            .thenCompose( author -> Stage.fetch(author.books) )
             .thenAccept( books -> ... )
 
 Of course, this isn't necessary if you fetch the association eagerly.
