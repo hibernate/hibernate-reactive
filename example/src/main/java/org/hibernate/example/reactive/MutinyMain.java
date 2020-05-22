@@ -23,26 +23,30 @@ public class MutinyMain {
 		Book book2 = new Book("0-380-97346-4", "Cryptonomicon", "Neal Stephenson");
 
 		//obtain a reactive session
-		//persist the Books
 		sessionFactory.withSession(
 				//persist the Books
-				session5 -> session5.withTransaction(tx1 -> session5.persist(book1, book2) )
+				session -> session.withTransaction(tx -> session.persist(book1, book2) )
 		)
 				//wait for it to finish
 				.await().indefinitely();
 
-		//retrieve a Book and print its title
 		sessionFactory.withSession(
 				//retrieve a Book and print its title
-				session4 -> session4.find(Book.class, book1.id)
-						.onItem().invoke( book3 -> out.println(book3.title + " is a great book!") )
+				session -> session.find(Book.class, book1.id)
+						.onItem().invoke( book -> out.println(book.title + " is a great book!") )
 		)
 				.await().indefinitely();
 
-		//query the Book titles
+		sessionFactory.withSession(
+				//retrieve both Books at once
+				session -> session.find(Book.class, book1.id, book2.id)
+						.onItem().invoke( books -> books.forEach( book -> out.println(book.isbn) ) )
+		)
+				.await().indefinitely();
+
 		sessionFactory.withSession(
 				//query the Book titles
-				session3 -> session3.createQuery("select title, author from Book order by title desc", Object[].class)
+				session -> session.createQuery("select title, author from Book order by title desc", Object[].class)
 						.getResultList()
 						.onItem().invoke( rows -> rows.forEach(
 								row -> out.printf("%s (%s)\n", row[0], row[1])
@@ -50,10 +54,9 @@ public class MutinyMain {
 		)
 				.await().indefinitely();
 
-		//query the entire Book entities
 		sessionFactory.withSession(
 				//query the entire Book entities
-				session2 -> session2.createQuery("from Book order by title desc", Book.class)
+				session -> session.createQuery("from Book order by title desc", Book.class)
 						.getResultList()
 						.onItem().invoke( books -> books.forEach(
 								b -> out.printf("%s: %s (%s)\n", b.isbn, b.title, b.author)
@@ -61,17 +64,15 @@ public class MutinyMain {
 		)
 				.await().indefinitely();
 
-		//retrieve a Book and delete it
 		sessionFactory.withSession(
 				//retrieve a Book and delete it
-				session1 -> session1.withTransaction(
-						tx -> session1.find(Book.class, book2.id)
-								.onItem().produceUni( book -> session1.remove(book) )
+				session -> session.withTransaction(
+						tx -> session.find(Book.class, book2.id)
+								.onItem().produceUni( book -> session.remove(book) )
 				)
 		)
 				.await().indefinitely();
 
-		//delete all the Books
 		sessionFactory.withSession(
 				//delete all the Books
 				session -> session.createQuery("delete Book").executeUpdate()
