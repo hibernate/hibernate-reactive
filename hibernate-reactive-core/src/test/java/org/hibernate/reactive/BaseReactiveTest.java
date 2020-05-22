@@ -91,7 +91,7 @@ public abstract class BaseReactiveTest {
 		if ( session != null ) {
 			session.close();
 		}
-		return sessionFactory.unwrap( Stage.SessionFactory.class ).openReactiveSession()
+		return sessionFactory.unwrap( Stage.SessionFactory.class ).openSession()
 				.thenApply( s -> session = s );
 	}
 

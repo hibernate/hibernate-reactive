@@ -107,16 +107,16 @@ If you prefer to use the [Mutiny][]-based API, `unwrap()` the type
 
 ### Obtaining a reactive session
 
-To obtain a reactive `Session` from the `SessionFactory`, use `withReactiveSession()`:
+To obtain a reactive `Session` from the `SessionFactory`, use `withSession()`:
 
-    sessionFactory.withReactiveSession(
+    sessionFactory.withSession(
             session -> ... //do some work
     );
 
-Alternatively, you can use `openReactiveSession()`, but you must remember to
-`close()` the session when you're done.
+Alternatively, you can use `openSession()`, but you must remember to `close()` 
+the session when you're done.
 
-    sessionFactory.openReactiveSession()
+    sessionFactory.openSession()
             .thenCompose(
                 session -> ... //do some work
                         .thenAccept( $ -> session.close() ) 

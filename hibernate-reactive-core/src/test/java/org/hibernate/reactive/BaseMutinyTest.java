@@ -92,7 +92,7 @@ public abstract class BaseMutinyTest {
 		if ( session != null ) {
 			session.close();
 		}
-		return sessionFactory.unwrap( Mutiny.SessionFactory.class ).openReactiveSession()
+		return sessionFactory.unwrap( Mutiny.SessionFactory.class ).openSession()
 				.onItem().invoke( s -> session = s );
 	}
 

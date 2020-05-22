@@ -1,5 +1,7 @@
 package org.hibernate.example.reactive;
 
+import java.util.concurrent.CompletionStage;
+
 import static org.hibernate.reactive.stage.Stage.*;
 import static javax.persistence.Persistence.*;
 import static java.lang.System.out;
@@ -25,7 +27,7 @@ public class Main {
 
 		//obtain a reactive session
 		//persist the Books
-		sessionFactory.withReactiveSession(
+		sessionFactory.withSession(
 				//persist the Books
 				session5 -> session5.withTransaction(tx1 -> session5.persist(book1, book2) )
 		)
@@ -33,7 +35,7 @@ public class Main {
 				.toCompletableFuture().join();
 
 		//retrieve a Book and print its title
-		sessionFactory.withReactiveSession(
+		sessionFactory.withSession(
 				//retrieve a Book and print its title
 				session4 -> session4.find(Book.class, book1.id)
 						.thenAccept(book3 -> out.println(book3.title + " is a great book!") )
@@ -41,7 +43,7 @@ public class Main {
 				.toCompletableFuture().join();
 
 		//query the Book titles
-		sessionFactory.withReactiveSession(
+		sessionFactory.withSession(
 				//query the Book titles
 				session3 -> session3.createQuery("select title, author from Book order by title desc", Object[].class)
 						.getResultList()
@@ -52,7 +54,7 @@ public class Main {
 				.toCompletableFuture().join();
 
 		//query the entire Book entities
-		sessionFactory.withReactiveSession(
+		sessionFactory.withSession(
 				//query the entire Book entities
 				session2 -> session2.createQuery("from Book order by title desc", Book.class)
 						.getResultList()
@@ -63,7 +65,7 @@ public class Main {
 				.toCompletableFuture().join();
 
 		//retrieve a Book and delete it
-		sessionFactory.withReactiveSession(
+		sessionFactory.withSession(
 				//retrieve a Book and delete it
 				session1 -> session1.withTransaction(
 						tx -> session1.find(Book.class, book2.id)
@@ -73,7 +75,7 @@ public class Main {
 				.toCompletableFuture().join();
 
 		//delete all the Books
-		sessionFactory.withReactiveSession(
+		sessionFactory.withSession(
 				//delete all the Books
 				session -> session.createQuery("delete Book").executeUpdate()
 		)
