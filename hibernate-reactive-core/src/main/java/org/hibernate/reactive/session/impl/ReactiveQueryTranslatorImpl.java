@@ -1,4 +1,4 @@
-package org.hibernate.reactive.impl;
+package org.hibernate.reactive.session.impl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +21,7 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.reactive.loader.hql.impl.ReactiveQueryLoader;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.jboss.logging.Logger;
@@ -134,7 +135,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 		String[] sqlStatements = getSqlStatements();
 		for ( String sql : sqlStatements ) {
 			updateStage = updateStage
-					.thenCompose( v -> ((ReactiveSessionInternal) session).getReactiveConnection()
+					.thenCompose( v -> ((ReactiveSession) session).getReactiveConnection()
 							.update( sql, queryParameters.getPositionalParameterValues() )
 					.thenAccept( updateCount -> atomicCounter.addAndGet( updateCount ) )
 			);

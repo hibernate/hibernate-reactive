@@ -3,7 +3,7 @@ package org.hibernate.reactive.mutiny.impl;
 import io.smallrye.mutiny.Uni;
 import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionFactoryImpl;
-import org.hibernate.reactive.impl.ReactiveSessionInternalImpl;
+import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
@@ -27,7 +27,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return Uni.createFrom().completionStage( pool.getConnection() )
-				.map( reactiveConnection -> new ReactiveSessionInternalImpl( delegate,
+				.map( reactiveConnection -> new ReactiveSessionImpl( delegate,
 						new SessionFactoryImpl.SessionBuilderImpl<>(delegate), reactiveConnection ) )
 				.map( MutinySessionImpl::new );
 	}

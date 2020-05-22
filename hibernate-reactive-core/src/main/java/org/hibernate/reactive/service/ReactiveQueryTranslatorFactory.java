@@ -7,7 +7,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.hql.spi.FilterTranslator;
 import org.hibernate.hql.spi.QueryTranslator;
 import org.hibernate.hql.spi.QueryTranslatorFactory;
-import org.hibernate.reactive.impl.ReactiveQueryTranslatorImpl;
+import org.hibernate.reactive.session.impl.ReactiveQueryTranslatorImpl;
 
 public class ReactiveQueryTranslatorFactory implements QueryTranslatorFactory {
 

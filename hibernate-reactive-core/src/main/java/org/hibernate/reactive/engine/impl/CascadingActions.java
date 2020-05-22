@@ -12,7 +12,7 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.Type;
@@ -50,8 +50,8 @@ public class CascadingActions {
 				IdentitySet context,
 				boolean isCascadeDeleteEnabled) {
 			LOG.tracev( "Cascading to delete: {0}", entityName );
-			return session.unwrap(ReactiveSessionInternal.class).reactiveFetch( child, true )
-					.thenCompose( c -> session.unwrap(ReactiveSessionInternal.class)
+			return session.unwrap(ReactiveSession.class).reactiveFetch( child, true )
+					.thenCompose( c -> session.unwrap(ReactiveSession.class)
 							.reactiveRemove( c, isCascadeDeleteEnabled, context ) );
 		}
 	};
@@ -70,7 +70,7 @@ public class CascadingActions {
 				boolean isCascadeDeleteEnabled)
 				throws HibernateException {
 			LOG.tracev( "Cascading to persist: {0}", entityName );
-			return session.unwrap(ReactiveSessionInternal.class).reactivePersist( child, context );
+			return session.unwrap(ReactiveSession.class).reactivePersist( child, context );
 		}
 	};
 
@@ -90,7 +90,7 @@ public class CascadingActions {
 				boolean isCascadeDeleteEnabled)
 				throws HibernateException {
 			LOG.tracev( "Cascading to persist on flush: {0}", entityName );
-			return session.unwrap(ReactiveSessionInternal.class).reactivePersistOnFlush( child, context );
+			return session.unwrap(ReactiveSession.class).reactivePersistOnFlush( child, context );
 		}
 	};
 
@@ -108,7 +108,7 @@ public class CascadingActions {
 						boolean isCascadeDeleteEnabled)
 						throws HibernateException {
 					LOG.tracev("Cascading to refresh: {0}", entityName);
-					return session.unwrap(ReactiveSessionInternal.class).reactiveMerge( child, context );
+					return session.unwrap(ReactiveSession.class).reactiveMerge( child, context );
 				}
 			};
 
@@ -127,7 +127,7 @@ public class CascadingActions {
 				boolean isCascadeDeleteEnabled)
 				throws HibernateException {
 			LOG.tracev("Cascading to refresh: {0}", entityName);
-			return session.unwrap(ReactiveSessionInternal.class).reactiveRefresh( child, context );
+			return session.unwrap(ReactiveSession.class).reactiveRefresh( child, context );
 		}
 	};
 

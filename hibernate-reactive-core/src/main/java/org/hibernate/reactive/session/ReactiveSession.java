@@ -1,4 +1,4 @@
-package org.hibernate.reactive.impl;
+package org.hibernate.reactive.session;
 
 import java.io.Serializable;
 import java.util.List;
@@ -12,20 +12,25 @@ import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.stage.Stage;
 
 /**
  * A Hibernate {@link org.hibernate.Session} backing the user-visible
- * {@link Stage.Session reactive session}. Note that even
- * though this interface extends {@code Session},
- * allowing it to be passed around through code in
- * Hibernate core, its non-reactive operations are
- * expected to throw {@link UnsupportedOperationException}.
+ * {@link org.hibernate.reactive.stage.Stage.Session reactive session}.
+ * This is primarily an internal contract between the various subsystems
+ * of Hibernate Reactive, though it also occurs in the schema of some
+ * extension points such as
+ * {@link org.hibernate.reactive.id.ReactiveIdentifierGenerator}.
  *
- *  @see Stage.Session the actual user visible API
+ * Note that even though this interface extends {@code Session},
+ * allowing it to be passed around through code in Hibernate core, its
+ * non-reactive operations are expected to throw
+ * {@link UnsupportedOperationException}.
+ *
+ *  @see org.hibernate.reactive.stage.Stage.Session
+ *  @see org.hibernate.reactive.mutiny.Mutiny.Session
  */
 @Incubating
-public interface ReactiveSessionInternal extends org.hibernate.Session {
+public interface ReactiveSession extends org.hibernate.Session {
 
 	ReactiveActionQueue getReactiveActionQueue();
 
@@ -53,9 +58,9 @@ public interface ReactiveSessionInternal extends org.hibernate.Session {
 
 	CompletionStage<?> reactiveRefresh(Object child, IdentitySet refreshedAlready);
 
-	<T> ReactiveQueryInternal<T> createReactiveQuery(String queryString);
+	<T> ReactiveQuery<T> createReactiveQuery(String queryString);
 
-	<T> ReactiveQueryInternal<T> createReactiveQuery(String queryString, Class<T> resultType);
+	<T> ReactiveQuery<T> createReactiveQuery(String queryString, Class<T> resultType);
 
 	<T> CompletionStage<T> reactiveGet(
 			Class<T> entityClass,

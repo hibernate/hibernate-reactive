@@ -27,7 +27,7 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -66,7 +66,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 	}
 
 	private ReactiveActionQueue actionQueue(EventSource session) {
-		return session.unwrap( ReactiveSessionInternal.class ).getReactiveActionQueue();
+		return session.unwrap( ReactiveSession.class ).getReactiveActionQueue();
 	}
 
 	/**

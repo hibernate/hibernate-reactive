@@ -17,7 +17,7 @@ import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityIdentityInsertAction;
@@ -142,7 +142,7 @@ abstract class AbstractReactiveSaveEventListener<C>
 		boolean autoincrement = persister.isIdentifierAssignedByInsert();
 		return ((ReactiveEntityPersister) persister)
 				.getReactiveIdentifierGenerator()
-				.generate( (ReactiveSessionInternal) source, entity )
+				.generate( (ReactiveSession) source, entity )
 				.thenCompose( id ->
 						reactivePerformSave(
 								entity,
@@ -343,7 +343,7 @@ abstract class AbstractReactiveSaveEventListener<C>
 			ReactiveEntityIdentityInsertAction insert = new ReactiveEntityIdentityInsertAction(
 					values, entity, persister, false, source, shouldDelayIdentityInserts
 			);
-			return source.unwrap(ReactiveSessionInternal.class)
+			return source.unwrap(ReactiveSession.class)
 					.getReactiveActionQueue()
 					.addAction( insert )
 					.thenApply( v -> insert );
@@ -353,7 +353,7 @@ abstract class AbstractReactiveSaveEventListener<C>
 			ReactiveEntityRegularInsertAction insert = new ReactiveEntityRegularInsertAction(
 					id, values, entity, version, persister, false, source
 			);
-			return source.unwrap(ReactiveSessionInternal.class)
+			return source.unwrap(ReactiveSession.class)
 					.getReactiveActionQueue()
 					.addAction( insert )
 					.thenApply( v -> insert );

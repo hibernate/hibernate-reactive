@@ -20,8 +20,7 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.loader.OuterJoinLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
-import org.hibernate.transform.ResultTransformer;
+import org.hibernate.reactive.session.ReactiveSession;
 
 import static org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor.toParameterArray;
 
@@ -278,7 +277,7 @@ public class ReactiveOuterJoinLoader extends OuterJoinLoader {
 		// Adding locks and comments.
 		sql = preprocessSQL( sql, queryParameters, getFactory(), afterLoadActions );
 
-		return session.unwrap(ReactiveSessionInternal.class)
+		return session.unwrap(ReactiveSession.class)
 				.getReactiveConnection()
 				.selectJdbc( sql, toParameterArray(queryParameters, session) )
 				.thenApply( transformer );

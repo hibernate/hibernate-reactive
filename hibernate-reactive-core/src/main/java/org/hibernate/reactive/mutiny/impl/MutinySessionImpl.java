@@ -5,7 +5,7 @@ import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
@@ -23,9 +23,9 @@ import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
  */
 public class MutinySessionImpl implements Mutiny.Session {
 
-	private final ReactiveSessionInternal delegate;
+	private final ReactiveSession delegate;
 
-	public MutinySessionImpl(ReactiveSessionInternal session) {
+	public MutinySessionImpl(ReactiveSession session) {
 		this.delegate = session;
 	}
 

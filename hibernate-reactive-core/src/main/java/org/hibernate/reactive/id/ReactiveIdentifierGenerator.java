@@ -3,7 +3,7 @@ package org.hibernate.reactive.id;
 import org.hibernate.Incubating;
 import org.hibernate.reactive.id.impl.SequenceReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.impl.TableReactiveIdentifierGenerator;
-import org.hibernate.reactive.impl.ReactiveSessionInternal;
+import org.hibernate.reactive.session.ReactiveSession;
 
 import java.util.concurrent.CompletionStage;
 
@@ -23,5 +23,5 @@ public interface ReactiveIdentifierGenerator<Id> {
 	 *
 	 * @param session the reactive session
 	 */
-	CompletionStage<Id> generate(ReactiveSessionInternal session, Object entity);
+	CompletionStage<Id> generate(ReactiveSession session, Object entity);
 }

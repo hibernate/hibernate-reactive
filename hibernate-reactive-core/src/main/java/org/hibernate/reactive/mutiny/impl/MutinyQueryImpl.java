@@ -3,7 +3,7 @@ package org.hibernate.reactive.mutiny.impl;
 import io.smallrye.mutiny.Uni;
 import org.hibernate.CacheMode;
 import org.hibernate.LockMode;
-import org.hibernate.reactive.impl.ReactiveQueryInternal;
+import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import java.util.List;
@@ -13,9 +13,9 @@ import java.util.List;
  */
 public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 
-	private final ReactiveQueryInternal<R> delegate;
+	private final ReactiveQuery<R> delegate;
 
-	public MutinyQueryImpl(ReactiveQueryInternal<R> delegate) {
+	public MutinyQueryImpl(ReactiveQuery<R> delegate) {
 		this.delegate = delegate;
 	}
 
