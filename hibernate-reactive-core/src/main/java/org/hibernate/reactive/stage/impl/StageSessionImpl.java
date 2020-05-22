@@ -250,7 +250,7 @@ public class StageSessionImpl implements Stage.Session {
 			return begin()
 					.thenCompose( v -> work.apply( this ) )
 					// only flush() if the work completed with no exception
-					.thenCompose( t -> delegate.reactiveAutoflush().thenApply( v -> t ) )
+					.thenCompose( result -> flush().thenApply( v -> result ) )
 					// have to capture the error here and pass it along,
 					// since we can't just return a CompletionStage that
 					// rolls back the transaction from the handle() function
@@ -258,13 +258,17 @@ public class StageSessionImpl implements Stage.Session {
 					// finally, commit or rollback the transaction, and
 					// then rethrow the caught error if necessary
 					.thenCompose(
-							t -> end()
+							result -> end()
 									// make sure that if rollback() throws,
 									// the original error doesn't get swallowed
 									.handle( this::processError )
 									// finally rethrow the original error, if any
-									.thenApply( v -> returnOrRethrow( error, t ) )
+									.thenApply( v -> returnOrRethrow( error, result ) )
 					);
+		}
+
+		CompletionStage<Void> flush() {
+			return delegate.reactiveAutoflush();
 		}
 
 		CompletionStage<Void> begin() {
