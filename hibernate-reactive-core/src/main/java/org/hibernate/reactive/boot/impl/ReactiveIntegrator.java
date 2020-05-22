@@ -1,4 +1,4 @@
-package org.hibernate.reactive.service;
+package org.hibernate.reactive.boot.impl;
 
 import org.hibernate.boot.Metadata;
 import org.hibernate.engine.spi.SessionFactoryImplementor;

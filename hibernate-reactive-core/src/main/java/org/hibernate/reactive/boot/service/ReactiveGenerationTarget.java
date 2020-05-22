@@ -1,4 +1,4 @@
-package org.hibernate.reactive.service;
+package org.hibernate.reactive.boot.service;
 
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;

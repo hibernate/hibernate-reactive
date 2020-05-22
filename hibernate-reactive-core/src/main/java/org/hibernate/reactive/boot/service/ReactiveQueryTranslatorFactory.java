@@ -1,4 +1,4 @@
-package org.hibernate.reactive.service;
+package org.hibernate.reactive.boot.service;
 
 import java.util.Map;
 
