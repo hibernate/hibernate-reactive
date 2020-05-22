@@ -1,5 +1,6 @@
 package org.hibernate.reactive.service;
 
+import org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.exception.JDBCConnectionException;
 import org.hibernate.service.spi.Configurable;
@@ -50,16 +51,24 @@ public class ReactiveDummyConnectionProvider implements ConnectionProvider, Conf
 
 	@Override
 	public void configure(Map configurationValues) {
-		if (delegate instanceof Configurable) {
+		if (delegate instanceof DriverManagerConnectionProviderImpl) {
+			noJDBC = true;
+			useReactiveConnectionForSchemaExport();
+		}
+		else if (delegate instanceof Configurable) {
 			try {
 				((Configurable) delegate).configure(configurationValues);
 			}
 			catch (JDBCConnectionException e) {
 				noJDBC = true;
-				registry.getService( SchemaManagementTool.class )
-						.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) );
+				useReactiveConnectionForSchemaExport();
 			}
 		}
+	}
+
+	private void useReactiveConnectionForSchemaExport() {
+		registry.getService( SchemaManagementTool.class )
+				.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) );
 	}
 
 	@Override
