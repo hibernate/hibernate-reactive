@@ -1,30 +1,30 @@
 package org.hibernate.reactive.pool.impl;
 
-import java.net.URI;
-import java.util.Map;
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
-import java.util.concurrent.CompletionStage;
-
+import io.vertx.core.Vertx;
+import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.SqlConnectOptions;
+import io.vertx.sqlclient.spi.Driver;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.cfg.ReactiveSettings;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.reactive.util.impl.JdbcUrlParser;
+import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.ServiceRegistryAwareService;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.service.spi.Startable;
 import org.hibernate.service.spi.Stoppable;
 
-import io.vertx.core.Vertx;
-import io.vertx.sqlclient.Pool;
-import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.SqlConnectOptions;
-import io.vertx.sqlclient.spi.Driver;
+import java.net.URI;
+import java.util.Map;
+import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
+import java.util.concurrent.CompletionStage;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
@@ -82,6 +82,10 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		final int poolSize = ConfigurationHelper.getInt(AvailableSettings.POOL_SIZE, configurationValues, DEFAULT_POOL_SIZE);
 
 		final String url = ConfigurationHelper.getString(AvailableSettings.URL, configurationValues);
+
+		CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000011: SQL Client URL [%s]", url );
+		CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000012: Connection pool size: %d", poolSize );
+
 		final URI uri = JdbcUrlParser.parse( url );
 		String database = uri.getPath().substring( 1 );
 		if (uri.getScheme().equals("db2") && database.indexOf( ':' ) > 0) {
@@ -137,6 +141,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
         String scheme = uri.getScheme(); // "postgresql", "mysql", "db2", etc
         for (Driver d : ServiceLoader.load( Driver.class )) {
             String driverName = d.getClass().getCanonicalName();
+			CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000013: Detected driver [%s]", driverName );
             if ("io.vertx.db2client.spi.DB2Driver".equals( driverName ) && "db2".equalsIgnoreCase( scheme )) {
                 return d.createPool( vertx, connectOptions, poolOptions );
             }
