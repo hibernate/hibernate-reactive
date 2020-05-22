@@ -1,9 +1,12 @@
 package org.hibernate.reactive.boot.service;
 
+import org.hibernate.internal.CoreLogging;
+import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.tool.schema.internal.exec.GenerationTarget;
+import org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase;
 
 import java.util.concurrent.CompletionStage;
 
@@ -16,6 +19,8 @@ import java.util.concurrent.CompletionStage;
 public class ReactiveGenerationTarget implements GenerationTarget {
 	private ServiceRegistry registry;
 	private CompletionStage<ReactiveConnection> commands;
+
+	CoreMessageLogger log = CoreLogging.messageLogger( GenerationTargetToDatabase.class );
 
 	public ReactiveGenerationTarget(ServiceRegistry registry) {
 		this.registry = registry;
@@ -32,7 +37,7 @@ public class ReactiveGenerationTarget implements GenerationTarget {
 				connection -> connection.execute( command )
 						.handle( (r, e) -> {
 							if ( e != null ) {
-								System.out.println( e.getMessage() );
+								log.warnf("HRX000021: DDL command failed [%s]", e.getMessage() );
 							}
 							return null;
 						} )
