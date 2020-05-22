@@ -1,7 +1,7 @@
 package org.hibernate.reactive.pool;
 
+import org.hibernate.Incubating;
 import org.hibernate.service.Service;
-import org.hibernate.service.spi.Stoppable;
 
 import java.util.concurrent.CompletionStage;
 
@@ -22,6 +22,7 @@ import java.util.concurrent.CompletionStage;
  *     .build();
  * </pre>
  */
+@Incubating
 public interface ReactiveConnectionPool extends Service {
 
 	/**

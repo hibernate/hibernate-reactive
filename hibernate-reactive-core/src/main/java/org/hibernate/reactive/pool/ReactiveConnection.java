@@ -1,5 +1,7 @@
 package org.hibernate.reactive.pool;
 
+import org.hibernate.Incubating;
+
 import java.sql.ResultSet;
 import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
@@ -11,6 +13,7 @@ import java.util.concurrent.CompletionStage;
  *
  * @see ReactiveConnectionPool
  */
+@Incubating
 public interface ReactiveConnection {
 
 	CompletionStage<Void> execute(String sql);

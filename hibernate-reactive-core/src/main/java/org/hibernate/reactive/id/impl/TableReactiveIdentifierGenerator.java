@@ -1,4 +1,4 @@
-package org.hibernate.reactive.persister.entity.impl;
+package org.hibernate.reactive.id.impl;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -19,6 +19,7 @@ import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Table;
 import org.hibernate.persister.spi.PersisterCreationContext;
+import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.impl.ReactiveSessionInternal;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.sql.impl.Parameters;
@@ -58,7 +59,7 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 
 
 	@Override
-	public CompletionStage<Long> generate(ReactiveSessionInternal session) {
+	public CompletionStage<Long> generate(ReactiveSessionInternal session, Object entity) {
 		Object[] param = segmentColumnName == null ? new Object[] {} : new Object[] {segmentValue};
 		ReactiveConnection connection = session.getReactiveConnection();
 		return connection.selectLong( selectQuery, param )

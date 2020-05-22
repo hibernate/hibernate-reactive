@@ -142,7 +142,7 @@ abstract class AbstractReactiveSaveEventListener<C>
 		boolean autoincrement = persister.isIdentifierAssignedByInsert();
 		return ((ReactiveEntityPersister) persister)
 				.getReactiveIdentifierGenerator()
-				.generate( (ReactiveSessionInternal) source )
+				.generate( (ReactiveSessionInternal) source, entity )
 				.thenCompose( id ->
 						reactivePerformSave(
 								entity,

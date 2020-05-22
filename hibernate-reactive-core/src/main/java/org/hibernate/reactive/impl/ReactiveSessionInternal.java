@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.event.internal.MergeContext;
@@ -23,6 +24,7 @@ import org.hibernate.reactive.stage.Stage;
  *
  *  @see Stage.Session the actual user visible API
  */
+@Incubating
 public interface ReactiveSessionInternal extends org.hibernate.Session {
 
 	ReactiveActionQueue getReactiveActionQueue();
