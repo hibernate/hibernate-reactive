@@ -1,10 +1,11 @@
 package org.hibernate.reactive.session;
 
+import org.hibernate.CacheMode;
+import org.hibernate.Incubating;
+import org.hibernate.LockMode;
+
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-
-import org.hibernate.Incubating;
-import org.hibernate.query.Query;
 
 /**
  * An internal contract between the reactive session implementation
@@ -14,7 +15,7 @@ import org.hibernate.query.Query;
  * @see ReactiveSession
  */
 @Incubating
-public interface ReactiveQuery<R> extends Query<R> {
+public interface ReactiveQuery<R> {
 
 	CompletionStage<R> getReactiveSingleResult();
 
@@ -23,4 +24,20 @@ public interface ReactiveQuery<R> extends Query<R> {
 	CompletionStage<Integer> executeReactiveUpdate();
 
 	CompletionStage<List<R>> reactiveList();
+
+	ReactiveQuery<R> setParameter(int position, Object value);
+
+	ReactiveQuery<R> setMaxResults(int maxResults);
+
+	ReactiveQuery<R> setFirstResult(int firstResult);
+
+	ReactiveQuery<R> setReadOnly(boolean readOnly);
+
+	ReactiveQuery<R> setComment(String comment);
+
+	ReactiveQuery<R> setLockMode(String alias, LockMode lockMode);
+
+	ReactiveQuery<R> setCacheMode(CacheMode cacheMode);
+
+	CacheMode getCacheMode();
 }

@@ -1,15 +1,5 @@
 package org.hibernate.reactive.session.impl;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import javax.persistence.EntityNotFoundException;
-
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
@@ -22,9 +12,9 @@ import org.hibernate.ObjectDeletedException;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.query.spi.QueryPlanCache;
-import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.internal.MergeContext;
@@ -73,6 +63,16 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;
+
+import javax.persistence.EntityNotFoundException;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * An {@link ReactiveSession} implemented by extension of
@@ -136,14 +136,15 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <R> ReactiveQuery<R> createReactiveQuery(String queryString) {
+	public <R> ReactiveQueryImpl<R> createReactiveQuery(String queryString) {
 		checkOpen();
 		pulseTransactionCoordinator();
 		delayedAfterCompletion();
 
 		try {
-			final ReactiveQuery<R> query = new ReactiveQueryImpl<>( this, getQueryPlan( queryString, false )
-					.getParameterMetadata(), queryString );
+			final ReactiveQueryImpl<R> query =
+					new ReactiveQueryImpl<>( this, getQueryPlan( queryString, false )
+						.getParameterMetadata(), queryString );
 			applyQuerySettingsAndHints( query );
 			query.setComment( queryString );
 			return query;
@@ -162,7 +163,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 		try {
 			// do the translation
-			final ReactiveQuery<R> query = createReactiveQuery( queryString );
+			final ReactiveQueryImpl<R> query = createReactiveQuery( queryString );
 			resultClassChecking( resultType, query.unwrap( Query.class ) );
 			return query;
 		}

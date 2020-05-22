@@ -1,11 +1,6 @@
 package org.hibernate.reactive.session.impl;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import javax.persistence.NoResultException;
-import javax.persistence.TransactionRequiredException;
-
+import org.hibernate.CacheMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.TypeMismatchException;
@@ -19,6 +14,12 @@ import org.hibernate.query.internal.QueryImpl;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
+
+import javax.persistence.NoResultException;
+import javax.persistence.TransactionRequiredException;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<R> {
 
@@ -124,9 +125,39 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		return queryParameters;
 	}
 
-	@Deprecated
-	protected void applyEntityGraphQueryHint(EntityGraphQueryHint hint) {
-		super.applyEntityGraphQueryHint( hint );
-		this.entityGraphQueryHint = hint;
+	public ReactiveQueryImpl<R> setParameter(int position, Object value) {
+		super.setParameter(position, value);
+		return this;
 	}
+
+	public ReactiveQueryImpl<R> setMaxResults(int maxResults) {
+		super.setMaxResults(maxResults);
+		return this;
+	}
+
+	public ReactiveQueryImpl<R> setFirstResult(int firstResult) {
+		super.setFirstResult(firstResult);
+		return this;
+	}
+
+	public ReactiveQueryImpl<R> setReadOnly(boolean readOnly) {
+		super.setReadOnly(readOnly);
+		return this;
+	}
+
+	public ReactiveQueryImpl<R> setComment(String comment) {
+		super.setComment(comment);
+		return this;
+	}
+
+	public ReactiveQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
+		super.setLockMode(alias, lockMode);
+		return this;
+	}
+
+	public ReactiveQueryImpl<R> setCacheMode(CacheMode cacheMode) {
+		super.setCacheMode(cacheMode);
+		return this;
+	}
+
 }

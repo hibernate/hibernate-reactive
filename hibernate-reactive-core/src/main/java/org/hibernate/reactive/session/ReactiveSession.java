@@ -1,36 +1,35 @@
 package org.hibernate.reactive.session;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
-
+import org.hibernate.CacheMode;
+import org.hibernate.Filter;
+import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
+import org.hibernate.UnknownProfileException;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
 import org.hibernate.reactive.pool.ReactiveConnection;
 
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
 /**
- * A Hibernate {@link org.hibernate.Session} backing the user-visible
+ * A contract with the Hibernate session backing the user-visible
  * {@link org.hibernate.reactive.stage.Stage.Session reactive session}.
  * This is primarily an internal contract between the various subsystems
  * of Hibernate Reactive, though it also occurs in the schema of some
  * extension points such as
  * {@link org.hibernate.reactive.id.ReactiveIdentifierGenerator}.
  *
- * Note that even though this interface extends {@code Session},
- * allowing it to be passed around through code in Hibernate core, its
- * non-reactive operations are expected to throw
- * {@link UnsupportedOperationException}.
- *
  *  @see org.hibernate.reactive.stage.Stage.Session
  *  @see org.hibernate.reactive.mutiny.Mutiny.Session
  */
 @Incubating
-public interface ReactiveSession extends org.hibernate.Session {
+public interface ReactiveSession  {
 
 	ReactiveActionQueue getReactiveActionQueue();
 
@@ -81,4 +80,43 @@ public interface ReactiveSession extends org.hibernate.Session {
 	CompletionStage<Integer> executeReactiveUpdate(String expandedQuery, QueryParameters queryParameters);
 
 	ReactiveConnection getReactiveConnection();
+
+	void setHibernateFlushMode(FlushMode flushMode);
+	FlushMode getHibernateFlushMode();
+
+	void setCacheMode(CacheMode cacheMode);
+	CacheMode getCacheMode();
+
+	<T> T getReference(Class<T> entityClass, Object id);
+
+	void detach(Object entity);
+
+	boolean isDefaultReadOnly();
+	void setDefaultReadOnly(boolean readOnly);
+
+	void setReadOnly(Object entityOrProxy, boolean readOnly);
+	boolean isReadOnly(Object entityOrProxy);
+
+	String getEntityName(Object object);
+	Serializable getIdentifier(Object object);
+	boolean contains(String entityName, Object object);
+
+	LockMode getCurrentLockMode(Object object);
+
+	Filter enableFilter(String filterName);
+	void disableFilter(String filterName);
+	Filter getEnabledFilter(String filterName);
+
+//	SessionStatistics getStatistics();
+
+	boolean isFetchProfileEnabled(String name) throws UnknownProfileException;
+	void enableFetchProfile(String name) throws UnknownProfileException;
+	void disableFetchProfile(String name) throws UnknownProfileException;
+
+	void clear();
+
+	boolean isDirty();
+	boolean isOpen();
+	void close();
+
 }
