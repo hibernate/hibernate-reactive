@@ -1,4 +1,4 @@
-package org.hibernate.reactive.service.initiator;
+package org.hibernate.reactive.boot.service;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform;

@@ -1,11 +1,10 @@
-package org.hibernate.reactive.service.initiator;
-
-import java.util.Map;
+package org.hibernate.reactive.boot.service;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.hql.spi.QueryTranslatorFactory;
-import org.hibernate.reactive.service.ReactiveQueryTranslatorFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
+
+import java.util.Map;
 
 public class ReactiveQueryTranslatorFactoryInitiator implements StandardServiceInitiator<QueryTranslatorFactory> {
 	public static final ReactiveQueryTranslatorFactoryInitiator INSTANCE = new ReactiveQueryTranslatorFactoryInitiator();

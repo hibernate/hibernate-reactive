@@ -1,4 +1,4 @@
-package org.hibernate.reactive.service.initiator;
+package org.hibernate.reactive.boot.service;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.cfg.AvailableSettings;
@@ -10,10 +10,10 @@ import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.engine.jdbc.connections.spi.JdbcConnectionAccess;
 import org.hibernate.engine.jdbc.dialect.spi.DatabaseMetaDataDialectResolutionInfoAdapter;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
+import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentImpl;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.internal.util.config.ConfigurationHelper;
-import org.hibernate.reactive.service.ReactiveJdbcEnvironmentImpl;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 import java.sql.Connection;
@@ -25,8 +25,8 @@ import java.util.Map;
  * provides an implementation of {@link JdbcEnvironment} that infers
  * the Hibernate {@link org.hibernate.dialect.Dialect} from the JDBC URL.
  */
-public class ReactiveJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
-	public static final ReactiveJdbcEnvironmentInitiator INSTANCE = new ReactiveJdbcEnvironmentInitiator();
+public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
+	public static final NoJdbcEnvironmentInitiator INSTANCE = new NoJdbcEnvironmentInitiator();
 
 	@Override
 	public Class<JdbcEnvironment> getServiceInitiated() {
@@ -85,7 +85,7 @@ public class ReactiveJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 								}
 							}
 					);
-					return new ReactiveJdbcEnvironmentImpl( registry, dialect, connection.getMetaData() );
+					return new JdbcEnvironmentImpl( registry, dialect, connection.getMetaData() );
 				}
 				catch (SQLException e) {}
 				finally {
@@ -99,7 +99,7 @@ public class ReactiveJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 		}
 
 		// if we get here, either we were asked to not use JDBC metadata or accessing the JDBC metadata failed.
-		return new ReactiveJdbcEnvironmentImpl( registry, dialectFactory, configurationValues );
+		return new JdbcEnvironmentImpl( registry, dialectFactory.buildDialect(configurationValues, null ) );
 	}
 
 }
