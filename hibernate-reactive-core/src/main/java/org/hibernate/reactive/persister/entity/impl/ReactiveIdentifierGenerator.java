@@ -1,6 +1,6 @@
 package org.hibernate.reactive.persister.entity.impl;
 
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.reactive.impl.ReactiveSessionInternal;
 
 import java.util.concurrent.CompletionStage;
 
@@ -17,5 +17,5 @@ public interface ReactiveIdentifierGenerator<Id> {
 	/**
 	 * Returns a generated identifier, via a {@link CompletionStage}.
 	 */
-	CompletionStage<Id> generate(SharedSessionContractImplementor session);
+	CompletionStage<Id> generate(ReactiveSessionInternal session);
 }

@@ -7,7 +7,6 @@ import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.impl.ReactiveSessionInternal;
@@ -59,8 +58,8 @@ public class SequenceReactiveIdentifierGenerator implements ReactiveIdentifierGe
 	}
 
 	@Override
-	public CompletionStage<Long> generate(SharedSessionContractImplementor session) {
+	public CompletionStage<Long> generate(ReactiveSessionInternal session) {
 		return sql==null ? CompletionStages.nullFuture()
-				: ((ReactiveSessionInternal) session).getReactiveConnection().selectLong( sql, new Object[0] );
+				: session.getReactiveConnection().selectLong( sql, new Object[0] );
 	}
 }
