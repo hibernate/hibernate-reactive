@@ -72,30 +72,51 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	}
 
 	protected Pool configurePool(Map configurationValues, Vertx vertx) {
-		// FIXME: Check which values can be null
-		String username = ConfigurationHelper.getString(AvailableSettings.USER, configurationValues);
-		String password = ConfigurationHelper.getString(AvailableSettings.PASS, configurationValues);
+		URI uri = jdbcUrl(configurationValues);
+		SqlConnectOptions connectOptions = sqlConnectOptions( uri );
+		PoolOptions poolOptions = poolOptions( configurationValues );
 
-		final int poolSize = ConfigurationHelper.getInt(AvailableSettings.POOL_SIZE, configurationValues, DEFAULT_POOL_SIZE);
+		try {
+			// First try to load the Pool using the standard ServiceLoader pattern
+			// This only works if exactly 1 Driver is on the classpath.
+			return Pool.pool( vertx, connectOptions, poolOptions );
+		}
+		catch (ServiceConfigurationError e) {
+			// Backup option if multiple drivers are on the classpath.
+			// We will be able to remove this once Vertx 3.9.2 is available
+			return findDriver( uri, e ).createPool( vertx, connectOptions, poolOptions );
+		}
+	}
 
-		final String url = ConfigurationHelper.getString(AvailableSettings.URL, configurationValues);
-
+	private URI jdbcUrl(Map configurationValues) {
+		final String url = ConfigurationHelper.getString( AvailableSettings.URL, configurationValues );
 		CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000011: SQL Client URL [%s]", url );
-		CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000012: Connection pool size: %d", poolSize );
+		return parse( url );
+	}
 
-		final URI uri = parse( url );
+	private PoolOptions poolOptions(Map configurationValues) {
+		final int poolSize = ConfigurationHelper.getInt( AvailableSettings.POOL_SIZE, configurationValues, DEFAULT_POOL_SIZE );
+		CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000012: Connection pool size: %d", poolSize );
+		return new PoolOptions().setMaxSize( poolSize );
+	}
+
+	private SqlConnectOptions sqlConnectOptions(URI uri) {
+
 		String database = uri.getPath().substring( 1 );
 		if (uri.getScheme().equals("db2") && database.indexOf( ':' ) > 0) {
 			database = database.substring( 0, database.indexOf( ':' ) );
 		}
 
+		// FIXME: Check which values can be null
+		String username = ConfigurationHelper.getString( AvailableSettings.USER, configurationValues );
+		String password = ConfigurationHelper.getString( AvailableSettings.PASS, configurationValues );
 		if (username==null || password==null) {
 			String[] params = {};
 			// DB2 URLs are a bit odd and have the format: jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
 			if (uri.getScheme().equals("db2")) {
 				int queryIndex = uri.getPath().indexOf(':') + 1;
 				if (queryIndex > 0) {
-				  params = uri.getPath().substring(queryIndex).split(";");
+					params = uri.getPath().substring(queryIndex).split(";");
 				}
 			} else {
 				params = uri.getQuery().split("&");
@@ -113,8 +134,6 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 			}
 		}
 
-		PoolOptions poolOptions = new PoolOptions()
-				.setMaxSize( poolSize );
 		SqlConnectOptions connectOptions = new SqlConnectOptions()
 				.setHost( uri.getHost() )
 				.setPort( uri.getPort() )
@@ -123,33 +142,25 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		if (password != null) {
 			connectOptions.setPassword( password );
 		}
-		
-		// First try to load the Pool using the standard ServiceLoader pattern
-		// This only works if exactly 1 Driver is on the classpath.
-		ServiceConfigurationError originalError;
-		try {
-			return Pool.pool( vertx, connectOptions, poolOptions );
-		} catch (ServiceConfigurationError e) {
-			originalError = e;
-		}
-		
-		// Backup option if multiple drivers are on the classpath. 
-		// We will be able to remove this once Vertx 3.9.2 is available
+		return connectOptions;
+	}
+
+	private Driver findDriver(URI uri, ServiceConfigurationError originalError) {
 		String scheme = uri.getScheme(); // "postgresql", "mysql", "db2", etc
 		for (Driver d : ServiceLoader.load( Driver.class )) {
 			String driverName = d.getClass().getCanonicalName();
 			CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000013: Detected driver [%s]", driverName );
 			if ("io.vertx.db2client.spi.DB2Driver".equals( driverName ) && "db2".equalsIgnoreCase( scheme )) {
-				return d.createPool( vertx, connectOptions, poolOptions );
+				return  d;
 			}
 			if ("io.vertx.mysqlclient.spi.MySQLDriver".equals( driverName ) && "mysql".equalsIgnoreCase( scheme )) {
-				return d.createPool( vertx, connectOptions, poolOptions );
+				return d;
 			}
-			if ("io.vertx.pgclient.spi.PgDriver".equals( driverName ) && 
+			if ("io.vertx.pgclient.spi.PgDriver".equals( driverName ) &&
 					("postgre".equalsIgnoreCase( scheme ) ||
 					 "postgres".equalsIgnoreCase( scheme ) ||
 					 "postgresql".equalsIgnoreCase( scheme ))) {
-				return d.createPool( vertx, connectOptions, poolOptions );
+				return d;
 			}
 		}
 		throw new ConfigurationException( "No suitable drivers found for URI scheme: " + scheme, originalError );
