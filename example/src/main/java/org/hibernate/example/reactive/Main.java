@@ -1,8 +1,9 @@
 package org.hibernate.example.reactive;
 
-import static org.hibernate.reactive.stage.Stage.*;
-import static javax.persistence.Persistence.*;
 import static java.lang.System.out;
+import static javax.persistence.Persistence.createEntityManagerFactory;
+import static org.hibernate.reactive.stage.Stage.SessionFactory;
+import static org.hibernate.reactive.stage.Stage.fetch;
 
 /**
  * Demonstrates the use of Hibernate Reactive with the
@@ -56,7 +57,7 @@ public class Main {
 				//retrieve an Author
 				session -> session.find(Author.class, author2.id)
 						//lazily fetch their books
-						.thenCompose( author -> session.fetch(author.books)
+						.thenCompose( author -> fetch(author.books)
 								//print some info
 								.thenAccept( books -> {
 									out.println(author.name + " wrote " + books.size() + " books");

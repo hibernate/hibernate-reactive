@@ -2,6 +2,7 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.stage.Stage;
 import org.junit.Test;
 
 import javax.persistence.*;
@@ -19,13 +20,41 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void findBookWithAuthors(TestContext context) {
+	public void findBookWithFetchAuthors(TestContext context) {
+		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
+		final Author terryPratchett = new Author(2132511, "Terry Pratchett", goodOmens);
+		goodOmens.getAuthors().add(neilGaiman);
+		goodOmens.getAuthors().add(terryPratchett);
+
+		test(
+				context,
+				openSession()
+						.thenCompose(s -> s.persist(goodOmens))
+						.thenCompose(s -> s.persist(neilGaiman))
+						.thenCompose(s -> s.persist(terryPratchett))
+						.thenCompose(s -> s.flush())
+						.thenCompose(v -> openSession())
+						.thenCompose(s -> s.find(Book.class, goodOmens.getId())
+								.thenCompose(
+										book -> s.fetch(book.getAuthors())
+								))
+						.thenAccept(optionalAssociation -> {
+							context.assertNotNull(optionalAssociation);
+							context.assertTrue(optionalAssociation.contains(neilGaiman));
+							context.assertTrue(optionalAssociation.contains(terryPratchett));
+
+						})
+		);
+
+	}
+	@Test
+	public void findBookWithStaticFetchAuthors(TestContext context) {
 		final Book goodOmens = new Book( 7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
 		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
 		goodOmens.getAuthors().add( neilGaiman );
 		goodOmens.getAuthors().add( terryPratchett );
-
 		test(
 				context,
 				openSession()
@@ -36,7 +65,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, goodOmens.getId() )
 								.thenCompose(
-										book -> s.fetch( book.getAuthors())
+										book -> Stage.fetch( book.getAuthors())
 								) )
 						.thenAccept( optionalAssociation -> {
 							context.assertNotNull(optionalAssociation);

@@ -3,6 +3,7 @@ package org.hibernate.example.reactive;
 import static java.lang.System.out;
 import static javax.persistence.Persistence.createEntityManagerFactory;
 import static org.hibernate.reactive.mutiny.Mutiny.SessionFactory;
+import static org.hibernate.reactive.mutiny.Mutiny.fetch;
 
 /**
  * Demonstrates the use of Hibernate Reactive with the
@@ -55,7 +56,7 @@ public class MutinyMain {
 				//retrieve an Author
 				session -> session.find(Author.class, author2.id)
 						//lazily fetch their books
-						.flatMap( author -> session.fetch(author.books)
+						.flatMap( author -> fetch(author.books)
 								//print some info
 								.onItem().invoke( books -> {
 									out.println(author.name + " wrote " + books.size() + " books");

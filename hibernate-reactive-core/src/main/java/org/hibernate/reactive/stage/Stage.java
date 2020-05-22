@@ -4,6 +4,12 @@ import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
+import org.hibernate.collection.internal.AbstractPersistentCollection;
+import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -332,6 +338,7 @@ public interface Stage {
 		 *
 		 * @return the fetched association, via a {@code CompletionStage}
 		 *
+		 * @see Stage#fetch(Object)
 		 * @see org.hibernate.Hibernate#initialize(Object)
 		 */
 		<T> CompletionStage<T> fetch(T association);
@@ -625,5 +632,36 @@ public interface Stage {
 		 * pool.
 		 */
 		void close();
+	}
+
+	/**
+	 * Asynchronously fetch an association that's configured for lazy loading.
+	 *
+	 * <pre>
+	 * {@code Stage.fetch(author.getBook()).thenAccept(book -> print(book.getTitle()));}
+	 * </pre>
+	 *
+	 * @param association a lazy-loaded association
+	 *
+	 * @return the fetched association, via a {@code CompletionStage}
+	 *
+	 * @see org.hibernate.Hibernate#initialize(Object)
+	 */
+	static <T> CompletionStage<T> fetch(T association) {
+		if ( association == null ) {
+			return CompletionStages.nullFuture();
+		}
+
+		SharedSessionContractImplementor session;
+		if ( association instanceof HibernateProxy) {
+			session = ( (HibernateProxy) association ).getHibernateLazyInitializer().getSession();
+		}
+		else if ( association instanceof PersistentCollection) {
+			session = ( (AbstractPersistentCollection) association ).getSession();
+		}
+		else {
+			return CompletionStages.completedFuture( association );
+		}
+		return ( (ReactiveSession) session ).reactiveFetch( association, false );
 	}
 }
