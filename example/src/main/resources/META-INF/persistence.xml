@@ -10,8 +10,17 @@
 
         <properties>
             <property name="javax.persistence.jdbc.url"
-                      value="jdbc:postgresql://localhost:5432/hreact?user=hreact&amp;password=hreact"/>
-            <!--property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/hreact?user=hreact&amp;password=hreact"/-->
+                      value="jdbc:postgresql://localhost:5432/hreact"/>
+            <!--property name="javax.persistence.jdbc.url"
+                      value="jdbc:mysql://localhost:3306/hreact"/-->
+
+            <property name="javax.persistence.jdbc.user"
+                      value="hreact"/>
+            <property name="javax.persistence.jdbc.password"
+                      value="hreact"/>
+
+            <property name="hibernate.connection.pool_size"
+                      value="10"/>
 
             <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
             <property name="hibernate.show_sql" value="true"/>

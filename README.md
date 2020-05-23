@@ -79,6 +79,14 @@ Configuration is completely transparent; configure Hibernate
 exactly as you normally would, for example by providing a
 `META-INF/persistence.xml` file.
 
+Configuration properties of particular interest include:
+
+- `javax.persistence.jdbc.url`, the JDBC URL of your database,
+- `javax.persistence.jdbc.user` and `javax.persistence.jdbc.password`,
+  the database credentials, and
+- `hibernate.connection.pool_size`, the size of the Vert.x reactive
+  connection pool.
+
 An example [`persistence.xml`][xml] file is included in the example 
 program.
 
