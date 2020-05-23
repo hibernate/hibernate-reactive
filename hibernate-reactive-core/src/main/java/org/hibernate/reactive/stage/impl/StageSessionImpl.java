@@ -137,6 +137,21 @@ public class StageSessionImpl implements Stage.Session {
 		return new StageQueryImpl<>( delegate.createReactiveQuery( jpql ) );
 	}
 
+//	@Override
+//	public <R> Stage.Query<R> createNativeQuery(String sql) {
+//		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql ) );
+//	}
+
+	@Override
+	public <R> Stage.Query<R> createNativeQuery(String sql, Class<R> resultType) {
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultType ) );
+	}
+
+	@Override
+	public <R> Stage.Query<R> createNativeQuery(String sql, String resultSetMapping) {
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping ) );
+	}
+
 	@Override
 	public FlushMode getFlushMode() {
 		switch ( delegate.getHibernateFlushMode() ) {

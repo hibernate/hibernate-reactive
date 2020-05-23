@@ -15,6 +15,7 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.query.spi.QueryPlanCache;
+import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.internal.MergeContext;
@@ -39,11 +40,15 @@ import org.hibernate.internal.SessionImpl;
 import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.jpa.QueryHints;
+import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
+import org.hibernate.loader.custom.CustomLoader;
+import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.Query;
+import org.hibernate.query.spi.NativeQueryImplementor;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
 import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
@@ -58,6 +63,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
@@ -65,6 +71,7 @@ import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.EntityNotFoundException;
+import javax.persistence.Tuple;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -132,6 +139,75 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 		else {
 			return CompletionStages.completedFuture( association );
+		}
+	}
+
+	@Override
+	public <T> ReactiveNativeQueryImpl<T> createReactiveNativeQuery(String sqlString) {
+		return getReactiveNativeQueryImplementor( sqlString, false );
+	}
+
+	@Override
+	public <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping) {
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			ReactiveNativeQuery<T> query = createReactiveNativeQuery( sqlString );
+			query.setResultSetMapping( resultSetMapping );
+			return query;
+		}
+		catch ( RuntimeException he ) {
+			throw getExceptionConverter().convert( he );
+		}
+	}
+
+	@Override
+	public <T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultClass) {
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			ReactiveNativeQuery<T> query = createReactiveNativeQuery( sqlString );
+			handleNativeQueryResult( query, resultClass );
+			return query;
+		}
+		catch ( RuntimeException he ) {
+			throw getExceptionConverter().convert( he );
+		}
+	}
+
+	private <T> void handleNativeQueryResult(ReactiveNativeQuery<T> query, Class<T> resultClass) {
+		if ( Tuple.class.equals( resultClass ) ) {
+			query.setResultTransformer( new NativeQueryTupleTransformer() );
+		}
+		else {
+			query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
+		}
+	}
+
+	private <T> ReactiveNativeQueryImpl<T> getReactiveNativeQueryImplementor(
+			String queryString,
+			boolean isOrdinalParameterZeroBased) {
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>(
+					queryString,
+					false,
+					this,
+					getFactory().getQueryPlanCache().getSQLParameterMetadata( queryString, isOrdinalParameterZeroBased )
+			);
+			query.setComment( "dynamic native SQL query" );
+			applyQuerySettingsAndHints( query );
+			return query;
+		}
+		catch ( RuntimeException he ) {
+			throw getExceptionConverter().convert( he );
 		}
 	}
 
@@ -220,7 +296,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<List<Object>> reactiveList(String query, QueryParameters queryParameters) throws HibernateException {
+	public <T> CompletionStage<List<T>> reactiveList(String query, QueryParameters queryParameters) throws HibernateException {
 		checkOpenOrWaitingForAutoClose();
 		pulseTransactionCoordinator();
 		queryParameters.validateParameters();
@@ -239,7 +315,31 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 //					dontFlushFromFind--;
 					afterOperation( x == null );
 					delayedAfterCompletion();
-				} );
+				} )
+				//TODO: this typecast is rubbish
+				.thenApply( list -> (List<T>) list );
+	}
+
+	@Override
+	public <T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters queryParameters) {
+		return listReactiveCustomQuery( getNativeQueryPlan( spec ).getCustomQuery(), queryParameters );
+	}
+
+	private <T> CompletionStage<List<T>> listReactiveCustomQuery(CustomQuery customQuery, QueryParameters queryParameters) {
+		checkOpenOrWaitingForAutoClose();
+//		checkTransactionSynchStatus();
+
+		ReactiveCustomLoader loader = new ReactiveCustomLoader( customQuery, getFactory() );
+
+//		autoFlushIfRequired( loader.getQuerySpaces() );
+
+//		dontFlushFromFind++;
+//		boolean success = false;
+			return loader.<T>reactiveList( this, queryParameters )
+					.whenComplete( (r, e) -> delayedAfterCompletion() );
+//			success = true;
+//			dontFlushFromFind--;
+//			afterOperation( success );
 	}
 
 	@Override

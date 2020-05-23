@@ -6,6 +6,7 @@ import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.UnknownProfileException;
+import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
@@ -57,6 +58,12 @@ public interface ReactiveSession  {
 
 	CompletionStage<?> reactiveRefresh(Object child, IdentitySet refreshedAlready);
 
+	<T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString);
+
+	<T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping);
+
+	<T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultType);
+
 	<T> ReactiveQuery<T> createReactiveQuery(String queryString);
 
 	<T> ReactiveQuery<T> createReactiveQuery(String queryString, Class<T> resultType);
@@ -75,7 +82,9 @@ public interface ReactiveSession  {
 			Class<T> entityClass,
 			Object... primaryKey);
 
-	<T> CompletionStage<List<Object>> reactiveList(String query, QueryParameters queryParameters);
+	<T> CompletionStage<List<T>> reactiveList(String query, QueryParameters queryParameters);
+
+	<T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters queryParameters);
 
 	CompletionStage<Integer> executeReactiveUpdate(String expandedQuery, QueryParameters queryParameters);
 

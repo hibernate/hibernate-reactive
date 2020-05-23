@@ -395,6 +395,41 @@ public interface Stage {
 		 */
 		<R> Query<R> createQuery(String queryString, Class<R> resultType);
 
+//		/**
+//		 * Create an instance of {@link Query} for the given SQL query string.
+//		 *
+//		 * @param queryString The SQL query
+//		 *
+//		 * @return The {@link Query} instance for manipulation and execution
+//		 *
+//		 * @see javax.persistence.EntityManager#createNativeQuery(String)
+//		 */
+//		<R> Query<R> createNativeQuery(String queryString);
+
+		/**
+		 * Create an instance of {@link Query} for the given SQL query string.
+		 *
+		 * @param queryString The SQL query
+		 * @param resultType the Java type returned in each row of query results
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see javax.persistence.EntityManager#createNativeQuery(String, Class)
+		 */
+		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType);
+
+		/**
+		 * Create an instance of {@link Query} for the given SQL query string.
+		 *
+		 * @param queryString The SQL query
+		 * @param resultSetMapping the name of the result set mapping
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see javax.persistence.EntityManager#createNativeQuery(String, String)
+		 */
+		<R> Query<R> createNativeQuery(String queryString, String resultSetMapping);
+
 		/**
 		 * Set the flush mode for this session.
 		 *

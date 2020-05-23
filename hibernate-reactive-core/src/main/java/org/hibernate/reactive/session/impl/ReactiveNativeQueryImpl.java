@@ -6,27 +6,61 @@ import org.hibernate.LockMode;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.engine.query.spi.EntityGraphQueryHint;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
+import org.hibernate.engine.query.spi.sql.NativeSQLQueryReturn;
+import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
+import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.hql.internal.QueryExecutionRequestException;
+import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.query.ParameterMetadata;
-import org.hibernate.query.internal.QueryImpl;
-import org.hibernate.reactive.session.ReactiveQuery;
+import org.hibernate.query.internal.NativeQueryImpl;
+import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.NoResultException;
-import javax.persistence.TransactionRequiredException;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<R> {
+/**
+ * @author Gavin King
+ */
+public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements ReactiveNativeQuery<R> {
 
 	private EntityGraphQueryHint entityGraphQueryHint;
 
-	public ReactiveQueryImpl(SharedSessionContractImplementor producer, ParameterMetadata parameterMetadata, String queryString) {
-		super( producer, parameterMetadata, queryString );
+	public ReactiveNativeQueryImpl(
+			NamedSQLQueryDefinition queryDef,
+			SharedSessionContractImplementor session,
+			ParameterMetadata parameterMetadata) {
+		super(queryDef, session, parameterMetadata);
+	}
+
+	public ReactiveNativeQueryImpl(
+			String sqlString,
+			boolean callable,
+			SharedSessionContractImplementor session,
+			ParameterMetadata sqlParameterMetadata) {
+		super( sqlString, callable, session, sqlParameterMetadata );
+	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> setResultTransformer(NativeQueryTupleTransformer nativeQueryTupleTransformer) {
+		super.setResultTransformer(nativeQueryTupleTransformer);
+		return this;
+	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> addEntity(String alias, String name, LockMode read) {
+		super.addEntity(alias, name, read);
+		return this;
+	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> setResultSetMapping(String name) {
+		super.setResultSetMapping(name);
+		return this;
 	}
 
 	@Override
@@ -80,23 +114,18 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 
 	@Override
 	public CompletionStage<List<R>> reactiveList() {
-		beforeQuery();
-		return doReactiveList().whenComplete( (list, err) -> afterQuery() );
+		return reactiveProducer().reactiveList(
+				generateQuerySpecification(),
+				getQueryParameters()
+		);
 	}
 
-	protected CompletionStage<List<R>> doReactiveList() {
-		if ( getMaxResults() == 0 ) {
-			return CompletionStages.completedFuture( Collections.emptyList() );
-		}
-		if ( getLockOptions().getLockMode() != null && getLockOptions().getLockMode() != LockMode.NONE ) {
-			if ( !getProducer().isTransactionInProgress() ) {
-				throw new TransactionRequiredException( "no transaction is in progress" );
-			}
-		}
-
-		final String expandedQuery = getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() );
-		ReactiveSession producer = reactiveProducer();
-		return producer.reactiveList( expandedQuery, makeReactiveQueryParametersForExecution( expandedQuery ) );
+	private NativeSQLQuerySpecification generateQuerySpecification() {
+		return new NativeSQLQuerySpecification(
+				getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() ),
+				getQueryReturns().toArray( new NativeSQLQueryReturn[getQueryReturns().size()] ),
+				getSynchronizedQuerySpaces()
+		);
 	}
 
 	private ReactiveSession reactiveProducer() {
@@ -121,37 +150,37 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		return queryParameters;
 	}
 
-	public ReactiveQueryImpl<R> setParameter(int position, Object value) {
+	public ReactiveNativeQueryImpl<R> setParameter(int position, Object value) {
 		super.setParameter(position, value);
 		return this;
 	}
 
-	public ReactiveQueryImpl<R> setMaxResults(int maxResults) {
+	public ReactiveNativeQueryImpl<R> setMaxResults(int maxResults) {
 		super.setMaxResults(maxResults);
 		return this;
 	}
 
-	public ReactiveQueryImpl<R> setFirstResult(int firstResult) {
+	public ReactiveNativeQueryImpl<R> setFirstResult(int firstResult) {
 		super.setFirstResult(firstResult);
 		return this;
 	}
 
-	public ReactiveQueryImpl<R> setReadOnly(boolean readOnly) {
+	public ReactiveNativeQueryImpl<R> setReadOnly(boolean readOnly) {
 		super.setReadOnly(readOnly);
 		return this;
 	}
 
-	public ReactiveQueryImpl<R> setComment(String comment) {
+	public ReactiveNativeQueryImpl<R> setComment(String comment) {
 		super.setComment(comment);
 		return this;
 	}
 
-	public ReactiveQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
+	public ReactiveNativeQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
 		super.setLockMode(alias, lockMode);
 		return this;
 	}
 
-	public ReactiveQueryImpl<R> setCacheMode(CacheMode cacheMode) {
+	public ReactiveNativeQueryImpl<R> setCacheMode(CacheMode cacheMode) {
 		super.setCacheMode(cacheMode);
 		return this;
 	}

@@ -5,8 +5,8 @@ import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.List;
@@ -145,6 +145,16 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public <R> Mutiny.Query<R> createQuery(String jpql) {
 		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql ) );
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNativeQuery(String sql, Class<R> resultType) {
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultType ) );
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNativeQuery(String sql, String resultSetMapping) {
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping ) );
 	}
 
 	@Override
