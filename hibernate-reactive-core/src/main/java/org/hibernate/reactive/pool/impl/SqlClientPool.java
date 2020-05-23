@@ -12,7 +12,6 @@ import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.cfg.ReactiveSettings;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.util.impl.JdbcUrlParser;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.ServiceRegistryAwareService;
@@ -86,7 +85,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000011: SQL Client URL [%s]", url );
 		CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000012: Connection pool size: %d", poolSize );
 
-		final URI uri = JdbcUrlParser.parse( url );
+		final URI uri = parse( url );
 		String database = uri.getPath().substring( 1 );
 		if (uri.getScheme().equals("db2") && database.indexOf( ':' ) > 0) {
 			database = database.substring( 0, database.indexOf( ':' ) );
@@ -174,6 +173,18 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	@Override
 	public void stop() {
 		this.pool.close();
+	}
+
+	public static URI parse(String url) {
+		if ( url == null ) {
+			return null;
+		}
+
+		if ( url.startsWith( "jdbc:" ) ) {
+			return URI.create( url.substring( 5 ) );
+		}
+
+		return URI.create( url );
 	}
 
 }
