@@ -17,7 +17,6 @@ import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.sql.impl.Parameters;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
@@ -34,6 +33,7 @@ import static org.hibernate.id.enhanced.TableGenerator.SEGMENT_VALUE_PARAM;
 import static org.hibernate.id.enhanced.TableGenerator.TABLE;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineSequenceName;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineTableName;
+import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
 
 /**
  * Support for JPA's {@link javax.persistence.TableGenerator}. This
@@ -165,7 +165,7 @@ public class TableReactiveIdentifierGenerator
 	}
 
 	protected String buildSelectQuery(Dialect dialect) {
-		Supplier<String> generator = Parameters.createDialectParameterGenerator(dialect);
+		Supplier<String> generator = createDialectParameterGenerator(dialect);
 		final String alias = "tbl";
 		String query = "select " + StringHelper.qualify( alias, valueColumnName ) +
 				" from " + renderedTableName + ' ' + alias;
@@ -179,7 +179,7 @@ public class TableReactiveIdentifierGenerator
 	}
 
 	protected String buildUpdateQuery(Dialect dialect) {
-		Supplier<String> generator = Parameters.createDialectParameterGenerator(dialect);
+		Supplier<String> generator = createDialectParameterGenerator(dialect);
 		String update = "update " + renderedTableName
 				+ " set " + valueColumnName + "="  + generator.get()
 				+ " where " + valueColumnName + "="  + generator.get();
@@ -190,7 +190,7 @@ public class TableReactiveIdentifierGenerator
 	}
 
 	protected String buildInsertQuery(Dialect dialect) {
-		Supplier<String> generator = Parameters.createDialectParameterGenerator(dialect);
+		Supplier<String> generator = createDialectParameterGenerator(dialect);
 		String insert = "insert into " + renderedTableName;
 		if (segmentColumnName != null) {
 			insert += " (" + segmentColumnName + ", " + valueColumnName + ") "

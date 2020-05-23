@@ -6,9 +6,14 @@
  */
 package org.hibernate.reactive.sql.impl;
 
+import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Supplier;
+
+import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
 
 /**
  * A {@link org.hibernate.sql.Delete} that generates
@@ -17,6 +22,14 @@ import java.util.function.Supplier;
 public class Delete extends org.hibernate.sql.Delete {
 
 	private final Supplier<String> nextParameter;
+
+	public Delete(SessionFactoryImplementor factory) {
+		this( factory.getJdbcServices().getDialect() );
+	}
+
+	public Delete(Dialect dialect) {
+		this( createDialectParameterGenerator( dialect ) );
+	}
 
 	public Delete(Supplier<String> nextParameter) {
 		this.nextParameter = nextParameter;

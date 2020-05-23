@@ -6,12 +6,13 @@ import org.hibernate.MappingException;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.entity.OuterJoinLoadable;
-import org.hibernate.reactive.sql.impl.Parameters;
 import org.hibernate.sql.ConditionFragment;
 import org.hibernate.sql.DisjunctionFragment;
 import org.hibernate.sql.InFragment;
 
 import java.util.function.Supplier;
+
+import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
 
 /**
  * An {@link org.hibernate.loader.entity.EntityJoinWalker} that generates
@@ -42,7 +43,7 @@ public class ReactiveEntityJoinWalker extends org.hibernate.loader.entity.Entity
 	@Override
 	protected StringBuilder whereString(String alias, String[] columnNames, int batchSize) {
 
-		Supplier<String> nextParameter = Parameters.createDialectParameterGenerator(getFactory());
+		Supplier<String> nextParameter = createDialectParameterGenerator( getDialect() );
 
 		if ( columnNames.length == 1 ) {
 			// if not a composite key, use "foo in (?, ?, ?)" for batching

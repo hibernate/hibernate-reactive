@@ -19,7 +19,6 @@ import org.hibernate.reactive.loader.entity.impl.ReactiveCascadeEntityLoader;
 import org.hibernate.reactive.loader.entity.impl.ReactiveUniqueEntityLoader;
 import org.hibernate.reactive.sql.impl.Delete;
 import org.hibernate.reactive.sql.impl.Insert;
-import org.hibernate.reactive.sql.impl.Parameters;
 import org.hibernate.reactive.sql.impl.Update;
 
 import java.io.Serializable;
@@ -50,7 +49,6 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	@Override
 	protected UniqueEntityLoader createEntityLoader(LockMode lockMode, LoadQueryInfluencers loadQueryInfluencers)
 			throws MappingException {
-		//FIXME add support to lock mode and loadQueryInfluencers
 		return ReactiveBatchingEntityLoaderBuilder.getBuilder( getFactory() )
 				.buildLoader( this, batchSize, lockMode, getFactory(), loadQueryInfluencers );
 	}
@@ -58,26 +56,23 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	@Override
 	protected UniqueEntityLoader createEntityLoader(LockOptions lockOptions, LoadQueryInfluencers loadQueryInfluencers)
 			throws MappingException {
-		//FIXME add support to lock mode and loadQueryInfluencers
 		return ReactiveBatchingEntityLoaderBuilder.getBuilder( getFactory() )
 				.buildLoader( this, batchSize, lockOptions, getFactory(), loadQueryInfluencers );
 	}
 
 	@Override
 	protected Update createUpdate() {
-		return new Update( getFactory().getJdbcServices().getDialect(),
-				Parameters.createDialectParameterGenerator( getFactory() ) );
+		return new Update( getFactory() );
 	}
 
 	@Override
 	protected Insert createInsert() {
-		return new Insert( getFactory().getJdbcServices().getDialect(),
-				Parameters.createDialectParameterGenerator( getFactory() ) );
+		return new Insert( getFactory() );
 	}
 
 	@Override
 	protected Delete createDelete() {
-		return new Delete( Parameters.createDialectParameterGenerator( getFactory() ) );
+		return new Delete( getFactory() );
 	}
 
 	@Override
