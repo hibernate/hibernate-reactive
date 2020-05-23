@@ -182,6 +182,14 @@ transaction.
 
 The session is automatically flushed at the end of the transaction.
 
+### Identifier generation
+
+Sequence, table, and `UUID` id generation is built in, along with support
+for assigned ids. 
+
+Custom id generators may be defined by implementing `ReactiveIdentifierGenerator` 
+and declaring the custom implementation using `@GenericGenerator`.
+
 ## Example program
 
 There is a very simple example program in the [`example`][example] 
@@ -266,7 +274,7 @@ directory.
 We're working hard to support the full feature set of Hibernate ORM. At
 present a few limitations remain.
 
-### Association mappings
+#### Association mappings
 
 At this time, Hibernate Reactive does not support the following mapping
 features:
@@ -278,7 +286,7 @@ features:
 Instead, use `@OneToMany(mappedBy=...)` together with `@ManyToOne` for all
 associations.
 
-### Eager association fetching
+#### Eager association fetching
 
 Hibernate Reactive does not support eager association fetching via subsequent 
 SQL select, for example, `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`
@@ -290,7 +298,7 @@ or `@ManyToOne(fetch=EAGER) @Fetch(SUBSELECT)`. So you must choose between:
 
 As usual, we recommend that all association mappings be declared lazy.
 
-### Queries
+#### Queries
 
 Currently there is no support for:
 
@@ -299,21 +307,16 @@ Currently there is no support for:
 
 Use HQL, or native SQL executed directly against the Vert.x `SqlClient`.
 
-### Fetch profiles
+#### Fetch profiles
 
 JPA `@NamedEntityGraph`s are not supported, but Hibernate `@FetchProfile`s
 _are_.
 
-### Identifier generation
+#### Identifier generation
 
-There is built-in support for sequence, table, and `UUID` id generation,
-but there is no block optimization for the `SEQUENCE` and `TABLE` id 
-generators.
+There is no block optimization for the `SEQUENCE` and `TABLE` id generators.
 
-Hibernate Reactive does not yet offer a facility for integrating custom 
-identifier generators.
-
-### Caching
+#### Caching
 
 Note that you should not use Hibernate Reactive with a second-level cache 
 implementation which performs blocking IO, for example passivation to the

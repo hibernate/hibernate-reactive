@@ -2,27 +2,24 @@ package org.hibernate.reactive.id.impl;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.boot.model.relational.Database;
-import org.hibernate.boot.model.relational.Namespace;
+import org.hibernate.MappingException;
 import org.hibernate.boot.model.relational.QualifiedName;
-import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.id.Configurable;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.config.ConfigurationHelper;
-import org.hibernate.mapping.PersistentClass;
-import org.hibernate.mapping.Table;
-import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.sql.impl.Parameters;
+import org.hibernate.service.ServiceRegistry;
+import org.hibernate.type.Type;
 
 import java.util.Collections;
 import java.util.Properties;
@@ -35,6 +32,8 @@ import static org.hibernate.id.enhanced.TableGenerator.DEF_SEGMENT_VALUE;
 import static org.hibernate.id.enhanced.TableGenerator.SEGMENT_COLUMN_PARAM;
 import static org.hibernate.id.enhanced.TableGenerator.SEGMENT_VALUE_PARAM;
 import static org.hibernate.id.enhanced.TableGenerator.TABLE;
+import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineSequenceName;
+import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineTableName;
 
 /**
  * Support for JPA's {@link javax.persistence.TableGenerator}. This
@@ -43,20 +42,25 @@ import static org.hibernate.id.enhanced.TableGenerator.TABLE;
  * rows ("segments"), or as an emulated sequence generator with
  * just one row and one column.
  */
-public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGenerator<Long> {
+public class TableReactiveIdentifierGenerator
+		implements ReactiveIdentifierGenerator<Long>, Configurable {
 
-	private final String selectQuery;
-	private final String updateQuery;
-	private final String insertQuery;
+	private boolean storeLastUsedValue;
+
+	private QualifiedName qualifiedTableName;
+	private String renderedTableName;
+
 	private String segmentColumnName;
+	private String segmentValue;
+
 	private String valueColumnName;
-	private final String renderedTableName;
-	private final boolean storeLastUsedValue;
-	private final long initialValue;
-	private final String segmentValue;
+	private long initialValue;
 
-	private final SessionFactoryImplementor sessionFactory;
+	private String selectQuery;
+	private String insertQuery;
+	private String updateQuery;
 
+	private boolean sequenceEmulator;
 
 	@Override
 	public CompletionStage<Long> generate(ReactiveSession session, Object entity) {
@@ -84,59 +88,44 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 				});
 	}
 
-	TableReactiveIdentifierGenerator(PersistentClass persistentClass, PersisterCreationContext creationContext) {
+	TableReactiveIdentifierGenerator(boolean sequenceEmulator) {
+		this.sequenceEmulator = sequenceEmulator;
+	}
 
-		MetadataImplementor metadata = creationContext.getMetadata();
-		sessionFactory = creationContext.getSessionFactory();
-		Database database = metadata.getDatabase();
-		JdbcEnvironment jdbcEnvironment = database.getJdbcEnvironment();
-		Dialect dialect = database.getJdbcEnvironment().getDialect();
+	@Override
+	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) throws MappingException {
+		JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
+		Dialect dialect = jdbcEnvironment.getDialect();
 
-		Properties props = IdentifierGeneration.identifierGeneratorProperties(
-				jdbcEnvironment.getDialect(),
-				sessionFactory,
-				persistentClass
-		);
-
-		QualifiedName qualifiedTableName = IdentifierGeneration.determineTableName(database, jdbcEnvironment, props);
-		final Namespace namespace = database.locateNamespace(
-				qualifiedTableName.getCatalogName(),
-				qualifiedTableName.getSchemaName()
-		);
-		Table table = namespace.locateTable( qualifiedTableName.getObjectName() );
-
-		if (table == null) {
+		if (sequenceEmulator) {
 			//it's a SequenceStyleGenerator backed by a table
-			qualifiedTableName = IdentifierGeneration.determineSequenceName(props, jdbcEnvironment, database);
-			renderedTableName = qualifiedTableName.render();
-
-			valueColumnName = determineValueColumnNameForSequenceEmulation(props, jdbcEnvironment);
+			qualifiedTableName = determineSequenceName( params, serviceRegistry );
+			valueColumnName = determineValueColumnNameForSequenceEmulation( params, jdbcEnvironment );
 			segmentColumnName = null;
 			segmentValue = null;
-			initialValue = determineInitialValueForSequenceEmulation( props );
+			initialValue = determineInitialValueForSequenceEmulation( params );
 
 			storeLastUsedValue = false;
 		}
 		else {
 			//It's a regular TableGenerator
-			segmentColumnName = determineSegmentColumnName( props, jdbcEnvironment );
-			valueColumnName = determineValueColumnNameForTable( props, jdbcEnvironment );
-			segmentValue = determineSegmentValue( props );
-			initialValue = determineInitialValueForTable( props );
+			qualifiedTableName = determineTableName( params, serviceRegistry );
+			segmentColumnName = determineSegmentColumnName( params, jdbcEnvironment );
+			valueColumnName = determineValueColumnNameForTable( params, jdbcEnvironment );
+			segmentValue = determineSegmentValue( params );
+			initialValue = determineInitialValueForTable( params );
 
-			// allow physical naming strategies a chance to kick in
-			renderedTableName = database.getJdbcEnvironment().getQualifiedObjectNameFormatter().format(
-					table.getQualifiedTableName(),
-					dialect
-			);
-
-			storeLastUsedValue = database.getServiceRegistry().getService( ConfigurationService.class )
+			storeLastUsedValue = serviceRegistry.getService( ConfigurationService.class )
 					.getSetting( AvailableSettings.TABLE_GENERATOR_STORE_LAST_USED, StandardConverters.BOOLEAN, true );
 		}
 
-		this.selectQuery = buildSelectQuery(sessionFactory);
-		this.updateQuery = buildUpdateQuery(sessionFactory);
-		this.insertQuery = buildInsertQuery(sessionFactory);
+		// allow physical naming strategies a chance to kick in
+		renderedTableName = jdbcEnvironment.getQualifiedObjectNameFormatter()
+				.format( qualifiedTableName, dialect );
+
+		selectQuery = buildSelectQuery( dialect );
+		updateQuery = buildUpdateQuery( dialect );
+		insertQuery = buildInsertQuery( dialect );
 	}
 
 	protected String determineSegmentColumnName(Properties params, JdbcEnvironment jdbcEnvironment) {
@@ -164,8 +153,7 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 
 	protected String determineDefaultSegmentValue(Properties params) {
 		final boolean preferSegmentPerEntity = ConfigurationHelper.getBoolean( CONFIG_PREFER_SEGMENT_PER_ENTITY, params, false );
-		final String defaultToUse = preferSegmentPerEntity ? params.getProperty( TABLE ) : DEF_SEGMENT_VALUE;
-		return defaultToUse;
+		return preferSegmentPerEntity ? params.getProperty( TABLE ) : DEF_SEGMENT_VALUE;
 	}
 
 	protected int determineInitialValueForTable(Properties params) {
@@ -176,8 +164,8 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 		return ConfigurationHelper.getInt( SequenceStyleGenerator.INITIAL_PARAM, params, SequenceStyleGenerator.DEFAULT_INITIAL_VALUE );
 	}
 
-	protected String buildSelectQuery(SessionFactoryImplementor sessionFactory) {
-		Supplier<String> generator = Parameters.createDialectParameterGenerator(sessionFactory);
+	protected String buildSelectQuery(Dialect dialect) {
+		Supplier<String> generator = Parameters.createDialectParameterGenerator(dialect);
 		final String alias = "tbl";
 		String query = "select " + StringHelper.qualify( alias, valueColumnName ) +
 				" from " + renderedTableName + ' ' + alias;
@@ -185,14 +173,13 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 			query += " where " + StringHelper.qualify(alias, segmentColumnName) + "=" + generator.get();
 		}
 
-		return sessionFactory.getJdbcServices().getDialect()
-				.applyLocksToSql( query,
+		return dialect.applyLocksToSql( query,
 						new LockOptions( LockMode.PESSIMISTIC_WRITE ).setAliasSpecificLockMode( alias, LockMode.PESSIMISTIC_WRITE ),
 						Collections.singletonMap( alias, new String[] { valueColumnName } ) );
 	}
 
-	protected String buildUpdateQuery(SessionFactoryImplementor sessionFactory) {
-		Supplier<String> generator = Parameters.createDialectParameterGenerator(this.sessionFactory);
+	protected String buildUpdateQuery(Dialect dialect) {
+		Supplier<String> generator = Parameters.createDialectParameterGenerator(dialect);
 		String update = "update " + renderedTableName
 				+ " set " + valueColumnName + "="  + generator.get()
 				+ " where " + valueColumnName + "="  + generator.get();
@@ -202,8 +189,8 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 		return update;
 	}
 
-	protected String buildInsertQuery(SessionFactoryImplementor sessionFactory) {
-		Supplier<String> generator = Parameters.createDialectParameterGenerator(this.sessionFactory);
+	protected String buildInsertQuery(Dialect dialect) {
+		Supplier<String> generator = Parameters.createDialectParameterGenerator(dialect);
 		String insert = "insert into " + renderedTableName;
 		if (segmentColumnName != null) {
 			insert += " (" + segmentColumnName + ", " + valueColumnName + ") "

@@ -7,22 +7,29 @@ import org.hibernate.NonUniqueObjectException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.Versioning;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityEntryExtraState;
+import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.SelfDirtinessTracker;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.WrapVisitor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.id.IdentifierGenerationException;
+import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityIdentityInsertAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityRegularInsertAction;
-import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.IntegerType;
 import org.hibernate.type.LongType;
@@ -140,10 +147,8 @@ abstract class AbstractReactiveSaveEventListener<C>
 
 		EntityPersister persister = source.getEntityPersister( entityName, entity );
 		boolean autoincrement = persister.isIdentifierAssignedByInsert();
-		return ((ReactiveEntityPersister) persister)
-				.getReactiveIdentifierGenerator()
-				.generate( (ReactiveSession) source, entity )
-				.thenCompose( id ->
+		return generateId( entity, source, persister )
+				.thenCompose(id ->
 						reactivePerformSave(
 								entity,
 								autoincrement ? null : assignIdIfNecessary( id, entity, entityName, source ),
@@ -152,7 +157,15 @@ abstract class AbstractReactiveSaveEventListener<C>
 								context,
 								source,
 								!autoincrement || requiresImmediateIdAccess
-						));
+						)
+				);
+	}
+
+	private static CompletionStage<?> generateId(Object entity, EventSource source, EntityPersister persister) {
+		IdentifierGenerator generator = persister.getIdentifierGenerator();
+		return generator instanceof ReactiveIdentifierGenerator
+				? ( (ReactiveIdentifierGenerator<?>) generator ).generate( (ReactiveSession) source, entity )
+				: CompletionStages.completedFuture( generator.generate( source.getSession(), entity ) );
 	}
 
 	/**

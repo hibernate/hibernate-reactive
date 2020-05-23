@@ -12,6 +12,11 @@ import java.util.concurrent.CompletionStage;
  * which supports a non-blocking method for obtaining the generated
  * identifier.
  *
+ * A custom generation strategy may be defined by implementing this
+ * interface, and, optionally, {@link org.hibernate.id.Configurable},
+ * and declaring the custom implementation class using
+ * {@link org.hibernate.annotations.GenericGenerator}.
+ *
  * @see TableReactiveIdentifierGenerator
  * @see SequenceReactiveIdentifierGenerator
  */

@@ -13,7 +13,6 @@ import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.UnionSubclassEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
-import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.loader.entity.impl.ReactiveBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.loader.entity.impl.ReactiveCascadeEntityLoader;
 import org.hibernate.reactive.loader.entity.impl.ReactiveUniqueEntityLoader;
@@ -24,20 +23,11 @@ import org.hibernate.reactive.sql.impl.Update;
 
 import java.io.Serializable;
 
-import static org.hibernate.reactive.id.impl.IdentifierGeneration.asReactiveGenerator;
-
 /**
  * An {@link ReactiveEntityPersister} backed by {@link UnionSubclassEntityPersister}
  * amd {@link ReactiveAbstractEntityPersister}.
  */
 public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPersister implements ReactiveAbstractEntityPersister {
-
-	private ReactiveIdentifierGenerator identifierGenerator;
-
-	@Override
-	public ReactiveIdentifierGenerator getReactiveIdentifierGenerator() {
-		return identifierGenerator;
-	}
 
 	public ReactiveUnionSubclassEntityPersister(
 			PersistentClass persistentClass,
@@ -45,8 +35,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 			NaturalIdDataAccess naturalIdRegionAccessStrategy,
 			PersisterCreationContext creationContext) throws HibernateException {
 		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext );
-
-		identifierGenerator = asReactiveGenerator( persistentClass, creationContext, getIdentifierGenerator() );
 	}
 
 	@Override
