@@ -68,6 +68,10 @@ public interface ReactiveSession  {
 
 	<T> ReactiveQuery<T> createReactiveQuery(String queryString, Class<T> resultType);
 
+	<R> ReactiveQuery<R> createReactiveNamedQuery(String name);
+
+	<R> ReactiveQuery<R> createReactiveNamedQuery(String name, Class<R> resultClass);
+
 	<T> CompletionStage<T> reactiveGet(
 			Class<T> entityClass,
 			Serializable id);

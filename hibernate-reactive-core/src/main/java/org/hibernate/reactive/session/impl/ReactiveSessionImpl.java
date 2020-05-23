@@ -16,6 +16,8 @@ import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.query.spi.QueryPlanCache;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
+import org.hibernate.engine.spi.NamedQueryDefinition;
+import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.internal.MergeContext;
@@ -341,6 +343,93 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 //			success = true;
 //			dontFlushFromFind--;
 //			afterOperation( success );
+	}
+
+	@Override
+	public <R> ReactiveQuery<R> createReactiveNamedQuery(String name) {
+		return buildReactiveQueryFromName( name, null );
+	}
+
+	@Override
+	public <R> ReactiveQuery<R> createReactiveNamedQuery(String name, Class<R> resultClass) {
+		return buildReactiveQueryFromName( name, resultClass );
+	}
+
+	private <T> ReactiveQuery<T> buildReactiveQueryFromName(String name, Class<T> resultType) {
+		checkOpen();
+		try {
+			pulseTransactionCoordinator();
+			delayedAfterCompletion();
+
+			// todo : apply stored setting at the JPA Query level too
+
+			final NamedQueryDefinition namedQueryDefinition = getFactory().getNamedQueryRepository().getNamedQueryDefinition( name );
+			if ( namedQueryDefinition != null ) {
+				return createReactiveQuery( namedQueryDefinition, resultType );
+			}
+
+			final NamedSQLQueryDefinition nativeQueryDefinition = getFactory().getNamedQueryRepository().getNamedSQLQueryDefinition( name );
+			if ( nativeQueryDefinition != null ) {
+				return createReactiveNativeQuery( nativeQueryDefinition, resultType );
+			}
+
+			throw getExceptionConverter().convert( new IllegalArgumentException( "No query defined for that name [" + name + "]" ) );
+		}
+		catch (RuntimeException e) {
+			throw !( e instanceof IllegalArgumentException ) ? new IllegalArgumentException( e ) : e;
+		}
+	}
+
+	private <T> ReactiveQuery<T> createReactiveQuery(NamedQueryDefinition namedQueryDefinition, Class<T> resultType) {
+		final ReactiveQuery<T> query = createReactiveQuery( namedQueryDefinition );
+		if ( resultType != null ) {
+			resultClassChecking( resultType, createQuery( namedQueryDefinition ) );
+		}
+		return query;
+	}
+
+	private <T> ReactiveQuery<T> createReactiveQuery(NamedQueryDefinition queryDefinition) {
+		String queryString = queryDefinition.getQueryString();
+		final ReactiveQueryImpl<T> query = new ReactiveQueryImpl<>(
+				this,
+				getQueryPlan( queryString, false ).getParameterMetadata(),
+				queryString
+		);
+		applyQuerySettingsAndHints( query );
+		query.setHibernateFlushMode( queryDefinition.getFlushMode() );
+		query.setComment( queryDefinition.getComment() != null ? queryDefinition.getComment() : queryDefinition.getName() );
+		if ( queryDefinition.getLockOptions() != null ) {
+			query.setLockOptions( queryDefinition.getLockOptions() );
+		}
+
+		initQueryFromNamedDefinition( query, queryDefinition );
+
+		return query;
+	}
+
+	private <T> ReactiveNativeQuery<T> createReactiveNativeQuery(NamedSQLQueryDefinition queryDefinition, Class<T> resultType) {
+		if ( resultType != null && !Tuple.class.equals( resultType ) ) {
+			resultClassChecking( resultType, queryDefinition );
+		}
+
+		final ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>(
+				queryDefinition,
+				this,
+				getFactory().getQueryPlanCache().getSQLParameterMetadata( queryDefinition.getQueryString(), false )
+		);
+		if ( Tuple.class.equals( resultType ) ) {
+			query.setResultTransformer( new NativeQueryTupleTransformer() );
+		}
+		applyQuerySettingsAndHints( query );
+		query.setHibernateFlushMode( queryDefinition.getFlushMode() );
+		query.setComment( queryDefinition.getComment() != null ? queryDefinition.getComment() : queryDefinition.getName() );
+		if ( queryDefinition.getLockOptions() != null ) {
+			query.setLockOptions( queryDefinition.getLockOptions() );
+		}
+
+		initQueryFromNamedDefinition( query, queryDefinition );
+
+		return query;
 	}
 
 	@Override
