@@ -22,12 +22,9 @@ import java.util.concurrent.CompletionStage;
  * @see ReactiveAbstractEntityPersister
  */
 public interface ReactiveEntityPersister extends EntityPersister {
+
 	Logger log = Logger.getLogger( ReactiveEntityPersister.class );
 
-	//TODO: we only support Long for now, but eventually
-	//      we need to do something more general
-	ReactiveIdentifierGenerator<?> getReactiveIdentifierGenerator();
-	
 	/**
 	 * Insert the given instance state without blocking.
 	 *

@@ -1,5 +1,6 @@
 package org.hibernate.reactive.sql.impl;
 
+import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -15,8 +16,11 @@ public class Parameters {
 	 * {@link SessionFactoryImplementor}.
 	 */
 	public static Supplier<String> createDialectParameterGenerator(SessionFactoryImplementor factory) {
-		//TODO: hardcoding the dialect here is very lame
-		if ( factory.getJdbcServices().getDialect() instanceof PostgreSQL81Dialect) {
+		return createDialectParameterGenerator( factory.getJdbcServices().getDialect() );
+	}
+
+	public static Supplier<String> createDialectParameterGenerator(Dialect dialect) {
+		if ( dialect instanceof PostgreSQL81Dialect) { //TODO: hardcoding the dialect here is very lame
 			return new Supplier<String>() {
 				int count = 0;
 				@Override

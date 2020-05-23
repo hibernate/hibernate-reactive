@@ -1,66 +1,45 @@
 package org.hibernate.reactive.id.impl;
 
-import org.hibernate.boot.model.relational.Database;
-import org.hibernate.boot.model.relational.Namespace;
+import org.hibernate.MappingException;
 import org.hibernate.boot.model.relational.QualifiedName;
-import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.mapping.PersistentClass;
-import org.hibernate.persister.spi.PersisterCreationContext;
+import org.hibernate.id.Configurable;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.service.ServiceRegistry;
+import org.hibernate.type.Type;
 
 import java.util.Properties;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineSequenceName;
+
 /**
  * Support for JPA's {@link javax.persistence.SequenceGenerator}.
  */
-public class SequenceReactiveIdentifierGenerator implements ReactiveIdentifierGenerator<Long> {
+public class SequenceReactiveIdentifierGenerator
+		implements ReactiveIdentifierGenerator<Long>, Configurable {
 
-	private final String sql;
+	private String sql;
+	private QualifiedName qualifiedSequenceName;
 
-	SequenceReactiveIdentifierGenerator(PersistentClass persistentClass, PersisterCreationContext creationContext) {
+	@Override
+	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) throws MappingException {
+		JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
+		Dialect dialect = jdbcEnvironment.getDialect();
 
-		MetadataImplementor metadata = creationContext.getMetadata();
-		SessionFactoryImplementor sessionFactory = creationContext.getSessionFactory();
-		Database database = metadata.getDatabase();
-		JdbcEnvironment jdbcEnvironment = database.getJdbcEnvironment();
+		qualifiedSequenceName = determineSequenceName( params, serviceRegistry );
 
-		Properties props = IdentifierGeneration.identifierGeneratorProperties(
-				jdbcEnvironment.getDialect(),
-				sessionFactory,
-				persistentClass
-		);
+		// allow physical naming strategies a chance to kick in
+		String renderedSequenceName = jdbcEnvironment.getQualifiedObjectNameFormatter()
+				.format( qualifiedSequenceName, dialect );
 
-		QualifiedName logicalQualifiedSequenceName =
-				IdentifierGeneration.determineSequenceName( props, jdbcEnvironment, database );
-		final Namespace namespace = database.locateNamespace(
-				logicalQualifiedSequenceName.getCatalogName(),
-				logicalQualifiedSequenceName.getSchemaName()
-		);
-		org.hibernate.boot.model.relational.Sequence sequence =
-				namespace.locateSequence( logicalQualifiedSequenceName.getObjectName() );
-
-		if (sequence != null) {
-			final Dialect dialect = jdbcEnvironment.getDialect();
-			String finalSequenceName = jdbcEnvironment.getQualifiedObjectNameFormatter().format(
-					sequence.getName(),
-					dialect
-			);
-			sql = dialect.getSequenceNextValString(finalSequenceName);
-		}
-		else {
-			sql = null;
-		}
+		sql = dialect.getSequenceNextValString( renderedSequenceName );
 	}
 
 	@Override
 	public CompletionStage<Long> generate(ReactiveSession session, Object entity) {
-		return sql==null ? CompletionStages.nullFuture()
-				: session.getReactiveConnection().selectLong( sql, new Object[0] );
+		return session.getReactiveConnection().selectLong( sql, new Object[0] );
 	}
 }
