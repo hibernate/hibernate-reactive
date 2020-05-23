@@ -298,14 +298,13 @@ or `@ManyToOne(fetch=EAGER) @Fetch(SUBSELECT)`. So you must choose between:
 
 As usual, we recommend that all association mappings be declared lazy.
 
-#### Queries
+#### Criteria queries
 
-Currently there is no support for:
+Currently there is no support for criteria queries. Use HQL or native SQL 
+instead. If you're concerned about type safety, check out the Hibernate 
+[Query Validator][].
 
-- criteria queries, or
-- native SQL queries.
-
-Use HQL, or native SQL executed directly against the Vert.x `SqlClient`.
+[Query Validator]: https://github.com/hibernate/query-validator/
 
 #### Fetch profiles
 
