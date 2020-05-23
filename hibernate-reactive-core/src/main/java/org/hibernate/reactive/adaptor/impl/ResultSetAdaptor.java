@@ -10,7 +10,21 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.sql.*;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Date;
+import java.sql.NClob;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -24,11 +38,13 @@ import java.util.Map;
 public class ResultSetAdaptor implements ResultSet {
 
 	private final RowIterator<Row> iterator;
+	private RowSet<Row> rows;
 	private Row row;
 	private boolean wasNull;
 
 	public ResultSetAdaptor(RowSet<Row> rows) {
 		this.iterator = rows.iterator();
+		this.rows = rows;
 	}
 
 	@Override
@@ -250,7 +266,123 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public ResultSetMetaData getMetaData() {
-		return null;
+		return new ResultSetMetaData() {
+			@Override
+			public int getColumnCount() {
+				return rows.columnsNames().size();
+			}
+
+			@Override
+			public boolean isAutoIncrement(int column) {
+				return false;
+			}
+
+			@Override
+			public boolean isCaseSensitive(int column) {
+				return false;
+			}
+
+			@Override
+			public boolean isSearchable(int column) {
+				return false;
+			}
+
+			@Override
+			public boolean isCurrency(int column) {
+				return false;
+			}
+
+			@Override
+			public int isNullable(int column) {
+				return columnNullableUnknown;
+			}
+
+			@Override
+			public boolean isSigned(int column) {
+				return false;
+			}
+
+			@Override
+			public int getColumnDisplaySize(int column) {
+				return 0;
+			}
+
+			@Override
+			public String getColumnLabel(int column) {
+				return rows.columnsNames().get(column-1);
+			}
+
+			@Override
+			public String getColumnName(int column) {
+				return rows.columnsNames().get(column-1);
+			}
+
+			@Override
+			public String getSchemaName(int column) {
+				return null;
+			}
+
+			@Override
+			public int getPrecision(int column) {
+				return 0;
+			}
+
+			@Override
+			public int getScale(int column) {
+				return 0;
+			}
+
+			@Override
+			public String getTableName(int column) {
+				return null;
+			}
+
+			@Override
+			public String getCatalogName(int column) {
+				return null;
+			}
+
+			@Override
+			public int getColumnType(int column) {
+				//TODO: we need SQLCLient to provide some column type info
+				return Types.VARCHAR;
+			}
+
+			@Override
+			public String getColumnTypeName(int column) {
+				return null;
+			}
+
+			@Override
+			public boolean isReadOnly(int column) {
+				return false;
+			}
+
+			@Override
+			public boolean isWritable(int column) {
+				return false;
+			}
+
+			@Override
+			public boolean isDefinitelyWritable(int column) {
+				return false;
+			}
+
+			@Override
+			public String getColumnClassName(int column) {
+				return null;
+			}
+
+			@Override
+			public <T> T unwrap(Class<T> iface) {
+				return null;
+			}
+
+			@Override
+			public boolean isWrapperFor(Class<?> iface) {
+				return false;
+			}
+		};
 	}
 
 	@Override
@@ -265,7 +397,8 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public int findColumn(String columnLabel) {
-		return row.getColumnIndex( columnLabel );
+		return rows.columnsNames().indexOf(columnLabel)+1;
+//		return row.getColumnIndex( columnLabel );
 	}
 
 	@Override
