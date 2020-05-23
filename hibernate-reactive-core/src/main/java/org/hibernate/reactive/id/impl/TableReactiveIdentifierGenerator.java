@@ -115,6 +115,7 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 			segmentValue = null;
 			initialValue = determineInitialValueForSequenceEmulation( props );
 
+			storeLastUsedValue = false;
 		}
 		else {
 			//It's a regular TableGenerator
@@ -128,14 +129,14 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 					table.getQualifiedTableName(),
 					dialect
 			);
+
+			storeLastUsedValue = database.getServiceRegistry().getService( ConfigurationService.class )
+					.getSetting( AvailableSettings.TABLE_GENERATOR_STORE_LAST_USED, StandardConverters.BOOLEAN, true );
 		}
 
 		this.selectQuery = buildSelectQuery(sessionFactory);
 		this.updateQuery = buildUpdateQuery(sessionFactory);
 		this.insertQuery = buildInsertQuery(sessionFactory);
-
-		storeLastUsedValue = database.getServiceRegistry().getService( ConfigurationService.class )
-				.getSetting( AvailableSettings.TABLE_GENERATOR_STORE_LAST_USED, StandardConverters.BOOLEAN, true );
 	}
 
 	protected String determineSegmentColumnName(Properties params, JdbcEnvironment jdbcEnvironment) {
@@ -196,7 +197,7 @@ public class TableReactiveIdentifierGenerator implements ReactiveIdentifierGener
 				+ " set " + valueColumnName + "="  + generator.get()
 				+ " where " + valueColumnName + "="  + generator.get();
 		if (segmentColumnName != null) {
-			update += "and " + segmentColumnName + "=" + generator.get();
+			update += " and " + segmentColumnName + "=" + generator.get();
 		}
 		return update;
 	}
