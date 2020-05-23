@@ -1,17 +1,10 @@
 package org.hibernate.reactive;
 
-import static org.junit.Assume.assumeTrue;
-
-import java.io.Serializable;
-import java.math.BigInteger;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.TimeZone;
+import io.vertx.ext.unit.TestContext;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
+import org.junit.Test;
 
 import javax.persistence.Column;
 import javax.persistence.Convert;
@@ -32,16 +25,19 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.Transient;
 import javax.persistence.Version;
+import java.io.Serializable;
+import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.TimeZone;
 
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
-import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
-import org.junit.Ignore;
-import org.junit.Test;
+import static org.junit.Assume.assumeTrue;
 
-import io.vertx.ext.unit.TestContext;
-
-@Ignore
 public class MySQLBasicTest extends BaseReactiveTest {
 
 	@Override
