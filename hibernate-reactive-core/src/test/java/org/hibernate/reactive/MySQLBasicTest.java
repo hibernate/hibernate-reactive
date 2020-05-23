@@ -214,11 +214,11 @@ public class MySQLBasicTest extends BaseReactiveTest {
 		TimeZone timeZone;
 		@Temporal(TemporalType.DATE)
 		private Date date;
-		@Column(name="_localDate")
+		@Column(name="localdayte")
 		private LocalDate localDate;
-		@Column(name="_localDateTime")
+		@Column(name="localtyme")
 		private LocalDateTime localDateTime;
-//		@Column(name="_localTime")
+//		@Column(name="localtyme")
 //		private LocalTime localTime;
 		@Convert(converter = BinInteger.class)
 		private BigInteger binInteger;

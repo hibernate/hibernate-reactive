@@ -107,7 +107,7 @@ public class SecondaryTableTest extends BaseReactiveTest {
 	public static class Book {
 		public static final String TABLE1 = "Book";
 		public static final String TABLE2 = "SpellBook";
-		public static final String TABLE3 = "Empty";
+		public static final String TABLE3 = "Extra";
 
 		@Id private Integer id;
 		private String title;
