@@ -203,7 +203,7 @@ public class ReactiveDynamicBatchingCollectionInitializerBuilder extends Reactiv
 					session.getJdbcServices().getJdbcEnvironment().getDialect()
 			);
 
-			return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters, false )
+			return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters )
 					.handle( (list, e) -> {
 						if (e instanceof JDBCException) {
 							throw getFactory().getJdbcServices().getSqlExceptionHelper().convert(

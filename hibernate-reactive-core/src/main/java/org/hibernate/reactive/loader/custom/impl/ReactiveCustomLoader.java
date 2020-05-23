@@ -1,15 +1,17 @@
-package org.hibernate.reactive.loader;
+package org.hibernate.reactive.loader.custom.impl;
 
+import org.hibernate.HibernateException;
 import org.hibernate.QueryException;
 import org.hibernate.cache.spi.QueryKey;
 import org.hibernate.cache.spi.QueryResultsCache;
-import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.loader.OuterJoinLoader;
+import org.hibernate.loader.custom.CustomLoader;
+import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.loader.spi.AfterLoadAction;
+import org.hibernate.reactive.loader.ReactiveLoader;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
@@ -21,23 +23,16 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Reactive version of {@link OuterJoinLoader}
- * <p>
- *     This class follows the same structure of {@link OuterJoinLoader} with the methods signature change so that
- *     it's possible to return a {@link CompletionStage}
- * </p>
+ * @author Gavin King
  */
-public class ReactiveOuterJoinLoader extends OuterJoinLoader implements ReactiveLoader {
+public class ReactiveCustomLoader extends CustomLoader implements ReactiveLoader {
 
-	public ReactiveOuterJoinLoader(SessionFactoryImplementor factory, LoadQueryInfluencers loadQueryInfluencers) {
-		super(factory, loadQueryInfluencers);
+	public ReactiveCustomLoader(CustomQuery customQuery, SessionFactoryImplementor factory) {
+		super(customQuery, factory);
 	}
 
-	public CompletionStage<List<Object>> doReactiveQueryAndInitializeNonLazyCollections(
-			final SessionImplementor session,
-			final QueryParameters queryParameters,
-			final boolean returnProxies) {
-		return doReactiveQueryAndInitializeNonLazyCollections( getSQLString(), session, queryParameters, returnProxies, null );
+	public CompletionStage<List<Object>> reactiveList(SharedSessionContractImplementor session, QueryParameters queryParameters) throws HibernateException {
+		return reactiveListIgnoreQueryCache( getSQLString(), getQueryIdentifier(), session, queryParameters );
 	}
 
 	@Override @SuppressWarnings("unchecked")

@@ -614,7 +614,7 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 					createDialectParameterGenerator( getDialect() )
 			);
 
-			return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters, false )
+			return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters )
 					.handle( (results, e) -> {
 						if (e instanceof JDBCException) {
 							throw session.getJdbcServices().getSqlExceptionHelper().convert(
