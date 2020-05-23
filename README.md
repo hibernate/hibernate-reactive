@@ -97,7 +97,7 @@ program.
 Obtain a Hibernate `SessionFactory` or JPA `EntityManagerFactory` 
 just as you normally would, for example, by calling:
 
-    EntityManagerFactory emf = createEntityManagerFactory("example");
+    EntityManagerFactory emf = Persistence.createEntityManagerFactory("example");
 
 Now, `unwrap()` the reactive `SessionFactory`:
  
