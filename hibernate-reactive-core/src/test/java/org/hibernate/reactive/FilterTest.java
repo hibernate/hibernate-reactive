@@ -21,7 +21,9 @@ public class FilterTest extends BaseReactiveTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty(AvailableSettings.USE_SQL_COMMENTS, "true" );
+		if ( DatabaseConfiguration.dbType() != DBType.DB2 ) {
+			configuration.setProperty(AvailableSettings.USE_SQL_COMMENTS, "true" );
+		}
 		configuration.addPackage(this.getClass().getPackage().getName());
 		configuration.addAnnotatedClass(Node.class);
 		configuration.addAnnotatedClass(Element.class);
@@ -30,8 +32,6 @@ public class FilterTest extends BaseReactiveTest {
 
 	@Test
 	public void testFilter(TestContext context) {
-		// TODO: @AGG get this test working with DB2
-		assumeTrue( DatabaseConfiguration.dbType() != DBType.DB2 );
 
 		Node basik = new Node("Child");
 		basik.parent = new Node("Parent");
