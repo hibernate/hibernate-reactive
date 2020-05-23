@@ -12,6 +12,8 @@ import org.hibernate.sql.ConditionFragment;
 import org.hibernate.sql.DisjunctionFragment;
 import org.hibernate.sql.InFragment;
 
+import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
+
 public class ReactiveOneToManyJoinWalker extends OneToManyJoinWalker {
 	public ReactiveOneToManyJoinWalker(QueryableCollection oneToManyPersister, int batchSize, String subquery, SessionFactoryImplementor factory, LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
 		super(oneToManyPersister, batchSize, subquery, factory, loadQueryInfluencers);
@@ -21,7 +23,7 @@ public class ReactiveOneToManyJoinWalker extends OneToManyJoinWalker {
 	 * Render the where condition for a (batch) load by identifier / collection key
 	 */
 	protected StringBuilder whereString(String alias, String[] columnNames, int batchSize) {
-		Supplier<String> nextParameter = Parameters.createDialectParameterGenerator(getFactory());
+		Supplier<String> nextParameter = createDialectParameterGenerator( getDialect() );
 
 		if ( columnNames.length == 1 ) {
 			// if not a composite key, use "foo in (?, ?, ?)" for batching

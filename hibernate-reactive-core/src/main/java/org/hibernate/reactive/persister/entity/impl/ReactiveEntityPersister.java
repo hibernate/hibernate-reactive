@@ -6,10 +6,7 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
-import org.hibernate.pretty.MessageHelper;
-import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.loader.entity.impl.ReactiveUniqueEntityLoader;
-import org.jboss.logging.Logger;
 
 import java.io.Serializable;
 import java.util.List;
@@ -22,8 +19,6 @@ import java.util.concurrent.CompletionStage;
  * @see ReactiveAbstractEntityPersister
  */
 public interface ReactiveEntityPersister extends EntityPersister {
-
-	Logger log = Logger.getLogger( ReactiveEntityPersister.class );
 
 	/**
 	 * Insert the given instance state without blocking.
@@ -78,17 +73,9 @@ public interface ReactiveEntityPersister extends EntityPersister {
 			SessionImplementor session,
 			MultiLoadOptions loadOptions);
 
-	default CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
-		return reactiveLoad( id, optionalObject, lockOptions, session, null );
-	}
+	CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session);
 
-	default CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
-		if ( log.isTraceEnabled() ) {
-			log.tracev( "Fetching entity: {0}", MessageHelper.infoString( this, id, getFactory() ) );
-		}
-
-		return getAppropriateLoader( lockOptions, session ).load( id, optionalObject, session, lockOptions, readOnly );
-	}
+	CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly);
 
 	ReactiveUniqueEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session);
 

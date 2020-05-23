@@ -8,9 +8,12 @@ package org.hibernate.reactive.sql.impl;
 
 import org.hibernate.MappingException;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 
 import java.util.Iterator;
 import java.util.function.Supplier;
+
+import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
 
 /**
  * An {@link org.hibernate.sql.Insert} that generates
@@ -20,6 +23,14 @@ public class Insert extends org.hibernate.sql.Insert {
 
 	private Dialect dialect;
 	private final Supplier<String> nextParameter;
+
+	public Insert(SessionFactoryImplementor factory) {
+		this( factory.getJdbcServices().getDialect() );
+	}
+
+	public Insert(Dialect dialect) {
+		this( dialect, createDialectParameterGenerator( dialect ) );
+	}
 
 	public Insert(Dialect dialect, Supplier<String> nextParameter) {
 		super(dialect);

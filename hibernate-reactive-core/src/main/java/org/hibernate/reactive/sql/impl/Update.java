@@ -7,10 +7,13 @@
 package org.hibernate.reactive.sql.impl;
 
 import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Supplier;
+
+import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
 
 /**
  * An {@link org.hibernate.sql.Update} that generates
@@ -19,6 +22,14 @@ import java.util.function.Supplier;
 public class Update extends org.hibernate.sql.Update {
 
 	private final Supplier<String> nextParameter;
+
+	public Update(SessionFactoryImplementor factory) {
+		this( factory.getJdbcServices().getDialect() );
+	}
+
+	public Update(Dialect dialect) {
+		this( dialect, createDialectParameterGenerator( dialect ) );
+	}
 
 	public Update(Dialect dialect, Supplier<String> nextParameter) {
 		super(dialect);

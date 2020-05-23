@@ -5,7 +5,6 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.BatchFetchQueueHelper;
-import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
@@ -27,8 +26,6 @@ import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.pretty.MessageHelper;
-import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
-import org.hibernate.reactive.sql.impl.Parameters;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.Type;
 import org.jboss.logging.Logger;
@@ -40,6 +37,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
+
+import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
 
 /**
  * @see org.hibernate.loader.entity.DynamicBatchingEntityLoaderBuilder
@@ -571,7 +570,7 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 							alias,
 							columnNames,
 							getDialect(),
-							Parameters.createDialectParameterGenerator(getFactory())
+							createDialectParameterGenerator( getDialect() )
 					);
 				}
 			};
@@ -605,20 +604,20 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 				SessionImplementor session,
 				QueryParameters queryParameters,
 				Serializable[] ids) {
-			final JdbcServices jdbcServices = session.getJdbcServices();
+
 			final String sql = expandBatchIdPlaceholder(
 					sqlTemplate,
 					ids,
 					alias,
 					persister.getKeyColumnNames(),
-					jdbcServices.getJdbcEnvironment().getDialect(),
-					Parameters.createDialectParameterGenerator(getFactory())
+					getDialect(),
+					createDialectParameterGenerator( getDialect() )
 			);
 
 			return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters, false )
 					.handle( (results, e) -> {
 						if (e instanceof JDBCException) {
-							throw jdbcServices.getSqlExceptionHelper().convert(
+							throw session.getJdbcServices().getSqlExceptionHelper().convert(
 									((JDBCException) e).getSQLException(),
 									"could not load an entity batch: " + MessageHelper.infoString(
 											getEntityPersisters()[0],
