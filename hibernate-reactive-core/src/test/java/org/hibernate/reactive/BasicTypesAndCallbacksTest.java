@@ -192,7 +192,9 @@ public class BasicTypesAndCallbacksTest extends BaseReactiveTest {
 		Double nullDouble;
 		Byte nullByte;
 
+		@Column(name="dessimal")
 		BigDecimal decimal;
+		@Column(name="inteja")
 		BigInteger integer;
 		byte[] bytes;
 		Cover cover;
@@ -201,11 +203,11 @@ public class BasicTypesAndCallbacksTest extends BaseReactiveTest {
 		TimeZone timeZone;
 		@Temporal(TemporalType.DATE)
 		private Date date;
-		@Column(name="_localDate")
+		@Column(name="localdayte")
 		private LocalDate localDate;
-		@Column(name="_localDateTime")
+		@Column(name="localdaytetyme")
 		private LocalDateTime localDateTime;
-		@Column(name="_localTime")
+		@Column(name="localtyme")
 		private LocalTime localTime;
 		@Convert(converter = BinInteger.class)
 		private BigInteger binInteger;
