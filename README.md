@@ -280,7 +280,7 @@ associations.
 
 ### Eager association fetching
 
-Hibernate Reactive does support eager association fetching via subsequent 
+Hibernate Reactive does not support eager association fetching via subsequent 
 SQL select, for example, `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`
 or `@ManyToOne(fetch=EAGER) @Fetch(SUBSELECT)`. So you must choose between:
 
