@@ -395,6 +395,29 @@ public interface Stage {
 		 */
 		<R> Query<R> createQuery(String queryString, Class<R> resultType);
 
+		/**
+		 * Create an instance of {@link Query} for the named query.
+		 *
+		 * @param queryName The name of the query
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see javax.persistence.EntityManager#createQuery(String)
+		 */
+		<R> Query<R> createNamedQuery(String queryName);
+
+		/**
+		 * Create an instance of {@link Query} for the named query.
+		 *
+		 * @param queryName The name of the query
+		 * @param resultType the Java type returned in each row of query results
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see javax.persistence.EntityManager#createQuery(String, Class)
+		 */
+		<R> Query<R> createNamedQuery(String queryName, Class<R> resultType);
+
 //		/**
 //		 * Create an instance of {@link Query} for the given SQL query string.
 //		 *

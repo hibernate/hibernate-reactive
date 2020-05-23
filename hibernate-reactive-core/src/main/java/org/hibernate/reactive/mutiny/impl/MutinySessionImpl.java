@@ -158,6 +158,16 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
+	public <R> Mutiny.Query<R> createNamedQuery(String name) {
+		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name ) );
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNamedQuery(String name, Class<R> resultType) {
+		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ) );
+	}
+
+	@Override
 	public FlushMode getFlushMode() {
 		switch ( delegate.getHibernateFlushMode() ) {
 			case MANUAL:
