@@ -41,14 +41,12 @@ import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.jpa.QueryHints;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
-import org.hibernate.loader.custom.CustomLoader;
 import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.Query;
-import org.hibernate.query.spi.NativeQueryImplementor;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
 import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
@@ -59,6 +57,7 @@ import org.hibernate.reactive.event.spi.ReactiveLoadEventListener;
 import org.hibernate.reactive.event.spi.ReactiveMergeEventListener;
 import org.hibernate.reactive.event.spi.ReactivePersistEventListener;
 import org.hibernate.reactive.event.spi.ReactiveRefreshEventListener;
+import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
@@ -322,10 +321,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters queryParameters) {
-		return listReactiveCustomQuery( getNativeQueryPlan( spec ).getCustomQuery(), queryParameters );
+		return listReactiveCustomQuery( getNativeQueryPlan( spec ).getCustomQuery(), queryParameters )
+				//TODO: this typecast is rubbish
+				.thenApply( list -> (List<T>) list );
 	}
 
-	private <T> CompletionStage<List<T>> listReactiveCustomQuery(CustomQuery customQuery, QueryParameters queryParameters) {
+	private CompletionStage<List<Object>> listReactiveCustomQuery(CustomQuery customQuery, QueryParameters queryParameters) {
 		checkOpenOrWaitingForAutoClose();
 //		checkTransactionSynchStatus();
 
@@ -335,7 +336,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 //		dontFlushFromFind++;
 //		boolean success = false;
-			return loader.<T>reactiveList( this, queryParameters )
+			return loader.reactiveList( this, queryParameters )
 					.whenComplete( (r, e) -> delayedAfterCompletion() );
 //			success = true;
 //			dontFlushFromFind--;

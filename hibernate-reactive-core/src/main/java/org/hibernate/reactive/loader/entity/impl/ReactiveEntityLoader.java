@@ -30,23 +30,6 @@ public class ReactiveEntityLoader extends ReactiveAbstractEntityLoader {
 			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
 		this( persister, 1, lockMode, factory, loadQueryInfluencers );
 	}
-//
-//	// We don't use all the parameters but I kept them for symmetry with EntityLoader
-//	public ReactiveEntityLoader(
-//			OuterJoinLoadable persister,
-//			LockMode lockMode,
-//			SessionFactoryImplementor factory,
-//			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
-//		this( persister, 1, lockMode, factory, loadQueryInfluencers );
-//	}
-//
-//	public ReactiveEntityLoader(
-//			OuterJoinLoadable persister,
-//			LockOptions lockOptions,
-//			SessionFactoryImplementor factory,
-//			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
-//		this( persister, 1, lockOptions, factory, loadQueryInfluencers );
-//	}
 
 	public ReactiveEntityLoader(
 			OuterJoinLoadable persister,
