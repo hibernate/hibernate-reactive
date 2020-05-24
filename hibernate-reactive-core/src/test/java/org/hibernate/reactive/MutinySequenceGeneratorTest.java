@@ -33,26 +33,28 @@ public class MutinySequenceGeneratorTest extends BaseMutinyTest {
 				.flatMap( v -> openSession())
 				.flatMap( s2 ->
 					s2.find( SequenceId.class, b.getId() )
-						.onItem().invoke( bb -> {
+						.map( bb -> {
 							context.assertNotNull( bb );
 							context.assertEquals( bb.id, 5 );
 							context.assertEquals( bb.string, b.string );
 							context.assertEquals( bb.version, 0 );
 
 							bb.string = "Goodbye";
+							return null;
 						})
 						.flatMap(vv -> s2.flush())
 						.flatMap(vv -> s2.find( SequenceId.class, b.getId() ))
-						.onItem().invoke( bt -> {
+						.map( bt -> {
 							context.assertEquals( bt.version, 1 );
+							return null;
 						}))
 				.flatMap( v -> openSession())
 				.flatMap( s3 -> s3.find( SequenceId.class, b.getId() ) )
-				.onItem().invoke( bb -> {
+				.map( bb -> {
 					context.assertEquals(bb.version, 1);
 					context.assertEquals(bb.string, "Goodbye");
+					return null;
 				})
-				.convert().toCompletionStage()
 		);
 	}
 
