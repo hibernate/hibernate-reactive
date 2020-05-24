@@ -12,12 +12,12 @@ import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.hql.internal.QueryExecutionRequestException;
-import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.internal.NativeQueryImpl;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.transform.ResultTransformer;
 
 import javax.persistence.NoResultException;
 import java.util.List;
@@ -46,7 +46,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> setResultTransformer(NativeQueryTupleTransformer nativeQueryTupleTransformer) {
+	public ReactiveNativeQueryImpl<R> setResultTransformer(ResultTransformer nativeQueryTupleTransformer) {
 		super.setResultTransformer(nativeQueryTupleTransformer);
 		return this;
 	}

@@ -9,6 +9,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import javax.persistence.criteria.CriteriaQuery;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -165,6 +166,11 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public <R> Mutiny.Query<R> createNamedQuery(String name, Class<R> resultType) {
 		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ) );
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+		return new MutinyQueryImpl<R>( delegate.createReactiveQuery(criteriaQuery) );
 	}
 
 	@Override

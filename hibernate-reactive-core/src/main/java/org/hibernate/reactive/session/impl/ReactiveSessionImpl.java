@@ -42,13 +42,16 @@ import org.hibernate.internal.SessionImpl;
 import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.jpa.QueryHints;
+import org.hibernate.jpa.spi.CriteriaQueryTupleTransformer;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.Query;
+import org.hibernate.query.internal.ParameterMetadataImpl;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
 import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
@@ -73,6 +76,8 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.Tuple;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Selection;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -197,12 +202,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		delayedAfterCompletion();
 
 		try {
-			ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>(
-					queryString,
-					false,
-					this,
-					getFactory().getQueryPlanCache().getSQLParameterMetadata( queryString, isOrdinalParameterZeroBased )
-			);
+			ParameterMetadata params = getFactory().getQueryPlanCache()
+					.getSQLParameterMetadata( queryString, isOrdinalParameterZeroBased );
+			ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>( queryString, false, this, params );
 			query.setComment( "dynamic native SQL query" );
 			applyQuerySettingsAndHints( query );
 			return query;
@@ -219,9 +221,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		delayedAfterCompletion();
 
 		try {
-			final ReactiveQueryImpl<R> query =
-					new ReactiveQueryImpl<>( this, getQueryPlan( queryString, false )
-						.getParameterMetadata(), queryString );
+			ParameterMetadataImpl parameterMetadata = getQueryPlan(queryString, false).getParameterMetadata();
+			ReactiveQueryImpl<R> query = new ReactiveQueryImpl<>( this, parameterMetadata, queryString );
 			applyQuerySettingsAndHints( query );
 			query.setComment( queryString );
 			return query;
@@ -430,6 +431,49 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		initQueryFromNamedDefinition( query, queryDefinition );
 
 		return query;
+	}
+
+	@Override
+	public <R> ReactiveQuery<R> createReactiveQuery(CriteriaQuery<R> criteriaQuery) {
+		ReactiveCriteriaQueryImpl<R> criteria = (ReactiveCriteriaQueryImpl<R>) criteriaQuery;
+		try {
+			criteria.validate();
+		}
+		catch (IllegalStateException ise) {
+			throw new IllegalArgumentException( "Error occurred validating the Criteria", ise );
+		}
+
+		CriteriaQueryRenderingContext renderingContext = new CriteriaQueryRenderingContext( getFactory() );
+		return criteria.build( renderingContext, this, renderingContext );
+	}
+
+	@Override
+	public <T> ReactiveQuery<T> createReactiveQuery(String jpaqlString, Class<T> resultClass,
+													Selection<T> selection, QueryOptions queryOptions) {
+		try {
+			final ReactiveQuery<T> query = createReactiveQuery( jpaqlString );
+
+			if ( queryOptions.getValueHandlers() == null ) {
+				if ( queryOptions.getResultMetadataValidator() != null ) {
+					queryOptions.getResultMetadataValidator().validate( query.getReturnTypes() );
+				}
+			}
+
+			// determine if we need a result transformer
+			List<Selection<?>> tupleElements = Tuple.class.equals( resultClass )
+					? selection.getCompoundSelectionItems()
+					: null;
+			if ( queryOptions.getValueHandlers() != null || tupleElements != null ) {
+				query.setResultTransformer(
+						new CriteriaQueryTupleTransformer( queryOptions.getValueHandlers(), tupleElements )
+				);
+			}
+
+			return query;
+		}
+		catch ( RuntimeException e ) {
+			throw getExceptionConverter().convert( e );
+		}
 	}
 
 	@Override

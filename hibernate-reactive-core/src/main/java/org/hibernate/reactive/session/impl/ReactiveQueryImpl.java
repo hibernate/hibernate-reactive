@@ -14,6 +14,7 @@ import org.hibernate.query.internal.QueryImpl;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.transform.ResultTransformer;
 
 import javax.persistence.NoResultException;
 import javax.persistence.TransactionRequiredException;
@@ -155,5 +156,12 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		super.setCacheMode(cacheMode);
 		return this;
 	}
+
+	@Override
+	public ReactiveQueryImpl<R> setResultTransformer(ResultTransformer resultTransformer) {
+		super.setResultTransformer(resultTransformer);
+		return this;
+	}
+
 
 }

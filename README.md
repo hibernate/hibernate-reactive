@@ -298,14 +298,6 @@ or `@ManyToOne(fetch=EAGER) @Fetch(SUBSELECT)`. So you must choose between:
 
 As usual, we recommend that all association mappings be declared lazy.
 
-#### Criteria queries
-
-Currently there is no support for criteria queries. Use HQL or native SQL 
-instead. If you're concerned about type safety, check out the Hibernate 
-[Query Validator][].
-
-[Query Validator]: https://github.com/hibernate/query-validator/
-
 #### Fetch profiles
 
 JPA `@NamedEntityGraph`s are not supported, but Hibernate `@FetchProfile`s

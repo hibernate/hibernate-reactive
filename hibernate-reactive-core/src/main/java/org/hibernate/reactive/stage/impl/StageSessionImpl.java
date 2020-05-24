@@ -8,6 +8,7 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import javax.persistence.criteria.CriteriaQuery;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -160,6 +161,11 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public <R> Stage.Query<R> createNativeQuery(String sql, String resultSetMapping) {
 		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping ) );
+	}
+
+	@Override
+	public <R> Stage.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+		return new StageQueryImpl<R>( delegate.createReactiveQuery(criteriaQuery) );
 	}
 
 	@Override

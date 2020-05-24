@@ -3,10 +3,12 @@ package org.hibernate.reactive.mutiny.impl;
 import io.smallrye.mutiny.Uni;
 import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionFactoryImpl;
-import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
+import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 
+import javax.persistence.criteria.CriteriaBuilder;
 import java.util.function.Function;
 
 /**
@@ -37,6 +39,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		return openSession().flatMap(
 				session -> work.apply( session ).on().termination( session::close )
 		);
+	}
+
+	@Override
+	public CriteriaBuilder getCriteriaBuilder() {
+		return new ReactiveCriteriaBuilderImpl( delegate );
 	}
 
 	@Override

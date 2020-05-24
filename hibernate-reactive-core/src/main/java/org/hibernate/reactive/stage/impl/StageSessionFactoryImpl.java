@@ -2,10 +2,12 @@ package org.hibernate.reactive.stage.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionFactoryImpl;
-import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
+import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.stage.Stage;
 
+import javax.persistence.criteria.CriteriaBuilder;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -38,6 +40,11 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 				session -> work.apply(session)
 						.whenComplete( (r, e) -> session.close() )
 		);
+	}
+
+	@Override
+	public CriteriaBuilder getCriteriaBuilder() {
+		return new ReactiveCriteriaBuilderImpl( delegate );
 	}
 
 	@Override

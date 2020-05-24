@@ -12,6 +12,8 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.reactive.session.ReactiveSession;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import java.util.List;
 import java.util.function.Function;
 
@@ -115,7 +117,7 @@ public interface Mutiny {
 		 */
 		Query<R> setLockMode(String alias, LockMode lockMode);
 
-		/**
+		/*
 
 		Some examples of additional useful methods to add here:
 
@@ -453,6 +455,17 @@ public interface Mutiny {
 		<R> Query<R> createNativeQuery(String queryString, String resultSetMapping);
 
 		/**
+		 * Create an instance of {@link Mutiny.Query} for the given criteria query.
+		 *
+		 * @param criteriaQuery The {@link CriteriaQuery}
+		 *
+		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 *
+		 * @see javax.persistence.EntityManager#createQuery(String)
+		 */
+		<R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery);
+
+		/**
 		 * Set the flush mode for this session.
 		 *
 		 * The flush mode determines the points at which the session is flushed.
@@ -689,6 +702,12 @@ public interface Mutiny {
 		 *             the result of the work as a {@link Uni}.
 		 */
 		<T> Uni<T> withSession(Function<Session, Uni<T>> work);
+
+		/**
+		 * @return an instance of {@link CriteriaBuilder} for creating
+		 * criteria queries.
+		 */
+		CriteriaBuilder getCriteriaBuilder();
 
 		/**
 		 * Destroy the session factory and clean up its connection
