@@ -1,5 +1,9 @@
 package org.hibernate.example.reactive;
 
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.Root;
+
 import static java.lang.System.out;
 import static javax.persistence.Persistence.createEntityManagerFactory;
 import static org.hibernate.reactive.stage.Stage.SessionFactory;
@@ -42,7 +46,7 @@ public class Main {
 				//retrieve a Book
 				session -> session.find(Book.class, book1.id)
 						//print its title
-						.thenAccept(book -> out.println(book.title + " is a great book!") )
+						.thenAccept( book -> out.println(book.title + " is a great book!") )
 		)
 				.toCompletableFuture().join();
 
@@ -84,6 +88,21 @@ public class Main {
 						.thenAccept( books -> books.forEach(
 								b -> out.printf("%s: %s (%s)\n", b.isbn, b.title, b.author.name)
 						) )
+		)
+				.toCompletableFuture().join();
+
+		sessionFactory.withSession(
+				//use a criteria query
+				session -> {
+					CriteriaQuery<Book> query = sessionFactory.getCriteriaBuilder().createQuery(Book.class);
+					Root<Author> a = query.from(Author.class);
+					Join<Author,Book> b = a.join(Author_.books);
+					query.where( a.get("name").in("Neal Stephenson", "William Gibson") );
+					query.select(b);
+					return session.createQuery(query).getResultList().thenAccept(
+							books -> books.forEach( book -> out.println(book.title) )
+					);
+				}
 		)
 				.toCompletableFuture().join();
 

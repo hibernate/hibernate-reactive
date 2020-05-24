@@ -1,5 +1,9 @@
 package org.hibernate.example.reactive;
 
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.Root;
+
 import static java.lang.System.out;
 import static javax.persistence.Persistence.createEntityManagerFactory;
 import static org.hibernate.reactive.mutiny.Mutiny.SessionFactory;
@@ -83,6 +87,21 @@ public class MutinyMain {
 						.onItem().invoke( books -> books.forEach(
 								b -> out.printf("%s: %s (%s)\n", b.isbn, b.title, b.author.name)
 						) )
+		)
+				.await().indefinitely();
+
+		sessionFactory.withSession(
+				//use a criteria query
+				session -> {
+					CriteriaQuery<Book> query = sessionFactory.getCriteriaBuilder().createQuery(Book.class);
+					Root<Author> a = query.from(Author.class);
+					Join<Author,Book> b = a.join(Author_.books);
+					query.where( a.get("name").in("Neal Stephenson", "William Gibson") );
+					query.select(b);
+					return session.createQuery(query).getResultList().onItem().invoke(
+							books -> books.forEach(book -> out.println(book.title) )
+					);
+				}
 		)
 				.await().indefinitely();
 

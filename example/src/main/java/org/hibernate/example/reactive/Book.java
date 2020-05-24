@@ -6,6 +6,8 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import static javax.persistence.FetchType.LAZY;
+
 @Entity
 @Table(name="books")
 class Book {
@@ -15,7 +17,7 @@ class Book {
 
 	String title;
 
-	@ManyToOne
+	@ManyToOne(fetch = LAZY)
 	Author author;
 
 	Book(String isbn, String title, Author author) {
