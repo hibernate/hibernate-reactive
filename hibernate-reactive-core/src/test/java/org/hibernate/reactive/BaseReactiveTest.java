@@ -1,24 +1,26 @@
 package org.hibernate.reactive;
 
-import java.util.concurrent.CompletionStage;
-
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Timeout;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.stage.Stage;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 @RunWith(VertxUnitRunner.class)
 public abstract class BaseReactiveTest {
@@ -52,7 +54,7 @@ public abstract class BaseReactiveTest {
 
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
-		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, "create-drop" );
+		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, dbType() == DBType.MYSQL ? "create-drop" : "create" );
 		configuration.setProperty( AvailableSettings.URL, DatabaseConfiguration.getJdbcUrl() );
 		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
 		return configuration;
@@ -60,11 +62,11 @@ public abstract class BaseReactiveTest {
 
 	@Before
 	public void before() {
+		Configuration configuration = constructConfiguration();
 		StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
-				.applySettings( constructConfiguration().getProperties() )
+				.applySettings( configuration.getProperties() )
 				.build();
-
-		sessionFactory = constructConfiguration().buildSessionFactory( registry );
+		sessionFactory = configuration.buildSessionFactory( registry );
 		poolProvider = registry.getService( ReactiveConnectionPool.class );
 	}
 
@@ -88,7 +90,7 @@ public abstract class BaseReactiveTest {
 	}
 
 	protected CompletionStage<Stage.Session> openSession() {
-		if ( session != null ) {
+		if ( session != null && session.isOpen() ) {
 			session.close();
 		}
 		return sessionFactory.unwrap( Stage.SessionFactory.class ).openSession()
