@@ -12,6 +12,8 @@ import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -116,7 +118,7 @@ public interface Stage {
 		 */
 		Query<R> setLockMode(String alias, LockMode lockMode);
 
-		/**
+		/*
 
 		Some examples of additional useful methods to add here:
 
@@ -454,6 +456,17 @@ public interface Stage {
 		<R> Query<R> createNativeQuery(String queryString, String resultSetMapping);
 
 		/**
+		 * Create an instance of {@link Query} for the given criteria query.
+		 *
+		 * @param criteriaQuery The {@link CriteriaQuery}
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see javax.persistence.EntityManager#createQuery(String)
+		 */
+		<R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery);
+
+		/**
 		 * Set the flush mode for this session.
 		 *
 		 * The flush mode determines the points at which the session is flushed.
@@ -690,6 +703,12 @@ public interface Stage {
 		 *             the result of the work as a {@link CompletionStage}.
 		 */
 		<T> CompletionStage<T> withSession(Function<Session, CompletionStage<T>> work);
+
+		/**
+		 * @return an instance of {@link CriteriaBuilder} for creating
+		 * criteria queries.
+		 */
+		CriteriaBuilder getCriteriaBuilder();
 
 		/**
 		 * Destroy the session factory and clean up its connection

@@ -3,6 +3,8 @@ package org.hibernate.reactive.session;
 import org.hibernate.CacheMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
+import org.hibernate.transform.ResultTransformer;
+import org.hibernate.type.Type;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -40,4 +42,8 @@ public interface ReactiveQuery<R> {
 	ReactiveQuery<R> setCacheMode(CacheMode cacheMode);
 
 	CacheMode getCacheMode();
+
+	ReactiveQuery<R> setResultTransformer(ResultTransformer resultTransformer);
+
+	Type[] getReturnTypes();
 }
