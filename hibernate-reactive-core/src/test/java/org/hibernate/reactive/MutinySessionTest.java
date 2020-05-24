@@ -10,6 +10,7 @@ import org.junit.Test;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.metamodel.EntityType;
 import java.util.Objects;
 
 public class MutinySessionTest extends BaseMutinyTest {
@@ -68,7 +69,6 @@ public class MutinySessionTest extends BaseMutinyTest {
 									session.detach( actualPig );
 									context.assertFalse( session.contains( actualPig ) );
 								} ) )
-						.convert().toCompletionStage()
 		);
 	}
 
@@ -89,7 +89,6 @@ public class MutinySessionTest extends BaseMutinyTest {
 									context.assertFalse( session.contains( actualPig ) );
 								} )
 						)
-						.convert().toCompletionStage()
 		);
 	}
 
@@ -102,7 +101,6 @@ public class MutinySessionTest extends BaseMutinyTest {
 						.onItem().produceUni( s -> s.flush() )
 						.onItem().produceUni( v -> selectNameFromId( 10 ) )
 						.onItem().invoke( selectRes -> context.assertEquals( "Tulip", selectRes ) )
-						.convert().toCompletionStage()
 		);
 	}
 
@@ -115,7 +113,59 @@ public class MutinySessionTest extends BaseMutinyTest {
 						.flatMap( s -> s.flush() )
 						.flatMap( v -> selectNameFromId( 10 ) )
 						.map( selectRes -> context.assertEquals( "Tulip", selectRes ) )
-						.convert().toCompletionStage()
+		);
+	}
+
+	@Test
+	public void reactivePersistInTx(TestContext context) {
+		test(
+				context,
+				openSession()
+						.flatMap(
+								s -> s.withTransaction(
+										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
+//												.thenCompose( vv -> s.flush() )
+								)
+						)
+						.flatMap( vv -> selectNameFromId( 10 ) )
+						.map( selectRes -> context.assertEquals( "Tulip", selectRes ) )
+		);
+	}
+
+	@Test
+	public void reactiveRollbackTx(TestContext context) {
+		test(
+				context,
+				openSession()
+						.flatMap(
+								s -> s.withTransaction(
+										t -> s.persist( new ReactiveSessionTest.GuineaPig( 10, "Tulip" ) )
+												.flatMap( vv -> s.flush() )
+												.map( vv -> {
+													throw new RuntimeException();
+												})
+								)
+						)
+						.on().failure().recoverWithItem((Object)null)
+						.flatMap( vv -> selectNameFromId( 10 ) )
+						.map( context::assertNull )
+		);
+	}
+
+	@Test
+	public void reactiveMarkedRollbackTx(TestContext context) {
+		test(
+				context,
+				openSession()
+						.flatMap(
+								s -> s.withTransaction(
+										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
+												.flatMap( vv -> s.flush() )
+												.map( vv -> { t.markForRollback(); return null; } )
+								)
+						)
+						.flatMap( vv -> selectNameFromId( 10 ) )
+						.map( context::assertNull )
 		);
 	}
 
@@ -131,7 +181,6 @@ public class MutinySessionTest extends BaseMutinyTest {
 						.onItem().produceUni( session -> session.flush() )
 						.onItem().produceUni( v -> selectNameFromId( 5 ) )
 						.onItem().invoke( ret -> context.assertNull( ret ) )
-						.convert().toCompletionStage()
 		);
 	}
 
@@ -147,7 +196,6 @@ public class MutinySessionTest extends BaseMutinyTest {
 						.flatMap( session -> session.flush() )
 						.flatMap( v -> selectNameFromId( 5 ) )
 						.map( ret -> context.assertNull( ret ) )
-						.convert().toCompletionStage()
 		);
 	}
 
@@ -163,7 +211,6 @@ public class MutinySessionTest extends BaseMutinyTest {
 										.onItem().produceUni( v -> session.flush() )
 										.onItem().produceUni( v -> selectNameFromId( 5 ) )
 										.onItem().invoke( ret -> context.assertNull( ret ) ) )
-						.convert().toCompletionStage()
 		);
 	}
 
@@ -179,7 +226,6 @@ public class MutinySessionTest extends BaseMutinyTest {
 								.flatMap( v -> session.flush() )
 								.flatMap( v -> selectNameFromId( 5 ) )
 								.map( ret -> context.assertNull( ret ) ) )
-								.convert().toCompletionStage()
 		);
 	}
 
@@ -192,18 +238,27 @@ public class MutinySessionTest extends BaseMutinyTest {
 						.flatMap( v -> openSession() )
 						.flatMap( session ->
 							session.find( GuineaPig.class, 5 )
-								.onItem().invoke( pig -> {
+								.map( pig -> {
 									context.assertNotNull( pig );
 									// Checking we are actually changing the name
 									context.assertNotEquals( pig.getName(), NEW_NAME );
 									pig.setName( NEW_NAME );
+									return null;
 								} )
 								.flatMap( v -> session.flush() )
 								.flatMap( v -> selectNameFromId( 5 ) )
 								.map( name -> context.assertEquals( NEW_NAME, name ) ) )
-						.convert().toCompletionStage()
 		);
 	}
+
+	@Test
+	public void testMetamodel(TestContext context) {
+		EntityType<GuineaPig> pig = getSessionFactory().getMetamodel().entity(GuineaPig.class);
+		context.assertNotNull(pig);
+		context.assertEquals( 2, pig.getAttributes().size() );
+		context.assertEquals( "GuineaPig", pig.getName() );
+	}
+
 
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
 		context.assertNotNull( actual );
@@ -211,7 +266,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		context.assertEquals( expected.getName(), actual.getName() );
 	}
 
-	@Entity
+	@Entity(name="GuineaPig")
 	@Table(name="Pig")
 	public static class GuineaPig {
 		@Id

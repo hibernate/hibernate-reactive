@@ -32,23 +32,25 @@ public abstract class BaseMutinyTest {
 	private org.hibernate.SessionFactory sessionFactory;
 	private ReactiveConnectionPool poolProvider;
 
-	protected static void test(TestContext context, CompletionStage<?> cs) {
+	protected static void test(TestContext context, Uni<?> cs) {
 		// this will be added to TestContext in the next vert.x release
 		Async async = context.async();
-		cs.whenComplete( (res, err) -> {
-			if ( res instanceof Stage.Session ) {
-				Stage.Session s = (Stage.Session) res;
-				if ( s.isOpen() ) {
-					s.close();
-				}
-			}
-			if ( err != null ) {
-				context.fail( err );
-			}
-			else {
-				async.complete();
-			}
-		} );
+		cs.convert()
+				.toCompletionStage()
+				.whenComplete( (res, err) -> {
+					if ( res instanceof Stage.Session ) {
+						Stage.Session s = (Stage.Session) res;
+						if ( s.isOpen() ) {
+							s.close();
+						}
+					}
+					if ( err != null ) {
+						context.fail( err );
+					}
+					else {
+						async.complete();
+					}
+				} );
 	}
 
 	protected Configuration constructConfiguration() {
@@ -92,8 +94,12 @@ public abstract class BaseMutinyTest {
 		if ( session != null ) {
 			session.close();
 		}
-		return sessionFactory.unwrap( Mutiny.SessionFactory.class ).openSession()
+		return getSessionFactory().openSession()
 				.onItem().invoke( s -> session = s );
+	}
+
+	protected Mutiny.SessionFactory getSessionFactory() {
+		return sessionFactory.unwrap( Mutiny.SessionFactory.class );
 	}
 
 	protected Uni<ReactiveConnection> connection() {
