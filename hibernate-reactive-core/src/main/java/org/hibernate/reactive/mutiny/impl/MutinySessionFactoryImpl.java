@@ -9,6 +9,7 @@ import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.metamodel.Metamodel;
 import java.util.function.Function;
 
 /**
@@ -29,8 +30,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return Uni.createFrom().completionStage( pool.getConnection() )
-				.map( reactiveConnection -> new ReactiveSessionImpl( delegate,
-						new SessionFactoryImpl.SessionBuilderImpl<>(delegate), reactiveConnection ) )
+				.map( reactiveConnection -> new ReactiveSessionImpl(
+						delegate,
+						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
+						reactiveConnection
+				) )
 				.map( MutinySessionImpl::new );
 	}
 
@@ -44,6 +48,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	@Override
 	public CriteriaBuilder getCriteriaBuilder() {
 		return new ReactiveCriteriaBuilderImpl( delegate );
+	}
+
+	@Override
+	public Metamodel getMetamodel() {
+		return delegate.getMetamodel();
 	}
 
 	@Override

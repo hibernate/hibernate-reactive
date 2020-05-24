@@ -8,6 +8,7 @@ import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.stage.Stage;
 
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.metamodel.Metamodel;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -29,22 +30,29 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return pool.getConnection()
-				.thenApply( reactiveConnection -> new ReactiveSessionImpl( delegate,
-						new SessionFactoryImpl.SessionBuilderImpl<>(delegate), reactiveConnection ) )
+				.thenApply( reactiveConnection -> new ReactiveSessionImpl(
+						delegate,
+						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
+						reactiveConnection
+				) )
 				.thenApply( StageSessionImpl::new );
 	}
 
 	@Override
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
 		return openSession().thenCompose(
-				session -> work.apply(session)
-						.whenComplete( (r, e) -> session.close() )
+				session -> work.apply(session).whenComplete( (r, e) -> session.close() )
 		);
 	}
 
 	@Override
 	public CriteriaBuilder getCriteriaBuilder() {
 		return new ReactiveCriteriaBuilderImpl( delegate );
+	}
+
+	@Override
+	public Metamodel getMetamodel() {
+		return delegate.getMetamodel();
 	}
 
 	@Override
