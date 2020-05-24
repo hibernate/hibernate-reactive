@@ -8,6 +8,12 @@ import org.hibernate.loader.entity.UniqueEntityLoader;
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * A reactific {@link UniqueEntityLoader}, the contract implemented
+ * by all reactive entity loaders, including batch loaders.
+ *
+ * @author Gavin King
+ */
 public interface ReactiveUniqueEntityLoader extends UniqueEntityLoader {
 
 	@Override

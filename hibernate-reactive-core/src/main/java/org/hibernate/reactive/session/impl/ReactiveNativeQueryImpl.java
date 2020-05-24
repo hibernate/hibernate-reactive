@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /**
+ *  Implementation of {@link ReactiveNativeQuery} by extension of
+ *  {@link NativeQueryImpl}.
+ *
  * @author Gavin King
  */
 public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements ReactiveNativeQuery<R> {
