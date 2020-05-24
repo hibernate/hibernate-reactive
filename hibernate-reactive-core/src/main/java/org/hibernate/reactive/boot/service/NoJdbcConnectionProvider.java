@@ -13,7 +13,7 @@ import java.sql.SQLException;
  */
 public class NoJdbcConnectionProvider implements ConnectionProvider {
 
-	static final NoJdbcConnectionProvider INSTANCE = new NoJdbcConnectionProvider();
+	public static final NoJdbcConnectionProvider INSTANCE = new NoJdbcConnectionProvider();
 
 	@Override
 	public Connection getConnection() throws SQLException {

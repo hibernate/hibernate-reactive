@@ -8,11 +8,15 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
+import org.hibernate.reactive.boot.service.NoJdbcConnectionProvider;
+import org.hibernate.reactive.boot.service.ReactiveGenerationTarget;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -54,7 +58,7 @@ public abstract class BaseReactiveTest {
 
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
-		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, dbType() == DBType.MYSQL ? "create-drop" : "create" );
+		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, "create" );
 		configuration.setProperty( AvailableSettings.URL, DatabaseConfiguration.getJdbcUrl() );
 		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
 		return configuration;
@@ -65,7 +69,25 @@ public abstract class BaseReactiveTest {
 		Configuration configuration = constructConfiguration();
 		StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() )
+				.addService( ConnectionProvider.class, NoJdbcConnectionProvider.INSTANCE)
 				.build();
+		registry.getService( SchemaManagementTool.class )
+				.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) {
+					@Override
+					public void prepare() {
+						super.prepare();
+						if ( dbType() == DBType.MYSQL ) {
+							accept("set foreign_key_checks = 0");
+						}
+					}
+					@Override
+					public void release() {
+						if ( dbType() == DBType.MYSQL ) {
+							accept("set foreign_key_checks = 1");
+						}
+						super.release();
+					}
+				} );
 		sessionFactory = configuration.buildSessionFactory( registry );
 		poolProvider = registry.getService( ReactiveConnectionPool.class );
 	}
