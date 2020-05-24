@@ -9,6 +9,8 @@ import org.junit.Test;
 import javax.persistence.*;
 import java.util.Objects;
 
+import static org.hibernate.Hibernate.isInitialized;
+
 public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 
 	@Override
@@ -35,6 +37,7 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 								.thenAccept( optionalAuthor -> {
 									context.assertNotNull( optionalAuthor );
 									context.assertEquals( author, optionalAuthor );
+									context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
 									context.assertEquals( book, optionalAuthor.getBook() );
 								}))
 						.thenCompose( v -> openSession())
@@ -63,10 +66,12 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 								.thenCompose( optionalAuthor -> {
 									context.assertNotNull( optionalAuthor );
 									context.assertEquals( author, optionalAuthor );
+									context.assertFalse( isInitialized( optionalAuthor.getBook() ) );
 									return s.fetch( optionalAuthor.getBook() ).thenAccept(
 											fetchedBook -> {
 												context.assertNotNull( fetchedBook );
 												context.assertEquals( book, fetchedBook );
+												context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
 											});
 								}))
 						.thenCompose( v -> openSession())
@@ -97,10 +102,12 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 								.thenCompose( optionalAuthor -> {
 									context.assertNotNull( optionalAuthor );
 									context.assertEquals( neilGaiman, optionalAuthor );
+									context.assertFalse( isInitialized( optionalAuthor.getBook() ) );
 									return s.fetch( optionalAuthor.getBook() ).thenAccept(
 											fetchedBook -> {
 												context.assertNotNull( fetchedBook );
 												context.assertEquals( goodOmens, fetchedBook );
+												context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
 											});
 								}))
 		);
