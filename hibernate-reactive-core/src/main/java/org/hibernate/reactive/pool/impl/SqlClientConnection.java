@@ -1,6 +1,17 @@
 package org.hibernate.reactive.pool.impl;
 
-import io.vertx.sqlclient.*;
+import io.vertx.sqlclient.PropertyKind;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowIterator;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.SqlClient;
+import io.vertx.sqlclient.SqlConnection;
+import io.vertx.sqlclient.SqlResult;
+import io.vertx.sqlclient.Transaction;
+import io.vertx.sqlclient.Tuple;
+import org.hibernate.engine.jdbc.internal.FormatStyle;
+import org.hibernate.internal.CoreLogging;
+import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -9,24 +20,25 @@ import java.sql.ResultSet;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
-import static io.vertx.core.Future.failedFuture;
-import static io.vertx.core.Future.succeededFuture;
-
 /**
  * A reactive connection based on Vert.x's {@link SqlConnection}.
  */
 public class SqlClientConnection implements ReactiveConnection {
+
+	private static final CoreMessageLogger log = CoreLogging.messageLogger("org.hibernate.SQL");
 	
 	private static PropertyKind<Long> mySqlLastInsertedId;
 
 	private final boolean showSQL;
+	private boolean formatSQL;
 
 	private final SqlConnection connection;
 	private Transaction transaction;
 	
-	SqlClientConnection(SqlConnection connection, boolean showSQL) {
+	SqlClientConnection(SqlConnection connection, boolean showSQL, boolean formatSQL) {
 		this.showSQL = showSQL;
 		this.connection = connection;
+		this.formatSQL = formatSQL;
 	}
 
 	@Override
@@ -90,23 +102,34 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters) {
-		Objects.requireNonNull( sql, "SQL query cannot be null" );
-		if (showSQL) {
-			System.out.println(sql);
-		}
+		feedback(sql);
 		return Handlers.toCompletionStage(
 				handler -> client().preparedQuery( sql ).execute( parameters, handler )
 		);
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql) {
-		Objects.requireNonNull( sql, "SQL query cannot be null" );
-		if (showSQL) {
-			System.out.println(sql);
-		}
+		feedback(sql);
 		return Handlers.toCompletionStage(
 				handler -> client().preparedQuery( sql ).execute( handler )
 		);
+	}
+
+	private void feedback(String sql) {
+		Objects.requireNonNull(sql, "SQL query cannot be null");
+		if ( formatSQL
+				&& ( showSQL || log.isDebugEnabled() ) ) {
+			//Note that DDL already gets formatter by the client
+			if ( !sql.contains( System.lineSeparator() ) ) {
+				sql = FormatStyle.BASIC.getFormatter().format(sql);
+			}
+		}
+
+		log.debug( sql );
+
+		if (showSQL) {
+			System.out.println(sql);
+		}
 	}
 
 

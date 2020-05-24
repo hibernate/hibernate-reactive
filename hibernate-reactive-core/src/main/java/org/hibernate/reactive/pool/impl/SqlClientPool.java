@@ -37,6 +37,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	public static final int DEFAULT_POOL_SIZE = 5;
 	private Pool pool;
 	private boolean showSQL;
+	private boolean formatSQL;
 	private ServiceRegistryImplementor serviceRegistry;
 	private Map configurationValues;
 
@@ -54,9 +55,11 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 
 	@Override
 	public void configure(Map configurationValues) {
-		this.showSQL = "true".equals( configurationValues.get( AvailableSettings.SHOW_SQL ) );
 		//TODO: actually extract the configuration values we need rather than keeping a reference to the whole map.
 		this.configurationValues = configurationValues;
+
+		showSQL = ConfigurationHelper.getBoolean( AvailableSettings.SHOW_SQL, configurationValues, false );
+		formatSQL = ConfigurationHelper.getBoolean( AvailableSettings.FORMAT_SQL, configurationValues, false );
 	}
 
 	@Override
@@ -172,7 +175,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 				handler -> pool.getConnection(
 						ar -> handler.handle(
 								ar.succeeded()
-										? succeededFuture( new SqlClientConnection( ar.result(), showSQL) )
+										? succeededFuture( new SqlClientConnection( ar.result(), showSQL, formatSQL) )
 										: failedFuture( ar.cause() )
 						)
 				)
