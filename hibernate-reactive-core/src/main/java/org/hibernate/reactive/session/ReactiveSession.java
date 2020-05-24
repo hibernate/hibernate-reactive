@@ -99,7 +99,7 @@ public interface ReactiveSession  {
 
 	String getEntityName(Object object);
 	Serializable getIdentifier(Object object);
-	boolean contains(String entityName, Object object);
+	boolean contains(Object object);
 
 	LockMode getCurrentLockMode(Object object);
 

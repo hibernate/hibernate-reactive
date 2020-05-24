@@ -89,7 +89,11 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() )
 							.thenAccept( actualPig -> {
 								assertThatPigsAreEqual( context, expectedPig, actualPig );
-								context.assertEquals( session.getLockMode( actualPig ), LockMode.READ );
+								context.assertTrue( session.contains( actualPig ) );
+								context.assertFalse( session.contains( expectedPig ) );
+								context.assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
+								session.detach( actualPig );
+								context.assertFalse( session.contains( actualPig ) );
 							} )
 						)
 		);

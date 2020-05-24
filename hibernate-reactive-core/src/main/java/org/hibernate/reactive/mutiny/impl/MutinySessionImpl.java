@@ -59,6 +59,11 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
+	public boolean contains(Object entity) {
+		return delegate.contains( entity );
+	}
+
+	@Override
 	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey) {
 		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, primaryKey, null, null ) );
 	}

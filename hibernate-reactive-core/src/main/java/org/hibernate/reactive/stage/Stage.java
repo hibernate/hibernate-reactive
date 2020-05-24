@@ -366,6 +366,11 @@ public interface Stage {
 		LockMode getLockMode(Object entity);
 
 		/**
+		 * Determine if the given instance belongs to this persistence context.
+		 */
+		boolean contains(Object entity);
+
+		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query
 		 * string.
 		 *

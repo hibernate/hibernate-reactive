@@ -57,6 +57,11 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public boolean contains(Object entity) {
+		return delegate.contains( entity );
+	}
+
+	@Override
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey) {
 		return delegate.reactiveFind( entityClass, primaryKey, null, null );
 	}

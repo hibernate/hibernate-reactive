@@ -2,6 +2,7 @@ package org.hibernate.reactive;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
+import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.junit.Test;
@@ -58,8 +59,15 @@ public class MutinySessionTest extends BaseMutinyTest {
 				context,
 				populateDB()
 						.onItem().produceUni( i -> openSession() )
-						.onItem().produceUni( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
-						.onItem().invoke( actualPig -> assertThatPigsAreEqual( context, expectedPig, actualPig ) )
+						.onItem().produceUni( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.onItem().invoke( actualPig -> {
+									assertThatPigsAreEqual( context, expectedPig, actualPig );
+									context.assertTrue( session.contains( actualPig ) );
+									context.assertFalse( session.contains( expectedPig ) );
+									context.assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
+									session.detach( actualPig );
+									context.assertFalse( session.contains( actualPig ) );
+								} ) )
 						.convert().toCompletionStage()
 		);
 	}
@@ -71,8 +79,16 @@ public class MutinySessionTest extends BaseMutinyTest {
 				context,
 				populateDB()
 						.flatMap( i -> openSession() )
-						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
-						.onItem().invoke( actualPig -> assertThatPigsAreEqual( context, expectedPig, actualPig ) )
+						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.onItem().invoke( actualPig -> {
+									assertThatPigsAreEqual( context, expectedPig, actualPig );
+									context.assertTrue( session.contains( actualPig ) );
+									context.assertFalse( session.contains( expectedPig ) );
+									context.assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
+									session.detach( actualPig );
+									context.assertFalse( session.contains( actualPig ) );
+								} )
+						)
 						.convert().toCompletionStage()
 		);
 	}
