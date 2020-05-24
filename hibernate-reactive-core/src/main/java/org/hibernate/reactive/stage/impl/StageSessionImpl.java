@@ -4,16 +4,19 @@ import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
+import org.hibernate.graph.GraphSemantic;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import javax.persistence.EntityGraph;
 import javax.persistence.criteria.CriteriaQuery;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import static java.util.Collections.singletonMap;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
 /**
@@ -81,6 +84,13 @@ public class StageSessionImpl implements Stage.Session {
 
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockMode lockMode) {
 		return delegate.reactiveFind( entityClass, primaryKey, lockMode, null );
+	}
+
+	@Override
+	public <T> CompletionStage<T> find(Class<T> entityClass, Object id, EntityGraph<T> entityGraph) {
+		return delegate.reactiveFind( entityClass, id, null,
+				singletonMap( GraphSemantic.FETCH.getJpaHintName(), entityGraph )
+		);
 	}
 
 	@Override
@@ -256,6 +266,21 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public boolean isFetchProfileEnabled(String name) {
 		return delegate.isFetchProfileEnabled(name);
+	}
+
+	@Override
+	public EntityGraph<?> getEntityGraph(String name) {
+		return delegate.getEntityGraph(name);
+	}
+
+	@Override
+	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType) {
+		return delegate.createEntityGraph(rootType);
+	}
+
+	@Override
+	public EntityGraph<?> createEntityGraph(String name) {
+		return delegate.createEntityGraph(name);
 	}
 
 	@Override

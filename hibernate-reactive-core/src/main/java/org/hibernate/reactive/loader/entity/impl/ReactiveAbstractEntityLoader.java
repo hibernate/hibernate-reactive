@@ -19,7 +19,6 @@ import org.hibernate.type.Type;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -41,7 +40,6 @@ public abstract class ReactiveAbstractEntityLoader extends ReactiveOuterJoinLoad
 		this.uniqueKeyType = uniqueKeyType;
 		this.entityName = persister.getEntityName();
 		this.persister = persister;
-
 	}
 
 	protected CompletionStage<Object> load(

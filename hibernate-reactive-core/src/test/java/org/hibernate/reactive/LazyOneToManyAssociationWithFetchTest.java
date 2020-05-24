@@ -1,11 +1,20 @@
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
+import org.hibernate.annotations.FetchMode;
+import org.hibernate.annotations.FetchProfile;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
 import org.junit.Test;
 
-import javax.persistence.*;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedAttributeNode;
+import javax.persistence.NamedEntityGraph;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -48,6 +57,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 		);
 
 	}
+
 	@Test
 	public void findBookWithStaticFetchAuthors(TestContext context) {
 		final Book goodOmens = new Book( 7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
@@ -75,6 +85,71 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 						} )
 		);
 	}
+
+	@Test
+	public void findBookWithEntityGraphFetchAuthors(TestContext context) {
+		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
+		final Author terryPratchett = new Author(2132511, "Terry Pratchett", goodOmens);
+		goodOmens.getAuthors().add(neilGaiman);
+		goodOmens.getAuthors().add(terryPratchett);
+
+		test(
+				context,
+				openSession()
+						.thenCompose(s -> s.persist(goodOmens))
+						.thenCompose(s -> s.persist(neilGaiman))
+						.thenCompose(s -> s.persist(terryPratchett))
+						.thenCompose(s -> s.flush())
+						.thenCompose(v -> openSession())
+						.thenCompose( s -> s.find(Book.class, goodOmens.getId(), s.getEntityGraph("withAuthors") ) )
+						.thenAccept(book -> {
+							List<Author> optionalAssociation = book.authors;
+							context.assertNotNull(optionalAssociation);
+							context.assertTrue(optionalAssociation.contains(neilGaiman));
+							context.assertTrue(optionalAssociation.contains(terryPratchett));
+
+						})
+		);
+
+	}
+
+	@Test
+	public void findBookWithFetchProfileAuthors(TestContext context) {
+		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
+		final Author terryPratchett = new Author(2132511, "Terry Pratchett", goodOmens);
+		goodOmens.getAuthors().add(neilGaiman);
+		goodOmens.getAuthors().add(terryPratchett);
+
+		test(
+				context,
+				openSession()
+						.thenCompose(s -> s.persist(goodOmens))
+						.thenCompose(s -> s.persist(neilGaiman))
+						.thenCompose(s -> s.persist(terryPratchett))
+						.thenCompose(s -> s.flush())
+						.thenCompose(v -> openSession())
+						.thenCompose( s -> s.enableFetchProfile("withAuthors").find(Book.class, goodOmens.getId() ) )
+						.thenAccept(book -> {
+							List<Author> optionalAssociation = book.authors;
+							context.assertNotNull(optionalAssociation);
+							context.assertTrue(optionalAssociation.contains(neilGaiman));
+							context.assertTrue(optionalAssociation.contains(terryPratchett));
+
+						})
+		);
+
+	}
+
+	@FetchProfile(name = "withAuthors",
+			fetchOverrides = @FetchProfile.FetchOverride(
+					entity = Book.class, association = "authors",
+					mode = FetchMode.JOIN))
+
+	@NamedEntityGraph(name="withAuthors",
+			attributeNodes = @NamedAttributeNode("authors")
+	)
 
 	@Entity
 	@Table(name = Book.TABLE)

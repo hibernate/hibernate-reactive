@@ -11,7 +11,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.custom.CustomLoader;
 import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.loader.spi.AfterLoadAction;
-import org.hibernate.reactive.loader.ReactiveLoader;
+import org.hibernate.reactive.loader.CachingReactiveLoader;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
@@ -27,13 +27,15 @@ import java.util.concurrent.CompletionStage;
  *
  * @author Gavin King
  */
-public class ReactiveCustomLoader extends CustomLoader implements ReactiveLoader {
+public class ReactiveCustomLoader extends CustomLoader implements CachingReactiveLoader {
 
 	public ReactiveCustomLoader(CustomQuery customQuery, SessionFactoryImplementor factory) {
 		super(customQuery, factory);
 	}
 
-	public CompletionStage<List<Object>> reactiveList(SharedSessionContractImplementor session, QueryParameters queryParameters) throws HibernateException {
+	public CompletionStage<List<Object>> reactiveList(
+			SharedSessionContractImplementor session,
+			QueryParameters queryParameters) throws HibernateException {
 		return reactiveListIgnoreQueryCache( getSQLString(), getQueryIdentifier(), session, queryParameters );
 	}
 
@@ -57,8 +59,10 @@ public class ReactiveCustomLoader extends CustomLoader implements ReactiveLoader
 	}
 
 	@Override
-	public void autoDiscoverTypes(ResultSet rs) {
-		super.autoDiscoverTypes(rs);
+	public void discoverTypes(QueryParameters queryParameters, ResultSet resultSet) {
+		if ( queryParameters.hasAutoDiscoverScalarTypes() ) {
+			super.autoDiscoverTypes(resultSet);
+		}
 	}
 
 	@Override

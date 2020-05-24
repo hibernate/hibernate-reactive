@@ -14,6 +14,7 @@ import org.hibernate.jpa.spi.HibernateEntityManagerImplementor;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
 import org.hibernate.reactive.pool.ReactiveConnection;
 
+import javax.persistence.EntityGraph;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Selection;
 import java.io.Serializable;
@@ -136,6 +137,10 @@ public interface ReactiveSession  {
 	boolean isFetchProfileEnabled(String name) throws UnknownProfileException;
 	void enableFetchProfile(String name) throws UnknownProfileException;
 	void disableFetchProfile(String name) throws UnknownProfileException;
+
+	<T> EntityGraph<T> createEntityGraph(Class<T> rootType);
+	EntityGraph<?> createEntityGraph(String name);
+	EntityGraph<?> getEntityGraph(String name);
 
 	void clear();
 
