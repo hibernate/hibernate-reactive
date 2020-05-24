@@ -14,6 +14,7 @@ import org.hibernate.reactive.session.ReactiveSession;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.metamodel.Metamodel;
 import java.util.List;
 import java.util.function.Function;
 
@@ -708,6 +709,11 @@ public interface Mutiny {
 		 * criteria queries.
 		 */
 		CriteriaBuilder getCriteriaBuilder();
+
+		/**
+		 * Obtain the JPA {@link Metamodel} for the persistence unit.
+		 */
+		Metamodel getMetamodel();
 
 		/**
 		 * Destroy the session factory and clean up its connection

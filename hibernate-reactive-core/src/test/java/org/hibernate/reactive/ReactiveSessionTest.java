@@ -8,6 +8,7 @@ import java.util.concurrent.CompletionStage;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.metamodel.EntityType;
 
 import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
@@ -268,6 +269,14 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.thenCompose( v -> selectNameFromId( 5 ) )
 								.thenAccept( name -> context.assertEquals( NEW_NAME, name ) ) )
 		);
+	}
+
+	@Test
+	public void testMetamodel(TestContext context) {
+		EntityType<GuineaPig> pig = getSessionFactory().getMetamodel().entity(GuineaPig.class);
+		context.assertNotNull(pig);
+		context.assertEquals( 2, pig.getAttributes().size() );
+		context.assertEquals( "GuineaPig", pig.getName() );
 	}
 
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {

@@ -14,6 +14,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.metamodel.Metamodel;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -709,6 +710,11 @@ public interface Stage {
 		 * criteria queries.
 		 */
 		CriteriaBuilder getCriteriaBuilder();
+
+		/**
+		 * Obtain the JPA {@link Metamodel} for the persistence unit.
+		 */
+		Metamodel getMetamodel();
 
 		/**
 		 * Destroy the session factory and clean up its connection
