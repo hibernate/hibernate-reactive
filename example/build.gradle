@@ -3,6 +3,9 @@ description = 'Hibernate Reactive Example'
 dependencies {
     implementation project(':hibernate-reactive-core')
 
+    // JPA metamodel generation for criteria queries
+    annotationProcessor "org.hibernate:hibernate-jpamodelgen:${hibernateOrmVersion}"
+
     // database drivers for PostgreSQL and MySQL
     runtimeOnly 'io.vertx:vertx-pg-client:3.9.1'
     runtimeOnly 'io.vertx:vertx-mysql-client:3.9.1'
