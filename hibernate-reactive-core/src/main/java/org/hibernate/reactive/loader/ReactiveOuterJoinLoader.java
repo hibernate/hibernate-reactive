@@ -1,8 +1,5 @@
 package org.hibernate.reactive.loader;
 
-import org.hibernate.QueryException;
-import org.hibernate.cache.spi.QueryKey;
-import org.hibernate.cache.spi.QueryResultsCache;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -11,13 +8,10 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.OuterJoinLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.transform.ResultTransformer;
-import org.hibernate.type.Type;
 
-import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -51,6 +45,7 @@ public class ReactiveOuterJoinLoader extends OuterJoinLoader implements Reactive
 				forcedResultTransformer, maxRows, afterLoadActions);
 	}
 
+	// Unnecessary override, I believe
 	@Override
 	public String preprocessSQL(String sql,
 								QueryParameters queryParameters,
@@ -59,43 +54,5 @@ public class ReactiveOuterJoinLoader extends OuterJoinLoader implements Reactive
 		return super.preprocessSQL(sql, queryParameters, factory, afterLoadActions);
 	}
 
-	@Override
-	public void autoDiscoverTypes(ResultSet rs) {
-		super.autoDiscoverTypes(rs);
-	}
 
-	@Override
-	public boolean[] includeInResultRow() {
-		return super.includeInResultRow();
-	}
-
-	@Override @SuppressWarnings("unchecked")
-	public List<Object> getResultFromQueryCache(SessionImplementor session, QueryParameters queryParameters, Set<Serializable> querySpaces, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key) {
-		return super.getResultFromQueryCache(session, queryParameters, querySpaces, resultTypes, queryCache, key);
-	}
-
-	@Override
-	public void putResultInQueryCache(SessionImplementor session, QueryParameters queryParameters, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key, List<Object> cachableList) {
-		super.putResultInQueryCache(session, queryParameters, resultTypes, queryCache, key, cachableList);
-	}
-
-	@Override
-	public ResultTransformer resolveResultTransformer(ResultTransformer resultTransformer) {
-		return super.resolveResultTransformer(resultTransformer);
-	}
-
-	@Override
-	public String[] getResultRowAliases() {
-		return super.getResultRowAliases();
-	}
-
-	@Override
-	public boolean areResultSetRowsTransformedImmediately() {
-		return super.areResultSetRowsTransformedImmediately();
-	}
-
-	@Override @SuppressWarnings("unchecked")
-	public List<Object> getResultList(List results, ResultTransformer resultTransformer) throws QueryException {
-		return super.getResultList(results, resultTransformer);
-	}
 }

@@ -298,11 +298,6 @@ or `@ManyToOne(fetch=EAGER) @Fetch(SUBSELECT)`. So you must choose between:
 
 As usual, we recommend that all association mappings be declared lazy.
 
-#### Fetch profiles
-
-JPA `@NamedEntityGraph`s are not supported, but Hibernate `@FetchProfile`s
-_are_.
-
 #### Identifier generation
 
 There is no block optimization for the `SEQUENCE` and `TABLE` id generators.

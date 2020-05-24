@@ -26,7 +26,6 @@ public class ReactivePersistenceContextAdapter extends StatefulPersistenceContex
 	}
 
 	public CompletionStage<Void> reactiveInitializeNonLazyCollections() throws HibernateException {
-
 		final NonLazyCollectionInitializer initializer = new NonLazyCollectionInitializer();
 		initializeNonLazyCollections( initializer );
 		return initializer.stage;
@@ -51,6 +50,6 @@ public class ReactivePersistenceContextAdapter extends StatefulPersistenceContex
 	@Deprecated
 	@Override
 	public void initializeNonLazyCollections() {
-		throw getSession().getExceptionConverter().convert( new UnsupportedOperationException( "ReactivePersistenceContextAdapter#initializeNonLazyCollections not supported, use reactiveInitializeNonLazyCollections instead" ) );
+//		throw getSession().getExceptionConverter().convert( new UnsupportedOperationException( "ReactivePersistenceContextAdapter#initializeNonLazyCollections not supported, use reactiveInitializeNonLazyCollections instead" ) );
 	}
 }

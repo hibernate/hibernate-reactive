@@ -49,6 +49,33 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void entityGraphWithOneAuthor(TestContext context) {
+		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse" );
+		final Author author = new Author( 5, "Charlie Mackesy", book );
+
+		test(
+				context,
+				openSession()
+						.thenCompose( s -> s.persist( book ) )
+						.thenCompose( s -> s.persist( author ) )
+						.thenCompose( s -> s.flush() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.find( Author.class, author.getId(), s.getEntityGraph("withBook") )
+								.thenAccept( optionalAuthor -> {
+									context.assertNotNull( optionalAuthor );
+									context.assertEquals( author, optionalAuthor );
+									context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
+									context.assertEquals( book, optionalAuthor.getBook() );
+								}))
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.find( Book.class, book.getId() ) )
+						.thenAccept( optionalBook -> {
+							context.assertNotNull( optionalBook );
+							context.assertEquals( book, optionalBook );
+						})
+		);
+	}
 
 	@Test
 	public void fetchWithOneAuthor(TestContext context) {
@@ -164,12 +191,17 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
-	@Table(name = Author.TABLE)
 	@FetchProfile(name = "withBook",
 			fetchOverrides = @FetchProfile.FetchOverride(
 					entity = Author.class, association = "book",
 					mode = FetchMode.JOIN))
+
+	@NamedEntityGraph(name="withBook",
+			attributeNodes = @NamedAttributeNode("book")
+	)
+
+	@Entity
+	@Table(name = Author.TABLE)
 	public static class Author {
 
 		public static final String TABLE = "Author";

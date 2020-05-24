@@ -12,6 +12,7 @@ import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import javax.persistence.EntityGraph;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.metamodel.Metamodel;
@@ -181,6 +182,15 @@ public interface Stage {
 		 * @see #find(Class,Object)
 		 */
 		<T> CompletionStage<T> find(Class<T> entityClass, Object id, LockMode lockMode);
+
+		/**
+		 * Asynchronously return the persistent instance of the given entity
+		 * class with the given identifier, using the given {@link EntityGraph}
+		 * as a fetch plan.
+		 *
+		 * @see #find(Class,Object)
+		 */
+		<T> CompletionStage<T> find(Class<T> entityClass, Object id, EntityGraph<T> entityGraph);
 
 		/**
 		 * Asynchronously return the persistent instances of the given entity
@@ -522,6 +532,21 @@ public interface Stage {
 		 * @see org.hibernate.engine.profile.FetchProfile for discussion of this feature
 		 */
 		Session enableFetchProfile(String name);
+
+		/**
+		 * Obtain a named {@link EntityGraph}
+		 */
+		<T> EntityGraph<T> getEntityGraph(String graphName);
+
+		/**
+		 * Create a new mutable {@link EntityGraph}
+		 */
+		<T> EntityGraph<T> createEntityGraph(Class<T> rootType);
+
+		/**
+		 * Create a new mutable copy of a named {@link EntityGraph}
+		 */
+		EntityGraph<?> createEntityGraph(String graphName);
 
 		/**
 		 * Disable a particular fetch profile on this session.  No-op if requested

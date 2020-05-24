@@ -12,7 +12,7 @@ import org.hibernate.hql.internal.ast.QueryTranslatorImpl;
 import org.hibernate.hql.internal.ast.tree.SelectClause;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
-import org.hibernate.reactive.loader.ReactiveLoader;
+import org.hibernate.reactive.loader.CachingReactiveLoader;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
@@ -26,7 +26,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * A reactive {@link QueryLoader} for HQL queries.
  */
-public class ReactiveQueryLoader extends QueryLoader implements ReactiveLoader {
+public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveLoader {
 
 	private final QueryTranslatorImpl queryTranslator;
 	private final SessionFactoryImplementor factory;
@@ -46,7 +46,12 @@ public class ReactiveQueryLoader extends QueryLoader implements ReactiveLoader {
 			SessionImplementor session,
 			QueryParameters queryParameters) throws HibernateException {
 		checkQuery( queryParameters );
-		return reactiveList( session, queryParameters, queryTranslator.getQuerySpaces(), selectClause.getQueryReturnTypes() );
+		return reactiveList(
+				session,
+				queryParameters,
+				queryTranslator.getQuerySpaces(),
+				selectClause.getQueryReturnTypes()
+		);
 	}
 
 	/**
@@ -59,6 +64,7 @@ public class ReactiveQueryLoader extends QueryLoader implements ReactiveLoader {
 			final QueryParameters queryParameters,
 			final Set<Serializable> querySpaces,
 			final Type[] resultTypes) throws HibernateException {
+
 		final boolean cacheable = factory.getSessionFactoryOptions().isQueryCacheEnabled()
 				&& queryParameters.isCacheable();
 
@@ -87,11 +93,6 @@ public class ReactiveQueryLoader extends QueryLoader implements ReactiveLoader {
 								SessionFactoryImplementor factory,
 								List<AfterLoadAction> afterLoadActions) {
 		return super.preprocessSQL(sql, queryParameters, factory, afterLoadActions);
-	}
-
-	@Override
-	public void autoDiscoverTypes(ResultSet rs) {
-		super.autoDiscoverTypes(rs);
 	}
 
 	@Override
