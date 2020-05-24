@@ -111,17 +111,19 @@ public abstract class BaseReactiveTest {
 		sessionFactory.close();
 	}
 
+	protected Stage.SessionFactory getSessionFactory() {
+		return sessionFactory.unwrap( Stage.SessionFactory.class );
+	}
+
 	protected CompletionStage<Stage.Session> openSession() {
 		if ( session != null && session.isOpen() ) {
 			session.close();
 		}
-		return sessionFactory.unwrap( Stage.SessionFactory.class ).openSession()
-				.thenApply( s -> session = s );
+		return getSessionFactory().openSession().thenApply( s -> session = s );
 	}
 
 	protected CompletionStage<ReactiveConnection> connection() {
-		return poolProvider.getConnection()
-				.thenApply( c -> connection = c );
+		return poolProvider.getConnection().thenApply( c -> connection = c );
 	}
 
 }
