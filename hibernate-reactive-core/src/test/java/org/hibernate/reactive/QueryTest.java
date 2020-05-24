@@ -9,6 +9,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedNativeQuery;
+import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
 import javax.persistence.SqlResultSetMapping;
 import javax.persistence.Table;
@@ -164,12 +166,85 @@ public class QueryTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testNamedHqlProjectionQuery(TestContext context) {
+		Author author1 = new Author("Iain M. Banks");
+		Author author2 = new Author("Neal Stephenson");
+		Book book1 = new Book("1-85723-235-6", "Feersum Endjinn", author1);
+		Book book2 = new Book("0-380-97346-4", "Cryptonomicon", author2);
+		Book book3 = new Book("0-553-08853-X", "Snow Crash", author2);
+		author1.books.add(book1);
+		author2.books.add(book2);
+		author2.books.add(book3);
+
+		test(context,
+				openSession()
+						.thenCompose( session -> session.persist(author1, author2) )
+						.thenCompose( session -> session.flush() )
+						.thenAccept( session -> session.close() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createNamedQuery("title,author (hql)").getResultList() )
+						.thenAccept( books -> {
+							context.assertEquals( 3, books.size() );
+							books.forEach( book -> {
+								context.assertTrue( book instanceof Object[] );
+								Object[] tuple = (Object[]) book;
+								context.assertEquals( 2, tuple.length );
+								context.assertTrue( tuple[0] instanceof String );
+								context.assertTrue( tuple[1] instanceof String );
+							} );
+						} )
+		);
+	}
+
+	@Test
+	public void testNamedNativeProjectionQuery(TestContext context) {
+		Author author1 = new Author("Iain M. Banks");
+		Author author2 = new Author("Neal Stephenson");
+		Book book1 = new Book("1-85723-235-6", "Feersum Endjinn", author1);
+		Book book2 = new Book("0-380-97346-4", "Cryptonomicon", author2);
+		Book book3 = new Book("0-553-08853-X", "Snow Crash", author2);
+		author1.books.add(book1);
+		author2.books.add(book2);
+		author2.books.add(book3);
+
+		test(context,
+				openSession()
+						.thenCompose( session -> session.persist(author1, author2) )
+						.thenCompose( session -> session.flush() )
+						.thenAccept( session -> session.close() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createNamedQuery("title,author (sql)").getResultList() )
+						.thenAccept( books -> {
+							context.assertEquals( 3, books.size() );
+							books.forEach( book -> {
+								context.assertTrue( book instanceof Object[] );
+								Object[] tuple = (Object[]) book;
+								context.assertEquals( 2, tuple.length );
+								context.assertTrue( tuple[0] instanceof String );
+								context.assertTrue( tuple[1] instanceof String );
+							} );
+						} )
+		);
+	}
+
+	@NamedNativeQuery(
+			name = "title,author (sql)",
+			query = "select b.title, a.name from books b join authors a on author_id=a.id order by b.isbn",
+			resultSetMapping = "title,author"
+	)
+
+	@NamedQuery(
+			name = "title,author (hql)",
+			query = "select b.title, a.name from Book b join b.author a order by b.isbn"
+	)
+
 	@SqlResultSetMapping(name="title,author", columns={
 			@ColumnResult(name = "title",type=String.class),
 			@ColumnResult(name = "name",type=String.class)
 	})
 
-	@Entity
+	@Entity(name="Author")
 	@Table(name="authors")
 	static class Author {
 		@Id
@@ -188,7 +263,7 @@ public class QueryTest extends BaseReactiveTest {
 		Author() {}
 	}
 
-	@Entity
+	@Entity(name="Book")
 	@Table(name="books")
 	static class Book {
 		@Id @GeneratedValue Integer id;
