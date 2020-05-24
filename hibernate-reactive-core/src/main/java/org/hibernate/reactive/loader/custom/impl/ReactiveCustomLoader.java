@@ -23,6 +23,8 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
+ * A reactive {@link org.hibernate.loader.Loader} for native SQL queries.
+ *
  * @author Gavin King
  */
 public class ReactiveCustomLoader extends CustomLoader implements ReactiveLoader {

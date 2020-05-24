@@ -7,6 +7,9 @@ import javax.persistence.Tuple;
 import javax.persistence.criteria.CriteriaQuery;
 
 /**
+ * A JPA {@link javax.persistence.criteria.CriteriaBuilder} for
+ * that acts as a factory for {@link ReactiveCriteriaQueryImpl}.
+ *
  * @author Gavin King
  */
 public class ReactiveCriteriaBuilderImpl extends CriteriaBuilderImpl {

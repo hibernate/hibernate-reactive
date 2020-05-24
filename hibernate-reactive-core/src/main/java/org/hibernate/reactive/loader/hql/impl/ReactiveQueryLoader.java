@@ -23,6 +23,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * A reactive {@link QueryLoader} for HQL queries.
+ */
 public class ReactiveQueryLoader extends QueryLoader implements ReactiveLoader {
 
 	private final QueryTranslatorImpl queryTranslator;

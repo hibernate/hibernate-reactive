@@ -4,6 +4,13 @@ import org.hibernate.LockMode;
 import org.hibernate.transform.ResultTransformer;
 
 /**
+ /**
+ * An internal contract between the reactive session implementation
+ * and the {@link org.hibernate.reactive.stage.Stage.Query} and
+ * {@link org.hibernate.reactive.mutiny.Mutiny.Query} APIs.
+ *
+ * @see ReactiveSession
+ *
  * @author Gavin King
  */
 public interface ReactiveNativeQuery<R> extends ReactiveQuery<R> {

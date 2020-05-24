@@ -22,6 +22,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * Implementation of {@link ReactiveQuery} by extension of
+ * {@link QueryImpl}.
+ */
 public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<R> {
 
 	private EntityGraphQueryHint entityGraphQueryHint;
