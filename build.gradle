@@ -1,10 +1,12 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'com.diffplug.gradle.spotless' version '4.0.1'
 }
 
 subprojects {
     apply plugin: 'java-library'
+    apply plugin: 'com.diffplug.gradle.spotless'
     group = 'org.hibernate.reactive'
     version = '1.0.0-SNAPSHOT'
     sourceCompatibility = 1.8
@@ -28,7 +30,6 @@ subprojects {
 ext {
     hibernateOrmVersion = '5.4.16.Final'
 }
-
 
 //allprojects {
 //    apply plugin: 'checkstyle'

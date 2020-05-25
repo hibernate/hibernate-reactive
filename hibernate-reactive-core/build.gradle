@@ -48,3 +48,16 @@ test {
   systemProperty 'docker', project.hasProperty('docker') ? 'true' : 'false'
   systemProperty 'db', project.hasProperty('db') ? project.getProperty('db') : 'postgresql'
 }
+
+spotless {
+    //Don't fail during the check: rather than enforcing guidelines, we use this plugin to fix mistakes automatically.
+    enforceCheck false
+    java {
+        licenseHeaderFile 'spotless.license.java'
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+tasks.compileJava.dependsOn(spotlessApply)
