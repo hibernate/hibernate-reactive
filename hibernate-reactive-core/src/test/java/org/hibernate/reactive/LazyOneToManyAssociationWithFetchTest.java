@@ -8,6 +8,7 @@ import org.hibernate.reactive.stage.Stage;
 import org.junit.Test;
 
 import javax.persistence.Entity;
+import javax.persistence.EntityGraph;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
@@ -87,7 +88,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void findBookWithEntityGraphFetchAuthors(TestContext context) {
+	public void findBookWithNamedEntityGraphFetchAuthors(TestContext context) {
 		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
 		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
 		final Author terryPratchett = new Author(2132511, "Terry Pratchett", goodOmens);
@@ -102,7 +103,39 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 						.thenCompose(s -> s.persist(terryPratchett))
 						.thenCompose(s -> s.flush())
 						.thenCompose(v -> openSession())
-						.thenCompose( s -> s.find(Book.class, goodOmens.getId(), s.getEntityGraph("withAuthors") ) )
+						.thenCompose( s -> s.find( s.getEntityGraph(Book.class, "withAuthors"), goodOmens.getId() ) )
+						.thenAccept(book -> {
+							List<Author> optionalAssociation = book.authors;
+							context.assertNotNull(optionalAssociation);
+							context.assertTrue(optionalAssociation.contains(neilGaiman));
+							context.assertTrue(optionalAssociation.contains(terryPratchett));
+
+						})
+		);
+
+	}
+
+	@Test
+	public void findBookWithNewEntityGraphFetchAuthors(TestContext context) {
+		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
+		final Author terryPratchett = new Author(2132511, "Terry Pratchett", goodOmens);
+		goodOmens.getAuthors().add(neilGaiman);
+		goodOmens.getAuthors().add(terryPratchett);
+
+		test(
+				context,
+				openSession()
+						.thenCompose(s -> s.persist(goodOmens))
+						.thenCompose(s -> s.persist(neilGaiman))
+						.thenCompose(s -> s.persist(terryPratchett))
+						.thenCompose(s -> s.flush())
+						.thenCompose(v -> openSession())
+						.thenCompose( s -> {
+							EntityGraph<Book> graph = s.createEntityGraph(Book.class);
+							graph.addAttributeNodes("authors");
+							return s.find( graph, goodOmens.getId() );
+						})
 						.thenAccept(book -> {
 							List<Author> optionalAssociation = book.authors;
 							context.assertNotNull(optionalAssociation);

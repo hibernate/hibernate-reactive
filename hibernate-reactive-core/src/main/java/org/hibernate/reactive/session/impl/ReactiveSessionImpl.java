@@ -74,6 +74,7 @@ import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import javax.persistence.EntityGraph;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.Tuple;
 import javax.persistence.criteria.CriteriaQuery;
@@ -1246,6 +1247,28 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			reactiveConnection.close();
 		}
 		super.close();
+	}
+
+	@Override @SuppressWarnings("unchecked")
+	public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity, String name) {
+		RootGraphImplementor<?> entityGraph = super.createEntityGraph(name);
+		if ( !entityGraph.getGraphedType().getJavaType().equals(entity) ) {
+			throw new HibernateException("wrong entity type");
+		}
+		return (RootGraphImplementor<T>) entityGraph;
+	}
+
+	public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity) {
+		return super.createEntityGraph( entity );
+	}
+
+	@Override @SuppressWarnings("unchecked")
+	public <T> RootGraphImplementor<T> getEntityGraph(Class<T> entity, String name) {
+		RootGraphImplementor<?> entityGraph = super.getEntityGraph(name);
+		if ( !entityGraph.getGraphedType().getJavaType().equals(entity) ) {
+			throw new HibernateException("wrong entity type");
+		}
+		return (RootGraphImplementor<T>) entityGraph;
 	}
 }
 
