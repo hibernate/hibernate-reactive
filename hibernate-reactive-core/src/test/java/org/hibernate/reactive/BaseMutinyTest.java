@@ -19,8 +19,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
-import java.util.concurrent.CompletionStage;
-
 @RunWith(VertxUnitRunner.class)
 public abstract class BaseMutinyTest {
 

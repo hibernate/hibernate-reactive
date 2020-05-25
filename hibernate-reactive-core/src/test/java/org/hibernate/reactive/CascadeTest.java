@@ -5,7 +5,23 @@ import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
-import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.PostLoad;
+import javax.persistence.PostPersist;
+import javax.persistence.PostRemove;
+import javax.persistence.PostUpdate;
+import javax.persistence.PrePersist;
+import javax.persistence.PreRemove;
+import javax.persistence.PreUpdate;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+import javax.persistence.Version;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -98,8 +114,7 @@ public class CascadeTest extends BaseReactiveTest {
 											return s2.fetch( node.parent )
 													.thenCompose( parent -> {
 														context.assertNotNull( parent );
-														return connection()
-																.thenCompose( connection -> connection.execute("update Node set string = upper(string)") )
+														return s2.createQuery("update Node set string = upper(string)").executeUpdate()
 																.thenCompose(v -> s2.refresh(node))
 																.thenAccept(v -> {
 																	context.assertEquals( node.getString(), "ADOPTED" );

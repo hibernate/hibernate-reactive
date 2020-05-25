@@ -88,8 +88,7 @@ public class AutoincrementTest extends BaseReactiveTest {
 							context.assertFalse( basic.postPersisted && basic.prePersisted );
 							context.assertEquals( basic.version, 1 );
 							context.assertEquals( basic.string, "Goodbye");
-							return connection()
-									.thenCompose( connection -> connection.execute("update Basic set string = 'Goodnight'") )
+							return s3.createQuery("update Basic set string = 'Goodnight'").executeUpdate()
 									.thenCompose(v -> s3.refresh(basic))
 									.thenAccept(v -> context.assertEquals(basic.getString(), "Goodnight"))
 									.thenCompose(v -> s3.remove(basic))
@@ -149,7 +148,7 @@ public class AutoincrementTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity @Table(name="Basic")
+	@Entity(name="Basic") @Table(name="Basic")
 	public static class Basic {
 
 		@Id @GeneratedValue(strategy = GenerationType.IDENTITY)
