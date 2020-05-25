@@ -96,7 +96,7 @@ public class MutinyMain {
 					CriteriaQuery<Book> query = sessionFactory.getCriteriaBuilder().createQuery(Book.class);
 					Root<Author> a = query.from(Author.class);
 					Join<Author,Book> b = a.join(Author_.books);
-					query.where( a.get("name").in("Neal Stephenson", "William Gibson") );
+					query.where( a.get(Author_.name).in("Neal Stephenson", "William Gibson") );
 					query.select(b);
 					return session.createQuery(query).getResultList().onItem().invoke(
 							books -> books.forEach(book -> out.println(book.title) )
