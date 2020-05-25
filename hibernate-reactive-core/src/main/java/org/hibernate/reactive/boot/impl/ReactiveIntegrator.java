@@ -36,6 +36,8 @@ public class ReactiveIntegrator implements Integrator {
 
 	private void attachEventContextManagingListenersIfRequired(SessionFactoryServiceRegistry serviceRegistry) {
 
+		//TODO only execute the following on a Reactive-enabled serviceregistry
+
 		CoreLogging.messageLogger(ReactiveIntegrator.class).info("HRX000001: Hibernate Reactive Preview");
 
 		EventListenerRegistry eventListenerRegistry = serviceRegistry.getService( EventListenerRegistry.class );
