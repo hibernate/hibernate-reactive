@@ -16,7 +16,9 @@ import javax.persistence.SqlResultSetMapping;
 import javax.persistence.Table;
 import javax.persistence.Tuple;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Root;
 import java.util.ArrayList;
@@ -52,6 +54,13 @@ public class QueryTest extends BaseReactiveTest {
 		b.fetch("author");
 		query.orderBy( builder.asc( b.get("isbn") ) );
 
+		CriteriaUpdate<Book> update = builder.createCriteriaUpdate(Book.class);
+		b = update.from(Book.class);
+		update.set( b.get("title"), "XXX" );
+
+		CriteriaDelete<Book> delete = builder.createCriteriaDelete(Book.class);
+		b = delete.from(Book.class);
+
 		test(context,
 				openSession()
 						.thenCompose( session -> session.persist(author1, author2) )
@@ -67,6 +76,10 @@ public class QueryTest extends BaseReactiveTest {
 								context.assertNotNull( book.isbn );
 							} );
 						} )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createQuery(update).executeUpdate() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createQuery(delete).executeUpdate() )
 		);
 	}
 

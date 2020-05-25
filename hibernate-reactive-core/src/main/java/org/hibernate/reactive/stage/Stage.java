@@ -14,7 +14,9 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.EntityGraph;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Metamodel;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -476,6 +478,28 @@ public interface Stage {
 		 * @see javax.persistence.EntityManager#createQuery(String)
 		 */
 		<R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery);
+
+		/**
+		 * Create an instance of {@link Query} for the given criteria update.
+		 *
+		 * @param criteriaUpdate The {@link CriteriaUpdate}
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see javax.persistence.EntityManager#createQuery(String)
+		 */
+		<R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
+
+		/**
+		 * Create an instance of {@link Query} for the given criteria delete.
+		 *
+		 * @param criteriaDelete The {@link CriteriaDelete}
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see javax.persistence.EntityManager#createQuery(String)
+		 */
+		<R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete);
 
 		/**
 		 * Set the flush mode for this session.

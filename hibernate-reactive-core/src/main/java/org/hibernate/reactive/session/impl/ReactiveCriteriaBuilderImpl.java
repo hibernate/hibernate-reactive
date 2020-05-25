@@ -4,7 +4,9 @@ import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
 
 import javax.persistence.Tuple;
+import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
 
 /**
  * A JPA {@link javax.persistence.criteria.CriteriaBuilder} for
@@ -25,6 +27,16 @@ public class ReactiveCriteriaBuilderImpl extends CriteriaBuilderImpl {
 	@Override
 	public <T> CriteriaQuery<T> createQuery(Class<T> resultClass) {
 		return new ReactiveCriteriaQueryImpl<>( this, resultClass );
+	}
+
+	@Override
+	public <T> CriteriaUpdate<T> createCriteriaUpdate(Class<T> targetEntity) {
+		return new ReactiveCriteriaUpdateImpl<>(this);
+	}
+
+	@Override
+	public <T> CriteriaDelete<T> createCriteriaDelete(Class<T> targetEntity) {
+		return new ReactiveCriteriaDeleteImpl<>(this);
 	}
 
 	@Override
