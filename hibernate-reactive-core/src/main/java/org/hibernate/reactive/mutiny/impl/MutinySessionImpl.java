@@ -324,6 +324,9 @@ public class MutinySessionImpl implements Mutiny.Session {
 		}
 
 		<R> R processError(R result, Throwable e, boolean canceled) {
+			if ( canceled ) {
+				rollback = true;
+			}
 			if ( e!=null ) {
 				rollback = true;
 				if (error == null) {
