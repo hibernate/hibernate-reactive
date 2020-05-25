@@ -152,7 +152,7 @@ public interface Stage {
 	 *
 	 * @see org.hibernate.Session
 	 */
-	interface Session {
+	interface Session extends AutoCloseable {
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
@@ -687,7 +687,7 @@ public interface Stage {
 	 * </pre>
 	 *
 	 */
-	interface SessionFactory {
+	interface SessionFactory extends AutoCloseable {
 
 		/**
 		 * Obtain a new {@link Session reactive session}, the

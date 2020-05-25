@@ -151,7 +151,7 @@ public interface Mutiny {
 	 *
 	 * @see org.hibernate.Session
 	 */
-	interface Session {
+	interface Session extends AutoCloseable {
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
@@ -686,7 +686,7 @@ public interface Mutiny {
 	 * </pre>
 	 *
 	 */
-	interface SessionFactory {
+	interface SessionFactory extends AutoCloseable {
 
 		/**
 		 * Obtain a new {@link Session reactive session}, the
