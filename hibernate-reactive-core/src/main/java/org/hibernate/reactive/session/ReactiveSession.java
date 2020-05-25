@@ -138,9 +138,9 @@ public interface ReactiveSession  {
 	void enableFetchProfile(String name) throws UnknownProfileException;
 	void disableFetchProfile(String name) throws UnknownProfileException;
 
-	<T> EntityGraph<T> createEntityGraph(Class<T> rootType);
-	EntityGraph<?> createEntityGraph(String name);
-	EntityGraph<?> getEntityGraph(String name);
+	<T> EntityGraph<T> createEntityGraph(Class<T> entity);
+	<T> EntityGraph<T> createEntityGraph(Class<T> entity, String name);
+	<T> EntityGraph<T> getEntityGraph(Class<T> entity, String name);
 
 	void clear();
 

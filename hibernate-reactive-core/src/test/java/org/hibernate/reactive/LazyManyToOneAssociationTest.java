@@ -6,7 +6,15 @@ import org.hibernate.annotations.FetchProfile;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
-import javax.persistence.*;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+import javax.persistence.EntityGraph;
+import javax.persistence.FetchType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedAttributeNode;
+import javax.persistence.NamedEntityGraph;
+import javax.persistence.Table;
 import java.util.Objects;
 
 import static org.hibernate.Hibernate.isInitialized;
@@ -50,7 +58,7 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void entityGraphWithOneAuthor(TestContext context) {
+	public void namedEntityGraphWithOneAuthor(TestContext context) {
 		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse" );
 		final Author author = new Author( 5, "Charlie Mackesy", book );
 
@@ -61,13 +69,45 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 						.thenCompose( s -> s.persist( author ) )
 						.thenCompose( s -> s.flush() )
 						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.find( Author.class, author.getId(), s.getEntityGraph("withBook") )
+						.thenCompose( s -> s.find( s.getEntityGraph(Author.class, "withBook"), author.getId() )
 								.thenAccept( optionalAuthor -> {
 									context.assertNotNull( optionalAuthor );
 									context.assertEquals( author, optionalAuthor );
 									context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
 									context.assertEquals( book, optionalAuthor.getBook() );
 								}))
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.find( Book.class, book.getId() ) )
+						.thenAccept( optionalBook -> {
+							context.assertNotNull( optionalBook );
+							context.assertEquals( book, optionalBook );
+						})
+		);
+	}
+
+	@Test
+	public void newEntityGraphWithOneAuthor(TestContext context) {
+		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse" );
+		final Author author = new Author( 5, "Charlie Mackesy", book );
+
+		test(
+				context,
+				openSession()
+						.thenCompose( s -> s.persist( book ) )
+						.thenCompose( s -> s.persist( author ) )
+						.thenCompose( s -> s.flush() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> {
+							EntityGraph<Author> graph = s.createEntityGraph(Author.class);
+							graph.addAttributeNodes("book");
+							return s.find( graph, author.getId() )
+									.thenAccept( optionalAuthor -> {
+										context.assertNotNull( optionalAuthor );
+										context.assertEquals( author, optionalAuthor );
+										context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
+										context.assertEquals( book, optionalAuthor.getBook() );
+									});
+						})
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, book.getId() ) )
 						.thenAccept( optionalBook -> {

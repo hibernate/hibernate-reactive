@@ -190,7 +190,7 @@ public interface Stage {
 		 *
 		 * @see #find(Class,Object)
 		 */
-		<T> CompletionStage<T> find(Class<T> entityClass, Object id, EntityGraph<T> entityGraph);
+		<T> CompletionStage<T> find(EntityGraph<T> entityGraph, Object id);
 
 		/**
 		 * Asynchronously return the persistent instances of the given entity
@@ -536,7 +536,7 @@ public interface Stage {
 		/**
 		 * Obtain a named {@link EntityGraph}
 		 */
-		<T> EntityGraph<T> getEntityGraph(String graphName);
+		<T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName);
 
 		/**
 		 * Create a new mutable {@link EntityGraph}
@@ -546,7 +546,7 @@ public interface Stage {
 		/**
 		 * Create a new mutable copy of a named {@link EntityGraph}
 		 */
-		EntityGraph<?> createEntityGraph(String graphName);
+		<T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName);
 
 		/**
 		 * Disable a particular fetch profile on this session.  No-op if requested

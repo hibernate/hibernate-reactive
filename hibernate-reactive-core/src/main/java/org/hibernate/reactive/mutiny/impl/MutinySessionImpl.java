@@ -6,6 +6,7 @@ import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -89,7 +90,8 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public <T> Uni<T> find(Class<T> entityClass, Object id, EntityGraph<T> entityGraph) {
+	public <T> Uni<T> find(EntityGraph<T> entityGraph, Object id) {
+		Class<T> entityClass = ((RootGraphImplementor<T>) entityGraph).getGraphedType().getJavaType();
 		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, id, null,
 				singletonMap( GraphSemantic.FETCH.getJpaHintName(), entityGraph ) ) );
 	}
@@ -273,18 +275,18 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public EntityGraph<?> getEntityGraph(String name) {
-		return delegate.getEntityGraph(name);
+	public <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name) {
+		return delegate.getEntityGraph(entity, name);
 	}
 
 	@Override
-	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType) {
-		return delegate.createEntityGraph(rootType);
+	public <T> EntityGraph<T> createEntityGraph(Class<T> entity) {
+		return delegate.createEntityGraph(entity);
 	}
 
 	@Override
-	public EntityGraph<?> createEntityGraph(String name) {
-		return delegate.createEntityGraph(name);
+	public <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name) {
+		return delegate.createEntityGraph(entity, name);
 	}
 
 	@Override
