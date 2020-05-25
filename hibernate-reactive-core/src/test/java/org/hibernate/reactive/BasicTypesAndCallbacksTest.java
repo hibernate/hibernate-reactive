@@ -7,13 +7,10 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.junit.Test;
 
 import javax.persistence.*;
-
-import static org.junit.Assume.assumeTrue;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -22,7 +19,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.TimeZone;
+
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+import static org.junit.Assume.assumeFalse;
 
 public class BasicTypesAndCallbacksTest extends BaseReactiveTest {
 
@@ -34,11 +39,41 @@ public class BasicTypesAndCallbacksTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testLobTypes(TestContext context) {
+
+		assumeFalse( dbType() == DBType.DB2 );
+
+		String text = "hello world once upon a time it was the best of times it was the worst of times goodbye";
+		StringBuilder longText = new StringBuilder();
+		for (int i =0; i<1000; i++) {
+			longText.append(text);
+		}
+		String book = longText.toString();
+		byte[] pic = longText.toString().getBytes();
+		Basic basick = new Basic( "Basick", pic, book );
+		test(context,
+				getSessionFactory()
+						.withSession(
+								session -> session.persist(basick).thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> getSessionFactory()
+								.withSession(
+										session -> session.find(Basic.class, basick.id)
+												.thenAccept( basic -> {
+													context.assertEquals( book, basic.book );
+													context.assertEquals( pic.length, basic.pic.length );
+													context.assertEquals( pic[100], basic.pic[100] );
+												})
+								))
+		);
+	}
+
+	@Test
 	public void testBasicTypes(TestContext context) {
 		// TODO @AGG
 		// The DB2 driver does not yet support a few types (BigDecimal, BigInteger, LocalTime)
 		// so we need to keep a separate copy around for testing DB2 (DB2BasicTest)
-		assumeTrue( DatabaseConfiguration.dbType() != DBType.DB2 );
+
+		assumeFalse( dbType() == DBType.DB2 );
 
 		Basic basik = new Basic("Hello World");
 		basik.decimal = new BigDecimal(12.12d);
@@ -220,6 +255,9 @@ public class BasicTypesAndCallbacksTest extends BaseReactiveTest {
 
 		Embed embed;
 
+		@Lob @Column(length = 100_000) protected byte[] pic;
+		@Lob @Column(length = 100_000) protected String book;
+
 		@Transient boolean prePersisted;
 		@Transient boolean postPersisted;
 		@Transient boolean preUpdated;
@@ -230,6 +268,12 @@ public class BasicTypesAndCallbacksTest extends BaseReactiveTest {
 
 		public Basic(String string) {
 			this.string = string;
+		}
+
+		public Basic(String string, byte[] pic, String book) {
+			this.string = string;
+			this.pic = pic;
+			this.book = book;
 		}
 
 		public Basic(Integer id, String string) {
