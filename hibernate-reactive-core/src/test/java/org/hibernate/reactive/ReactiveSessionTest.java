@@ -20,14 +20,14 @@ import javax.persistence.metamodel.EntityType;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 public class ReactiveSessionTest extends BaseReactiveTest {
 
 	@BeforeClass
 	public static void beforeAll() {
 		// TODO: @AGG investigate this test class for DB2
-		assumeTrue(DatabaseConfiguration.dbType() != DBType.DB2);
+		assumeFalse(DatabaseConfiguration.dbType() == DBType.DB2);
 	}
 
 	@Override
@@ -113,7 +113,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		// TODO @AGG
 		// The DB2 driver does not yet support a few types (BigDecimal, BigInteger, LocalTime)
 		// so we need to keep a separate copy around for testing DB2 (DB2BasicTest)
-		assumeTrue( DatabaseConfiguration.dbType() != DBType.DB2 );
+		assumeFalse( DatabaseConfiguration.dbType() == DBType.DB2 );
 
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(

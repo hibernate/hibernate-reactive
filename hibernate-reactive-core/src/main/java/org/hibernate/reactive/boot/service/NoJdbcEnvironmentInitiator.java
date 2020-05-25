@@ -38,18 +38,18 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 		return JdbcEnvironment.class;
 	}
 
-	@Override
+	@Override @SuppressWarnings("unchecked")
 	public JdbcEnvironment initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
 		if ( !configurationValues.containsKey( AvailableSettings.DIALECT ) ) {
 			String url = configurationValues.getOrDefault( AvailableSettings.URL, "" ).toString();
 			Class<? extends Dialect> dialectClass = null;
-			if (url.startsWith("jdbc:mysql:")) {
+			if ( url.startsWith("jdbc:mysql:") ) {
 				dialectClass = MySQL8Dialect.class;
 			}
-			else if (url.startsWith("jdbc:postgresql:")) {
+			else if ( url.startsWith("jdbc:postgresql:") ) {
 				dialectClass = PostgreSQL10Dialect.class;
 			}
-			else if (url.startsWith( "jdbc:db2:" )) {
+			else if ( url.startsWith( "jdbc:db2:" ) ) {
 				dialectClass =  DB297Dialect.class;
 			}
 			//TODO etc
@@ -75,7 +75,8 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 
 		if ( useJdbcMetadata ) {
 			ConnectionProvider connectionProvider = registry.getService( ConnectionProvider.class );
-			final JdbcConnectionAccess jdbcConnectionAccess = new ConnectionProviderJdbcConnectionAccess( connectionProvider );
+			final JdbcConnectionAccess jdbcConnectionAccess =
+					new ConnectionProviderJdbcConnectionAccess( connectionProvider );
 			try {
 				final Connection connection = jdbcConnectionAccess.obtainConnection();
 				try {
