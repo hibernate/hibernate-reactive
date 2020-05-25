@@ -41,7 +41,7 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 						metadata.getProviderClassName()
 				) ) {
 					//correct provider
-					Map<Object, Object> protectiveCopy = new HashMap<Object, Object>( integration );
+					Map<Object, Object> protectiveCopy = new HashMap<>( integration );
 					enforceReactiveConfig( protectiveCopy );
 					protectiveCopy.put( AvailableSettings.PROVIDER, delegate.getClass().getName() );
 					return delegate.createEntityManagerFactory(
@@ -70,7 +70,7 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 	public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map map) {
 		final String persistenceProviderClassName = info.getPersistenceProviderClassName();
 		if ( persistenceProviderClassName == null || IMPLEMENTATION_NAME.equals( persistenceProviderClassName ) ) {
-			Map<Object, Object> protectiveCopy = map != null ? new HashMap<Object, Object>( map ) : new HashMap<Object, Object>();
+			Map<Object, Object> protectiveCopy = map != null ? new HashMap<>( map ) : new HashMap<>();
 			enforceReactiveConfig( protectiveCopy );
 			//HEM only builds an EntityManagerFactory when HibernatePersistence.class.getName() is the PersistenceProvider
 			//that's why we override it when

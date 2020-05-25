@@ -7,9 +7,10 @@ import org.hibernate.query.criteria.internal.compile.ImplicitParameterBinding;
 import org.hibernate.type.Type;
 
 import javax.persistence.criteria.Selection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static java.util.stream.Collectors.toMap;
 
 /**
  * An implementation of {@link QueryOptions} for reactive criteria queries.
@@ -25,7 +26,11 @@ class CriteriaQueryOptions implements QueryOptions {
 	public CriteriaQueryOptions(Selection<?> selection,
 								List<ImplicitParameterBinding> implicitParameterBindings) {
 		this.selection = (SelectionImplementor<?>) selection;
-		this.implicitParameterTypes = extractTypeMap( implicitParameterBindings );
+		this.implicitParameterTypes = implicitParameterBindings.stream()
+				.collect(toMap(
+						ImplicitParameterBinding::getParameterName,
+						ImplicitParameterBinding::getJavaType
+				));
 	}
 
 	@Override @SuppressWarnings("rawtypes")
@@ -63,15 +68,6 @@ class CriteriaQueryOptions implements QueryOptions {
 				}
 			}
 		}
-	}
-
-	@SuppressWarnings("rawtypes")
-	private static Map<String, Class> extractTypeMap(List<ImplicitParameterBinding> implicitParameterBindings) {
-		final HashMap<String,Class> map = new HashMap<>();
-		for ( ImplicitParameterBinding implicitParameter : implicitParameterBindings ) {
-			map.put( implicitParameter.getParameterName(), implicitParameter.getJavaType() );
-		}
-		return map;
 	}
 
 }
