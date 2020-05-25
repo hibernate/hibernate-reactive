@@ -5,102 +5,163 @@
  */
 package org.hibernate.reactive.jpa.impl;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.hibernate.jpa.HibernatePersistenceProvider;
+import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
+import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
+import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
+import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
+import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
+import org.jboss.logging.Logger;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
+import javax.persistence.spi.LoadState;
 import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceUnitInfo;
 import javax.persistence.spi.ProviderUtil;
-
-import org.hibernate.cfg.Environment;
-import org.hibernate.jpa.AvailableSettings;
-import org.hibernate.jpa.HibernatePersistenceProvider;
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
-import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * JPA PersistenceProvider implementation specific to Hibernate Reactive
  * All specific configurations are set transparently for the user.
  */
 public class ReactivePersistenceProvider implements PersistenceProvider {
-	private static String IMPLEMENTATION_NAME = ReactivePersistenceProvider.class.getName();
 
-	private final HibernatePersistenceProvider delegate = new HibernatePersistenceProvider();
+	private static final Logger log = Logger.getLogger( HibernatePersistenceProvider.class );
+	private final PersistenceUtilHelper.MetadataCache cache = new PersistenceUtilHelper.MetadataCache();
 
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * Note: per-spec, the values passed as {@code properties} override values found in {@code persistence.xml}
+	 */
 	@Override
-	public EntityManagerFactory createEntityManagerFactory(String emName, Map map) {
-		try {
-			Map<?, ?> integration = map == null ? Collections.emptyMap() : Collections.unmodifiableMap( map );
-
-			List<ParsedPersistenceXmlDescriptor> metadataFiles = PersistenceXmlParser.locatePersistenceUnits(
-					integration
-			);
-
-			for ( ParsedPersistenceXmlDescriptor metadata : metadataFiles ) {
-				//if the provider is not set, don't use it as people might want to use Hibernate ORM
-				if ( IMPLEMENTATION_NAME.equalsIgnoreCase(
-						metadata.getProviderClassName()
-				) ) {
-					//correct provider
-					Map<Object, Object> protectiveCopy = new HashMap<>( integration );
-					enforceReactiveConfig( protectiveCopy );
-					protectiveCopy.put( AvailableSettings.PROVIDER, delegate.getClass().getName() );
-					return delegate.createEntityManagerFactory(
-							emName, protectiveCopy
-					);
-				}
-			}
-
-			//not the right provider
+	public EntityManagerFactory createEntityManagerFactory(String persistenceUnitName, Map properties) {
+		log.tracef( "Starting createEntityManagerFactory for persistenceUnitName %s", persistenceUnitName );
+		final Map immutableProperties = immutable( properties );
+		final EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull( persistenceUnitName, immutableProperties );
+		if ( builder == null ) {
+			log.trace( "Could not obtain matching EntityManagerFactoryBuilder, returning null" );
 			return null;
 		}
-		catch (PersistenceException pe) {
-			throw pe;
+		else {
+			return builder.build();
+		}
+	}
+
+	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(String persistenceUnitName, Map properties) {
+		log.tracef( "Attempting to obtain correct EntityManagerFactoryBuilder for persistenceUnitName : %s", persistenceUnitName );
+
+		final List<ParsedPersistenceXmlDescriptor> units;
+		try {
+			units = PersistenceXmlParser.locatePersistenceUnits( properties );
 		}
 		catch (Exception e) {
-			throw new PersistenceException( "Unable to build EntityManagerFactory", e );
+			log.debug( "Unable to locate persistence units", e );
+			throw new PersistenceException( "Unable to locate persistence units", e );
 		}
-	}
 
-	private void enforceReactiveConfig(Map<Object,Object> map) {
-		//we use a placeholder DS to make sure, Hibernate EntityManager (Ejb3Configuration) does not enforce a different connection provider
-		map.put( Environment.DATASOURCE, "---PlaceHolderDSForOGM---" );
-	}
+		log.debugf( "Located and parsed %s persistence units; checking each", units.size() );
 
-	@Override
-	public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map map) {
-		final String persistenceProviderClassName = info.getPersistenceProviderClassName();
-		if ( persistenceProviderClassName == null || IMPLEMENTATION_NAME.equals( persistenceProviderClassName ) ) {
-			Map<Object, Object> protectiveCopy = map != null ? new HashMap<>( map ) : new HashMap<>();
-			enforceReactiveConfig( protectiveCopy );
-			//HEM only builds an EntityManagerFactory when HibernatePersistence.class.getName() is the PersistenceProvider
-			//that's why we override it when
-			//new DelegatorPersistenceUnitInfo(info)
-			return delegate.createContainerEntityManagerFactory(
-					new DelegatorPersistenceUnitInfo( info ),
-					protectiveCopy
+		if ( persistenceUnitName == null && units.size() > 1 ) {
+			// no persistence-unit name to look for was given and we found multiple persistence-units
+			throw new PersistenceException( "No name provided and multiple persistence units found" );
+		}
+
+		for ( ParsedPersistenceXmlDescriptor persistenceUnit : units ) {
+			log.debugf(
+					"Checking persistence-unit [name=%s, explicit-provider=%s] against incoming persistence unit name [%s]",
+					persistenceUnit.getName(),
+					persistenceUnit.getProviderClassName(),
+					persistenceUnitName
 			);
+
+			final boolean matches = persistenceUnitName == null || persistenceUnit.getName().equals( persistenceUnitName );
+			if ( !matches ) {
+				log.debug( "Excluding from consideration due to name mis-match" );
+				continue;
+			}
+
+			// See if we (Hibernate Reactive) are the persistence provider
+			if ( ! ReactiveProviderChecker.isProvider( persistenceUnit, properties ) ) {
+				log.debug( "Excluding from consideration due to provider mis-match" );
+				continue;
+			}
+
+			return getEntityManagerFactoryBuilder( persistenceUnit, properties );
 		}
-		//not the right provider
+
+		log.debug( "Found no matching persistence units" );
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
+	private static Map immutable(Map properties) {
+		return properties == null ? Collections.emptyMap() : Collections.unmodifiableMap( properties );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * Note: per-spec, the values passed as {@code properties} override values found in {@link PersistenceUnitInfo}
+	 */
 	@Override
-	public ProviderUtil getProviderUtil() {
-		return delegate.getProviderUtil();
+	public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map properties) {
+		log.tracef( "Starting createContainerEntityManagerFactory : %s", info.getPersistenceUnitName() );
+
+		return getEntityManagerFactoryBuilder( info, properties ).build();
 	}
 
 	@Override
 	public void generateSchema(PersistenceUnitInfo info, Map map) {
-		throw new IllegalStateException( "Hibernate Reactive does not support schema generation" );
+		log.tracef( "Starting generateSchema : PUI.name=%s", info.getPersistenceUnitName() );
+
+		final EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilder( info, map );
+		builder.generateSchema();
 	}
 
 	@Override
 	public boolean generateSchema(String persistenceUnitName, Map map) {
-		throw new IllegalStateException( "Hibernate Reactive does not support schema generation" );
+		log.tracef( "Starting generateSchema for persistenceUnitName %s", persistenceUnitName );
+
+		final EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull( persistenceUnitName, map );
+		if ( builder == null ) {
+			log.trace( "Could not obtain matching EntityManagerFactoryBuilder, returning false" );
+			return false;
+		}
+		builder.generateSchema();
+		return true;
 	}
+
+	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(PersistenceUnitInfo info, Map integration) {
+		return getEntityManagerFactoryBuilder( new PersistenceUnitInfoDescriptor( info ), integration );
+	}
+
+	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(PersistenceUnitDescriptor persistenceUnitDescriptor, Map integration) {
+		return new ReactiveEntityManagerFactoryBuilder( persistenceUnitDescriptor, integration );
+	}
+
+	private final ProviderUtil providerUtil = new ProviderUtil() {
+		@Override
+		public LoadState isLoadedWithoutReference(Object proxy, String property) {
+			return PersistenceUtilHelper.isLoadedWithoutReference( proxy, property, cache );
+		}
+		@Override
+		public LoadState isLoadedWithReference(Object proxy, String property) {
+			return PersistenceUtilHelper.isLoadedWithReference( proxy, property, cache );
+		}
+		@Override
+		public LoadState isLoaded(Object o) {
+			return PersistenceUtilHelper.isLoaded(o);
+		}
+	};
+
+	@Override
+	public ProviderUtil getProviderUtil() {
+		return providerUtil;
+	}
+
 }
