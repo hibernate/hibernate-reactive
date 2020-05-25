@@ -59,4 +59,9 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	public void close() {
 		delegate.close();
 	}
+
+	@Override
+	public boolean isOpen() {
+		return delegate.isOpen();
+	}
 }

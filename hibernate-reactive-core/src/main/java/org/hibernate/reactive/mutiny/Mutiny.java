@@ -633,6 +633,9 @@ public interface Mutiny {
 		 */
 		void close();
 
+		/**
+		 * @return false if {@link #close()} has been called
+		 */
 		boolean isOpen();
 	}
 
@@ -720,6 +723,11 @@ public interface Mutiny {
 		 * pool.
 		 */
 		void close();
+
+		/**
+		 * @return false if {@link #close()} has been called
+		 */
+		boolean isOpen();
 	}
 
 	/**

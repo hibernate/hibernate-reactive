@@ -634,6 +634,9 @@ public interface Stage {
 		 */
 		void close();
 
+		/**
+		 * @return false if {@link #close()} has been called
+		 */
 		boolean isOpen();
 	}
 
@@ -721,6 +724,11 @@ public interface Stage {
 		 * pool.
 		 */
 		void close();
+
+		/**
+		 * @return false if {@link #close()} has been called
+		 */
+		boolean isOpen();
 	}
 
 	/**
