@@ -77,7 +77,6 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 import javax.persistence.EntityGraph;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.Tuple;
-import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Selection;
 import java.io.Serializable;
 import java.util.List;
@@ -435,8 +434,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <R> ReactiveQuery<R> createReactiveQuery(CriteriaQuery<R> criteriaQuery) {
-		ReactiveCriteriaQueryImpl<R> criteria = (ReactiveCriteriaQueryImpl<R>) criteriaQuery;
+	public <R> ReactiveQuery<R> createReactiveQuery(Criteria<R> criteria) {
 		try {
 			criteria.validate();
 		}
@@ -444,8 +442,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			throw new IllegalArgumentException( "Error occurred validating the Criteria", ise );
 		}
 
-		CriteriaQueryRenderingContext renderingContext = new CriteriaQueryRenderingContext( getFactory() );
-		return criteria.build( renderingContext, this, renderingContext );
+		return criteria.build( newRenderingContext(), this );
+	}
+
+	private CriteriaQueryRenderingContext newRenderingContext() {
+		return new CriteriaQueryRenderingContext( getFactory() );
 	}
 
 	@Override

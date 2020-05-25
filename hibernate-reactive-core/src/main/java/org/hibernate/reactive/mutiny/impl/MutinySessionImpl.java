@@ -9,10 +9,13 @@ import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.impl.Criteria;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.EntityGraph;
+import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -179,9 +182,19 @@ public class MutinySessionImpl implements Mutiny.Session {
 		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ) );
 	}
 
-	@Override
+	@Override @SuppressWarnings("unchecked")
 	public <R> Mutiny.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new MutinyQueryImpl<R>( delegate.createReactiveQuery(criteriaQuery) );
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery) );
+	}
+
+	@Override @SuppressWarnings("unchecked")
+	public <R> Mutiny.Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaUpdate) );
+	}
+
+	@Override @SuppressWarnings("unchecked")
+	public <R> Mutiny.Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaDelete) );
 	}
 
 	@Override
