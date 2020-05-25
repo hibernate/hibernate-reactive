@@ -14,9 +14,17 @@ import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 
 /**
+ * Superclass of builders for batching entity loaders.
+ *
+ * The {@link #getBuilder(SessionFactoryImplementor)} method selects
+ * between {@link ReactivePaddedBatchingEntityLoaderBuilder} and
+ * {@link ReactiveDynamicBatchingEntityLoaderBuilder} depending upon
+ * the {@link org.hibernate.loader.BatchFetchStyle} selected.
+ *
  * @see org.hibernate.loader.entity.BatchingEntityLoaderBuilder
  */
 public class ReactiveBatchingEntityLoaderBuilder {
+
 	public static ReactiveBatchingEntityLoaderBuilder getBuilder(SessionFactoryImplementor factory) {
 		switch ( factory.getSessionFactoryOptions().getBatchFetchStyle() ) {
 			case PADDED:

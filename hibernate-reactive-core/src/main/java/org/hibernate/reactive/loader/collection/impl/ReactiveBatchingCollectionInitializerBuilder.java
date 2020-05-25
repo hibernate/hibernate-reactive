@@ -11,14 +11,18 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.collection.QueryableCollection;
 
 /**
- * Contract for building {@link ReactiveCollectionInitializer} instances capable
- * of performing batch-fetch loading.
+ * Superclass of builders for batching
+ * {@link ReactiveCollectionInitializer collection initializers}.
  *
- * @author Gavin King
+ * The {@link #getBuilder(SessionFactoryImplementor)} method selects
+ * between {@link ReactivePaddedBatchingCollectionInitializerBuilder} and
+ * {@link ReactiveDynamicBatchingCollectionInitializerBuilder} depending upon
+ * the {@link org.hibernate.loader.BatchFetchStyle} selected.
  *
- * @see org.hibernate.loader.BatchFetchStyle
+ * @see org.hibernate.loader.entity.BatchingEntityLoaderBuilder
  */
 public abstract class ReactiveBatchingCollectionInitializerBuilder {
+
 	public static ReactiveBatchingCollectionInitializerBuilder getBuilder(SessionFactoryImplementor factory) {
 		switch ( factory.getSettings().getBatchFetchStyle() ) {
 			case PADDED: {
