@@ -1,15 +1,6 @@
 package org.hibernate.reactive;
 
-import static org.junit.Assume.assumeTrue;
-
-import java.util.Objects;
-import java.util.concurrent.CompletionStage;
-
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.metamodel.EntityType;
-
+import io.vertx.ext.unit.TestContext;
 import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
@@ -17,7 +8,14 @@ import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import io.vertx.ext.unit.TestContext;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.metamodel.EntityType;
+import java.util.Objects;
+import java.util.concurrent.CompletionStage;
+
+import static org.junit.Assume.assumeTrue;
 
 public class ReactiveSessionTest extends BaseReactiveTest {
 	
@@ -34,12 +32,17 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		return configuration;
 	}
 
-	private CompletionStage<Integer> populateDB() {
-		return connection().thenCompose( connection -> connection.update( "INSERT INTO Pig (id, name) VALUES (5, 'Aloi')" ) );
+	private CompletionStage<Void> populateDB() {
+		return getSessionFactory()
+				.withSession(
+						session -> session.persist( new GuineaPig(5, "Aloi") )
+								.thenApply( v -> { session.flush(); return null; } )
+				);
 	}
 
 	private CompletionStage<Integer> cleanDB() {
-		return connection().thenCompose( connection -> connection.update( "DELETE FROM Pig" ) );
+		return getSessionFactory()
+				.withSession( session -> session.createQuery( "delete GuineaPig" ).executeUpdate() );
 	}
 
 	public void after(TestContext context) {
@@ -62,22 +65,22 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<String> selectNameFromId(Integer id) {
-		return connection().thenCompose( connection -> connection.select(
-				DatabaseConfiguration.statement("SELECT name FROM Pig WHERE id = ", ""), 
-				new Object[]{id} ).thenApply(
-				rowSet -> {
-					if ( rowSet.size() == 1 ) {
-						// Only one result
-						return (String) rowSet.next()[0];
-					}
-					else if ( rowSet.size() > 1 ) {
-						throw new AssertionError( "More than one result returned: " + rowSet.size() );
-					}
-					else {
-						// Size 0
-						return null;
-					}
-				} ) );
+		return getSessionFactory().withSession(
+				session -> session.createQuery("SELECT name FROM GuineaPig WHERE id = " + id )
+						.getResultList()
+						.thenApply(
+								rowSet -> {
+									switch ( rowSet.size() ) {
+										case 0:
+											return null;
+										case 1:
+											return (String) rowSet.get(0);
+										default:
+											throw new AssertionError("More than one result returned: " + rowSet.size());
+									}
+								}
+						)
+		);
 	}
 
 	@Test

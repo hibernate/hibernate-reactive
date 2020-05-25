@@ -22,12 +22,17 @@ public class CompositeIdTest extends BaseReactiveTest {
 		return configuration;
 	}
 
-	private CompletionStage<Integer> populateDB() {
-		return connection().thenCompose( connection -> connection.update( "INSERT INTO Pig (id, name, weight) VALUES (5, 'Aloi', 100)" ) );
+	private CompletionStage<Void> populateDB() {
+		return getSessionFactory()
+				.withSession(
+						session -> session.persist( new GuineaPig(5, "Aloi", 100) )
+							.thenApply( v -> { session.flush(); return null; } )
+				 );
 	}
 
 	private CompletionStage<Integer> cleanDB() {
-		return connection().thenCompose( connection -> connection.update( "DELETE FROM Pig" ) );
+		return getSessionFactory()
+				.withSession( session -> session.createQuery( "delete GuineaPig" ).executeUpdate() );
 	}
 
 	public void after(TestContext context) {
@@ -50,41 +55,41 @@ public class CompositeIdTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<String> selectNameFromId(Integer id) {
-		return connection().thenCompose( connection -> connection.select(
-				DatabaseConfiguration.statement("SELECT name FROM Pig WHERE id = ",""), 
-				new Object[]{id} ).thenApply(
-				rowSet -> {
-					if ( rowSet.size() == 1 ) {
-						// Only one result
-						return (String) rowSet.next()[0];
-					}
-					else if ( rowSet.size() > 1 ) {
-						throw new AssertionError( "More than one result returned: " + rowSet.size() );
-					}
-					else {
-						// Size 0
-						return null;
-					}
-				} ) );
+		return getSessionFactory().withSession(
+				session -> session.createQuery("SELECT name FROM GuineaPig WHERE id = " + id )
+						.getResultList()
+						.thenApply(
+								rowSet -> {
+									switch ( rowSet.size() ) {
+										case 0:
+											return null;
+										case 1:
+											return (String) rowSet.get(0);
+										default:
+											throw new AssertionError("More than one result returned: " + rowSet.size());
+									}
+								}
+						)
+		);
 	}
 
 	private CompletionStage<Double> selectWeightFromId(Integer id) {
-		return connection().thenCompose( connection -> connection.select(
-				DatabaseConfiguration.statement("SELECT weight FROM Pig WHERE id = ", ""), 
-				new Object[]{id} ).thenApply(
-				rowSet -> {
-					if ( rowSet.size() == 1 ) {
-						// Only one result
-						return (Double) rowSet.next()[0];
-					}
-					else if ( rowSet.size() > 1 ) {
-						throw new AssertionError( "More than one result returned: " + rowSet.size() );
-					}
-					else {
-						// Size 0
-						return null;
-					}
-				} ) );
+		return getSessionFactory().withSession(
+				session -> session.createQuery("SELECT weight FROM GuineaPig WHERE id = " + id )
+						.getResultList()
+						.thenApply(
+								rowSet -> {
+									switch ( rowSet.size() ) {
+										case 0:
+											return null;
+										case 1:
+											return (Double) rowSet.get(0);
+										default:
+											throw new AssertionError("More than one result returned: " + rowSet.size());
+									}
+								}
+						)
+		);
 	}
 
 	@Test
@@ -205,7 +210,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
+	@Entity(name="GuineaPig")
 	@Table(name="Pig")
 	@IdClass(Pig.class)
 	public static class GuineaPig implements Serializable {
@@ -215,6 +220,12 @@ public class CompositeIdTest extends BaseReactiveTest {
 		private double weight = 100.0;
 
 		public GuineaPig() {
+		}
+
+		public GuineaPig(Integer id, String name, int weight) {
+			this.id = id;
+			this.name = name;
+			this.weight = weight;
 		}
 
 		public GuineaPig(Integer id, String name) {
