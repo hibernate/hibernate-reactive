@@ -182,6 +182,11 @@ transaction.
 
 The session is automatically flushed at the end of the transaction.
 
+For extra convenience, there's a method that opens a session and starts a
+transaction in one call:
+
+    sessionFactory.withTransaction( (session, tx) -> session.persist(book) )
+
 ### Identifier generation
 
 Sequence, table, and `UUID` id generation is built in, along with support

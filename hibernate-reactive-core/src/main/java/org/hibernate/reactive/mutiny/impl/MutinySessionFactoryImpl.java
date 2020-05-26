@@ -15,6 +15,7 @@ import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.metamodel.Metamodel;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -48,6 +49,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		return openSession().flatMap(
 				session -> work.apply( session ).on().termination( session::close )
 		);
+	}
+
+	@Override
+	public <T> Uni<T> withTransaction(BiFunction<Mutiny.Session, Mutiny.Transaction, Uni<T>> work) {
+		return withSession( (s) -> s.withTransaction( (t) -> work.apply(s, t) ) );
 	}
 
 	@Override

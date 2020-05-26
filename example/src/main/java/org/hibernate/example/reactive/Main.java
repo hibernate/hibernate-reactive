@@ -35,9 +35,9 @@ public class Main {
 		author2.books.add(book3);
 
 		//obtain a reactive session
-		sessionFactory.withSession(
+		sessionFactory.withTransaction(
 				//persist the Authors with their Books in a transaction
-				session -> session.withTransaction( tx -> session.persist(author1, author2) )
+				(session, tx) -> session.persist(author1, author2)
 		)
 				//wait for it to finish
 				.toCompletableFuture().join();
@@ -106,23 +106,18 @@ public class Main {
 		)
 				.toCompletableFuture().join();
 
-		sessionFactory.withSession(
+		sessionFactory.withTransaction(
 				//retrieve a Book and delete it
-				session -> session.withTransaction(
-						tx -> session.find(Book.class, book2.id)
-								.thenCompose( book -> session.remove(book) )
-				)
+				(session, tx) -> session.find(Book.class, book2.id)
+						.thenCompose( book -> session.remove(book) )
 		)
 				.toCompletableFuture().join();
 
-		sessionFactory.withSession(
-				//delete everything in a transaction
-				session -> session.withTransaction(
-						//delete all the Books
-						tx -> session.createQuery("delete Book").executeUpdate()
-								//delete all the Authors
-								.thenCompose( $ -> session.createQuery("delete Author").executeUpdate() )
-				)
+		sessionFactory.withTransaction(
+				//delete all the Books in a transaction
+				(session, tx) -> session.createQuery("delete Book").executeUpdate()
+						//delete all the Authors
+						.thenCompose( $ -> session.createQuery("delete Author").executeUpdate() )
 		)
 				.toCompletableFuture().join();
 

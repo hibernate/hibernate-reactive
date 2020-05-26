@@ -15,6 +15,7 @@ import org.hibernate.reactive.stage.Stage;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.metamodel.Metamodel;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -48,6 +49,11 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		return openSession().thenCompose(
 				session -> work.apply(session).whenComplete( (r, e) -> session.close() )
 		);
+	}
+
+	@Override
+	public <T> CompletionStage<T> withTransaction(BiFunction<Stage.Session, Stage.Transaction, CompletionStage<T>> work) {
+		return withSession( (s) -> s.withTransaction( (t) -> work.apply(s, t) ) );
 	}
 
 	@Override

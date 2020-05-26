@@ -25,6 +25,7 @@ import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Metamodel;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -761,6 +762,21 @@ public interface Stage {
 		 *             the result of the work as a {@link CompletionStage}.
 		 */
 		<T> CompletionStage<T> withSession(Function<Session, CompletionStage<T>> work);
+
+		/**
+		 * Perform work using a {@link Session reactive session} within an
+		 * associated {@link Transaction transaction}.
+		 *
+		 * The session will be {@link Session#flush() flushed} and closed
+		 * automatically, and the transaction committed automatically.
+		 *
+		 * @param work a function which accepts the session and returns
+		 *             the result of the work as a {@link CompletionStage}.
+		 *
+		 * @see #withSession(Function)
+		 * @see Session#withTransaction(Function)
+		 */
+		<T> CompletionStage<T> withTransaction(BiFunction<Session, Transaction, CompletionStage<T>> work);
 
 		/**
 		 * @return an instance of {@link CriteriaBuilder} for creating

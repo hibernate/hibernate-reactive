@@ -34,9 +34,9 @@ public class MutinyMain {
 		author2.books.add(book3);
 
 		//obtain a reactive session
-		sessionFactory.withSession(
+		sessionFactory.withTransaction(
 				//persist the Authors with their Books in a transaction
-				session -> session.withTransaction( tx -> session.persist(author1, author2) )
+				(session, tx) -> session.persist(author1, author2)
 		)
 				//wait for it to finish
 				.await().indefinitely();
@@ -105,24 +105,19 @@ public class MutinyMain {
 		)
 				.await().indefinitely();
 
-		sessionFactory.withSession(
+		sessionFactory.withTransaction(
 				//retrieve a Book
-				session -> session.withTransaction(
-						tx -> session.find(Book.class, book2.id)
-								//delete the Book
-								.onItem().produceUni( book -> session.remove(book) )
-				)
+				(session, tx) -> session.find(Book.class, book2.id)
+						//delete the Book
+						.onItem().produceUni( book -> session.remove(book) )
 		)
 				.await().indefinitely();
 
-		sessionFactory.withSession(
-				//delete everything in a transaction
-				session -> session.withTransaction(
-						//delete all the Books
-						tx -> session.createQuery("delete Book").executeUpdate()
-								//delete all the Authors
-								.flatMap( $ -> session.createQuery("delete Author").executeUpdate() )
-				)
+		sessionFactory.withTransaction(
+				//delete all the Books in a transaction
+				(session, tx) -> session.createQuery("delete Book").executeUpdate()
+						//delete all the Authors
+						.flatMap( $ -> session.createQuery("delete Author").executeUpdate() )
 		)
 				.await().indefinitely();
 
