@@ -73,16 +73,35 @@ public interface ReactiveEntityPersister extends EntityPersister {
 			SharedSessionContractImplementor session)
 					throws HibernateException;
 
+	/**
+	 * Obtain a pessimistic lock without blocking
+	 */
+	CompletionStage<?> lockReactive(
+			Serializable id,
+			Object version,
+			Object object,
+			LockOptions lockOptions,
+			SharedSessionContractImplementor session)
+			throws HibernateException;
+
 	CompletionStage<List<Object>> reactiveMultiLoad(
 	 		Serializable[] ids,
 			SessionImplementor session,
 			MultiLoadOptions loadOptions);
 
-	CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session);
+	CompletionStage<Object> reactiveLoad(Serializable id,
+										 Object optionalObject,
+										 LockOptions lockOptions,
+										 SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly);
+	CompletionStage<Object> reactiveLoad(Serializable id,
+										 Object optionalObject,
+										 LockOptions lockOptions,
+										 SharedSessionContractImplementor session,
+										 Boolean readOnly);
 
-	ReactiveUniqueEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session);
+	ReactiveUniqueEntityLoader getAppropriateLoader(LockOptions lockOptions,
+													SharedSessionContractImplementor session);
 
 	CompletionStage<Boolean> reactiveIsTransient(Object entity, SessionImplementor session);
 }

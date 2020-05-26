@@ -67,6 +67,8 @@ public interface ReactiveSession  {
 
 	CompletionStage<?> reactiveRefresh(Object child, IdentitySet refreshedAlready);
 
+	CompletionStage<Void> reactiveLock(Object entity, LockMode lockMode);
+
 	<T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString);
 
 	<T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping);

@@ -35,7 +35,8 @@ import java.util.concurrent.CompletionStage;
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultMergeEventListener}.
  */
-public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEventListener<MergeContext> implements ReactiveMergeEventListener, MergeEventListener {
+public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEventListener<MergeContext>
+		implements ReactiveMergeEventListener, MergeEventListener {
 
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultReactiveMergeEventListener.class );
 

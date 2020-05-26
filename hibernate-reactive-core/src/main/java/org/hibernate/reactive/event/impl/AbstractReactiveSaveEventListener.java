@@ -52,8 +52,7 @@ import java.util.concurrent.CompletionStage;
  * @see DefaultReactivePersistOnFlushEventListener
  * @see DefaultReactiveMergeEventListener
  */
-abstract class AbstractReactiveSaveEventListener<C>
-		implements CallbackRegistryConsumer {
+abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryConsumer {
 
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( AbstractReactiveSaveEventListener.class );
 

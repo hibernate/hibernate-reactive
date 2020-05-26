@@ -38,7 +38,9 @@ import java.util.concurrent.CompletionStage;
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultRefreshEventListener}.
  */
-public class DefaultReactiveRefreshEventListener implements RefreshEventListener, ReactiveRefreshEventListener {
+public class DefaultReactiveRefreshEventListener
+		implements RefreshEventListener, ReactiveRefreshEventListener {
+
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultReactiveRefreshEventListener.class );
 
 	public CompletionStage<Void> reactiveOnRefresh(RefreshEvent event) throws HibernateException {

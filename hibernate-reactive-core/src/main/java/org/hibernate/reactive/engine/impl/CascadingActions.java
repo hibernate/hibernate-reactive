@@ -6,6 +6,7 @@
 package org.hibernate.reactive.engine.impl;
 
 import org.hibernate.HibernateException;
+import org.hibernate.LockMode;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.internal.CoreMessageLogger;
@@ -42,7 +43,7 @@ public class CascadingActions {
 	public static final CascadingAction<IdentitySet> DELETE =
 			new BaseCascadingAction<IdentitySet>(org.hibernate.engine.spi.CascadingActions.DELETE) {
 		@Override
-		public CompletionStage <?> cascade(
+		public CompletionStage<?> cascade(
 				EventSource session,
 				Object child,
 				String entityName,
@@ -61,7 +62,7 @@ public class CascadingActions {
 	public static final CascadingAction<IdentitySet> PERSIST =
 			new BaseCascadingAction<IdentitySet>(org.hibernate.engine.spi.CascadingActions.PERSIST) {
 		@Override
-		public CompletionStage <?> cascade(
+		public CompletionStage<?> cascade(
 				EventSource session,
 				Object child,
 				String entityName,
@@ -81,7 +82,7 @@ public class CascadingActions {
 	public static final CascadingAction<IdentitySet> PERSIST_ON_FLUSH =
 			new BaseCascadingAction<IdentitySet>(org.hibernate.engine.spi.CascadingActions.PERSIST_ON_FLUSH) {
 		@Override
-		public CompletionStage <?> cascade(
+		public CompletionStage<?> cascade(
 				EventSource session,
 				Object child,
 				String entityName,
@@ -99,7 +100,7 @@ public class CascadingActions {
 	public static final CascadingAction<MergeContext> MERGE =
 			new BaseCascadingAction<MergeContext>(org.hibernate.engine.spi.CascadingActions.MERGE) {
 				@Override
-				public CompletionStage <?> cascade(
+				public CompletionStage<?> cascade(
 						EventSource session,
 						Object child,
 						String entityName,
@@ -118,7 +119,7 @@ public class CascadingActions {
 	public static final CascadingAction<IdentitySet> REFRESH =
 			new BaseCascadingAction<IdentitySet>(org.hibernate.engine.spi.CascadingActions.REFRESH) {
 		@Override
-		public CompletionStage <?> cascade(
+		public CompletionStage<?> cascade(
 				EventSource session,
 				Object child,
 				String entityName,
@@ -129,6 +130,24 @@ public class CascadingActions {
 			return session.unwrap(ReactiveSession.class).reactiveRefresh( child, context );
 		}
 	};
+
+	/**
+	 * @see org.hibernate.Session#lock(Object, org.hibernate.LockMode)
+	 */
+	public static final CascadingAction<LockMode> LOCK =
+			new BaseCascadingAction<LockMode>(org.hibernate.engine.spi.CascadingActions.LOCK) {
+				@Override
+				public CompletionStage<?> cascade(
+						EventSource session,
+						Object child,
+						String entityName,
+						LockMode context,
+						boolean isCascadeDeleteEnabled)
+						throws HibernateException {
+					LOG.tracev("Cascading to lock: {0}", entityName);
+					return session.unwrap(ReactiveSession.class).reactiveLock(child, context);
+				}
+			};
 
 	public abstract static class BaseCascadingAction<C> implements CascadingAction<C> {
 		private final org.hibernate.engine.spi.CascadingAction delegate;

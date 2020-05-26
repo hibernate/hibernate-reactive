@@ -24,7 +24,8 @@ import org.hibernate.stat.spi.StatisticsImplementor;
 
 import org.jboss.logging.Logger;
 
-public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlushingEventListener implements ReactiveAutoFlushEventListener, AutoFlushEventListener {
+public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlushingEventListener
+		implements ReactiveAutoFlushEventListener, AutoFlushEventListener {
 
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger( CoreMessageLogger.class, DefaultReactiveAutoFlushEventListener.class.getName() );
 
