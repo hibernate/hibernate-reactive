@@ -67,6 +67,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.session.QueryType;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -74,7 +75,6 @@ import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
-import javax.persistence.EntityGraph;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.Tuple;
 import javax.persistence.criteria.Selection;
@@ -214,6 +214,15 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 	}
 
+	private static QueryType queryType(String queryString) {
+		queryString = queryString.trim().toLowerCase();
+		return queryString.startsWith("insert")
+			|| queryString.startsWith("update")
+			|| queryString.startsWith("delete")
+				? QueryType.INSERT_UPDATE_DELETE
+				: QueryType.SELECT;
+	}
+
 	@Override
 	public <R> ReactiveQueryImpl<R> createReactiveQuery(String queryString) {
 		checkOpen();
@@ -222,7 +231,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 		try {
 			ParameterMetadataImpl parameterMetadata = getQueryPlan(queryString, false).getParameterMetadata();
-			ReactiveQueryImpl<R> query = new ReactiveQueryImpl<>( this, parameterMetadata, queryString );
+			ReactiveQueryImpl<R> query = new ReactiveQueryImpl<>( this, parameterMetadata, queryString, queryType(queryString) );
 			applyQuerySettingsAndHints( query );
 			query.setComment( queryString );
 			return query;
@@ -394,7 +403,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		final ReactiveQueryImpl<T> query = new ReactiveQueryImpl<>(
 				this,
 				getQueryPlan( queryString, false ).getParameterMetadata(),
-				queryString
+				queryString,
+				queryType( queryString )
 		);
 		applyQuerySettingsAndHints( query );
 		query.setHibernateFlushMode( queryDefinition.getFlushMode() );

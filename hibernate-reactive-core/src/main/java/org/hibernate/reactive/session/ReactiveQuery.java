@@ -25,8 +25,6 @@ public interface ReactiveQuery<R> {
 
 	CompletionStage<Integer> executeReactiveUpdate();
 
-	CompletionStage<List<R>> reactiveList();
-
 	ReactiveQuery<R> setParameter(int position, Object value);
 
 	ReactiveQuery<R> setMaxResults(int maxResults);

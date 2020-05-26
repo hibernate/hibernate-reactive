@@ -4,12 +4,9 @@ import org.hibernate.CacheMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.TypeMismatchException;
-import org.hibernate.engine.query.spi.EntityGraphQueryHint;
-import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.query.spi.sql.NativeSQLQueryReturn;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
-import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.hql.internal.QueryExecutionRequestException;
 import org.hibernate.query.ParameterMetadata;
@@ -30,8 +27,6 @@ import java.util.concurrent.CompletionStage;
  * @author Gavin King
  */
 public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements ReactiveNativeQuery<R> {
-
-	private EntityGraphQueryHint entityGraphQueryHint;
 
 	public ReactiveNativeQueryImpl(
 			NamedSQLQueryDefinition queryDef,
@@ -105,7 +100,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 				} );
 	}
 
-	protected CompletionStage<Integer> doExecuteReactiveUpdate() {
+	private CompletionStage<Integer> doExecuteReactiveUpdate() {
 		final String expandedQuery = getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() );
 		return reactiveProducer().executeReactiveUpdate( expandedQuery, makeQueryParametersForExecution( expandedQuery ) );
 	}
@@ -115,8 +110,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 		return reactiveList();
 	}
 
-	@Override
-	public CompletionStage<List<R>> reactiveList() {
+	private CompletionStage<List<R>> reactiveList() {
 		return reactiveProducer().reactiveList(
 				generateQuerySpecification(),
 				getQueryParameters()
@@ -135,54 +129,43 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 		return (ReactiveSession) getProducer();
 	}
 
-	/**
-	 * @see #makeQueryParametersForExecution(String)
-	 */
-	protected QueryParameters makeReactiveQueryParametersForExecution(String hql) {
-		QueryParameters queryParameters = super.makeQueryParametersForExecution( hql );
-		if ( queryParameters.getQueryPlan() != null ) {
-			HQLQueryPlan plan = new ReactiveHQLQueryPlan(
-					hql,
-					false,
-					getProducer().getLoadQueryInfluencers().getEnabledFilters(),
-					getProducer().getFactory(),
-					entityGraphQueryHint
-			);
-			queryParameters.setQueryPlan( plan );
-		}
-		return queryParameters;
-	}
-
+	@Override
 	public ReactiveNativeQueryImpl<R> setParameter(int position, Object value) {
 		super.setParameter(position, value);
 		return this;
 	}
 
+	@Override
 	public ReactiveNativeQueryImpl<R> setMaxResults(int maxResults) {
 		super.setMaxResults(maxResults);
 		return this;
 	}
 
+	@Override
 	public ReactiveNativeQueryImpl<R> setFirstResult(int firstResult) {
 		super.setFirstResult(firstResult);
 		return this;
 	}
 
+	@Override
 	public ReactiveNativeQueryImpl<R> setReadOnly(boolean readOnly) {
 		super.setReadOnly(readOnly);
 		return this;
 	}
 
+	@Override
 	public ReactiveNativeQueryImpl<R> setComment(String comment) {
 		super.setComment(comment);
 		return this;
 	}
 
+	@Override
 	public ReactiveNativeQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
 		super.setLockMode(alias, lockMode);
 		return this;
 	}
 
+	@Override
 	public ReactiveNativeQueryImpl<R> setCacheMode(CacheMode cacheMode) {
 		super.setCacheMode(cacheMode);
 		return this;

@@ -11,6 +11,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.hql.internal.QueryExecutionRequestException;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.internal.QueryImpl;
+import org.hibernate.reactive.session.QueryType;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -28,14 +29,28 @@ import java.util.concurrent.CompletionStage;
  */
 public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<R> {
 
+	/**
+	 * Needed once we support query hints.
+	 *
+	 * See {@link #collectHints}
+	 */
 	private EntityGraphQueryHint entityGraphQueryHint;
 
-	public ReactiveQueryImpl(SharedSessionContractImplementor producer, ParameterMetadata parameterMetadata, String queryString) {
+	private final QueryType type;
+
+	public ReactiveQueryImpl(SharedSessionContractImplementor producer,
+							 ParameterMetadata parameterMetadata,
+							 String queryString,
+							 QueryType type) {
 		super( producer, parameterMetadata, queryString );
+		this.type = type;
 	}
 
 	@Override
 	public CompletionStage<R> getReactiveSingleResult() {
+		if (type!=null && type!=QueryType.SELECT) {
+			throw new UnsupportedOperationException("not a select query");
+		}
 		return getReactiveResultList().thenApply( this::uniqueResult );
 	}
 
@@ -53,6 +68,10 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 
 	@Override
 	public CompletionStage<Integer> executeReactiveUpdate() {
+		if (type!=null && type!=QueryType.INSERT_UPDATE_DELETE) {
+			throw new UnsupportedOperationException("not an insert/update/delete query");
+		}
+
 		getProducer().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
 
 		beforeQuery();
@@ -73,23 +92,25 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 				} );
 	}
 
-	protected CompletionStage<Integer> doExecuteReactiveUpdate() {
+	private CompletionStage<Integer> doExecuteReactiveUpdate() {
 		final String expandedQuery = getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() );
 		return reactiveProducer().executeReactiveUpdate( expandedQuery, makeQueryParametersForExecution( expandedQuery ) );
 	}
 
 	@Override
 	public CompletionStage<List<R>> getReactiveResultList() {
+		if (type!=null && type!=QueryType.SELECT) {
+			throw new UnsupportedOperationException("not a select query");
+		}
 		return reactiveList();
 	}
 
-	@Override
-	public CompletionStage<List<R>> reactiveList() {
+	private CompletionStage<List<R>> reactiveList() {
 		beforeQuery();
 		return doReactiveList().whenComplete( (list, err) -> afterQuery() );
 	}
 
-	protected CompletionStage<List<R>> doReactiveList() {
+	private CompletionStage<List<R>> doReactiveList() {
 		if ( getMaxResults() == 0 ) {
 			return CompletionStages.completedFuture( Collections.emptyList() );
 		}
@@ -111,7 +132,7 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 	/**
 	 * @see #makeQueryParametersForExecution(String)
 	 */
-	protected QueryParameters makeReactiveQueryParametersForExecution(String hql) {
+	private QueryParameters makeReactiveQueryParametersForExecution(String hql) {
 		QueryParameters queryParameters = super.makeQueryParametersForExecution( hql );
 		if ( queryParameters.getQueryPlan() != null ) {
 			HQLQueryPlan plan = new ReactiveHQLQueryPlan(
@@ -126,36 +147,43 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		return queryParameters;
 	}
 
+	@Override
 	public ReactiveQueryImpl<R> setParameter(int position, Object value) {
 		super.setParameter(position, value);
 		return this;
 	}
 
+	@Override
 	public ReactiveQueryImpl<R> setMaxResults(int maxResults) {
 		super.setMaxResults(maxResults);
 		return this;
 	}
 
+	@Override
 	public ReactiveQueryImpl<R> setFirstResult(int firstResult) {
 		super.setFirstResult(firstResult);
 		return this;
 	}
 
+	@Override
 	public ReactiveQueryImpl<R> setReadOnly(boolean readOnly) {
 		super.setReadOnly(readOnly);
 		return this;
 	}
 
+	@Override
 	public ReactiveQueryImpl<R> setComment(String comment) {
 		super.setComment(comment);
 		return this;
 	}
 
+	@Override
 	public ReactiveQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
 		super.setLockMode(alias, lockMode);
 		return this;
 	}
 
+	@Override
 	public ReactiveQueryImpl<R> setCacheMode(CacheMode cacheMode) {
 		super.setCacheMode(cacheMode);
 		return this;
