@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.loader.entity.impl;
 
 import org.hibernate.HibernateException;
@@ -8,7 +13,6 @@ import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;

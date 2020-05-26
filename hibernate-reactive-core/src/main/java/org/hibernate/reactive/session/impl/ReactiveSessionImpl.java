@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.session.impl;
 
 import org.hibernate.CacheMode;
@@ -74,7 +79,6 @@ import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
-import javax.persistence.EntityGraph;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.Tuple;
 import javax.persistence.criteria.Selection;
@@ -1272,4 +1276,3 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		return (RootGraphImplementor<T>) entityGraph;
 	}
 }
-

@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive;
 
 import static org.junit.Assume.assumeTrue;
@@ -49,11 +54,11 @@ public class DB2BasicTest extends BaseReactiveTest {
 		configuration.addAnnotatedClass( Basic.class );
 		return configuration;
 	}
-	
+
 	@Test
 	public void testBasicTypes(TestContext context) {
 		// This test is specifically for DB2, and can be removed one DB2 supports
-		// all of the data types in the common BasicTypesAndCallbacksTest 
+		// all of the data types in the common BasicTypesAndCallbacksTest
 		// (namely BigInteger, BigDecimal, and LocalTime)
 		assumeTrue( DatabaseConfiguration.dbType() == DBType.DB2 );
 

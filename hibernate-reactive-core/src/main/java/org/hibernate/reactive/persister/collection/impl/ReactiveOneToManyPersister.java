@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.persister.collection.impl;
 
 import java.io.Serializable;
@@ -10,13 +15,11 @@ import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
-import org.hibernate.loader.collection.CollectionInitializer;
 import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.OneToManyPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.loader.collection.impl.ReactiveBatchingCollectionInitializerBuilder;
 import org.hibernate.reactive.loader.collection.impl.ReactiveCollectionInitializer;
-import org.hibernate.reactive.loader.collection.impl.ReactiveCollectionLoader;
 import org.hibernate.reactive.loader.collection.impl.ReactiveSubselectOneToManyLoader;
 
 public class ReactiveOneToManyPersister extends OneToManyPersister {

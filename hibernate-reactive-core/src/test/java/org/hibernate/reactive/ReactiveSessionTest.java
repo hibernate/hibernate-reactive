@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
@@ -18,7 +23,7 @@ import java.util.concurrent.CompletionStage;
 import static org.junit.Assume.assumeTrue;
 
 public class ReactiveSessionTest extends BaseReactiveTest {
-	
+
 	@BeforeClass
 	public static void beforeAll() {
 		// TODO: @AGG investigate this test class for DB2
@@ -109,7 +114,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		// The DB2 driver does not yet support a few types (BigDecimal, BigInteger, LocalTime)
 		// so we need to keep a separate copy around for testing DB2 (DB2BasicTest)
 		assumeTrue( DatabaseConfiguration.dbType() != DBType.DB2 );
-		
+
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
