@@ -32,6 +32,19 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	}
 
 	@Override
+	public Mutiny.Session createSession() {
+		ReactiveConnectionPool pool = delegate.getServiceRegistry()
+				.getService(ReactiveConnectionPool.class);
+		return new MutinySessionImpl(
+				new ReactiveSessionImpl(
+						delegate,
+						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
+						pool.getProxyConnection()
+				)
+		);
+	}
+
+	@Override
 	public Uni<Mutiny.Session> openSession() throws HibernateException {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);

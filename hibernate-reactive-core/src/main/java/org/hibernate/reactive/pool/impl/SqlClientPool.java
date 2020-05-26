@@ -16,6 +16,7 @@ import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.ServiceRegistryAwareService;
@@ -24,6 +25,7 @@ import org.hibernate.service.spi.Startable;
 import org.hibernate.service.spi.Stoppable;
 
 import java.net.URI;
+import java.sql.ResultSet;
 import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
@@ -199,6 +201,11 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	}
 
 	@Override
+	public ReactiveConnection getProxyConnection() {
+		return new ProxyConnection();
+	}
+
+	@Override
 	public void stop() {
 		if ( pool != null ) {
 			this.pool.close();
@@ -217,4 +224,76 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		return URI.create( url );
 	}
 
+	private class ProxyConnection implements ReactiveConnection {
+		private ReactiveConnection connection;
+
+		CompletionStage<ReactiveConnection> connection() {
+			return connection == null ?
+					getConnection().thenApply(conn -> connection = conn) :
+					CompletionStages.completedFuture(connection);
+		}
+
+		@Override
+		public CompletionStage<Void> execute(String sql) {
+			return connection().thenCompose( conn -> conn.execute(sql) );
+		}
+
+		@Override
+		public CompletionStage<Integer> update(String sql) {
+			return connection().thenCompose( conn -> conn.update(sql) );
+		}
+
+		@Override
+		public CompletionStage<Integer> update(String sql, Object[] paramValues) {
+			return connection().thenCompose( conn -> conn.update(sql, paramValues) );
+		}
+
+		@Override
+		public CompletionStage<Long> updateReturning(String sql, Object[] paramValues) {
+			return connection().thenCompose( conn -> conn.updateReturning(sql, paramValues) );
+		}
+
+		@Override
+		public CompletionStage<Result> select(String sql) {
+			return connection().thenCompose( conn -> conn.select(sql) );
+		}
+
+		@Override
+		public CompletionStage<Result> select(String sql, Object[] paramValues) {
+			return connection().thenCompose( conn -> conn.select(sql) );
+		}
+
+		@Override
+		public CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues) {
+			return connection().thenCompose( conn -> conn.selectJdbc(sql, paramValues) );
+		}
+
+		@Override
+		public CompletionStage<Long> selectLong(String sql, Object[] paramValues) {
+			return connection().thenCompose( conn -> conn.selectLong(sql, paramValues) );
+		}
+
+		@Override
+		public CompletionStage<Void> beginTransaction() {
+			return connection().thenCompose(ReactiveConnection::beginTransaction);
+		}
+
+		@Override
+		public CompletionStage<Void> commitTransaction() {
+			return connection().thenCompose(ReactiveConnection::commitTransaction);
+		}
+
+		@Override
+		public CompletionStage<Void> rollbackTransaction() {
+			return connection().thenCompose(ReactiveConnection::rollbackTransaction);
+		}
+
+		@Override
+		public void close() {
+			if (connection!=null) {
+				connection.close();
+				connection = null;
+			}
+		}
+	}
 }

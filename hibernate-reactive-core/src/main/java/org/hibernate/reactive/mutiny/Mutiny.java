@@ -756,9 +756,25 @@ public interface Mutiny {
 	interface SessionFactory extends AutoCloseable {
 
 		/**
-		 * Obtain a new {@link Session reactive session}, the
-		 * main interaction point between the user's program and
-		 * Hibernate Reactive.
+		 * Obtain a new {@link Session reactive session}, the main
+		 * interaction point between the user's program and Hibernate
+		 * Reactive.
+		 *
+		 * The underlying database connection is obtained lazily
+		 * when the returned {@link Session} needs to access the
+		 * database.
+		 *
+		 * The client must close the session using {@link Session#close()}.
+		 */
+		Session createSession();
+
+		/**
+		 * Obtain a new {@link Session reactive session}, the main
+		 * interaction point between the user's program and Hibernate
+		 * Reactive.
+		 *
+		 * The underlying database connection is obtained before the
+		 * {@link Session} is returned via a {@link Uni}.
 		 *
 		 * The client must close the session using {@link Session#close()}.
 		 */

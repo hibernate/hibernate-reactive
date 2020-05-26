@@ -31,8 +31,16 @@ import java.util.concurrent.CompletionStage;
 public interface ReactiveConnectionPool extends Service {
 
 	/**
-	 * Obtain a reactive connection.
+	 * Obtain a reactive connection, returning the connection
+	 * via a {@link CompletionStage}.
 	 */
 	CompletionStage<ReactiveConnection> getConnection();
+
+	/**
+	 * Obtain a lazily-initializing reactive connection. The
+	 * actual connection might be made when the returned
+	 * instance if {@link ReactiveConnection} is first used.
+	 */
+	ReactiveConnection getProxyConnection();
 
 }

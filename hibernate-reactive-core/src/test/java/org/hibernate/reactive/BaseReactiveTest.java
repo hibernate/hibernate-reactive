@@ -120,6 +120,14 @@ public abstract class BaseReactiveTest {
 		return sessionFactory.unwrap( Stage.SessionFactory.class );
 	}
 
+	protected Stage.Session createSession() {
+		if ( session != null && session.isOpen() ) {
+			session.close();
+		}
+		session = getSessionFactory().createSession();
+		return session;
+	}
+
 	protected CompletionStage<Stage.Session> openSession() {
 		if ( session != null && session.isOpen() ) {
 			session.close();
