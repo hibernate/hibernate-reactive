@@ -17,6 +17,7 @@ import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.loader.ReactiveLoader;
+import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
 import org.hibernate.reactive.sql.impl.Parameters;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
@@ -37,6 +38,7 @@ import java.util.concurrent.CompletionStage;
  * @author Gavin King
  */
 public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
+		//can't extend org.hibernate.loader.entity.plan.EntityLoader which has private constructors
 		implements ReactiveUniqueEntityLoader, ReactiveLoader {
 
 	private final OuterJoinLoadable persister;

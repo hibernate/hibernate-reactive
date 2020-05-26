@@ -17,10 +17,10 @@ import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.pretty.MessageHelper;
+import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;

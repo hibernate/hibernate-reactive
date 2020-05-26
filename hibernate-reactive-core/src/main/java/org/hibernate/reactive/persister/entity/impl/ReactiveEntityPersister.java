@@ -6,7 +6,7 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
-import org.hibernate.reactive.loader.entity.impl.ReactiveUniqueEntityLoader;
+import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
 
 import java.io.Serializable;
 import java.util.List;

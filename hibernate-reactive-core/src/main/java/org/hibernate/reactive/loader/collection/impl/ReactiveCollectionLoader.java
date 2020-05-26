@@ -2,36 +2,55 @@ package org.hibernate.reactive.loader.collection.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.QueryParameters;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.loader.collection.CollectionLoader;
+import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.collection.QueryableCollection;
-import org.hibernate.pretty.MessageHelper;
-import org.hibernate.reactive.loader.ReactiveOuterJoinLoader;
+import org.hibernate.reactive.loader.ReactiveLoader;
+import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-public class ReactiveCollectionLoader extends ReactiveOuterJoinLoader
-		implements ReactiveCollectionInitializer {
-	private final QueryableCollection collectionPersister;
+import static org.hibernate.pretty.MessageHelper.collectionInfoString;
+
+/**
+ * A reactific {@link org.hibernate.loader.collection.CollectionLoader}.
+ *
+ * @see org.hibernate.loader.collection.CollectionLoader
+ */
+public class ReactiveCollectionLoader extends CollectionLoader
+		implements ReactiveCollectionInitializer, ReactiveLoader {
 
 	public ReactiveCollectionLoader(
 			QueryableCollection collectionPersister,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers) {
-		super(factory, loadQueryInfluencers);
-		this.collectionPersister = collectionPersister;
+		super(collectionPersister, factory, loadQueryInfluencers);
 	}
 
-	protected QueryableCollection collectionPersister() {
-		return collectionPersister;
-	}
-
-	@Override
-	protected boolean isSubselectLoadingEnabled() {
-		return hasSubselectLoadableCollections();
+	protected CompletionStage<List<Object>> doReactiveQueryAndInitializeNonLazyCollections(
+			final SessionImplementor session,
+			final QueryParameters queryParameters,
+			final boolean returnProxies) {
+		return doReactiveQueryAndInitializeNonLazyCollections(
+				getSQLString(),
+				session,
+				queryParameters,
+				returnProxies,
+				null
+		);
 	}
 
 	/**
@@ -58,7 +77,7 @@ public class ReactiveCollectionLoader extends ReactiveOuterJoinLoader
 		if (LOG.isDebugEnabled()) {
 			LOG.debugf(
 					"Loading collection: %s",
-					MessageHelper.collectionInfoString(collectionPersister(), id, getFactory())
+					collectionInfoString(collectionPersister(), id, getFactory())
 			);
 		}
 
@@ -67,12 +86,15 @@ public class ReactiveCollectionLoader extends ReactiveOuterJoinLoader
 		return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, true )
 				.handle( (list, e) -> {
 					if (e instanceof JDBCException) {
-						throw getFactory().getJdbcServices().getSqlExceptionHelper().convert(
-								((JDBCException) e).getSQLException(),
-								"could not initialize a collection: " +
-										MessageHelper.collectionInfoString(collectionPersister(), id, getFactory()),
-								getSQLString()
-						);
+						throw getFactory()
+								.getJdbcServices()
+								.getSqlExceptionHelper()
+								.convert(
+										((JDBCException) e).getSQLException(),
+										"could not initialize a collection: " +
+												collectionInfoString( collectionPersister(), id, getFactory() ),
+										getSQLString()
+								);
 					} else if (e != null) {
 						CompletionStages.rethrow(e);
 					}
@@ -91,7 +113,7 @@ public class ReactiveCollectionLoader extends ReactiveOuterJoinLoader
 		if ( LOG.isDebugEnabled() ) {
 			LOG.debugf(
 					"Batch loading collection: %s",
-					MessageHelper.collectionInfoString( getCollectionPersisters()[0], ids, getFactory() )
+					collectionInfoString( getCollectionPersisters()[0], ids, getFactory() )
 			);
 		}
 
@@ -101,13 +123,17 @@ public class ReactiveCollectionLoader extends ReactiveOuterJoinLoader
 		return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, true )
 				.handle( (list, e) -> {
 					if (e instanceof JDBCException) {
-						throw getFactory().getJdbcServices().getSqlExceptionHelper().convert(
-								((JDBCException) e).getSQLException(),
-								"could not initialize a collection batch: " +
-										MessageHelper.collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
-								getSQLString()
-						);
-					} else if (e != null) {
+						throw getFactory()
+								.getJdbcServices()
+								.getSqlExceptionHelper()
+								.convert(
+										((JDBCException) e).getSQLException(),
+										"could not initialize a collection batch: " +
+												collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
+										getSQLString()
+								);
+					}
+					else if (e != null) {
 						CompletionStages.rethrow(e);
 					}
 					LOG.debug("Done batch load");
@@ -115,13 +141,29 @@ public class ReactiveCollectionLoader extends ReactiveOuterJoinLoader
 				} );
 	}
 
-	protected Type getKeyType() {
-		return collectionPersister.getKeyType();
-	}
-
 	@Override
-	public String toString() {
-		return getClass().getName() + '(' + collectionPersister.getRole() + ')';
+	public String preprocessSQL(String sql,
+								QueryParameters queryParameters,
+								SessionFactoryImplementor factory,
+								List<AfterLoadAction> afterLoadActions) {
+		return super.preprocessSQL(sql, queryParameters, factory, afterLoadActions);
 	}
 
+	@Override @SuppressWarnings("unchecked")
+	public List<Object> processResultSet(ResultSet resultSet,
+										 QueryParameters queryParameters,
+										 SharedSessionContractImplementor session,
+										 boolean returnProxies,
+										 ResultTransformer forcedResultTransformer,
+										 int maxRows, List<AfterLoadAction> afterLoadActions) throws SQLException {
+		return super.processResultSet(
+				resultSet,
+				queryParameters,
+				session,
+				returnProxies,
+				forcedResultTransformer,
+				maxRows,
+				afterLoadActions
+		);
+	}
 }

@@ -7,6 +7,7 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.persister.collection.QueryableCollection;
+import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;

@@ -1,4 +1,4 @@
-package org.hibernate.reactive.loader.entity.impl;
+package org.hibernate.reactive.loader.entity;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
@@ -23,12 +23,8 @@ public interface ReactiveUniqueEntityLoader extends UniqueEntityLoader {
 	CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions);
 
 	@Override
-	default CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, Boolean readOnly) throws HibernateException {
-		return load( id, optionalObject, session );
-	}
+	CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, Boolean readOnly);
 
 	@Override
-	default CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions, Boolean readOnly) {
-		return load( id, optionalObject, session, lockOptions );
-	}
+	CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions, Boolean readOnly);
 }

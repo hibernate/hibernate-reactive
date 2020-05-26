@@ -14,8 +14,8 @@ import java.util.function.Supplier;
 import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
 
 /**
- * A {@link org.hibernate.loader.entity.EntityJoinWalker} that generates
- * SQL with the database-native bind variable syntax.
+ * A {@link org.hibernate.loader.entity.CascadeEntityJoinWalker} that
+ * generates SQL with the database-native bind variable syntax.
  */
 public class ReactiveCascadeEntityJoinWalker extends CascadeEntityJoinWalker {
 

@@ -9,6 +9,7 @@ package org.hibernate.reactive.loader.collection.impl;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.collection.QueryableCollection;
+import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
 
 /**
  * Superclass of builders for batching

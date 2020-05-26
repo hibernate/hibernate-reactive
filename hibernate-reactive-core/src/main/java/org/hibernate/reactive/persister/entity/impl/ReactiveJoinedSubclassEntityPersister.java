@@ -15,7 +15,7 @@ import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.loader.entity.impl.ReactiveBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.loader.entity.impl.ReactiveCascadeEntityLoader;
-import org.hibernate.reactive.loader.entity.impl.ReactiveUniqueEntityLoader;
+import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
 import org.hibernate.reactive.sql.impl.Delete;
 import org.hibernate.reactive.sql.impl.Insert;
 import org.hibernate.reactive.sql.impl.Update;
