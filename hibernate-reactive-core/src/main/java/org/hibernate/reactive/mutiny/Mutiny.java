@@ -24,6 +24,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Metamodel;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -175,7 +176,7 @@ public interface Mutiny {
 		 * @param entityClass The entity type
 		 * @param id an identifier
 		 *
-		 * @return a persistent instance or null via a {@code CompletionStage}
+		 * @return a persistent instance or null via a {@code Uni}
 		 *
 		 * @see javax.persistence.EntityManager#find(Class, Object)
 		 */
@@ -205,7 +206,7 @@ public interface Mutiny {
 		 *
 		 * @param entityClass The entity type
 		 * @param ids the identifiers
-		 * @return a list of persistent instances and nulls via a {@code CompletionStage}
+		 * @return a list of persistent instances and nulls via a {@code Uni}
 		 */
 		<T> Uni<List<T>> find(Class<T> entityClass, Object... ids);
 
@@ -356,7 +357,7 @@ public interface Mutiny {
 		 *
 		 * @param association a lazy-loaded association
 		 *
-		 * @return the fetched association, via a {@code CompletionStage}
+		 * @return the fetched association, via a {@code Uni}
 		 *
 		 * @see Mutiny#fetch(Object)
 		 * @see org.hibernate.Hibernate#initialize(Object)
@@ -373,7 +374,7 @@ public interface Mutiny {
 		 *
 		 * @param association a lazy-loaded association
 		 *
-		 * @return the fetched association, via a {@code CompletionStage}
+		 * @return the fetched association, via a {@code Uni}
 		 *
 		 * @see org.hibernate.Hibernate#unproxy(Object)
 		 */
@@ -762,6 +763,21 @@ public interface Mutiny {
 		<T> Uni<T> withSession(Function<Session, Uni<T>> work);
 
 		/**
+		 * Perform work using a {@link Session reactive session} within an
+		 * associated {@link Transaction transaction}.
+		 *
+		 * The session will be {@link Session#flush() flushed} and closed
+		 * automatically, and the transaction committed automatically.
+		 *
+		 * @param work a function which accepts the session and returns
+		 *             the result of the work as a {@link Uni}.
+		 *
+		 * @see #withSession(Function)
+		 * @see Session#withTransaction(Function)
+		 */
+		<T> Uni<T> withTransaction(BiFunction<Session, Transaction, Uni<T>> work);
+
+		/**
 		 * @return an instance of {@link CriteriaBuilder} for creating
 		 * criteria queries.
 		 */
@@ -793,7 +809,7 @@ public interface Mutiny {
 	 *
 	 * @param association a lazy-loaded association
 	 *
-	 * @return the fetched association, via a {@code CompletionStage}
+	 * @return the fetched association, via a {@code Uni}
 	 *
 	 * @see org.hibernate.Hibernate#initialize(Object)
 	 */
