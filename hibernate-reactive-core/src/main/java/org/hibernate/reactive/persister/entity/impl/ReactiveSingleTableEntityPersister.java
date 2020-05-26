@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.persister.entity.impl;
 
 import org.hibernate.HibernateException;
@@ -178,4 +183,3 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 		return (ReactiveUniqueEntityLoader) super.getAppropriateLoader(lockOptions, session);
 	}
 }
-

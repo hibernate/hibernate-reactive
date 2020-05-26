@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.containers;
 
 import java.util.Arrays;
@@ -9,19 +14,19 @@ import java.util.Arrays;
 public class DatabaseConfiguration {
 
 	public static final boolean USE_DOCKER = Boolean.getBoolean("docker");
-	
+
 	public static enum DBType {
 		DB2,
 		MYSQL,
 		POSTGRESQL
 	}
-	
+
 	public static final String USERNAME = "hreact";
 	public static final String PASSWORD = "hreact";
 	public static final String DB_NAME = "hreact";
-	
+
 	private static DBType dbType;
-	
+
 	public static DBType dbType() {
 		if (dbType == null) {
 			String dbTypeString = System.getProperty( "db", DBType.POSTGRESQL.name() ).toUpperCase();
@@ -31,7 +36,7 @@ public class DatabaseConfiguration {
 				try {
 					dbType = DBType.valueOf( dbTypeString );
 				} catch (IllegalArgumentException e) {
-					throw new IllegalArgumentException( "Unknown DB type '" + dbTypeString + 
+					throw new IllegalArgumentException( "Unknown DB type '" + dbTypeString +
 							"' specified. Allowed values are: " + Arrays.toString( DBType.values() ), e );
 				}
 			}
@@ -39,7 +44,7 @@ public class DatabaseConfiguration {
 		}
 		return dbType;
 	}
-	
+
 	public static String getJdbcUrl() {
 		DBType dbType = dbType();
 		switch (dbType) {
@@ -50,10 +55,10 @@ public class DatabaseConfiguration {
 			case POSTGRESQL:
 				return PostgreSQLDatabase.getJdbcUrl();
 			default:
-				throw new IllegalArgumentException( "Unknown DB type: "+ dbType );	
+				throw new IllegalArgumentException( "Unknown DB type: "+ dbType );
 		}
 	}
-	
+
 	/**
 	 * Builds a prepared statement SQL string in a portable way. For example,
 	 * DB2 and MySQL use syntax like "SELECT * FROM FOO WHERE BAR = ?" but
@@ -77,10 +82,10 @@ public class DatabaseConfiguration {
 			    }
 			    return sb.toString();
 			default:
-				throw new IllegalArgumentException( "Unknown DB type: "+ dbType );	
+				throw new IllegalArgumentException( "Unknown DB type: "+ dbType );
 		}
 	}
-	
+
 	private DatabaseConfiguration() {
 	}
 

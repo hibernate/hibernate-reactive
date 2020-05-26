@@ -1,8 +1,7 @@
-/*
- * Hibernate, Relational Persistence for Idiomatic Java
+/* Hibernate, Relational Persistence for Idiomatic Java
  *
- * License: GNU Lesser General Public License (LGPL), version 2.1 or later.
- * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
  */
 package org.hibernate.reactive.loader.collection.impl;
 
@@ -40,12 +39,12 @@ public class ReactiveSubselectOneToManyLoader extends ReactiveOneToManyLoader {
 	private final Map<String, int[]> namedParameterLocMap;
 
 	public ReactiveSubselectOneToManyLoader(
-			QueryableCollection persister, 
+			QueryableCollection persister,
 			String subquery,
 			Collection entityKeys,
 			QueryParameters queryParameters,
 			Map<String, int[]> namedParameterLocMap,
-			SessionFactoryImplementor factory, 
+			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
 		super( persister, 1, subquery, factory, loadQueryInfluencers );
 
@@ -55,7 +54,7 @@ public class ReactiveSubselectOneToManyLoader extends ReactiveOneToManyLoader {
 		while ( iter.hasNext() ) {
 			keys[i++] = ( (EntityKey) iter.next() ).getIdentifier();
 		}
-		
+
 		this.namedParameters = queryParameters.getNamedParameters();
 		this.types = queryParameters.getFilteredPositionalParameterTypes();
 		this.values = queryParameters.getFilteredPositionalParameterValues();
@@ -64,13 +63,13 @@ public class ReactiveSubselectOneToManyLoader extends ReactiveOneToManyLoader {
 
 	@Override
 	public void initialize(Serializable id, SharedSessionContractImplementor session) throws HibernateException {
-		loadCollectionSubselect( 
-				session, 
-				keys, 
+		loadCollectionSubselect(
+				session,
+				keys,
 				values,
 				types,
 				namedParameters,
-				getKeyType() 
+				getKeyType()
 		);
 	}
 

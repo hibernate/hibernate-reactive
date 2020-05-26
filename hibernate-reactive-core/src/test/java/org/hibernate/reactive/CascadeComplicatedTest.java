@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
@@ -383,7 +388,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 		public AbstractEntity() {
 			uuid = UUID.randomUUID().toString();
 		}
-		
+
 		@Basic
 		@Column(unique = true, updatable = false, length = 36, columnDefinition = "char(36)")
 		private String uuid;
@@ -415,7 +420,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 			return true;
 		}
 	}
-	
+
 	@Entity(name = "B")
 	public static class B extends AbstractEntity{
 
@@ -462,7 +467,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 
 	@Entity(name = "C")
 	public static class C extends AbstractEntity {
-		
+
 		@Id
 		@GeneratedValue(strategy = GenerationType.SEQUENCE)
 		private Long id;

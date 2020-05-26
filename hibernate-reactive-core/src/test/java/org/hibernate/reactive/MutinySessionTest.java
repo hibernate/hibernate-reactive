@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive;
 
 import io.smallrye.mutiny.Uni;
@@ -36,7 +41,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		return connection().flatMap(
 				connection -> Uni.createFrom().completionStage(
 						connection.select(
-								DatabaseConfiguration.statement( "SELECT name FROM Pig WHERE id = ", "" ), 
+								DatabaseConfiguration.statement( "SELECT name FROM Pig WHERE id = ", "" ),
 								new Object[]{id})
 								.thenApply(
 										rowSet -> {

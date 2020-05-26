@@ -1,8 +1,7 @@
-/*
- * Hibernate OGM, Domain model persistence for NoSQL datastores
+/* Hibernate, Relational Persistence for Idiomatic Java
  *
- * License: GNU Lesser General Public License (LGPL), version 2.1 or later
- * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
  */
 package org.hibernate.reactive.configuration;
 
@@ -13,10 +12,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.pool.impl.SqlClientPool;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
@@ -32,8 +28,6 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.pgclient.PgPool;
-import io.vertx.sqlclient.Pool;
 
 @RunWith(VertxUnitRunner.class)
 public class ReactiveConnectionPoolTest {
@@ -67,31 +61,31 @@ public class ReactiveConnectionPoolTest {
 		reactivePool.start();
 		return reactivePool;
 	}
-	
+
 	@Test
 	public void configureWithJdbcUrl(TestContext context) {
 		// This test doesn't need to rotate across all DBs and has PG-specific logic in it
 		assumeTrue( DatabaseConfiguration.dbType() == DBType.POSTGRESQL );
-		
+
 		String url = DatabaseConfiguration.getJdbcUrl();
 		Map<String,Object> config = new HashMap<>();
 		config.put( AvailableSettings.URL, url );
 		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
 		verifyConnectivity( context, reactivePool );
 	}
-	
+
 	@Test
 	public void configureWithCredentials(TestContext context) {
 		// This test doesn't need to rotate across all DBs and has PG-specific logic in it
 		assumeTrue( DatabaseConfiguration.dbType() == DBType.POSTGRESQL );
-		
+
 		// Set up URL with invalid credentials so we can ensure that
 		// explicit USER and PASS settings take precedence over credentials in the URL
 		String url = DatabaseConfiguration.getJdbcUrl();
 		url = url.replace( "user=" + DatabaseConfiguration.USERNAME, "user=bogus" );
 		url = url.replace( "password=" + DatabaseConfiguration.PASSWORD, "password=bogus" );
-		
-		// Correct user/password are supplied explicitly in the config map and 
+
+		// Correct user/password are supplied explicitly in the config map and
 		// should override the credentials in the URL
 		Map<String,Object> config = new HashMap<>();
 		config.put( AvailableSettings.URL, url );
@@ -105,7 +99,7 @@ public class ReactiveConnectionPoolTest {
 	public void configureWithWrongCredentials(TestContext context) {
 		// This test doesn't need to rotate across all DBs and has PG-specific logic in it
 		assumeTrue( DatabaseConfiguration.dbType() == DBType.POSTGRESQL );
-		
+
 		thrown.expect( CompletionException.class );
 		thrown.expectMessage( "io.vertx.pgclient.PgException:" );
 		thrown.expectMessage( "\"bogus\"" );

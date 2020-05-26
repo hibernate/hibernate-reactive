@@ -1,8 +1,12 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.sql.impl;
 
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.PostgreSQL81Dialect;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
 
 import java.util.function.Supplier;
 

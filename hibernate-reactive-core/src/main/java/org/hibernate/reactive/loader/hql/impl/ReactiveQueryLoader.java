@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.loader.hql.impl;
 
 import org.hibernate.HibernateException;
@@ -57,7 +62,7 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 	/**
 	 * Return the query results, using the query cache, called
 	 * by subclasses that implement cacheable queries
-	 * @see QueryLoader#list(SharedSessionContractImplementor, QueryParameters, Set, Type[]) 
+	 * @see QueryLoader#list(SharedSessionContractImplementor, QueryParameters, Set, Type[])
 	 */
 	protected CompletionStage<List<Object>> reactiveList(
 			final SessionImplementor session,

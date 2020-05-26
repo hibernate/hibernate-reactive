@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.containers;
 
 import java.sql.Connection;
@@ -41,7 +46,7 @@ class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
                         Thread.sleep(100L);
                         continue; // Don't attempt to connect yet
                     }
-                    
+
                     AtomicReference<AsyncResult<?>> result = new AtomicReference<>();
                     CountDownLatch countDown = new CountDownLatch( 1 );
                     SqlConnection connection = createVertxConnection();
@@ -68,11 +73,11 @@ class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
 
         logger().info("Container is started (URL: {})", getVertxUrl());
     }
-    
+
     public String getVertxUrl() {
     	return MySQLDatabase.buildUrlWithCredentials(getJdbcUrl().replace( "jdbc:", "" ));
     }
-    
+
     public SqlConnection createVertxConnection() {
     	String url = getVertxUrl();
     	CountDownLatch countDown = new CountDownLatch( 1 );
@@ -88,12 +93,12 @@ class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
     	else
     		throw new ContainerLaunchException( "Failed to obtain a connection", result.get().cause() );
     }
-    
+
     @Override
     public Connection createConnection(String queryString) throws SQLException, NoDriverFoundException {
     	throw new UnsupportedOperationException();
     }
-    
+
     private void await(CountDownLatch latch) {
     	try {
     		latch.await( getStartupTimeoutSeconds(), TimeUnit.SECONDS );

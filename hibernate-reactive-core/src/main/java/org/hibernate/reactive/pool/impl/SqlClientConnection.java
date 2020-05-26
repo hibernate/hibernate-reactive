@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.pool.impl;
 
 import io.vertx.sqlclient.PropertyKind;
@@ -26,7 +31,7 @@ import java.util.concurrent.CompletionStage;
 public class SqlClientConnection implements ReactiveConnection {
 
 	private static final CoreMessageLogger log = CoreLogging.messageLogger("org.hibernate.SQL");
-	
+
 	private static PropertyKind<Long> mySqlLastInsertedId;
 
 	private final boolean showSQL;
@@ -34,7 +39,7 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	private final SqlConnection connection;
 	private Transaction transaction;
-	
+
 	SqlClientConnection(SqlConnection connection, boolean showSQL, boolean formatSQL) {
 		this.showSQL = showSQL;
 		this.connection = connection;
@@ -177,7 +182,7 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	/**
 	 * Loads MySQLClient.LAST_INSERTED_ID via reflection to avoid a hard
-	 * dependency on the MySQL driver 
+	 * dependency on the MySQL driver
 	 */
 	@SuppressWarnings("unchecked")
 	private static PropertyKind<Long> getMySqlLastInsertedId() {
