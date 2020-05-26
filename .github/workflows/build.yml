@@ -20,7 +20,7 @@ jobs:
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
     - name: Build and Test with PostgreSQL
-      run: ./gradlew build -Pdocker -Pdb=pg
+      run: ./gradlew build -Pdocker -Pdb=postgresql
 
   test_mysql:      
     name: Test with MySQL

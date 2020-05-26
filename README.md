@@ -228,7 +228,7 @@ such as DB2, you can specify `-Pdb=<DBType>`, for example:
 
     ./gradlew test -Pdb=db2
     
-Possible values are (case insensitive): `db2`, `mysql`, `pg` (or `postgresql`)
+Possible values are (case insensitive): `db2, `mysql, postgresql
     
 #### If you have Docker installed
 
