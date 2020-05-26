@@ -22,7 +22,7 @@ subprojects {
 
     repositories {
         // Only enable these for local development, never push it:
-        // mavenLocal()
+        mavenLocal()
         // jcenter()
         mavenCentral()
     }
@@ -30,15 +30,8 @@ subprojects {
     ext.publishScript = rootProject.rootDir.absolutePath + '/publish.gradle'
 }
 
-// Versions which need to be aligned across modules; this also
-// allows overriding the build using a parameter, which can be
-// useful to monitor compatibility for upcoming versions on CI:
-//
-// ./gradlew clean build -PhibernateOrmVersion=5.4.9-SNAPSHOT
-
 ext {
-    hibernateOrmVersion = '5.4.16.Final'
+    hibernateOrmVersion = '5.4.17-SNAPSHOT'
 }
-
 
 
