@@ -49,6 +49,7 @@ import static org.hibernate.reactive.engine.impl.Cascade.fetchLazyAssociationsBe
  */
 public class DefaultReactiveDeleteEventListener
 		implements DeleteEventListener, ReactiveDeleteEventListener, CallbackRegistryConsumer, JpaBootstrapSensitive {
+
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultReactiveDeleteEventListener.class );
 
 	private CallbackRegistry callbackRegistry;

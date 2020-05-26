@@ -35,6 +35,7 @@ import org.hibernate.event.spi.FlushEvent;
 import org.hibernate.event.spi.InitializeCollectionEvent;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
+import org.hibernate.event.spi.LockEvent;
 import org.hibernate.event.spi.MergeEvent;
 import org.hibernate.event.spi.PersistEvent;
 import org.hibernate.event.spi.RefreshEvent;
@@ -64,6 +65,7 @@ import org.hibernate.reactive.event.impl.DefaultReactiveInitializeCollectionEven
 import org.hibernate.reactive.event.spi.ReactiveDeleteEventListener;
 import org.hibernate.reactive.event.spi.ReactiveFlushEventListener;
 import org.hibernate.reactive.event.spi.ReactiveLoadEventListener;
+import org.hibernate.reactive.event.spi.ReactiveLockEventListener;
 import org.hibernate.reactive.event.spi.ReactiveMergeEventListener;
 import org.hibernate.reactive.event.spi.ReactivePersistEventListener;
 import org.hibernate.reactive.event.spi.ReactiveRefreshEventListener;
@@ -814,6 +816,29 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 		return fire(event, refreshedAlready, EventType.REFRESH,
 				(ReactiveRefreshEventListener l) -> l::reactiveOnRefresh)
+				.handle( (v, e) -> {
+					delayedAfterCompletion();
+
+					if (e instanceof RuntimeException) {
+						throw getExceptionConverter().convert( (RuntimeException) e );
+					}
+					else if (e != null) {
+						return CompletionStages.rethrow(e);
+					}
+					return v;
+				});
+	}
+
+	@Override
+	public CompletionStage<Void> reactiveLock(Object object, LockMode lockMode) {
+		checkOpen();
+		return fireLock( new LockEvent( object, lockMode, this ) );
+	}
+
+	private CompletionStage<Void> fireLock(LockEvent event) {
+		pulseTransactionCoordinator();
+
+		return fire( event, EventType.LOCK, (ReactiveLockEventListener l) -> l::reactiveOnLock )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 

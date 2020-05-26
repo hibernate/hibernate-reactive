@@ -19,7 +19,9 @@ import java.util.concurrent.CompletionStage;
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultFlushEventListener}.
  */
-public class DefaultReactiveFlushEventListener extends AbstractReactiveFlushingEventListener implements ReactiveFlushEventListener, FlushEventListener {
+public class DefaultReactiveFlushEventListener extends AbstractReactiveFlushingEventListener
+		implements ReactiveFlushEventListener, FlushEventListener {
+
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger(
 			CoreMessageLogger.class,
 			DefaultReactiveFlushEventListener.class.getName()

@@ -149,6 +149,11 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public CompletionStage<Stage.Session> lock(Object entity, LockMode lockMode) {
+		return delegate.reactiveLock( entity, lockMode ).thenApply( v -> this );
+	}
+
+	@Override
 	public <R> Stage.Query<R> createQuery(String jpql, Class<R> resultType) {
 		return new StageQueryImpl<>( delegate.createReactiveQuery( jpql, resultType ) );
 	}

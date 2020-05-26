@@ -7,8 +7,10 @@ package org.hibernate.reactive.persister.entity.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
+import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.Session;
+import org.hibernate.StaleObjectStateException;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.engine.OptimisticLockStyle;
@@ -25,15 +27,17 @@ import org.hibernate.jdbc.Expectation;
 import org.hibernate.jdbc.Expectations;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
+import org.hibernate.persister.entity.Lockable;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.entity.OuterJoinLoadable;
-import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.sql.impl.Update;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.Delete;
+import org.hibernate.sql.SimpleSelect;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.type.Type;
 import org.jboss.logging.Logger;
@@ -41,10 +45,14 @@ import org.jboss.logging.Logger;
 import java.io.Serializable;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
+import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor.toParameterArray;
+import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
 import static org.hibernate.reactive.sql.impl.Parameters.processParameters;
 
 /**
@@ -65,7 +73,7 @@ import static org.hibernate.reactive.sql.impl.Parameters.processParameters;
  * @see ReactiveUnionSubclassEntityPersister
  * @see ReactiveSingleTableEntityPersister
  */
-public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister, OuterJoinLoadable {
+public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister, OuterJoinLoadable, Lockable {
 	Logger log = Logger.getLogger( JoinedSubclassEntityPersister.class );
 
 	/**
@@ -201,7 +209,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		if ( log.isTraceEnabled() ) {
-			log.tracev( "Inserting entity: {0}", MessageHelper.infoString(delegate(), id, delegate().getFactory() ) );
+			log.tracev( "Inserting entity: {0}", infoString(delegate(), id, delegate().getFactory() ) );
 			if ( j == 0 && delegate().isVersioned() ) {
 				log.tracev( "Version: {0}", Versioning.getVersion( fields, delegate()) );
 			}
@@ -260,7 +268,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		sql = processParameters( sql, session.getFactory().getJdbcServices().getDialect() );
 
 		if ( log.isTraceEnabled() ) {
-			log.tracev( "Inserting entity: {0}", MessageHelper.infoString(delegate()) );
+			log.tracev( "Inserting entity: {0}", infoString(delegate()) );
 			if ( delegate().isVersioned() ) {
 				log.tracev( "Version: {0}", Versioning.getVersion( fields, delegate()) );
 			}
@@ -326,7 +334,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 //		}
 
 		if ( log.isTraceEnabled() ) {
-			log.tracev( "Deleting entity: {0}", MessageHelper.infoString(delegate(), id, delegate().getFactory() ) );
+			log.tracev( "Deleting entity: {0}", infoString(delegate(), id, delegate().getFactory() ) );
 			if ( useVersion ) {
 				log.tracev( "Version: {0}", version );
 			}
@@ -511,7 +519,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		final boolean useVersion = j == 0 && delegate().isVersioned();
 
 		if ( log.isTraceEnabled() ) {
-			log.tracev( "Updating entity: {0}", MessageHelper.infoString(delegate(), id, delegate().getFactory() ) );
+			log.tracev( "Updating entity: {0}", infoString(delegate(), id, delegate().getFactory() ) );
 			if ( useVersion ) {
 				log.tracev( "Existing version: {0} -> New version:{1}", oldVersion, fields[delegate().getVersionProperty()] );
 			}
@@ -613,7 +621,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		catch (SQLException e) {
 			throw delegate().getFactory().getSQLExceptionHelper().convert(
 					e,
-					"could not update: " + MessageHelper.infoString(delegate(), id, delegate().getFactory() ),
+					"could not update: " + infoString(delegate(), id, delegate().getFactory() ),
 					sql
 			);
 		}
@@ -785,13 +793,151 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				lazy ? delegate().getSQLLazyUpdateStrings() : delegate().getSQLUpdateStrings();
 	}
 
+	default String generateSelectLockString(LockOptions lockOptions) {
+		final SessionFactoryImplementor factory = getFactory();
+		Dialect dialect = factory.getJdbcServices().getDialect();
+		Supplier<String> generator = createDialectParameterGenerator(dialect);
+		final SimpleSelect select = new SimpleSelect(dialect)
+				.setLockOptions( lockOptions )
+				.setTableName( getRootTableName() )
+				.addColumn( getRootTableIdentifierColumnNames()[0] )
+				.addCondition( getRootTableIdentifierColumnNames(), "=" + generator.get() );
+		if ( isVersioned() ) {
+			select.addCondition( getVersionColumnName(), "=" + generator.get() );
+		}
+		if ( factory.getSessionFactoryOptions().isCommentsEnabled() ) {
+			select.setComment( lockOptions.getLockMode() + " lock " + getEntityName() );
+		}
+		return select.toStatementString();
+	}
+
+	default String generateUpdateLockString(LockOptions lockOptions) {
+		final SessionFactoryImplementor factory = getFactory();
+		Dialect dialect = factory.getJdbcServices().getDialect();
+		final Update update = new Update(dialect);
+		update.setTableName( getRootTableName() );
+		update.addPrimaryKeyColumns( getRootTableIdentifierColumnNames() );
+		update.setVersionColumnName( getVersionColumnName() );
+		update.addColumn( getVersionColumnName() );
+		if ( factory.getSessionFactoryOptions().isCommentsEnabled() ) {
+			update.setComment( lockOptions.getLockMode() + " lock " + getEntityName() );
+		}
+		return update.toStatementString();
+	}
+
+	@Override
+	default CompletionStage<?> lockReactive(
+			Serializable id,
+			Object version,
+			Object object,
+			LockOptions lockOptions,
+			SharedSessionContractImplementor session) throws HibernateException {
+
+		LockMode lockMode = lockOptions.getLockMode();
+
+		Object nextVersion = nextVersionForLock( lockMode, id, version, object, session );
+
+		String sql;
+		boolean writeLock;
+		switch (lockMode) {
+			case READ:
+			case PESSIMISTIC_READ:
+			case PESSIMISTIC_WRITE:
+			case UPGRADE_NOWAIT:
+			case UPGRADE_SKIPLOCKED:
+			case UPGRADE:
+				sql = generateSelectLockString( lockOptions );
+				writeLock = false;
+				break;
+			case PESSIMISTIC_FORCE_INCREMENT:
+			case FORCE:
+			case WRITE:
+				sql = generateUpdateLockString( lockOptions );
+				writeLock = true;
+				break;
+			case NONE:
+				return CompletionStages.nullFuture();
+			default:
+				throw new IllegalArgumentException("lock mode not supported");
+		}
+
+		PreparedStatementAdaptor statement = new PreparedStatementAdaptor();
+		try {
+			int offset = 1;
+			if ( writeLock ) {
+				getVersionType().nullSafeSet( statement, nextVersion, offset, session );
+				offset++;
+			}
+			getIdentifierType().nullSafeSet( statement, id, offset, session );
+			offset += getIdentifierType().getColumnSpan( getFactory() );
+			if ( isVersioned() ) {
+				getVersionType().nullSafeSet( statement, version, offset, session );
+			}
+		}
+		catch ( SQLException e) {
+			throw new HibernateException( e );
+		}
+		Object[] parameters = statement.getParametersAsArray();
+
+		ReactiveConnection connection = getReactiveConnection( session );
+		CompletionStage<Boolean> lock;
+		if (writeLock) {
+			lock = connection.update(sql, parameters).thenApply(affected -> affected > 0);
+		}
+		else {
+			lock = connection.select(sql, parameters).thenApply(Iterator::hasNext);
+		}
+
+		return lock.thenAccept( found -> {
+			if (!found) {
+				throw new StaleObjectStateException( getEntityName(), id );
+			}
+		} ).handle( (r ,e) -> {
+			if (e instanceof SQLException) {
+				throw session.getJdbcServices().getSqlExceptionHelper().convert(
+						(SQLException) e,
+						"could not lock: "
+								+ infoString( this, id, session.getFactory() ),
+						sql
+				);
+			}
+			return CompletionStages.returnOrRethrow(e, r);
+		} );
+	}
+
+	default Object nextVersionForLock(LockMode lockMode, Serializable id, Object version, Object entity,
+									  SharedSessionContractImplementor session) {
+		if ( lockMode == LockMode.PESSIMISTIC_FORCE_INCREMENT ) {
+			if ( !isVersioned() ) {
+				throw new IllegalArgumentException("increment locks not supported for unversioned entity");
+			}
+
+			Object  nextVersion = getVersionType().next( version, session);
+
+			if ( log.isTraceEnabled() ) {
+				log.trace(
+						"Forcing version increment [" + infoString( this, id, getFactory() ) + "; "
+								+ getVersionType().toLoggableString( version, getFactory() ) + " -> "
+								+ getVersionType().toLoggableString( nextVersion, getFactory() ) + "]"
+				);
+			}
+
+			session.getPersistenceContextInternal().getEntry( entity ).forceLocked( entity, nextVersion );
+
+			return nextVersion;
+		}
+		else {
+			return version;
+		}
+	}
+
 	default CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
 		return reactiveLoad( id, optionalObject, lockOptions, session, null );
 	}
 
 	default CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
 		if ( log.isTraceEnabled() ) {
-			log.tracev( "Fetching entity: {0}", MessageHelper.infoString( this, id, getFactory() ) );
+			log.tracev( "Fetching entity: {0}", infoString( this, id, getFactory() ) );
 		}
 		return getAppropriateLoader( lockOptions, session ).load( id, optionalObject, session, lockOptions, readOnly );
 	}

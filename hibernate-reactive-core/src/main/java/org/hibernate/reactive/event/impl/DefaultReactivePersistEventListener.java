@@ -39,6 +39,7 @@ import java.util.concurrent.CompletionStage;
 public class DefaultReactivePersistEventListener
 		extends AbstractReactiveSaveEventListener<IdentitySet>
 		implements PersistEventListener, ReactivePersistEventListener, CallbackRegistryConsumer {
+
 	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultReactivePersistEventListener.class );
 
 	@Override

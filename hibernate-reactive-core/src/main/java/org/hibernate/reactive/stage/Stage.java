@@ -336,6 +336,21 @@ public interface Stage {
 		CompletionStage<Session> refresh(Object... entities);
 
 		/**
+		 * Obtain the specified lock level upon the given object. For example, this
+		 * may be used to perform a version check with {@link LockMode#READ}, or to
+		 * upgrade to a pessimistic lock with {@link LockMode#PESSIMISTIC_WRITE}.
+		 * This operation  cascades to associated instances if the association is
+		 * mapped with {@code cascade="lock"}.
+		 *
+		 * Note that the optimistic lock modes {@link LockMode#OPTIMISTIC} and
+		 * {@link LockMode#OPTIMISTIC_FORCE_INCREMENT} are not currently supported.
+		 *
+		 * @param entity a persistent or transient instance
+		 * @param lockMode the lock level
+		 */
+		CompletionStage<Session> lock(Object entity, LockMode lockMode);
+
+		/**
 		 * Force this session to flush asynchronously. Must be called at the
 		 * end of a unit of work, before committing the transaction and closing
 		 * the session. <i>Flushing</i> is the process of synchronizing the

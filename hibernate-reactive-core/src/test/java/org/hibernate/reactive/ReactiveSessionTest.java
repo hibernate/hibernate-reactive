@@ -16,6 +16,7 @@ import org.junit.Test;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Version;
 import javax.persistence.metamodel.EntityType;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
@@ -142,6 +143,74 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 									assertThatPigsAreEqual( context, expectedPig, actualPig );
 									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
 								} )
+						)
+		);
+	}
+
+	@Test
+	public void reactiveFindThenUpgradeLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.thenCompose( pig -> session.lock(pig, LockMode.PESSIMISTIC_READ).thenApply( v -> pig ) )
+								.thenAccept( actualPig -> {
+									assertThatPigsAreEqual( context, expectedPig, actualPig );
+									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_READ );
+								} )
+						)
+		);
+	}
+
+	@Test
+	public void reactiveFindThenWriteLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.thenCompose( pig -> session.lock(pig, LockMode.PESSIMISTIC_WRITE).thenApply( v -> pig ) )
+								.thenAccept( actualPig -> {
+									assertThatPigsAreEqual( context, expectedPig, actualPig );
+									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+									context.assertEquals( actualPig.version, 0 );
+								} )
+						)
+		);
+	}
+
+	@Test
+	public void reactiveFindThenForceLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.thenCompose( pig -> session.lock(pig, LockMode.PESSIMISTIC_FORCE_INCREMENT).thenApply( v -> pig ) )
+								.thenAccept( actualPig -> {
+									assertThatPigsAreEqual( context, expectedPig, actualPig );
+									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_FORCE_INCREMENT );
+									context.assertEquals( actualPig.version, 1 );
+								} )
+								.thenCompose( v -> session.createQuery("select version from GuineaPig").getSingleResult() )
+								.thenAccept( version -> context.assertEquals(1, version) )
+								.thenAccept( v -> session.close() )
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.thenCompose( pig -> session.lock(pig, LockMode.PESSIMISTIC_FORCE_INCREMENT).thenApply( v -> pig ) )
+								.thenAccept( actualPig -> {
+									assertThatPigsAreEqual( context, expectedPig, actualPig );
+									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_FORCE_INCREMENT );
+									context.assertEquals( actualPig.version, 2 );
+								} )
+								.thenCompose( v -> session.createQuery("select version from GuineaPig").getSingleResult() )
+								.thenAccept( version -> context.assertEquals(2, version) )
+								.thenAccept( v -> session.close() )
 						)
 		);
 	}
@@ -283,7 +352,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	public void testMetamodel(TestContext context) {
 		EntityType<GuineaPig> pig = getSessionFactory().getMetamodel().entity(GuineaPig.class);
 		context.assertNotNull(pig);
-		context.assertEquals( 2, pig.getAttributes().size() );
+		context.assertEquals( 3, pig.getAttributes().size() );
 		context.assertEquals( "GuineaPig", pig.getName() );
 	}
 
@@ -299,6 +368,8 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		@Id
 		private Integer id;
 		private String name;
+		@Version
+		private int version;
 
 		public GuineaPig() {
 		}

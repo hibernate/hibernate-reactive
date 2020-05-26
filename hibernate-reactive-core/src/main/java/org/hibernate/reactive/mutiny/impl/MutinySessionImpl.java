@@ -158,6 +158,12 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
+	public Uni<Mutiny.Session> lock(Object entity, LockMode lockMode) {
+		return Uni.createFrom().completionStage( delegate.reactiveLock( entity, lockMode ) )
+				.map( v -> this );
+	}
+
+	@Override
 	public <R> Mutiny.Query<R> createQuery(String jpql, Class<R> resultType) {
 		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql, resultType ) );
 	}
