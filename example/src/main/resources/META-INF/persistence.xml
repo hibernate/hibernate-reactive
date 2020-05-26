@@ -12,11 +12,11 @@
 
             <!-- PostgreSQL -->
             <property name="javax.persistence.jdbc.url"
-                      value="jdbc:postgresql://localhost:5432/hreact"/>
+                      value="jdbc:postgresql://localhost/hreact"/>
 
             <!-- MySQL -->
             <!--property name="javax.persistence.jdbc.url"
-                      value="jdbc:mysql://localhost:3306/hreact"/-->
+                      value="jdbc:mysql://localhost/hreact"/-->
 
             <!-- Credentials -->
             <property name="javax.persistence.jdbc.user"

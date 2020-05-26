@@ -110,8 +110,10 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 
 	private SqlConnectOptions sqlConnectOptions(URI uri) {
 
+		String scheme = uri.getScheme();
+
 		String database = uri.getPath().substring( 1 );
-		if (uri.getScheme().equals("db2") && database.indexOf( ':' ) > 0) {
+		if ( scheme.equals("db2") && database.indexOf( ':' ) > 0 ) {
 			database = database.substring( 0, database.indexOf( ':' ) );
 		}
 
@@ -121,7 +123,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		if (username==null || password==null) {
 			String[] params = {};
 			// DB2 URLs are a bit odd and have the format: jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
-			if (uri.getScheme().equals("db2")) {
+			if ( scheme.equals("db2") ) {
 				int queryIndex = uri.getPath().indexOf(':') + 1;
 				if (queryIndex > 0) {
 					params = uri.getPath().substring(queryIndex).split(";");
@@ -142,9 +144,18 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 			}
 		}
 
+		int port = uri.getPort();
+		if (port==-1) {
+			switch (scheme) {
+				case "postgresql": port = 5432; break;
+				case "mysql": port = 3306; break;
+				case "db2": port = 50000; break;
+			}
+		}
+
 		SqlConnectOptions connectOptions = new SqlConnectOptions()
 				.setHost( uri.getHost() )
-				.setPort( uri.getPort() )
+				.setPort( port )
 				.setDatabase( database )
 				.setUser( username );
 		if (password != null) {
