@@ -32,6 +32,19 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	}
 
 	@Override
+	public Stage.Session createSession() {
+		ReactiveConnectionPool pool = delegate.getServiceRegistry()
+				.getService(ReactiveConnectionPool.class);
+		return new StageSessionImpl(
+				new ReactiveSessionImpl(
+						delegate,
+						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
+						pool.getProxyConnection()
+				)
+		);
+	}
+
+	@Override
 	public CompletionStage<Stage.Session> openSession() throws HibernateException {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);

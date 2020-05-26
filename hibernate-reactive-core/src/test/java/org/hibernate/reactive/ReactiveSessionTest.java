@@ -10,6 +10,7 @@ import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
+import org.hibernate.reactive.stage.Stage;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -106,6 +107,32 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								context.assertFalse( session.contains( actualPig ) );
 							} )
 						)
+		);
+	}
+
+	@Test
+	public void reactivePersistFindDelete(TestContext context) {
+		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
+		Stage.Session session = getSessionFactory().createSession();
+		test(
+				context,
+				session.persist( guineaPig )
+						.thenCompose( v -> session.flush() )
+						.thenAccept( v -> session.detach(guineaPig) )
+						.thenAccept( v -> context.assertFalse( session.contains(guineaPig) ) )
+						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
+						.thenAccept( actualPig -> {
+							assertThatPigsAreEqual( context, guineaPig, actualPig );
+							context.assertTrue( session.contains( actualPig ) );
+							context.assertFalse( session.contains( guineaPig ) );
+							context.assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
+							session.detach( actualPig );
+							context.assertFalse( session.contains( actualPig ) );
+						} )
+						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
+						.thenCompose( pig -> session.remove(pig) )
+						.thenCompose( v -> session.flush() )
+						.thenAccept( v -> session.close() )
 		);
 	}
 
