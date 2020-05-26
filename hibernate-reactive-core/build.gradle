@@ -36,17 +36,34 @@ dependencies {
     testImplementation 'org.slf4j:slf4j-log4j12:1.7.30'
 }
 
+// Is there a way to read this from org.hibernate.reactive.containers.DatabaseConfiguration?
+def dbs = ['MySQL', 'PostgreSQL', 'DB2']
+def testTasks = []
+
+// For each database create a dynamic test task
+dbs.each{ db ->
+    testTasks.add( "test_${db.toLowerCase()}" )
+    task "test_${db.toLowerCase()}"(type: Test){
+        defaultCharacterEncoding = "UTF-8"
+        testLogging {
+            displayGranularity 1
+            showStandardStreams = false
+            showStackTraces = true
+            exceptionFormat = 'full'
+            events 'PASSED', 'FAILED', 'SKIPPED'
+        }
+        systemProperty 'docker', project.hasProperty('docker') ? 'true' : 'false'
+        doFirst() {
+            systemProperty 'db', db
+        }
+    } }
+
+task testAll( dependsOn: testTasks ){
+}
+
 test {
-  defaultCharacterEncoding = "UTF-8"
-  testLogging {
-      displayGranularity 1
-      showStandardStreams = false
-      showStackTraces = true
-      exceptionFormat = 'full'
-      events 'PASSED', 'FAILED', 'SKIPPED'
-  }
-  systemProperty 'docker', project.hasProperty('docker') ? 'true' : 'false'
-  systemProperty 'db', project.hasProperty('db') ? project.getProperty('db') : 'postgresql'
+    String selectedDb = project.hasProperty('db') ? project.getProperty('db') : 'postgresql'
+    dependsOn "test_${selectedDb.toLowerCase()}"
 }
 
 spotless {
