@@ -40,17 +40,66 @@ dependencies {
     testImplementation 'org.slf4j:slf4j-log4j12:1.7.30'
 }
 
+// Print a summary of the results of the tests (number of failures, successes and skipped)
+def loggingSummary(db, result, desc) {
+    if ( !desc.parent ) { // will match the outermost suite
+        def output = "${db} results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
+        def repeatLength = output.length() + 1
+        println '\n' + ('-' * repeatLength) + '\n' + output + '\n' + ('-' * repeatLength)
+    }
+}
+
+// Configuration for the tests
+tasks.withType(Test) {
+    defaultCharacterEncoding = "UTF-8"
+    testLogging {
+        displayGranularity 1
+        showStandardStreams = false
+        showStackTraces = true
+        exceptionFormat = 'full'
+        events 'PASSED', 'FAILED', 'SKIPPED'
+    }
+    systemProperty 'docker', project.hasProperty( 'docker' ) ? 'true' : 'false'
+}
+
+// Example:
+// gradle test -Pdb=MySQL
 test {
-  defaultCharacterEncoding = "UTF-8"
-  testLogging {
-      displayGranularity 1
-      showStandardStreams = false
-      showStackTraces = true
-      exceptionFormat = 'full'
-      events 'PASSED', 'FAILED', 'SKIPPED'
-  }
-  systemProperty 'docker', project.hasProperty('docker') ? 'true' : 'false'
-  systemProperty 'db', project.hasProperty('db') ? project.getProperty('db') : 'postgresql'
+    def selectedDb = project.hasProperty( 'db' )
+            ? project.getProperty( 'db' )
+            : 'PostgreSQL'
+    afterSuite { desc, result ->
+        loggingSummary( selectedDb, result, desc )
+    }
+    doFirst {
+        systemProperty 'db', selectedDb
+    }
+}
+
+// Rule to recognize calls to testDb<dbName>
+// and run the tests on the selected db
+// Example:
+// gradle testDbMySQL testDbDB2
+tasks.addRule( "Pattern testDb<id>" ) { String taskName ->
+    if ( taskName.startsWith( "testDb" ) ) {
+        task( type: Test, taskName ) {
+            def dbName = taskName.substring( "testDb".length() )
+            description = "Run tests for ${dbName}"
+
+            afterSuite { desc, result ->
+                loggingSummary( dbName, result, desc )
+            }
+            doFirst() {
+                systemProperty 'db', dbName
+            }
+        }
+    }
+}
+
+// The dbs we want to test when running testAll
+def dbs = ['MySQL', 'PostgreSQL', 'DB2']
+task testAll( dependsOn: dbs.collect( [] as HashSet ) { db -> "testDb${db}" } ) {
+    description = "Run tests for ${dbs}"
 }
 
 spotless {
