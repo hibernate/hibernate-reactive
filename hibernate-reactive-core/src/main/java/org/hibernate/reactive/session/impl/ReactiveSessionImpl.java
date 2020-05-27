@@ -96,6 +96,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.Tuple;
+import javax.persistence.metamodel.Attribute;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -174,6 +175,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		else {
 			return CompletionStages.completedFuture( association );
 		}
+	}
+
+	@Override
+	public <E,T> CompletionStage<T> reactiveFetch(E entity, Attribute<E,T> field) {
+		return ( (ReactiveEntityPersister) getEntityPersister( null, entity ) )
+				.reactiveInitializeLazyProperty( field, entity, this );
 	}
 
 	@Override

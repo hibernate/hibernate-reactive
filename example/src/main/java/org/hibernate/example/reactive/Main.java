@@ -46,7 +46,11 @@ public class Main {
 				//retrieve a Book
 				session -> session.find(Book.class, book1.id)
 						//print its title
-						.thenAccept( book -> out.println(book.title + " is a great book!") )
+						.thenCompose( book -> {
+							out.println(book.title + " is a great book!");
+							return session.fetch( book, Book_.isbn )
+									.thenAccept( isbn -> out.println(isbn + " is the ISBN") );
+						} )
 		)
 				.toCompletableFuture().join();
 

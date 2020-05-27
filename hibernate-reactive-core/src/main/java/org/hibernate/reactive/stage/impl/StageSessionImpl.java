@@ -22,6 +22,7 @@ import javax.persistence.EntityGraph;
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
+import javax.persistence.metamodel.Attribute;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -52,6 +53,11 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public <T> CompletionStage<T> fetch(T association) {
 		return delegate.reactiveFetch(association, false);
+	}
+
+	@Override
+	public <E,T> CompletionStage<T> fetch(E entity, Attribute<E,T> field) {
+		return delegate.reactiveFetch(entity, field);
 	}
 
 	@Override

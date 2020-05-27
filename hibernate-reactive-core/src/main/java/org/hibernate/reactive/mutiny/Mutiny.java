@@ -24,6 +24,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
+import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.Metamodel;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -439,6 +440,16 @@ public interface Mutiny {
 		 * @see org.hibernate.Hibernate#initialize(Object)
 		 */
 		<T> Uni<T> fetch(T association);
+
+		/**
+		 * Fetch a lazy property of the given entity, identified
+		 * by a JPA {@link Attribute attribute metamodel}.
+		 *
+		 * <pre>
+		 * {@code session.fetch(book, Book_.isbn).thenAccept(isbn -> print(isbn))}
+		 * </pre>
+		 */
+		<E,T> Uni<T> fetch(E entity, Attribute<E,T> field);
 
 		/**
 		 * Asynchronously fetch an association that's configured for lazy loading,

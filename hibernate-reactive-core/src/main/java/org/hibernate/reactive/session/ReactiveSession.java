@@ -23,6 +23,7 @@ import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
 import org.hibernate.reactive.pool.ReactiveConnection;
 
 import javax.persistence.EntityGraph;
+import javax.persistence.metamodel.Attribute;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,8 @@ public interface ReactiveSession  {
 	ReactiveActionQueue getReactiveActionQueue();
 
 	<T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
+
+	<E,T> CompletionStage<T> reactiveFetch(E entity, Attribute<E,T> field);
 
 	CompletionStage<Void> reactivePersist(Object entity);
 
