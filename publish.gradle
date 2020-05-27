@@ -10,6 +10,29 @@ task javadocJar(type: Jar) {
     archiveClassifier = 'javadoc'
 }
 
+jar {
+    manifest {
+        attributes(
+                // Basic JAR manifest attributes
+                'Specification-Title': project.name,
+                'Specification-Version': project.version,
+                'Specification-Vendor': 'Hibernate.org',
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version,
+                'Implementation-Vendor': 'Hibernate.org',
+                'Implementation-Vendor-Id': 'org.hibernate',
+                'Implementation-Url': 'http://hibernate.org/reactive',
+        )
+    }
+}
+
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
 publishing {
     repositories {
         mavenLocal()
@@ -57,27 +80,4 @@ publishing {
             }
         }
     }
-}
-
-jar {
-    manifest {
-        attributes(
-                // Basic JAR manifest attributes
-                'Specification-Title': project.name,
-                'Specification-Version': project.version,
-                'Specification-Vendor': 'Hibernate.org',
-                'Implementation-Title': project.name,
-                'Implementation-Version': project.version,
-                'Implementation-Vendor': 'Hibernate.org',
-                'Implementation-Vendor-Id': 'org.hibernate',
-                'Implementation-Url': 'http://hibernate.org/reactive',
-        )
-    }
-}
-
-javadoc {
-    if(JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption('html5', true)
-    }
-    options.addStringOption('Xdoclint:none', '-quiet')
 }
