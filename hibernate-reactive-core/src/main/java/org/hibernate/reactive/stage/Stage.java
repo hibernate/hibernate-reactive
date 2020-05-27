@@ -156,9 +156,6 @@ public interface Stage {
 	 * explicitly request asynchronous fetching of an association, or the
 	 * association should be fetched eagerly when the entity is first retrieved.
 	 *
-	 * {@code Session} does not support JPA entity graphs, but Hibernate fetch
-	 * profiles may be used instead.
-	 *
 	 * @see org.hibernate.Session
 	 */
 	interface Session extends AutoCloseable {
@@ -234,7 +231,7 @@ public interface Stage {
 		/**
 		 * Asynchronously persist the given transient instance, first assigning
 		 * a generated identifier. (Or using the current value of the identifier
-		 * property if the <code>assigned</code> generator is used.) This operation
+		 * property if the {@code assigned} generator is used.) This operation
 		 * cascades to associated instances if the association is mapped with
 		 * {@code cascade="save-update"}
 		 *

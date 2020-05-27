@@ -155,9 +155,6 @@ public interface Mutiny {
 	 * explicitly request asynchronous fetching of an association, or the
 	 * association should be fetched eagerly when the entity is first retrieved.
 	 *
-	 * {@code Session} does not support JPA entity graphs, but Hibernate fetch
-	 * profiles may be used instead.
-	 *
 	 * @see org.hibernate.Session
 	 */
 	interface Session extends AutoCloseable {
@@ -170,7 +167,7 @@ public interface Mutiny {
 		 * returns an uninitialized instance.)
 		 *
 		 * <pre>
-		 * {@code session.find(Book.class, id).thenAccept(book -> print(book.getTitle()));}
+		 * {@code session.find(Book.class, id).map(book -> print(book.getTitle()));}
 		 * </pre>
 		 *
 		 * @param entityClass The entity type
@@ -233,12 +230,12 @@ public interface Mutiny {
 		/**
 		 * Asynchronously persist the given transient instance, first assigning
 		 * a generated identifier. (Or using the current value of the identifier
-		 * property if the <code>assigned</code> generator is used.) This operation
+		 * property if the {@code assigned} generator is used.) This operation
 		 * cascades to associated instances if the association is mapped with
 		 * {@code cascade="save-update"}
 		 *
 		 * <pre>
-		 * {@code session.persist(newBook).thenAccept(v -> session.flush());}
+		 * {@code session.persist(newBook).map(v -> session.flush());}
 		 * </pre>
 		 *
 		 * @param entity a transient instance of a persistent class
@@ -819,7 +816,7 @@ public interface Mutiny {
 	 * Asynchronously fetch an association that's configured for lazy loading.
 	 *
 	 * <pre>
-	 * {@code Mutiny.fetch(author.getBook()).thenAccept(book -> print(book.getTitle()));}
+	 * {@code Mutiny.fetch(author.getBook()).map(book -> print(book.getTitle()));}
 	 * </pre>
 	 *
 	 * @param association a lazy-loaded association
