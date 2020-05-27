@@ -220,15 +220,17 @@ To publish Hibernate Reactive to your local Maven repository, run:
 
 ### Running tests
 
-To run the tests, you'll need to get the test databases running on your 
-machine. There are three ways to start the test databases.
+To run the tests, you'll need to decide which RDBMS you want to test 
+with, and then get an instance of the test database running on your 
+machine.
 
-By default (almost) all of the tests will run with PostgreSQL. To use a different database
-such as DB2, you can specify `-Pdb=<DBType>`, for example:
+By default, the tests will be run against PostgreSQL. To test against 
+MySQL or DB2, you must explicitly specify `-Pdb=mysql` or `-Pdb=db2`, 
+for example:
 
     ./gradlew test -Pdb=db2
     
-Possible values are (case insensitive): `db2`, `mysql`, `pg` (or `postgresql`)
+There are three ways to start the test database.
     
 #### If you have Docker installed
 
@@ -236,10 +238,19 @@ If you have Docker installed, running the tests is really easy. You
 don't need to create the test databases manually. Just type:
 
     ./gradlew test -Pdocker
-    
+
+Or:
+
+    ./gradlew test -Pdocker -Pdb=mysql
+
+Or:
+
+    ./gradlew test -Pdocker -Pdb=db2
+
 The tests will run faster if you reuse the same containers across 
-multiple test runs. To do this, set `testcontainers.reuse.enable=true` in 
-the file `$HOME/.testcontainers.properties`. (Just create the file if it 
+multiple test runs. To do this, edit the testcontainers configuration 
+file `.testcontainers.properties` in your home directory, adding the 
+line `testcontainers.reuse.enable=true`. (Just create the file if it 
 doesn't already exist.)
 
 #### If you already have PostgreSQL installed
@@ -253,16 +264,20 @@ following commands:
     create user hreact with password 'hreact';
     grant all privileges on database hreact to hreact;
 
-There are also tests for MySQL, so if you also have MySQL installed, 
-you can run these tests as well. Create the test database using the 
-following commands:
+Then run `./gradlew test` from the `hibernate-reactive` directory.
+
+#### If you already have MySQL installed
+
+If you have MySQL installed, you can create the test database using 
+the following commands:
 
     mysql -uroot
     create database hreact;
     create user hreact identified by 'hreact';
     grant all on hreact.* to hreact;
 
-Finally, run `./gradlew test` from the `hibernate-reactive` directory.
+Then run `./gradlew test -Pdb=mysql` from the `hibernate-reactive` 
+directory.
 
 #### If you have Podman
 
