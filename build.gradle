@@ -6,11 +6,16 @@ plugins {
     id 'com.jfrog.bintray' version '1.8.5' apply false
 }
 
+ext {
+    // Needs to be overridden when publishing SNAPSHOT versions to GitHub Packages
+    projectVersion = '1.0.0-SNAPSHOT'
+}
+
 subprojects {
     apply plugin: 'java-library'
     apply plugin: 'com.diffplug.gradle.spotless'
     group = 'org.hibernate.reactive'
-    version = '1.0.0-SNAPSHOT'
+    version = projectVersion
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
     compileJava.options.encoding = 'UTF-8'
