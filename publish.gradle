@@ -1,4 +1,21 @@
 apply plugin: 'maven-publish'
+apply plugin: 'nu.studer.credentials'
+
+// To publish snapshots:
+//  ./gradlew publish -PjbossNexusUser="<YOUR USERNAME>" -PjbossNexusPassword="<YOUR PASSWORD>"
+
+ext {
+    // Credentials can be specified on the command-line using project properties,
+    // or stored locally using the gradle-credentials-plugin.
+    // See below for the name of project properties.
+    // See https://github.com/etiennestuder/gradle-credentials-plugin to store credentials locally.
+    if (!project.hasProperty('jbossNexusUser')) {
+        jbossNexusUser = credentials.jbossNexusUser
+    }
+    if (!project.hasProperty('jbossNexusPassword')) {
+        jbossNexusPassword = credentials.jbossNexusPassword
+    }
+}
 
 task sourcesJar(type: Jar) {
     from sourceSets.main.allJava
@@ -36,6 +53,14 @@ javadoc {
 publishing {
     repositories {
         mavenLocal()
+        maven {
+            name 'jboss-snapshots-repository'
+            url 'https://repository.jboss.org/nexus/content/repositories/snapshots'
+            credentials {
+                username project.jbossNexusUser
+                password project.jbossNexusPassword
+            }
+        }
     }
     publications {
         publishedArtifacts(MavenPublication) {
