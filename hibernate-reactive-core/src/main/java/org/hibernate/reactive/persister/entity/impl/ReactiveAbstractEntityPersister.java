@@ -33,6 +33,7 @@ import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.sql.impl.Parameters;
 import org.hibernate.reactive.sql.impl.Update;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.Delete;
@@ -51,7 +52,6 @@ import java.util.function.Supplier;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
-import static org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor.toIdParameterArray;
 import static org.hibernate.reactive.sql.impl.Parameters.processParameters;
 
 /**
@@ -946,19 +946,81 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return ReactiveDynamicBatchingEntityLoaderBuilder.INSTANCE.multiLoad(this, ids, session, loadOptions);
 	}
 
-	@Override
-	default CompletionStage<Boolean> reactiveIsTransient(Object entity, SessionImplementor session) {
-		Boolean unsaved = delegate().isTransient( entity, session );
-		if ( unsaved!=null ) {
-			return CompletionStages.completedFuture( unsaved );
+//	@Override
+//	default CompletionStage<Boolean> reactiveIsTransient(Object entity, SessionImplementor session) {
+//		Boolean unsaved = delegate().isTransient( entity, session );
+//		if ( unsaved!=null ) {
+//			return CompletionStages.completedFuture( unsaved );
+//		}
+//		String sql = processParameters(
+//				delegate().getSQLSnapshotSelectString(),
+//				session.getFactory().getJdbcServices().getDialect()
+//		);
+//		Serializable id = delegate().getIdentifier( entity, session );
+//		Object[] params = toParameterArray( new QueryParameters( getIdentifierType(), id ), session );
+//		return getReactiveConnection(session).select( sql, params )
+//				.thenApply( resultSet -> !resultSet.hasNext() );
+//	}
+
+	default CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Serializable id,
+																  SharedSessionContractImplementor session) {
+		if ( log.isTraceEnabled() ) {
+			log.tracev(
+					"Getting current persistent state for: {0}",
+					infoString( this, id, getFactory() )
+			);
 		}
-		String sql = processParameters(
+
+		PreparedStatementAdaptor statement = new PreparedStatementAdaptor();
+		try {
+			getIdentifierType().nullSafeSet(statement, id, 1, session);
+		}
+		catch (SQLException e) {
+			//can never happen
+			throw new JDBCException("error binding parameters", e);
+		}
+
+		String sql = Parameters.processParameters(
 				delegate().getSQLSnapshotSelectString(),
-				session.getFactory().getJdbcServices().getDialect()
+				getFactory().getJdbcServices().getDialect()
 		);
-		Serializable id = delegate().getIdentifier( entity, session );
-		Object[] params = toIdParameterArray( id, getIdentifierType(), session );
-		return getReactiveConnection(session).select( sql, params )
-				.thenApply( resultSet -> !resultSet.hasNext() );
+
+		return getReactiveConnection( session )
+				.selectJdbc( sql, statement.getParametersAsArray() )
+				.thenApply( (rs) -> {
+					try {
+						if ( rs.next() ) {
+							//return the "hydrated" state (ie. associations are not resolved)
+							Type[] types = getPropertyTypes();
+							Object[] values = new Object[types.length];
+							boolean[] includeProperty = getPropertyUpdateability();
+							for ( int i = 0; i < types.length; i++ ) {
+								if ( includeProperty[i] ) {
+									values[i] = types[i].hydrate(
+											rs,
+											getPropertyAliases( "", i ),
+											session,
+											null
+									); //null owner ok??
+								}
+							}
+							return values;
+						}
+						else {
+							//no corresponding row: transient!
+							return null;
+						}
+					}
+					catch (SQLException e) {
+						throw session.getJdbcServices()
+								.getSqlExceptionHelper()
+								.convert(
+										e,
+										"could not retrieve snapshot: "
+												+ infoString( this, id, getFactory() ),
+										sql
+								);
+					}
+				} );
 	}
 }
