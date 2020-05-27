@@ -5,15 +5,13 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
+import org.hibernate.reactive.boot.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.boot.service.NoJdbcConnectionProvider;
 import org.hibernate.reactive.boot.service.ReactiveGenerationTarget;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
@@ -22,12 +20,16 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
-import java.util.concurrent.CompletionStage;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Timeout;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
@@ -72,7 +74,7 @@ public abstract class BaseReactiveTest {
 	@Before
 	public void before() {
 		Configuration configuration = constructConfiguration();
-		StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
+		StandardServiceRegistry registry = new ReactiveServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() )
 				.addService( ConnectionProvider.class, NoJdbcConnectionProvider.INSTANCE)
 				.build();

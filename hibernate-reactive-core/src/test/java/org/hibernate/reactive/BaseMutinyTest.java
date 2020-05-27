@@ -5,24 +5,26 @@
  */
 package org.hibernate.reactive;
 
-import io.smallrye.mutiny.Uni;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.boot.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.stage.Stage;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Timeout;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 @RunWith(VertxUnitRunner.class)
 public abstract class BaseMutinyTest {
@@ -66,7 +68,7 @@ public abstract class BaseMutinyTest {
 
 	@Before
 	public void before() {
-		StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
+		StandardServiceRegistry registry = new ReactiveServiceRegistryBuilder()
 				.applySettings( constructConfiguration().getProperties() )
 				.build();
 
