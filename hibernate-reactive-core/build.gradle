@@ -40,6 +40,15 @@ dependencies {
 def dbs = ['MySQL', 'PostgreSQL', 'DB2']
 def testTasks = []
 
+// Print a summary of the results of the tests (number of failures, successes and skipped)
+def loggingSummary(db, result, desc) {
+    if ( !desc.parent ) { // will match the outermost suite
+        def output = "${db} results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
+        def repeatLength = output.length() + 1
+        println '\n' + ('-' * repeatLength) + '\n' + output + '\n' + ('-' * repeatLength)
+    }
+}
+
 // For each database create a dynamic test task
 dbs.each { db ->
     testTasks.add( "test_${db.toLowerCase()}" )
@@ -51,6 +60,9 @@ dbs.each { db ->
             showStackTraces = true
             exceptionFormat = 'full'
             events 'PASSED', 'FAILED', 'SKIPPED'
+            afterSuite { desc, result ->
+                loggingSummary( db, result, desc )
+            }
         }
         systemProperty 'docker', project.hasProperty( 'docker' ) ? 'true' : 'false'
         doFirst() {
@@ -63,6 +75,7 @@ task testAll( dependsOn: testTasks ) {
 }
 
 test {
+  def selectedDb = project.hasProperty( 'db' ) ? project.getProperty( 'db' ) : 'PostgreSQL'
   defaultCharacterEncoding = "UTF-8"
   testLogging {
       displayGranularity 1
@@ -70,9 +83,12 @@ test {
       showStackTraces = true
       exceptionFormat = 'full'
       events 'PASSED', 'FAILED', 'SKIPPED'
+      afterSuite { desc, result ->
+          loggingSummary( selectedDb, result, desc )
+      }
   }
-  systemProperty 'docker', project.hasProperty('docker') ? 'true' : 'false'
-  systemProperty 'db', project.hasProperty('db') ? project.getProperty('db') : 'postgresql'
+  systemProperty 'docker', project.hasProperty( 'docker' ) ? 'true' : 'false'
+  systemProperty 'db', selectedDb
 }
 
 spotless {
