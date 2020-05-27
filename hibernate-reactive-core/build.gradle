@@ -51,6 +51,14 @@ dbs.each{ db ->
             showStackTraces = true
             exceptionFormat = 'full'
             events 'PASSED', 'FAILED', 'SKIPPED'
+            afterSuite { desc, result ->
+                if (!desc.parent) { // will match the outermost suite
+                    // A summary of the results of the tests (number of failures, successes and skipped)
+                    def output = "${db} results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
+                    def repeatLength = output.length() + 1
+                    println '\n' + ('-' * repeatLength) + '\n' + output + '\n' + ('-' * repeatLength)
+                }
+            }
         }
         systemProperty 'docker', project.hasProperty('docker') ? 'true' : 'false'
         doFirst() {
