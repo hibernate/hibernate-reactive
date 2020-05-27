@@ -16,13 +16,13 @@ import org.hibernate.internal.util.StringHelper;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -271,7 +271,8 @@ public final class ForeignKeys {
 	 *
 	 * @return {@code true} if the given entity is transient (unsaved)
 	 */
-	public static CompletionStage<Boolean> isTransient(String entityName, Object entity, Boolean assumed, SessionImplementor session) {
+	public static CompletionStage<Boolean> isTransient(String entityName, Object entity, Boolean assumed,
+													   SessionImplementor session) {
 		if ( entity == LazyPropertyInitializer.UNFETCHED_PROPERTY ) {
 			// an unfetched association can only point to
 			// an entity that already exists in the db
@@ -297,17 +298,11 @@ public final class ForeignKeys {
 			return CompletionStages.completedFuture( assumed );
 		}
 
-		return ((ReactiveEntityPersister) persister).reactiveIsTransient( entity, session );
-
-		//TODO: reactive snapshot fetching!!!!
-
 		// hit the database, after checking the session cache for a snapshot
-//		final Object[] snapshot = session.getPersistenceContextInternal().getDatabaseSnapshot(
-//				persister.getIdentifier( entity, session ),
-//				persister
-//		);
-//		return CompletionStages.completedFuture(snapshot == null);
-
+		ReactivePersistenceContextAdapter persistenceContext =
+				(ReactivePersistenceContextAdapter) session.getPersistenceContextInternal();
+		Serializable id = persister.getIdentifier(entity, session);
+		return persistenceContext.reactiveGetDatabaseSnapshot( id, persister).thenApply(Objects::isNull);
 	}
 
 	/**

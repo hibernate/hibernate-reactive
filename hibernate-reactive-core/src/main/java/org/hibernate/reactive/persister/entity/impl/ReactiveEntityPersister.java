@@ -103,5 +103,12 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	ReactiveUniqueEntityLoader getAppropriateLoader(LockOptions lockOptions,
 													SharedSessionContractImplementor session);
 
-	CompletionStage<Boolean> reactiveIsTransient(Object entity, SessionImplementor session);
+	/**
+	 * Get the current database state of the object, in a "hydrated" form, without
+	 * resolving identifiers
+	 *
+	 * @return null if there is no row in the database
+	 */
+	CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Serializable id,
+														  SharedSessionContractImplementor session);
 }
