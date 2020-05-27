@@ -20,7 +20,7 @@ jobs:
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
     - name: Test and build all databases
-      run: ./gradlew testAll build -Pdocker 
+      run: ./gradlew build testAll -Pdocker 
 
   build_package:      
     name: Build and create maven package
