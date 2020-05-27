@@ -15,7 +15,7 @@ subprojects {
 
     repositories {
         // Only enable these for local development, never push it:
-        // mavenLocal()
+        mavenLocal()
         // jcenter()
         mavenCentral()
     }
@@ -30,7 +30,7 @@ subprojects {
 // ./gradlew clean build -PhibernateOrmVersion=5.4.9-SNAPSHOT
 
 ext {
-    hibernateOrmVersion = '5.4.16.Final'
+    hibernateOrmVersion = '5.5.0-SNAPSHOT'
 }
 
 
