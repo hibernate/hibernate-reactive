@@ -53,6 +53,8 @@ public interface Stage {
 
 		Query<R> setParameter(int var1, Object var2);
 
+		Query<R> setParameter(String name, Object var2);
+
 		Query<R> setMaxResults(int maxResults);
 
 		Query<R> setFirstResult(int firstResult);

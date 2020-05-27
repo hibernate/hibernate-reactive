@@ -32,6 +32,8 @@ public interface ReactiveQuery<R> {
 
 	ReactiveQuery<R> setParameter(int position, Object value);
 
+	ReactiveQuery<R> setParameter(String name, Object value);
+
 	ReactiveQuery<R> setMaxResults(int maxResults);
 
 	ReactiveQuery<R> setFirstResult(int firstResult);

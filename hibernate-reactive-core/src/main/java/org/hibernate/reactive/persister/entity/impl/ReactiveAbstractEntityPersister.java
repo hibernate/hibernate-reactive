@@ -18,7 +18,6 @@ import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -51,8 +50,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
-import static org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor.toParameterArray;
 import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
+import static org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor.toIdParameterArray;
 import static org.hibernate.reactive.sql.impl.Parameters.processParameters;
 
 /**
@@ -958,7 +957,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				session.getFactory().getJdbcServices().getDialect()
 		);
 		Serializable id = delegate().getIdentifier( entity, session );
-		Object[] params = toParameterArray( new QueryParameters( getIdentifierType(), id ), session );
+		Object[] params = toIdParameterArray( id, getIdentifierType(), session );
 		return getReactiveConnection(session).select( sql, params )
 				.thenApply( resultSet -> !resultSet.hasNext() );
 	}

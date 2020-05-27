@@ -17,6 +17,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.spi.AfterLoadAction;
+import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.transform.ResultTransformer;
@@ -168,4 +169,7 @@ public interface ReactiveLoader {
 	 */
 	default void discoverTypes(QueryParameters queryParameters, ResultSet resultSet) {}
 
+	default Object[] toParameterArray(QueryParameters queryParameters, SharedSessionContractImplementor session) {
+		return QueryParametersAdaptor.toParameterArray( queryParameters, session );
+	}
 }

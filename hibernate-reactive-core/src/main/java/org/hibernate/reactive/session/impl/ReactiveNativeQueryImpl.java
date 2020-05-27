@@ -141,6 +141,12 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
+	public ReactiveNativeQueryImpl<R> setParameter(String name, Object value) {
+		super.setParameter(name, value);
+		return this;
+	}
+
+	@Override
 	public ReactiveNativeQueryImpl<R> setMaxResults(int maxResults) {
 		super.setMaxResults(maxResults);
 		return this;

@@ -9,15 +9,14 @@ import org.hibernate.HibernateException;
 import org.hibernate.QueryException;
 import org.hibernate.cache.spi.QueryKey;
 import org.hibernate.cache.spi.QueryResultsCache;
-import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.*;
 import org.hibernate.hql.internal.ast.QueryTranslatorImpl;
 import org.hibernate.hql.internal.ast.tree.SelectClause;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
+import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.loader.CachingReactiveLoader;
+import org.hibernate.reactive.sql.impl.Parameters;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
@@ -88,7 +87,15 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 										 boolean returnProxies,
 										 ResultTransformer forcedResultTransformer,
 										 int maxRows, List<AfterLoadAction> afterLoadActions) throws SQLException {
-		return super.processResultSet(rs, queryParameters, session, returnProxies,
+		final RowSelection rowSelection = queryParameters.getRowSelection();
+		final ResultSet resultSetPreprocessed = preprocessResultSet(
+				rs,
+				rowSelection,
+				getLimitHandler( rowSelection ),
+				queryParameters.hasAutoDiscoverScalarTypes(),
+				session
+		);
+		return super.processResultSet(resultSetPreprocessed, queryParameters, session, returnProxies,
 				forcedResultTransformer, maxRows, afterLoadActions);
 	}
 
@@ -97,7 +104,10 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 								QueryParameters queryParameters,
 								SessionFactoryImplementor factory,
 								List<AfterLoadAction> afterLoadActions) {
-		return super.preprocessSQL(sql, queryParameters, factory, afterLoadActions);
+		return Parameters.processParameters(
+				super.preprocessSQL(sql, queryParameters, factory, afterLoadActions),
+				factory.getDialect()
+		);
 	}
 
 	@Override
@@ -133,5 +143,17 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 	@Override @SuppressWarnings("unchecked")
 	public List<Object> getResultList(List results, ResultTransformer resultTransformer) throws QueryException {
 		return super.getResultList(results, resultTransformer);
+	}
+
+	@Override
+	public Object[] toParameterArray(QueryParameters queryParameters, SharedSessionContractImplementor session) {
+		return QueryParametersAdaptor.toParameterArray( preparedStatement ->
+				bindPreparedStatement(
+						preparedStatement,
+						queryParameters,
+						getLimitHandler(queryParameters.getRowSelection()),
+						session
+				)
+		);
 	}
 }
