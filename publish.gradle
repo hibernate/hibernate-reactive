@@ -91,12 +91,12 @@ publishing {
                 url = 'https://github.com/hibernate/hibernate-reactive'
                 organization {
                     name = 'Hibernate.org'
-                    url = 'http://hibernate.org'
+                    url = 'https://hibernate.org'
                 }
                 licenses {
                     license {
                         name = 'GNU Library General Public License v2.1 or later'
-                        url = 'http://www.opensource.org/licenses/LGPL-2.1'
+                        url = 'https://opensource.org/licenses/LGPL-2.1'
                         comments = 'See discussion at http://hibernate.org/community/license/ for more details.'
                         distribution = 'repo'
                     }
@@ -115,7 +115,7 @@ publishing {
                         id = 'hibernate-team'
                         name = 'The Hibernate Development Team'
                         organization = 'Hibernate.org'
-                        organizationUrl = 'http://hibernate.org'
+                        organizationUrl = 'https://hibernate.org'
                     }
                 }
             }
