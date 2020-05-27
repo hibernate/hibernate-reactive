@@ -39,7 +39,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-final class ReactiveServiceInitiators {
+public final class ReactiveServiceInitiators {
 
     private ReactiveServiceInitiators() {
     }
@@ -48,6 +48,8 @@ final class ReactiveServiceInitiators {
 
     private static List<StandardServiceInitiator> buildInitialServiceInitiatorList() {
         final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
+
+        serviceInitiators.add( ReactiveSessionFactoryBuilderInitiator.INSTANCE );
 
         serviceInitiators.add( BytecodeProviderInitiator.INSTANCE );
         serviceInitiators.add( ProxyFactoryFactoryInitiator.INSTANCE );

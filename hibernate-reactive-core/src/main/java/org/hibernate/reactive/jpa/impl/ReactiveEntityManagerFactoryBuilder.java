@@ -5,12 +5,18 @@
  */
 package org.hibernate.reactive.jpa.impl;
 
+import org.hibernate.boot.internal.MetadataImpl;
+import org.hibernate.boot.internal.SessionFactoryBuilderImpl;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.reactive.boot.impl.ReactiveServiceRegistryBuilder;
+import org.hibernate.reactive.boot.ReactiveServiceRegistryBuilder;
+import org.hibernate.reactive.boot.impl.ReactiveSessionFactoryBuilder;
 
+import javax.persistence.EntityManagerFactory;
 import java.util.Map;
 
 /**
@@ -24,9 +30,28 @@ public final class ReactiveEntityManagerFactoryBuilder extends EntityManagerFact
         super( persistenceUnitDescriptor, integration );
     }
 
+    //Overridden so to use a customized serviceregistry: see ReactiveServiceRegistryBuilder
     @Override
     protected StandardServiceRegistryBuilder getStandardServiceRegistryBuilder(BootstrapServiceRegistry bsr) {
         return ReactiveServiceRegistryBuilder.forJpa( bsr );
+    }
+
+    //Overridden to so provide a custom SessionFactoryBuilder; also, we want to avoid loading random
+    //SessionFactoryBuilder implementations that might be found on the classpath.
+    @Override
+    public EntityManagerFactory build() {
+        final MetadataImpl metadata = (MetadataImpl) metadata();
+        final StandardServiceRegistry standardServiceRegistry = getStandardServiceRegistry();
+        final SessionFactoryBuilderImpl defaultBuilder = new SessionFactoryBuilderImpl( metadata, metadata.getBootstrapContext() );
+        final SessionFactoryBuilderImplementor reactiveSessionFactoryBuilder = new ReactiveSessionFactoryBuilder( metadata, defaultBuilder );
+        populateSfBuilder( reactiveSessionFactoryBuilder, standardServiceRegistry );
+
+        try {
+            return reactiveSessionFactoryBuilder.build();
+        }
+        catch (Exception e) {
+            throw persistenceException( "Unable to build Hibernate SessionFactory", e );
+        }
     }
 
 }
