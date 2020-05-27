@@ -61,15 +61,23 @@ jobs:
         java-version: 1.8
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
-    - name: Create maven package
-      run: ./gradlew assemble publishToMavenLocal
     - name: Detect the version of Hibernate Reactive
       id: detect-version
       run: |
         ./gradlew hibernate-reactive-core:properties | grep '^version:' | sed -E 's/version: (.*)/::set-output name=version::\1/'
-    - name: Publish to JBoss Nexus (SNAPSHOT only, push only, PR excluded)
+    - name: Generate a unique version
+      id: generate-unique-version
       env:
-        ORG_GRADLE_PROJECT_jbossNexusUser: ${{ secrets.jbossNexusUser }}
-        ORG_GRADLE_PROJECT_jbossNexusPassword: ${{ secrets.jbossNexusPassword }}
-      if: endsWith( steps.detect-version.outputs.version, '-SNAPSHOT' ) && github.event_name == 'push' && env.ORG_GRADLE_PROJECT_jbossNexusUser
+        UNIQUE_VERSION: ${{ format( '{0}-{1}', steps.detect-version.outputs.version, github.sha ) }}
+      run: echo "::set-output name=version::$UNIQUE_VERSION"
+    - name: Create maven package
+      env:
+        ORG_GRADLE_PROJECT_projectVersion: ${{ steps.generate-unique-version.outputs.version }}
+      run: ./gradlew assemble publishToMavenLocal
+    - name: Publish to GitHub Packages (SNAPSHOT only, push only, PR excluded)
+      env:
+        ORG_GRADLE_PROJECT_projectVersion: ${{ steps.generate-unique-version.outputs.version }}
+        ORG_GRADLE_PROJECT_githubUser: ${{ github.actor }}
+        ORG_GRADLE_PROJECT_githubToken: ${{ github.token }}
+      if: endsWith( steps.detect-version.outputs.version, '-SNAPSHOT' ) && github.event_name == 'push'
       run: ./gradlew publish

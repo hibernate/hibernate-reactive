@@ -3,7 +3,7 @@ apply plugin: 'nu.studer.credentials'
 apply plugin: 'com.jfrog.bintray'
 
 // To publish snapshots:
-//  ./gradlew publish -PjbossNexusUser="<YOUR USERNAME>" -PjbossNexusPassword="<YOUR PASSWORD>"
+//  ./gradlew publish -PgithubUser="<YOUR USERNAME>" -PgithubToken="<YOUR TOKEN>"
 // To release:
 //  1. Update the version, changelog, etc.
 //  2. Commit.
@@ -19,11 +19,11 @@ ext {
     // or stored locally using the gradle-credentials-plugin.
     // See below for the name of project properties.
     // See https://github.com/etiennestuder/gradle-credentials-plugin to store credentials locally.
-    if (!project.hasProperty('jbossNexusUser')) {
-        jbossNexusUser = credentials.jbossNexusUser
+    if (!project.hasProperty('githubUser')) {
+        githubUser = credentials.githubUser
     }
-    if (!project.hasProperty('jbossNexusPassword')) {
-        jbossNexusPassword = credentials.jbossNexusPassword
+    if (!project.hasProperty('githubToken')) {
+        githubToken = credentials.githubToken
     }
     if (!project.hasProperty('bintrayUser')) {
         bintrayUser = credentials.bintrayUser
@@ -70,11 +70,11 @@ publishing {
     repositories {
         mavenLocal()
         maven {
-            name 'jboss-snapshots-repository'
-            url 'https://repository.jboss.org/nexus/content/repositories/snapshots'
+            name 'github-packages-repository'
+            url 'https://maven.pkg.github.com/hibernate/hibernate-reactive'
             credentials {
-                username project.jbossNexusUser
-                password project.jbossNexusPassword
+                username project.githubUser
+                password project.githubToken
             }
         }
     }
