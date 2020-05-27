@@ -62,12 +62,14 @@ jobs:
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
     - name: Create maven package
-      run: ./gradlew assemble publishToMavenLocal 
-
-    # The USERNAME and TOKEN need to correspond to the credentials environment variables used in
-    # the publishing section of your build.gradle
-    #- name: Publish to GitHub Packages
-    #  run: gradle publish
-    #  env:
-    #    USERNAME: ${{ github.actor }}
-    #    TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: ./gradlew assemble publishToMavenLocal
+    - name: Detect the version of Hibernate Reactive
+      id: detect-version
+      run: |
+        ./gradlew hibernate-reactive-core:properties | grep '^version:' | sed -E 's/version: (.*)/::set-output name=version::\1/'
+    - name: Publish to JBoss Nexus (SNAPSHOT only, push only, PR excluded)
+      env:
+        ORG_GRADLE_PROJECT_jbossNexusUser: ${{ secrets.jbossNexusUser }}
+        ORG_GRADLE_PROJECT_jbossNexusPassword: ${{ secrets.jbossNexusPassword }}
+      if: endsWith( steps.detect-version.outputs.version, '-SNAPSHOT' ) && github.event_name == 'push' && env.ORG_GRADLE_PROJECT_jbossNexusUser
+      run: ./gradlew publish
