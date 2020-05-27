@@ -159,6 +159,12 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 	}
 
 	@Override
+	public ReactiveQueryImpl<R> setParameter(String name, Object value) {
+		super.setParameter(name, value);
+		return this;
+	}
+
+	@Override
 	public ReactiveQueryImpl<R> setMaxResults(int maxResults) {
 		super.setMaxResults(maxResults);
 		return this;

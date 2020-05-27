@@ -31,6 +31,12 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 	}
 
 	@Override
+	public Stage.Query<R> setParameter(String name, Object var2) {
+		delegate.setParameter( name, var2 );
+		return this;
+	}
+
+	@Override
 	public Stage.Query<R> setMaxResults(int maxResults) {
 		delegate.setMaxResults( maxResults );
 		return this;
