@@ -38,7 +38,7 @@ publishing {
         mavenLocal()
     }
     publications {
-        mavenJava(MavenPublication) {
+        publishedArtifacts(MavenPublication) {
             groupId = project.group
             version = project.version
             from components.java
