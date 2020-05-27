@@ -23,24 +23,15 @@ subprojects {
     ext.publishScript = rootProject.rootDir.absolutePath + '/publish.gradle'
 }
 
-// Versions which need to be aligned across modules;
-// this also allows to override the build from a parameter,
-// which can be useful to monitor compatibility for upcoming versions on CI:
+// Versions which need to be aligned across modules; this also
+// allows overriding the build using a parameter, which can be
+// useful to monitor compatibility for upcoming versions on CI:
+//
 // ./gradlew clean build -PhibernateOrmVersion=5.4.9-SNAPSHOT
+
 ext {
     hibernateOrmVersion = '5.4.16.Final'
 }
-
-//allprojects {
-//    apply plugin: 'checkstyle'
-//
-//    checkstyle {
-//        toolVersion "8.24"
-////    sourceSets = [ project.sourceSets.main ]
-//        configFile = rootProject.file( 'shared/config/checkstyle/checkstyle.xml' )
-//        showViolations = true
-//    }
-//}
 
 
 
