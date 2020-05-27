@@ -5,12 +5,14 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
+import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.Session;
 import org.hibernate.StaleObjectStateException;
+import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeDescriptor;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.engine.OptimisticLockStyle;
@@ -18,6 +20,8 @@ import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.PersistentAttributeInterceptable;
+import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -40,6 +44,7 @@ import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.type.Type;
 import org.jboss.logging.Logger;
 
+import javax.persistence.metamodel.Attribute;
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -47,6 +52,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
@@ -918,4 +924,147 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			throw new JDBCException( "error while binding parameters", e );
 		}
 	}
+
+	default boolean hasUnenhancedProxy() {
+		// skip proxy instantiation if entity is bytecode enhanced
+		return getEntityMetamodel().isLazy()
+				&& !( getEntityMetamodel().getBytecodeEnhancementMetadata().isEnhancedForLazyLoading()
+					&& getFactory().getSessionFactoryOptions().isEnhancementAsProxyEnabled() );
+	}
+
+	Object initializeLazyProperty(String fieldName, Object entity, SharedSessionContractImplementor session);
+
+	@SuppressWarnings("unchecked")
+	default <E,T> CompletionStage<T> reactiveInitializeLazyProperty(Attribute<E,T> field, E entity,
+																	SharedSessionContractImplementor session) {
+		Object result = initializeLazyProperty( field.getName(), entity, session );
+		if (result instanceof CompletionStage) {
+			return (CompletionStage<T>) result;
+		}
+		else {
+			return CompletionStages.nullFuture();
+		}
+	}
+
+	default CompletionStage<?> reactiveInitializeLazyPropertiesFromDatastore(
+			final String fieldName,
+			final Object entity,
+			final SharedSessionContractImplementor session,
+			final Serializable id,
+			final EntityEntry entry) {
+
+		if ( !hasLazyProperties() ) {
+			throw new AssertionFailure( "no lazy properties" );
+		}
+
+		final PersistentAttributeInterceptor interceptor = ( (PersistentAttributeInterceptable) entity ).$$_hibernate_getInterceptor();
+		assert interceptor != null : "Expecting bytecode interceptor to be non-null";
+
+		log.tracef( "Initializing lazy properties from datastore (triggered for `%s`)", fieldName );
+
+		final String fetchGroup = getEntityMetamodel().getBytecodeEnhancementMetadata()
+				.getLazyAttributesMetadata()
+				.getFetchGroupName( fieldName );
+		final List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors = getEntityMetamodel().getBytecodeEnhancementMetadata()
+				.getLazyAttributesMetadata()
+				.getFetchGroupAttributeDescriptors( fetchGroup );
+
+		@SuppressWarnings("deprecation")
+		final Set<String> initializedLazyAttributeNames = interceptor.getInitializedLazyAttributeNames();
+
+		Object[] params = PreparedStatementAdaptor.bind( statement -> {
+			getIdentifierType().nullSafeSet( statement, id, 1, session );
+		} );
+
+		String lazySelect = getSQLLazySelectString( fetchGroup );
+
+		// null sql means that the only lazy properties
+		// are shared PK one-to-one associations which are
+		// handled differently in the Type#nullSafeGet code...
+		if ( lazySelect == null ) {
+			return CompletionStages.completedFuture( initLazyProperty(
+					fieldName, entity,
+					session, entry,
+					interceptor,
+					fetchGroupAttributeDescriptors,
+					initializedLazyAttributeNames,
+					null
+			) );
+		}
+
+		return ((ReactiveSession) session).getReactiveConnection()
+				.selectJdbc( lazySelect, params )
+				.thenApply( resultSet -> {
+					try {
+						resultSet.next();
+						return initLazyProperty(
+								fieldName, entity,
+								session, entry,
+								interceptor,
+								fetchGroupAttributeDescriptors,
+								initializedLazyAttributeNames,
+								resultSet
+						);
+					}
+					catch (SQLException sqle) {
+						//can't occur
+						throw new JDBCException("error initializing lazy property", sqle);
+					}
+				} );
+	}
+
+	default Object initLazyProperty(String fieldName, Object entity, SharedSessionContractImplementor session, EntityEntry entry, PersistentAttributeInterceptor interceptor, List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors, Set<String> initializedLazyAttributeNames, ResultSet rs)  {
+		for ( LazyAttributeDescriptor fetchGroupAttributeDescriptor: fetchGroupAttributeDescriptors ) {
+			final boolean previousInitialized =
+					initializedLazyAttributeNames.contains( fetchGroupAttributeDescriptor.getName() );
+
+			if ( previousInitialized ) {
+				continue;
+			}
+
+			final Object selectedValue;
+			try {
+				selectedValue = fetchGroupAttributeDescriptor.getType().nullSafeGet(
+						rs,
+						getLazyPropertyColumnAliases()[ fetchGroupAttributeDescriptor.getLazyIndex() ],
+						session,
+						entity
+				);
+			}
+			catch (SQLException sqle) {
+				//can't occur
+				throw new JDBCException("error initializing lazy property", sqle);
+			}
+
+			final boolean set = initializeLazyProperty(
+					fieldName,
+					entity,
+					session,
+					entry,
+					fetchGroupAttributeDescriptor.getLazyIndex(),
+					selectedValue
+			);
+
+			if ( set ) {
+				interceptor.attributeInitialized( fetchGroupAttributeDescriptor.getName() );
+			}
+
+			log.trace( "Done initializing lazy properties" );
+
+			return selectedValue;
+		}
+
+		return null;
+	}
+
+	boolean initializeLazyProperty(String fieldName,
+								   Object entity,
+								   SharedSessionContractImplementor session,
+								   EntityEntry entry,
+								   int lazyIndex,
+								   Object selectedValue);
+
+	String[][] getLazyPropertyColumnAliases();
+
+	String getSQLLazySelectString(String fetchGroup);
 }

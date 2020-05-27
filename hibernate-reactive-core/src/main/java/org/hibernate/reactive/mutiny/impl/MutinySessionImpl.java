@@ -23,6 +23,7 @@ import javax.persistence.EntityGraph;
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
+import javax.persistence.metamodel.Attribute;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -54,6 +55,11 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public <T> Uni<T> fetch(T association) {
 		return Uni.createFrom().completionStage( delegate.reactiveFetch(association, false) );
+	}
+
+	@Override
+	public <E, T> Uni<T> fetch(E entity, Attribute<E, T> field) {
+		return Uni.createFrom().completionStage( delegate.reactiveFetch(entity, field) );
 	}
 
 	@Override

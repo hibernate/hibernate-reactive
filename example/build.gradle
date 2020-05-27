@@ -18,3 +18,25 @@ dependencies {
     runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
 }
 
+// All of the remaining configuration is only necessary to enable
+// the Hibernate bytecode enhancer and field-level lazy fetching.
+// (This is very optional!)
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.hibernate:hibernate-gradle-plugin:${hibernateOrmVersion}"
+    }
+}
+
+apply plugin: 'org.hibernate.orm'
+
+hibernate {
+    enhance {
+        enableLazyInitialization = true
+        enableDirtyTracking = true
+        enableAssociationManagement = false
+    }
+}

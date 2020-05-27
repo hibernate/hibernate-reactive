@@ -5,9 +5,6 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -42,6 +39,9 @@ import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.EmbeddedComponentType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
+
+import java.io.Serializable;
+import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.session.impl.SessionUtil.throwEntityNotFound;
@@ -570,15 +570,16 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			);
 		}
 
-		CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry = CacheEntityLoaderHelper.INSTANCE.loadFromSessionCache(
-				event,
-				keyToLoad,
-				options
-		);
+		CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry =
+				CacheEntityLoaderHelper.INSTANCE.loadFromSessionCache(
+						event,
+						keyToLoad,
+						options
+				);
 		Object entity = persistenceContextEntry.getEntity();
 		if ( entity != null ) {
 			Object managed = persistenceContextEntry.isManaged() ? entity : null;
-			return  CompletionStages.completedFuture( managed );
+			return CompletionStages.completedFuture( managed );
 		}
 
 		entity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache( event, persister, keyToLoad );

@@ -12,6 +12,7 @@ import org.hibernate.MappingException;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.CascadingActions;
+import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jdbc.Expectation;
@@ -27,12 +28,14 @@ import org.hibernate.reactive.loader.entity.impl.ReactiveCascadeEntityLoader;
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 /**
  * An {@link ReactiveEntityPersister} backed by {@link SingleTableEntityPersister}
  *  * amd {@link ReactiveAbstractEntityPersister}.
  */
-public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersister implements ReactiveAbstractEntityPersister {
+public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersister
+		implements ReactiveAbstractEntityPersister {
 
 	public ReactiveSingleTableEntityPersister(
 			PersistentClass persistentClass,
@@ -40,6 +43,11 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 			NaturalIdDataAccess naturalIdRegionAccessStrategy,
 			PersisterCreationContext creationContext) throws HibernateException {
 		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext );
+	}
+
+	@Override
+	public boolean hasProxy() {
+		return hasUnenhancedProxy();
 	}
 
 	@Override
@@ -182,5 +190,26 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	public boolean check(int rows, Serializable id, int tableNumber,
 						 Expectation expectation, PreparedStatement statement) throws HibernateException {
 		return super.check(rows, id, tableNumber, expectation, statement);
+	}
+
+	@Override
+	public boolean initializeLazyProperty(String fieldName, Object entity,
+										  SharedSessionContractImplementor session,
+										  EntityEntry entry,
+										  int lazyIndex,
+										  Object selectedValue) {
+		return super.initializeLazyProperty(fieldName, entity, session, entry, lazyIndex, selectedValue);
+	}
+
+	@Override
+	public CompletionStage<?> initializeLazyPropertiesFromDatastore(String fieldName, Object entity,
+																	   SharedSessionContractImplementor session,
+																	   Serializable id, EntityEntry entry) {
+		return reactiveInitializeLazyPropertiesFromDatastore(fieldName, entity, session, id, entry);
+	}
+
+	@Override
+	public String[][] getLazyPropertyColumnAliases() {
+		return super.getLazyPropertyColumnAliases();
 	}
 }

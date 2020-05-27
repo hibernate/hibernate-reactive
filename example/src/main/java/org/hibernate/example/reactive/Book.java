@@ -1,5 +1,6 @@
 package org.hibernate.example.reactive;
 
+import javax.persistence.Basic;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -17,7 +18,12 @@ class Book {
 	Integer id;
 
 	@NotNull @Size(min=13, max=13)
+	@Basic(fetch = LAZY)
 	String isbn;
+
+	public String getIsbn() {
+		return isbn;
+	}
 
 	@NotNull @Size(max=100)
 	String title;

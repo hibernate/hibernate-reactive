@@ -24,6 +24,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
+import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.Metamodel;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -429,7 +430,7 @@ public interface Stage {
 		 * Asynchronously fetch an association that's configured for lazy loading.
 		 *
 		 * <pre>
-		 * {@code session.fetch(author.getBook()).thenAccept(book -> print(book.getTitle()));}
+		 * {@code session.fetch(author.getBook()).thenAccept(book -> print(book.getTitle()))}
 		 * </pre>
 		 *
 		 * @param association a lazy-loaded association
@@ -440,6 +441,16 @@ public interface Stage {
 		 * @see org.hibernate.Hibernate#initialize(Object)
 		 */
 		<T> CompletionStage<T> fetch(T association);
+
+		/**
+		 * Fetch a lazy property of the given entity, identified
+		 * by a JPA {@link Attribute attribute metamodel}.
+		 *
+		 * <pre>
+		 * {@code session.fetch(book, Book_.isbn).thenAccept(isbn -> print(isbn))}
+		 * </pre>
+		 */
+		<E,T> CompletionStage<T> fetch(E entity, Attribute<E,T> field);
 
 		/**
 		 * Asynchronously fetch an association that's configured for lazy loading,
