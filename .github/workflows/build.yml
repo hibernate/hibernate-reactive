@@ -8,8 +8,8 @@ on:
     branches: master
 
 jobs:
-  test_postgresql:
-    name: Test with PostgreSQL
+  test_dbs:
+    name: Test available databases
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -20,36 +20,8 @@ jobs:
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
     - name: Build and Test with PostgreSQL
-      run: ./gradlew build -Pdocker -Pdb=pg
+      run: ./gradlew testAll -Pdocker
 
-  test_mysql:      
-    name: Test with MySQL
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
-      with:
-        java-version: 1.8
-        server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
-        settings-path: ${{ github.workspace }} # location for the settings.xml file
-    - name: Build and Test with MySQL
-      run: ./gradlew build -Pdocker -Pdb=mysql
-
-  test_db2:      
-    name: Test with DB2
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
-      with:
-        java-version: 1.8
-        server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
-        settings-path: ${{ github.workspace }} # location for the settings.xml file
-    - name: Build and Test with DB2
-      run: ./gradlew build -Pdocker -Pdb=db2
-      
   build_package:      
     name: Build and create maven package
     runs-on: ubuntu-latest
