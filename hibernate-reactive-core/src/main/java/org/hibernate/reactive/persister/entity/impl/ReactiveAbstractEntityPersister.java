@@ -524,8 +524,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			}
 		}
 
-		try {
-			int index = 1; // starting index
+//		try {
+		int index = 1; // starting index
 //			if ( useBatch ) {
 //				update = session
 //						.getJdbcCoordinator()
@@ -533,73 +533,80 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 //						.getBatchStatement( sql, callable );
 //			}
 //			else {
-			final PreparedStatementAdaptor update = new PreparedStatementAdaptor();
+		final PreparedStatementAdaptor update = new PreparedStatementAdaptor();
 //			}
 
-			try {
-				index += expectation.prepare( update );
+		try {
+			index += expectation.prepare( update );
 
-				//Now write the values of fields onto the prepared statement
-				index = delegate().dehydrate(
-						id,
-						fields,
-						rowId,
-						includeProperty,
-						delegate().getPropertyColumnUpdateable(),
-						j,
-						update,
-						session,
-						index,
-						true
-				);
+			//Now write the values of fields onto the prepared statement
+			index = delegate().dehydrate(
+					id,
+					fields,
+					rowId,
+					includeProperty,
+					delegate().getPropertyColumnUpdateable(),
+					j,
+					update,
+					session,
+					index,
+					true
+			);
 
-				// Write any appropriate versioning conditional parameters
-				if ( useVersion && delegate().getEntityMetamodel().getOptimisticLockStyle() == OptimisticLockStyle.VERSION ) {
-					if ( delegate().checkVersion( includeProperty ) ) {
-						delegate().getVersionType().nullSafeSet( update, oldVersion, index, session );
+			// Write any appropriate versioning conditional parameters
+			if ( useVersion && delegate().getEntityMetamodel().getOptimisticLockStyle() == OptimisticLockStyle.VERSION ) {
+				if ( delegate().checkVersion( includeProperty ) ) {
+					delegate().getVersionType().nullSafeSet( update, oldVersion, index, session );
+				}
+			}
+			else if ( isAllOrDirtyOptimisticLocking() && oldFields != null ) {
+				boolean[] versionability = delegate().getPropertyVersionability(); //TODO: is this really necessary????
+				boolean[] includeOldField = delegate().getEntityMetamodel().getOptimisticLockStyle() == OptimisticLockStyle.ALL
+						? delegate().getPropertyUpdateability()
+						: includeProperty;
+				Type[] types = delegate().getPropertyTypes();
+				for (int i = 0; i < delegate().getEntityMetamodel().getPropertySpan(); i++ ) {
+					boolean include = includeOldField[i] &&
+							delegate().isPropertyOfTable( i, j ) &&
+							versionability[i]; //TODO: is this really necessary????
+					if ( include ) {
+						boolean[] settable = types[i].toColumnNullness( oldFields[i], delegate().getFactory() );
+						types[i].nullSafeSet(
+								update,
+								oldFields[i],
+								index,
+								settable,
+								session
+						);
+						index += ArrayHelper.countTrue( settable );
 					}
 				}
-				else if ( isAllOrDirtyOptimisticLocking() && oldFields != null ) {
-					boolean[] versionability = delegate().getPropertyVersionability(); //TODO: is this really necessary????
-					boolean[] includeOldField = delegate().getEntityMetamodel().getOptimisticLockStyle() == OptimisticLockStyle.ALL
-							? delegate().getPropertyUpdateability()
-							: includeProperty;
-					Type[] types = delegate().getPropertyTypes();
-					for (int i = 0; i < delegate().getEntityMetamodel().getPropertySpan(); i++ ) {
-						boolean include = includeOldField[i] &&
-								delegate().isPropertyOfTable( i, j ) &&
-								versionability[i]; //TODO: is this really necessary????
-						if ( include ) {
-							boolean[] settable = types[i].toColumnNullness( oldFields[i], delegate().getFactory() );
-							types[i].nullSafeSet(
-									update,
-									oldFields[i],
-									index,
-									settable,
-									session
-							);
-							index += ArrayHelper.countTrue( settable );
-						}
-					}
-				}
+			}
+		}
+		catch (SQLException e) {
+			//can't actually occur
+			throw new JDBCException( "error preparing statement", e );
+		}
 
 //				if ( useBatch ) {
 //					session.getJdbcCoordinator().getBatch( updateBatchKey ).addToBatch();
 //					return true;
 //				}
 //				else {
-				return getReactiveConnection(session)
-						.update( sql, update.getParametersAsArray() )
-						.thenApply( count -> {
-							try {
-								expectation.verifyOutcome(count, update, -1);
-							}
-							catch (SQLException e) {
-								//can't actually occur!
-								throw new JDBCException( "error while verifying result count", e );
-							}
-							return count > 0;
-						});
+
+		return getReactiveConnection(session)
+				.update( sql, update.getParametersAsArray() )
+				.thenApply( count -> {
+					try {
+						expectation.verifyOutcome(count, update, -1);
+					}
+					catch (SQLException e) {
+						//can't actually occur!
+						throw new JDBCException( "error while verifying result count", e );
+					}
+					return count > 0;
+				});
+
 //					return check(
 //							session.getJdbcCoordinator().getResultSetReturn().executeUpdate( update ),
 //							id,
@@ -608,22 +615,13 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 //							update
 //					);
 //				}
-			}
-			finally {
+//		}
+//		finally {
 //				if ( !useBatch ) {
 //					session.getJdbcCoordinator().getResourceRegistry().release( update );
 //					session.getJdbcCoordinator().afterStatementExecution();
 //				}
-			}
-
-		}
-		catch (SQLException e) {
-			throw delegate().getFactory().getSQLExceptionHelper().convert(
-					e,
-					"could not update: " + infoString(delegate(), id, delegate().getFactory() ),
-					sql
-			);
-		}
+//		}
 	}
 
 	default CompletionStage<?> updateReactive(
@@ -892,15 +890,12 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				throw new StaleObjectStateException( getEntityName(), id );
 			}
 		} ).handle( (r ,e) -> {
-			if (e instanceof SQLException) {
-				throw session.getJdbcServices().getSqlExceptionHelper().convert(
-						(SQLException) e,
-						"could not lock: "
-								+ infoString( this, id, session.getFactory() ),
-						sql
-				);
-			}
-			return CompletionStages.returnOrRethrow(e, r);
+			CompletionStages.convertSqlException( e, getFactory(),
+					() -> "could not lock: "
+							+ infoString( this, id, getFactory() ),
+					sql
+			);
+			return CompletionStages.returnOrRethrow( e, r );
 		} );
 	}
 
@@ -1012,14 +1007,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 						}
 					}
 					catch (SQLException e) {
-						throw session.getJdbcServices()
-								.getSqlExceptionHelper()
-								.convert(
-										e,
-										"could not retrieve snapshot: "
-												+ infoString( this, id, getFactory() ),
-										sql
-								);
+						//can't actually occur!
+						throw new JDBCException( "error while binding parameters", e );
 					}
 				} );
 	}

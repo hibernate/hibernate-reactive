@@ -20,7 +20,6 @@ import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
@@ -49,20 +48,15 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters, true, forcedResultTransformer )
 				.handle( (list, e ) -> {
-					if ( e instanceof SQLException ) {
-						throw session.getSessionFactory().getJdbcServices().getSqlExceptionHelper()
-								.convert( (SQLException) e, "could not execute query", sql );
-					}
-					else if ( e != null ) {
-						CompletionStages.rethrow( e );
-					}
+					CompletionStages.convertSqlException( e, session, () -> "could not execute query", sql );
 
-					if ( stats ) {
+					if ( e ==null && stats ) {
 						final long endTime = System.nanoTime();
 						final long milliseconds = TimeUnit.MILLISECONDS.convert( endTime - startTime, TimeUnit.NANOSECONDS );
 						statistics.queryExecuted( queryIdentifier, list.size(), milliseconds );
 					}
-					return list;
+
+					return CompletionStages.returnOrRethrow(e, list );
 				} );
 	}
 

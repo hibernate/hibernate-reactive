@@ -80,23 +80,25 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		getProducer().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
 
 		beforeQuery();
-		return doExecuteReactiveUpdate()
-				.handle( (count, e) -> {
-					afterQuery();
-					if ( e instanceof QueryExecutionRequestException ) {
-						CompletionStages.rethrow( new IllegalStateException( e ) );
-					}
-					if ( e instanceof TypeMismatchException ) {
-						CompletionStages.rethrow( new IllegalStateException( e ) );
-					}
-					if ( e instanceof HibernateException ) {
-						CompletionStages.rethrow( getExceptionConverter().convert( (HibernateException) e ) );
-					}
-					CompletionStages.rethrowIfNotNull( e );
-					return count;
-				} );
+		return doExecuteReactiveUpdate().handle(this::afterQuery);
 	}
 
+	//copy pasted between here and ReactiveNativeQueryImpl
+	private Integer afterQuery(Integer count, Throwable e) {
+		afterQuery();
+		if ( e instanceof QueryExecutionRequestException) {
+			CompletionStages.rethrow( new IllegalStateException( e ) );
+		}
+		if ( e instanceof TypeMismatchException) {
+			CompletionStages.rethrow( new IllegalStateException( e ) );
+		}
+		if ( e instanceof HibernateException) {
+			CompletionStages.rethrow( getExceptionConverter().convert( (HibernateException) e ) );
+		}
+		return CompletionStages.returnOrRethrow( e, count );
+	}
+
+	//copy pasted between here and ReactiveNativeQueryImpl
 	private CompletionStage<Integer> doExecuteReactiveUpdate() {
 		final String expandedQuery = getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() );
 		return reactiveProducer().executeReactiveUpdate( expandedQuery, makeQueryParametersForExecution( expandedQuery ) );

@@ -6,7 +6,6 @@
 package org.hibernate.reactive.loader.entity.impl;
 
 import org.hibernate.HibernateException;
-import org.hibernate.JDBCException;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.QueryParameters;
@@ -116,28 +115,19 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 		return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, false )
 			.handle( (list, e) -> {
 				LOG.debug( "Done entity load" );
-				if (e instanceof JDBCException) {
-					final Loadable[] persisters = getEntityPersisters();
-					throw getFactory()
-							.getJdbcServices()
-							.getSqlExceptionHelper()
-							.convert(
-									((JDBCException) e).getSQLException(),
-									"could not load an entity: " +
-											infoString(
-													persisters[persisters.length - 1],
-													id,
-													identifierType,
-													getFactory()
-											),
-									getSQLString()
-							);
-				}
-				else if (e !=null ) {
-					CompletionStages.rethrow(e);
-				}
-				return list;
-			});
+				final Loadable[] persisters = getEntityPersisters();
+				CompletionStages.convertSqlException( e, getFactory(),
+						() -> "could not load an entity: " +
+								infoString(
+										persisters[persisters.length - 1],
+										id,
+										identifierType,
+										getFactory()
+								),
+						getSQLString()
+				);
+				return CompletionStages.returnOrRethrow( e, list );
+			} );
 	}
 
 	@Override

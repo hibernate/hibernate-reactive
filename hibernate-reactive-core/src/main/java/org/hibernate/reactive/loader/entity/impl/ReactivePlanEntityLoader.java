@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.loader.entity.impl;
 
-import org.hibernate.JDBCException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
@@ -20,7 +19,6 @@ import org.hibernate.loader.plan.exec.query.internal.QueryBuildingParametersImpl
 import org.hibernate.loader.plan.exec.query.spi.QueryBuildingParameters;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.entity.OuterJoinLoadable;
-import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.loader.ReactiveLoader;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
 import org.hibernate.reactive.sql.impl.Parameters;
@@ -33,6 +31,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.pretty.MessageHelper.infoString;
 
 /**
  * An entity loader that respects the JPA {@link javax.persistence.EntityGraph}
@@ -180,21 +180,13 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, (SessionImplementor) session, parameters )
 				.thenApply( results -> extractEntityResult( results, id ) )
 				.handle( (list, e) -> {
-					if (e instanceof JDBCException) {
-						throw session.getJdbcServices().getSqlExceptionHelper().convert(
-								((JDBCException) e).getSQLException(),
-								"could not load an entity: " + MessageHelper.infoString(
-										persister,
-										id,
-										persister.getIdentifierType(),
-										getFactory()
-								),
-								getStaticLoadQuery().getSqlStatement()
-						);
-					}
-
-					return CompletionStages.returnOrRethrow(e, list);
-				});
+					CompletionStages.convertSqlException( e, getFactory(),
+							() -> "could not load an entity: "
+									+ infoString( persister, id, persister.getIdentifierType(), getFactory() ),
+							getStaticLoadQuery().getSqlStatement()
+					);
+					return CompletionStages.returnOrRethrow( e, list) ;
+				} );
 	}
 
 	private QueryParameters getQueryParameters(Serializable id, Object optionalObject, LockOptions lockOptions, Boolean readOnly) {

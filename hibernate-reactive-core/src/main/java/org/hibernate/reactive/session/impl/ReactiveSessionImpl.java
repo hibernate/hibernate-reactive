@@ -290,10 +290,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					else if ( e instanceof RuntimeException ) {
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
-					else if ( e != null ) {
-						return CompletionStages.rethrow( e );
-					}
-					return v;
+					return CompletionStages.returnNullorRethrow( e );
 				} );
 	}
 
@@ -538,10 +535,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					else if (e instanceof RuntimeException) {
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
-					else if (e != null) {
-						return CompletionStages.rethrow(e);
-					}
-					return v;
+					return CompletionStages.returnNullorRethrow( e );
 				});
 	}
 
@@ -559,10 +553,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					else if (e instanceof RuntimeException) {
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
-					else if (e != null){
-						return CompletionStages.rethrow(e);
-					}
-					return v;
+					return CompletionStages.returnNullorRethrow( e );
 				});
 	}
 
@@ -629,10 +620,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						//including HibernateException
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
-					else if (e != null) {
-						return CompletionStages.rethrow(e);
-					}
-					return v;
+					return CompletionStages.returnNullorRethrow( e );
 				});
 	}
 
@@ -654,10 +642,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						//including HibernateException
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
-					else if (e != null) {
-						return CompletionStages.rethrow(e);
-					}
-					return v;
+					return CompletionStages.returnNullorRethrow( e );
 				});
 	}
 
@@ -694,10 +679,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						//including HibernateException
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
-					else if (e !=null) {
-						return CompletionStages.rethrow(e);
-					}
-					return (T) event.getResult();
+					return CompletionStages.returnOrRethrow( e, (T) event.getResult() );
 				});
 	}
 
@@ -719,10 +701,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						//including HibernateException
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
-					else if (e !=null) {
-						return CompletionStages.rethrow(e);
-					}
-					return v;
+					return CompletionStages.returnNullorRethrow( e );
 				});
 
 	}
@@ -756,10 +735,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					if ( e instanceof RuntimeException ) {
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
-					else if (e != null) {
-						return CompletionStages.rethrow( e );
-					}
-					return v;
+					return CompletionStages.returnNullorRethrow( e );
 				} );
 	}
 
@@ -804,10 +780,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						//including HibernateException
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
-					else if (e != null) {
-						return CompletionStages.rethrow(e);
-					}
-					return v;
+					return CompletionStages.returnNullorRethrow( e );
 				});
 	}
 
@@ -822,10 +795,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					if (e instanceof RuntimeException) {
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
-					else if (e != null) {
-						return CompletionStages.rethrow(e);
-					}
-					return v;
+					return CompletionStages.returnNullorRethrow( e );
 				});
 	}
 
@@ -845,10 +815,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					if (e instanceof RuntimeException) {
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
-					else if (e != null) {
-						return CompletionStages.rethrow(e);
-					}
-					return v;
+					return CompletionStages.returnNullorRethrow( e );
 				});
 	}
 
