@@ -743,11 +743,11 @@ public interface Mutiny {
 	 * programmatic configuration of Hibernate using:
 	 *
 	 * <pre>
-	 * Configuration configuration = new ReactiveConfiguration();
+	 * Configuration configuration = new Configuration();
 	 * ...
 	 * Mutiny.SessionFactory sessionFactory =
 	 * 		configuration.buildSessionFactory(
-	 * 			new StandardServiceRegistryBuilder()
+	 * 			new ReactiveServiceRegistryBuilder()
 	 * 				.applySettings( configuration.getProperties() )
 	 * 				.build()
 	 * 		)

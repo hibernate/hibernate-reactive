@@ -744,11 +744,11 @@ public interface Stage {
 	 * programmatic configuration of Hibernate using:
 	 *
 	 * <pre>
-	 * Configuration configuration = new ReactiveConfiguration();
+	 * Configuration configuration = new Configuration();
 	 * ...
 	 * Stage.SessionFactory sessionFactory =
 	 * 		configuration.buildSessionFactory(
-	 * 			new StandardServiceRegistryBuilder()
+	 * 			new ReactiveServiceRegistryBuilder()
 	 * 				.applySettings( configuration.getProperties() )
 	 * 				.build()
 	 * 		)

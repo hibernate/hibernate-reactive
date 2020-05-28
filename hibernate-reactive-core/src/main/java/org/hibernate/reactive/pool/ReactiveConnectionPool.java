@@ -6,6 +6,7 @@
 package org.hibernate.reactive.pool;
 
 import org.hibernate.Incubating;
+import org.hibernate.reactive.boot.ReactiveServiceRegistryBuilder;
 import org.hibernate.service.Service;
 
 import java.util.concurrent.CompletionStage;
@@ -18,10 +19,10 @@ import java.util.concurrent.CompletionStage;
  * with Hibernate Reactive by contributing a new service using a
  * {@link org.hibernate.boot.registry.StandardServiceInitiator}
  * or from code-based Hibernate configuration by calling
- * {@link org.hibernate.boot.registry.StandardServiceRegistryBuilder#addService}.
+ * {@link ReactiveServiceRegistryBuilder#addService}.
  *
  * <pre>
- * new StandardServiceRegistryBuilder()
+ * new ReactiveServiceRegistryBuilder()
  *     .applySettings( properties )
  *     .addService( ReactiveConnectionPool.class, new MyReactiveConnectionPool() )
  *     .build();

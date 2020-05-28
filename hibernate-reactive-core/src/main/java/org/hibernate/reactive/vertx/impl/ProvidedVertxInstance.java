@@ -6,6 +6,8 @@
 package org.hibernate.reactive.vertx.impl;
 
 import io.vertx.core.Vertx;
+
+import org.hibernate.reactive.boot.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.vertx.VertxInstance;
 
 import java.util.Objects;
@@ -15,11 +17,11 @@ import java.util.Objects;
  * to provide an instance of {@link Vertx} whose lifecyle is managed
  * externally to Hibernate Reactive. The {@code ProvidedVertxInstance}
  * must be registered with explicitly Hibernate by calling
- * {@link org.hibernate.boot.registry.StandardServiceRegistryBuilder#addService}.
+ * {@link ReactiveServiceRegistryBuilder#addService}.
  * Hibernate will destroy the {@code Vertx} instance on shutdown.
  *
  * <pre>
- * new StandardServiceRegistryBuilder()
+ * new ReactiveServiceRegistryBuilder()
  *     .applySettings( properties )
  *     .addService( VertxInstance.class, new ProvidedVertxInstance( vertx ) )
  *     .build();
