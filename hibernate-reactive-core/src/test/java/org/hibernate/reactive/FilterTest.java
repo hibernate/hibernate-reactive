@@ -7,10 +7,7 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.annotations.Filter;
-import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
-import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.junit.Test;
 
 import javax.persistence.*;
@@ -25,9 +22,6 @@ public class FilterTest extends BaseReactiveTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		if ( DatabaseConfiguration.dbType() != DBType.DB2 ) {
-			configuration.setProperty(AvailableSettings.USE_SQL_COMMENTS, "true" );
-		}
 		configuration.addPackage(this.getClass().getPackage().getName());
 		configuration.addAnnotatedClass(Node.class);
 		configuration.addAnnotatedClass(Element.class);
