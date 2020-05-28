@@ -45,7 +45,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 			  cleanDB()
 					  .whenComplete( (res, err) -> {
 						  // in case cleanDB() fails we
-						  // stll have to close the factory
+						  // still have to close the factory
 						  super.after( context );
 					  } )
 		);
