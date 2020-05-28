@@ -22,6 +22,7 @@ import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.jmx.internal.JmxServiceInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
+import org.hibernate.reactive.boot.impl.marker.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.boot.service.NoJdbcConnectionProviderInitiator;
 import org.hibernate.reactive.boot.service.NoJdbcEnvironmentInitiator;
 import org.hibernate.reactive.boot.service.NoJtaPlatformInitiator;
@@ -49,6 +50,9 @@ public final class ReactiveServiceInitiators {
 
     private static List<StandardServiceInitiator> buildInitialServiceInitiatorList() {
         final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
+
+        // Definitely exclusive to Hibernate Reactive, as it marks the registry as Reactive:
+        serviceInitiators.add( ReactiveMarkerServiceInitiator.INSTANCE );
 
         // Exclusive to Hibernate Reactive:
         serviceInitiators.add( VertxInstanceInitiator.INSTANCE );
