@@ -6,24 +6,22 @@
 package org.hibernate.reactive.session.impl;
 
 import org.hibernate.CacheMode;
-import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
-import org.hibernate.TypeMismatchException;
 import org.hibernate.engine.query.spi.sql.NativeSQLQueryReturn;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.hql.internal.QueryExecutionRequestException;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.internal.NativeQueryImpl;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 
-import javax.persistence.NoResultException;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.session.ReactiveQuery.convertQueryException;
+import static org.hibernate.reactive.session.ReactiveQuery.extractUniqueResult;
 
 /**
  *  Implementation of {@link ReactiveNativeQuery} by extension of
@@ -68,19 +66,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public CompletionStage<R> getReactiveSingleResult() {
-		return getReactiveResultList().thenApply( this::uniqueResult );
-	}
-
-	private R uniqueResult(List<R> list) {
-		try {
-			if ( list.size() == 0 ) {
-				throw new NoResultException( "No entity found for query" );
-			}
-			return uniqueElement( list );
-		}
-		catch (HibernateException e) {
-			throw getExceptionConverter().convert( e, getLockOptions() );
-		}
+		return getReactiveResultList().thenApply( list -> extractUniqueResult( list, this ) );
 	}
 
 	@Override
@@ -88,22 +74,9 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 		getProducer().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
 
 		beforeQuery();
-		return doExecuteReactiveUpdate().handle(this::afterQuery);
-	}
-
-	//copy pasted between here and ReactiveQueryImpl
-	private Integer afterQuery(Integer count, Throwable e) {
-		afterQuery();
-		if ( e instanceof QueryExecutionRequestException) {
-			CompletionStages.rethrow( new IllegalStateException( e ) );
-		}
-		if ( e instanceof TypeMismatchException) {
-			CompletionStages.rethrow( new IllegalStateException( e ) );
-		}
-		if ( e instanceof HibernateException) {
-			CompletionStages.rethrow( getExceptionConverter().convert( (HibernateException) e ) );
-		}
-		return CompletionStages.returnOrRethrow( e, count );
+		return doExecuteReactiveUpdate()
+				.whenComplete( (count, error) -> afterQuery() )
+				.handle( (count, error) -> convertQueryException( count, error, this ) );
 	}
 
 	//copy pasted between here and ReactiveQueryImpl
@@ -114,20 +87,16 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public CompletionStage<List<R>> getReactiveResultList() {
-		return reactiveList();
-	}
-
-	private CompletionStage<List<R>> reactiveList() {
-		return reactiveProducer().reactiveList(
-				generateQuerySpecification(),
-				getQueryParameters()
-		);
+		beforeQuery();
+		return reactiveProducer().<R>reactiveList( generateQuerySpecification(), getQueryParameters() )
+				.whenComplete( (list, err) -> afterQuery() )
+				.handle( (list, error) -> convertQueryException( list, error, this ) );
 	}
 
 	private NativeSQLQuerySpecification generateQuerySpecification() {
 		return new NativeSQLQuerySpecification(
 				getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() ),
-				getQueryReturns().toArray( new NativeSQLQueryReturn[getQueryReturns().size()] ),
+				getQueryReturns().toArray( new NativeSQLQueryReturn[0] ),
 				getSynchronizedQuerySpaces()
 		);
 	}

@@ -6,14 +6,11 @@
 package org.hibernate.reactive.session.impl;
 
 import org.hibernate.CacheMode;
-import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
-import org.hibernate.TypeMismatchException;
 import org.hibernate.engine.query.spi.EntityGraphQueryHint;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.hql.internal.QueryExecutionRequestException;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.internal.QueryImpl;
 import org.hibernate.reactive.session.QueryType;
@@ -22,11 +19,13 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 
-import javax.persistence.NoResultException;
 import javax.persistence.TransactionRequiredException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.session.ReactiveQuery.convertQueryException;
+import static org.hibernate.reactive.session.ReactiveQuery.extractUniqueResult;
 
 /**
  * Implementation of {@link ReactiveQuery} by extension of
@@ -56,19 +55,7 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		if (type!=null && type!=QueryType.SELECT) {
 			throw new UnsupportedOperationException("not a select query");
 		}
-		return getReactiveResultList().thenApply( this::uniqueResult );
-	}
-
-	private R uniqueResult(List<R> list) {
-		try {
-			if ( list.size() == 0 ) {
-				throw new NoResultException( "No entity found for query" );
-			}
-			return uniqueElement( list );
-		}
-		catch (HibernateException e) {
-			throw getExceptionConverter().convert( e, getLockOptions() );
-		}
+		return getReactiveResultList().thenApply( list -> extractUniqueResult( list, this ) );
 	}
 
 	@Override
@@ -80,22 +67,9 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		getProducer().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
 
 		beforeQuery();
-		return doExecuteReactiveUpdate().handle(this::afterQuery);
-	}
-
-	//copy pasted between here and ReactiveNativeQueryImpl
-	private Integer afterQuery(Integer count, Throwable e) {
-		afterQuery();
-		if ( e instanceof QueryExecutionRequestException) {
-			CompletionStages.rethrow( new IllegalStateException( e ) );
-		}
-		if ( e instanceof TypeMismatchException) {
-			CompletionStages.rethrow( new IllegalStateException( e ) );
-		}
-		if ( e instanceof HibernateException) {
-			CompletionStages.rethrow( getExceptionConverter().convert( (HibernateException) e ) );
-		}
-		return CompletionStages.returnOrRethrow( e, count );
+		return doExecuteReactiveUpdate()
+				.whenComplete( (count, error) -> afterQuery() )
+				.handle( (count, error) -> convertQueryException( count, error, this ) );
 	}
 
 	//copy pasted between here and ReactiveNativeQueryImpl
@@ -109,12 +83,10 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		if (type!=null && type!=QueryType.SELECT) {
 			throw new UnsupportedOperationException("not a select query");
 		}
-		return reactiveList();
-	}
-
-	private CompletionStage<List<R>> reactiveList() {
 		beforeQuery();
-		return doReactiveList().whenComplete( (list, err) -> afterQuery() );
+		return doReactiveList()
+				.whenComplete( (list, err) -> afterQuery() )
+				.handle( (count, error) -> convertQueryException( count, error, this ) );
 	}
 
 	private CompletionStage<List<R>> doReactiveList() {
@@ -128,8 +100,7 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		}
 
 		final String expandedQuery = getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() );
-		ReactiveSession producer = reactiveProducer();
-		return producer.reactiveList( expandedQuery, makeReactiveQueryParametersForExecution( expandedQuery ) );
+		return reactiveProducer().reactiveList( expandedQuery, makeReactiveQueryParametersForExecution( expandedQuery ) );
 	}
 
 	private ReactiveSession reactiveProducer() {
