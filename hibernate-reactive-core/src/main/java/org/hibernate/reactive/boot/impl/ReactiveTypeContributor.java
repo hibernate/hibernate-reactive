@@ -33,13 +33,12 @@ public class ReactiveTypeContributor implements TypeContributor {
 	@Override
 	public void contribute(TypeContributions typeContributions, ServiceRegistry serviceRegistry) {
 		if ( ReactiveModeCheck.isReactiveRegistry( serviceRegistry ) ) {
-			registerReactiveChanges( typeContributions );
+			registerReactiveChanges( typeContributions, serviceRegistry );
 		}
 	}
 
-	private void registerReactiveChanges(final TypeContributions typeContributions) {
-		BasicTypeRegistry basicTypeRegistry =
-				typeContributions.getTypeConfiguration().getBasicTypeRegistry();
+	private void registerReactiveChanges(TypeContributions typeContributions, ServiceRegistry serviceRegistry) {
+		BasicTypeRegistry basicTypeRegistry = typeContributions.getTypeConfiguration().getBasicTypeRegistry();
 		Dialect dialect = serviceRegistry.getService(JdbcEnvironment.class).getDialect();
 		basicTypeRegistry.register( new BlobType(dialect) );
 		basicTypeRegistry.register( new ClobType(dialect) );

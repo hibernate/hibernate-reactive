@@ -10,6 +10,8 @@ import java.util.Map;
 import org.hibernate.cfg.AvailableSettings;
 
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.reactive.provider.ReactivePersistenceProvider;
+
 import org.jboss.logging.Logger;
 
 /**
