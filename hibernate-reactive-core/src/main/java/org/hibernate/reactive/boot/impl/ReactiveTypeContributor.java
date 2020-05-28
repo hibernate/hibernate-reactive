@@ -25,11 +25,19 @@ import java.sql.Types;
  * type mappings and replaces them with the same handling as regular byte
  * arrays and strings, since the {@link io.vertx.sqlclient.SqlClient} doesn't
  * support any special handling for LOBs.
+ * This is only applied if the Hibernate ORM instance we're registering with
+ * is marked as being reactive.
  */
 public class ReactiveTypeContributor implements TypeContributor {
 
 	@Override
 	public void contribute(TypeContributions typeContributions, ServiceRegistry serviceRegistry) {
+		if ( ReactiveModeCheck.isReactiveRegistry( serviceRegistry ) ) {
+			registerReactiveChanges( typeContributions );
+		}
+	}
+
+	private void registerReactiveChanges(final TypeContributions typeContributions) {
 		BasicTypeRegistry basicTypeRegistry =
 				typeContributions.getTypeConfiguration().getBasicTypeRegistry();
 		Dialect dialect = serviceRegistry.getService(JdbcEnvironment.class).getDialect();

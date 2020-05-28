@@ -19,8 +19,11 @@ import org.hibernate.service.spi.SessionFactoryServiceRegistry;
  * replacing the built-in
  * {@link org.hibernate.event.spi.AbstractEvent event}
  * listeners with reactive listeners.
+ * This is only applied if the Hibernate ORM instance we're registering with
+ * is marked as being reactive.
  */
 public class ReactiveIntegrator implements Integrator {
+
 	@Override
 	public void integrate(
 			Metadata metadata,
@@ -35,25 +38,25 @@ public class ReactiveIntegrator implements Integrator {
 	}
 
 	private void attachEventContextManagingListenersIfRequired(SessionFactoryServiceRegistry serviceRegistry) {
+		if ( ReactiveModeCheck.isReactiveRegistry( serviceRegistry ) ) {
 
-		//TODO only execute the following on a Reactive-enabled serviceregistry
+			CoreLogging.messageLogger(ReactiveIntegrator.class).info("HRX000001: Hibernate Reactive Preview");
 
-		CoreLogging.messageLogger(ReactiveIntegrator.class).info("HRX000001: Hibernate Reactive Preview");
+			EventListenerRegistry eventListenerRegistry = serviceRegistry.getService( EventListenerRegistry.class );
+			eventListenerRegistry.addDuplicationStrategy( ReplacementDuplicationStrategy.INSTANCE );
 
-		EventListenerRegistry eventListenerRegistry = serviceRegistry.getService( EventListenerRegistry.class );
-		eventListenerRegistry.addDuplicationStrategy( ReplacementDuplicationStrategy.INSTANCE );
-
-		eventListenerRegistry.getEventListenerGroup( EventType.AUTO_FLUSH ).appendListener( new DefaultReactiveAutoFlushEventListener() );
-		eventListenerRegistry.getEventListenerGroup( EventType.FLUSH ).appendListener( new DefaultReactiveFlushEventListener() );
-		eventListenerRegistry.getEventListenerGroup( EventType.FLUSH_ENTITY ).appendListener( new DefaultReactiveFlushEntityEventListener() );
-		eventListenerRegistry.getEventListenerGroup( EventType.PERSIST ).appendListener( new DefaultReactivePersistEventListener() );
-		eventListenerRegistry.getEventListenerGroup( EventType.PERSIST_ONFLUSH ).appendListener( new DefaultReactivePersistOnFlushEventListener() );
-		eventListenerRegistry.getEventListenerGroup( EventType.MERGE ).appendListener( new DefaultReactiveMergeEventListener() );
-		eventListenerRegistry.getEventListenerGroup( EventType.DELETE ).appendListener( new DefaultReactiveDeleteEventListener() );
-		eventListenerRegistry.getEventListenerGroup( EventType.REFRESH ).appendListener( new DefaultReactiveRefreshEventListener() );
-		eventListenerRegistry.getEventListenerGroup( EventType.LOCK ).appendListener( new DefaultReactiveLockEventListener() );
-		eventListenerRegistry.getEventListenerGroup( EventType.LOAD ).appendListener( new DefaultReactiveLoadEventListener() );
-		eventListenerRegistry.getEventListenerGroup( EventType.INIT_COLLECTION ).appendListener( new DefaultReactiveInitializeCollectionEventListener() );
+			eventListenerRegistry.getEventListenerGroup( EventType.AUTO_FLUSH ).appendListener( new DefaultReactiveAutoFlushEventListener() );
+			eventListenerRegistry.getEventListenerGroup( EventType.FLUSH ).appendListener( new DefaultReactiveFlushEventListener() );
+			eventListenerRegistry.getEventListenerGroup( EventType.FLUSH_ENTITY ).appendListener( new DefaultReactiveFlushEntityEventListener() );
+			eventListenerRegistry.getEventListenerGroup( EventType.PERSIST ).appendListener( new DefaultReactivePersistEventListener() );
+			eventListenerRegistry.getEventListenerGroup( EventType.PERSIST_ONFLUSH ).appendListener( new DefaultReactivePersistOnFlushEventListener() );
+			eventListenerRegistry.getEventListenerGroup( EventType.MERGE ).appendListener( new DefaultReactiveMergeEventListener() );
+			eventListenerRegistry.getEventListenerGroup( EventType.DELETE ).appendListener( new DefaultReactiveDeleteEventListener() );
+			eventListenerRegistry.getEventListenerGroup( EventType.REFRESH ).appendListener( new DefaultReactiveRefreshEventListener() );
+			eventListenerRegistry.getEventListenerGroup( EventType.LOCK ).appendListener( new DefaultReactiveLockEventListener() );
+			eventListenerRegistry.getEventListenerGroup( EventType.LOAD ).appendListener( new DefaultReactiveLoadEventListener() );
+			eventListenerRegistry.getEventListenerGroup( EventType.INIT_COLLECTION ).appendListener( new DefaultReactiveInitializeCollectionEventListener() );
+		}
 	}
 
 }
