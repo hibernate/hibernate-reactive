@@ -7,7 +7,6 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
-
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -110,6 +109,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 				openSession()
 						.thenCompose( s -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
 						.thenCompose( s -> s.flush() )
+						.whenComplete( (s,e) -> s.close() )
 						.thenCompose( v -> selectNameFromId( 10 ) )
 						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
 		);
@@ -125,6 +125,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
 						.thenCompose( session -> session.flush() )
+						.whenComplete( (session, err) -> session.close() )
 						.thenCompose( v -> selectNameFromId( 5 ) )
 						.thenAccept( context::assertNull )
 		);
@@ -141,7 +142,9 @@ public class CompositeIdTest extends BaseReactiveTest {
 								.thenCompose( aloi -> session.remove( aloi ) )
 								.thenCompose( v -> session.flush() )
 								.thenCompose( v -> selectNameFromId( 5 ) )
-								.thenAccept( context::assertNull ) )
+								.thenAccept( context::assertNull )
+								.whenComplete( (v, err) -> session.close() )
+						)
 		);
 	}
 
@@ -161,6 +164,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 									pig.setWeight( NEW_WEIGHT );
 								} )
 								.thenCompose( v -> session.flush() )
+								.whenComplete( (v, err) -> session.close() )
 								.thenCompose( v -> selectWeightFromId( 5 ) )
 								.thenAccept( w -> context.assertEquals( NEW_WEIGHT, w ) ) )
 		);

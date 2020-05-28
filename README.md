@@ -127,7 +127,7 @@ the session when you're done.
     sessionFactory.openSession()
             .thenCompose(
                 session -> ... //do some work
-                        .thenAccept( $ -> session.close() ) 
+                        .whenComplete( ($,e) -> session.close() ) 
             );
 
 ### Using the reactive session

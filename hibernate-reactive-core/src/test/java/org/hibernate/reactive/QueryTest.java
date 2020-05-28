@@ -70,7 +70,7 @@ public class QueryTest extends BaseReactiveTest {
 				openSession()
 						.thenCompose( session -> session.persist(author1, author2) )
 						.thenCompose( session -> session.flush() )
-						.thenAccept( session -> session.close() )
+						.whenComplete( (session,err) -> session.close() )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery(query).getResultList() )
 						.thenAccept( books -> {
@@ -111,7 +111,7 @@ public class QueryTest extends BaseReactiveTest {
 				openSession()
 						.thenCompose( session -> session.persist(author1, author2) )
 						.thenCompose( session -> session.flush() )
-						.thenAccept( session -> session.close() )
+						.whenComplete( (session,err) -> session.close() )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery(query).getResultList() )
 						.thenAccept( books -> {
@@ -139,7 +139,7 @@ public class QueryTest extends BaseReactiveTest {
 				openSession()
 					.thenCompose( session -> session.persist(author1, author2) )
 					.thenCompose( session -> session.flush() )
-					.thenAccept( session -> session.close() )
+					.whenComplete( (session,err) -> session.close() )
 					.thenCompose( v -> openSession() )
 					.thenCompose( session -> session.createNativeQuery("select * from books order by isbn", Book.class).getResultList() )
 					.thenAccept( books -> {
@@ -168,7 +168,7 @@ public class QueryTest extends BaseReactiveTest {
 				openSession()
 						.thenCompose( session -> session.persist(author1, author2) )
 						.thenCompose( session -> session.flush() )
-						.thenAccept( session -> session.close() )
+						.whenComplete( (session,err) -> session.close() )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery("select b.title, a.name from books b join authors a on author_id=a.id order by b.isbn", "title,author").getResultList() )
 						.thenAccept( books -> {
@@ -199,7 +199,7 @@ public class QueryTest extends BaseReactiveTest {
 				openSession()
 						.thenCompose( session -> session.persist(author1, author2) )
 						.thenCompose( session -> session.flush() )
-						.thenAccept( session -> session.close() )
+						.whenComplete( (session,err) -> session.close() )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNamedQuery("title,author (hql)").getResultList() )
 						.thenAccept( books -> {
@@ -230,7 +230,7 @@ public class QueryTest extends BaseReactiveTest {
 				openSession()
 						.thenCompose( session -> session.persist(author1, author2) )
 						.thenCompose( session -> session.flush() )
-						.thenAccept( session -> session.close() )
+						.whenComplete( (session,err) -> session.close() )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNamedQuery("title,author (sql)").getResultList() )
 						.thenAccept( books -> {
