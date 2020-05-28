@@ -7,6 +7,7 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -40,22 +41,14 @@ public class CompositeIdTest extends BaseReactiveTest {
 	}
 
 	public void after(TestContext context) {
-		cleanDB()
-				.whenComplete( (res, err) -> {
-					// in case cleanDB() fails we
-					// stll have to close the factory
-					try {
-						super.after(context);
-					}
-					finally {
-						context.assertNull( err );
-					}
-				} )
-				.whenComplete( (res, err) -> {
-					// in case cleanDB() worked but
-					// SessionFactory didn't close
-					context.assertNull( err );
-				} );
+		test( context,
+			  cleanDB()
+					  .whenComplete( (res, err) -> {
+						  // in case cleanDB() fails we
+						  // stll have to close the factory
+						  super.after( context );
+					  } )
+		);
 	}
 
 	private CompletionStage<String> selectNameFromId(Integer id) {

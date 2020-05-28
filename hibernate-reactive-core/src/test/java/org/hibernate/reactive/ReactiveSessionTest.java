@@ -53,22 +53,14 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	public void after(TestContext context) {
-		cleanDB()
+		test( context,
+			  cleanDB()
 				.whenComplete( (res, err) -> {
 					// in case cleanDB() fails we
 					// stll have to close the factory
-					try {
-						super.after(context);
-					}
-					finally {
-						context.assertNull( err );
-					}
+					super.after( context );
 				} )
-				.whenComplete( (res, err) -> {
-					// in case cleanDB() worked but
-					// SessionFactory didn't close
-					context.assertNull( err );
-				} );
+		);
 	}
 
 	private CompletionStage<String> selectNameFromId(Integer id) {
