@@ -31,6 +31,12 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 	}
 
 	@Override
+	public Mutiny.Query<R> setParameter(String name, Object var2) {
+		delegate.setParameter( name, var2 );
+		return this;
+	}
+
+	@Override
 	public Mutiny.Query<R> setMaxResults(int maxResults) {
 		delegate.setMaxResults( maxResults );
 		return this;
