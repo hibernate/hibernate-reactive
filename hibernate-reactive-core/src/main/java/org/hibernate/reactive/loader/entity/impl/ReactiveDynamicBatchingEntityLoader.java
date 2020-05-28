@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.loader.entity.impl;
 
-import org.hibernate.JDBCException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.dialect.Dialect;
@@ -16,13 +15,14 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.loader.entity.EntityJoinWalker;
 import org.hibernate.persister.entity.OuterJoinLoadable;
-import org.hibernate.pretty.MessageHelper;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
+import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
 
 /**
@@ -115,19 +115,16 @@ class ReactiveDynamicBatchingEntityLoader extends ReactiveEntityLoader {
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters )
 				.handle( (results, e) -> {
-					if (e instanceof JDBCException) {
-						throw session.getJdbcServices().getSqlExceptionHelper().convert(
-								((JDBCException) e).getSQLException(),
-								"could not load an entity batch: " + MessageHelper.infoString(
-										getEntityPersisters()[0],
-										ids,
-										session.getFactory()
-								),
-								sql
-							);
-					}
-					return results;
-				});
+					CompletionStages.convertSqlException( e, getFactory(),
+							() -> "could not load an entity batch: " + infoString(
+									getEntityPersisters()[0],
+									ids,
+									session.getFactory()
+							),
+							sql
+					);
+					return CompletionStages.returnOrRethrow( e, results );
+				} );
 	}
 
 	private static StringBuilder buildBatchFetchRestrictionFragment(

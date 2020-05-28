@@ -139,7 +139,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 							if ( x instanceof HibernateException ) {
 								LOG.unableToLoadCommand( (HibernateException) x );
 							}
-							CompletionStages.rethrowIfNotNull( x );
+							CompletionStages.returnNullorRethrow( x );
 
 							if ( event.getResult() instanceof CompletionStage ) {
 								throw new AssertionFailure( "Unexpected CompletionStage" );

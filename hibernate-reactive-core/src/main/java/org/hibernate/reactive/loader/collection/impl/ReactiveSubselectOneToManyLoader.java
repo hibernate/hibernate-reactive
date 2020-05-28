@@ -6,7 +6,6 @@
 package org.hibernate.reactive.loader.collection.impl;
 
 import org.hibernate.HibernateException;
-import org.hibernate.JDBCException;
 import org.hibernate.MappingException;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
@@ -16,7 +15,6 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.TypedValue;
 import org.hibernate.persister.collection.QueryableCollection;
-import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.Type;
 
@@ -25,6 +23,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.pretty.MessageHelper.collectionInfoString;
 
 /**
  * Implements subselect fetching for a one to many association
@@ -95,19 +95,14 @@ public class ReactiveSubselectOneToManyLoader extends ReactiveOneToManyLoader {
 
 		QueryParameters parameters = new QueryParameters(parameterTypes, parameterValues, namedParameters, ids);
 		return doReactiveQueryAndInitializeNonLazyCollections( (SessionImplementor) session, parameters, true )
-					.handle( (list, e) -> {
-						if (e instanceof JDBCException) {
-							throw getFactory().getJdbcServices().getSqlExceptionHelper().convert(
-									((JDBCException) e).getSQLException(),
-									"could not load collection by subselect: " +
-											MessageHelper.collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
-									getSQLString()
-							);
-						} else if (e != null) {
-							CompletionStages.rethrow(e);
-						}
-						return null;
-					} );
+				.handle( (list, e) -> {
+					CompletionStages.convertSqlException( e, getFactory(),
+							() -> "could not load collection by subselect: " +
+									collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
+							getSQLString()
+					);
+					return CompletionStages.returnNullorRethrow(e);
+				} );
 	}
 
 	@Override

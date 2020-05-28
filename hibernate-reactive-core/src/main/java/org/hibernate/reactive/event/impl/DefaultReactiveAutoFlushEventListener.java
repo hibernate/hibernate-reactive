@@ -69,7 +69,7 @@ public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlush
 		}
 		autoFlushStage.whenComplete( (v, x) -> {
 			source.getEventListenerManager().flushEnd( event.getNumberOfEntitiesProcessed(), event.getNumberOfCollectionsProcessed() );
-			CompletionStages.rethrowIfNotNull( x );
+			CompletionStages.returnNullorRethrow( x );
 		} );
 
 		return autoFlushStage;

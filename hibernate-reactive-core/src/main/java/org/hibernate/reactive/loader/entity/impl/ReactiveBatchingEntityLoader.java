@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.loader.entity.impl;
 
-import org.hibernate.JDBCException;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.internal.BatchFetchQueueHelper;
 import org.hibernate.engine.spi.QueryParameters;
@@ -15,14 +14,16 @@ import org.hibernate.loader.entity.BatchingEntityLoaderBuilder;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.OuterJoinLoadable;
-import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.pretty.MessageHelper.infoString;
 
 /**
  * The base contract for loaders capable of performing batch-fetch loading of entities using multiple primary key
@@ -129,14 +130,12 @@ public abstract class ReactiveBatchingEntityLoader implements ReactiveUniqueEnti
 							persister(),
 							session
 					);
-					if (e instanceof JDBCException) {
-						throw session.getJdbcServices().getSqlExceptionHelper().convert(
-								((JDBCException) e).getSQLException(),
-								"could not load an entity batch: " + MessageHelper.infoString(persister(), ids, session.getFactory()),
-								loaderToUse.getSQLString()
-						);
-					}
-					return result;
+					CompletionStages.convertSqlException(e, session,
+							() -> "could not load an entity batch: "
+									+ infoString( persister(), ids, session.getFactory() ),
+							loaderToUse.getSQLString()
+					);
+					return CompletionStages.returnOrRethrow( e, result );
 				});
 	}
 

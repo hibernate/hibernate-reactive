@@ -5,9 +5,15 @@
  */
 package org.hibernate.reactive.util.impl;
 
+import org.hibernate.JDBCException;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+
+import java.sql.SQLException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class CompletionStages {
 
@@ -52,7 +58,7 @@ public class CompletionStages {
 		throw (T) x;
 	}
 
-	public static <T extends Throwable, Ret> Ret rethrowIfNotNull(Throwable x) throws T {
+	public static <T extends Throwable, Ret> Ret returnNullorRethrow(Throwable x) throws T {
 		if (x != null ) {
 			throw (T) x;
 		}
@@ -64,5 +70,25 @@ public class CompletionStages {
 			throw (T) x;
 		}
 		return result;
+	}
+
+	public static void convertSqlException(Throwable t, SharedSessionContractImplementor session,
+										   Supplier<String> message, String sql) {
+		if (t instanceof JDBCException) {
+			t = ((JDBCException) t).getSQLException();
+		}
+		if (t instanceof SQLException) {
+			throw session.getJdbcServices().getSqlExceptionHelper().convert( (SQLException) t, message.get(), sql);
+		}
+	}
+
+	public static void convertSqlException(Throwable t, SessionFactoryImplementor factory,
+										   Supplier<String> message, String sql) {
+		if (t instanceof JDBCException) {
+			t = ((JDBCException) t).getSQLException();
+		}
+		if (t instanceof SQLException) {
+			throw factory.getJdbcServices().getSqlExceptionHelper().convert( (SQLException) t, message.get(), sql);
+		}
 	}
 }

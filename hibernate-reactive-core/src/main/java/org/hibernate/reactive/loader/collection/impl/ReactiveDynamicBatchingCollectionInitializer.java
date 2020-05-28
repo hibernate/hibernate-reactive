@@ -6,7 +6,6 @@
 package org.hibernate.reactive.loader.collection.impl;
 
 import org.hibernate.HibernateException;
-import org.hibernate.JDBCException;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -16,7 +15,6 @@ import org.hibernate.loader.JoinWalker;
 import org.hibernate.loader.collection.BasicCollectionJoinWalker;
 import org.hibernate.loader.collection.OneToManyJoinWalker;
 import org.hibernate.persister.collection.QueryableCollection;
-import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.Type;
 
@@ -25,6 +23,7 @@ import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.internal.util.StringHelper.buildBatchFetchRestrictionFragment;
+import static org.hibernate.pretty.MessageHelper.collectionInfoString;
 
 /**
  * A {@link ReactiveCollectionLoader} whose generated SQL contains a placeholder
@@ -99,7 +98,7 @@ class ReactiveDynamicBatchingCollectionInitializer extends ReactiveCollectionLoa
 		if ( LOG.isDebugEnabled() ) {
 			LOG.debugf(
 					"Batch loading collection: %s",
-					MessageHelper.collectionInfoString( getCollectionPersisters()[0], ids, getFactory() )
+					collectionInfoString( getCollectionPersisters()[0], ids, getFactory() )
 			);
 		}
 
@@ -117,18 +116,13 @@ class ReactiveDynamicBatchingCollectionInitializer extends ReactiveCollectionLoa
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters )
 				.handle( (list, e) -> {
-					if (e instanceof JDBCException) {
-						throw getFactory().getJdbcServices().getSqlExceptionHelper().convert(
-								((JDBCException) e).getSQLException(),
-								"could not initialize a collection batch: " +
-										MessageHelper.collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
-								getSQLString()
-						);
-					} else if (e != null) {
-						CompletionStages.rethrow(e);
-					}
+					CompletionStages.convertSqlException( e, getFactory(),
+							() -> "could not initialize a collection batch: " +
+									collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
+							getSQLString()
+					);
 					LOG.debug("Done batch load");
-					return null;
+					return CompletionStages.returnNullorRethrow( e );
 				} );
 
 	}
