@@ -40,7 +40,7 @@ public class BasicTypesAndCallbacksTest extends BaseReactiveTest {
 
 	@Test
 	public void testLobTypes(TestContext context) {
-
+		// TODO @AGG need better DB2 client support for LOB types
 		assumeFalse( dbType() == DBType.DB2 );
 
 		String text = "hello world once upon a time it was the best of times it was the worst of times goodbye";
