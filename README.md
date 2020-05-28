@@ -143,7 +143,7 @@ Methods with no meaningful return value return a reference to the `Session`:
     
     session2.persist(book)
             .thenCompose( $ -> session2.flush() )
-            .thenAccept( $ -> session2.close() )
+            .whenComplete( ($,e) -> session2.close() )
 
 That `createQuery()` method produces a reactive `Query`, allowing HQL / JPQL 
 queries to be executed asynchronously, always returning their results via a 
