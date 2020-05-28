@@ -6,11 +6,17 @@
 package org.hibernate.reactive.session;
 
 import org.hibernate.CacheMode;
+import org.hibernate.HibernateException;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
+import org.hibernate.TypeMismatchException;
+import org.hibernate.hql.internal.QueryExecutionRequestException;
+import org.hibernate.query.internal.AbstractProducedQuery;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
+import javax.persistence.NoResultException;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -51,4 +57,32 @@ public interface ReactiveQuery<R> {
 	ReactiveQuery<R> setResultTransformer(ResultTransformer resultTransformer);
 
 	Type[] getReturnTypes();
+
+	static <T> T convertQueryException(T result, Throwable e,
+									   AbstractProducedQuery<?> query) {
+		if ( e instanceof QueryExecutionRequestException) {
+			throw new IllegalStateException( e );
+		}
+		if ( e instanceof TypeMismatchException) {
+			throw new IllegalStateException( e );
+		}
+		if ( e instanceof HibernateException) {
+			throw query.getProducer().getExceptionConverter()
+					.convert( (HibernateException) e, query.getLockOptions() );
+		}
+		return CompletionStages.returnOrRethrow( e, result );
+	}
+
+	static <R> R extractUniqueResult(List<R> list, AbstractProducedQuery<R> query) {
+		try {
+			if ( list.size() == 0 ) {
+				throw new NoResultException( "No entity found for query" );
+			}
+			return AbstractProducedQuery.uniqueElement( list );
+		}
+		catch (HibernateException e) {
+			throw query.getProducer().getExceptionConverter()
+					.convert( e, query.getLockOptions() );
+		}
+	}
 }
