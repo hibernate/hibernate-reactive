@@ -11,7 +11,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class QueryParametersAdaptor {
@@ -20,31 +19,10 @@ public class QueryParametersAdaptor {
 			final Serializable id,
 			final Type type,
 			final SharedSessionContractImplementor session) {
-		return toParameterArray( preparedStatement -> type.nullSafeSet( preparedStatement, id, 1, session ) );
-	}
 
-
-	public static Object[] toParameterArray(QueryParameters queryParameters, SharedSessionContractImplementor session) {
-
-		return toParameterArray(
-				preparedStatement -> {
-					Type[] types = queryParameters.getPositionalParameterTypes();
-					Object[] values = queryParameters.getPositionalParameterValues();
-					int n = 1;
-					for (int i = 0; i < types.length; i++) {
-						Type type = types[i];
-						Object value = values[i];
-							type.nullSafeSet(preparedStatement, value, n, session);
-							n += type.getColumnSpan(session.getFactory());
-					}
-				}
-		);
-	}
-
-	public static Object[] toParameterArray(Binder binder) {
-		PreparedStatementAdaptor adaptor = new PreparedStatementAdaptor();
+		final PreparedStatementAdaptor adaptor = new PreparedStatementAdaptor();
 		try {
-			binder.bind( adaptor );
+			type.nullSafeSet( adaptor, id, 1, session );
 			return adaptor.getParametersAsArray();
 		}
 		catch (SQLException e) {
@@ -53,7 +31,24 @@ public class QueryParametersAdaptor {
 		}
 	}
 
-	public interface Binder {
-		void bind(PreparedStatement preparedStatement) throws SQLException;
+	public static Object[] toParameterArray(QueryParameters queryParameters, SharedSessionContractImplementor session) {
+
+		final PreparedStatementAdaptor adaptor = new PreparedStatementAdaptor();
+		try {
+			Type[] types = queryParameters.getPositionalParameterTypes();
+			Object[] values = queryParameters.getPositionalParameterValues();
+			int n = 1;
+			for (int i = 0; i < types.length; i++) {
+				Type type = types[i];
+				Object value = values[i];
+				type.nullSafeSet(adaptor, value, n, session);
+				n += type.getColumnSpan(session.getFactory());
+			}
+			return adaptor.getParametersAsArray();
+		}
+		catch (SQLException e) {
+			//can never happen
+			throw new JDBCException("error binding parameters", e);
+		}
 	}
 }
