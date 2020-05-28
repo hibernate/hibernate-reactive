@@ -9,16 +9,10 @@ import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Version;
+import javax.persistence.*;
 import java.util.Objects;
 import java.util.UUID;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
-import static org.junit.Assume.assumeTrue;
 
 public class UUIDGeneratorTest extends BaseReactiveTest {
 
@@ -31,9 +25,6 @@ public class UUIDGeneratorTest extends BaseReactiveTest {
 
 	@Test
 	public void testUUIDGenerator(TestContext context) {
-
-		//TODO: why precisely are UUIDs not working on MySQL?
-		assumeTrue( dbType() != DBType.MYSQL );
 
 		TableId b = new TableId();
 		b.string = "Hello World";
@@ -69,7 +60,7 @@ public class UUIDGeneratorTest extends BaseReactiveTest {
 
 	@Entity
 	public static class TableId {
-		@Id @GeneratedValue UUID id;
+		@Id @GeneratedValue @Column( length = 16 ) UUID id;
 		@Version Integer version;
 		String string;
 
