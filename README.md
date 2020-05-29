@@ -75,9 +75,18 @@ below.
 
 ### Configuration
 
-Configuration is completely transparent; configure Hibernate 
-exactly as you normally would, for example by providing a
-`META-INF/persistence.xml` file.
+Hibernate Reactive is configured via the standard JPA `persistence.xml` 
+document which must be placed, as usual, in the `/META-INF` directory.
+
+The only configuration specific to Hibernate Reactive is the persistence
+`<provider>` element, which must be explicit:
+
+    <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
+
+Otherwise, configuration is almost completely transparent; configure 
+Hibernate exactly as you usually would&mdash;but note that some 
+configuration properties related to JDBC or JTA aren't relevant in the 
+context of Hibernate Reactive.
 
 Configuration properties of particular interest include:
 
@@ -91,9 +100,6 @@ An example [`persistence.xml`][xml] file is included in the example
 program.
 
 [xml]: https://github.com/hibernate/hibernate-reactive/blob/master/example/src/main/resources/META-INF/persistence.xml
-
-Remember to set the `<provider>` to `org.hibernate.reactive.provider.ReactivePersistenceProvider`,
-or you will boot a standard (not Reactive) Hibernate ORM instance.
 
 ### Obtaining a reactive session factory
 
