@@ -2,6 +2,66 @@ import java.nio.charset.StandardCharsets
 
 description = 'Release module'
 
+// To publish documentation:
+//  1. Add the relevant SSH key to your SSH agent.
+//  2. Execute this:
+//    ./gradlew uploadDocumentation -PjbossFilemgmtSshUser="<YOUR USERNAME>"
+
+final File documentationDir = mkdir( "${project.buildDir}/documentation" );
+
+/**
+ * Assembles all documentation into the {buildDir}/documentation directory.
+ */
+task assembleDocumentation(dependsOn: [rootProject.project( 'documentation' ).tasks.assemble]) {
+    description = 'Assembles all documentation into the {buildDir}/documentation directory'
+
+    doLast {
+        // copy documentation outputs into target/documentation.
+        // 		* this is used in building the dist bundles
+        //		* it is also used as a base to build a staged directory for documentation upload
+
+        // Aggregated JavaDoc
+        copy {
+            from "${rootProject.project( 'documentation' ).buildDir}/javadocs"
+            into "${documentationDir}/javadocs"
+        }
+
+        // Reference Documentation
+        copy {
+            from "${rootProject.project( 'documentation' ).buildDir}/asciidoc/reference"
+            into "${documentationDir}/reference"
+        }
+    }
+}
+assemble.dependsOn assembleDocumentation
+
+/**
+ * Upload the documentation to the JBoss doc server
+ */
+task uploadDocumentation(type:Exec, dependsOn: assembleDocumentation) {
+    description = "Uploads documentation to the JBoss doc server"
+
+    final String url = "filemgmt.jboss.org:/docs_htdocs/hibernate/reactive/${project.version.family}"
+
+    executable 'rsync'
+    args '-avz', '--links', '--protocol=28', "${documentationDir.absolutePath}/", url
+
+    doFirst {
+        if ( project.version.isSnapshot() ) {
+            logger.error( "Cannot perform upload of SNAPSHOT documentation" );
+            throw new RuntimeException( "Cannot perform upload of SNAPSHOT documentation" );
+        }
+        else {
+            logger.lifecycle( "Uploading documentation to '${url}'..." )
+        }
+    }
+
+    doLast {
+        logger.lifecycle( 'Done uploading documentation' )
+    }
+}
+
+
 // Usage: ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin -PgitBranch=master
 task ciRelease {
     group = "Release"
