@@ -37,7 +37,7 @@ subprojects {
 // ./gradlew clean build -PhibernateOrmVersion=5.4.9-SNAPSHOT
 
 ext {
-    hibernateOrmVersion = '5.4.16.Final'
+    hibernateOrmVersion = '5.4.17.Final'
 }
 
 
