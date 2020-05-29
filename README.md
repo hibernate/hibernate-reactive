@@ -312,14 +312,19 @@ features:
 - `@ManyToMany` associations, and
 - one-sided `@OneToMany` associations without `mappedBy`.
 
-Instead, use `@OneToMany(mappedBy=...)` together with `@ManyToOne` for all
-associations.
+Instead, use `@OneToMany(mappedBy=...)` together with `@ManyToOne` for 
+all associations.
 
 #### Eager association fetching
 
-Hibernate Reactive does not support eager association fetching via subsequent 
-SQL select, for example, `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`
-or `@ManyToOne(fetch=EAGER) @Fetch(SUBSELECT)`. So you must choose between:
+Hibernate Reactive does not support eager association fetching via 
+subsequent SQL select for `@ManyToOne` (or `@OneToOne`) associations, 
+so the following mappings are disallowed:
+
+- `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`, and 
+- `@ManyToOne(fetch=EAGER) @Fetch(SUBSELECT)`.
+
+Instead, you must choose between:
 
 - lazy fetching, for example, `@ManyToOne @Fetch(SELECT)` or
   `@ManyToOne @Fetch(SUBSELECT)`, or
