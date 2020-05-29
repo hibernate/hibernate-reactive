@@ -18,9 +18,9 @@ import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
+import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
 import org.hibernate.reactive.loader.entity.impl.ReactiveBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.loader.entity.impl.ReactiveCascadeEntityLoader;
-import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
 import org.hibernate.reactive.sql.impl.Delete;
 import org.hibernate.reactive.sql.impl.Insert;
 import org.hibernate.reactive.sql.impl.Update;
@@ -174,5 +174,16 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	@Override
 	public ReactiveUniqueEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session) {
 		return (ReactiveUniqueEntityLoader) super.getAppropriateLoader(lockOptions, session);
+	}
+
+	@Override
+	public void preInsertInMemoryValueGeneration(Object[] fields, Object object,
+												 SharedSessionContractImplementor session) {
+		super.preInsertInMemoryValueGeneration(fields, object, session);
+	}
+
+	@Override
+	public String[] getUpdateStrings(boolean byRowId, boolean hasUninitializedLazyProperties) {
+		return super.getUpdateStrings(byRowId, hasUninitializedLazyProperties);
 	}
 }

@@ -75,27 +75,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	Logger log = Logger.getLogger( JoinedSubclassEntityPersister.class );
 
 	/**
-	 * This is a copy of a
-	 * {@link AbstractEntityPersister#preInsertInMemoryValueGeneration(Object[], Object, SharedSessionContractImplementor) private method}
-	 * of {@code AbstractEntityPersister} that we could have made public.
-	 */
-	static void preInsertInMemoryValueGeneration(
-			Object[] fields,
-			Object object,
-			SharedSessionContractImplementor session,
-			AbstractEntityPersister delegate) {
-		if ( delegate.getEntityMetamodel().hasPreInsertGeneratedValues() ) {
-			final InMemoryValueGenerationStrategy[] strategies = delegate.getEntityMetamodel().getInMemoryValueGenerationStrategies();
-			for ( int i = 0; i < strategies.length; i++ ) {
-				if ( strategies[i] != null && strategies[i].getGenerationTiming().includesInsert() ) {
-					fields[i] = strategies[i].getValueGenerator().generateValue( (Session) session, object );
-					delegate.setPropertyValue( object, i, fields[i] );
-				}
-			}
-		}
-	}
-
-	/**
 	 * A self-reference of type {@code AbstractEntityPersister}.
 	 *
 	 * @return this object
@@ -112,7 +91,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	default CompletionStage<Serializable> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
 		// apply any pre-insert in-memory value generation
-		preInsertInMemoryValueGeneration( fields, object, session, delegate() );
+		preInsertInMemoryValueGeneration( fields, object, session );
 
 		final int span = delegate().getTableSpan();
 		CompletionStage<Serializable> stage = CompletionStages.nullFuture();
@@ -140,6 +119,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return stage;
 	}
 
+	void preInsertInMemoryValueGeneration(Object[] fields, Object object,
+										  SharedSessionContractImplementor session);
+
 	@Override
 	default CompletionStage<?> insertReactive(
 			Serializable id,
@@ -147,7 +129,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Object object,
 			SharedSessionContractImplementor session) {
 		// apply any pre-insert in-memory value generation
-		preInsertInMemoryValueGeneration( fields, object, session, delegate() );
+		preInsertInMemoryValueGeneration( fields, object, session );
 
 		CompletionStage<?> insertStage = CompletionStages.nullFuture();
 		final int span = delegate().getTableSpan();
@@ -446,11 +428,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return deleteStage;
 	}
 
-	/**
-	 * This is a copy of a
-	 * {@link AbstractEntityPersister#isAllOrDirtyOptLocking() private method}
-	 * of {@code AbstractEntityPersister} that we could have made public.
-	 */
 	default boolean isAllOrDirtyOptimisticLocking() {
 		OptimisticLockStyle optimisticLockStyle =
 				delegate().getEntityMetamodel().getOptimisticLockStyle();
@@ -636,14 +613,15 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		// apply any pre-update in-memory value generation
 		if ( delegate().getEntityMetamodel().hasPreUpdateGeneratedValues() ) {
-			final InMemoryValueGenerationStrategy[] valueGenerationStrategies = delegate().getEntityMetamodel().getInMemoryValueGenerationStrategies();
+			final InMemoryValueGenerationStrategy[] valueGenerationStrategies =
+					delegate().getEntityMetamodel().getInMemoryValueGenerationStrategies();
 			int valueGenerationStrategiesSize = valueGenerationStrategies.length;
 			if ( valueGenerationStrategiesSize != 0 ) {
 				int[] fieldsPreUpdateNeeded = new int[valueGenerationStrategiesSize];
 				int count = 0;
 				for ( int i = 0; i < valueGenerationStrategiesSize; i++ ) {
-					if ( valueGenerationStrategies[i] != null && valueGenerationStrategies[i].getGenerationTiming()
-							.includesUpdate() ) {
+					if ( valueGenerationStrategies[i] != null
+							&& valueGenerationStrategies[i].getGenerationTiming().includesUpdate() ) {
 						fields[i] = valueGenerationStrategies[i].getValueGenerator().generateValue(
 								(Session) session,
 								object
@@ -706,10 +684,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 		else {
 			// For the case of dynamic-update="false", or no snapshot, we use the static SQL
-			updateStrings = getSQLUpdateStrings(
-					rowId != null,
-					delegate().hasUninitializedLazyProperties( object )
-			);
+			boolean hasUninitializedLazy = delegate().hasUninitializedLazyProperties( object );
+			updateStrings = getUpdateStrings( rowId != null, hasUninitializedLazy );
 			propsToUpdate = delegate().getPropertyUpdateability( object );
 		}
 
@@ -736,6 +712,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 		return updateStage;
 	}
+
+	String[] getUpdateStrings(boolean byRowId, boolean hasUninitializedLazyProperties);
 
 	default CompletionStage<?> updateOrInsertReactive(
 			final Serializable id,
@@ -776,17 +754,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		// Nothing to do;
 		return CompletionStages.nullFuture();
-	}
-
-	/**
-	 * This is a copy of a
-	 * {@link AbstractEntityPersister#getUpdateStrings(boolean, boolean) private method}
-	 * of {@code AbstractEntityPersister} that we could have made public.
-	 */
-	default String[] getSQLUpdateStrings(boolean byRowId, boolean lazy) {
-		return byRowId ?
-				lazy ? delegate().getSQLLazyUpdateByRowIdStrings() : delegate().getSQLUpdateByRowIdStrings() :
-				lazy ? delegate().getSQLLazyUpdateStrings() : delegate().getSQLUpdateStrings();
 	}
 
 	default String generateSelectLockString(LockOptions lockOptions) {

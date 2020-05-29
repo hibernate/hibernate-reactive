@@ -175,4 +175,15 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	public ReactiveUniqueEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session) {
 		return (ReactiveUniqueEntityLoader) super.getAppropriateLoader(lockOptions, session);
 	}
+
+	@Override
+	public void preInsertInMemoryValueGeneration(Object[] fields, Object object,
+												 SharedSessionContractImplementor session) {
+		super.preInsertInMemoryValueGeneration(fields, object, session);
+	}
+
+	@Override
+	public String[] getUpdateStrings(boolean byRowId, boolean hasUninitializedLazyProperties) {
+		return super.getUpdateStrings(byRowId, hasUninitializedLazyProperties);
+	}
 }
