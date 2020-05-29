@@ -1,7 +1,7 @@
 ![Hibernate logo][]
 
 [![CI Status](https://github.com/hibernate/hibernate-reactive/workflows/Hibernate%20Reactive%20CI/badge.svg)](https://github.com/hibernate/hibernate-reactive/actions?query=workflow%3A%22Hibernate+Reactive+CI%22)
-[![License](https://img.shields.io/badge/License-LGPL%202.1-green.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt)
+[![License](https://img.shields.io/badge/License-LGPL%202.1-green.svg)](https://opensource.org/licenses/LGPL-2.1)
 
 # Hibernate Reactive
 
@@ -91,6 +91,9 @@ An example [`persistence.xml`][xml] file is included in the example
 program.
 
 [xml]: https://github.com/hibernate/hibernate-reactive/blob/master/example/src/main/resources/META-INF/persistence.xml
+
+Remember to set the `<provider>` to `org.hibernate.reactive.provider.ReactivePersistenceProvider`,
+or you will boot a standard (not Reactive) Hibernate ORM instance.
 
 ### Obtaining a reactive session factory
 
