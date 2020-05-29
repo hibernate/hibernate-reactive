@@ -7,6 +7,7 @@ package org.hibernate.reactive.loader.collection.impl;
 
 import java.util.function.Supplier;
 
+import org.hibernate.Filter;
 import org.hibernate.MappingException;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -19,7 +20,11 @@ import org.hibernate.sql.InFragment;
 import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
 
 public class ReactiveOneToManyJoinWalker extends OneToManyJoinWalker {
-	public ReactiveOneToManyJoinWalker(QueryableCollection oneToManyPersister, int batchSize, String subquery, SessionFactoryImplementor factory, LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
+
+	public ReactiveOneToManyJoinWalker(QueryableCollection oneToManyPersister,
+									   int batchSize, String subquery,
+									   SessionFactoryImplementor factory,
+									   LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
 		super(oneToManyPersister, batchSize, subquery, factory, loadQueryInfluencers);
 	}
 
@@ -27,7 +32,16 @@ public class ReactiveOneToManyJoinWalker extends OneToManyJoinWalker {
 	 * Render the where condition for a (batch) load by identifier / collection key
 	 */
 	protected StringBuilder whereString(String alias, String[] columnNames, int batchSize) {
+
 		Supplier<String> nextParameter = createDialectParameterGenerator( getDialect() );
+
+		// Filter parameters are going to be added before us so increment
+		for ( Filter filter: getLoadQueryInfluencers().getEnabledFilters().values() ) {
+			int params = filter.getFilterDefinition().getParameterNames().size();
+			for (int i=0; i<params; i++) {
+				nextParameter.get();
+			}
+		}
 
 		if ( columnNames.length == 1 ) {
 			// if not a composite key, use "foo in (?, ?, ?)" for batching

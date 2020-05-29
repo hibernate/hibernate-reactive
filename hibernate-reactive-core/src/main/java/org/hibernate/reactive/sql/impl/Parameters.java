@@ -38,19 +38,19 @@ public class Parameters {
 		int quoteCount = 0;
 		while ( quoteTokenizer.hasMoreTokens() ) {
 			final String token = quoteTokenizer.nextToken();
-				if ( token.charAt( 0 ) == '\'' ) {
-					quoteCount++;
-					sb.append( token );
-				}
-				else if ( quoteCount % 2 == 0) {
-					// if quoteCount is even, that means the token is not in a quoted string
-					sb.append( processParameters( token, generator ) );
-				}
-				else {
-					// quoteCount is odd, so token is in a quoted string.
-					sb.append( token );
-				}
+			if ( token.charAt( 0 ) == '\'' ) {
+				quoteCount++;
+				sb.append( token );
 			}
+			else if ( quoteCount % 2 == 0) {
+				// if quoteCount is even, that means the token is not in a quoted string
+				sb.append( processParameters( token, generator ) );
+			}
+			else {
+				// quoteCount is odd, so token is in a quoted string.
+				sb.append( token );
+			}
+		}
 		return sb.toString();
 	}
 
