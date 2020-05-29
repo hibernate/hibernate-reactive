@@ -16,6 +16,25 @@ task ciRelease {
     }
 
     doLast {
+        println("Checking that the working tree is clean...")
+        String uncommittedFiles = executeGitCommand('status', '--porcelain')
+        if ( !uncommittedFiles.isEmpty() ) {
+            throw new GradleException(
+                    "Cannot release because there are uncommitted or untracked files in the working tree."
+                            + "\nCommit or stash your changes first."
+                            + "\nUncommitted files:\n" + uncommittedFiles
+            );
+        }
+
+        println("Checking that all commits are pushed...")
+        String diffWithUpstream = executeGitCommand('diff', '@{u}')
+        if ( !diffWithUpstream.isEmpty() ) {
+            throw new GradleException(
+                    "Cannot release because there are commits on the branch to release that haven't been pushed yet."
+                            + "\nPush your commits to the branch to release first."
+            );
+        }
+
         println("Adding commit to update version to '${project.releaseVersion}'...")
         project.projectVersionFile.text = "projectVersion=${project.releaseVersion}"
         executeGitCommand('add', '.')
@@ -26,7 +45,7 @@ task ciRelease {
         }
 
         println("Tagging '${tag}'...")
-        executeGitCommand('tag', tag)
+        executeGitCommand('tag', '-a', '-m', "Release ${project.releaseVersion}", tag)
 
         println("Adding commit to update version to '${project.developmentVersion}'...")
         project.projectVersionFile.text = "projectVersion=${project.developmentVersion}"
@@ -45,7 +64,7 @@ task ciRelease {
     }
 }
 
-static void executeGitCommand(Object ... subcommand){
+static String executeGitCommand(Object ... subcommand){
     List<Object> command = ['git']
     Collections.addAll( command, subcommand )
     def proc = command.execute()
@@ -55,6 +74,7 @@ static void executeGitCommand(Object ... subcommand){
     if ( code != 0 ) {
         throw new GradleException( "An error occurred while executing " + command + "\n\nstdout:\n" + stdout + "\n\nstderr:\n" + stderr )
     }
+    return stdout
 }
 
 static String inputStreamToString(InputStream inputStream) {
