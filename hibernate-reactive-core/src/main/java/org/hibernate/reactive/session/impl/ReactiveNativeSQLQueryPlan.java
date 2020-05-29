@@ -6,7 +6,6 @@
 package org.hibernate.reactive.session.impl;
 
 import org.hibernate.HibernateException;
-import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.query.spi.NativeSQLQueryPlan;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -14,7 +13,6 @@ import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.param.ParameterBinder;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.sql.impl.Parameters;
 
 import java.util.concurrent.CompletionStage;
 
@@ -45,16 +43,6 @@ public class ReactiveNativeSQLQueryPlan extends NativeSQLQueryPlan {
 
 		queryParameters.processFilters( customQuery.getSQL(), sessionContract );
 
-		Dialect dialect = session.getDialect();
-		String sql = Parameters.processParameters(
-				dialect.addSqlHintOrComment(
-						queryParameters.getFilteredSQL(),
-						queryParameters,
-						session.getFactory().getSessionFactoryOptions().isCommentsEnabled()
-				),
-				dialect
-		);
-
 		Object[] params = PreparedStatementAdaptor.bind( statement -> {
 			int col = 1;
 			for ( ParameterBinder binder : customQuery.getParameterValueBinders() ) {
@@ -66,6 +54,10 @@ public class ReactiveNativeSQLQueryPlan extends NativeSQLQueryPlan {
 //		if ( selection != null && selection.getTimeout() != null ) {
 //			statement.setQueryTimeout( selection.getTimeout() );
 //		}
+
+		boolean commentsEnabled = session.getFactory().getSessionFactoryOptions().isCommentsEnabled();
+		String sql = session.getDialect()
+				.addSqlHintOrComment( queryParameters.getFilteredSQL(), queryParameters, commentsEnabled );
 
 		return session.getReactiveConnection().update( sql, params );
 	}

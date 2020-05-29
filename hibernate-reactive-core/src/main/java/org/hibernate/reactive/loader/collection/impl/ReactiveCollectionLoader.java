@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
-import static org.hibernate.reactive.sql.impl.Parameters.processParameters;
 
 /**
  * A reactific {@link org.hibernate.loader.collection.CollectionLoader}.
@@ -135,8 +134,7 @@ public class ReactiveCollectionLoader extends CollectionLoader
 								SessionFactoryImplementor factory,
 								List<AfterLoadAction> afterLoadActions) {
 		//this is needed here for the case of fetching a collection with filters
-		String processed = super.preprocessSQL(sql, queryParameters, factory, afterLoadActions);
-		return processParameters( processed, factory.getJdbcServices().getDialect() );
+		return super.preprocessSQL(sql, queryParameters, factory, afterLoadActions);
 	}
 
 	@Override @SuppressWarnings("unchecked")

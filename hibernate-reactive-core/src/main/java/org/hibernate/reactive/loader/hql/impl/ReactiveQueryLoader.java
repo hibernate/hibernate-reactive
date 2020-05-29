@@ -31,8 +31,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
-import static org.hibernate.reactive.sql.impl.Parameters.processParameters;
-
 /**
  * A reactive {@link QueryLoader} for HQL queries.
  */
@@ -110,8 +108,7 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 								QueryParameters queryParameters,
 								SessionFactoryImplementor factory,
 								List<AfterLoadAction> afterLoadActions) {
-		String processed = super.preprocessSQL(sql, queryParameters, factory, afterLoadActions);
-		return processParameters( processed, factory.getJdbcServices().getDialect() );
+		return super.preprocessSQL(sql, queryParameters, factory, afterLoadActions);
 	}
 
 	@Override

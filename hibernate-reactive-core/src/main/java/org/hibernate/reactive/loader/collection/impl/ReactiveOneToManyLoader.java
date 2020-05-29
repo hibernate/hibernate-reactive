@@ -11,7 +11,7 @@ import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.CoreMessageLogger;
-import org.hibernate.loader.JoinWalker;
+import org.hibernate.loader.collection.OneToManyJoinWalker;
 import org.hibernate.loader.collection.OneToManyLoader;
 import org.hibernate.persister.collection.QueryableCollection;
 import org.hibernate.transform.ResultTransformer;
@@ -46,14 +46,13 @@ public class ReactiveOneToManyLoader extends ReactiveCollectionLoader {
 			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
 		super(oneToManyPersister, factory, loadQueryInfluencers);
 
-		JoinWalker walker = new ReactiveOneToManyJoinWalker(
+		initFromWalker( new OneToManyJoinWalker(
 				oneToManyPersister,
 				batchSize,
 				subquery,
 				factory,
 				loadQueryInfluencers
-		);
-		initFromWalker(walker);
+		) );
 
 		postInstantiate();
 		if (LOG.isDebugEnabled()) {

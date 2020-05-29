@@ -45,7 +45,7 @@ public class ReactiveEntityLoader extends ReactiveAbstractEntityLoader {
 				persister.getIdentifierType(),
 				factory,
 				loadQueryInfluencers,
-				new ReactiveEntityJoinWalker(
+				new EntityJoinWalker(
 						persister,
 						persister.getIdentifierColumnNames(),
 						batchSize,
@@ -70,7 +70,7 @@ public class ReactiveEntityLoader extends ReactiveAbstractEntityLoader {
 				persister.getIdentifierType(),
 				factory,
 				loadQueryInfluencers,
-				new ReactiveEntityJoinWalker(
+				new EntityJoinWalker(
 						persister,
 						persister.getIdentifierColumnNames(),
 						batchSize,

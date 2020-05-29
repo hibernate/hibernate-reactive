@@ -6,6 +6,17 @@
 package org.hibernate.reactive.testing;
 
 import io.vertx.core.Vertx;
+import org.hibernate.boot.model.naming.Identifier;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.MySQL8Dialect;
+import org.hibernate.engine.jdbc.env.spi.ExtractedDatabaseMetaData;
+import org.hibernate.engine.jdbc.env.spi.IdentifierHelper;
+import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
+import org.hibernate.engine.jdbc.env.spi.LobCreatorBuilder;
+import org.hibernate.engine.jdbc.env.spi.NameQualifierSupport;
+import org.hibernate.engine.jdbc.env.spi.QualifiedObjectNameFormatter;
+import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
+import org.hibernate.engine.jdbc.spi.TypeInfo;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.reactive.vertx.impl.ProvidedVertxInstance;
 import org.hibernate.service.Service;
@@ -71,10 +82,64 @@ public class TestingRegistryRule extends ExternalResource {
             return null;
         }
 
-        @Override
+        @Override @SuppressWarnings("unchecked")
         public <R extends Service> R getService(Class<R> serviceRole) {
-            if ( serviceRole == VertxInstance.class )
+            if ( serviceRole == VertxInstance.class ) {
                 return (R) vertxService;
+            }
+            else if ( serviceRole == JdbcEnvironment.class ) {
+                return (R) new JdbcEnvironment() {
+                    @Override
+                    public Dialect getDialect() {
+                        return new MySQL8Dialect();
+                    }
+
+                    @Override
+                    public ExtractedDatabaseMetaData getExtractedDatabaseMetaData() {
+                        return null;
+                    }
+
+                    @Override
+                    public Identifier getCurrentCatalog() {
+                        return null;
+                    }
+
+                    @Override
+                    public Identifier getCurrentSchema() {
+                        return null;
+                    }
+
+                    @Override
+                    public QualifiedObjectNameFormatter getQualifiedObjectNameFormatter() {
+                        return null;
+                    }
+
+                    @Override
+                    public IdentifierHelper getIdentifierHelper() {
+                        return null;
+                    }
+
+                    @Override
+                    public NameQualifierSupport getNameQualifierSupport() {
+                        return null;
+                    }
+
+                    @Override
+                    public SqlExceptionHelper getSqlExceptionHelper() {
+                        return null;
+                    }
+
+                    @Override
+                    public LobCreatorBuilder getLobCreatorBuilder() {
+                        return null;
+                    }
+
+                    @Override
+                    public TypeInfo getTypeInfoForJdbcCode(int jdbcTypeCode) {
+                        return null;
+                    }
+                };
+            }
             else {
                 throw new IllegalArgumentException( "This is a mock service - need to explicitly handle any service we might need during testing" );
             }

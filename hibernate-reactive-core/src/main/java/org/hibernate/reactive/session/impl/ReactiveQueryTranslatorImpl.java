@@ -24,7 +24,6 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.param.ParameterSpecification;
-import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.loader.hql.impl.ReactiveQueryLoader;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -35,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import static org.hibernate.reactive.sql.impl.Parameters.processParameters;
+import static org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor.toParameterArray;
 
 public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 
@@ -147,18 +146,18 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 		errorIfSelect();
 
 		// Multiple UPDATE SQL strings are not supported yet
+		String sql = getSqlStatements()[0];
 
-		final String processedSql = processParameters( getSqlStatements()[0], session.getDialect() );
-		final Object[] parameterValues = QueryParametersAdaptor.toParameterArray(
+		Object[] parameterValues = toParameterArray(
 				queryParameters,
 				getCollectedParameterSpecifications( session ),
 				session.getSharedContract()
 		);
-		return CompletionStages.completedFuture(0)
-				.thenCompose( count -> session.getReactiveConnection()
-						.update( processedSql, parameterValues )
+		return CompletionStages.completedFuture(0).thenCompose(
+				count -> session.getReactiveConnection()
+						.update( sql, parameterValues )
 						.thenApply( updateCount -> count + updateCount )
-				);
+		);
 	}
 
 	/**
