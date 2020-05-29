@@ -5,10 +5,8 @@
  */
 package org.hibernate.reactive.session.impl;
 
-import org.hibernate.AssertionFailure;
 import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
 import org.hibernate.query.criteria.internal.CriteriaQueryImpl;
-import org.hibernate.query.criteria.internal.QueryStructure;
 import org.hibernate.query.criteria.internal.SelectionImplementor;
 import org.hibernate.query.criteria.internal.ValueHandlerFactory;
 import org.hibernate.query.criteria.internal.compile.ImplicitParameterBinding;
@@ -21,7 +19,6 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.type.Type;
 
 import javax.persistence.TypedQuery;
-import java.lang.reflect.Field;
 import java.util.List;
 
 /**
@@ -32,34 +29,13 @@ import java.util.List;
  */
 public class ReactiveCriteriaQueryImpl<T> extends CriteriaQueryImpl<T> implements Criteria<T> {
 
-	//TODO: expose this field in ORM!
-	private static Field queryStructureField;
-	static {
-		try {
-			queryStructureField = CriteriaQueryImpl.class.getDeclaredField("queryStructure");
-			queryStructureField.setAccessible(true);
-		}
-		catch (Exception e) {
-			throw new AssertionFailure("missing field", e);
-		}
-	}
-
-	private final QueryStructure<T> queryStructure;
-
-	@SuppressWarnings("unchecked")
 	public ReactiveCriteriaQueryImpl(CriteriaBuilderImpl criteriaBuilder, Class<T> returnType) {
 		super(criteriaBuilder, returnType);
-		try {
-			this.queryStructure = (QueryStructure<T>) queryStructureField.get(this);
-		}
-		catch (Exception e) {
-			throw new AssertionFailure("missing field", e);
-		}
 	}
 
 	private String renderQuery(RenderingContext renderingContext) {
 		StringBuilder jpaql = new StringBuilder();
-		queryStructure.render( jpaql, renderingContext );
+		getQueryStructure().render( jpaql, renderingContext );
 		renderOrderByClause( renderingContext, jpaql );
 		return jpaql.toString();
 	}
