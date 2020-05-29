@@ -1,4 +1,8 @@
-description = 'Hibernate Reactive Core'
+ext {
+	mavenPomName = 'Hibernate Reactive Core'
+}
+
+description = 'The core module of Hibernate Reactive'
 
 apply from: publishScript
 
