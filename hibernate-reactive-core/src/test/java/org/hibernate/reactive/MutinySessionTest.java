@@ -266,6 +266,45 @@ public class MutinySessionTest extends BaseMutinyTest {
 	}
 
 	@Test
+	public void reactiveQueryWithLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.flatMap( v -> getSessionFactory().withTransaction(
+								(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class)
+										.setLockMode(LockMode.PESSIMISTIC_WRITE)
+										.getSingleResult()
+										.onItem().invoke( actualPig -> {
+											assertThatPigsAreEqual( context, expectedPig, actualPig );
+											context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+										} )
+								)
+						)
+		);
+	}
+
+	@Test
+	public void reactiveQueryWithAliasedLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.flatMap(
+								v -> getSessionFactory().withTransaction(
+										(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class)
+												.setLockMode("pig", LockMode.PESSIMISTIC_WRITE )
+												.getSingleResult()
+												.onItem().invoke( actualPig -> {
+													assertThatPigsAreEqual( context, expectedPig, actualPig );
+													context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+												} )
+								)
+						)
+		);
+	}
+
+	@Test
 	public void testMetamodel(TestContext context) {
 		EntityType<GuineaPig> pig = getSessionFactory().getMetamodel().entity(GuineaPig.class);
 		context.assertNotNull(pig);

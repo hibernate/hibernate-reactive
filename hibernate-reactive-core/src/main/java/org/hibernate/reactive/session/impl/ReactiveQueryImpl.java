@@ -11,6 +11,7 @@ import org.hibernate.engine.query.spi.EntityGraphQueryHint;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.criteria.internal.compile.ExplicitParameterInfo;
 import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
@@ -22,7 +23,6 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 
 import javax.persistence.Parameter;
-import javax.persistence.TransactionRequiredException;
 import javax.persistence.criteria.ParameterExpression;
 import java.util.Collections;
 import java.util.List;
@@ -103,11 +103,18 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		if ( getMaxResults() == 0 ) {
 			return CompletionStages.completedFuture( Collections.emptyList() );
 		}
-		if ( getLockOptions().getLockMode() != null && getLockOptions().getLockMode() != LockMode.NONE ) {
-			if ( !getProducer().isTransactionInProgress() ) {
-				throw new TransactionRequiredException( "no transaction is in progress" );
-			}
-		}
+
+		// disable this check for now because I don't have a
+		// way figure out if there is a transaction in process,
+		// and anyway we don't really care about this check
+//		LockMode lockMode = getLockOptions().getLockMode();
+//		if ( lockMode != null && lockMode != LockMode.NONE ) {
+//			// note that this check doesn't get done for aliased locks,
+//			// but that's the same as in hibernate-core so don't care
+//			if ( !getProducer().isTransactionInProgress() ) {
+//				throw new TransactionRequiredException( "no transaction is in progress" );
+//			}
+//		}
 
 		final String expandedQuery = getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() );
 		return reactiveProducer().reactiveList( expandedQuery, makeReactiveQueryParametersForExecution( expandedQuery ) );
@@ -166,10 +173,10 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 	}
 
 	private <T> ExplicitParameterInfo<?> resolveParameterInfo(Parameter<T> param) {
-		if ( ExplicitParameterInfo.class.isInstance( param ) ) {
+		if (param instanceof ExplicitParameterInfo) {
 			return (ExplicitParameterInfo<?>) param;
 		}
-		else if ( ParameterExpression.class.isInstance( param ) ) {
+		else if (param instanceof ParameterExpression) {
 			return explicitParameterInfoMap.get( param );
 		}
 		else {
@@ -206,6 +213,18 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 	@Override
 	public ReactiveQueryImpl<R> setComment(String comment) {
 		super.setComment(comment);
+		return this;
+	}
+
+	@Override
+	public ReactiveQuery<R> setLockMode(LockMode lockMode) {
+		super.setLockMode( LockModeConverter.convertToLockModeType( lockMode ) );
+		return this;
+	}
+
+	@Override
+	public ReactiveQuery<R> setQueryHint(String hintName, Object value) {
+		super.setHint(hintName, value);
 		return this;
 	}
 

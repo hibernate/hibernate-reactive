@@ -54,6 +54,10 @@ public interface ReactiveQuery<R> {
 
 	ReactiveQuery<R> setComment(String comment);
 
+	ReactiveQuery<R> setQueryHint(String hintName, Object value);
+
+	ReactiveQuery<R> setLockMode(LockMode lockMode);
+
 	ReactiveQuery<R> setLockMode(String alias, LockMode lockMode);
 
 	ReactiveQuery<R> setCacheMode(CacheMode cacheMode);
@@ -91,4 +95,5 @@ public interface ReactiveQuery<R> {
 					.convert( e, query.getLockOptions() );
 		}
 	}
+
 }

@@ -112,6 +112,11 @@ public interface Stage {
 		Query<R> setComment(String comment);
 
 		/**
+		 * Set a query hint.
+		 */
+		Query<R> setHint(String hintName, Object value);
+
+		/**
 		 * (Re)set the current {@link CacheMode} in effect for this query.
 		 */
 		Query<R> setCacheMode(CacheMode cacheMode);
@@ -126,24 +131,17 @@ public interface Stage {
 		CacheMode getCacheMode();
 
 		/**
+		 * Set the {@link LockMode} to use for the whole query.
+		 */
+		Query<R> setLockMode(LockMode lockMode);
+
+		/**
 		 * Set the {@link LockMode} to use for specified alias (as defined in
 		 * the query's <tt>FROM</tt> clause).
 		 *
 		 * @see org.hibernate.query.Query#setLockMode(String,LockMode)
 		 */
 		Query<R> setLockMode(String alias, LockMode lockMode);
-
-		/*
-
-		Some examples of additional useful methods to add here:
-
-		String getQueryString();
-
-		Query<R> setCacheable(boolean var1);
-
-		Query<R> setCacheRegion(String var1);
-
-		*/
 
 	}
 
