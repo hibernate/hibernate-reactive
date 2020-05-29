@@ -10,7 +10,6 @@ import org.hibernate.QueryException;
 import org.hibernate.cache.spi.QueryKey;
 import org.hibernate.cache.spi.QueryResultsCache;
 import org.hibernate.dialect.pagination.LimitHandler;
-import org.hibernate.dialect.pagination.LimitHelper;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.RowSelection;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -20,12 +19,12 @@ import org.hibernate.hql.internal.ast.QueryTranslatorImpl;
 import org.hibernate.hql.internal.ast.tree.SelectClause;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
+import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.CachingReactiveLoader;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -88,7 +87,7 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 	}
 
 	@Override @SuppressWarnings("unchecked")
-	public List<Object> processResultSet(ResultSet rs,
+	public List<Object> processResultSet(ResultSet resultSet,
 										 QueryParameters queryParameters,
 										 SharedSessionContractImplementor session,
 										 boolean returnProxies,
@@ -96,9 +95,11 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 										 int maxRows, List<AfterLoadAction> afterLoadActions) throws SQLException {
 		final RowSelection rowSelection = queryParameters.getRowSelection();
 		final ResultSet resultSetPreprocessed = preprocessResultSet(
-				rs,
+				resultSet,
 				rowSelection,
-				getLimitHandler( rowSelection )
+				getLimitHandler( rowSelection ),
+				false,
+				session
 		);
 		return super.processResultSet(resultSetPreprocessed, queryParameters, session, returnProxies,
 				forcedResultTransformer, maxRows, afterLoadActions);
@@ -148,29 +149,11 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 		return super.getResultList(results, resultTransformer);
 	}
 
-	/**
-	 * This is based on private method,
-	 * {@link Loader#processResultSet(ResultSet, RowSelection, LimitHandler limitHandler, boolean, SharedSessionContractImplementor),
-	 */
-	private ResultSet preprocessResultSet(
-			ResultSet resultSet,
-			final RowSelection selection,
-			final LimitHandler limitHandler
-	) throws SQLException, HibernateException {
-		if ( !limitHandler.supportsLimitOffset()
-				|| !LimitHelper.useLimit( limitHandler, selection ) ) {
-			for (int i = 0,
-				 firstRow = LimitHelper.getFirstRow(selection);
-				 i < firstRow; i++ ) {
-				resultSet.next();
-			}
-		}
-		return resultSet;
-	}
-
 	@Override
-	public int bindParameterValues(PreparedStatement statement, QueryParameters queryParameters, int startIndex,
-								   SharedSessionContractImplementor session) throws SQLException {
-		return super.bindParameterValues( statement, queryParameters, startIndex, session );
+	public void bindPreparedStatement(PreparedStatementAdaptor adaptor,
+									  QueryParameters queryParameters,
+									  LimitHandler limitHandler,
+									  SharedSessionContractImplementor session) throws SQLException {
+		super.bindPreparedStatement(adaptor, queryParameters, limitHandler, session);
 	}
 }

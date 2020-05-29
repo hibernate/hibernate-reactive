@@ -9,6 +9,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.QueryException;
 import org.hibernate.cache.spi.QueryKey;
 import org.hibernate.cache.spi.QueryResultsCache;
+import org.hibernate.dialect.pagination.LimitHandler;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
@@ -16,12 +17,12 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.custom.CustomLoader;
 import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.loader.spi.AfterLoadAction;
+import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.CachingReactiveLoader;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -48,13 +49,13 @@ public class ReactiveCustomLoader extends CustomLoader implements CachingReactiv
 	}
 
 	@Override @SuppressWarnings("unchecked")
-	public List<Object> processResultSet(ResultSet rs,
+	public List<Object> processResultSet(ResultSet resultSet,
 										 QueryParameters queryParameters,
 										 SharedSessionContractImplementor session,
 										 boolean returnProxies,
 										 ResultTransformer forcedResultTransformer,
 										 int maxRows, List<AfterLoadAction> afterLoadActions) throws SQLException {
-		return super.processResultSet(rs, queryParameters, session, returnProxies,
+		return super.processResultSet(resultSet, queryParameters, session, returnProxies,
 				forcedResultTransformer, maxRows, afterLoadActions);
 	}
 
@@ -110,8 +111,10 @@ public class ReactiveCustomLoader extends CustomLoader implements CachingReactiv
 	}
 
 	@Override
-	public int bindParameterValues(PreparedStatement statement, QueryParameters queryParameters, int startIndex,
-								   SharedSessionContractImplementor session) throws SQLException {
-		return super.bindParameterValues( statement, queryParameters, startIndex, session );
+	public void bindPreparedStatement(PreparedStatementAdaptor adaptor,
+									  QueryParameters queryParameters,
+									  LimitHandler limitHandler,
+									  SharedSessionContractImplementor session) throws SQLException {
+		super.bindPreparedStatement(adaptor, queryParameters, limitHandler, session);
 	}
 }
