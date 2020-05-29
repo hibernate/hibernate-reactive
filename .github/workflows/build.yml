@@ -18,8 +18,6 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-        server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
-        settings-path: ${{ github.workspace }} # location for the settings.xml file
     - name: Build and Test with PostgreSQL
       run: ./gradlew build -Pdocker -Pdb=pg
 
@@ -32,8 +30,6 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-        server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
-        settings-path: ${{ github.workspace }} # location for the settings.xml file
     - name: Build and Test with MySQL
       run: ./gradlew build -Pdocker -Pdb=mysql
 
@@ -46,8 +42,6 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-        server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
-        settings-path: ${{ github.workspace }} # location for the settings.xml file
     - name: Build and Test with DB2
       run: ./gradlew build -Pdocker -Pdb=db2
 
@@ -85,8 +79,6 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-        server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
-        settings-path: ${{ github.workspace }} # location for the settings.xml file
     - name: Create maven package
       run: ./gradlew assemble
     - name: Publish release to Bintray
