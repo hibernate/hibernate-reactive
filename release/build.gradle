@@ -2,15 +2,17 @@ import java.nio.charset.StandardCharsets
 
 description = 'Release module'
 
-// Usage: ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin
+// Usage: ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin -PgitBranch=master
 task ciRelease {
     group = "Release"
     description = "Triggers the release on CI: creates commits to change the version (release, then development), creates a tag, pushes everything. Then CI will take over and perform the release."
 
     doFirst {
-        if (!project.hasProperty('releaseVersion') || !project.hasProperty('developmentVersion') || !project.hasProperty('gitRemote')) {
+        if (!project.hasProperty('releaseVersion') || !project.hasProperty('developmentVersion')
+                || !project.hasProperty('gitRemote') ||!project.hasProperty('gitBranch')) {
             throw new GradleException(
-                    "The ciRelease task requires the 'releaseVersion', 'developmentVersion' and 'gitRemote' parameters."
+                    "Task 'ciRelease' requires all of the following properties to be set:"
+                            + "'releaseVersion', 'developmentVersion', 'gitRemote' and 'gitBranch'."
             )
         }
     }
@@ -25,6 +27,9 @@ task ciRelease {
                             + "\nUncommitted files:\n" + uncommittedFiles
             );
         }
+
+        println("Switching to branch '${project.gitBranch}'...")
+        executeGitCommand('switch', project.gitBranch)
 
         println("Checking that all commits are pushed...")
         String diffWithUpstream = executeGitCommand('diff', '@{u}')
