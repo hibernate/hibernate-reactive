@@ -1,0 +1,16 @@
+= Hibernate Reactive {fullVersion} Reference Documentation
+AUTHOR 1, AUTHOR 2
+:toc2:
+:toclevels: 3
+:sectanchors:
+
+:leveloffset: +1
+
+include::preface.adoc[]
+
+:numbered:
+
+include::getting-started.adoc[]
+
+:leveloffset: -1
+

@@ -1,0 +1,123 @@
+import org.asciidoctor.gradle.AsciidoctorTask
+
+import java.time.Year
+
+apply plugin: 'org.asciidoctor.convert'
+
+ext {
+	projectsToSkipWhenAggregatingJavadocs = [
+			'example',
+			'release',
+			'documentation'
+	]
+}
+
+rootProject.subprojects { subproject ->
+	if ( !this.projectsToSkipWhenAggregatingJavadocs.contains( subproject.name ) ) {
+		this.evaluationDependsOn( subproject.path )
+	}
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Aggregated JavaDoc
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+final File javadocDir = mkdir( new File( (File) project.buildDir, 'javadocs' ) )
+
+/**
+ * Builds the JavaDocs aggregated (unified) across all the sub-projects
+ */
+task aggregateJavadocs(type: Javadoc, group: 'Documentation') {
+    description = 'Builds the aggregated (unified) JavaDocs across all sub-projects'
+
+	final int inceptionYear = 2020
+    final int currentYear = Year.now().getValue()
+
+    // exclude any generated sources and internal packages
+    exclude( '**/generated-src/**' )
+	exclude( '**/src/main/generated/**' )
+    exclude( '**/internal/**' )
+	exclude( '**/impl/**' )
+
+	// apply standard config
+	maxMemory = '512m'
+	destinationDir = javadocDir
+	configure( options ) {
+		windowTitle = 'Hibernate Reactive JavaDoc'
+		docTitle = "Hibernate Reactive JavaDoc ($project.version)"
+		bottom = "Copyright &copy; $inceptionYear-$currentYear <a href=\"http://redhat.com\">Red Hat, Inc</a>. All Rights Reserved."
+		use = true
+		options.encoding = 'UTF-8'
+
+		links = [
+				'https://docs.oracle.com/javase/8/docs/api/',
+				'http://docs.jboss.org/hibernate/beanvalidation/spec/2.0/api/',
+				'https://javaee.github.io/javaee-spec/javadocs/',
+				// Need toString() to avoid ClassCastException from GStringImpl to String (!?)
+				"https://docs.jboss.org/hibernate/orm/${hibernateOrmVersion.family}/javadocs/".toString()
+		]
+		
+		if ( JavaVersion.current().isJava11Compatible() ) {
+			//The need to set `--source 1.8` applies to all JVMs after 11, and also to 11
+			// but after excluding the first two builds; see also specific comments on
+			// https://bugs.openjdk.java.net/browse/JDK-8212233?focusedCommentId=14245762
+			// For now, let's be compatible with JDK 11.0.3+. We can improve on it if people
+			// complain they cannot build with JDK 11.0.0, 11.0.1 and 11.0.2.
+			System.out.println("Forcing Javadoc in Java 8 compatible mode");
+			options.source = project.baselineJavaVersion
+		}
+
+		options.addStringOption( 'Xdoclint:none', '-quiet' )
+	}
+
+    // process each project, building up:
+    //      1) appropriate sources
+    //      2) classpath
+    parent.subprojects.each { Project subProject->
+        // skip certain sub-projects
+		if ( ! project.projectsToSkipWhenAggregatingJavadocs.contains( subProject.name ) ) {
+			// we only care about the main SourceSet...
+			source subProject.sourceSets.main.java
+
+			classpath += subProject.sourceSets.main.output + subProject.sourceSets.main.compileClasspath
+		}
+    }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Asciidoc
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+asciidoctor {
+	// we do not want it creating its "default task"
+	enabled = false
+}
+
+task renderReferenceDocumentation(type: AsciidoctorTask, group: 'Documentation') {
+    description = 'Renders the Reference Documentation in HTML format using Asciidoctor.'
+    sourceDir = file( 'src/main/asciidoc/reference' )
+    sources {
+        include 'index.adoc'
+    }
+    outputDir = new File("$buildDir/asciidoc/reference/html_single")
+    backends "html5"
+    separateOutputDirs false
+    options logDocuments: true
+	attributes icons: 'font', experimental: true,
+			   'source-highlighter': 'prettify',
+			   linkcss: true,
+			   majorMinorVersion: project.version.family,
+			   fullVersion: project.version.toString(),
+			   docinfo: 'private'
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// All
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+task assembleDocumentation(dependsOn: [aggregateJavadocs, renderReferenceDocumentation]) {
+	group 'Documentation'
+	description 'Grouping task for performing all documentation building tasks'
+}
+
+assemble.dependsOn assembleDocumentation

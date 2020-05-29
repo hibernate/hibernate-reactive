@@ -11,5 +11,6 @@ rootProject.name = 'hibernate-reactive'
 
 include 'hibernate-reactive-core'
 include 'example'
+include 'documentation'
 include 'release'
 
