@@ -8,6 +8,7 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.annotations.Filter;
 import org.hibernate.cfg.Configuration;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.persistence.*;
@@ -62,9 +63,100 @@ public class FilterTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testFilterWithParameter(TestContext context) {
+
+		Node basik = new Node("Child");
+		basik.region = "oceania";
+		basik.parent = new Node("Parent");
+		basik.parent.region = "oceania";
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+		basik.elements.get(0).region = "asia";
+		basik.elements.get(1).region = "oceania";
+		basik.elements.get(2).region = "oceania";
+
+		test(context,
+				openSession()
+						.thenCompose(s -> s.persist(basik))
+						.thenCompose(s -> s.flush())
+						.thenCompose(v -> openSession())
+						.thenCompose(s -> {
+							s.enableFilter("region").setParameter("region", "oceania");
+							return s.createQuery("select distinct n from Node n left join fetch n.elements order by n.id")
+									.setComment("Hello World!")
+									.getResultList();
+						})
+						.thenAccept(list -> {
+							context.assertEquals(list.size(), 2);
+							context.assertEquals(((Node) list.get(0)).elements.size(), 2);
+						})
+						.thenCompose(v -> openSession())
+						.thenCompose(s -> {
+							s.enableFilter("region").setParameter("region", "oceania");
+							return s.createQuery("select distinct n, e from Node n join n.elements e").getResultList();
+						})
+						.thenAccept(list -> context.assertEquals(list.size(), 2))
+		);
+	}
+
+	@Test
+	public void testFilterCollectionFetch(TestContext context) {
+
+		Node basik = new Node("Child");
+		basik.parent = new Node("Parent");
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+		basik.elements.get(0).deleted = true;
+
+		test(context,
+				openSession()
+						.thenCompose(s -> s.persist(basik))
+						.thenCompose(s -> s.flush())
+						.thenCompose(v -> openSession())
+						.thenCompose(s -> {
+							s.enableFilter("current");
+							return s.find( Node.class, basik.getId() )
+									.thenCompose( node -> s.fetch( node.elements ) );
+						})
+						.thenAccept( list -> context.assertEquals( 2, list.size() ) )
+		);
+	}
+
+	@Test @Ignore("parameter binding for collection fetching with filters is broken")
+	public void testFilterCollectionFetchWithParameter(TestContext context) {
+
+		Node basik = new Node("Child");
+		basik.region = "oceania";
+		basik.parent = new Node("Parent");
+		basik.parent.region = "oceania";
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+		basik.elements.get(0).region = "asia";
+		basik.elements.get(1).region = "oceania";
+		basik.elements.get(2).region = "oceania";
+
+		test(context,
+				openSession()
+						.thenCompose(s -> s.persist(basik))
+						.thenCompose(s -> s.flush())
+						.thenCompose(v -> openSession())
+						.thenCompose(s -> {
+							s.enableFilter("region").setParameter("region", "oceania");
+							return s.find( Node.class, basik.getId() )
+									.thenCompose( node -> s.fetch( node.elements ) );
+						})
+						.thenAccept( list -> context.assertEquals( 2, list.size() ) )
+		);
+	}
+
 	@Entity(name = "Element")
 	@Table(name = "Element")
 	@Filter(name = "current")
+	@Filter(name = "region")
 	public static class Element {
 		@Id
 		@GeneratedValue
@@ -74,6 +166,8 @@ public class FilterTest extends BaseReactiveTest {
 		Node node;
 
 		boolean deleted;
+
+		String region;
 
 		public Element(Node node) {
 			this.node = node;
@@ -86,6 +180,7 @@ public class FilterTest extends BaseReactiveTest {
 	@Entity(name = "Node")
 	@Table(name = "Node")
 	@Filter(name = "current")
+	@Filter(name = "region")
 	public static class Node {
 
 		@Id
@@ -97,6 +192,8 @@ public class FilterTest extends BaseReactiveTest {
 
 		boolean deleted;
 
+		String region;
+
 		@ManyToOne(fetch = FetchType.LAZY,
 				cascade = {CascadeType.PERSIST,
 						CascadeType.REFRESH,
@@ -104,11 +201,12 @@ public class FilterTest extends BaseReactiveTest {
 						CascadeType.REMOVE})
 		Node parent;
 
-		@OneToMany(fetch = FetchType.EAGER,
+		@OneToMany(fetch = FetchType.LAZY,
 				cascade = {CascadeType.PERSIST,
 						CascadeType.REMOVE},
 				mappedBy = "node")
 		@Filter(name = "current")
+		@Filter(name = "region")
 		List<Element> elements = new ArrayList<>();
 
 		@Transient
