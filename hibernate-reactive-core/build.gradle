@@ -1,6 +1,6 @@
-apply from: publishScript
-
 description = 'Hibernate Reactive Core'
+
+apply from: publishScript
 
 dependencies {
 

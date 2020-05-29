@@ -86,7 +86,7 @@ publishing {
             artifact sourcesJar
             artifact javadocJar
             pom {
-                name = project.properties.title
+                name = project.name
                 description = project.description
                 url = 'https://github.com/hibernate/hibernate-reactive'
                 organization {
