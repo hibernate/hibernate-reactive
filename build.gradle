@@ -1,3 +1,5 @@
+import java.util.regex.Pattern
+
 plugins {
     id 'java-library'
     id 'maven-publish'
@@ -8,7 +10,14 @@ plugins {
 
 ext {
     projectVersionFile = file( "${rootProject.projectDir}/gradle/version.properties" )
-    projectVersion = readVersionFromProperties( projectVersionFile )
+    projectVersion = Version.parseProjectVersion( readVersionFromProperties( projectVersionFile ) )
+
+    if ( project.hasProperty('releaseVersion') ) {
+        releaseVersion = Version.parseReleaseVersion( project.releaseVersion )
+    }
+    if ( project.hasProperty('developmentVersion') ) {
+        developmentVersion = Version.parseDevelopmentVersion( project.developmentVersion )
+    }
 }
 
 subprojects {
@@ -49,4 +58,70 @@ private static String readVersionFromProperties(File file) {
         stream -> versionProperties.load( stream )
     }
     return versionProperties.projectVersion
+}
+
+class Version {
+
+    private static final Pattern RELEASE_VERSION_PATTERN = ~/^(\d+)\.(\d+)\.(\d+)\.((?<=\.0\.)(?:Alpha\d+|Beta\d+|CR\d+)|Final)$/
+
+    private static final Pattern DEVELOPMENT_VERSION_PATTERN = ~/^(\d+)\.(\d+)\.(\d+)-SNAPSHOT$/
+
+    static Version parseReleaseVersion(String versionString) {
+        def matcher = (versionString =~ RELEASE_VERSION_PATTERN)
+        if ( !matcher.matches() ) {
+            throw new IllegalArgumentException(
+                    "Invalid version number: '$versionString'." +
+                            " Release version numbers must match /$RELEASE_VERSION_PATTERN/."
+            )
+        }
+        return new Version( matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(4), false )
+    }
+
+    static Version parseDevelopmentVersion(String versionString) {
+        def matcher = (versionString =~ DEVELOPMENT_VERSION_PATTERN)
+        if ( !matcher.matches() ) {
+            throw new IllegalArgumentException(
+                    "Invalid version number: '$versionString'." +
+                            " Development version numbers must match /$DEVELOPMENT_VERSION_PATTERN/."
+            )
+        }
+
+        return new Version( matcher.group(1), matcher.group(2), matcher.group(3), null, true )
+    }
+
+    static Version parseProjectVersion(String versionString) {
+        if ( (versionString =~ RELEASE_VERSION_PATTERN).matches() ) {
+            return parseReleaseVersion( versionString )
+        }
+        if ( (versionString =~ DEVELOPMENT_VERSION_PATTERN).matches() ) {
+            return parseDevelopmentVersion( versionString )
+        }
+        throw new IllegalArgumentException(
+                "Invalid version number: '$versionString'." +
+                        " Project version numbers must match either /$RELEASE_VERSION_PATTERN/ or /$DEVELOPMENT_VERSION_PATTERN/."
+        )
+    }
+
+    final String major
+    final String minor
+    final String micro
+    final String qualifier
+    final boolean snapshot
+
+    Version(String major, String minor, String micro, String qualifier, boolean snapshot) {
+        this.major = major
+        this.minor = minor
+        this.micro = micro
+        this.qualifier = qualifier
+        this.snapshot = snapshot
+    }
+
+    @Override
+    String toString() {
+        [major, minor, micro, qualifier].findAll({ it != null }).join('.') + (snapshot ? '-SNAPSHOT' : '')
+    }
+
+    String getFamily() {
+        "$major.$minor"
+    }
 }
