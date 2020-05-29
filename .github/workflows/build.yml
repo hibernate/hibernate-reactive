@@ -80,6 +80,18 @@ jobs:
         java-version: 1.8
     - name: Create maven package
       run: ./gradlew assemble
+    - name: Install SSH key
+      uses: shimataro/ssh-key-action@v2
+      with:
+        name: jboss_filemgmt
+        key: ${{ secrets.JBOSS_FILEMGMT_SSH_KEY }}
+        known_hosts: ${{ secrets.JBOSS_FILEMGMT_SSH_KNOWN_HOSTS }}
+        config: |
+          Host filemgmt.jboss.org
+            User hibernate
+            IdentityFile ~/.ssh/jboss_filemgmt
+    - name: Publish documentation to jboss.org
+      run: ./gradlew uploadDocumentation
     - name: Publish release to Bintray
       env:
         ORG_GRADLE_PROJECT_bintrayUser: ${{ secrets.BINTRAY_USER }}
