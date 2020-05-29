@@ -57,11 +57,8 @@ task ciRelease {
         executeGitCommand('add', '.')
         executeGitCommand('commit', '-m', project.developmentVersion)
 
-        println("Pushing branch to remote '${project.gitRemote}'...")
-        executeGitCommand('push', project.gitRemote)
-
-        println("Pushing tag '${tag}' to remote '${project.gitRemote}'...")
-        executeGitCommand('push', project.gitRemote, tag)
+        println("Pushing branch and tag to remote '${project.gitRemote}'...")
+        executeGitCommand('push', '--atomic', project.gitRemote, project.gitBranch, tag)
 
         println("Done!")
 
