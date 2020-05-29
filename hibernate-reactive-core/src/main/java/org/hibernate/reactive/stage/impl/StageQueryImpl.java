@@ -68,6 +68,18 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 	}
 
 	@Override
+	public Stage.Query<R> setHint(String hintName, Object value) {
+		delegate.setQueryHint( hintName, value );
+		return null;
+	}
+
+	@Override
+	public Stage.Query<R> setLockMode(LockMode lockMode) {
+		delegate.setLockMode( lockMode );
+		return this;
+	}
+
+	@Override
 	public Stage.Query<R> setLockMode(String alias, LockMode lockMode) {
 		delegate.setLockMode( alias, lockMode );
 		return this;

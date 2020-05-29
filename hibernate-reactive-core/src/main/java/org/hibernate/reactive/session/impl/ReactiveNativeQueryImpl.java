@@ -11,10 +11,12 @@ import org.hibernate.engine.query.spi.sql.NativeSQLQueryReturn;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
 import org.hibernate.query.internal.NativeQueryImpl;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
+import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.transform.ResultTransformer;
 
@@ -150,6 +152,18 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	@Override
 	public ReactiveNativeQueryImpl<R> setComment(String comment) {
 		super.setComment(comment);
+		return this;
+	}
+
+	@Override
+	public ReactiveQuery<R> setLockMode(LockMode lockMode) {
+		super.setLockMode( LockModeConverter.convertToLockModeType( lockMode ) );
+		return this;
+	}
+
+	@Override
+	public ReactiveQuery<R> setQueryHint(String hintName, Object value) {
+		super.setHint(hintName, value);
 		return this;
 	}
 

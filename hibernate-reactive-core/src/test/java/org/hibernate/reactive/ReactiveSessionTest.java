@@ -245,14 +245,35 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		test(
 				context,
 				populateDB()
-						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.createQuery( "from GuineaPig pig", GuineaPig.class).setLockMode("pig", LockMode.PESSIMISTIC_WRITE )
-								.getSingleResult()
-								.thenAccept( actualPig -> {
-									assertThatPigsAreEqual( context, expectedPig, actualPig );
-									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
-								} )
-								.whenComplete( (v, err) -> session.close() )
+						.thenCompose( v -> getSessionFactory().withTransaction(
+								(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class)
+										.setLockMode(LockMode.PESSIMISTIC_WRITE)
+										.getSingleResult()
+										.thenAccept( actualPig -> {
+											assertThatPigsAreEqual( context, expectedPig, actualPig );
+											context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+										} )
+								)
+						)
+		);
+	}
+
+	@Test
+	public void reactiveQueryWithAliasedLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose(
+								v -> getSessionFactory().withTransaction(
+										(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class)
+												.setLockMode("pig", LockMode.PESSIMISTIC_WRITE )
+												.getSingleResult()
+												.thenAccept( actualPig -> {
+													assertThatPigsAreEqual( context, expectedPig, actualPig );
+													context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+												} )
+								)
 						)
 		);
 	}

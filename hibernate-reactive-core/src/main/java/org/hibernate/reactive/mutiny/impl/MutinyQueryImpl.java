@@ -8,8 +8,8 @@ package org.hibernate.reactive.mutiny.impl;
 import io.smallrye.mutiny.Uni;
 import org.hibernate.CacheMode;
 import org.hibernate.LockMode;
-import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.session.ReactiveQuery;
 
 import javax.persistence.Parameter;
 import java.util.List;
@@ -64,6 +64,18 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 	@Override
 	public Mutiny.Query<R> setComment(String comment) {
 		delegate.setComment( comment );
+		return this;
+	}
+
+	@Override
+	public Mutiny.Query<R> setHint(String hintName, Object value) {
+		delegate.setQueryHint( hintName, value );
+		return null;
+	}
+
+	@Override
+	public Mutiny.Query<R> setLockMode(LockMode lockMode) {
+		delegate.setLockMode( lockMode );
 		return this;
 	}
 
