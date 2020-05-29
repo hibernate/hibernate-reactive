@@ -174,7 +174,7 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 	default Object[] toParameterArray(QueryParameters queryParameters, SharedSessionContractImplementor session) {
 		PreparedStatementAdaptor adaptor = new PreparedStatementAdaptor();
 		try {
-			bindPreparedStatement(
+			bindStatement(
 					adaptor,
 					queryParameters,
 					limitHandler( queryParameters.getRowSelection(), session ),
@@ -192,7 +192,7 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 	 * This is based on the code related to binding a PreparedStatement in {@link Loader#prepareQueryStatement},
 	 * with modifications.
 	 */
-	default PreparedStatement bindPreparedStatement(
+	default PreparedStatement bindStatement(
 			final PreparedStatement st,
 			final QueryParameters queryParameters,
 			final LimitHandler limitHandler,
