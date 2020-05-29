@@ -10,6 +10,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.reactive.boot.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.boot.service.ReactiveGenerationTarget;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
@@ -75,6 +76,7 @@ public abstract class BaseReactiveTest {
 		StandardServiceRegistry registry = new ReactiveServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() )
 				.build();
+		registry.getService( ConnectionProvider.class ); //force the NoJdbcConnectionProvider to load first
 		registry.getService( SchemaManagementTool.class )
 				.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) {
 					@Override
