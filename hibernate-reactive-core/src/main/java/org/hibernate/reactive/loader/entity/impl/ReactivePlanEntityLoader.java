@@ -8,6 +8,7 @@ package org.hibernate.reactive.loader.entity.impl;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -21,7 +22,6 @@ import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.reactive.loader.ReactiveLoader;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
-import org.hibernate.reactive.sql.impl.Parameters;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.sql.impl.Parameters.processParameters;
 
 /**
  * An entity loader that respects the JPA {@link javax.persistence.EntityGraph}
@@ -169,13 +170,9 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 										SharedSessionContractImplementor session,
 										LockOptions lockOptions, Boolean readOnly) {
 
-		//copied from super:
 		final QueryParameters parameters = getQueryParameters( id, optionalObject, lockOptions, readOnly );
-
-		String sql = Parameters.processParameters(
-				getStaticLoadQuery().getSqlStatement(),
-				getFactory().getJdbcServices().getDialect()
-		);
+		Dialect dialect = getFactory().getJdbcServices().getDialect();
+		String sql = processParameters( getStaticLoadQuery().getSqlStatement(), dialect );
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, (SessionImplementor) session, parameters )
 				.thenApply( results -> extractEntityResult( results, id ) )
@@ -190,6 +187,7 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 	}
 
 	private QueryParameters getQueryParameters(Serializable id, Object optionalObject, LockOptions lockOptions, Boolean readOnly) {
+		//copied from super:
 		final QueryParameters qp = new QueryParameters();
 		qp.setPositionalParameterTypes( new Type[] { persister.getIdentifierType() } );
 		qp.setPositionalParameterValues( new Object[] { id } );

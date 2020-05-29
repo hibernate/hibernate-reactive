@@ -75,9 +75,10 @@ public class ReactiveCriteriaQueryImpl<T> extends CriteriaQueryImpl<T> implement
 
 //		return new CriteriaQueryTypeQueryAdapter(
 //				session,
-//				jpaqlQuery,
-//				parameterMetadata.explicitParameterInfoMap()
+//				query,
+//				context.explicitParameterInfoMap()
 //		);
+		query.setParameterMetadata( context );
 
 		return query;
 	}

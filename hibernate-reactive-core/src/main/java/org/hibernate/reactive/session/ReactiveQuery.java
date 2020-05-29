@@ -11,12 +11,14 @@ import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.hql.internal.QueryExecutionRequestException;
+import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
 import org.hibernate.query.internal.AbstractProducedQuery;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
 import javax.persistence.NoResultException;
+import javax.persistence.Parameter;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -30,6 +32,8 @@ import java.util.concurrent.CompletionStage;
 @Incubating
 public interface ReactiveQuery<R> {
 
+	void setParameterMetadata(InterpretedParameterMetadata parameterMetadata);
+
 	CompletionStage<R> getReactiveSingleResult();
 
 	CompletionStage<List<R>> getReactiveResultList();
@@ -39,6 +43,8 @@ public interface ReactiveQuery<R> {
 	ReactiveQuery<R> setParameter(int position, Object value);
 
 	ReactiveQuery<R> setParameter(String name, Object value);
+
+	<T> ReactiveQuery<R> setParameter(Parameter<T> parameter, T value);
 
 	ReactiveQuery<R> setMaxResults(int maxResults);
 

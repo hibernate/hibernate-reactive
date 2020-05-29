@@ -5,12 +5,6 @@
  */
 package org.hibernate.reactive.session.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.hibernate.HibernateException;
 import org.hibernate.engine.query.spi.EntityGraphQueryHint;
 import org.hibernate.engine.spi.QueryParameters;
@@ -28,8 +22,14 @@ import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.reactive.loader.hql.impl.ReactiveQueryLoader;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
-
 import org.jboss.logging.Logger;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.sql.impl.Parameters.processParameters;
 
 public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 
@@ -77,10 +77,12 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 		errorIfDML();
 
 		final QueryNode query = (QueryNode) getSqlAST();
-		final boolean hasLimit = queryParameters.getRowSelection() != null && queryParameters.getRowSelection().definesLimits();
+		final boolean hasLimit =
+				queryParameters.getRowSelection() != null
+						&& queryParameters.getRowSelection().definesLimits();
 		final boolean needsDistincting =
 				( query.getSelectClause().isDistinct() || getEntityGraphQueryHint() != null || hasLimit )
-				&& containsCollectionFetches();
+						&& containsCollectionFetches();
 
 		QueryParameters queryParametersToUse;
 		if ( hasLimit && containsCollectionFetches() ) {
@@ -101,6 +103,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 		else {
 			queryParametersToUse = queryParameters;
 		}
+
 		return queryLoader.reactiveList( (SessionImplementor) session, queryParametersToUse )
 				.thenApply(results -> {
 					if ( needsDistincting ) {
@@ -135,17 +138,21 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 	}
 
 	public CompletionStage<Integer> executeReactiveUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) {
-		final AtomicInteger atomicCounter = new AtomicInteger( 0 );
-		CompletionStage<Void> updateStage = CompletionStages.nullFuture();
-		String[] sqlStatements = getSqlStatements();
-		for ( String sql : sqlStatements ) {
+		errorIfSelect();
+
+		CompletionStage<Integer> updateStage = CompletionStages.completedFuture(0);
+		for ( String sqlStatement : getSqlStatements() ) {
+
+			//TODO: bind named parameters!
+
+			String sql = processParameters( sqlStatement, session.getJdbcServices().getDialect() );
 			updateStage = updateStage
-					.thenCompose( v -> ((ReactiveSession) session).getReactiveConnection()
+					.thenCompose( count -> ((ReactiveSession) session).getReactiveConnection()
 							.update( sql, queryParameters.getPositionalParameterValues() )
-					.thenAccept( updateCount -> atomicCounter.addAndGet( updateCount ) )
-			);
+							.thenApply( updateCount -> count + updateCount )
+					);
 		}
-		return updateStage.thenApply( v -> atomicCounter.get() );
+		return updateStage;
 	}
 
 	/**

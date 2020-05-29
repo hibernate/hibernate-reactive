@@ -25,6 +25,7 @@ import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Join;
+import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Root;
 import java.util.ArrayList;
 import java.util.List;
@@ -85,6 +86,126 @@ public class QueryTest extends BaseReactiveTest {
 						.thenCompose( session -> session.createQuery(update).executeUpdate() )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery(delete).executeUpdate() )
+		);
+	}
+
+	@Test
+	public void testCriteriaEntityQueryWithParam(TestContext context) {
+		Author author1 = new Author("Iain M. Banks");
+		Author author2 = new Author("Neal Stephenson");
+		Book book1 = new Book("1-85723-235-6", "Feersum Endjinn", author1);
+		Book book2 = new Book("0-380-97346-4", "Cryptonomicon", author2);
+		Book book3 = new Book("0-553-08853-X", "Snow Crash", author2);
+		author1.books.add(book1);
+		author2.books.add(book2);
+		author2.books.add(book3);
+
+		CriteriaBuilder builder = getSessionFactory().getCriteriaBuilder();
+		CriteriaQuery<Book> query = builder.createQuery(Book.class);
+		Root<Book> b = query.from(Book.class);
+		b.fetch("author");
+		ParameterExpression<String> t = builder.parameter(String.class);
+		query.where( builder.equal( b.get("title"), t ) );
+		query.orderBy( builder.asc( b.get("isbn") ) );
+
+//		CriteriaUpdate<Book> update = builder.createCriteriaUpdate(Book.class);
+//		b = update.from(Book.class);
+//		update.where( builder.equal( b.get("title"), t ) );
+//		update.set( b.get("title"), "XXX" );
+//
+//		CriteriaDelete<Book> delete = builder.createCriteriaDelete(Book.class);
+//		b = delete.from(Book.class);
+//		delete.where( builder.equal( b.get("title"), t ) );
+
+		test(context,
+				openSession()
+						.thenCompose( session -> session.persist(author1, author2) )
+						.thenCompose( session -> session.flush() )
+						.whenComplete( (session,err) -> session.close() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createQuery(query)
+								.setParameter( t, "Snow Crash")
+								.getResultList() )
+						.thenAccept( books -> {
+							context.assertEquals( 1, books.size() );
+							books.forEach( book -> {
+								context.assertNotNull( book.id );
+								context.assertNotNull( book.title );
+								context.assertNotNull( book.isbn );
+								context.assertEquals( "Snow Crash", book.title );
+							} );
+						} )
+
+						//TODO: get parameters in update/delete criteria working!
+
+//						.thenCompose( v -> openSession() )
+//						.thenCompose( session -> session.createQuery(update)
+//								.setParameter( t, "Snow Crash")
+//								.executeUpdate() )
+//						.thenCompose( v -> openSession() )
+//						.thenCompose( session -> session.createQuery(delete)
+//								.setParameter( t, "Snow Crash")
+//								.executeUpdate() )
+		);
+	}
+
+	@Test
+	public void testCriteriaEntityQueryWithNamedParam(TestContext context) {
+		Author author1 = new Author("Iain M. Banks");
+		Author author2 = new Author("Neal Stephenson");
+		Book book1 = new Book("1-85723-235-6", "Feersum Endjinn", author1);
+		Book book2 = new Book("0-380-97346-4", "Cryptonomicon", author2);
+		Book book3 = new Book("0-553-08853-X", "Snow Crash", author2);
+		author1.books.add(book1);
+		author2.books.add(book2);
+		author2.books.add(book3);
+
+		CriteriaBuilder builder = getSessionFactory().getCriteriaBuilder();
+		CriteriaQuery<Book> query = builder.createQuery(Book.class);
+		Root<Book> b = query.from(Book.class);
+		b.fetch("author");
+		ParameterExpression<String> t = builder.parameter(String.class, "title");
+		query.where( builder.equal( b.get("title"), t ) );
+		query.orderBy( builder.asc( b.get("isbn") ) );
+
+//		CriteriaUpdate<Book> update = builder.createCriteriaUpdate(Book.class);
+//		b = update.from(Book.class);
+//		update.where( builder.equal( b.get("title"), t ) );
+//		update.set( b.get("title"), "XXX" );
+//
+//		CriteriaDelete<Book> delete = builder.createCriteriaDelete(Book.class);
+//		b = delete.from(Book.class);
+//		delete.where( builder.equal( b.get("title"), t ) );
+
+		test(context,
+				openSession()
+						.thenCompose( session -> session.persist(author1, author2) )
+						.thenCompose( session -> session.flush() )
+						.whenComplete( (session,err) -> session.close() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createQuery(query)
+								.setParameter("title", "Snow Crash")
+								.getResultList() )
+						.thenAccept( books -> {
+							context.assertEquals( 1, books.size() );
+							books.forEach( book -> {
+								context.assertNotNull( book.id );
+								context.assertNotNull( book.title );
+								context.assertNotNull( book.isbn );
+								context.assertEquals( "Snow Crash", book.title );
+							} );
+						} )
+
+				//TODO: get parameters in update/delete criteria working!
+
+//						.thenCompose( v -> openSession() )
+//						.thenCompose( session -> session.createQuery(update)
+//								.setParameter("title", "Snow Crash")
+//								.executeUpdate() )
+//						.thenCompose( v -> openSession() )
+//						.thenCompose( session -> session.createQuery(delete)
+//								.setParameter("title", "Snow Crash")
+//								.executeUpdate() )
 		);
 	}
 
@@ -150,6 +271,70 @@ public class QueryTest extends BaseReactiveTest {
 							context.assertNotNull( book.isbn );
 						} );
 					} )
+		);
+	}
+
+	@Test
+	public void testNativeEntityQueryWithParam(TestContext context) {
+		Author author1 = new Author("Iain M. Banks");
+		Author author2 = new Author("Neal Stephenson");
+		Book book1 = new Book("1-85723-235-6", "Feersum Endjinn", author1);
+		Book book2 = new Book("0-380-97346-4", "Cryptonomicon", author2);
+		Book book3 = new Book("0-553-08853-X", "Snow Crash", author2);
+		author1.books.add(book1);
+		author2.books.add(book2);
+		author2.books.add(book3);
+
+		test(context,
+				openSession()
+						.thenCompose( session -> session.persist(author1, author2) )
+						.thenCompose( session -> session.flush() )
+						.whenComplete( (session,err) -> session.close() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createNativeQuery("select * from books where title=?1 order by isbn", Book.class)
+								.setParameter(1, "Snow Crash")
+								.getResultList() )
+						.thenAccept( books -> {
+							context.assertEquals( 1, books.size() );
+							books.forEach( book -> {
+								context.assertNotNull( book.id );
+								context.assertNotNull( book.title );
+								context.assertNotNull( book.isbn );
+								context.assertEquals( "Snow Crash", book.title );
+							} );
+						} )
+		);
+	}
+
+	@Test
+	public void testNativeEntityQueryWithNamedParam(TestContext context) {
+		Author author1 = new Author("Iain M. Banks");
+		Author author2 = new Author("Neal Stephenson");
+		Book book1 = new Book("1-85723-235-6", "Feersum Endjinn", author1);
+		Book book2 = new Book("0-380-97346-4", "Cryptonomicon", author2);
+		Book book3 = new Book("0-553-08853-X", "Snow Crash", author2);
+		author1.books.add(book1);
+		author2.books.add(book2);
+		author2.books.add(book3);
+
+		test(context,
+				openSession()
+						.thenCompose( session -> session.persist(author1, author2) )
+						.thenCompose( session -> session.flush() )
+						.whenComplete( (session,err) -> session.close() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createNativeQuery("select * from books where title=:title order by isbn", Book.class)
+								.setParameter("title", "Snow Crash")
+								.getResultList() )
+						.thenAccept( books -> {
+							context.assertEquals( 1, books.size() );
+							books.forEach( book -> {
+								context.assertNotNull( book.id );
+								context.assertNotNull( book.title );
+								context.assertNotNull( book.isbn );
+								context.assertEquals( "Snow Crash", book.title );
+							} );
+						} )
 		);
 	}
 

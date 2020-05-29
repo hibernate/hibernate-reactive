@@ -139,7 +139,7 @@ public interface ReactiveLoader {
 				.thenApply( transformer );
 	}
 
-	default LimitHandler limitHandler(RowSelection selection, SessionImplementor session) {
+	default LimitHandler limitHandler(RowSelection selection, SharedSessionContractImplementor session) {
 		LimitHandler limitHandler = session.getJdbcServices().getDialect().getLimitHandler();
 		return LimitHelper.useLimit( limitHandler, selection ) ? limitHandler : NoopLimitHandler.INSTANCE;
 	}

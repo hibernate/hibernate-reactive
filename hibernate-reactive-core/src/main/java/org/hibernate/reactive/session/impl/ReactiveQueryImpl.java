@@ -12,6 +12,8 @@ import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.ParameterMetadata;
+import org.hibernate.query.criteria.internal.compile.ExplicitParameterInfo;
+import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
 import org.hibernate.query.internal.QueryImpl;
 import org.hibernate.reactive.session.QueryType;
 import org.hibernate.reactive.session.ReactiveQuery;
@@ -19,9 +21,12 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 
+import javax.persistence.Parameter;
 import javax.persistence.TransactionRequiredException;
+import javax.persistence.criteria.ParameterExpression;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.session.ReactiveQuery.convertQueryException;
@@ -39,7 +44,7 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 	 * See {@link #collectHints}
 	 */
 	private EntityGraphQueryHint entityGraphQueryHint;
-
+	private Map<ParameterExpression<?>, ExplicitParameterInfo<?>> explicitParameterInfoMap;
 	private final QueryType type;
 
 	public ReactiveQueryImpl(SharedSessionContractImplementor producer,
@@ -48,6 +53,11 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 							 QueryType type) {
 		super( producer, parameterMetadata, queryString );
 		this.type = type;
+	}
+
+	@Override
+	public void setParameterMetadata(InterpretedParameterMetadata parameterMetadata) {
+		explicitParameterInfoMap = parameterMetadata.explicitParameterInfoMap();
 	}
 
 	@Override
@@ -135,6 +145,38 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 	public ReactiveQueryImpl<R> setParameter(String name, Object value) {
 		super.setParameter(name, value);
 		return this;
+	}
+
+	@Override
+	public <P> ReactiveQueryImpl<R> setParameter(Parameter<P> parameter, P value) {
+		final ExplicitParameterInfo<?> parameterInfo = resolveParameterInfo( parameter );
+		if ( parameterInfo.isNamed() ) {
+			setParameter( parameterInfo.getName(), value );
+		}
+		else {
+			setParameter( parameterInfo.getPosition(), value );
+		}
+		return this;
+	}
+
+	private <T> ExplicitParameterInfo<?> resolveParameterInfo(Parameter<T> param) {
+		if ( ExplicitParameterInfo.class.isInstance( param ) ) {
+			return (ExplicitParameterInfo<?>) param;
+		}
+		else if ( ParameterExpression.class.isInstance( param ) ) {
+			return explicitParameterInfoMap.get( param );
+		}
+		else {
+			for ( ExplicitParameterInfo<?> parameterInfo: explicitParameterInfoMap.values() ) {
+				if ( param.getName() != null && param.getName().equals( parameterInfo.getName() ) ) {
+					return parameterInfo;
+				}
+				else if ( param.getPosition() != null && param.getPosition().equals( parameterInfo.getPosition() ) ) {
+					return parameterInfo;
+				}
+			}
+		}
+		throw new IllegalArgumentException( "Unable to locate parameter [" + param + "] in query" );
 	}
 
 	@Override

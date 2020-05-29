@@ -5,13 +5,14 @@
  */
 package org.hibernate.reactive.stage.impl;
 
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.CacheMode;
 import org.hibernate.LockMode;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.stage.Stage;
+
+import javax.persistence.Parameter;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Implementation of {@link Stage.Query}.
@@ -25,14 +26,20 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 	}
 
 	@Override
-	public Stage.Query<R> setParameter(int var1, Object var2) {
-		delegate.setParameter( var1, var2 );
+	public Stage.Query<R> setParameter(int position, Object value) {
+		delegate.setParameter( position, value );
 		return this;
 	}
 
 	@Override
-	public Stage.Query<R> setParameter(String name, Object var2) {
-		delegate.setParameter( name, var2 );
+	public Stage.Query<R> setParameter(String name, Object value) {
+		delegate.setParameter( name, value );
+		return this;
+	}
+
+	@Override
+	public <T> Stage.Query<R> setParameter(Parameter<T> parameter, T value) {
+		delegate.setParameter( parameter, value );
 		return this;
 	}
 

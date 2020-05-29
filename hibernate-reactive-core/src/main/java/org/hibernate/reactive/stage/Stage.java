@@ -18,6 +18,7 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.EntityGraph;
+import javax.persistence.Parameter;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
@@ -51,9 +52,11 @@ public interface Stage {
 	 */
 	interface Query<R> {
 
-		Query<R> setParameter(int var1, Object var2);
+		Query<R> setParameter(int position, Object value);
 
-		Query<R> setParameter(String name, Object var2);
+		Query<R> setParameter(String name, Object value);
+
+		<T> Query<R> setParameter(Parameter<T> name, T value);
 
 		Query<R> setMaxResults(int maxResults);
 

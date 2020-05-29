@@ -12,11 +12,13 @@ import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.ParameterMetadata;
+import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
 import org.hibernate.query.internal.NativeQueryImpl;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.transform.ResultTransformer;
 
+import javax.persistence.Parameter;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -44,6 +46,11 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 			SharedSessionContractImplementor session,
 			ParameterMetadata sqlParameterMetadata) {
 		super( sqlString, callable, session, sqlParameterMetadata );
+	}
+
+	@Override
+	public void setParameterMetadata(InterpretedParameterMetadata parameterMetadata) {
+		throw new UnsupportedOperationException("not a JPA query");
 	}
 
 	@Override
@@ -114,6 +121,12 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameter(String name, Object value) {
 		super.setParameter(name, value);
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveNativeQueryImpl<R> setParameter(Parameter<P> parameter, P value) {
+		 super.setParameter(parameter, value);
 		return this;
 	}
 

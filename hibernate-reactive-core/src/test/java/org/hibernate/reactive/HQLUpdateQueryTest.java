@@ -14,6 +14,7 @@ import org.hibernate.cfg.Configuration;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -67,6 +68,25 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test @Ignore("parameters in update queries not yet working")
+	public void testUpdateQueryWithParameters(TestContext context) {
+		String updatedDescription =  "Most rye breads use a mix of rye and wheat flours";
+		test(
+				context,
+				openSession()
+						.thenApply( s -> s.createQuery( "UPDATE Flour SET description = :updatedDescription WHERE id = :id" )
+								.setParameter("updatedDescription", updatedDescription)
+								.setParameter("id", rye.getId()) )
+						.thenCompose( qr -> {
+							context.assertNotNull( qr );
+							return qr.executeUpdate();
+						} )
+						.thenAccept( resultCount -> context.assertEquals( 1, resultCount ))
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.find( Flour.class, rye.getId() ) )
+						.thenAccept( result -> context.assertEquals( updatedDescription, result.getDescription() ) )
+		);
+	}
 
 	@Test
 	public void testInsertQuery(TestContext context) {

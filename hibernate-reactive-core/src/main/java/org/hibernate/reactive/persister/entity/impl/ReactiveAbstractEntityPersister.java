@@ -33,7 +33,6 @@ import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.sql.impl.Parameters;
 import org.hibernate.reactive.sql.impl.Update;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.Delete;
@@ -975,10 +974,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			throw new JDBCException("error binding parameters", e);
 		}
 
-		String sql = Parameters.processParameters(
-				delegate().getSQLSnapshotSelectString(),
-				getFactory().getJdbcServices().getDialect()
-		);
+		Dialect dialect = getFactory().getJdbcServices().getDialect();
+		String sql = processParameters( delegate().getSQLSnapshotSelectString(), dialect );
 
 		return getReactiveConnection( session )
 				.selectJdbc( sql, statement.getParametersAsArray() )

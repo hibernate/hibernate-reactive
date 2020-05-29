@@ -21,11 +21,14 @@ import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.sql.impl.Parameters.processParameters;
 
 /**
  * A reactive {@link org.hibernate.loader.Loader} for native SQL queries.
@@ -60,7 +63,8 @@ public class ReactiveCustomLoader extends CustomLoader implements CachingReactiv
 								QueryParameters queryParameters,
 								SessionFactoryImplementor factory,
 								List<AfterLoadAction> afterLoadActions) {
-		return super.preprocessSQL(sql, queryParameters, factory, afterLoadActions);
+		String processed = super.preprocessSQL(sql, queryParameters, factory, afterLoadActions);
+		return processParameters( processed, factory.getJdbcServices().getDialect() );
 	}
 
 	@Override
@@ -103,5 +107,11 @@ public class ReactiveCustomLoader extends CustomLoader implements CachingReactiv
 	@Override @SuppressWarnings("unchecked")
 	public List<Object> getResultList(List results, ResultTransformer resultTransformer) throws QueryException {
 		return super.getResultList(results, resultTransformer);
+	}
+
+	@Override
+	public int bindParameterValues(PreparedStatement statement, QueryParameters queryParameters, int startIndex,
+								   SharedSessionContractImplementor session) throws SQLException {
+		return super.bindParameterValues( statement, queryParameters, startIndex, session );
 	}
 }

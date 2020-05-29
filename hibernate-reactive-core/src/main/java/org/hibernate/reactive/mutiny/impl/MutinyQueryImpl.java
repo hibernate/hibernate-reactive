@@ -11,6 +11,7 @@ import org.hibernate.LockMode;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import javax.persistence.Parameter;
 import java.util.List;
 
 /**
@@ -25,14 +26,20 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 	}
 
 	@Override
-	public Mutiny.Query<R> setParameter(int var1, Object var2) {
-		delegate.setParameter( var1, var2 );
+	public Mutiny.Query<R> setParameter(int position, Object value) {
+		delegate.setParameter( position, value );
 		return this;
 	}
 
 	@Override
-	public Mutiny.Query<R> setParameter(String name, Object var2) {
-		delegate.setParameter( name, var2 );
+	public Mutiny.Query<R> setParameter(String name, Object value) {
+		delegate.setParameter( name, value );
+		return this;
+	}
+
+	@Override
+	public <T> Mutiny.Query<R> setParameter(Parameter<T> name, T value) {
+		delegate.setParameter( name, value );
 		return this;
 	}
 
