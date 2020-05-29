@@ -9,10 +9,17 @@ import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Version;
 import java.util.Objects;
 import java.util.UUID;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+import static org.junit.Assume.assumeFalse;
 
 public class UUIDGeneratorTest extends BaseReactiveTest {
 
@@ -25,6 +32,8 @@ public class UUIDGeneratorTest extends BaseReactiveTest {
 
 	@Test
 	public void testUUIDGenerator(TestContext context) {
+
+		assumeFalse( dbType() == DBType.DB2 );
 
 		TableId b = new TableId();
 		b.string = "Hello World";
@@ -60,7 +69,7 @@ public class UUIDGeneratorTest extends BaseReactiveTest {
 
 	@Entity
 	public static class TableId {
-		@Id @GeneratedValue @Column( length = 16 ) UUID id;
+		@Id @GeneratedValue @Column(length=16) UUID id;
 		@Version Integer version;
 		String string;
 
