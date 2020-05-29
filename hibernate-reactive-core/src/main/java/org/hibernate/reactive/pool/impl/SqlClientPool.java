@@ -9,8 +9,11 @@ import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnectOptions;
+import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.spi.Driver;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.dialect.PostgreSQL9Dialect;
+import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
@@ -61,13 +64,9 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	private boolean formatSQL;
 	private ServiceRegistryImplementor serviceRegistry;
 	private Map configurationValues;
+	private boolean usePostgresStyleParameters;
 
 	public SqlClientPool() {}
-
-	public SqlClientPool(Pool pool, boolean showSQL) {
-		this.pool = pool;
-		this.showSQL = showSQL;
-	}
 
 	@Override
 	public void injectServices(ServiceRegistryImplementor serviceRegistry) {
@@ -81,6 +80,8 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 
 		showSQL = ConfigurationHelper.getBoolean( AvailableSettings.SHOW_SQL, configurationValues, false );
 		formatSQL = ConfigurationHelper.getBoolean( AvailableSettings.FORMAT_SQL, configurationValues, false );
+		usePostgresStyleParameters =
+				serviceRegistry.getService(JdbcEnvironment.class).getDialect() instanceof PostgreSQL9Dialect;
 	}
 
 	@Override
@@ -240,11 +241,15 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 				handler -> pool.getConnection(
 						ar -> handler.handle(
 								ar.succeeded()
-										? succeededFuture( new SqlClientConnection( ar.result(), showSQL, formatSQL) )
+										? succeededFuture( newConnection( ar.result() ) )
 										: failedFuture( ar.cause() )
 						)
 				)
 		);
+	}
+
+	private SqlClientConnection newConnection(SqlConnection ar) {
+		return new SqlClientConnection( ar, showSQL, formatSQL, usePostgresStyleParameters );
 	}
 
 	@Override

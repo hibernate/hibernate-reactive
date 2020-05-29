@@ -36,14 +36,18 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	private final boolean showSQL;
 	private boolean formatSQL;
+	private boolean usePostgresStyleParameters;
 
 	private final SqlConnection connection;
 	private Transaction transaction;
 
-	SqlClientConnection(SqlConnection connection, boolean showSQL, boolean formatSQL) {
+	SqlClientConnection(SqlConnection connection,
+						boolean showSQL, boolean formatSQL,
+						boolean usePostgresStyleParameters) {
 		this.showSQL = showSQL;
 		this.connection = connection;
 		this.formatSQL = formatSQL;
+		this.usePostgresStyleParameters = usePostgresStyleParameters;
 	}
 
 	@Override
@@ -108,8 +112,9 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters) {
 		feedback(sql);
+		String processedSql = usePostgresStyleParameters ? Parameters.process( sql, parameters.size() ) : sql;
 		return Handlers.toCompletionStage(
-				handler -> client().preparedQuery( sql ).execute( parameters, handler )
+				handler -> client().preparedQuery( processedSql ).execute( parameters, handler )
 		);
 	}
 

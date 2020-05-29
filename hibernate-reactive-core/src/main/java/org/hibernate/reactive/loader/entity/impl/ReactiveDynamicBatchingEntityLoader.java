@@ -20,10 +20,8 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
-import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
 
 /**
  * A {@link ReactiveEntityLoader} whose generated SQL contains a placeholder
@@ -56,7 +54,7 @@ class ReactiveDynamicBatchingEntityLoader extends ReactiveEntityLoader {
 			LoadQueryInfluencers loadQueryInfluencers) {
 		super( persister, -1, lockMode, factory, loadQueryInfluencers );
 
-		EntityJoinWalker walker = new ReactiveEntityJoinWalker(
+		EntityJoinWalker walker = new EntityJoinWalker(
 				persister,
 				persister.getIdentifierColumnNames(),
 				-1,
@@ -68,8 +66,7 @@ class ReactiveDynamicBatchingEntityLoader extends ReactiveEntityLoader {
 				return buildBatchFetchRestrictionFragment(
 						alias,
 						columnNames,
-						getDialect(),
-						createDialectParameterGenerator( getDialect() )
+						getDialect()
 				);
 			}
 		};
@@ -109,8 +106,7 @@ class ReactiveDynamicBatchingEntityLoader extends ReactiveEntityLoader {
 				ids,
 				alias,
 				persister.getKeyColumnNames(),
-				getDialect(),
-				createDialectParameterGenerator( getDialect() )
+				getDialect()
 		);
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters )
@@ -130,8 +126,7 @@ class ReactiveDynamicBatchingEntityLoader extends ReactiveEntityLoader {
 	private static StringBuilder buildBatchFetchRestrictionFragment(
 			String alias,
 			String[] columnNames,
-			Dialect dialect,
-			Supplier<String> nextParameter) {
+			Dialect dialect) {
 		// the general idea here is to just insert a placeholder that we can easily find later...
 		if ( columnNames.length == 1 ) {
 			// non-composite key
@@ -176,37 +171,27 @@ class ReactiveDynamicBatchingEntityLoader extends ReactiveEntityLoader {
 			Serializable[] ids,
 			String alias,
 			String[] keyColumnNames,
-			Dialect dialect,
-			Supplier<String> nextParameter) {
+			Dialect dialect) {
 		if ( keyColumnNames.length == 1 ) {
 			// non-composite
-			return StringHelper.replace( sql, StringHelper.BATCH_ID_PLACEHOLDER, repeat( nextParameter, ids.length, "," ) );
+			return StringHelper.replace( sql, StringHelper.BATCH_ID_PLACEHOLDER, StringHelper.repeat( "?", ids.length, "," ) );
 		}
 		else {
 			// composite
 			if ( dialect.supportsRowValueConstructorSyntaxInInList() ) {
-				final String tuple = '(' + repeat( nextParameter, keyColumnNames.length, "," ) + ')';
+				final String tuple = '(' + StringHelper.repeat( "?", keyColumnNames.length, "," ) + ')';
 				return StringHelper.replace( sql, StringHelper.BATCH_ID_PLACEHOLDER, StringHelper.repeat( tuple, ids.length, "," ) );
 			}
 			else {
 				final String keyCheck = '(' + StringHelper.joinWithQualifierAndSuffix(
 						keyColumnNames,
 						alias,
-						" = " + nextParameter.get(),
+						" = ?",
 						" and "
 				) + ')';
 				return StringHelper.replace( sql, StringHelper.BATCH_ID_PLACEHOLDER, StringHelper.repeat( keyCheck, ids.length, " or " ) );
 			}
 		}
 	}
-
-	private static String repeat(Supplier<String> string, int times, String deliminator) {
-		StringBuilder buf = new StringBuilder().append( string.get() );
-		for ( int i = 1; i < times; i++ ) {
-			buf.append( deliminator ).append( string.get() );
-		}
-		return buf.toString();
-	}
-
 
 }

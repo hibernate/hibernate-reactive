@@ -22,9 +22,6 @@ import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
 import org.hibernate.reactive.loader.entity.impl.ReactiveBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.loader.entity.impl.ReactiveCascadeEntityLoader;
-import org.hibernate.reactive.sql.impl.Delete;
-import org.hibernate.reactive.sql.impl.Insert;
-import org.hibernate.reactive.sql.impl.Update;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
@@ -63,21 +60,6 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 			throws MappingException {
 		return ReactiveBatchingEntityLoaderBuilder.getBuilder( getFactory() )
 				.buildLoader( this, batchSize, lockOptions, getFactory(), loadQueryInfluencers );
-	}
-
-	@Override
-	protected Update createUpdate() {
-		return new Update( getFactory() );
-	}
-
-	@Override
-	protected Insert createInsert() {
-		return new Insert( getFactory() );
-	}
-
-	@Override
-	protected Delete createDelete() {
-		return new Delete( getFactory() );
 	}
 
 	@Override

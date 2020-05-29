@@ -8,7 +8,6 @@ package org.hibernate.reactive.loader.entity.impl;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
-import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -33,7 +32,6 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
-import static org.hibernate.reactive.sql.impl.Parameters.processParameters;
 
 /**
  * An entity loader that respects the JPA {@link javax.persistence.EntityGraph}
@@ -170,9 +168,8 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 										SharedSessionContractImplementor session,
 										LockOptions lockOptions, Boolean readOnly) {
 
-		final QueryParameters parameters = getQueryParameters( id, optionalObject, lockOptions, readOnly );
-		Dialect dialect = getFactory().getJdbcServices().getDialect();
-		String sql = processParameters( getStaticLoadQuery().getSqlStatement(), dialect );
+		final QueryParameters parameters = buildQueryParameters( id, optionalObject, lockOptions, readOnly );
+		String sql = getStaticLoadQuery().getSqlStatement();
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, (SessionImplementor) session, parameters )
 				.thenApply( results -> extractEntityResult( results, id ) )
@@ -180,13 +177,16 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 					CompletionStages.logSqlException( err,
 							() -> "could not load an entity: "
 									+ infoString( persister, id, persister.getIdentifierType(), getFactory() ),
-							getStaticLoadQuery().getSqlStatement()
+							sql
 					);
 					return CompletionStages.returnOrRethrow( err, list) ;
 				} );
 	}
 
-	private QueryParameters getQueryParameters(Serializable id, Object optionalObject, LockOptions lockOptions, Boolean readOnly) {
+	private QueryParameters buildQueryParameters(Serializable id,
+												 Object optionalObject,
+												 LockOptions lockOptions,
+												 Boolean readOnly) {
 		//copied from super:
 		final QueryParameters qp = new QueryParameters();
 		qp.setPositionalParameterTypes( new Type[] { persister.getIdentifierType() } );

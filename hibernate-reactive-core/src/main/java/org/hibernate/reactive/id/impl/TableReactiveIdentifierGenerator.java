@@ -28,7 +28,6 @@ import org.hibernate.type.Type;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
 import static org.hibernate.id.enhanced.TableGenerator.CONFIG_PREFER_SEGMENT_PER_ENTITY;
 import static org.hibernate.id.enhanced.TableGenerator.DEF_SEGMENT_COLUMN;
@@ -38,7 +37,6 @@ import static org.hibernate.id.enhanced.TableGenerator.SEGMENT_VALUE_PARAM;
 import static org.hibernate.id.enhanced.TableGenerator.TABLE;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineSequenceName;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineTableName;
-import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
 
 /**
  * Support for JPA's {@link javax.persistence.TableGenerator}. This
@@ -170,12 +168,11 @@ public class TableReactiveIdentifierGenerator
 	}
 
 	protected String buildSelectQuery(Dialect dialect) {
-		Supplier<String> generator = createDialectParameterGenerator(dialect);
 		final String alias = "tbl";
 		String query = "select " + StringHelper.qualify( alias, valueColumnName ) +
 				" from " + renderedTableName + ' ' + alias;
 		if (segmentColumnName != null) {
-			query += " where " + StringHelper.qualify(alias, segmentColumnName) + "=" + generator.get();
+			query += " where " + StringHelper.qualify(alias, segmentColumnName) + "=?";
 		}
 
 		return dialect.applyLocksToSql( query,
@@ -184,26 +181,22 @@ public class TableReactiveIdentifierGenerator
 	}
 
 	protected String buildUpdateQuery(Dialect dialect) {
-		Supplier<String> generator = createDialectParameterGenerator(dialect);
 		String update = "update " + renderedTableName
-				+ " set " + valueColumnName + "="  + generator.get()
-				+ " where " + valueColumnName + "="  + generator.get();
+				+ " set " + valueColumnName + "=?"
+				+ " where " + valueColumnName + "=?";
 		if (segmentColumnName != null) {
-			update += " and " + segmentColumnName + "=" + generator.get();
+			update += " and " + segmentColumnName + "=?";
 		}
 		return update;
 	}
 
 	protected String buildInsertQuery(Dialect dialect) {
-		Supplier<String> generator = createDialectParameterGenerator(dialect);
 		String insert = "insert into " + renderedTableName;
 		if (segmentColumnName != null) {
-			insert += " (" + segmentColumnName + ", " + valueColumnName + ") "
-					+ " values (" + generator.get() + ", " + generator.get() + ")";
+			insert += " (" + segmentColumnName + ", " + valueColumnName + ") " + " values (?, ?)";
 		}
 		else {
-			insert += " (" + valueColumnName + ") "
-					+ " values (" + generator.get() + ")";
+			insert += " (" + valueColumnName + ") " + " values (?)";
 		}
 		return insert;
 	}

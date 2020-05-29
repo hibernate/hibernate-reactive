@@ -32,10 +32,10 @@ import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.sql.impl.Update;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.Delete;
 import org.hibernate.sql.SimpleSelect;
+import org.hibernate.sql.Update;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.type.Type;
 import org.jboss.logging.Logger;
@@ -48,12 +48,9 @@ import java.sql.Types;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.pretty.MessageHelper.infoString;
-import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
-import static org.hibernate.reactive.sql.impl.Parameters.processParameters;
 
 /**
  * An abstract implementation of {@link ReactiveEntityPersister} whose
@@ -243,8 +240,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			String sql,
 			Object object,
 			SharedSessionContractImplementor session) throws HibernateException {
-
-		sql = processParameters( sql, session.getFactory().getJdbcServices().getDialect() );
 
 		if ( log.isTraceEnabled() ) {
 			log.tracev( "Inserting entity: {0}", infoString(delegate()) );
@@ -712,14 +707,13 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	default String generateSelectLockString(LockOptions lockOptions) {
 		final SessionFactoryImplementor factory = getFactory();
 		Dialect dialect = factory.getJdbcServices().getDialect();
-		Supplier<String> generator = createDialectParameterGenerator(dialect);
 		final SimpleSelect select = new SimpleSelect(dialect)
 				.setLockOptions( lockOptions )
 				.setTableName( getRootTableName() )
 				.addColumn( getRootTableIdentifierColumnNames()[0] )
-				.addCondition( getRootTableIdentifierColumnNames(), "=" + generator.get() );
+				.addCondition( getRootTableIdentifierColumnNames(), "=?" );
 		if ( isVersioned() ) {
-			select.addCondition( getVersionColumnName(), "=" + generator.get() );
+			select.addCondition( getVersionColumnName(), "=?" );
 		}
 		if ( factory.getSessionFactoryOptions().isCommentsEnabled() ) {
 			select.setComment( lockOptions.getLockMode() + " lock " + getEntityName() );
@@ -889,11 +883,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				statement -> getIdentifierType().nullSafeSet(statement, id, 1, session)
 		);
 
-		Dialect dialect = getFactory().getJdbcServices().getDialect();
-		String sql = processParameters( delegate().getSQLSnapshotSelectString(), dialect );
-
 		return getReactiveConnection( session )
-				.selectJdbc( sql, params )
+				.selectJdbc( delegate().getSQLSnapshotSelectString(), params )
 				.thenApply( (resultSet) -> processSnapshot(session, resultSet) );
 	}
 

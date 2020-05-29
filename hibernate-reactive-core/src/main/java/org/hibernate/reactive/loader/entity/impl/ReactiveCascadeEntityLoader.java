@@ -9,7 +9,7 @@ import org.hibernate.MappingException;
 import org.hibernate.engine.spi.CascadingAction;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.loader.JoinWalker;
+import org.hibernate.loader.entity.CascadeEntityJoinWalker;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 
 /**
@@ -30,12 +30,7 @@ public class ReactiveCascadeEntityLoader extends ReactiveAbstractEntityLoader {
 				LoadQueryInfluencers.NONE
 		);
 
-		JoinWalker walker = new ReactiveCascadeEntityJoinWalker(
-				persister,
-				action,
-				factory
-		);
-		initFromWalker( walker );
+		initFromWalker( new CascadeEntityJoinWalker( persister, action, factory ) );
 
 		postInstantiate();
 

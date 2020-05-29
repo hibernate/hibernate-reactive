@@ -104,13 +104,13 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 			final Serializable optionalIdentifier,
 			LockOptions lockOptions) throws HibernateException {
 
-		QueryParameters parameters = new QueryParameters();
-		parameters.setPositionalParameterTypes( new Type[] { identifierType } );
-		parameters.setPositionalParameterValues( new Object[] { id } );
-		parameters.setOptionalObject( optionalObject );
-		parameters.setOptionalEntityName( optionalEntityName );
-		parameters.setOptionalId( optionalIdentifier );
-		parameters.setLockOptions( lockOptions );
+		QueryParameters parameters = buildQueryParameters(
+				id, identifierType,
+				optionalObject,
+				optionalEntityName,
+				optionalIdentifier,
+				lockOptions
+		);
 
 		return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, false )
 			.handle( (list, err) -> {
@@ -128,6 +128,21 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 				);
 				return CompletionStages.returnOrRethrow( err, list );
 			} );
+	}
+
+	private QueryParameters buildQueryParameters(Object id, Type identifierType,
+												 Object optionalObject,
+												 String optionalEntityName,
+												 Serializable optionalIdentifier,
+												 LockOptions lockOptions) {
+		QueryParameters parameters = new QueryParameters();
+		parameters.setPositionalParameterTypes( new Type[] { identifierType } );
+		parameters.setPositionalParameterValues( new Object[] { id } );
+		parameters.setOptionalObject( optionalObject );
+		parameters.setOptionalEntityName( optionalEntityName );
+		parameters.setOptionalId( optionalIdentifier );
+		parameters.setLockOptions( lockOptions );
+		return parameters;
 	}
 
 	@Override
