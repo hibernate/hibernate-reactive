@@ -126,7 +126,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameter(Parameter<P> parameter, P value) {
-		 super.setParameter(parameter, value);
+		super.setParameter(parameter, value);
 		return this;
 	}
 

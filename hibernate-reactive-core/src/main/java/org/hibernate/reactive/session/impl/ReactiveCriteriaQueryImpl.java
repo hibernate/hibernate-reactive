@@ -9,13 +9,20 @@ import org.hibernate.AssertionFailure;
 import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
 import org.hibernate.query.criteria.internal.CriteriaQueryImpl;
 import org.hibernate.query.criteria.internal.QueryStructure;
+import org.hibernate.query.criteria.internal.SelectionImplementor;
+import org.hibernate.query.criteria.internal.ValueHandlerFactory;
 import org.hibernate.query.criteria.internal.compile.ImplicitParameterBinding;
+import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
 import org.hibernate.query.criteria.internal.compile.RenderingContext;
+import org.hibernate.reactive.session.Criteria;
+import org.hibernate.reactive.session.CriteriaQueryOptions;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.type.Type;
 
 import javax.persistence.TypedQuery;
 import java.lang.reflect.Field;
+import java.util.List;
 
 /**
  * A reactific {@link CriteriaQueryImpl}, providing the implementation
@@ -58,15 +65,30 @@ public class ReactiveCriteriaQueryImpl<T> extends CriteriaQueryImpl<T> implement
 	}
 
 	public ReactiveQuery<T> build(CriteriaQueryRenderingContext context, ReactiveSession session) {
-
-		ReactiveQuery<T> query = session.createReactiveQuery(
+		final SelectionImplementor<?> selection = (SelectionImplementor<?>) getSelection();
+		ReactiveQuery<T> query = session.createReactiveCriteriaQuery(
 				renderQuery( context ),
 				getResultType(),
-				getSelection(),
-				new CriteriaQueryOptions(
-						queryStructure.getSelection(),
-						context.implicitParameterBindings()
-				)
+				new CriteriaQueryOptions() {
+					@Override
+					public SelectionImplementor<?> getSelection() {
+						return selection;
+					}
+					@Override
+					public InterpretedParameterMetadata getParameterMetadata() {
+						return context;
+					}
+					@Override @SuppressWarnings("rawtypes")
+					public List<ValueHandlerFactory.ValueHandler> getValueHandlers() {
+						return selection == null ? null : selection.getValueHandlers();
+					}
+					@Override
+					public void validate(Type[] returnTypes) {
+						if ( selection != null ) {
+							validateSelection( returnTypes, selection );
+						}
+					}
+				}
 		);
 
 		for ( ImplicitParameterBinding implicitParameterBinding: context.implicitParameterBindings() ) {
@@ -78,10 +100,27 @@ public class ReactiveCriteriaQueryImpl<T> extends CriteriaQueryImpl<T> implement
 //				query,
 //				context.explicitParameterInfoMap()
 //		);
-		query.setParameterMetadata( context );
 
 		return query;
 	}
 
-
+	private static void validateSelection(Type[] returnTypes, SelectionImplementor<?> selection) {
+		if ( selection.isCompoundSelection() ) {
+			if ( returnTypes.length != selection.getCompoundSelectionItems().size() ) {
+				throw new IllegalStateException(
+						"Number of return values [" + returnTypes.length +
+								"] did not match expected [" +
+								selection.getCompoundSelectionItems().size() + "]"
+				);
+			}
+		}
+		else {
+			if  (returnTypes.length > 1 ) {
+				throw new IllegalStateException(
+						"Number of return values [" + returnTypes.length +
+								"] did not match expected [1]"
+				);
+			}
+		}
+	}
 }

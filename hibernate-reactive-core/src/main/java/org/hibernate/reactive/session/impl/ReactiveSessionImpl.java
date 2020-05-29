@@ -74,6 +74,8 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.session.Criteria;
+import org.hibernate.reactive.session.CriteriaQueryOptions;
 import org.hibernate.reactive.session.QueryType;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveQuery;
@@ -84,7 +86,6 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.Tuple;
-import javax.persistence.criteria.Selection;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -237,8 +238,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		delayedAfterCompletion();
 
 		try {
-			ParameterMetadataImpl parameterMetadata = getQueryPlan(queryString, false).getParameterMetadata();
-			ReactiveQueryImpl<R> query = new ReactiveQueryImpl<>( this, parameterMetadata, queryString, queryType(queryString) );
+			ParameterMetadataImpl paramMetadata = getQueryPlan( queryString, false ).getParameterMetadata();
+			ReactiveQueryImpl<R> query = new ReactiveQueryImpl<>( this, paramMetadata, queryString, queryType(queryString) );
 			applyQuerySettingsAndHints( query );
 			query.setComment( queryString );
 			return query;
@@ -404,12 +405,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	private <T> ReactiveQuery<T> createReactiveQuery(NamedQueryDefinition queryDefinition) {
 		String queryString = queryDefinition.getQueryString();
-		final ReactiveQueryImpl<T> query = new ReactiveQueryImpl<>(
-				this,
-				getQueryPlan( queryString, false ).getParameterMetadata(),
-				queryString,
-				queryType( queryString )
-		);
+		ParameterMetadataImpl paramMetadata = getQueryPlan( queryString, false ).getParameterMetadata();
+		ReactiveQueryImpl<T> query = new ReactiveQueryImpl<>( this, paramMetadata, queryString, queryType( queryString ) );
 		applyQuerySettingsAndHints( query );
 		query.setHibernateFlushMode( queryDefinition.getFlushMode() );
 		query.setComment( queryDefinition.getComment() != null ? queryDefinition.getComment() : queryDefinition.getName() );
@@ -464,25 +461,26 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <T> ReactiveQuery<T> createReactiveQuery(String jpaqlString, Class<T> resultClass,
-													Selection<T> selection, QueryOptions queryOptions) {
+	public <T> ReactiveQuery<T> createReactiveCriteriaQuery(String jpaqlString,
+															Class<T> resultClass,
+															CriteriaQueryOptions queryOptions) {
 		try {
-			final ReactiveQuery<T> query = createReactiveQuery( jpaqlString );
+			ReactiveQuery<T> query = createReactiveQuery( jpaqlString );
+			query.setParameterMetadata( queryOptions.getParameterMetadata() );
 
-			if ( queryOptions.getValueHandlers() == null ) {
-				if ( queryOptions.getResultMetadataValidator() != null ) {
-					queryOptions.getResultMetadataValidator().validate( query.getReturnTypes() );
-				}
+			boolean hasValueHandlers = queryOptions.getValueHandlers() != null;
+			boolean hasTupleElements = Tuple.class.equals( resultClass );
+
+			if ( !hasValueHandlers ) {
+				queryOptions.validate( query.getReturnTypes() );
 			}
 
 			// determine if we need a result transformer
-			List<Selection<?>> tupleElements = Tuple.class.equals( resultClass )
-					? selection.getCompoundSelectionItems()
-					: null;
-			if ( queryOptions.getValueHandlers() != null || tupleElements != null ) {
-				query.setResultTransformer(
-						new CriteriaQueryTupleTransformer( queryOptions.getValueHandlers(), tupleElements )
-				);
+			if ( hasValueHandlers || hasTupleElements ) {
+				query.setResultTransformer( new CriteriaQueryTupleTransformer(
+						queryOptions.getValueHandlers(),
+						hasTupleElements ? queryOptions.getSelection().getCompoundSelectionItems() : null
+				) );
 			}
 
 			return query;
@@ -555,13 +553,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					}
 					return CompletionStages.returnNullorRethrow( e );
 				});
-	}
-
-	private Boolean getReadOnlyFromLoadQueryInfluencers() {
-		if ( getLoadQueryInfluencers() != null ) {
-			return getLoadQueryInfluencers().getReadOnly();
-		}
-		return null;
 	}
 
 	@Override
@@ -901,7 +892,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <T> CompletionStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids) {
-		return new ReactiveMultiIdentifierLoadAccessImpl<T>(entityClass).multiLoad(ids);
+		return new ReactiveMultiIdentifierLoadAccessImpl<>(entityClass).multiLoad(ids);
 		//TODO: copy/paste the exception handling from immediately above?
 	}
 

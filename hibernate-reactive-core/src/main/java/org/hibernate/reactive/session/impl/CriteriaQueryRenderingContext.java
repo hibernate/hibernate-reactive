@@ -36,7 +36,7 @@ import java.util.Map;
  * @author Gavin King
  * @author Steve Ebersole
  */
-class CriteriaQueryRenderingContext implements RenderingContext, InterpretedParameterMetadata {
+public class CriteriaQueryRenderingContext implements RenderingContext, InterpretedParameterMetadata {
 
 	private final Map<ParameterExpression<?>, ExplicitParameterInfo<?>> explicitParameterInfoMap = new HashMap<>();
 	private final List<ImplicitParameterBinding> implicitParameterBindings = new ArrayList<>();

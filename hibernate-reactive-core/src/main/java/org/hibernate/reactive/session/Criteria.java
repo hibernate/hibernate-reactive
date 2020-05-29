@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.session.impl;
+package org.hibernate.reactive.session;
 
-import org.hibernate.reactive.session.ReactiveQuery;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.impl.CriteriaQueryRenderingContext;
+import org.hibernate.reactive.session.impl.ReactiveCriteriaDeleteImpl;
+import org.hibernate.reactive.session.impl.ReactiveCriteriaQueryImpl;
+import org.hibernate.reactive.session.impl.ReactiveCriteriaUpdateImpl;
 
 /**
  * Abstracts over criteria {@link ReactiveCriteriaQueryImpl queries},

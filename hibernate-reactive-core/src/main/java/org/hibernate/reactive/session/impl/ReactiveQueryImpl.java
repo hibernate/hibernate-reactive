@@ -149,12 +149,18 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 
 	@Override
 	public <P> ReactiveQueryImpl<R> setParameter(Parameter<P> parameter, P value) {
-		final ExplicitParameterInfo<?> parameterInfo = resolveParameterInfo( parameter );
-		if ( parameterInfo.isNamed() ) {
-			setParameter( parameterInfo.getName(), value );
+		if (explicitParameterInfoMap==null) {
+			// not a criteria query
+			super.setParameter( parameter, value );
 		}
 		else {
-			setParameter( parameterInfo.getPosition(), value );
+			final ExplicitParameterInfo<?> parameterInfo = resolveParameterInfo( parameter );
+			if ( parameterInfo.isNamed() ) {
+				setParameter( parameterInfo.getName(), value );
+			}
+			else {
+				setParameter( parameterInfo.getPosition(), value );
+			}
 		}
 		return this;
 	}

@@ -8,6 +8,7 @@ package org.hibernate.reactive.session.impl;
 import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
 import org.hibernate.query.criteria.internal.CriteriaDeleteImpl;
 import org.hibernate.query.criteria.internal.compile.ImplicitParameterBinding;
+import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 
@@ -27,11 +28,8 @@ public class ReactiveCriteriaDeleteImpl<T> extends CriteriaDeleteImpl<T> impleme
 
 	@Override
 	public ReactiveQuery<T> build(CriteriaQueryRenderingContext context, ReactiveSession session) {
-		ReactiveQuery<T> query = session.createReactiveQuery(
-				renderQuery( context ),
-				null,
-				null,
-				new CriteriaQueryOptions( null, context.implicitParameterBindings() )
+		ReactiveQuery<T> query = session.createReactiveCriteriaQuery(
+				renderQuery( context ), null, () -> context
 		);
 
 		for ( ImplicitParameterBinding implicitParameterBinding: context.implicitParameterBindings() ) {

@@ -15,13 +15,10 @@ import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
-import org.hibernate.jpa.spi.HibernateEntityManagerImplementor.QueryOptions;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.session.impl.Criteria;
 
 import javax.persistence.EntityGraph;
-import javax.persistence.criteria.Selection;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -85,11 +82,10 @@ public interface ReactiveSession  {
 
 	<R> ReactiveQuery<R> createReactiveQuery(Criteria<R> criteria);
 
-	<T> ReactiveQuery<T> createReactiveQuery(
+	<T> ReactiveQuery<T> createReactiveCriteriaQuery(
 			String jpaqlString,
 			Class<T> resultClass,
-			Selection<T> selection,
-			QueryOptions queryOptions);
+			CriteriaQueryOptions queryOptions);
 
 	<T> CompletionStage<T> reactiveGet(
 			Class<T> entityClass,

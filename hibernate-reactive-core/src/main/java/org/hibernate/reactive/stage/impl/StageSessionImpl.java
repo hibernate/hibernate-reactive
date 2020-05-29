@@ -12,7 +12,7 @@ import org.hibernate.LockMode;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.session.impl.Criteria;
+import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
