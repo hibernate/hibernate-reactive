@@ -11,8 +11,11 @@ import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.UnknownProfileException;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.QueryParameters;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
@@ -101,11 +104,14 @@ public interface ReactiveSession  {
 			Class<T> entityClass,
 			Object... primaryKey);
 
-	<T> CompletionStage<List<T>> reactiveList(String query, QueryParameters queryParameters);
+	<T> CompletionStage<List<T>> reactiveList(String query, QueryParameters parameters);
 
-	<T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters queryParameters);
+	<T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters parameters);
 
-	CompletionStage<Integer> executeReactiveUpdate(String expandedQuery, QueryParameters queryParameters);
+	CompletionStage<Integer> executeReactiveUpdate(String expandedQuery, QueryParameters parameters);
+
+	CompletionStage<Integer> executeReactiveUpdate(NativeSQLQuerySpecification specification,
+												   QueryParameters parameters);
 
 	ReactiveConnection getReactiveConnection();
 
@@ -151,4 +157,7 @@ public interface ReactiveSession  {
 	boolean isOpen();
 	void close();
 
+	Dialect getDialect();
+	SessionFactoryImplementor getFactory();
+	SharedSessionContractImplementor getSharedContract();
 }

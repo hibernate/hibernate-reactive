@@ -88,8 +88,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	//copy pasted between here and ReactiveQueryImpl
 	private CompletionStage<Integer> doExecuteReactiveUpdate() {
-		final String expandedQuery = getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() );
-		return reactiveProducer().executeReactiveUpdate( expandedQuery, makeQueryParametersForExecution( expandedQuery ) );
+		return reactiveProducer().executeReactiveUpdate( generateQuerySpecification(), getQueryParameters() );
 	}
 
 	@Override

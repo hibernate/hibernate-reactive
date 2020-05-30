@@ -20,7 +20,7 @@ import org.hibernate.reactive.stage.impl.StageSessionFactoryImpl;
  */
 public class ReactiveSessionFactoryImpl extends SessionFactoryImpl {
 	public ReactiveSessionFactoryImpl(MetadataImplementor metadata, SessionFactoryOptions options) {
-		super( metadata, options, ReactiveHQLQueryPlan::new );
+		super( metadata, options, ReactiveHQLQueryPlan::new ); //TODO: pass ReactiveNativeHQLQueryPlan::new
 	}
 
 	@Override
