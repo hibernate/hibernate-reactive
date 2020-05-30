@@ -14,7 +14,6 @@ import org.hibernate.cfg.Configuration;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -68,7 +67,7 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 		);
 	}
 
-	@Test @Ignore("parameters in update queries not yet working")
+	@Test
 	public void testUpdateQueryWithParameters(TestContext context) {
 		String updatedDescription =  "Most rye breads use a mix of rye and wheat flours";
 		test(

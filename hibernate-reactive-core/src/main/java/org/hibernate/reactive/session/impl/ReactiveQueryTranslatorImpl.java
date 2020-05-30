@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive.session.impl;
 
+import antlr.RecognitionException;
+import antlr.collections.AST;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.query.spi.EntityGraphQueryHint;
 import org.hibernate.engine.spi.QueryParameters;
@@ -14,11 +16,15 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.hql.internal.QueryExecutionRequestException;
 import org.hibernate.hql.internal.ast.HqlSqlWalker;
+import org.hibernate.hql.internal.ast.QuerySyntaxException;
 import org.hibernate.hql.internal.ast.QueryTranslatorImpl;
+import org.hibernate.hql.internal.ast.SqlGenerator;
 import org.hibernate.hql.internal.ast.tree.QueryNode;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.loader.hql.QueryLoader;
+import org.hibernate.param.ParameterSpecification;
+import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.loader.hql.impl.ReactiveQueryLoader;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -140,19 +146,19 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 	public CompletionStage<Integer> executeReactiveUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) {
 		errorIfSelect();
 
-		CompletionStage<Integer> updateStage = CompletionStages.completedFuture(0);
-		for ( String sqlStatement : getSqlStatements() ) {
+		// Multiple UPDATE SQL strings are not supported yet
 
-			//TODO: bind named parameters!
-
-			String sql = processParameters( sqlStatement, session.getJdbcServices().getDialect() );
-			updateStage = updateStage
-					.thenCompose( count -> ((ReactiveSession) session).getReactiveConnection()
-							.update( sql, queryParameters.getPositionalParameterValues() )
-							.thenApply( updateCount -> count + updateCount )
-					);
-		}
-		return updateStage;
+		final String processedSql = processParameters( getSqlStatements()[0], session.getJdbcServices().getDialect() );
+		final Object[] parameterValues = QueryParametersAdaptor.toParameterArray(
+				queryParameters,
+				getCollectedParameterSpecifications( session ),
+				session
+		);
+		return CompletionStages.completedFuture(0)
+				.thenCompose( count -> ((ReactiveSession) session).getReactiveConnection()
+						.update( processedSql, parameterValues )
+						.thenApply( updateCount -> count + updateCount )
+				);
 	}
 
 	/**
@@ -162,6 +168,23 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 	@Override
 	public int executeUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
 		throw new UnsupportedOperationException("Use executeReactiveUpdate instead ");
+	}
+
+	// TODO: it would be nice to be able to override getCollectedParameterSpecifications().
+	//       To do that, we would need to add protected method, QueryTranslatorImpl#getFactory
+	private List<ParameterSpecification> getCollectedParameterSpecifications(SharedSessionContractImplementor session) {
+		// Currently, ORM returns null for getCollectedParameterSpecifications() a StatementExecute
+		List<ParameterSpecification> parameterSpecifications = getCollectedParameterSpecifications();
+		if ( parameterSpecifications == null ) {
+			final SqlGenerator gen = new SqlGenerator( session.getFactory());
+			try {
+				gen.statement( (AST) getSqlAST() );
+				parameterSpecifications = gen.getCollectedParameters();
+			} catch (RecognitionException e) {
+				throw QuerySyntaxException.convert(e);
+			}
+		}
+		return parameterSpecifications;
 	}
 
 	//TODO: Change scope in ORM
