@@ -111,10 +111,10 @@ public interface Stage {
 		 */
 		Query<R> setComment(String comment);
 
-		/**
-		 * Set a query hint.
-		 */
-		Query<R> setHint(String hintName, Object value);
+//		/**
+//		 * Set a query hint.
+//		 */
+//		Query<R> setHint(String hintName, Object value);
 
 		/**
 		 * (Re)set the current {@link CacheMode} in effect for this query.
