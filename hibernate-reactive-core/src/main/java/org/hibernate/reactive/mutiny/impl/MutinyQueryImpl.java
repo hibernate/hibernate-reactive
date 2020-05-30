@@ -67,11 +67,11 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 		return this;
 	}
 
-	@Override
-	public Mutiny.Query<R> setHint(String hintName, Object value) {
-		delegate.setQueryHint( hintName, value );
-		return null;
-	}
+//	@Override
+//	public Mutiny.Query<R> setHint(String hintName, Object value) {
+//		delegate.setQueryHint( hintName, value );
+//		return null;
+//	}
 
 	@Override
 	public Mutiny.Query<R> setLockMode(LockMode lockMode) {
