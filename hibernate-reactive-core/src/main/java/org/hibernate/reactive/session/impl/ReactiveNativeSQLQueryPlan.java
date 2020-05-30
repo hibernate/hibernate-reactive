@@ -6,7 +6,6 @@
 package org.hibernate.reactive.session.impl;
 
 import org.hibernate.HibernateException;
-import org.hibernate.JDBCException;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.query.spi.NativeSQLQueryPlan;
 import org.hibernate.engine.spi.QueryParameters;
@@ -17,7 +16,6 @@ import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.sql.impl.Parameters;
 
-import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
 
 public class ReactiveNativeSQLQueryPlan extends NativeSQLQueryPlan {
@@ -57,22 +55,18 @@ public class ReactiveNativeSQLQueryPlan extends NativeSQLQueryPlan {
 				dialect
 		);
 
-		PreparedStatementAdaptor statement = new PreparedStatementAdaptor();
-		try {
+		Object[] params = PreparedStatementAdaptor.bind( statement -> {
 			int col = 1;
 			for ( ParameterBinder binder : customQuery.getParameterValueBinders() ) {
 				col += binder.bind( statement, queryParameters, sessionContract, col );
 			}
-		}
-		catch (SQLException e) {
-			//can not happen
-			throw new JDBCException("error binding parameters", e);
-		}
+		} );
+
 //		RowSelection selection = queryParameters.getRowSelection();
 //		if ( selection != null && selection.getTimeout() != null ) {
 //			statement.setQueryTimeout( selection.getTimeout() );
 //		}
 
-		return session.getReactiveConnection().update( sql, statement.getParametersAsArray() );
+		return session.getReactiveConnection().update( sql, params );
 	}
 }

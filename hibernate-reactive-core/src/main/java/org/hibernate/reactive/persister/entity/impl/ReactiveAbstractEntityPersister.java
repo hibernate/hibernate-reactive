@@ -210,20 +210,17 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 //		}
 //		final boolean callable = delegate.isInsertCallable( j );
 
-		PreparedStatementAdaptor insert = new PreparedStatementAdaptor();
-		try {
-			int index = delegate().dehydrate( null, fields, notNull, delegate().getPropertyColumnInsertable(), j, insert, session, false );
+		Object[] params = PreparedStatementAdaptor.bind( insert -> {
+			boolean[][] insertable = delegate().getPropertyColumnInsertable();
+			int index = delegate().dehydrate( null, fields, notNull, insertable, j, insert, session, false );
 			delegate().getIdentifierType().nullSafeSet( insert, id, index, session );
-		}
-		catch (SQLException e) {
-			//can't actually occur!
-			throw new JDBCException( "error while binding parameters", e );
-		}
-		return getReactiveConnection(session)
-				.update( sql, insert.getParametersAsArray() )
+		} );
+
+		return getReactiveConnection( session )
+				.update( sql, params )
 				.thenAccept( count -> {
 					try {
-						expectation.verifyOutcome(count, insert, -1);
+						expectation.verifyOutcome(count, new PreparedStatementAdaptor(), -1);
 					}
 					catch (SQLException e) {
 						//can't actually occur!
@@ -254,14 +251,10 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			}
 		}
 
-		PreparedStatementAdaptor insert = new PreparedStatementAdaptor();
-		try {
-			delegate().dehydrate( null, fields, notNull, delegate().getPropertyColumnInsertable(), 0, insert, session, false );
-		}
-		catch (SQLException e) {
-			//can't actually occur!
-			throw new JDBCException( "error while binding parameters", e );
-		}
+		Object[] params = PreparedStatementAdaptor.bind( insert -> {
+			boolean[][] insertable = delegate().getPropertyColumnInsertable();
+			delegate().dehydrate( null, fields, notNull, insertable, 0, insert, session, false );
+		} );
 
 		SessionFactoryImplementor factory = session.getFactory();
 		Dialect dialect = factory.getJdbcServices().getDialect();
@@ -272,8 +265,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			if ( dialect instanceof PostgreSQL81Dialect) {
 				sql = sql + " returning " + identifierColumnName;
 			}
-			return connection.updateReturning( sql, insert.getParametersAsArray() )
-					.thenApply( id -> id );
+			return connection.updateReturning( sql, params ).thenApply( id -> id );
 		}
 		else {
 			//use an extra round trip to fetch the id
@@ -283,7 +275,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 							identifierColumnName,
 							Types.INTEGER
 					);
-			return connection.update( sql, insert.getParametersAsArray() )
+			return connection.update( sql, params )
 					.thenCompose( v -> connection.selectLong( selectIdSql, new Object[0] ) )
 					.thenApply( id -> id );
 		}
@@ -329,10 +321,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		//Render the SQL query
-		PreparedStatementAdaptor delete = new PreparedStatementAdaptor();
-		try {
-			// FIXME: This is a hack to set the right type for the parameters
-			//		until we have a proper type system in place
+		Object[] params = PreparedStatementAdaptor.bind( delete -> {
 			int index = 1;
 
 			index += expectation.prepare( delete );
@@ -359,16 +348,13 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					}
 				}
 			}
-		}
-		catch ( SQLException e) {
-			throw new HibernateException( e );
-		}
+		} );
 
 		return getReactiveConnection(session)
-				.update( sql, delete.getParametersAsArray() )
+				.update( sql, params )
 				.thenAccept( count -> {
 					try {
-						expectation.verifyOutcome(count, delete, -1);
+						expectation.verifyOutcome(count, new PreparedStatementAdaptor(), -1);
 					}
 					catch (SQLException e) {
 						//can't actually occur!
@@ -501,7 +487,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 //		try {
-		int index = 1; // starting index
 //			if ( useBatch ) {
 //				update = session
 //						.getJdbcCoordinator()
@@ -509,10 +494,10 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 //						.getBatchStatement( sql, callable );
 //			}
 //			else {
-		final PreparedStatementAdaptor update = new PreparedStatementAdaptor();
 //			}
 
-		try {
+		Object[] params = PreparedStatementAdaptor.bind( update -> {
+			int index = 1;
 			index += expectation.prepare( update );
 
 			//Now write the values of fields onto the prepared statement
@@ -558,11 +543,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					}
 				}
 			}
-		}
-		catch (SQLException e) {
-			//can't actually occur
-			throw new JDBCException( "error preparing statement", e );
-		}
+		} );
 
 //				if ( useBatch ) {
 //					session.getJdbcCoordinator().getBatch( updateBatchKey ).addToBatch();
@@ -571,10 +552,10 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 //				else {
 
 		return getReactiveConnection(session)
-				.update( sql, update.getParametersAsArray() )
+				.update( sql, params )
 				.thenApply( count -> {
 					try {
-						expectation.verifyOutcome(count, update, -1);
+						expectation.verifyOutcome(count, new PreparedStatementAdaptor(), -1);
 					}
 					catch (SQLException e) {
 						//can't actually occur!
@@ -932,20 +913,15 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			);
 		}
 
-		PreparedStatementAdaptor statement = new PreparedStatementAdaptor();
-		try {
-			getIdentifierType().nullSafeSet(statement, id, 1, session);
-		}
-		catch (SQLException e) {
-			//can never happen
-			throw new JDBCException("error binding parameters", e);
-		}
+		Object[] params = PreparedStatementAdaptor.bind(
+				statement -> getIdentifierType().nullSafeSet(statement, id, 1, session)
+		);
 
 		Dialect dialect = getFactory().getJdbcServices().getDialect();
 		String sql = processParameters( delegate().getSQLSnapshotSelectString(), dialect );
 
 		return getReactiveConnection( session )
-				.selectJdbc( sql, statement.getParametersAsArray() )
+				.selectJdbc( sql, params )
 				.thenApply( (rs) -> {
 					try {
 						if ( rs.next() ) {

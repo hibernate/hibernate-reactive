@@ -6,12 +6,29 @@
 package org.hibernate.reactive.adaptor.impl;
 
 import io.vertx.core.buffer.Buffer;
+import org.hibernate.AssertionFailure;
 
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.sql.*;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.NClob;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Calendar;
 
@@ -20,6 +37,22 @@ import java.util.Calendar;
  * that expects a JDBC {@link PreparedStatement}.
  */
 public class PreparedStatementAdaptor implements PreparedStatement {
+
+	@FunctionalInterface
+	public interface Binder {
+		void bind(PreparedStatement statement) throws SQLException;
+	}
+
+	public static Object[] bind(Binder binder) {
+		PreparedStatementAdaptor statement = new PreparedStatementAdaptor();
+		try {
+			binder.bind(statement);
+		}
+		catch (SQLException e) {
+			throw new AssertionFailure("SQLException should never occur", e);
+		}
+		return statement.getParametersAsArray();
+	}
 
 	static final Object[] NO_PARAMS = new Object[0];
 

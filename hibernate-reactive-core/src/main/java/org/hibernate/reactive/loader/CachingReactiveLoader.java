@@ -6,7 +6,6 @@
 package org.hibernate.reactive.loader;
 
 import org.hibernate.HibernateException;
-import org.hibernate.JDBCException;
 import org.hibernate.QueryException;
 import org.hibernate.cache.spi.FilterKey;
 import org.hibernate.cache.spi.QueryKey;
@@ -26,6 +25,7 @@ import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
@@ -167,24 +167,16 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 
 	@Override
 	default Object[] toParameterArray(QueryParameters queryParameters, SharedSessionContractImplementor session) {
-		PreparedStatementAdaptor adaptor = new PreparedStatementAdaptor();
-		try {
-			bindPreparedStatement(
-					adaptor,
-					queryParameters,
-					limitHandler( queryParameters.getRowSelection(), session ),
-					session
-			);
-			return adaptor.getParametersAsArray();
-		}
-		catch (SQLException e) {
-			//can never happen
-			throw new JDBCException("error binding parameters", e);
-		}
+		return PreparedStatementAdaptor.bind( adaptor -> bindToPreparedStatement(
+				adaptor,
+				queryParameters,
+				limitHandler( queryParameters.getRowSelection(), session ),
+				session
+		) );
 	}
 
-	void bindPreparedStatement(PreparedStatementAdaptor adaptor,
-							   QueryParameters queryParameters,
-							   LimitHandler limitHandler,
-							   SharedSessionContractImplementor session) throws SQLException;
+	void bindToPreparedStatement(PreparedStatement adaptor,
+								 QueryParameters queryParameters,
+								 LimitHandler limitHandler,
+								 SharedSessionContractImplementor session) throws SQLException;
 }

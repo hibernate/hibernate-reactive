@@ -19,12 +19,12 @@ import org.hibernate.hql.internal.ast.QueryTranslatorImpl;
 import org.hibernate.hql.internal.ast.tree.SelectClause;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
-import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.CachingReactiveLoader;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -150,10 +150,10 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 	}
 
 	@Override
-	public void bindPreparedStatement(PreparedStatementAdaptor adaptor,
-									  QueryParameters queryParameters,
-									  LimitHandler limitHandler,
-									  SharedSessionContractImplementor session) throws SQLException {
+	public void bindToPreparedStatement(PreparedStatement adaptor,
+										QueryParameters queryParameters,
+										LimitHandler limitHandler,
+										SharedSessionContractImplementor session) throws SQLException {
 		super.bindPreparedStatement(adaptor, queryParameters, limitHandler, session);
 	}
 }
