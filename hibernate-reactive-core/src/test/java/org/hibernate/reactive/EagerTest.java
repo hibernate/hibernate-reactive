@@ -58,13 +58,33 @@ public class EagerTest extends BaseReactiveTest {
 						.thenCompose(s -> s.persist(basik))
 						.thenCompose(s -> s.flush())
 						.thenCompose(v -> openSession())
-						.thenCompose(s -> {
-							s.enableFilter("current");
-							return s.find( Node.class, basik.getId() );
-						})
+						.thenCompose(s -> s.find( Node.class, basik.getId() ))
 						.thenAccept( node -> {
 							context.assertTrue( Hibernate.isInitialized( node.elements ) );
 							context.assertEquals( 3, node.elements.size() );
+						} )
+		);
+	}
+
+	@Test
+	public void testEagerParentFetch(TestContext context) {
+
+		Node basik = new Node("Child");
+		basik.parent = new Node("Parent");
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+
+		test(context,
+				openSession()
+						.thenCompose(s -> s.persist(basik))
+						.thenCompose(s -> s.flush())
+						.thenCompose(v -> openSession())
+						.thenCompose(s -> s.find( Element.class, basik.elements.get(0).id ))
+						.thenAccept( element -> {
+							context.assertTrue( Hibernate.isInitialized( element.node ) );
+							context.assertTrue( Hibernate.isInitialized( element.node.elements ) );
+							context.assertEquals( 3, element.node.elements.size() );
 						} )
 		);
 	}
@@ -83,10 +103,7 @@ public class EagerTest extends BaseReactiveTest {
 						.thenCompose(s -> s.persist(basik))
 						.thenCompose(s -> s.flush())
 						.thenCompose(v -> openSession())
-						.thenCompose(s -> {
-							s.enableFilter("current");
-							return s.createQuery("from Node order by id", Node.class).getResultList();
-						})
+						.thenCompose(s -> s.createQuery("from Node order by id", Node.class).getResultList())
 						.thenAccept(list -> {
 							context.assertEquals(list.size(), 2);
 							context.assertTrue( Hibernate.isInitialized( list.get(0).elements ) );
@@ -94,10 +111,7 @@ public class EagerTest extends BaseReactiveTest {
 							context.assertEquals(list.get(1).elements.size(), 0);
 						})
 						.thenCompose(v -> openSession())
-						.thenCompose(s -> {
-							s.enableFilter("current");
-							return s.createQuery("select distinct n, e from Node n join n.elements e order by n.id").getResultList();
-						})
+						.thenCompose(s -> s.createQuery("select distinct n, e from Node n join n.elements e order by n.id").getResultList())
 						.thenAccept(list -> {
 							context.assertEquals(list.size(), 3);
 							Object[] tup = (Object[]) list.get(0);
@@ -115,6 +129,7 @@ public class EagerTest extends BaseReactiveTest {
 		Integer id;
 
 		@ManyToOne
+//		@Fetch(FetchMode.SELECT)
 		Node node;
 
 		public Element(Node node) {
