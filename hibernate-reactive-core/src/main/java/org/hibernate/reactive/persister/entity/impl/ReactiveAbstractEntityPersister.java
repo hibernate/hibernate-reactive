@@ -23,7 +23,6 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
-import org.hibernate.jdbc.Expectations;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
 import org.hibernate.persister.entity.Lockable;
@@ -42,6 +41,8 @@ import org.hibernate.type.Type;
 import org.jboss.logging.Logger;
 
 import java.io.Serializable;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Iterator;
@@ -49,6 +50,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
+import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.sql.impl.Parameters.createDialectParameterGenerator;
 import static org.hibernate.reactive.sql.impl.Parameters.processParameters;
@@ -196,7 +198,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		// TODO : shouldn't inserts be Expectations.NONE?
-		final Expectation expectation = Expectations.appropriateExpectation( delegate().getInsertResultCheckStyles()[j] );
+		final Expectation expectation = appropriateExpectation( delegate().getInsertResultCheckStyles()[j] );
 //		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
 //		final boolean useBatch = expectation.canBeBatched() &&
 //				jdbcBatchSizeToUse > 1 &&
@@ -296,7 +298,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 		final boolean useVersion = j == 0 && delegate().isVersioned();
 //		final boolean callable = delegate.isDeleteCallable( j );
-		final Expectation expectation = Expectations.appropriateExpectation( delegate().getDeleteResultCheckStyles()[j] );
+		final Expectation expectation = appropriateExpectation( delegate().getDeleteResultCheckStyles()[j] );
 //		final boolean useBatch = j == 0 && delegate.isBatchable() && expectation.canBeBatched();
 //		if ( useBatch && deleteBatchKey == null ) {
 //			deleteBatchKey = new BasicBatchKey(
@@ -352,15 +354,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		return getReactiveConnection(session)
 				.update( sql, params )
-				.thenAccept( count -> {
-					try {
-						expectation.verifyOutcome(count, new PreparedStatementAdaptor(), -1);
-					}
-					catch (SQLException e) {
-						//can't actually occur!
-						throw new JDBCException( "error while verifying result count", e );
-					}
-				});
+				.thenAccept( count -> check( count, id, j, expectation, new PreparedStatementAdaptor() ) );
 	}
 
 	default CompletionStage<?> deleteReactive(
@@ -467,7 +461,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			final String sql,
 			final SharedSessionContractImplementor session) throws HibernateException {
 
-		final Expectation expectation = Expectations.appropriateExpectation( delegate().getUpdateResultCheckStyles()[j] );
+		final Expectation expectation = appropriateExpectation( delegate().getUpdateResultCheckStyles()[j] );
 //		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
 //		final boolean useBatch = expectation.canBeBatched() && isBatchable() && jdbcBatchSizeToUse > 1;
 //		if ( useBatch && updateBatchKey == null ) {
@@ -486,14 +480,11 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			}
 		}
 
-//		try {
 //			if ( useBatch ) {
 //				update = session
 //						.getJdbcCoordinator()
 //						.getBatch( updateBatchKey )
 //						.getBatchStatement( sql, callable );
-//			}
-//			else {
 //			}
 
 		Object[] params = PreparedStatementAdaptor.bind( update -> {
@@ -549,37 +540,18 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 //					session.getJdbcCoordinator().getBatch( updateBatchKey ).addToBatch();
 //					return true;
 //				}
-//				else {
 
 		return getReactiveConnection(session)
 				.update( sql, params )
-				.thenApply( count -> {
-					try {
-						expectation.verifyOutcome(count, new PreparedStatementAdaptor(), -1);
-					}
-					catch (SQLException e) {
-						//can't actually occur!
-						throw new JDBCException( "error while verifying result count", e );
-					}
-					return count > 0;
-				});
-
-//					return check(
-//							session.getJdbcCoordinator().getResultSetReturn().executeUpdate( update ),
-//							id,
-//							j,
-//							expectation,
-//							update
-//					);
-//				}
-//		}
-//		finally {
-//				if ( !useBatch ) {
-//					session.getJdbcCoordinator().getResourceRegistry().release( update );
-//					session.getJdbcCoordinator().afterStatementExecution();
-//				}
-//		}
+				.thenApply( count -> check( count, id, j, expectation, new PreparedStatementAdaptor() ) );
 	}
+
+	boolean check(
+			int rows,
+			Serializable id,
+			int tableNumber,
+			Expectation expectation,
+			PreparedStatement statement) throws HibernateException;
 
 	default CompletionStage<?> updateReactive(
 			final Serializable id,
@@ -922,34 +894,37 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		return getReactiveConnection( session )
 				.selectJdbc( sql, params )
-				.thenApply( (rs) -> {
-					try {
-						if ( rs.next() ) {
-							//return the "hydrated" state (ie. associations are not resolved)
-							Type[] types = getPropertyTypes();
-							Object[] values = new Object[types.length];
-							boolean[] includeProperty = getPropertyUpdateability();
-							for ( int i = 0; i < types.length; i++ ) {
-								if ( includeProperty[i] ) {
-									values[i] = types[i].hydrate(
-											rs,
-											getPropertyAliases( "", i ),
-											session,
-											null
-									); //null owner ok??
-								}
-							}
-							return values;
-						}
-						else {
-							//no corresponding row: transient!
-							return null;
-						}
+				.thenApply( (resultSet) -> processSnapshot(session, resultSet) );
+	}
+
+	//would be nice of we could just reuse this code from AbstractEntityPersister
+	default Object[] processSnapshot(SharedSessionContractImplementor session, ResultSet resultSet) {
+		try {
+			if ( resultSet.next() ) {
+				//return the "hydrated" state (ie. associations are not resolved)
+				Type[] types = getPropertyTypes();
+				Object[] values = new Object[types.length];
+				boolean[] includeProperty = getPropertyUpdateability();
+				for ( int i = 0; i < types.length; i++ ) {
+					if ( includeProperty[i] ) {
+						values[i] = types[i].hydrate(
+								resultSet,
+								getPropertyAliases( "", i ),
+								session,
+								null
+						); //null owner ok??
 					}
-					catch (SQLException e) {
-						//can't actually occur!
-						throw new JDBCException( "error while binding parameters", e );
-					}
-				} );
+				}
+				return values;
+			}
+			else {
+				//no corresponding row: transient!
+				return null;
+			}
+		}
+		catch (SQLException e) {
+			//can't actually occur!
+			throw new JDBCException( "error while binding parameters", e );
+		}
 	}
 }

@@ -14,6 +14,7 @@ import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.CascadingActions;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.UnionSubclassEntityPersister;
@@ -26,6 +27,7 @@ import org.hibernate.reactive.sql.impl.Insert;
 import org.hibernate.reactive.sql.impl.Update;
 
 import java.io.Serializable;
+import java.sql.PreparedStatement;
 
 /**
  * An {@link ReactiveEntityPersister} backed by {@link UnionSubclassEntityPersister}
@@ -185,5 +187,11 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	@Override
 	public String[] getUpdateStrings(boolean byRowId, boolean hasUninitializedLazyProperties) {
 		return super.getUpdateStrings(byRowId, hasUninitializedLazyProperties);
+	}
+
+	@Override
+	public boolean check(int rows, Serializable id, int tableNumber,
+						 Expectation expectation, PreparedStatement statement) throws HibernateException {
+		return super.check(rows, id, tableNumber, expectation, statement);
 	}
 }
