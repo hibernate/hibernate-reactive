@@ -188,17 +188,24 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 			connectOptions.setPassword( password );
 		}
 
+		//enable the prepared statement cache by default
+		connectOptions.setCachePreparedStatements(true);
+
 		final Integer cacheMaxSize = ConfigurationHelper.getInteger( PREPARED_STATEMENT_CACHE_MAX_SIZE, configurationValues );
 		if (cacheMaxSize!=null) {
-			CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000014: Prepared statement cache max size: %d", cacheMaxSize );
-			connectOptions.setCachePreparedStatements(true);
-			connectOptions.setPreparedStatementCacheMaxSize(cacheMaxSize);
+			if (cacheMaxSize <= 0) {
+				CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000014: Prepared statement cache disabled", cacheMaxSize );
+				connectOptions.setCachePreparedStatements(false);
+			}
+			else {
+				CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000015: Prepared statement cache max size: %d", cacheMaxSize );
+				connectOptions.setPreparedStatementCacheMaxSize(cacheMaxSize);
+			}
 		}
 
 		final Integer sqlLimit = ConfigurationHelper.getInteger( PREPARED_STATEMENT_CACHE_SQL_LIMIT, configurationValues );
 		if (cacheMaxSize!=null) {
-			CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000015: Prepared statement cache SQL limit: %d", sqlLimit );
-			connectOptions.setCachePreparedStatements(true);
+			CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000016: Prepared statement cache SQL limit: %d", sqlLimit );
 			connectOptions.setPreparedStatementCacheSqlLimit(sqlLimit);
 		}
 
