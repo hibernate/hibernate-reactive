@@ -143,26 +143,26 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 				});
 	}
 
-	public CompletionStage<Integer> executeReactiveUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) {
+	public CompletionStage<Integer> executeReactiveUpdate(QueryParameters queryParameters, ReactiveSession session) {
 		errorIfSelect();
 
 		// Multiple UPDATE SQL strings are not supported yet
 
-		final String processedSql = processParameters( getSqlStatements()[0], session.getJdbcServices().getDialect() );
+		final String processedSql = processParameters( getSqlStatements()[0], session.getDialect() );
 		final Object[] parameterValues = QueryParametersAdaptor.toParameterArray(
 				queryParameters,
 				getCollectedParameterSpecifications( session ),
-				session
+				session.getSharedContract()
 		);
 		return CompletionStages.completedFuture(0)
-				.thenCompose( count -> ((ReactiveSession) session).getReactiveConnection()
+				.thenCompose( count -> session.getReactiveConnection()
 						.update( processedSql, parameterValues )
 						.thenApply( updateCount -> count + updateCount )
 				);
 	}
 
 	/**
-	 * @deprecated Use {@link #executeReactiveUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session)}
+	 * @deprecated Use {@link #executeReactiveUpdate(QueryParameters queryParameters, ReactiveSession session)}
 	 */
 	@Deprecated
 	@Override
@@ -172,11 +172,11 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 
 	// TODO: it would be nice to be able to override getCollectedParameterSpecifications().
 	//       To do that, we would need to add protected method, QueryTranslatorImpl#getFactory
-	private List<ParameterSpecification> getCollectedParameterSpecifications(SharedSessionContractImplementor session) {
+	private List<ParameterSpecification> getCollectedParameterSpecifications(ReactiveSession session) {
 		// Currently, ORM returns null for getCollectedParameterSpecifications() a StatementExecute
 		List<ParameterSpecification> parameterSpecifications = getCollectedParameterSpecifications();
 		if ( parameterSpecifications == null ) {
-			final SqlGenerator gen = new SqlGenerator( session.getFactory());
+			final SqlGenerator gen = new SqlGenerator( session.getFactory() );
 			try {
 				gen.statement( (AST) getSqlAST() );
 				parameterSpecifications = gen.getCollectedParameters();

@@ -492,6 +492,14 @@ public interface Stage {
 		<R> Query<R> createNativeQuery(String queryString, String resultSetMapping);
 
 		/**
+		 * Create an instance of {@link Query} for the given SQL update, insert,
+		 * or delete DML string.
+		 *
+		 * @param queryString The SQL update, insert, or delete query
+		 */
+		Query<Integer> createNativeQuery(String queryString);
+
+		/**
 		 * Create an instance of {@link Query} for the given criteria query.
 		 *
 		 * @param criteriaQuery The {@link CriteriaQuery}

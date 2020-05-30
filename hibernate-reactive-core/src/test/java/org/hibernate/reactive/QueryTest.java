@@ -108,14 +108,14 @@ public class QueryTest extends BaseReactiveTest {
 		query.where( builder.equal( b.get("title"), t ) );
 		query.orderBy( builder.asc( b.get("isbn") ) );
 
-//		CriteriaUpdate<Book> update = builder.createCriteriaUpdate(Book.class);
-//		b = update.from(Book.class);
-//		update.where( builder.equal( b.get("title"), t ) );
-//		update.set( b.get("title"), "XXX" );
-//
-//		CriteriaDelete<Book> delete = builder.createCriteriaDelete(Book.class);
-//		b = delete.from(Book.class);
-//		delete.where( builder.equal( b.get("title"), t ) );
+		CriteriaUpdate<Book> update = builder.createCriteriaUpdate(Book.class);
+		b = update.from(Book.class);
+		update.where( builder.equal( b.get("title"), t ) );
+		update.set( b.get("title"), "XXX" );
+
+		CriteriaDelete<Book> delete = builder.createCriteriaDelete(Book.class);
+		b = delete.from(Book.class);
+		delete.where( builder.equal( b.get("title"), t ) );
 
 		test(context,
 				openSession()
@@ -136,16 +136,14 @@ public class QueryTest extends BaseReactiveTest {
 							} );
 						} )
 
-						//TODO: get parameters in update/delete criteria working!
-
-//						.thenCompose( v -> openSession() )
-//						.thenCompose( session -> session.createQuery(update)
-//								.setParameter( t, "Snow Crash")
-//								.executeUpdate() )
-//						.thenCompose( v -> openSession() )
-//						.thenCompose( session -> session.createQuery(delete)
-//								.setParameter( t, "Snow Crash")
-//								.executeUpdate() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createQuery(update)
+								.setParameter( t, "Snow Crash")
+								.executeUpdate() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createQuery(delete)
+								.setParameter( t, "Snow Crash")
+								.executeUpdate() )
 		);
 	}
 
@@ -168,14 +166,14 @@ public class QueryTest extends BaseReactiveTest {
 		query.where( builder.equal( b.get("title"), t ) );
 		query.orderBy( builder.asc( b.get("isbn") ) );
 
-//		CriteriaUpdate<Book> update = builder.createCriteriaUpdate(Book.class);
-//		b = update.from(Book.class);
-//		update.where( builder.equal( b.get("title"), t ) );
-//		update.set( b.get("title"), "XXX" );
-//
-//		CriteriaDelete<Book> delete = builder.createCriteriaDelete(Book.class);
-//		b = delete.from(Book.class);
-//		delete.where( builder.equal( b.get("title"), t ) );
+		CriteriaUpdate<Book> update = builder.createCriteriaUpdate(Book.class);
+		b = update.from(Book.class);
+		update.where( builder.equal( b.get("title"), t ) );
+		update.set( b.get("title"), "XXX" );
+
+		CriteriaDelete<Book> delete = builder.createCriteriaDelete(Book.class);
+		b = delete.from(Book.class);
+		delete.where( builder.equal( b.get("title"), t ) );
 
 		test(context,
 				openSession()
@@ -196,16 +194,14 @@ public class QueryTest extends BaseReactiveTest {
 							} );
 						} )
 
-				//TODO: get parameters in update/delete criteria working!
-
-//						.thenCompose( v -> openSession() )
-//						.thenCompose( session -> session.createQuery(update)
-//								.setParameter("title", "Snow Crash")
-//								.executeUpdate() )
-//						.thenCompose( v -> openSession() )
-//						.thenCompose( session -> session.createQuery(delete)
-//								.setParameter("title", "Snow Crash")
-//								.executeUpdate() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createQuery(update)
+								.setParameter("title", "Snow Crash")
+								.executeUpdate() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createQuery(delete)
+								.setParameter("title", "Snow Crash")
+								.executeUpdate() )
 		);
 	}
 
@@ -303,6 +299,13 @@ public class QueryTest extends BaseReactiveTest {
 								context.assertEquals( "Snow Crash", book.title );
 							} );
 						} )
+
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createNativeQuery("update books set title = ?1 where title = ?2")
+								.setParameter(1, "XXX")
+								.setParameter(2, "Snow Crash")
+								.executeUpdate() )
+						.thenAccept( count -> context.assertEquals(1, count) )
 		);
 	}
 
@@ -335,6 +338,13 @@ public class QueryTest extends BaseReactiveTest {
 								context.assertEquals( "Snow Crash", book.title );
 							} );
 						} )
+
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createNativeQuery("update books set title = :newtitle where title = :title")
+								.setParameter("newtitle", "XXX")
+								.setParameter("title", "Snow Crash")
+								.executeUpdate() )
+						.thenAccept( count -> context.assertEquals(1, count) )
 		);
 	}
 

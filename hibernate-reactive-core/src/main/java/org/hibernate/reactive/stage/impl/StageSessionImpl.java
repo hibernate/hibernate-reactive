@@ -188,6 +188,11 @@ public class StageSessionImpl implements Stage.Session {
 		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping ) );
 	}
 
+	@Override
+	public Stage.Query<Integer> createNativeQuery(String sql) {
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql ) );
+	}
+
 	@Override @SuppressWarnings("unchecked")
 	public <R> Stage.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
 		return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery) );

@@ -17,6 +17,7 @@ import org.hibernate.ObjectDeletedException;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.query.spi.QueryPlanCache;
@@ -25,6 +26,7 @@ import org.hibernate.engine.spi.NamedQueryDefinition;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.AutoFlushEvent;
@@ -51,6 +53,7 @@ import org.hibernate.jpa.QueryHints;
 import org.hibernate.jpa.spi.CriteriaQueryTupleTransformer;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.loader.custom.CustomQuery;
+import org.hibernate.loader.custom.sql.SQLCustomQuery;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.proxy.HibernateProxy;
@@ -110,6 +113,16 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 							   ReactiveConnection connection) {
 		super( delegate, options );
 		reactiveConnection = connection;
+	}
+
+	@Override
+	public SharedSessionContractImplementor getSharedContract() {
+		return this;
+	}
+
+	@Override
+	public Dialect getDialect() {
+		return getJdbcServices().getDialect();
 	}
 
 	@Override
@@ -296,10 +309,17 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	protected HQLQueryPlan getQueryPlan(String query, boolean shallow) throws HibernateException {
+	protected ReactiveHQLQueryPlan getQueryPlan(String query, boolean shallow) throws HibernateException {
 		QueryPlanCache queryPlanCache = getFactory().getQueryPlanCache();
-		return queryPlanCache.getHQLQueryPlan( query, shallow, getLoadQueryInfluencers().getEnabledFilters() );
+		return (ReactiveHQLQueryPlan) queryPlanCache.getHQLQueryPlan( query, shallow, getLoadQueryInfluencers().getEnabledFilters() );
 	}
+
+	//TODO: parameterize the SessionFactory constructor by ReactiveNativeSQLQueryPlan::new
+//	@Override
+//	protected ReactiveNativeSQLQueryPlan getNativeQueryPlan(NativeSQLQuerySpecification spec) throws HibernateException {
+//		QueryPlanCache queryPlanCache = getFactory().getQueryPlanCache();
+//		return (ReactiveNativeSQLQueryPlan) queryPlanCache.getNativeSQLQueryPlan( spec );
+//	}
 
 	protected CompletionStage<Void> reactiveAutoFlushIfRequired(Set<?> querySpaces) throws HibernateException {
 		checkOpen();
@@ -312,12 +332,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <T> CompletionStage<List<T>> reactiveList(String query, QueryParameters queryParameters) throws HibernateException {
+	public <T> CompletionStage<List<T>> reactiveList(String query, QueryParameters parameters) throws HibernateException {
 		checkOpenOrWaitingForAutoClose();
 		pulseTransactionCoordinator();
-		queryParameters.validateParameters();
+		parameters.validateParameters();
 
-		HQLQueryPlan plan = queryParameters.getQueryPlan();
+		HQLQueryPlan plan = parameters.getQueryPlan();
 		if ( plan == null ) {
 			plan = getQueryPlan( query, false );
 		}
@@ -326,7 +346,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		return reactiveAutoFlushIfRequired( plan.getQuerySpaces() )
 				// FIXME: I guess I can fix this as a separate issue
 //				dontFlushFromFind++;   //stops flush being called multiple times if this method is recursively called
-				.thenCompose( v -> reactivePlan.performReactiveList( queryParameters, this ) )
+				.thenCompose( v -> reactivePlan.performReactiveList(parameters, this ) )
 				.whenComplete( (list, x) -> {
 //					dontFlushFromFind--;
 					afterOperation( x == null );
@@ -337,13 +357,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters queryParameters) {
-		return listReactiveCustomQuery( getNativeQueryPlan( spec ).getCustomQuery(), queryParameters )
+	public <T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters parameters) {
+		return listReactiveCustomQuery( getNativeQueryPlan( spec ).getCustomQuery(), parameters)
 				//TODO: this typecast is rubbish
 				.thenApply( list -> (List<T>) list );
 	}
 
-	private CompletionStage<List<Object>> listReactiveCustomQuery(CustomQuery customQuery, QueryParameters queryParameters) {
+	private CompletionStage<List<Object>> listReactiveCustomQuery(CustomQuery customQuery, QueryParameters parameters) {
 		checkOpenOrWaitingForAutoClose();
 //		checkTransactionSynchStatus();
 
@@ -353,7 +373,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 //		dontFlushFromFind++;
 //		boolean success = false;
-			return loader.reactiveList( this, queryParameters )
+			return loader.reactiveList( this, parameters )
 					.whenComplete( (r, e) -> delayedAfterCompletion() );
 //			success = true;
 //			dontFlushFromFind--;
@@ -491,15 +511,39 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Integer> executeReactiveUpdate(String query, QueryParameters queryParameters) {
+	public CompletionStage<Integer> executeReactiveUpdate(String query, QueryParameters parameters) {
 		checkOpenOrWaitingForAutoClose();
 		pulseTransactionCoordinator();
-		queryParameters.validateParameters();
+		parameters.validateParameters();
 
-		ReactiveHQLQueryPlan reactivePlan = (ReactiveHQLQueryPlan) getQueryPlan( query, false );
+		ReactiveHQLQueryPlan reactivePlan = getQueryPlan( query, false );
 		return reactiveAutoFlushIfRequired( reactivePlan.getQuerySpaces() )
 				.thenAccept( v -> verifyImmutableEntityUpdate( reactivePlan ) )
-				.thenCompose( v -> reactivePlan.performExecuteReactiveUpdate( queryParameters, this ) )
+				.thenCompose( v -> reactivePlan.performExecuteReactiveUpdate( parameters, this ) )
+				.whenComplete( (count, x) -> {
+					afterOperation( x == null );
+					delayedAfterCompletion();
+				} );
+	}
+
+	@Override
+	public CompletionStage<Integer> executeReactiveUpdate(NativeSQLQuerySpecification specification,
+														  QueryParameters parameters) {
+		checkOpenOrWaitingForAutoClose();
+		pulseTransactionCoordinator();
+		parameters.validateParameters();
+
+		ReactiveNativeSQLQueryPlan reactivePlan = //getNativeQueryPlan( specification );
+				new ReactiveNativeSQLQueryPlan(
+						specification.getQueryString(),
+						new SQLCustomQuery(
+								specification.getQueryString(),
+								specification.getQueryReturns(),
+								specification.getQuerySpaces(),
+								getFactory()
+						) );
+		return reactiveAutoFlushIfRequired( reactivePlan.getCustomQuery().getQuerySpaces() )
+				.thenCompose( v -> reactivePlan.performExecuteReactiveUpdate( parameters, this ) )
 				.whenComplete( (count, x) -> {
 					afterOperation( x == null );
 					delayedAfterCompletion();

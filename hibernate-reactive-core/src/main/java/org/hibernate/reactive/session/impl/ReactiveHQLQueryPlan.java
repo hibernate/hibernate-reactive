@@ -5,12 +5,6 @@
  */
 package org.hibernate.reactive.session.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.query.spi.EntityGraphQueryHint;
@@ -23,13 +17,21 @@ import org.hibernate.hql.spi.QueryTranslator;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A reactific {@link HQLQueryPlan}
  */
 class ReactiveHQLQueryPlan extends HQLQueryPlan {
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( ReactiveHQLQueryPlan.class );
+
+	private static final CoreMessageLogger log = CoreLogging.messageLogger( HQLQueryPlan.class );
 
 	public ReactiveHQLQueryPlan(
 			String hql,
@@ -67,13 +69,18 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 		throw new UnsupportedOperationException( "Use performReactiveList instead" );
 	}
 
+	@Override
+	public int performExecuteUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
+		throw new UnsupportedOperationException( "Use performExecuteReactiveUpdate instead" );
+	}
+
 	/**
 	 * @see HQLQueryPlan#performList(QueryParameters, SharedSessionContractImplementor)
 	 * @throws HibernateException
 	 */
 	public CompletionStage<List<Object>> performReactiveList(QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
-		if ( LOG.isTraceEnabled() ) {
-			LOG.tracev( "Find: {0}", getSourceQuery() );
+		if ( log.isTraceEnabled() ) {
+			log.tracev( "Find: {0}", getSourceQuery() );
 			queryParameters.traceParameters( session.getFactory() );
 		}
 
@@ -88,7 +95,7 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 
 		final QueryParameters queryParametersToUse;
 		if ( needsLimit ) {
-			LOG.needsLimit();
+			log.needsLimit();
 			final RowSelection selection = new RowSelection();
 			selection.setFetchSize( queryParameters.getRowSelection().getFetchSize() );
 			selection.setTimeout( queryParameters.getRowSelection().getTimeout() );
@@ -148,24 +155,25 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 		}
 	}
 
-	public CompletionStage<Integer> performExecuteReactiveUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) {
-		if ( LOG.isTraceEnabled() ) {
-			LOG.tracev( "Execute update: {0}", getSourceQuery() );
+	public CompletionStage<Integer> performExecuteReactiveUpdate(QueryParameters queryParameters, ReactiveSession session) {
+		if ( log.isTraceEnabled() ) {
+			log.tracev( "Execute update: {0}", getSourceQuery() );
 			queryParameters.traceParameters( session.getFactory() );
 		}
 		QueryTranslator[] translators = getTranslators();
 		if ( translators.length != 1 ) {
-			LOG.splitQueries( getSourceQuery(), translators.length );
+			log.splitQueries( getSourceQuery(), translators.length );
 		}
-		AtomicInteger includedCount = new AtomicInteger( 0 );
-		CompletionStage<Void> combinedStage = CompletionStages.nullFuture();
+
+		CompletionStage<Integer> combinedStage = CompletionStages.completedFuture(0);
 		for ( QueryTranslator translator : translators ) {
 			ReactiveQueryTranslatorImpl reactiveTranslator = (ReactiveQueryTranslatorImpl) translator;
 			combinedStage = combinedStage
-					.thenCompose( v -> reactiveTranslator.executeReactiveUpdate( queryParameters, session ) )
-					.thenAccept( count -> includedCount.addAndGet( count ) );
+					.thenCompose(
+							count -> reactiveTranslator.executeReactiveUpdate( queryParameters, session )
+									.thenApply( updateCount -> count + updateCount )
+					);
 		}
-		return combinedStage.thenApply( ignore -> includedCount.get() );
-
+		return combinedStage;
 	}
 }
