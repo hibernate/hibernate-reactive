@@ -41,7 +41,21 @@ import static io.vertx.core.Future.succeededFuture;
  */
 public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwareService, Configurable, Stoppable, Startable {
 
+	/**
+	 * @see SqlConnectOptions#setPreparedStatementCacheSqlLimit(int)
+	 */
+	public static final String PREPARED_STATEMENT_CACHE_SQL_LIMIT = "hibernate.vertx.prepared_statement_cache.sql_limit";
+	/**
+	 * @see SqlConnectOptions#setPreparedStatementCacheMaxSize(int)
+	 */
+	public static final String PREPARED_STATEMENT_CACHE_MAX_SIZE = "hibernate.vertx.prepared_statement_cache.max_size";
+	/**
+	 * @see PoolOptions#setMaxWaitQueueSize(int)
+	 */
+	public static final String MAX_WAIT_QUEUE_SIZE = "hibernate.vertx.pool.max_wait_queue_size";
+
 	public static final int DEFAULT_POOL_SIZE = 5;
+
 	private Pool pool;
 	private boolean showSQL;
 	private boolean formatSQL;
@@ -105,9 +119,19 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	}
 
 	private PoolOptions poolOptions(Map configurationValues) {
+		PoolOptions poolOptions = new PoolOptions();
+
 		final int poolSize = ConfigurationHelper.getInt( AvailableSettings.POOL_SIZE, configurationValues, DEFAULT_POOL_SIZE );
 		CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000012: Connection pool size: %d", poolSize );
-		return new PoolOptions().setMaxSize( poolSize );
+		poolOptions.setMaxSize( poolSize );
+
+		final Integer maxWaitQueueSize = ConfigurationHelper.getInteger( MAX_WAIT_QUEUE_SIZE, configurationValues );
+		if (maxWaitQueueSize!=null) {
+			CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000013: Connection pool max wait queue size: %d", maxWaitQueueSize );
+			poolOptions.setMaxWaitQueueSize(maxWaitQueueSize);
+		}
+
+		return poolOptions;
 	}
 
 	private SqlConnectOptions sqlConnectOptions(URI uri) {
@@ -163,6 +187,21 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		if (password != null) {
 			connectOptions.setPassword( password );
 		}
+
+		final Integer cacheMaxSize = ConfigurationHelper.getInteger( PREPARED_STATEMENT_CACHE_MAX_SIZE, configurationValues );
+		if (cacheMaxSize!=null) {
+			CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000014: Prepared statement cache max size: %d", cacheMaxSize );
+			connectOptions.setCachePreparedStatements(true);
+			connectOptions.setPreparedStatementCacheMaxSize(cacheMaxSize);
+		}
+
+		final Integer sqlLimit = ConfigurationHelper.getInteger( PREPARED_STATEMENT_CACHE_SQL_LIMIT, configurationValues );
+		if (cacheMaxSize!=null) {
+			CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000015: Prepared statement cache SQL limit: %d", sqlLimit );
+			connectOptions.setCachePreparedStatements(true);
+			connectOptions.setPreparedStatementCacheSqlLimit(sqlLimit);
+		}
+
 		return connectOptions;
 	}
 
