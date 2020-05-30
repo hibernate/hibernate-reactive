@@ -188,8 +188,8 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 			connectOptions.setPassword( password );
 		}
 
-		//enable the prepared statement cache by default
-		connectOptions.setCachePreparedStatements(true);
+		//enable the prepared statement cache by default (except for DB2)
+		connectOptions.setCachePreparedStatements( !scheme.equals("db2") );
 
 		final Integer cacheMaxSize = ConfigurationHelper.getInteger( PREPARED_STATEMENT_CACHE_MAX_SIZE, configurationValues );
 		if (cacheMaxSize!=null) {
@@ -199,6 +199,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 			}
 			else {
 				CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000015: Prepared statement cache max size: %d", cacheMaxSize );
+				connectOptions.setCachePreparedStatements(true);
 				connectOptions.setPreparedStatementCacheMaxSize(cacheMaxSize);
 			}
 		}
