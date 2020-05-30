@@ -8,10 +8,12 @@ package org.hibernate.reactive.adaptor.impl;
 import org.hibernate.JDBCException;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.param.ParameterSpecification;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
 import java.sql.SQLException;
+import java.util.List;
 
 public class QueryParametersAdaptor {
 
@@ -43,6 +45,24 @@ public class QueryParametersAdaptor {
 				Object value = values[i];
 				type.nullSafeSet(adaptor, value, n, session);
 				n += type.getColumnSpan(session.getFactory());
+			}
+			return adaptor.getParametersAsArray();
+		}
+		catch (SQLException e) {
+			//can never happen
+			throw new JDBCException("error binding parameters", e);
+		}
+	}
+
+	public static Object[] toParameterArray(
+			QueryParameters queryParameters,
+			List<ParameterSpecification> parameterSpecifications,
+			SharedSessionContractImplementor session) {
+		final PreparedStatementAdaptor adaptor = new PreparedStatementAdaptor();
+		try {
+			int pos = 1;
+			for (ParameterSpecification parameterSpecification : parameterSpecifications) {
+				pos += parameterSpecification.bind(adaptor, queryParameters, session, pos);
 			}
 			return adaptor.getParametersAsArray();
 		}
