@@ -113,10 +113,10 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 		parameters.setLockOptions( lockOptions );
 
 		return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, false )
-			.handle( (list, e) -> {
+			.handle( (list, err) -> {
 				LOG.debug( "Done entity load" );
-				final Loadable[] persisters = getEntityPersisters();
-				CompletionStages.convertSqlException( e, getFactory(),
+				Loadable[] persisters = getEntityPersisters();
+				CompletionStages.logSqlException( err,
 						() -> "could not load an entity: " +
 								infoString(
 										persisters[persisters.length - 1],
@@ -126,7 +126,7 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 								),
 						getSQLString()
 				);
-				return CompletionStages.returnOrRethrow( e, list );
+				return CompletionStages.returnOrRethrow( err, list );
 			} );
 	}
 

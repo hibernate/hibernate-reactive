@@ -95,13 +95,13 @@ public class ReactiveSubselectOneToManyLoader extends ReactiveOneToManyLoader {
 
 		QueryParameters parameters = new QueryParameters(parameterTypes, parameterValues, namedParameters, ids);
 		return doReactiveQueryAndInitializeNonLazyCollections( (SessionImplementor) session, parameters, true )
-				.handle( (list, e) -> {
-					CompletionStages.convertSqlException( e, getFactory(),
+				.handle( (list, err) -> {
+					CompletionStages.logSqlException( err,
 							() -> "could not load collection by subselect: " +
 									collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
 							getSQLString()
 					);
-					return CompletionStages.returnNullorRethrow(e);
+					return CompletionStages.returnNullorRethrow(err);
 				} );
 	}
 

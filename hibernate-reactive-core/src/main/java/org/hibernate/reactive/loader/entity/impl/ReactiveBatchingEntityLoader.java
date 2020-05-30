@@ -117,7 +117,7 @@ public abstract class ReactiveBatchingEntityLoader implements ReactiveUniqueEnti
 
 		QueryParameters parameters = buildQueryParameters(id, ids, optionalObject, lockOptions, readOnly);
 		return loaderToUse.doReactiveQueryAndInitializeNonLazyCollections( (SessionImplementor) session, parameters, false )
-				.handle((list, e) -> {
+				.handle((list, err) -> {
 //						log.debug( "Done entity batch load" );
 					// The EntityKey for any entity that is not found will remain in the batch.
 					// Explicitly remove the EntityKeys for entities that were not found to
@@ -130,12 +130,12 @@ public abstract class ReactiveBatchingEntityLoader implements ReactiveUniqueEnti
 							persister(),
 							session
 					);
-					CompletionStages.convertSqlException(e, session,
+					CompletionStages.logSqlException( err,
 							() -> "could not load an entity batch: "
 									+ infoString( persister(), ids, session.getFactory() ),
 							loaderToUse.getSQLString()
 					);
-					return CompletionStages.returnOrRethrow( e, result );
+					return CompletionStages.returnOrRethrow( err, result );
 				});
 	}
 

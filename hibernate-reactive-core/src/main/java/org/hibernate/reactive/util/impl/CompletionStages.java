@@ -5,17 +5,17 @@
  */
 package org.hibernate.reactive.util.impl;
 
-import org.hibernate.JDBCException;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.internal.CoreLogging;
+import org.hibernate.internal.CoreMessageLogger;
 
-import java.sql.SQLException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class CompletionStages {
+
+	private static CoreMessageLogger log = CoreLogging.messageLogger("org.hibernate.reactive.errors");
 
 	public static <T, R> CompletionStage<R> zipArray(
 			Function<? super Object[], ? extends R> zipper,
@@ -72,23 +72,8 @@ public class CompletionStages {
 		return result;
 	}
 
-	public static void convertSqlException(Throwable t, SharedSessionContractImplementor session,
-										   Supplier<String> message, String sql) {
-		if (t instanceof JDBCException) {
-			t = ((JDBCException) t).getSQLException();
-		}
-		if (t instanceof SQLException) {
-			throw session.getJdbcServices().getSqlExceptionHelper().convert( (SQLException) t, message.get(), sql);
-		}
-	}
-
-	public static void convertSqlException(Throwable t, SessionFactoryImplementor factory,
-										   Supplier<String> message, String sql) {
-		if (t instanceof JDBCException) {
-			t = ((JDBCException) t).getSQLException();
-		}
-		if (t instanceof SQLException) {
-			throw factory.getJdbcServices().getSqlExceptionHelper().convert( (SQLException) t, message.get(), sql);
-		}
+	public static void logSqlException(Throwable t, Supplier<String> message, String sql) {
+		log.error( "failed to execute statement [" + sql + "]");
+		log.error( message.get(), t );
 	}
 }

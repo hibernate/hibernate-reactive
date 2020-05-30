@@ -114,8 +114,8 @@ class ReactiveDynamicBatchingEntityLoader extends ReactiveEntityLoader {
 		);
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters )
-				.handle( (results, e) -> {
-					CompletionStages.convertSqlException( e, getFactory(),
+				.handle( (results, err) -> {
+					CompletionStages.logSqlException( err,
 							() -> "could not load an entity batch: " + infoString(
 									getEntityPersisters()[0],
 									ids,
@@ -123,7 +123,7 @@ class ReactiveDynamicBatchingEntityLoader extends ReactiveEntityLoader {
 							),
 							sql
 					);
-					return CompletionStages.returnOrRethrow( e, results );
+					return CompletionStages.returnOrRethrow( err, results );
 				} );
 	}
 

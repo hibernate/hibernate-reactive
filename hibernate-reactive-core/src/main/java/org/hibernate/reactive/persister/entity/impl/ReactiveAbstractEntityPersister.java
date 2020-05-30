@@ -856,7 +856,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				throw new StaleObjectStateException( getEntityName(), id );
 			}
 		} ).handle( (r ,e) -> {
-			CompletionStages.convertSqlException( e, getFactory(),
+			CompletionStages.logSqlException( e,
 					() -> "could not lock: "
 							+ infoString( this, id, getFactory() ),
 					sql

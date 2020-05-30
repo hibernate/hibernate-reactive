@@ -89,14 +89,14 @@ public class ReactiveCollectionLoader extends CollectionLoader
 		Serializable[] ids = new Serializable[]{id};
 		QueryParameters parameters = new QueryParameters( new Type[]{type}, ids, ids );
 		return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, true )
-				.handle( (list, e) -> {
-					CompletionStages.convertSqlException( e, getFactory(),
+				.handle( (list, err) -> {
+					CompletionStages.logSqlException( err,
 							() -> "could not initialize a collection: " +
 									collectionInfoString( collectionPersister(), id, getFactory() ),
 							getSQLString()
 					);
 					LOG.debug("Done loading collection");
-					return CompletionStages.returnNullorRethrow( e );
+					return CompletionStages.returnNullorRethrow( err );
 				} );
 	}
 
@@ -118,14 +118,14 @@ public class ReactiveCollectionLoader extends CollectionLoader
 		Arrays.fill( idTypes, type );
 		QueryParameters parameters = new QueryParameters( idTypes, ids, ids );
 		return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, true )
-				.handle( (list, e) -> {
-					CompletionStages.convertSqlException( e, getFactory(),
+				.handle( (list, err) -> {
+					CompletionStages.logSqlException( err,
 							() -> "could not initialize a collection batch: " +
 									collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
 							getSQLString()
 					);
 					LOG.debug("Done batch load");
-					return CompletionStages.returnNullorRethrow( e );
+					return CompletionStages.returnNullorRethrow( err );
 				} );
 	}
 

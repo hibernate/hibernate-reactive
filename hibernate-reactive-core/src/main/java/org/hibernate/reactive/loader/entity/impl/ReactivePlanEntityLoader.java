@@ -176,13 +176,13 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, (SessionImplementor) session, parameters )
 				.thenApply( results -> extractEntityResult( results, id ) )
-				.handle( (list, e) -> {
-					CompletionStages.convertSqlException( e, getFactory(),
+				.handle( (list, err) -> {
+					CompletionStages.logSqlException( err,
 							() -> "could not load an entity: "
 									+ infoString( persister, id, persister.getIdentifierType(), getFactory() ),
 							getStaticLoadQuery().getSqlStatement()
 					);
-					return CompletionStages.returnOrRethrow( e, list) ;
+					return CompletionStages.returnOrRethrow( err, list) ;
 				} );
 	}
 

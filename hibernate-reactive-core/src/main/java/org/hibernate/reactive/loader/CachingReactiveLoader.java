@@ -56,16 +56,16 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 		final long startTime = stats ? System.nanoTime() : 0;
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters, true, forcedResultTransformer )
-				.handle( (list, e ) -> {
-					CompletionStages.convertSqlException( e, session, () -> "could not execute query", sql );
+				.handle( (list, err) -> {
+					CompletionStages.logSqlException( err, () -> "could not execute query", sql );
 
-					if ( e ==null && stats ) {
+					if ( err ==null && stats ) {
 						final long endTime = System.nanoTime();
 						final long milliseconds = TimeUnit.MILLISECONDS.convert( endTime - startTime, TimeUnit.NANOSECONDS );
 						statistics.queryExecuted( queryIdentifier, list.size(), milliseconds );
 					}
 
-					return CompletionStages.returnOrRethrow(e, list );
+					return CompletionStages.returnOrRethrow(err, list );
 				} );
 	}
 
