@@ -10,11 +10,13 @@ import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
+import org.hibernate.MappingException;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.reactive.ResultSetMapping;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.session.Criteria;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.EntityGraph;
@@ -175,12 +177,18 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String sql, Class<R> resultType) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultType ) );
+		try {
+			delegate.getFactory().getMetamodel().entityPersister(resultType);
+			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultType ) );
+		}
+		catch (MappingException me) {
+			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ) );
+		}
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String sql, String resultSetMapping) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping ) );
+	public <R> Mutiny.Query<R> createNativeQuery(String sql, ResultSetMapping<R> resultSetMapping) {
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping.getName() ) );
 	}
 
 	@Override
@@ -301,6 +309,11 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public boolean isFetchProfileEnabled(String name) {
 		return delegate.isFetchProfileEnabled(name);
+	}
+
+	@Override
+	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
+		return delegate.getResultSetMapping(resultType, mappingName);
 	}
 
 	@Override

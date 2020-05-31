@@ -365,17 +365,47 @@ public class QueryTest extends BaseReactiveTest {
 						.thenCompose( session -> session.flush() )
 						.whenComplete( (session,err) -> session.close() )
 						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.createNativeQuery("select b.title, a.name from books b join authors a on author_id=a.id order by b.isbn", "title,author").getResultList() )
+						.thenCompose( session -> session.createNativeQuery(
+								"select b.title, a.name from books b join authors a on author_id=a.id order by b.isbn",
+								session.getResultSetMapping( Object[].class, "title,author" )
+						).getResultList() )
 						.thenAccept( books -> {
 							context.assertEquals( 3, books.size() );
-							books.forEach( book -> {
-								context.assertTrue( book instanceof Object[] );
-								Object[] tuple = (Object[]) book;
+							books.forEach( tuple -> {
+								context.assertTrue( tuple instanceof Object[] );
 								context.assertEquals( 2, tuple.length );
 								context.assertTrue( tuple[0] instanceof String );
 								context.assertTrue( tuple[1] instanceof String );
 							} );
 						} )
+
+						.thenCompose( v -> openSession().thenCompose(
+								session -> session.createQuery( "select title from Book", String.class )
+										.getResultList()
+										.thenAccept( list -> context.assertTrue( list.get(0) instanceof String ) )
+										.thenCompose( vv -> session.createQuery("select title, isbn, id from Book", Object[].class )
+												.getResultList()
+												.thenAccept( list -> {
+													Object[] tuple = list.get(0);
+													context.assertEquals( 3, tuple.length );
+													context.assertTrue( tuple[0] instanceof String );
+												} )
+										)
+										.thenCompose( vv -> session.createNativeQuery( "select title from books", String.class )
+												.getResultList()
+												.thenAccept( list -> context.assertTrue( list.get(0) instanceof String ) )
+										)
+										.thenCompose( vv -> session.createNativeQuery("select title, isbn, id from books", Object[].class )
+												.getResultList()
+												.thenAccept( list -> {
+													Object[] tuple = list.get(0);
+													context.assertEquals( 3, tuple.length );
+													context.assertTrue( tuple[0] instanceof String );
+												} )
+										)
+										.thenAccept( vv -> session.close() )
+								)
+						)
 		);
 	}
 
@@ -396,17 +426,23 @@ public class QueryTest extends BaseReactiveTest {
 						.thenCompose( session -> session.flush() )
 						.whenComplete( (session,err) -> session.close() )
 						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.createNamedQuery("title,author (hql)").getResultList() )
+						.thenCompose( session -> session.createNamedQuery("title,author (hql)", Object[].class).getResultList() )
 						.thenAccept( books -> {
 							context.assertEquals( 3, books.size() );
-							books.forEach( book -> {
-								context.assertTrue( book instanceof Object[] );
-								Object[] tuple = (Object[]) book;
+							books.forEach( tuple -> {
+								context.assertTrue( tuple instanceof Object[] );
 								context.assertEquals( 2, tuple.length );
 								context.assertTrue( tuple[0] instanceof String );
 								context.assertTrue( tuple[1] instanceof String );
 							} );
 						} )
+
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createQuery("update Book set title = ?1 where title = ?2")
+								.setParameter(1, "XXX")
+								.setParameter(2, "Snow Crash")
+								.executeUpdate() )
+								.thenAccept( count -> context.assertEquals(1, count) )
 		);
 	}
 
@@ -427,12 +463,11 @@ public class QueryTest extends BaseReactiveTest {
 						.thenCompose( session -> session.flush() )
 						.whenComplete( (session,err) -> session.close() )
 						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.createNamedQuery("title,author (sql)").getResultList() )
+						.thenCompose( session -> session.createNamedQuery("title,author (sql)", Object[].class).getResultList() )
 						.thenAccept( books -> {
 							context.assertEquals( 3, books.size() );
-							books.forEach( book -> {
-								context.assertTrue( book instanceof Object[] );
-								Object[] tuple = (Object[]) book;
+							books.forEach( tuple -> {
+								context.assertTrue( tuple instanceof Object[] );
 								context.assertEquals( 2, tuple.length );
 								context.assertTrue( tuple[0] instanceof String );
 								context.assertTrue( tuple[1] instanceof String );
@@ -443,6 +478,7 @@ public class QueryTest extends BaseReactiveTest {
 
 	@NamedNativeQuery(
 			name = "title,author (sql)",
+			resultClass = Object[].class,
 			query = "select b.title, a.name from books b join authors a on author_id=a.id order by b.isbn",
 			resultSetMapping = "title,author"
 	)
