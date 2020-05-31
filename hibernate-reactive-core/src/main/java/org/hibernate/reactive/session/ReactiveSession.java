@@ -18,6 +18,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
+import org.hibernate.reactive.ResultSetMapping;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
 import org.hibernate.reactive.pool.ReactiveConnection;
 
@@ -150,6 +151,8 @@ public interface ReactiveSession  {
 	<T> EntityGraph<T> createEntityGraph(Class<T> entity);
 	<T> EntityGraph<T> createEntityGraph(Class<T> entity, String name);
 	<T> EntityGraph<T> getEntityGraph(Class<T> entity, String name);
+
+	<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
 
 	void clear();
 

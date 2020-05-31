@@ -18,9 +18,15 @@ import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.ResultSetMappingDefinition;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.query.spi.QueryPlanCache;
+import org.hibernate.engine.query.spi.sql.NativeSQLQueryCollectionReturn;
+import org.hibernate.engine.query.spi.sql.NativeSQLQueryConstructorReturn;
+import org.hibernate.engine.query.spi.sql.NativeSQLQueryReturn;
+import org.hibernate.engine.query.spi.sql.NativeSQLQueryRootReturn;
+import org.hibernate.engine.query.spi.sql.NativeSQLQueryScalarReturn;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.NamedQueryDefinition;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
@@ -61,6 +67,7 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.Query;
 import org.hibernate.query.internal.ParameterMetadataImpl;
+import org.hibernate.reactive.ResultSetMapping;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
 import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
@@ -188,6 +195,79 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		catch ( RuntimeException he ) {
 			throw getExceptionConverter().convert( he );
 		}
+	}
+
+	@Override
+	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
+		ResultSetMappingDefinition mapping = getFactory().getNamedQueryRepository()
+				.getResultSetMappingDefinition( mappingName );
+		if (mapping==null) {
+			throw new IllegalArgumentException("result set mapping does not exist: " + mappingName);
+		}
+
+		if ( resultType!=null ) {
+			Class<?> mappedResultType = getResultType(mapping);
+			if ( !resultType.equals(mappedResultType) ) {
+				throw new IllegalArgumentException("incorrect result type for result set mapping: "
+						+ mappingName + " has type " + mappedResultType.getName() );
+			}
+		}
+
+		return new ResultSetMapping<T>() {
+			@Override
+			public String getName() {
+				return mappingName;
+			}
+			@Override
+			public Class<T> getResultType() {
+				return resultType;
+			}
+		};
+	}
+
+	private Class<?> getResultType(ResultSetMappingDefinition mapping) {
+		Class<?> mappedResultType = null;
+		for ( NativeSQLQueryReturn queryReturn: mapping.getQueryReturns() ) {
+			if (queryReturn instanceof NativeSQLQueryScalarReturn) {
+				if (mappedResultType != null) {
+					return Object[].class;
+				}
+				else {
+					mappedResultType = ((NativeSQLQueryScalarReturn) queryReturn).getType().getReturnedClass();
+				}
+			}
+			else if (queryReturn instanceof NativeSQLQueryRootReturn) {
+				if (mappedResultType != null) {
+					return Object[].class;
+				}
+				else {
+					NativeSQLQueryRootReturn entityReturn = (NativeSQLQueryRootReturn) queryReturn;
+					String entityName = entityReturn.getReturnEntityName();
+					mappedResultType = getFactory().getMetamodel().entityPersister(entityName).getMappedClass();
+				}
+			}
+			else if (queryReturn instanceof NativeSQLQueryCollectionReturn) {
+				if (mappedResultType != null) {
+					return Object[].class;
+				}
+				else {
+					NativeSQLQueryCollectionReturn collectionReturn = (NativeSQLQueryCollectionReturn) queryReturn;
+					String entityName = collectionReturn.getOwnerEntityName();
+					String propertyName = collectionReturn.getOwnerProperty();
+					String role = entityName + '.' + propertyName;
+					mappedResultType = getFactory().getMetamodel().collectionPersister(role).getElementClass();
+				}
+			}
+			else if (queryReturn instanceof NativeSQLQueryConstructorReturn) {
+				if (mappedResultType != null) {
+					return Object[].class;
+				}
+				else {
+					mappedResultType = ((NativeSQLQueryConstructorReturn) queryReturn).getTargetClass();
+				}
+			}
+		}
+		return mappedResultType;
 	}
 
 	@Override
@@ -440,7 +520,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	private <T> ReactiveNativeQuery<T> createReactiveNativeQuery(NamedSQLQueryDefinition queryDefinition, Class<T> resultType) {
-		if ( resultType != null && !Tuple.class.equals( resultType ) ) {
+		if ( resultType != null && !Tuple.class.equals( resultType ) && !Object[].class.equals( resultType ) ) {
 			resultClassChecking( resultType, queryDefinition );
 		}
 

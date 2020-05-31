@@ -14,6 +14,7 @@ import org.hibernate.collection.internal.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.reactive.ResultSetMapping;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
@@ -514,19 +515,20 @@ public interface Stage {
 		 */
 		<R> Query<R> createNamedQuery(String queryName, Class<R> resultType);
 
-//		/**
-//		 * Create an instance of {@link Query} for the given SQL query string.
-//		 *
-//		 * @param queryString The SQL query
-//		 *
-//		 * @return The {@link Query} instance for manipulation and execution
-//		 *
-//		 * @see javax.persistence.EntityManager#createNativeQuery(String)
-//		 */
-//		<R> Query<R> createNativeQuery(String queryString);
-
 		/**
-		 * Create an instance of {@link Query} for the given SQL query string.
+		 * Create an instance of {@link Query} for the given SQL query string,
+		 * using the given {@code resultType} to interpret the results.
+		 *
+		 * <ul>
+		 * <li>If the given result type is {@link Object}, or a built-in type
+		 * such as {@link String} or {@link Integer}, the result set must
+		 * have a single column, which will be returned as a scalar.</li>
+		 * <li>If the given result type is {@code Object[]}, then the result set
+		 * must have multiple columns, which will be returned in arrays.</li>
+		 * <li>Otherwise, the given result type must be an entity class, in which
+		 * case the result set column aliases must map to the fields of the
+		 * entity, and the query will return instances of the entity.</li>
+		 * </ul>
 		 *
 		 * @param queryString The SQL query
 		 * @param resultType the Java type returned in each row of query results
@@ -538,22 +540,24 @@ public interface Stage {
 		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType);
 
 		/**
-		 * Create an instance of {@link Query} for the given SQL query string.
+		 * Create an instance of {@link Query} for the given SQL query string,
+		 * using the given {@link ResultSetMapping} to interpret the result set.
 		 *
 		 * @param queryString The SQL query
-		 * @param resultSetMapping the name of the result set mapping
+		 * @param resultSetMapping the result set mapping
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 *
+		 * @see #getResultSetMapping(Class, String)
 		 * @see javax.persistence.EntityManager#createNativeQuery(String, String)
 		 */
-		<R> Query<R> createNativeQuery(String queryString, String resultSetMapping);
+		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
 
 		/**
 		 * Create an instance of {@link Query} for the given SQL update, insert,
-		 * or delete DML string.
+		 * or delete DML statement.
 		 *
-		 * @param queryString The SQL update, insert, or delete query
+		 * @param queryString The SQL update, insert, or delete statement
 		 */
 		Query<Integer> createNativeQuery(String queryString);
 
@@ -645,6 +649,12 @@ public interface Stage {
 		 * @see org.hibernate.engine.profile.FetchProfile for discussion of this feature
 		 */
 		Session enableFetchProfile(String name);
+
+		/**
+		 * Obtain a native SQL result set mapping defined via the annotation
+		 * {@link javax.persistence.SqlResultSetMapping}.
+		 */
+		<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
 
 		/**
 		 * Obtain a named {@link EntityGraph}
