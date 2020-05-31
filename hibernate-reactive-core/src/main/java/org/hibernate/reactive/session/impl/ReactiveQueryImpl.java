@@ -6,6 +6,7 @@
 package org.hibernate.reactive.session.impl;
 
 import org.hibernate.CacheMode;
+import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.engine.query.spi.EntityGraphQueryHint;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
@@ -238,6 +239,17 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 	public ReactiveQueryImpl<R> setCacheMode(CacheMode cacheMode) {
 		super.setCacheMode(cacheMode);
 		return this;
+	}
+
+	@Override
+	public ReactiveQueryImpl<R> setHibernateFlushMode(FlushMode flushMode) {
+		super.setHibernateFlushMode(flushMode);
+		return this;
+	}
+
+	@Override
+	public FlushMode getHibernateFlushMode() {
+		return super.getHibernateFlushMode();
 	}
 
 	@Override

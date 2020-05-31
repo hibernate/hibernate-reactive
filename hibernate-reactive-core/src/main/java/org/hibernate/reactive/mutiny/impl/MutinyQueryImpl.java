@@ -7,6 +7,7 @@ package org.hibernate.reactive.mutiny.impl;
 
 import io.smallrye.mutiny.Uni;
 import org.hibernate.CacheMode;
+import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.ReactiveQuery;
@@ -50,15 +51,30 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 	}
 
 	@Override
+	public int getMaxResults() {
+		return delegate.getMaxResults();
+	}
+
+	@Override
 	public Mutiny.Query<R> setFirstResult(int firstResult) {
 		delegate.setFirstResult( firstResult );
 		return this;
 	}
 
 	@Override
+	public int getFirstResult() {
+		return delegate.getFirstResult();
+	}
+
+	@Override
 	public Mutiny.Query<R> setReadOnly(boolean readOnly) {
 		delegate.setReadOnly( readOnly );
 		return this;
+	}
+
+	@Override
+	public boolean isReadOnly() {
+		return delegate.isReadOnly();
 	}
 
 	@Override
@@ -94,6 +110,17 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 	@Override
 	public CacheMode getCacheMode() {
 		return delegate.getCacheMode();
+	}
+
+	@Override
+	public Mutiny.Query<R> setFlushMode(FlushMode flushMode) {
+		delegate.setHibernateFlushMode(flushMode);
+		return this;
+	}
+
+	@Override
+	public FlushMode getFlushMode() {
+		return delegate.getHibernateFlushMode();
 	}
 
 	@Override

@@ -6,6 +6,7 @@
 package org.hibernate.reactive.stage.impl;
 
 import org.hibernate.CacheMode;
+import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.stage.Stage;
@@ -50,15 +51,30 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 	}
 
 	@Override
+	public int getMaxResults() {
+		return delegate.getMaxResults();
+	}
+
+	@Override
 	public Stage.Query<R> setFirstResult(int firstResult) {
 		delegate.setFirstResult( firstResult );
 		return this;
 	}
 
 	@Override
+	public int getFirstResult() {
+		return delegate.getFirstResult();
+	}
+
+	@Override
 	public Stage.Query<R> setReadOnly(boolean readOnly) {
 		delegate.setReadOnly( readOnly );
 		return this;
+	}
+
+	@Override
+	public boolean isReadOnly() {
+		return delegate.isReadOnly();
 	}
 
 	@Override
@@ -94,6 +110,17 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 	@Override
 	public CacheMode getCacheMode() {
 		return delegate.getCacheMode();
+	}
+
+	@Override
+	public Stage.Query<R> setFlushMode(FlushMode flushMode) {
+		delegate.setHibernateFlushMode(flushMode);
+		return this;
+	}
+
+	@Override
+	public FlushMode getFlushMode() {
+		return delegate.getHibernateFlushMode();
 	}
 
 	@Override

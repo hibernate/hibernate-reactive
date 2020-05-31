@@ -6,6 +6,7 @@
 package org.hibernate.reactive.session;
 
 import org.hibernate.CacheMode;
+import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
@@ -50,7 +51,13 @@ public interface ReactiveQuery<R> {
 
 	ReactiveQuery<R> setFirstResult(int firstResult);
 
+	int getMaxResults();
+
+	int getFirstResult();
+
 	ReactiveQuery<R> setReadOnly(boolean readOnly);
+
+	boolean isReadOnly();
 
 	ReactiveQuery<R> setComment(String comment);
 
@@ -63,6 +70,10 @@ public interface ReactiveQuery<R> {
 	ReactiveQuery<R> setCacheMode(CacheMode cacheMode);
 
 	CacheMode getCacheMode();
+
+	FlushMode getHibernateFlushMode();
+
+	ReactiveQuery<R> setHibernateFlushMode(FlushMode flushMode);
 
 	ReactiveQuery<R> setResultTransformer(ResultTransformer resultTransformer);
 

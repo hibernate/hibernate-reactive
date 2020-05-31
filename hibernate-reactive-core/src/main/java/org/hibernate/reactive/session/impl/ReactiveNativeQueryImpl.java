@@ -6,6 +6,7 @@
 package org.hibernate.reactive.session.impl;
 
 import org.hibernate.CacheMode;
+import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.engine.query.spi.sql.NativeSQLQueryReturn;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
@@ -176,6 +177,17 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	@Override
 	public ReactiveNativeQueryImpl<R> setCacheMode(CacheMode cacheMode) {
 		super.setCacheMode(cacheMode);
+		return this;
+	}
+
+	@Override
+	public FlushMode getHibernateFlushMode() {
+		return super.getHibernateFlushMode();
+	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> setHibernateFlushMode(FlushMode flushMode) {
+		super.setHibernateFlushMode(flushMode);
 		return this;
 	}
 

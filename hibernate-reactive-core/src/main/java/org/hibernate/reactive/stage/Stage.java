@@ -52,15 +52,50 @@ public interface Stage {
 	 */
 	interface Query<R> {
 
+		/**
+		 * Set the value of a positional parameter. Positional parameters
+		 * are numbered from 1, and are specified in the query using
+		 * placeholder tokens of form {@code ?1}, {@code ?2}, etc.
+		 */
 		Query<R> setParameter(int position, Object value);
 
+		/**
+		 * Set the value of a named parameter. Named parameters are
+		 * specified in the query using placeholder tokens of form
+		 * {@code :name}.
+		 */
 		Query<R> setParameter(String name, Object value);
 
+		/**
+		 * Set the value of a typed parameter.
+		 *
+		 * @see CriteriaBuilder#parameter(Class)
+		 */
 		<T> Query<R> setParameter(Parameter<T> name, T value);
 
+		/**
+		 * Set the maximum number of results that may be returned by this
+		 * query when executed.
+		 */
 		Query<R> setMaxResults(int maxResults);
 
+		/**
+		 * Set the position of the first result that may be returned by
+		 * this query when executed, where the results are numbered from
+		 * 0.
+		 */
 		Query<R> setFirstResult(int firstResult);
+
+		/**
+		 * @return the maximum number results, or {@link Integer#MAX_VALUE}
+		 *          if not set
+		 */
+		int getMaxResults();
+
+		/**
+		 * @return the first result, or 0 if not set
+		 */
+		int getFirstResult();
 
 		/**
 		 * Asynchronously Execute this query, returning a single row
@@ -105,6 +140,11 @@ public interface Stage {
 		Query<R> setReadOnly(boolean readOnly);
 
 		/**
+		 * @return the read-only/modifiable mode
+		 */
+		boolean isReadOnly();
+
+		/**
 		 * Set the comment for this query.
 		 *
 		 * @param comment The human-readable comment
@@ -129,6 +169,20 @@ public interface Stage {
 		 * @see Session#getCacheMode()
 		 */
 		CacheMode getCacheMode();
+
+		/**
+		 * (Re)set the current {@link FlushMode} in effect for this query.
+		 */
+		Query<R> setFlushMode(FlushMode flushMode);
+
+		/**
+		 * Obtain the {@link FlushMode} in effect for this query.  By default,
+		 * the query inherits the {@code FlushMode} of the {@link Session}
+		 * from which is originates.
+		 *
+		 * @see Session#getFlushMode()
+		 */
+		FlushMode getFlushMode();
 
 		/**
 		 * Set the {@link LockMode} to use for the whole query.
