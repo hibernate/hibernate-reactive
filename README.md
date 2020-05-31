@@ -83,10 +83,10 @@ The only configuration specific to Hibernate Reactive is the persistence
 
     <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
 
-Otherwise, configuration is almost completely transparent; configure 
-Hibernate exactly as you usually would&mdash;but note that some 
-configuration properties related to JDBC or JTA aren't relevant in the 
-context of Hibernate Reactive.
+Otherwise, configuration is almost completely transparent. Configure 
+Hibernate exactly as you usually would, noting that most configuration 
+properties related to JDBC or JTA aren't relevant in the context of 
+Hibernate Reactive.
 
 Configuration properties of particular interest include:
 
@@ -95,6 +95,16 @@ Configuration properties of particular interest include:
   the database credentials, and
 - `hibernate.connection.pool_size`, the size of the Vert.x reactive
   connection pool.
+
+The Vert.x database client has built-in connection pooling and prepared 
+statement caching. During performance tuning, you can further customize 
+the pool and cache via the following properties:
+
+- `hibernate.vertx.pool.max_wait_queue_size`
+- `hibernate.vertx.prepared_statement_cache.max_size`
+- `hibernate.vertx.prepared_statement_cache.sql_limit`
+
+(But for now, just leave these settings alone.)
 
 An example [`persistence.xml`][xml] file is included in the example 
 program.
