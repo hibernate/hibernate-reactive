@@ -271,6 +271,11 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
+	public boolean isDefaultReadOnly() {
+		return delegate.isDefaultReadOnly();
+	}
+
+	@Override
 	public Mutiny.Session setReadOnly(Object entityOrProxy, boolean readOnly) {
 		delegate.setReadOnly(entityOrProxy, readOnly);
 		return this;

@@ -34,7 +34,7 @@ import java.util.function.Function;
 /**
  * An API for Hibernate Reactive where non-blocking operations are
  * represented by a Java {@link CompletionStage}.
- *
+ * <p>
  * The {@link Query}, {@link Session}, and {@link SessionFactory}
  * interfaces declared here are simply non-blocking counterparts to
  * the similarly-named interfaces in Hibernate ORM.
@@ -44,12 +44,12 @@ public interface Stage {
 	 * A non-blocking counterpart to the Hibernate
 	 * {@link org.hibernate.query.Query} interface, allowing reactive
 	 * execution of HQL and JPQL queries.
-	 *
+	 * <p>
 	 * The semantics of operations on this interface are identical to the
 	 * semantics of the similarly-named operations of {@code Query}, except
 	 * that the operations are performed asynchronously, returning a
 	 * {@link CompletionStage} without blocking the calling thread.
-	 *
+	 * <p>
 	 * Note that {@link javax.persistence.TemporalType} is not supported
 	 * as an argument for parameter bindings, and so parameters of type
 	 * {@link java.util.Date} or {@link java.util.Calendar} should not be
@@ -75,7 +75,10 @@ public interface Stage {
 		Query<R> setParameter(String name, Object value);
 
 		/**
-		 * Set the value of a typed parameter.
+		 * Set the value of a typed parameter. Typed parameters are
+		 * obtained from the JPA {@link CriteriaBuilder}, which may
+		 * itself be obtained by calling
+		 * {@link SessionFactory#getCriteriaBuilder()}.
 		 *
 		 * @see CriteriaBuilder#parameter(Class)
 		 */
@@ -118,7 +121,7 @@ public interface Stage {
 		CompletionStage<R> getSingleResult();
 
 		/**
-		 * Asynchronously execute this query, return the query results
+		 * Asynchronously execute this query, returning the query results
 		 * as a {@link List}. If the query contains multiple results per
 		 * row, the results are returned in an instance of <tt>Object[]</tt>.
 		 *
@@ -149,11 +152,14 @@ public interface Stage {
 
 		/**
 		 * @return the read-only/modifiable mode
+		 *
+		 * @see Session#isDefaultReadOnly()
 		 */
 		boolean isReadOnly();
 
 		/**
-		 * Set the comment for this query.
+		 * Set the comment for this query. This comment will be prepended
+		 * to the SQL query sent to the database.
 		 *
 		 * @param comment The human-readable comment
 		 */
@@ -165,12 +171,13 @@ public interface Stage {
 //		Query<R> setHint(String hintName, Object value);
 
 		/**
-		 * (Re)set the current {@link CacheMode} in effect for this query.
+		 * Set the current {@link CacheMode} in effect while this query
+		 * is being executed.
 		 */
 		Query<R> setCacheMode(CacheMode cacheMode);
 
 		/**
-		 * Obtain the {@link CacheMode} in effect for this query.  By default,
+		 * Obtain the {@link CacheMode} in effect for this query. By default,
 		 * the query inherits the {@code CacheMode} of the {@link Session}
 		 * from which is originates.
 		 *
@@ -179,12 +186,13 @@ public interface Stage {
 		CacheMode getCacheMode();
 
 		/**
-		 * (Re)set the current {@link FlushMode} in effect for this query.
+		 * Set the current {@link FlushMode} in effect while this query is
+		 * being executed.
 		 */
 		Query<R> setFlushMode(FlushMode flushMode);
 
 		/**
-		 * Obtain the {@link FlushMode} in effect for this query.  By default,
+		 * Obtain the {@link FlushMode} in effect for this query. By default,
 		 * the query inherits the {@code FlushMode} of the {@link Session}
 		 * from which is originates.
 		 *
@@ -199,7 +207,7 @@ public interface Stage {
 
 		/**
 		 * Set the {@link LockMode} to use for specified alias (as defined in
-		 * the query's <tt>FROM</tt> clause).
+		 * the query's {@code from} clause).
 		 *
 		 * @see org.hibernate.query.Query#setLockMode(String,LockMode)
 		 */
@@ -210,16 +218,23 @@ public interface Stage {
 	/**
 	 * A non-blocking counterpart to the Hibernate {@link org.hibernate.Session}
 	 * interface, allowing a reactive style of interaction with the database.
-	 *
+	 * <p>
 	 * The semantics of operations on this interface are identical to the
 	 * semantics of the similarly-named operations of {@code Session}, except
 	 * that the operations are performed asynchronously, returning a
 	 * {@link CompletionStage} without blocking the calling thread.
-	 *
+	 * <p>
 	 * Entities associated with an {@code Session} do not support transparent
-	 * lazy association fetching. Instead, {@link #fetch} should be used to
-	 * explicitly request asynchronous fetching of an association, or the
-	 * association should be fetched eagerly when the entity is first retrieved.
+	 * lazy association fetching. Instead, {@link #fetch(Object)} should be used
+	 * to explicitly request asynchronous fetching of an association, or the
+	 * association should be fetched eagerly when the entity is first retrieved,
+	 * for example, by:
+	 *
+	 * <ul>
+	 * <li>{@link #enableFetchProfile(String) enabling a fetch profile},
+	 * <li>using an {@link EntityGraph}, or
+	 * <li>writing a {@code join fetch} clause in a HQL query.
+	 * </ul>
 	 *
 	 * @see org.hibernate.Session
 	 */
@@ -227,10 +242,10 @@ public interface Stage {
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
-		 * class with the given identifier, or null if there is no such
-		 * persistent instance. (If the instance is already associated with
+		 * class with the given identifier, or {@code null} if there is no such
+		 * persistent instance. If the instance is already associated with
 		 * the session, return the associated instance. This method never
-		 * returns an uninitialized instance.)
+		 * returns an uninitialized instance.
 		 *
 		 * <pre>
 		 * {@code session.find(Book.class, id).thenAccept(book -> print(book.getTitle()));}
@@ -278,11 +293,12 @@ public interface Stage {
 		 * given identifier, assuming that the instance exists. This method
 		 * never results in access to the underlying data store, and thus
 		 * might return a proxied instance that must be initialized explicitly
-		 * using {@link #fetch}.
-		 *
+		 * using {@link #fetch(Object)}.
+		 * <p>
 		 * You should not use this method to determine if an instance exists
 		 * (use {@link #find} instead). Use this only to retrieve an instance
-		 * that you assume exists, where non-existence would be an actual error.
+		 * which you safely assume exists, where non-existence would be an
+		 * actual error.
 		 *
 		 * @param entityClass a persistent class
 		 * @param id a valid identifier of an existing persistent instance of the class
@@ -296,9 +312,10 @@ public interface Stage {
 		/**
 		 * Asynchronously persist the given transient instance, first assigning
 		 * a generated identifier. (Or using the current value of the identifier
-		 * property if the {@code assigned} generator is used.) This operation
-		 * cascades to associated instances if the association is mapped with
-		 * {@code cascade="save-update"}
+		 * property if the entity has assigned identifiers.)
+		 * <p>
+		 * This operation cascades to associated instances if the association is
+		 * mapped with {@link javax.persistence.CascadeType#PERSIST}.
 		 *
 		 * <pre>
 		 * {@code session.persist(newBook).thenAccept(v -> session.flush());}
@@ -311,7 +328,7 @@ public interface Stage {
 		CompletionStage<Session> persist(Object entity);
 
 		/**
-		 * Persist multiple entities.
+		 * Persist multiple transient entity instances at once.
 		 *
 		 * @see #persist(Object)
 		 */
@@ -321,8 +338,10 @@ public interface Stage {
 		 * Asynchronously remove a persistent instance from the datastore. The
 		 * argument may be an instance associated with the receiving session or
 		 * a transient instance with an identifier associated with existing
-		 * persistent state. his operation cascades to associated instances if
-		 * the association is mapped with {@code cascade="delete"}
+		 * persistent state.
+		 * <p>
+		 * This operation cascades to associated instances if the association is
+		 * mapped with {@link javax.persistence.CascadeType#REMOVE}.
 		 *
 		 * <pre>
 		 * {@code session.delete(book).thenAccept(v -> session.flush());}
@@ -335,20 +354,22 @@ public interface Stage {
 		CompletionStage<Session> remove(Object entity);
 
 		/**
-		 * Remove multiple entities.
+		 * Remove multiple entity instances at once.
 		 *
 		 * @see #remove(Object)
 		 */
 		CompletionStage<Session> remove(Object... entities);
 
 		/**
-		 * Copy the state of the given object onto the persistent object with the same
-		 * identifier. If there is no persistent instance currently associated with
-		 * the session, it will be loaded. Return the persistent instance. If the
-		 * given instance is unsaved, save a copy of and return it as a newly persistent
-		 * instance. The given instance does not become associated with the session.
-		 * This operation cascades to associated instances if the association is mapped
-		 * with {@code cascade="merge"}
+		 * Copy the state of the given object onto the persistent instance with
+		 * the same identifier. If there is no such persistent instance currently
+		 * associated with the session, it will be loaded. Return the persistent
+		 * instance. Or, if the given instance is transient, save a copy of it
+		 * and return the copy as a newly persistent instance. The given instance
+		 * does not become associated with the session.
+		 * <p>
+		 * This operation cascades to associated instances if the association is
+		 * mapped with {@link javax.persistence.CascadeType#MERGE}.
 		 *
 		 * @param entity a detached instance with state to be copied
 		 *
@@ -359,21 +380,22 @@ public interface Stage {
 		<T> CompletionStage<T> merge(T entity);
 
 		/**
-		 * Merge multiple entities.
+		 * Merge multiple entity instances at once.
 		 *
 		 * @see #merge(Object)
 		 */
 		<T> CompletionStage<Void> merge(T... entities);
 
 		/**
-		 * Re-read the state of the given instance from the underlying database. It is
-		 * inadvisable to use this to implement long-running sessions that span many
-		 * business tasks. This method is, however, useful in certain special circumstances.
-		 * For example
+		 * Re-read the state of the given instance from the underlying database.
+		 * It is inadvisable to use this to implement long-running sessions that
+		 * span many business tasks. This method is, however, useful in certain
+		 * special circumstances, for example:
+		 *
 		 * <ul>
-		 * <li>where a database trigger alters the object state upon insert or update
-		 * <li>after executing direct SQL (eg. a mass update) in the same session
-		 * <li>after inserting a <code>Blob</code> or <code>Clob</code>
+		 * <li>where a database trigger alters the object state after insert or
+		 * update, or
+		 * <li>after executing direct native SQL in the same session.
 		 * </ul>
 		 *
 		 * @param entity a persistent or detached instance
@@ -391,19 +413,24 @@ public interface Stage {
 		CompletionStage<Session> refresh(Object entity, LockMode lockMode);
 
 		/**
-		 * Refresh multiple entities.
+		 * Refresh multiple entity instances at once.
 		 *
 		 * @see #refresh(Object)
 		 */
 		CompletionStage<Session> refresh(Object... entities);
 
 		/**
-		 * Obtain the specified lock level upon the given object. For example, this
-		 * may be used to perform a version check with {@link LockMode#READ}, or to
-		 * upgrade to a pessimistic lock with {@link LockMode#PESSIMISTIC_WRITE}.
-		 * This operation  cascades to associated instances if the association is
-		 * mapped with {@code cascade="lock"}.
+		 * Obtain the specified lock level upon the given object. For example,
+		 * this operation may be used to:
 		 *
+		 * <ul>
+		 * <li>perform a version check with {@link LockMode#READ}, or
+		 * <li>upgrade to a pessimistic lock with {@link LockMode#PESSIMISTIC_WRITE}.
+		 * </ul>
+		 *
+		 * This operation cascades to associated instances if the association is
+		 * mapped with {@link org.hibernate.annotations.CascadeType#LOCK}.
+		 * <p>
 		 * Note that the optimistic lock modes {@link LockMode#OPTIMISTIC} and
 		 * {@link LockMode#OPTIMISTIC_FORCE_INCREMENT} are not currently supported.
 		 *
@@ -607,12 +634,12 @@ public interface Stage {
 		<R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete);
 
 		/**
-		 * Set the flush mode for this session.
-		 *
+		 * Set the {@link FlushMode flush mode} for this session.
+		 * <p>
 		 * The flush mode determines the points at which the session is flushed.
 		 * <i>Flushing</i> is the process of synchronizing the underlying persistent
 		 * store with persistable state held in memory.
-		 *
+		 * <p>
 		 * For a logically "read only" session, it is reasonable to set the session's
 		 * flush mode to {@link FlushMode#MANUAL} at the start of the session (in
 		 * order to achieve some extra performance).
@@ -629,9 +656,10 @@ public interface Stage {
 		FlushMode getFlushMode();
 		/**
 		 * Remove this instance from the session cache. Changes to the instance
-		 * will not be synchronized with the database. This operation cascades
-		 * to associated instances if the association is mapped with
-		 * <code>cascade="evict"</code>.
+		 * will not be synchronized with the database.
+		 * <p>
+		 * This operation cascades to associated instances if the association is
+		 * mapped with {@link javax.persistence.CascadeType#DETACH}.
 		 *
 		 * @param entity The entity to evict
 		 *
@@ -643,7 +671,7 @@ public interface Stage {
 		Session detach(Object entity);
 
 		/**
-		 * Completely clear the session. Evict all loaded instances and cancel
+		 * Completely clear the session. Detach all persistent instances and cancel
 		 * all pending insertions, updates and deletions.
 		 *
 		 * @see javax.persistence.EntityManager#clear()
@@ -651,8 +679,8 @@ public interface Stage {
 		Session clear();
 
 		/**
-		 * Enable a particular fetch profile on this session.  No-op if requested
-		 * profile is already enabled.
+		 * Enable a particular fetch profile on this session, or do nothing if
+		 * requested fetch profile is already enabled.
 		 *
 		 * @param name The name of the fetch profile to be enabled.
 		 * @throws org.hibernate.UnknownProfileException Indicates that the given name does not
@@ -684,8 +712,8 @@ public interface Stage {
 		<T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName);
 
 		/**
-		 * Disable a particular fetch profile on this session.  No-op if requested
-		 * profile is already disabled.
+		 * Disable a particular fetch profile on this session, or do nothing if
+		 * the requested fetch profile is not enabled.
 		 *
 		 * @param name The name of the fetch profile to be disabled.
 		 * @throws org.hibernate.UnknownProfileException Indicates that the given name does not
@@ -696,7 +724,8 @@ public interface Stage {
 		Session disableFetchProfile(String name);
 
 		/**
-		 * Is a particular fetch profile enabled on this session?
+		 * Determine if the fetch profile with the given name is enabled for this
+		 * session.
 		 *
 		 * @param name The name of the profile to be checked.
 		 * @return True if fetch profile is enabled; false if not.
@@ -710,7 +739,7 @@ public interface Stage {
 		/**
 		 * Change the default for entities and proxies loaded into this session
 		 * from modifiable to read-only mode, or from modifiable to read-only mode.
-		 *
+		 * <p>
 		 * Read-only entities are not dirty-checked and snapshots of persistent
 		 * state are not maintained. Read-only entities can be modified, but
 		 * changes are not persisted.
@@ -718,6 +747,12 @@ public interface Stage {
 		 * @see org.hibernate.Session#setDefaultReadOnly(boolean)
 		 */
 		 Session setDefaultReadOnly(boolean readOnly);
+
+		/**
+		 * @return the default read-only mode for entities and proxies loaded in
+		 *         this session
+		 */
+		boolean isDefaultReadOnly();
 
 		/**
 		 * Set an unmodified persistent object to read-only mode, or a read-only
@@ -736,10 +771,10 @@ public interface Stage {
 		boolean isReadOnly(Object entityOrProxy);
 
 		/**
-		 * Set the cache mode.
+		 * Set the {@link CacheMode cache mode} for this session.
 		 * <p>
-		 * Cache mode determines the manner in which this session can interact with
-		 * the second level cache.
+		 * The cache mode determines the manner in which this session interacts
+		 * with the second level cache.
 		 *
 		 * @param cacheMode The new cache mode.
 		 */
@@ -753,7 +788,7 @@ public interface Stage {
 		CacheMode getCacheMode();
 
 		/**
-		 * Enable the named filter for this current session.
+		 * Enable the named filter for this session.
 		 *
 		 * @param filterName The name of the filter to be enabled.
 		 *
@@ -762,7 +797,7 @@ public interface Stage {
 		Filter enableFilter(String filterName);
 
 		/**
-		 * Disable the named filter for the current session.
+		 * Disable the named filter for this session.
 		 *
 		 * @param filterName The name of the filter to be disabled.
 		 */
@@ -818,7 +853,7 @@ public interface Stage {
 
 	/**
 	 * Factory for {@link Session reactive sessions}.
-	 *
+	 * <p>
 	 * A {@code Stage.SessionFactory} may be obtained from an instance of
 	 * {@link javax.persistence.EntityManagerFactory} as follows:
 	 *
@@ -830,7 +865,7 @@ public interface Stage {
 	 *
 	 * Here, configuration properties must be specified in
 	 * {@code persistence.xml}.
-	 *
+	 * <p>
 	 * Alternatively, a {@code Stage.SessionFactory} may be obtained via
 	 * programmatic configuration of Hibernate using:
 	 *
@@ -853,11 +888,11 @@ public interface Stage {
 		 * Obtain a new {@link Session reactive session}, the main
 		 * interaction point between the user's program and Hibernate
 		 * Reactive.
-		 *
+		 * <p>
 		 * The underlying database connection is obtained lazily
 		 * when the returned {@link Session} needs to access the
 		 * database.
-		 *
+		 * <p>
 		 * The client must close the session using {@link Session#close()}.
 		 */
 		Session createSession();
@@ -866,17 +901,17 @@ public interface Stage {
 		 * Obtain a new {@link Session reactive session}, the main
 		 * interaction point between the user's program and Hibernate
 		 * Reactive.
-		 *
+		 * <p>
 		 * The underlying database connection is obtained before the
 		 * {@link Session} is returned via a {@link CompletionStage}.
-		 *
+		 * <p>
 		 * The client must close the session using {@link Session#close()}.
 		 */
 		CompletionStage<Session> openSession();
 
 		/**
 		 * Perform work using a {@link Session reactive session}.
-		 *
+		 * <p>
 		 * The session will be closed automatically.
 		 *
 		 * @param work a function which accepts the session and returns
@@ -887,7 +922,7 @@ public interface Stage {
 		/**
 		 * Perform work using a {@link Session reactive session} within an
 		 * associated {@link Transaction transaction}.
-		 *
+		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
 		 * automatically, and the transaction committed automatically.
 		 *
@@ -911,8 +946,7 @@ public interface Stage {
 		Metamodel getMetamodel();
 
 		/**
-		 * Destroy the session factory and clean up its connection
-		 * pool.
+		 * Destroy the session factory and clean up its connection pool.
 		 */
 		void close();
 

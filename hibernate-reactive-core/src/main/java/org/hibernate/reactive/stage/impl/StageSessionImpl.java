@@ -264,6 +264,11 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public boolean isDefaultReadOnly() {
+		return delegate.isDefaultReadOnly();
+	}
+
+	@Override
 	public Stage.Session setReadOnly(Object entityOrProxy, boolean readOnly) {
 		delegate.setReadOnly(entityOrProxy, readOnly);
 		return this;
