@@ -67,7 +67,7 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.Query;
 import org.hibernate.query.internal.ParameterMetadataImpl;
-import org.hibernate.reactive.ResultSetMapping;
+import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
 import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;

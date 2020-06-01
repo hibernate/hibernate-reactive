@@ -12,7 +12,7 @@ import org.hibernate.LockMode;
 import org.hibernate.MappingException;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
-import org.hibernate.reactive.ResultSetMapping;
+import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;

@@ -15,7 +15,7 @@ import org.hibernate.collection.internal.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.reactive.ResultSetMapping;
+import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.session.ReactiveSession;
 
 import javax.persistence.EntityGraph;
