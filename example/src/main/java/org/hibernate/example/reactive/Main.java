@@ -46,11 +46,7 @@ public class Main {
 				//retrieve a Book
 				session -> session.find(Book.class, book1.id)
 						//print its title
-						.thenCompose( book -> {
-							out.println(book.title + " is a great book!");
-							return session.fetch( book, Book_.isbn )
-									.thenAccept( isbn -> out.println(isbn + " is the ISBN") );
-						} )
+						.thenAccept( book -> out.println(book.title + " is a great book!") )
 		)
 				.toCompletableFuture().join();
 
@@ -107,6 +103,17 @@ public class Main {
 							books -> books.forEach( book -> out.println(book.title) )
 					);
 				}
+		)
+				.toCompletableFuture().join();
+
+		sessionFactory.withSession(
+				//retrieve a Book
+				session -> session.find(Book.class, book1.id)
+						//fetch a lazy field of the Book
+						.thenCompose( book -> session.fetch( book, Book_.isbn )
+								//print the lazy field
+								.thenAccept( isbn -> out.printf("%s is the ISBN of '%s'\n", isbn, book.title) )
+						)
 		)
 				.toCompletableFuture().join();
 
