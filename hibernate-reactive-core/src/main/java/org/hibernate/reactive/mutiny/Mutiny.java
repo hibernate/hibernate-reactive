@@ -442,8 +442,9 @@ public interface Mutiny {
 		<T> Uni<T> fetch(T association);
 
 		/**
-		 * Fetch a lazy property of the given entity, identified
-		 * by a JPA {@link Attribute attribute metamodel}.
+		 * Fetch a lazy property of the given entity, identified by a JPA
+		 * {@link Attribute attribute metamodel}. Note that this feature is
+		 * only supported in conjunction with the Hibernate bytecode enhancer.
 		 *
 		 * <pre>
 		 * {@code session.fetch(book, Book_.isbn).thenAccept(isbn -> print(isbn))}
