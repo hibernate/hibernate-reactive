@@ -192,6 +192,21 @@ a static method of `Stage` and `Mutiny`:
 
 Of course, this isn't necessary if you fetch the association eagerly.
 
+### Field-level lazy fetching
+
+Similarly, field-level lazy fetching&mdash;an advanced feature, which 
+is only supported in conjunction with Hibernate's optional compile-time 
+bytecode enhancer&mdash;is also an explicit operation:
+
+    session5.find(Book.class, book.id)
+            .thenCompose( book -> session.fetch(book, Book_.isbn) )
+            .thenAccept( isbn -> ... )
+
+Note that the field to fetch is identified by a JPA metamodel `Attribute`.
+
+We don't encourage you to use field-level lazy fetching unless you have
+very specific requirements.
+
 ### Transactions
 
 The `withTransaction()` method performs work within the scope of a database 
