@@ -16,7 +16,7 @@ import java.util.concurrent.CompletionStage;
  * A replacement for {@link org.hibernate.id.IdentifierGenerator},
  * which supports a non-blocking method for obtaining the generated
  * identifier.
- *
+ * <p>
  * A custom generation strategy may be defined by implementing this
  * interface, and, optionally, {@link org.hibernate.id.Configurable},
  * and declaring the custom implementation class using

@@ -5,13 +5,6 @@
  */
 package org.hibernate.reactive.boot;
 
-import java.io.File;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.hibernate.boot.cfgxml.internal.ConfigLoader;
 import org.hibernate.boot.cfgxml.spi.LoadedConfig;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
@@ -31,10 +24,19 @@ import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.spi.ServiceContributor;
 
+import java.io.File;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Adaptation of {@link StandardServiceRegistryBuilder}; the main difference
- * is the use of a different initial set of services {@see ReactiveServiceInitiators}
- * and the fact this will not attempt to load service contributors and other Integrators.
+ * is the use of a different initial set of services and the fact this will
+ * not attempt to load service contributors and other {@code Integrators}.
+ *
+ * @see ReactiveServiceInitiators
  */
 public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistryBuilder {
 

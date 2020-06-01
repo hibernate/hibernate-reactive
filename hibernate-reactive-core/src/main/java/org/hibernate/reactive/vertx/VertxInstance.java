@@ -14,7 +14,7 @@ import org.hibernate.service.Service;
  * Used by {@link org.hibernate.reactive.pool.impl.SqlClientPool}
  * to obtain an instance of {@link Vertx}. The default instance is
  * {@link org.hibernate.reactive.vertx.impl.DefaultVertxInstance}.
- *
+ * <p>
  * A program may integrate a custom {@link VertxInstance}
  * with Hibernate Reactive by contributing a new service using a
  * {@link org.hibernate.boot.registry.StandardServiceInitiator}

@@ -32,6 +32,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * A contract with the Hibernate session backing the user-visible
  * {@link org.hibernate.reactive.stage.Stage.Session reactive session}.
+ * <p>
  * This is primarily an internal contract between the various subsystems
  * of Hibernate Reactive, though it also occurs in the schema of some
  * extension points such as
