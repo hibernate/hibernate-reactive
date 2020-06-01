@@ -10,9 +10,9 @@ import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
-import org.hibernate.MappingException;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.metamodel.spi.MetamodelImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.Criteria;
@@ -177,11 +177,13 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String sql, Class<R> resultType) {
-		try {
-			delegate.getFactory().getMetamodel().entityPersister(resultType);
+		final String typeName = resultType.getName();
+		final MetamodelImplementor metamodel = delegate.getFactory().getMetamodel();
+		final boolean knownType = metamodel.entityPersisters().containsKey( typeName );
+		if ( knownType ) {
 			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultType ) );
 		}
-		catch (MappingException me) {
+		else {
 			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ) );
 		}
 	}
