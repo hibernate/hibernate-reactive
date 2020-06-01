@@ -366,3 +366,11 @@ There is no block optimization for the `SEQUENCE` and `TABLE` id generators.
 Note that you should not use Hibernate Reactive with a second-level cache 
 implementation which performs blocking IO, for example passivation to the
 filesystem or distributed replication.
+
+#### Driver-specific limitations
+
+You might run into some [limitations of the Vert.x DB2 client][] when using 
+Hibernate Reactive with DB2.
+
+[limitations of the Vert.x DB2 client]: https://github.com/eclipse-vertx/vertx-sql-client/blob/master/vertx-db2-client/src/main/asciidoc/index.adoc#reactive-db2-client
+
