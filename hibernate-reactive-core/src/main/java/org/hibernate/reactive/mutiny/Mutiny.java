@@ -47,6 +47,12 @@ public interface Mutiny {
 	 * that the operations are performed asynchronously, returning a
 	 * {@link Uni} without blocking the calling thread.
 	 *
+	 * Note that {@link javax.persistence.TemporalType} is not supported
+	 * as an argument for parameter bindings, and so parameters of type
+	 * {@link java.util.Date} or {@link java.util.Calendar} should not be
+	 * used. Instead, datetime types from {@code java.time} should be used
+	 * as parameters.
+	 *
 	 * @see javax.persistence.Query
 	 */
 	interface Query<R> {
