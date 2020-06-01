@@ -37,9 +37,6 @@
             <property name="hibernate.format_sql" value="true"/>
             <!--property name="hibernate.show_sql" value="true"/-->
 
-            <!--property name="hibernate.bytecode.allow_enhancement_as_proxy"
-                      value="true"/-->
-
         </properties>
 
     </persistence-unit>
