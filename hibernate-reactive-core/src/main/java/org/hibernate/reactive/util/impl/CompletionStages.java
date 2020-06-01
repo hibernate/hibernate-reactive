@@ -73,7 +73,9 @@ public class CompletionStages {
 	}
 
 	public static void logSqlException(Throwable t, Supplier<String> message, String sql) {
-		log.error( "failed to execute statement [" + sql + "]");
-		log.error( message.get(), t );
+		if (t!=null) {
+			log.error( "failed to execute statement [" + sql + "]");
+			log.error( message.get(), t );
+		}
 	}
 }
