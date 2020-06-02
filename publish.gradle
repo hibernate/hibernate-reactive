@@ -4,15 +4,7 @@ apply plugin: 'com.jfrog.bintray'
 
 // To publish snapshots:
 //  ./gradlew publish -PjbossNexusUser="<YOUR USERNAME>" -PjbossNexusPassword="<YOUR PASSWORD>"
-// To release:
-//  1. Update the version, changelog, etc.
-//  2. Commit.
-//  3. Tag the release.
-//     > git tag -a -m "Release $RELEASE_VERSION" "$RELEASE_VERSION"
-//  4. Push the tag to the repository.
-//     > git push <REMOTE> "$RELEASE_VERSION"
-//  5. Publish:
-//     > ./gradlew bintrayUpload -PbintrayUser="<YOUR USERNAME>" -PbintrayKey="<YOUR API KEY>"
+// To release, see task ciRelease in release/build.gradle
 
 ext {
     // Credentials can be specified on the command-line using project properties,
