@@ -12,7 +12,6 @@ import org.hibernate.engine.query.spi.EntityGraphQueryHint;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.criteria.internal.compile.ExplicitParameterInfo;
 import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
@@ -29,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import static java.util.Collections.emptyMap;
 import static org.hibernate.reactive.session.ReactiveQuery.convertQueryException;
 import static org.hibernate.reactive.session.ReactiveQuery.extractUniqueResult;
 
@@ -218,7 +218,17 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 
 	@Override
 	public ReactiveQuery<R> setLockMode(LockMode lockMode) {
-		super.setLockMode( LockModeConverter.convertToLockModeType( lockMode ) );
+		getProducer().checkOpen();
+		if ( !LockMode.NONE.equals( lockMode ) ) {
+			@SuppressWarnings("deprecation")
+			boolean select = getProducer().getFactory().getQueryPlanCache()
+					.getHQLQueryPlan( getQueryString(), false, emptyMap() )
+					.isSelect();
+			if ( !select) {
+				throw new IllegalArgumentException( "Lock mode is only supported for select queries: " + lockMode );
+			}
+		}
+		getLockOptions().setLockMode( lockMode );
 		return this;
 	}
 

@@ -12,7 +12,6 @@ import org.hibernate.engine.query.spi.sql.NativeSQLQueryReturn;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
 import org.hibernate.query.internal.NativeQueryImpl;
@@ -158,8 +157,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public ReactiveQuery<R> setLockMode(LockMode lockMode) {
-		super.setLockMode( LockModeConverter.convertToLockModeType( lockMode ) );
-		return this;
+		throw new UnsupportedOperationException("LockMode not supported for native SQL queries");
 	}
 
 	@Override
