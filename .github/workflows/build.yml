@@ -63,8 +63,8 @@ jobs:
         sed -E 's/^projectVersion( *= *| +)([^ ]+)/::set-output name=version::\2/g' gradle/version.properties
     - name: Publish snapshot to JBoss Nexus (experimental, Nexus rejects some binaries)
       env:
-        ORG_GRADLE_PROJECT_jbossNexusUser: ${{ secrets.jbossNexusUser }}
-        ORG_GRADLE_PROJECT_jbossNexusPassword: ${{ secrets.jbossNexusPassword }}
+        ORG_GRADLE_PROJECT_jbossNexusUser: ${{ secrets.JBOSS_NEXUS_USER }}
+        ORG_GRADLE_PROJECT_jbossNexusPassword: ${{ secrets.JBOSS_NEXUS_PASSWORD }}
       if: endsWith( steps.detect-version.outputs.version, '-SNAPSHOT' ) && env.ORG_GRADLE_PROJECT_jbossNexusUser
       run: ./gradlew publish
       
@@ -82,6 +82,6 @@ jobs:
       run: ./gradlew assemble
     - name: Publish release to Bintray
       env:
-        ORG_GRADLE_PROJECT_bintrayUser: ${{ secrets.bintrayUser }}
-        ORG_GRADLE_PROJECT_bintrayKey: ${{ secrets.bintrayKey }}
+        ORG_GRADLE_PROJECT_bintrayUser: ${{ secrets.BINTRAY_USER }}
+        ORG_GRADLE_PROJECT_bintrayKey: ${{ secrets.BINTRAY_KEY }}
       run: ./gradlew bintrayUpload
