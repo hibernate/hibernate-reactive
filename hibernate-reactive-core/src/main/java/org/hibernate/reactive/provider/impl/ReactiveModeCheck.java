@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.boot.impl;
+package org.hibernate.reactive.provider.impl;
 
-import org.hibernate.reactive.boot.impl.marker.ReactiveMarkerService;
+import org.hibernate.reactive.provider.service.ReactiveMarkerService;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.UnknownServiceException;
 

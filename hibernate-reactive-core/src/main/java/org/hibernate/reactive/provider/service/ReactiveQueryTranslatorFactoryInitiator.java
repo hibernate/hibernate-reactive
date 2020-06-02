@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.boot.service;
+package org.hibernate.reactive.provider.service;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.hql.spi.QueryTranslatorFactory;

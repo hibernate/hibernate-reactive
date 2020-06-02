@@ -7,7 +7,6 @@ package org.hibernate.reactive.vertx;
 
 import io.vertx.core.Vertx;
 
-import org.hibernate.reactive.boot.ReactiveServiceRegistryBuilder;
 import org.hibernate.service.Service;
 
 /**
@@ -19,7 +18,7 @@ import org.hibernate.service.Service;
  * with Hibernate Reactive by contributing a new service using a
  * {@link org.hibernate.boot.registry.StandardServiceInitiator}
  * or from code-based Hibernate configuration by calling
- * {@link ReactiveServiceRegistryBuilder#addService}.
+ * {@link org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder#addService}.
  *
  * <pre>
  * new ReactiveServiceRegistryBuilder()

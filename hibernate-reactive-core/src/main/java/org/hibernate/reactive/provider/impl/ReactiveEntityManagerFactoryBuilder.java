@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.jpa.impl;
+package org.hibernate.reactive.provider.impl;
 
 import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.internal.SessionFactoryBuilderImpl;
@@ -13,8 +13,8 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.reactive.boot.ReactiveServiceRegistryBuilder;
-import org.hibernate.reactive.boot.impl.ReactiveSessionFactoryBuilder;
+import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
+import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilder;
 
 import javax.persistence.EntityManagerFactory;
 import java.util.Map;

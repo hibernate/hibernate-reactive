@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.jpa.impl;
+package org.hibernate.reactive.provider.impl;
 
 import java.util.Map;
 
 import org.hibernate.cfg.AvailableSettings;
 
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.reactive.provider.ReactivePersistenceProvider;
 
+import org.hibernate.reactive.provider.ReactivePersistenceProvider;
 import org.jboss.logging.Logger;
 
 /**

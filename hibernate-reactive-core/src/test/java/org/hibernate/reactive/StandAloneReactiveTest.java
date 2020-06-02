@@ -9,7 +9,7 @@ import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.PostgreSQL9Dialect;
-import org.hibernate.reactive.boot.ReactiveServiceRegistryBuilder;
+import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.stage.Stage;
 
 import org.junit.Test;
