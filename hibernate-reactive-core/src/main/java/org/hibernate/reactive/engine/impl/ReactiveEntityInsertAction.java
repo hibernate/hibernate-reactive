@@ -14,8 +14,8 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
-import org.hibernate.reactive.engine.spi.ReactiveExecutable;
+import org.hibernate.reactive.engine.ReactiveActionQueue;
+import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.concurrent.CompletionStage;

@@ -31,7 +31,7 @@ import org.hibernate.event.spi.FlushEvent;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
+import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;

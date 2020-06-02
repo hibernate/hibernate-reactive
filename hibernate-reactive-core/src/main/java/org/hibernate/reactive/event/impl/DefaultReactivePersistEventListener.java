@@ -27,7 +27,7 @@ import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.engine.impl.CascadingAction;
 import org.hibernate.reactive.engine.impl.CascadingActions;
-import org.hibernate.reactive.event.spi.ReactivePersistEventListener;
+import org.hibernate.reactive.event.ReactivePersistEventListener;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.Map;

@@ -30,7 +30,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.reactive.event.spi.ReactiveLoadEventListener;
+import org.hibernate.reactive.event.ReactiveLoadEventListener;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
