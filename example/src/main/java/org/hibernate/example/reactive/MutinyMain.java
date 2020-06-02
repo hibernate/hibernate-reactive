@@ -20,10 +20,11 @@ public class MutinyMain {
 		// obtain a factory for reactive sessions based on the
 		// standard JPA configuration properties specified in
 		// resources/META-INF/persistence.xml
-		SessionFactory sessionFactory =
+		SessionFactory factory =
 				createEntityManagerFactory("example")
 						.unwrap(SessionFactory.class);
 
+		// define some test data
 		Author author1 = new Author("Iain M. Banks");
 		Author author2 = new Author("Neal Stephenson");
 		Book book1 = new Book("1-85723-235-6", "Feersum Endjinn", author1);
@@ -33,35 +34,35 @@ public class MutinyMain {
 		author2.books.add(book2);
 		author2.books.add(book3);
 
-		//obtain a reactive session
-		sessionFactory.withTransaction(
-				//persist the Authors with their Books in a transaction
+		// obtain a reactive session
+		factory.withTransaction(
+				// persist the Authors with their Books in a transaction
 				(session, tx) -> session.persist(author1, author2)
 		)
-				//wait for it to finish
+				// wait for it to finish
 				.await().indefinitely();
 
-		sessionFactory.withSession(
-				//retrieve a Book
+		factory.withSession(
+				// retrieve a Book
 				session -> session.find(Book.class, book1.id)
-						//print its title
+						// print its title
 						.onItem().invoke( book -> out.println(book.title + " is a great book!") )
 		)
 				.await().indefinitely();
 
-		sessionFactory.withSession(
-				//retrieve both Authors at once
+		factory.withSession(
+				// retrieve both Authors at once
 				session -> session.find(Author.class, author1.id, author2.id)
 						.onItem().invoke( authors -> authors.forEach( author -> out.println(author.name) ) )
 		)
 				.await().indefinitely();
 
-		sessionFactory.withSession(
-				//retrieve an Author
+		factory.withSession(
+				// retrieve an Author
 				session -> session.find(Author.class, author2.id)
-						//lazily fetch their books
+						// lazily fetch their books
 						.flatMap( author -> fetch(author.books)
-								//print some info
+								// print some info
 								.onItem().invoke( books -> {
 									out.println(author.name + " wrote " + books.size() + " books");
 									books.forEach( book -> out.println(book.title) );
@@ -70,8 +71,8 @@ public class MutinyMain {
 		)
 				.await().indefinitely();
 
-		sessionFactory.withSession(
-				//query the Book titles
+		factory.withSession(
+				// query the Book titles
 				session -> session.createQuery("select title, author.name from Book order by title desc", Object[].class)
 						.getResultList()
 						.onItem().invoke( rows -> rows.forEach(
@@ -80,8 +81,8 @@ public class MutinyMain {
 		)
 				.await().indefinitely();
 
-		sessionFactory.withSession(
-				//query the entire Book entities
+		factory.withSession(
+				// query the entire Book entities
 				session -> session.createQuery("from Book book join fetch book.author order by book.title desc", Book.class)
 						.getResultList()
 						.onItem().invoke( books -> books.forEach(
@@ -90,10 +91,10 @@ public class MutinyMain {
 		)
 				.await().indefinitely();
 
-		sessionFactory.withSession(
-				//use a criteria query
+		factory.withSession(
+				// use a criteria query
 				session -> {
-					CriteriaQuery<Book> query = sessionFactory.getCriteriaBuilder().createQuery(Book.class);
+					CriteriaQuery<Book> query = factory.getCriteriaBuilder().createQuery(Book.class);
 					Root<Author> a = query.from(Author.class);
 					Join<Author,Book> b = a.join(Author_.books);
 					query.where( a.get(Author_.name).in("Neal Stephenson", "William Gibson") );
@@ -105,23 +106,24 @@ public class MutinyMain {
 		)
 				.await().indefinitely();
 
-		sessionFactory.withTransaction(
-				//retrieve a Book
+		factory.withTransaction(
+				// retrieve a Book
 				(session, tx) -> session.find(Book.class, book2.id)
-						//delete the Book
+						// delete the Book
 						.flatMap( book -> session.remove(book) )
 		)
 				.await().indefinitely();
 
-		sessionFactory.withTransaction(
-				//delete all the Books in a transaction
+		factory.withTransaction(
+				// delete all the Books in a transaction
 				(session, tx) -> session.createQuery("delete Book").executeUpdate()
 						//delete all the Authors
 						.flatMap( $ -> session.createQuery("delete Author").executeUpdate() )
 		)
 				.await().indefinitely();
 
-		sessionFactory.close();
+		// remember to shut down the connection pool
+		factory.close();
 	}
 
 }
