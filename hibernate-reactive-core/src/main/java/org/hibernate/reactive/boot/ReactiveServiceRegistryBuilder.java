@@ -17,6 +17,7 @@ import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.Environment;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.integrator.spi.IntegratorService;
+import org.hibernate.integrator.spi.ServiceContributingIntegrator;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.boot.impl.ReactiveServiceInitiators;
 import org.hibernate.service.Service;
@@ -40,8 +41,13 @@ import java.util.Map;
  */
 public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistryBuilder {
 
+    @SuppressWarnings("rawtypes")
     private final Map settings;
+
+    @SuppressWarnings("rawtypes")
     private final List<StandardServiceInitiator> initiators;
+
+    @SuppressWarnings("rawtypes")
     private final List<ProvidedService> providedServices = new ArrayList<>();
 
     private boolean autoCloseRegistry = true;
@@ -59,7 +65,7 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
         };
         return new StandardServiceRegistryBuilder(
                 bootstrapServiceRegistry,
-                new HashMap(),
+                new HashMap<>(),
                 loadedConfig,
                 defaultReactiveInitiatorList()
         ) {
@@ -114,6 +120,7 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
             BootstrapServiceRegistry bootstrapServiceRegistry,
             Map settings,
             LoadedConfig loadedConfig,
+            @SuppressWarnings("rawtypes")
             List<StandardServiceInitiator> initiators) {
         this.bootstrapServiceRegistry = bootstrapServiceRegistry;
         this.configLoader = new ConfigLoader( bootstrapServiceRegistry );
@@ -283,7 +290,7 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
      *
      * @return this, for method chaining
      */
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public StandardServiceRegistryBuilder addService(final Class serviceRole, final Service service) {
         providedServices.add( new ProvidedService( serviceRole, service ) );
         return this;
@@ -328,6 +335,7 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
         applyServiceContributingIntegrators();
         applyServiceContributors();
 
+        @SuppressWarnings("rawtypes")
         final Map settingsCopy = new HashMap( settings );
         settingsCopy.put( org.hibernate.boot.cfgxml.spi.CfgXmlAccessService.LOADED_CONFIG_KEY, aggregatedCfgXml );
         ConfigurationHelper.resolvePlaceHolders( settingsCopy );
@@ -345,9 +353,8 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
     private void applyServiceContributingIntegrators() {
         for ( Integrator integrator : bootstrapServiceRegistry.getService( IntegratorService.class )
                 .getIntegrators() ) {
-            if ( org.hibernate.integrator.spi.ServiceContributingIntegrator.class.isInstance( integrator ) ) {
-                org.hibernate.integrator.spi.ServiceContributingIntegrator.class.cast( integrator ).prepareServices(
-                        this );
+            if (integrator instanceof ServiceContributingIntegrator) {
+                ((ServiceContributingIntegrator) integrator).prepareServices( this );
             }
         }
     }
@@ -375,6 +382,7 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
         ( (StandardServiceRegistryImpl) serviceRegistry ).destroy();
     }
 
+    @SuppressWarnings("rawtypes")
     private static List<StandardServiceInitiator> defaultReactiveInitiatorList() {
         final List<StandardServiceInitiator> initiators = new ArrayList<>( ReactiveServiceInitiators.LIST.size() );
         initiators.addAll( ReactiveServiceInitiators.LIST );
