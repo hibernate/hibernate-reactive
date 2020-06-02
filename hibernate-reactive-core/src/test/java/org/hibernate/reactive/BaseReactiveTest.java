@@ -5,30 +5,28 @@
  */
 package org.hibernate.reactive;
 
-import java.util.concurrent.CompletionStage;
-
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Timeout;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
-import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
-import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
+import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
+import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
@@ -64,9 +62,9 @@ public abstract class BaseReactiveTest {
 
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
-		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, "create" );
-		configuration.setProperty( AvailableSettings.URL, DatabaseConfiguration.getJdbcUrl() );
-		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
+		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
+		configuration.setProperty( Settings.URL, DatabaseConfiguration.getJdbcUrl() );
+		configuration.setProperty( Settings.SHOW_SQL, "true" );
 		return configuration;
 	}
 

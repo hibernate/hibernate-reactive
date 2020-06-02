@@ -5,14 +5,12 @@
  */
 package org.hibernate.reactive.provider.impl;
 
-import java.util.Map;
-
-import org.hibernate.cfg.AvailableSettings;
-
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-
+import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.ReactivePersistenceProvider;
 import org.jboss.logging.Logger;
+
+import java.util.Map;
 
 /**
  * Helper for handling checks to see whether ReactivePersistenceProvider is the requested
@@ -60,8 +58,8 @@ public final class ReactiveProviderChecker {
 
     /**
      * Extract the requested persistence provider name using the algorithm Hibernate uses.  Namely, a provider named
-     * in the 'integration' map (under the key '{@value AvailableSettings#JPA_PERSISTENCE_PROVIDER}') is preferred, as per-spec, over
-     * value specified in persistence unit.
+     * in the 'integration' map (under the key '{@value Settings#JPA_PERSISTENCE_PROVIDER}') is preferred, as per-spec,
+     * over value specified in persistence unit.
      *
      * @param persistenceUnit The {@code <persistence-unit/>} descriptor.
      * @param integration The integration values.
@@ -95,7 +93,7 @@ public final class ReactiveProviderChecker {
         if ( integration == null ) {
             return null;
         }
-        final String setting = (String) integration.get( AvailableSettings.JPA_PERSISTENCE_PROVIDER );
+        final String setting = (String) integration.get( Settings.JPA_PERSISTENCE_PROVIDER );
         return setting == null ? null : setting.trim();
     }
 

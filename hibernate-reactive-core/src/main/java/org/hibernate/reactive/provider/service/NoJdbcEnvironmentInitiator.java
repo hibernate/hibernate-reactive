@@ -6,7 +6,6 @@
 package org.hibernate.reactive.provider.service;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
-import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
@@ -19,6 +18,7 @@ import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentImpl;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.reactive.provider.Settings;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 import java.sql.Connection;
@@ -40,8 +40,8 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 
 	@Override @SuppressWarnings("unchecked")
 	public JdbcEnvironment initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-		if ( !configurationValues.containsKey( AvailableSettings.DIALECT ) ) {
-			String url = configurationValues.getOrDefault( AvailableSettings.URL, "" ).toString();
+		if ( !configurationValues.containsKey( Settings.DIALECT ) ) {
+			String url = configurationValues.getOrDefault( Settings.URL, "" ).toString();
 			Class<? extends Dialect> dialectClass = null;
 			if ( url.startsWith("jdbc:mysql:") ) {
 				dialectClass = MySQL8Dialect.class;
@@ -54,7 +54,7 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 			}
 			//TODO etc
 			if ( dialectClass != null ) {
-				configurationValues.put( AvailableSettings.DIALECT, dialectClass.getName() );
+				configurationValues.put( Settings.DIALECT, dialectClass.getName() );
 			}
 		}
 
@@ -62,7 +62,7 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 
 		// 'hibernate.temp.use_jdbc_metadata_defaults' is a temporary magic value.
 		// The need for it is intended to be alleviated with future development, thus it is
-		// not defined as an Environment constant...
+		// not defined as an Settings constant...
 		//
 		// it is used to control whether we should consult the JDBC metadata to determine
 		// certain Settings default values; it is useful to *not* do this when the database

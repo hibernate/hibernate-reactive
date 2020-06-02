@@ -8,7 +8,6 @@ package org.hibernate.reactive.id.impl;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.boot.model.relational.QualifiedName;
 import org.hibernate.boot.model.relational.QualifiedNameParser;
-import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
@@ -17,6 +16,7 @@ import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.reactive.provider.Settings;
 import org.hibernate.service.ServiceRegistry;
 
 import java.util.Properties;
@@ -38,7 +38,7 @@ public class IdentifierGeneration {
 
 		String fallbackSequenceName = SequenceStyleGenerator.DEF_SEQUENCE_NAME;
 		final Boolean preferGeneratorNameAsDefaultName = serviceRegistry.getService( ConfigurationService.class )
-				.getSetting( AvailableSettings.PREFER_GENERATOR_NAME_AS_DEFAULT_SEQUENCE_NAME, StandardConverters.BOOLEAN, true );
+				.getSetting( Settings.PREFER_GENERATOR_NAME_AS_DEFAULT_SEQUENCE_NAME, StandardConverters.BOOLEAN, true );
 		if ( preferGeneratorNameAsDefaultName ) {
 			final String generatorName = params.getProperty( IdentifierGenerator.GENERATOR_NAME );
 			if ( StringHelper.isNotEmpty( generatorName ) ) {
@@ -75,7 +75,7 @@ public class IdentifierGeneration {
 	static QualifiedName determineTableName(Properties params, ServiceRegistry serviceRegistry) {
 		String fallbackTableName = TableGenerator.DEF_TABLE;
 		final Boolean preferGeneratorNameAsDefaultName = serviceRegistry.getService( ConfigurationService.class )
-				.getSetting( AvailableSettings.PREFER_GENERATOR_NAME_AS_DEFAULT_SEQUENCE_NAME, StandardConverters.BOOLEAN, true );
+				.getSetting( Settings.PREFER_GENERATOR_NAME_AS_DEFAULT_SEQUENCE_NAME, StandardConverters.BOOLEAN, true );
 		if ( preferGeneratorNameAsDefaultName ) {
 			final String generatorName = params.getProperty( IdentifierGenerator.GENERATOR_NAME );
 			if ( StringHelper.isNotEmpty( generatorName ) ) {

@@ -5,29 +5,27 @@
  */
 package org.hibernate.reactive.configuration;
 
-import static org.junit.Assume.assumeTrue;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Timeout;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
+import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.pool.impl.SqlClientPool;
+import org.hibernate.reactive.testing.TestingRegistryRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
-import org.hibernate.reactive.pool.impl.SqlClientPool;
-import org.hibernate.reactive.pool.ReactiveConnectionPool;
-
-import org.hibernate.reactive.testing.TestingRegistryRule;
-import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(VertxUnitRunner.class)
 public class ReactiveConnectionPoolTest {
@@ -69,7 +67,7 @@ public class ReactiveConnectionPoolTest {
 
 		String url = DatabaseConfiguration.getJdbcUrl();
 		Map<String,Object> config = new HashMap<>();
-		config.put( AvailableSettings.URL, url );
+		config.put( Settings.URL, url );
 		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
 		verifyConnectivity( context, reactivePool );
 	}
@@ -88,9 +86,9 @@ public class ReactiveConnectionPoolTest {
 		// Correct user/password are supplied explicitly in the config map and
 		// should override the credentials in the URL
 		Map<String,Object> config = new HashMap<>();
-		config.put( AvailableSettings.URL, url );
-		config.put( AvailableSettings.USER, DatabaseConfiguration.USERNAME );
-		config.put( AvailableSettings.PASS, DatabaseConfiguration.PASSWORD );
+		config.put( Settings.URL, url );
+		config.put( Settings.USER, DatabaseConfiguration.USERNAME );
+		config.put( Settings.PASS, DatabaseConfiguration.PASSWORD );
 		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
 		verifyConnectivity( context, reactivePool );
 	}
@@ -106,9 +104,9 @@ public class ReactiveConnectionPoolTest {
 
 		String url = DatabaseConfiguration.getJdbcUrl();
 		Map<String,Object> config = new HashMap<>();
-		config.put( AvailableSettings.URL, url );
-		config.put( AvailableSettings.USER, "bogus" );
-		config.put( AvailableSettings.PASS, "bogus" );
+		config.put( Settings.URL, url );
+		config.put( Settings.USER, "bogus" );
+		config.put( Settings.PASS, "bogus" );
 		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
 		verifyConnectivity( context, reactivePool );
 	}

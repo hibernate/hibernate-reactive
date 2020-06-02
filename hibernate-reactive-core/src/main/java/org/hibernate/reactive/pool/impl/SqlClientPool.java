@@ -11,12 +11,12 @@ import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnectOptions;
 import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.spi.Driver;
-import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.PostgreSQL9Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -44,20 +44,7 @@ import static io.vertx.core.Future.succeededFuture;
  */
 public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwareService, Configurable, Stoppable, Startable {
 
-	/**
-	 * @see SqlConnectOptions#setPreparedStatementCacheSqlLimit(int)
-	 */
-	public static final String PREPARED_STATEMENT_CACHE_SQL_LIMIT = "hibernate.vertx.prepared_statement_cache.sql_limit";
-	/**
-	 * @see SqlConnectOptions#setPreparedStatementCacheMaxSize(int)
-	 */
-	public static final String PREPARED_STATEMENT_CACHE_MAX_SIZE = "hibernate.vertx.prepared_statement_cache.max_size";
-	/**
-	 * @see PoolOptions#setMaxWaitQueueSize(int)
-	 */
-	public static final String MAX_WAIT_QUEUE_SIZE = "hibernate.vertx.pool.max_wait_queue_size";
-
-	public static final int DEFAULT_POOL_SIZE = 5;
+	private static final int DEFAULT_POOL_SIZE = 5;
 
 	private Pool pool;
 	private boolean showSQL;
@@ -78,8 +65,8 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		//TODO: actually extract the configuration values we need rather than keeping a reference to the whole map.
 		this.configurationValues = configurationValues;
 
-		showSQL = ConfigurationHelper.getBoolean( AvailableSettings.SHOW_SQL, configurationValues, false );
-		formatSQL = ConfigurationHelper.getBoolean( AvailableSettings.FORMAT_SQL, configurationValues, false );
+		showSQL = ConfigurationHelper.getBoolean( Settings.SHOW_SQL, configurationValues, false );
+		formatSQL = ConfigurationHelper.getBoolean( Settings.FORMAT_SQL, configurationValues, false );
 		usePostgresStyleParameters =
 				serviceRegistry.getService(JdbcEnvironment.class).getDialect() instanceof PostgreSQL9Dialect;
 	}
@@ -114,7 +101,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	}
 
 	private URI jdbcUrl(Map configurationValues) {
-		final String url = ConfigurationHelper.getString( AvailableSettings.URL, configurationValues );
+		final String url = ConfigurationHelper.getString( Settings.URL, configurationValues );
 		CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000011: SQL Client URL [%s]", url );
 		return parse( url );
 	}
@@ -122,11 +109,11 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	private PoolOptions poolOptions(Map configurationValues) {
 		PoolOptions poolOptions = new PoolOptions();
 
-		final int poolSize = ConfigurationHelper.getInt( AvailableSettings.POOL_SIZE, configurationValues, DEFAULT_POOL_SIZE );
+		final int poolSize = ConfigurationHelper.getInt( Settings.POOL_SIZE, configurationValues, DEFAULT_POOL_SIZE );
 		CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000012: Connection pool size: %d", poolSize );
 		poolOptions.setMaxSize( poolSize );
 
-		final Integer maxWaitQueueSize = ConfigurationHelper.getInteger( MAX_WAIT_QUEUE_SIZE, configurationValues );
+		final Integer maxWaitQueueSize = ConfigurationHelper.getInteger( Settings.MAX_WAIT_QUEUE_SIZE, configurationValues );
 		if (maxWaitQueueSize!=null) {
 			CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000013: Connection pool max wait queue size: %d", maxWaitQueueSize );
 			poolOptions.setMaxWaitQueueSize(maxWaitQueueSize);
@@ -145,8 +132,8 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		}
 
 		// FIXME: Check which values can be null
-		String username = ConfigurationHelper.getString( AvailableSettings.USER, configurationValues );
-		String password = ConfigurationHelper.getString( AvailableSettings.PASS, configurationValues );
+		String username = ConfigurationHelper.getString( Settings.USER, configurationValues );
+		String password = ConfigurationHelper.getString( Settings.PASS, configurationValues );
 		if (username==null || password==null) {
 			String[] params = {};
 			// DB2 URLs are a bit odd and have the format: jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
@@ -192,7 +179,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		//enable the prepared statement cache by default (except for DB2)
 		connectOptions.setCachePreparedStatements( !scheme.equals("db2") );
 
-		final Integer cacheMaxSize = ConfigurationHelper.getInteger( PREPARED_STATEMENT_CACHE_MAX_SIZE, configurationValues );
+		final Integer cacheMaxSize = ConfigurationHelper.getInteger( Settings.PREPARED_STATEMENT_CACHE_MAX_SIZE, configurationValues );
 		if (cacheMaxSize!=null) {
 			if (cacheMaxSize <= 0) {
 				CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000014: Prepared statement cache disabled", cacheMaxSize );
@@ -205,7 +192,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 			}
 		}
 
-		final Integer sqlLimit = ConfigurationHelper.getInteger( PREPARED_STATEMENT_CACHE_SQL_LIMIT, configurationValues );
+		final Integer sqlLimit = ConfigurationHelper.getInteger( Settings.PREPARED_STATEMENT_CACHE_SQL_LIMIT, configurationValues );
 		if (cacheMaxSize!=null) {
 			CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000016: Prepared statement cache SQL limit: %d", sqlLimit );
 			connectOptions.setPreparedStatementCacheSqlLimit(sqlLimit);

@@ -5,17 +5,12 @@
  */
 package org.hibernate.reactive;
 
-import static org.junit.Assume.assumeTrue;
-
-import java.io.Serializable;
-import java.math.BigInteger;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.TimeZone;
+import io.vertx.ext.unit.TestContext;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
+import org.junit.Test;
 
 import javax.persistence.Column;
 import javax.persistence.Convert;
@@ -36,21 +31,24 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.Transient;
 import javax.persistence.Version;
+import java.io.Serializable;
+import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.TimeZone;
 
-import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
-import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
+import static org.junit.Assume.assumeTrue;
 
 public class DB2BasicTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( AvailableSettings.URL, DatabaseConfiguration.getJdbcUrl() );
+		configuration.setProperty( Settings.URL, DatabaseConfiguration.getJdbcUrl() );
 		configuration.addAnnotatedClass( Basic.class );
 		return configuration;
 	}

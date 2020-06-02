@@ -5,26 +5,24 @@
  */
 package org.hibernate.reactive;
 
-import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
-import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.stage.Stage;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.runner.RunWith;
-
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
+import org.hibernate.reactive.stage.Stage;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.runner.RunWith;
 
 @RunWith(VertxUnitRunner.class)
 public abstract class BaseMutinyTest {
@@ -60,9 +58,9 @@ public abstract class BaseMutinyTest {
 
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
-		configuration.setProperty( AvailableSettings.HBM2DDL_AUTO, "create" );
-		configuration.setProperty( AvailableSettings.URL, DatabaseConfiguration.getJdbcUrl() );
-		configuration.setProperty( AvailableSettings.SHOW_SQL, "true" );
+		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
+		configuration.setProperty( Settings.URL, DatabaseConfiguration.getJdbcUrl() );
+		configuration.setProperty( Settings.SHOW_SQL, "true" );
 		return configuration;
 	}
 
