@@ -21,7 +21,7 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingAction;
-import org.hibernate.reactive.event.spi.ReactiveMergeEventListener;
+import org.hibernate.reactive.event.ReactiveMergeEventListener;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.stat.spi.StatisticsImplementor;

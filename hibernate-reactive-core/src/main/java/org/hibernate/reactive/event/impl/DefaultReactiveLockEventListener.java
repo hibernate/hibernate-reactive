@@ -28,7 +28,7 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;
 import org.hibernate.reactive.engine.impl.ForeignKeys;
-import org.hibernate.reactive.event.spi.ReactiveLockEventListener;
+import org.hibernate.reactive.event.ReactiveLockEventListener;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.jboss.logging.Logger;

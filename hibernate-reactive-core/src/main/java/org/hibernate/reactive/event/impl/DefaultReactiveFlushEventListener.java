@@ -9,7 +9,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.*;
 import org.hibernate.event.spi.*;
 import org.hibernate.internal.CoreMessageLogger;
-import org.hibernate.reactive.event.spi.ReactiveFlushEventListener;
+import org.hibernate.reactive.event.ReactiveFlushEventListener;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.jboss.logging.Logger;

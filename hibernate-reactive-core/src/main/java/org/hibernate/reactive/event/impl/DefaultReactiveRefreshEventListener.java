@@ -24,7 +24,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;
-import org.hibernate.reactive.event.spi.ReactiveRefreshEventListener;
+import org.hibernate.reactive.event.ReactiveRefreshEventListener;
 import org.hibernate.reactive.persister.entity.impl.ReactiveAbstractEntityPersister;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.CollectionType;

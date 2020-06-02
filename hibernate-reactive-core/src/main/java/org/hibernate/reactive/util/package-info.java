@@ -4,4 +4,4 @@
  *
  * @see org.hibernate.reactive.util.impl.CompletionStages
  */
-package org.hibernate.reactive.util.impl;
+package org.hibernate.reactive.util;

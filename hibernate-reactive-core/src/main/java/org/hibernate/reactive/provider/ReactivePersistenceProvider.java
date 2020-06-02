@@ -28,8 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * JPA {@link PersistenceProvider} implementation specific to Hibernate Reactive
- * All specific configurations are set transparently for the user.
+ * JPA {@link PersistenceProvider} for Hibernate Reactive.
  */
 public class ReactivePersistenceProvider implements PersistenceProvider {
 

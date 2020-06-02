@@ -17,8 +17,8 @@ import org.hibernate.event.spi.AutoFlushEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
-import org.hibernate.reactive.event.spi.ReactiveAutoFlushEventListener;
+import org.hibernate.reactive.engine.ReactiveActionQueue;
+import org.hibernate.reactive.event.ReactiveAutoFlushEventListener;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 

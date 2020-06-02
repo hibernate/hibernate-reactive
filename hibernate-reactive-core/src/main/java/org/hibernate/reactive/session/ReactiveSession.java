@@ -19,7 +19,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.reactive.common.ResultSetMapping;
-import org.hibernate.reactive.engine.spi.ReactiveActionQueue;
+import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.pool.ReactiveConnection;
 
 import javax.persistence.EntityGraph;

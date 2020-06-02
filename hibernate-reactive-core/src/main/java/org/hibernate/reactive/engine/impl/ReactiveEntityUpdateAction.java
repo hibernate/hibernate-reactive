@@ -13,7 +13,7 @@ import org.hibernate.cache.spi.entry.CacheEntry;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.*;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.reactive.engine.spi.ReactiveExecutable;
+import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.internal.StatsHelper;
