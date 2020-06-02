@@ -96,4 +96,6 @@ jobs:
       env:
         ORG_GRADLE_PROJECT_bintrayUser: ${{ secrets.BINTRAY_USER }}
         ORG_GRADLE_PROJECT_bintrayKey: ${{ secrets.BINTRAY_KEY }}
-      run: ./gradlew bintrayUpload
+        ORG_GRADLE_PROJECT_sonatypeOssrhUser: ${{ secrets.SONATYPE_OSSRH_USER }}
+        ORG_GRADLE_PROJECT_sonatypeOssrhPassword: ${{ secrets.SONATYPE_OSSRH_PASSWORD }}
+      run: ./gradlew bintrayUpload bintrayPublish
