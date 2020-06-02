@@ -2,6 +2,7 @@
 
 [![CI Status](https://github.com/hibernate/hibernate-reactive/workflows/Hibernate%20Reactive%20CI/badge.svg)](https://github.com/hibernate/hibernate-reactive/actions?query=workflow%3A%22Hibernate+Reactive+CI%22)
 [![License](https://img.shields.io/badge/License-LGPL%202.1-green.svg)](https://opensource.org/licenses/LGPL-2.1)
+[![Download](https://api.bintray.com/packages/hibernate/artifacts/hibernate-reactive/images/download.svg)](https://bintray.com/hibernate/artifacts/hibernate-reactive/_latestVersion)
 
 # Hibernate Reactive
 
