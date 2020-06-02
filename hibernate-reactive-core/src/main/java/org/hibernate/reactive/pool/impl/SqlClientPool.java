@@ -193,7 +193,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		}
 
 		final Integer sqlLimit = ConfigurationHelper.getInteger( Settings.PREPARED_STATEMENT_CACHE_SQL_LIMIT, configurationValues );
-		if (cacheMaxSize!=null) {
+		if (sqlLimit!=null) {
 			CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000016: Prepared statement cache SQL limit: %d", sqlLimit );
 			connectOptions.setPreparedStatementCacheSqlLimit(sqlLimit);
 		}
