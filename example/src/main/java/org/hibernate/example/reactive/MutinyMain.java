@@ -109,7 +109,7 @@ public class MutinyMain {
 				//retrieve a Book
 				(session, tx) -> session.find(Book.class, book2.id)
 						//delete the Book
-						.onItem().produceUni( book -> session.remove(book) )
+						.flatMap( book -> session.remove(book) )
 		)
 				.await().indefinitely();
 
