@@ -12,9 +12,9 @@ import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
-import org.hibernate.reactive.jpa.impl.ReactiveEntityManagerFactoryBuilder;
-import org.hibernate.reactive.jpa.impl.ReactiveProviderChecker;
 
+import org.hibernate.reactive.provider.impl.ReactiveEntityManagerFactoryBuilder;
+import org.hibernate.reactive.provider.impl.ReactiveProviderChecker;
 import org.jboss.logging.Logger;
 
 import javax.persistence.EntityManagerFactory;

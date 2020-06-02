@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.boot;
+package org.hibernate.reactive.provider;
 
 import org.hibernate.boot.cfgxml.internal.ConfigLoader;
 import org.hibernate.boot.cfgxml.spi.LoadedConfig;
@@ -19,7 +19,7 @@ import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.integrator.spi.IntegratorService;
 import org.hibernate.integrator.spi.ServiceContributingIntegrator;
 import org.hibernate.internal.util.config.ConfigurationHelper;
-import org.hibernate.reactive.boot.impl.ReactiveServiceInitiators;
+import org.hibernate.reactive.provider.impl.ReactiveServiceInitiators;
 import org.hibernate.service.Service;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.internal.ProvidedService;

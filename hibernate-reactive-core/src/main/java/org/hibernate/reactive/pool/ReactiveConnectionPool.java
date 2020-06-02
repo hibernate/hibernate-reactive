@@ -6,7 +6,7 @@
 package org.hibernate.reactive.pool;
 
 import org.hibernate.Incubating;
-import org.hibernate.reactive.boot.ReactiveServiceRegistryBuilder;
+import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.service.Service;
 
 import java.util.concurrent.CompletionStage;

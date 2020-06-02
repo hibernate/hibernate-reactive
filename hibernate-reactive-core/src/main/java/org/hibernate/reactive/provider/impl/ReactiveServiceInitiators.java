@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.boot.impl;
+package org.hibernate.reactive.provider.impl;
 
 import org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceInitiator;
@@ -22,13 +22,14 @@ import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.jmx.internal.JmxServiceInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
-import org.hibernate.reactive.boot.impl.marker.ReactiveMarkerServiceInitiator;
-import org.hibernate.reactive.boot.service.NoJdbcConnectionProviderInitiator;
-import org.hibernate.reactive.boot.service.NoJdbcEnvironmentInitiator;
-import org.hibernate.reactive.boot.service.NoJtaPlatformInitiator;
-import org.hibernate.reactive.boot.service.ReactiveQueryTranslatorFactoryInitiator;
+import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
+import org.hibernate.reactive.provider.service.NoJdbcConnectionProviderInitiator;
+import org.hibernate.reactive.provider.service.NoJdbcEnvironmentInitiator;
+import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
+import org.hibernate.reactive.provider.service.ReactiveQueryTranslatorFactoryInitiator;
+import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInitiator;
 import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactoryInitiator;
-import org.hibernate.reactive.jpa.impl.ReactivePersisterClassResolverInitiator;
+import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
 import org.hibernate.reactive.pool.impl.SqlClientPoolInitiator;
 import org.hibernate.reactive.vertx.impl.VertxInstanceInitiator;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;

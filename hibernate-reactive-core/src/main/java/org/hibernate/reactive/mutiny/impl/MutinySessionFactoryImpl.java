@@ -20,8 +20,8 @@ import java.util.function.Function;
 
 /**
  * Implementation of {@link Mutiny.SessionFactory}.
- *
- * @see org.hibernate.reactive.boot.impl.ReactiveSessionFactoryBuilder
+ * <p>
+ * Obtained by calling {@link org.hibernate.SessionFactory#unwrap(Class)}.
  */
 public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
