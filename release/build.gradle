@@ -7,6 +7,9 @@ description = 'Release module'
 //  2. Execute this:
 //    ./gradlew uploadDocumentation -PjbossFilemgmtSshUser="<YOUR USERNAME>"
 
+// To tag a version and trigger a release on CI (which will include publishing to Bintray and publishing documentation):
+//  ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin -PgitBranch=master
+
 final File documentationDir = mkdir( "${project.buildDir}/documentation" );
 
 /**
@@ -61,8 +64,6 @@ task uploadDocumentation(type:Exec, dependsOn: assembleDocumentation) {
     }
 }
 
-
-// Usage: ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin -PgitBranch=master
 task ciRelease {
     group = "Release"
     description = "Triggers the release on CI: creates commits to change the version (release, then development), creates a tag, pushes everything. Then CI will take over and perform the release."
