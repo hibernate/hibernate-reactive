@@ -23,6 +23,12 @@ ext {
     if (!project.hasProperty('bintrayKey')) {
         bintrayKey = credentials.bintrayKey
     }
+    if (!project.hasProperty('sonatypeOssrhUser')) {
+        sonatypeOssrhUser = credentials.sonatypeOssrhUser
+    }
+    if (!project.hasProperty('sonatypeOssrhPassword')) {
+        sonatypeOssrhPassword = credentials.sonatypeOssrhPassword
+    }
 }
 
 task sourcesJar(type: Jar) {
@@ -137,6 +143,8 @@ bintray {
             }
             mavenCentralSync {
                 sync = true
+                user = project.sonatypeOssrhUser
+                password = project.sonatypeOssrhPassword
             }
         }
     }
