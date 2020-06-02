@@ -44,7 +44,7 @@ task uploadDocumentation(type:Exec, dependsOn: assembleDocumentation) {
     final String url = "filemgmt.jboss.org:/docs_htdocs/hibernate/reactive/${project.version.family}"
 
     executable 'rsync'
-    args '-avz', '--links', '--protocol=28', "${documentationDir.absolutePath}/", url
+    args '-avz', '--delete', '--links', '--protocol=28', "${documentationDir.absolutePath}/", url
 
     doFirst {
         if ( project.version.isSnapshot() ) {
