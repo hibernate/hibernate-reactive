@@ -86,7 +86,7 @@ public final class ReactiveProviderChecker {
         // NOTE : if no provider requested we assume we are NOT the provider, leaving the responsibility to Hibernate ORM
         // (the classical, blocking version)
         log.debug( "No PersistenceProvider explicitly requested" );
-        return "";
+        return null;
     }
 
     private static String extractProviderName(Map integration) {
