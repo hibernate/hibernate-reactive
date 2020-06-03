@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.mutiny;
 
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
@@ -111,9 +112,10 @@ public interface Mutiny {
 		 * Asynchronously execute this query, returning a single row
 		 * that matches the query, or {@code null} if the query returns
 		 * no results, throwing an exception if the query returns more
-		 * than one matching result.
+		 * than one matching row. If the query has multiple results per
+		 * row, the results are returned in an instance of {@code Object[]}.
 		 *
-		 * @return the single resulting row or <tt>null</tt>
+		 * @return the single resulting row or {@code null}
 		 *
 		 * @see javax.persistence.Query#getSingleResult()
 		 */
@@ -121,14 +123,31 @@ public interface Mutiny {
 
 		/**
 		 * Asynchronously execute this query, returning the query results
-		 * as a {@link List}. If the query contains multiple results per
-		 * row, the results are returned in an instance of <tt>Object[]</tt>.
+		 * as a {@link List}, via a {@link Uni}. If the query has multiple
+		 * results per row, the results are returned in an instance of
+		 * {@code Object[]}. If the query has multiple results per row,
+		 * the results are returned in an instance of {@code Object[]}.
 		 *
 		 * @return the resulting rows as a {@link List}
 		 *
 		 * @see javax.persistence.Query#getResultList()
 		 */
 		Uni<List<R>> getResultList();
+
+		/**
+		 * Asynchronously execute this query, returning the query results
+		 * as a {@link Multi}. If the query has multiple results per row,
+		 * the results are returned in an instance of {@code Object[]}.
+		 * <p>
+		 * For now, this operation does no more than simply repackage the
+		 * result of {@link #getResultList()} as a {@link Multi} for
+		 * convenience.
+		 *
+		 * @return the resulting rows via a {@link Multi}
+		 */
+		default Multi<R> getResults() {
+			return getResultList().onItem().produceMulti( list -> Multi.createFrom().iterable(list) );
+		}
 
 		/**
 		 * Asynchronously execute this delete, update, or insert query,

@@ -112,9 +112,10 @@ public interface Stage {
 		 * Asynchronously Execute this query, returning a single row
 		 * that matches the query, or {@code null} if the query returns
 		 * no results, throwing an exception if the query returns more
-		 * than one matching result.
+		 * than one matching row. If the query has multiple results per
+		 * row, the results are returned in an instance of {@code Object[]}.
 		 *
-		 * @return the single resulting row or <tt>null</tt>
+		 * @return the single resulting row or {@code null}
 		 *
 		 * @see javax.persistence.Query#getSingleResult()
 		 */
@@ -122,8 +123,9 @@ public interface Stage {
 
 		/**
 		 * Asynchronously execute this query, returning the query results
-		 * as a {@link List}. If the query contains multiple results per
-		 * row, the results are returned in an instance of <tt>Object[]</tt>.
+		 * as a {@link List}, via a {@link CompletionStage}. If the query
+		 * has multiple results per row, the results are returned in an
+		 * instance of {@code Object[]}.
 		 *
 		 * @return the resulting rows as a {@link List}
 		 *
