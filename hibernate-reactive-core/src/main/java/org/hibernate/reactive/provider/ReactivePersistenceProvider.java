@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.provider;
 
-import org.hibernate.jpa.HibernatePersistenceProvider;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
@@ -32,7 +31,7 @@ import java.util.Map;
  */
 public class ReactivePersistenceProvider implements PersistenceProvider {
 
-	private static final Logger log = Logger.getLogger( HibernatePersistenceProvider.class );
+	private static final Logger log = Logger.getLogger( ReactivePersistenceProvider.class );
 	private final PersistenceUtilHelper.MetadataCache cache = new PersistenceUtilHelper.MetadataCache();
 
 	/**
