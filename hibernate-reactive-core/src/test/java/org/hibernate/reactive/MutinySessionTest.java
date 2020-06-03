@@ -10,6 +10,7 @@ import io.vertx.ext.unit.TestContext;
 import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -17,6 +18,9 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.metamodel.EntityType;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.Assume.assumeFalse;
 
 public class MutinySessionTest extends BaseMutinyTest {
 
@@ -28,34 +32,30 @@ public class MutinySessionTest extends BaseMutinyTest {
 	}
 
 	private Uni<Integer> populateDB() {
-		return connection().flatMap(
-				conn -> Uni.createFrom().completionStage( conn.update( "INSERT INTO Pig (id, name) VALUES (5, 'Aloi')" ) )
-		);
+		return getSessionFactory()
+				.withSession(
+						session -> session.persist( new GuineaPig(5, "Aloi") )
+								.map( v -> { session.flush(); return null; } )
+				);
 	}
-//
-//	private Uni<Integer> cleanDB() {
-//		return connection().flatMap( conn -> Uni.createFrom().completionStage( conn.update( "DELETE FROM Pig" ) ) );
-//	}
 
 	private Uni<String> selectNameFromId(Integer id) {
-		return connection().flatMap(
-				connection -> Uni.createFrom().completionStage(
-						connection.select(
-								DatabaseConfiguration.statement( "SELECT name FROM Pig WHERE id = ", "" ),
-								new Object[]{id})
-								.thenApply(
-										rowSet -> {
-											if (rowSet.size() == 1) {
-												// Only one result
-												return (String) rowSet.next()[0];
-											} else if (rowSet.size() > 1) {
-												throw new AssertionError("More than one result returned: " + rowSet.size());
-											} else {
-												// Size 0
-												return null;
-											}
-										})
-				) );
+		return getSessionFactory().withSession(
+				session -> session.createQuery("SELECT name FROM GuineaPig WHERE id = " + id )
+						.getResultList()
+						.map(
+								rowSet -> {
+									switch ( rowSet.size() ) {
+										case 0:
+											return null;
+										case 1:
+											return (String) rowSet.get(0);
+										default:
+											throw new AssertionError("More than one result returned: " + rowSet.size());
+									}
+								}
+						)
+		);
 	}
 
 	@Test
@@ -66,14 +66,17 @@ public class MutinySessionTest extends BaseMutinyTest {
 				populateDB()
 						.onItem().produceUni( i -> openSession() )
 						.onItem().produceUni( session -> session.find( GuineaPig.class, expectedPig.getId() )
-								.onItem().invoke( actualPig -> {
-									assertThatPigsAreEqual( context, expectedPig, actualPig );
-									context.assertTrue( session.contains( actualPig ) );
-									context.assertFalse( session.contains( expectedPig ) );
-									context.assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
-									session.detach( actualPig );
-									context.assertFalse( session.contains( actualPig ) );
-								} ) )
+						.onItem().invoke( actualPig -> {
+							assertThatPigsAreEqual( context, expectedPig, actualPig );
+							context.assertTrue( session.contains( actualPig ) );
+							context.assertFalse( session.contains( expectedPig ) );
+							context.assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
+							session.detach( actualPig );
+							context.assertFalse( session.contains( actualPig ) );
+						} )
+						.on().termination( (v, err, c) -> session.close() )
+				)
+
 		);
 	}
 
@@ -93,6 +96,83 @@ public class MutinySessionTest extends BaseMutinyTest {
 									session.detach( actualPig );
 									context.assertFalse( session.contains( actualPig ) );
 								} )
+								.on().termination( (v, err, c) -> session.close() )
+						)
+		);
+	}
+
+	@Test
+	public void reactiveFindWithLock(TestContext context) {
+		// TODO @AGG
+		// The DB2 driver does not yet support a few types (BigDecimal, BigInteger, LocalTime)
+		// so we need to keep a separate copy around for testing DB2 (DB2BasicTest)
+		assumeFalse( DatabaseConfiguration.dbType() == DBType.DB2 );
+
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.flatMap( v -> openSession() )
+						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId(), LockMode.PESSIMISTIC_WRITE )
+								.onItem().invoke( actualPig -> {
+									assertThatPigsAreEqual( context, expectedPig, actualPig );
+									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+								} )
+								.on().termination( (v, err, c) -> session.close() )
+						)
+		);
+	}
+
+	@Test
+	public void reactiveFindRefreshWithLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.flatMap( v -> openSession() )
+						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.flatMap( pig -> session.refresh(pig, LockMode.PESSIMISTIC_WRITE).map( v -> pig ) )
+								.onItem().invoke( actualPig -> {
+									assertThatPigsAreEqual( context, expectedPig, actualPig );
+									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+								} )
+								.on().termination( (v, err, c) -> session.close() )
+						)
+		);
+	}
+
+	@Test
+	public void reactiveFindThenUpgradeLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.flatMap( v -> openSession() )
+						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.flatMap( pig -> session.lock(pig, LockMode.PESSIMISTIC_READ).map( v -> pig ) )
+								.onItem().invoke( actualPig -> {
+									assertThatPigsAreEqual( context, expectedPig, actualPig );
+									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_READ );
+								} )
+								.on().termination( (v, err, c) -> session.close() )
+						)
+		);
+	}
+
+	@Test
+	public void reactiveFindThenWriteLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.flatMap( v -> openSession() )
+						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.flatMap( pig -> session.lock(pig, LockMode.PESSIMISTIC_WRITE).map( v -> pig ) )
+								.onItem().invoke( actualPig -> {
+									assertThatPigsAreEqual( context, expectedPig, actualPig );
+									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+								} )
+								.on().termination( (v, err, c) -> session.close() )
 						)
 		);
 	}
@@ -222,7 +302,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 										.onItem().produceUni( v -> session.flush() )
 										.on().termination( (v, e, c) -> session.close() )
 										.onItem().produceUni( v -> selectNameFromId( 5 ) )
-										.onItem().invoke( ret -> context.assertNull( ret ) ) )
+										.onItem().invoke(context::assertNull) )
 		);
 	}
 
@@ -238,7 +318,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 								.flatMap( v -> session.flush() )
 								.on().termination( (v, e, c) -> session.close() )
 								.flatMap( v -> selectNameFromId( 5 ) )
-								.map( ret -> context.assertNull( ret ) ) )
+								.map(context::assertNull) )
 		);
 	}
 
@@ -301,6 +381,30 @@ public class MutinySessionTest extends BaseMutinyTest {
 												} )
 								)
 						)
+		);
+	}
+
+	@Test
+	public void reactiveMultiQuery(TestContext context) {
+		GuineaPig foo = new GuineaPig( 5, "Foo" );
+		GuineaPig bar = new GuineaPig( 6, "Bar" );
+		GuineaPig baz = new GuineaPig( 7, "Baz" );
+		AtomicInteger i = new AtomicInteger();
+
+		test( context,
+				getSessionFactory().withTransaction( (session, transaction) -> session.persist(foo, bar, baz) )
+						.flatMap( v -> getSessionFactory().withSession(
+								session -> session.createQuery("from GuineaPig", GuineaPig.class).getResults()
+										.onItem().invoke( pig -> {
+											context.assertNotNull(pig);
+											i.getAndIncrement();
+										} )
+										.collectItems().asList()
+										.onItem().invoke( list -> {
+											context.assertEquals(3, i.get());
+											context.assertEquals(3, list.size());
+										})
+						) )
 		);
 	}
 
