@@ -123,6 +123,12 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 		return delegate.getHibernateFlushMode();
 	}
 
+//	@Override
+//	public Mutiny.Query<R> setPlan(EntityGraph<R> entityGraph) {
+//		delegate.setPlan(entityGraph);
+//		return this;
+//	}
+
 	@Override
 	public Uni<Integer> executeUpdate() {
 		return Uni.createFrom().completionStage( delegate.executeReactiveUpdate() );

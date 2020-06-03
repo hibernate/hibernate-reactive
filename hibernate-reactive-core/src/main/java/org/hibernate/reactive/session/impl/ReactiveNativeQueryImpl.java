@@ -20,6 +20,7 @@ import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.transform.ResultTransformer;
 
+import javax.persistence.EntityGraph;
 import javax.persistence.Parameter;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -189,4 +190,8 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 		return this;
 	}
 
+	@Override
+	public void setPlan(EntityGraph<R> entityGraph) {
+		throw new UnsupportedOperationException("native SQL query cannot have a fetch plan");
+	}
 }

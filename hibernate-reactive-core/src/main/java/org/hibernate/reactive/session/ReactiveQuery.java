@@ -18,6 +18,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
+import javax.persistence.EntityGraph;
 import javax.persistence.NoResultException;
 import javax.persistence.Parameter;
 import java.util.List;
@@ -107,4 +108,5 @@ public interface ReactiveQuery<R> {
 		}
 	}
 
+	void setPlan(EntityGraph<R> entityGraph);
 }

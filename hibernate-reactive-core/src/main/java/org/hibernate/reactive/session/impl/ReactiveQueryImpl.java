@@ -12,6 +12,9 @@ import org.hibernate.engine.query.spi.EntityGraphQueryHint;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.RootGraph;
+import org.hibernate.graph.internal.RootGraphImpl;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.criteria.internal.compile.ExplicitParameterInfo;
 import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
@@ -21,6 +24,7 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 
+import javax.persistence.EntityGraph;
 import javax.persistence.Parameter;
 import javax.persistence.criteria.ParameterExpression;
 import java.util.Collections;
@@ -29,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import static java.util.Collections.emptyMap;
+import static org.hibernate.jpa.QueryHints.HINT_FETCHGRAPH;
 import static org.hibernate.reactive.session.ReactiveQuery.convertQueryException;
 import static org.hibernate.reactive.session.ReactiveQuery.extractUniqueResult;
 
@@ -267,5 +272,9 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		return this;
 	}
 
-
+	@Override
+	public void setPlan(EntityGraph<R> entityGraph) {
+		applyGraph( (RootGraph) entityGraph, GraphSemantic.FETCH );
+		applyEntityGraphQueryHint( new EntityGraphQueryHint( HINT_FETCHGRAPH, (RootGraphImpl) entityGraph ) );
+	}
 }

@@ -123,6 +123,12 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 		return delegate.getHibernateFlushMode();
 	}
 
+//	@Override
+//	public Stage.Query<R> setPlan(EntityGraph<R> entityGraph) {
+//		delegate.setPlan(entityGraph);
+//		return this;
+//	}
+
 	@Override
 	public CompletionStage<Integer> executeUpdate() {
 		return delegate.executeReactiveUpdate();
