@@ -79,7 +79,7 @@ task ciRelease {
     }
 
     doLast {
-        println("Checking that the working tree is clean...")
+        logger.lifecycle("Checking that the working tree is clean...")
         String uncommittedFiles = executeGitCommand('status', '--porcelain')
         if ( !uncommittedFiles.isEmpty() ) {
             throw new GradleException(
@@ -89,10 +89,10 @@ task ciRelease {
             );
         }
 
-        println("Switching to branch '${project.gitBranch}'...")
+        logger.lifecycle("Switching to branch '${project.gitBranch}'...")
         executeGitCommand('switch', project.gitBranch)
 
-        println("Checking that all commits are pushed...")
+        logger.lifecycle("Checking that all commits are pushed...")
         String diffWithUpstream = executeGitCommand('diff', '@{u}')
         if ( !diffWithUpstream.isEmpty() ) {
             throw new GradleException(
@@ -101,7 +101,7 @@ task ciRelease {
             );
         }
 
-        println("Adding commit to update version to '${project.releaseVersion}'...")
+        logger.lifecycle("Adding commit to update version to '${project.releaseVersion}'...")
         project.projectVersionFile.text = "projectVersion=${project.releaseVersion}"
         executeGitCommand('add', '.')
         executeGitCommand('commit', '-m', project.releaseVersion)
@@ -110,20 +110,20 @@ task ciRelease {
             tag = tag.replace( ".Final", "" )
         }
 
-        println("Tagging '${tag}'...")
+        logger.lifecycle("Tagging '${tag}'...")
         executeGitCommand('tag', '-a', '-m', "Release ${project.releaseVersion}", tag)
 
-        println("Adding commit to update version to '${project.developmentVersion}'...")
+        logger.lifecycle("Adding commit to update version to '${project.developmentVersion}'...")
         project.projectVersionFile.text = "projectVersion=${project.developmentVersion}"
         executeGitCommand('add', '.')
         executeGitCommand('commit', '-m', project.developmentVersion)
 
-        println("Pushing branch and tag to remote '${project.gitRemote}'...")
+        logger.lifecycle("Pushing branch and tag to remote '${project.gitRemote}'...")
         executeGitCommand('push', '--atomic', project.gitRemote, project.gitBranch, tag)
 
-        println("Done!")
+        logger.lifecycle("Done!")
 
-        println("Go to https://github.com/hibernate/hibernate-reactive/actions?query=branch%3A${tag} to check the progress of the automated release.")
+        logger.lifecycle("Go to https://github.com/hibernate/hibernate-reactive/actions?query=branch%3A${tag} to check the progress of the automated release.")
     }
 }
 
