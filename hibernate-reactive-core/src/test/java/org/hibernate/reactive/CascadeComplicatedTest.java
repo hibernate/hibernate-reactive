@@ -6,13 +6,22 @@
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.Hibernate;
-import org.hibernate.reactive.stage.Stage;
+import org.hibernate.cfg.Configuration;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.persistence.*;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.MappedSuperclass;
+import javax.persistence.OneToMany;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
@@ -101,7 +110,8 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 							return s;
 						})
 						.thenCompose(s -> s.flush())
-						.thenCompose(ignore -> check( openSession(), context ))
+						.thenAccept(s -> s.close())
+						.thenCompose(ignore -> check( context ))
 		);
 	}
 
@@ -117,7 +127,8 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 								})
 						)
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> check(openSession(), context))
+						.thenAccept(s -> s.close())
+						.thenCompose(v -> check(context))
 		);
 	}
 
@@ -125,22 +136,18 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 	public void testMergeDetachedAssociationsInitialized(TestContext context) {
 		test(
 				context,
-				openSession()
-						.thenCompose(s -> s.persist(b))
-						.thenApply( s -> {
-							bId = b.id;
-							return s;
-						})
-						.thenCompose(s -> s.flush())
-						.thenCompose(ignore -> openSession()
-								.thenCompose(s2 -> s2.find(B.class, bId)
-										.thenApply(bFound -> {
-											s2.clear();
-											s2.merge( bFound );
-											return s2;
-										}))
+				getSessionFactory()
+						.withSession(s -> s.persist(b)
+								.thenAccept( v -> bId = b.id )
+								.thenCompose(v -> s.flush())
 						)
-						.thenCompose(v -> check(openSession(), context))
+						.thenCompose(ignore -> getSessionFactory()
+								.withSession(s1 -> s1.find(B.class, bId))
+								.thenCompose( bFound -> getSessionFactory()
+										.withSession( s2 -> s2.merge( bFound )
+												.thenCompose(v -> s2.flush())))
+						)
+						.thenCompose(v -> check(context))
 		);
 	}
 
@@ -155,10 +162,11 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 							return s;
 						})
 						.thenCompose(s -> s.flush())
+						.thenAccept(s -> s.close())
 						.thenCompose(ignore -> openSession()
 								.thenCompose(s2 -> s2.merge(b))
 						)
-						.thenCompose(v -> check(openSession(), context))
+						.thenCompose(v -> check(context))
 		);
 	}
 
@@ -174,7 +182,8 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 							return s;
 						})
 						.thenCompose(s -> s.flush())
-						.thenCompose(ignore -> check( openSession(), context ))
+						.thenAccept(s -> s.close())
+						.thenCompose(ignore -> check(context))
 						.thenAccept(ignore -> {
 							// Cascade-remove is not configured, so remove all associations.
 							// Everything will need to be merged, then deleted in the proper order
@@ -212,6 +221,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 						.thenCompose(s2 -> s2.remove(e))
 						.thenCompose(s2 -> s2.remove(c))
 						.thenCompose(s2 -> s2.flush())
+						.thenAccept(s2 -> s2.close())
 		);
 	}
 
@@ -239,8 +249,8 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 		g.fCollection.remove(f);
 	}
 
-	private CompletionStage<Object> check(CompletionStage<Stage.Session> sessionStage, TestContext context) {
-		return  sessionStage.thenCompose(sCheck -> sCheck.find(B.class, bId)
+	private CompletionStage<Object> check(TestContext context) {
+		return  getSessionFactory().withSession(sCheck -> sCheck.find(B.class, bId)
 				.thenApply(bCheck -> {
 					context.assertEquals(b, bCheck);
 					context.assertFalse(Hibernate.isInitialized(bCheck.getC()));
@@ -293,12 +303,12 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.getgCollection())
 						.thenApply(gCollectionCheck -> {
-								final G gElement = gCollectionCheck.iterator().next();
-								context.assertEquals(g, gElement);
-								context.assertTrue(bCheck.getD().getE().getF().getG() == gElement);
-								context.assertTrue(bCheck == gElement.getB());
-								return bCheck;
-							}
+									final G gElement = gCollectionCheck.iterator().next();
+									context.assertEquals(g, gElement);
+									context.assertTrue(bCheck.getD().getE().getF().getG() == gElement);
+									context.assertTrue(bCheck == gElement.getB());
+									return bCheck;
+								}
 						)
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.getC().getbCollection())
