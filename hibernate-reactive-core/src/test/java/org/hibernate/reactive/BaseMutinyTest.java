@@ -60,7 +60,8 @@ public abstract class BaseMutinyTest {
 		Configuration configuration = new Configuration();
 		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
 		configuration.setProperty( Settings.URL, DatabaseConfiguration.getJdbcUrl() );
-		configuration.setProperty( Settings.SHOW_SQL, "true" );
+		//Use JAVA_TOOL_OPTIONS='-Dhibernate.show_sql=true'
+		configuration.setProperty( Settings.SHOW_SQL, System.getProperty(Settings.SHOW_SQL, "false") );
 		return configuration;
 	}
 
