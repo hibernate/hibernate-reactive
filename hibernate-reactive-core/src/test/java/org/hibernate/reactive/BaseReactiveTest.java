@@ -75,6 +75,19 @@ public abstract class BaseReactiveTest {
 		StandardServiceRegistry registry = new ReactiveServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() )
 				.build();
+		mysqlConfiguration( registry );
+		sessionFactory = configuration.buildSessionFactory( registry );
+		poolProvider = registry.getService( ReactiveConnectionPool.class );
+	}
+
+	/*
+	 * MySQL doesn't implement 'drop table cascade constraints'.
+	 *
+	 * The reason this is a problem in our test suite is that we
+	 * have lots of different schemas for the "same" table: Pig, Author, Book.
+	 * A user would surely only have one schema for each table.
+	 */
+	private void mysqlConfiguration(StandardServiceRegistry registry) {
 		registry.getService( ConnectionProvider.class ); //force the NoJdbcConnectionProvider to load first
 		registry.getService( SchemaManagementTool.class )
 				.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) {
@@ -93,8 +106,6 @@ public abstract class BaseReactiveTest {
 						super.release();
 					}
 				} );
-		sessionFactory = configuration.buildSessionFactory( registry );
-		poolProvider = registry.getService( ReactiveConnectionPool.class );
 	}
 
 	@After
