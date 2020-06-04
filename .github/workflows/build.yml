@@ -9,6 +9,35 @@ on:
     branches: master
 
 jobs:
+  run_example_postgres:
+    name: Run the example project on Postgres
+    runs-on: ubuntu-latest
+    services:
+       # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres
+        env:
+          POSTGRES_DB: hreact
+          POSTGRES_USER: hreact
+          POSTGRES_PASSWORD: hreact
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 1.8
+      with:
+        java-version: 1.8
+      uses: actions/setup-java@v1
+    - name: Run the main classes
+      run: ./gradlew :example:runMainAll
+
   test_postgresql:
     name: Test with PostgreSQL
     runs-on: ubuntu-latest
