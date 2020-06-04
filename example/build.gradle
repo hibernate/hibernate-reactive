@@ -40,3 +40,25 @@ hibernate {
         enableAssociationManagement = false
     }
 }
+
+// The following tasks run the example with
+// the different API available.
+//
+// They require the selected db ready
+// to accept connections.
+task runMainCompletionStage( type: JavaExec ) {
+    group = "Execution"
+    description = "Run example for CompletionStage API"
+    classpath = sourceSets.main.runtimeClasspath
+    main = "org.hibernate.example.reactive.Main"
+}
+
+task runMainMutiny( type: JavaExec ) {
+    group = "Execution"
+    description = "Run example for Mutiny API"
+    classpath = sourceSets.main.runtimeClasspath
+    main = "org.hibernate.example.reactive.MutinyMain"
+}
+
+task runMainAll( dependsOn: ["runMainCompletionStage", "runMainMutiny"] ) {
+}
