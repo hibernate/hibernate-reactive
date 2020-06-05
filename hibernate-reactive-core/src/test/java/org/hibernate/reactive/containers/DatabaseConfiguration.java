@@ -6,6 +6,8 @@
 package org.hibernate.reactive.containers;
 
 import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Contains the common constants that we need for the configuration of databases
@@ -18,7 +20,40 @@ public class DatabaseConfiguration {
 	public static enum DBType {
 		DB2,
 		MYSQL,
-		POSTGRESQL
+		POSTGRESQL( "POSTGRES", "PG" );
+
+		// A list of alternative names that can be used to select the db
+		private final String[] aliases;
+
+		DBType(String... aliases) {
+			this.aliases = aliases;
+		}
+
+		@Override
+		public String toString() {
+			// Print the name and all the aliases
+			StringBuilder result = new StringBuilder( name() );
+			Stream.of( aliases ).forEach( alt -> result.append( ", " ).append( alt ) );
+			return result.toString();
+		}
+
+		public static DBType fromString(String dbName) {
+			Objects.requireNonNull( dbName );
+			for ( DBType dbType : values() ) {
+				// Look at the enum name
+				if ( dbName.equalsIgnoreCase( dbType.name() ) ) {
+					return dbType;
+				}
+				// Search in the aliases
+				for ( String alias : dbType.aliases ) {
+					if ( alias.equalsIgnoreCase( dbName ) ) {
+						return dbType;
+					}
+				}
+			}
+			throw new IllegalArgumentException( "Unknown DB type '" + dbName + "' specified. Allowed values are: " + Arrays
+					.toString( DBType.values() ) );
+		}
 	}
 
 	public static final String USERNAME = "hreact";
@@ -29,18 +64,9 @@ public class DatabaseConfiguration {
 
 	public static DBType dbType() {
 		if (dbType == null) {
-			String dbTypeString = System.getProperty( "db", DBType.POSTGRESQL.name() ).toUpperCase();
-			if ( "PG".equals( dbTypeString ) || "POSTGRES".equals( dbTypeString ) ) {
-				dbType = DBType.POSTGRESQL;
-			} else {
-				try {
-					dbType = DBType.valueOf( dbTypeString );
-				} catch (IllegalArgumentException e) {
-					throw new IllegalArgumentException( "Unknown DB type '" + dbTypeString +
-							"' specified. Allowed values are: " + Arrays.toString( DBType.values() ), e );
-				}
-			}
-			System.out.println( "Using database type: " + dbType );
+			String dbTypeString = System.getProperty( "db", DBType.POSTGRESQL.name() );
+			dbType = DBType.fromString( dbTypeString );
+			System.out.println( "Using database type: " + dbType.name() );
 		}
 		return dbType;
 	}
@@ -73,14 +99,14 @@ public class DatabaseConfiguration {
 			case MYSQL:
 				return String.join("?", parts);
 			case POSTGRESQL:
-			    StringBuilder sb = new StringBuilder();
-			    for (int i = 0; i < parts.length; i++) {
-			      if (i > 0) {
-			        sb.append("$").append((i));
-			      }
-			      sb.append(parts[i]);
-			    }
-			    return sb.toString();
+				StringBuilder sb = new StringBuilder();
+				for (int i = 0; i < parts.length; i++) {
+					if (i > 0) {
+						sb.append("$").append((i));
+					}
+					sb.append(parts[i]);
+				}
+				return sb.toString();
 			default:
 				throw new IllegalArgumentException( "Unknown DB type: "+ dbType );
 		}
@@ -88,5 +114,4 @@ public class DatabaseConfiguration {
 
 	private DatabaseConfiguration() {
 	}
-
 }
