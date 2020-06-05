@@ -28,10 +28,10 @@ dependencies {
     // Testing
     testImplementation "org.hibernate:hibernate-testing:${hibernateOrmVersion}"
     testImplementation 'org.assertj:assertj-core:3.13.2'
-    testImplementation 'io.vertx:vertx-unit:3.9.1'
-    testImplementation 'io.vertx:vertx-pg-client:3.9.1'
-    testImplementation 'io.vertx:vertx-mysql-client:3.9.1'
-    testImplementation 'io.vertx:vertx-db2-client:3.9.1'
+    testImplementation "io.vertx:vertx-unit:${vertxVersion}"
+    testImplementation "io.vertx:vertx-pg-client:${vertxVersion}"
+    testImplementation "io.vertx:vertx-mysql-client:${vertxVersion}"
+    testImplementation "io.vertx:vertx-db2-client:${vertxVersion}"
 
     // Testcontainers
     testImplementation 'org.testcontainers:postgresql:1.13.0'

@@ -11,8 +11,8 @@ dependencies {
     annotationProcessor "org.hibernate:hibernate-jpamodelgen:${hibernateOrmVersion}"
 
     // database drivers for PostgreSQL and MySQL
-    runtimeOnly 'io.vertx:vertx-pg-client:3.9.1'
-    runtimeOnly 'io.vertx:vertx-mysql-client:3.9.1'
+    runtimeOnly "io.vertx:vertx-pg-client:${vertxVersion}"
+    runtimeOnly "io.vertx:vertx-mysql-client:${vertxVersion}"
 
     // logging (optional)
     runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
