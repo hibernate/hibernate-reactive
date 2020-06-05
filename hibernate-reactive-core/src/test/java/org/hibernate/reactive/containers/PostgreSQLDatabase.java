@@ -7,7 +7,9 @@ package org.hibernate.reactive.containers;
 
 import org.testcontainers.containers.PostgreSQLContainer;
 
-class PostgreSQLDatabase {
+class PostgreSQLDatabase implements TestableDatabase {
+
+	public static PostgreSQLDatabase INSTANCE = new PostgreSQLDatabase();
 
 	public final static String IMAGE_NAME = "postgres:12-alpine";
 
@@ -24,7 +26,8 @@ class PostgreSQLDatabase {
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
 			.withReuse( true );
 
-	public static String getJdbcUrl() {
+	@Override
+	public String getJdbcUrl() {
 		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
@@ -40,7 +43,18 @@ class PostgreSQLDatabase {
 		return jdbcUrl + "&user=" + postgresql.getUsername() + "&password=" + postgresql.getPassword();
 	}
 
-	private PostgreSQLDatabase() {
+	@Override
+	public String statement(String... parts) {
+		StringBuilder sb = new StringBuilder();
+		for ( int i = 0; i < parts.length; i++ ) {
+			if ( i > 0 ) {
+				sb.append( "$" ).append( ( i ) );
+			}
+			sb.append( parts[i] );
+		}
+		return sb.toString();
 	}
 
+	private PostgreSQLDatabase() {
+	}
 }

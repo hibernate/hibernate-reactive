@@ -18,14 +18,17 @@ public class DatabaseConfiguration {
 	public static final boolean USE_DOCKER = Boolean.getBoolean("docker");
 
 	public static enum DBType {
-		DB2,
-		MYSQL,
-		POSTGRESQL( "POSTGRES", "PG" );
+		DB2( DB2Database.INSTANCE ),
+		MYSQL( MySQLDatabase.INSTANCE ),
+		POSTGRESQL( PostgreSQLDatabase.INSTANCE, "POSTGRES", "PG" );
+
+		private final TestableDatabase configuration;
 
 		// A list of alternative names that can be used to select the db
 		private final String[] aliases;
 
-		DBType(String... aliases) {
+		DBType(TestableDatabase configuration, String... aliases) {
+			this.configuration = configuration;
 			this.aliases = aliases;
 		}
 
@@ -71,18 +74,8 @@ public class DatabaseConfiguration {
 		return dbType;
 	}
 
-	public static String getJdbcUrl() {
-		DBType dbType = dbType();
-		switch (dbType) {
-			case DB2:
-				return DB2Database.getJdbcUrl();
-			case MYSQL:
-				return MySQLDatabase.getJdbcUrl();
-			case POSTGRESQL:
-				return PostgreSQLDatabase.getJdbcUrl();
-			default:
-				throw new IllegalArgumentException( "Unknown DB type: "+ dbType );
-		}
+ 	public static String getJdbcUrl() {
+		return dbType().configuration.getJdbcUrl();
 	}
 
 	/**
@@ -93,25 +86,10 @@ public class DatabaseConfiguration {
 	 * <code>statement("SELECT * FROM FOO WHERE BAR = ", "")</code>
 	 */
 	public static String statement(String... parts) {
-		DBType dbType = dbType();
-		switch (dbType) {
-			case DB2:
-			case MYSQL:
-				return String.join("?", parts);
-			case POSTGRESQL:
-				StringBuilder sb = new StringBuilder();
-				for (int i = 0; i < parts.length; i++) {
-					if (i > 0) {
-						sb.append("$").append((i));
-					}
-					sb.append(parts[i]);
-				}
-				return sb.toString();
-			default:
-				throw new IllegalArgumentException( "Unknown DB type: "+ dbType );
-		}
+		return dbType().configuration.statement( parts );
 	}
 
 	private DatabaseConfiguration() {
 	}
+
 }

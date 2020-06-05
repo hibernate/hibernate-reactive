@@ -5,7 +5,9 @@
  */
 package org.hibernate.reactive.containers;
 
-class MySQLDatabase {
+class MySQLDatabase implements TestableDatabase {
+
+	static MySQLDatabase INSTANCE = new MySQLDatabase();
 
 	public final static String IMAGE_NAME = "mysql:8";
 
@@ -22,7 +24,8 @@ class MySQLDatabase {
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
 			.withReuse( true );
 
-	public static String getJdbcUrl() {
+	@Override
+	public String getJdbcUrl() {
 		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port

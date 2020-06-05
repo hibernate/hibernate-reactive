@@ -7,7 +7,9 @@ package org.hibernate.reactive.containers;
 
 import org.testcontainers.containers.Db2Container;
 
-class DB2Database {
+class DB2Database implements TestableDatabase {
+
+	public static DB2Database INSTANCE = new DB2Database();
 
 	public final static String IMAGE_NAME = "ibmcom/db2:11.5.0.0a";
 
@@ -25,7 +27,8 @@ class DB2Database {
 		      .acceptLicense()
 		      .withReuse(true);
 
-	public static String getJdbcUrl() {
+	@Override
+	public String getJdbcUrl() {
 		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
