@@ -34,9 +34,9 @@ dependencies {
     testImplementation "io.vertx:vertx-db2-client:${vertxVersion}"
 
     // Testcontainers
-    testImplementation "org.testcontainers:postgresql:${testscontainersVersion}"
-    testImplementation "org.testcontainers:mysql:${testscontainersVersion}"
-    testImplementation "org.testcontainers:db2:${testscontainersVersion}"
+    testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
+    testImplementation "org.testcontainers:mysql:${testcontainersVersion}"
+    testImplementation "org.testcontainers:db2:${testcontainersVersion}"
     testImplementation 'org.slf4j:slf4j-log4j12:1.7.30'
 }
 
