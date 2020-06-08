@@ -20,7 +20,7 @@ dependencies {
     annotationProcessor 'org.jboss.logging:jboss-logging-processor:2.1.0.Final'
 
     //Specific implementation details of Hibernate Reactive:
-    implementation 'io.vertx:vertx-sql-client:3.9.1'
+    implementation "io.vertx:vertx-sql-client:${vertxVersion}"
 
     //Mutiny is also exposed as API
     api 'io.smallrye.reactive:mutiny:0.5.0'
