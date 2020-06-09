@@ -3,7 +3,7 @@
              xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd"
              version="2.0">
 
-    <persistence-unit name="example">
+    <persistence-unit name="postgresql-example">
         <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
 
         <class>org.hibernate.example.reactive.Author</class>
@@ -15,9 +15,39 @@
             <property name="javax.persistence.jdbc.url"
                       value="jdbc:postgresql://localhost/hreact"/>
 
+            <!-- Credentials -->
+            <property name="javax.persistence.jdbc.user"
+                      value="hreact"/>
+            <property name="javax.persistence.jdbc.password"
+                      value="hreact"/>
+
+            <!-- The Vert.x SQL Client connection pool size -->
+            <property name="hibernate.connection.pool_size"
+                      value="10"/>
+
+            <!-- Automatic schema export -->
+            <property name="javax.persistence.schema-generation.database.action"
+                      value="drop-and-create"/>
+
+            <!-- SQL statement logging -->
+            <property name="hibernate.format_sql" value="true"/>
+            <!--property name="hibernate.show_sql" value="true"/-->
+
+        </properties>
+
+    </persistence-unit>
+
+    <persistence-unit name="mysql-example">
+        <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
+
+        <class>org.hibernate.example.reactive.Author</class>
+        <class>org.hibernate.example.reactive.Book</class>
+
+        <properties>
+
             <!-- MySQL -->
-            <!--property name="javax.persistence.jdbc.url"
-                      value="jdbc:mysql://localhost/hreact"/-->
+            <property name="javax.persistence.jdbc.url"
+                      value="jdbc:mysql://localhost/hreact"/>
 
             <!-- Credentials -->
             <property name="javax.persistence.jdbc.user"

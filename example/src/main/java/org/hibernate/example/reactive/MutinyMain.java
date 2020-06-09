@@ -15,13 +15,16 @@ import static org.hibernate.reactive.mutiny.Mutiny.fetch;
  */
 public class MutinyMain {
 
+	// The first argument can be used to select a persistenceUnit.
+	// Check resources/META-INF/persistence.xml for available names.
 	public static void main(String[] args) {
+		out.println( "== Mutiny API Example ==" );
 
 		// obtain a factory for reactive sessions based on the
 		// standard JPA configuration properties specified in
 		// resources/META-INF/persistence.xml
 		SessionFactory factory =
-				createEntityManagerFactory("example")
+				createEntityManagerFactory( persitenceUnitName( args ) )
 						.unwrap(SessionFactory.class);
 
 		// define some test data
@@ -126,4 +129,13 @@ public class MutinyMain {
 		factory.close();
 	}
 
+	/**
+	 * Return the persistence unit name to use in the example.
+	 *
+	 * @param args the first element is the persistence unit name if present
+	 * @return the selected persistence unit name or the default one
+	 */
+	public static String persitenceUnitName(String[] args) {
+		return args.length > 0 ? args[0] : "postgresql-example";
+	}
 }

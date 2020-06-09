@@ -41,24 +41,43 @@ hibernate {
     }
 }
 
-// The following tasks run the example with
+// The following rules define a task to run
 // the different API available.
 //
 // They require the selected db ready
 // to accept connections.
-task runMainCompletionStage( type: JavaExec ) {
-    group = "Execution"
-    description = "Run example for CompletionStage API"
-    classpath = sourceSets.main.runtimeClasspath
-    main = "org.hibernate.example.reactive.Main"
+//
+// Examples:
+// gradle runExampleMySQLMain runExamplePostgreSQLMutinyMain
+def mainClasses = ['Main', 'MutinyMain']
+def dbs = ['PostgreSQL', 'MySQL']
+
+dbs.each { db ->
+    tasks.addRule( "Pattern runExampleOn${db}<mainClass>" ) { String taskName ->
+        if ( taskName.startsWith( "runExampleOn${db}" ) ) {
+            task( type: JavaExec, taskName ) {
+                def  mainClass = taskName.substring( "runExampleOn${db}".length() )
+                group = "Execution"
+                description = "Run ${mainClass} on ${db}"
+                classpath = sourceSets.main.runtimeClasspath
+                main = "org.hibernate.example.reactive.${mainClass}"
+                // The persistence unit name defined in resources/META-INF/persitence.xml
+                args db.toLowerCase() + '-example'
+            }
+        }
+    }
 }
 
-task runMainMutiny( type: JavaExec ) {
-    group = "Execution"
-    description = "Run example for Mutiny API"
-    classpath = sourceSets.main.runtimeClasspath
-    main = "org.hibernate.example.reactive.MutinyMain"
+task runAllExamplesOnPostgreSQL(
+        dependsOn: mainClasses.collect( [] as HashSet ) { mainClass -> "runExampleOnPostgreSQL${mainClass}" } ) {
+    description = "Run ${mainClasses} on PostgreSQL"
 }
 
-task runMainAll( dependsOn: ["runMainCompletionStage", "runMainMutiny"] ) {
+task runAllExamplesOnMySQL(
+        dependsOn: mainClasses.collect( [] as HashSet ) { mainClass -> "runExampleOnMySQL${mainClass}" } ) {
+    description = "Run ${mainClasses} on MySQL"
+}
+
+task runAllExamples( dependsOn: ["runAllExamplesOnPostgreSQL", "runAllExamplesOnMySQL"] ) {
+    description = "Run  examples on ${mainClasses}"
 }
