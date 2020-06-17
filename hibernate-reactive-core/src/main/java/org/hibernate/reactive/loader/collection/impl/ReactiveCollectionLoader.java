@@ -6,15 +6,14 @@
 package org.hibernate.reactive.loader.collection.impl;
 
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.LoadQueryInfluencers;
-import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.*;
 import org.hibernate.loader.collection.CollectionLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
+import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.collection.QueryableCollection;
-import org.hibernate.reactive.loader.ReactiveLoader;
+import org.hibernate.reactive.ReactiveLoaderBasedLoader;
+import org.hibernate.reactive.loader.ReactiveLoaderBasedResultSetProcessor;
+import org.hibernate.reactive.loader.ReactiveResultSetProcessor;
 import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
@@ -35,13 +34,16 @@ import static org.hibernate.pretty.MessageHelper.collectionInfoString;
  * @see org.hibernate.loader.collection.CollectionLoader
  */
 public class ReactiveCollectionLoader extends CollectionLoader
-		implements ReactiveCollectionInitializer, ReactiveLoader {
+		implements ReactiveCollectionInitializer, ReactiveLoaderBasedLoader {
 
+	private final ReactiveResultSetProcessor reactiveResultSetProcessor;
 	public ReactiveCollectionLoader(
 			QueryableCollection collectionPersister,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers) {
 		super(collectionPersister, factory, loadQueryInfluencers);
+		this.reactiveResultSetProcessor = new ReactiveLoaderBasedResultSetProcessor( this );
+
 	}
 
 	protected CompletionStage<List<Object>> doReactiveQueryAndInitializeNonLazyCollections(
@@ -129,6 +131,11 @@ public class ReactiveCollectionLoader extends CollectionLoader
 	}
 
 	@Override
+	public ReactiveResultSetProcessor getReactiveResultSetProcessor() {
+		return reactiveResultSetProcessor;
+	}
+
+	@Override
 	public String preprocessSQL(String sql,
 								QueryParameters queryParameters,
 								SessionFactoryImplementor factory,
@@ -144,14 +151,41 @@ public class ReactiveCollectionLoader extends CollectionLoader
 										 boolean returnProxies,
 										 ResultTransformer forcedResultTransformer,
 										 int maxRows, List<AfterLoadAction> afterLoadActions) throws SQLException {
-		return super.processResultSet(
-				resultSet,
+		throw new UnsupportedOperationException( "use #reactiveProcessResultSet instead." );
+	}
+
+	@Override
+	public boolean isSubselectLoadingEnabled() {
+		return super.isSubselectLoadingEnabled();
+	}
+
+	@Override
+	public List<Object> getRowsFromResultSet(
+			ResultSet rs,
+			QueryParameters queryParameters,
+			SharedSessionContractImplementor session,
+			boolean returnProxies,
+			ResultTransformer forcedResultTransformer,
+			int maxRows,
+			List<Object> hydratedObjects,
+			List<EntityKey[]> subselectResultKeys) throws SQLException {
+		return super.getRowsFromResultSet( rs,
 				queryParameters,
 				session,
 				returnProxies,
 				forcedResultTransformer,
 				maxRows,
-				afterLoadActions
-		);
+				hydratedObjects,
+				subselectResultKeys);
+	}
+
+	@Override
+	public void createSubselects(List keys, QueryParameters queryParameters, SharedSessionContractImplementor session) {
+		super.createSubselects( keys, queryParameters, session );
+	}
+
+	@Override
+	public void endCollectionLoad(Object resultSetId, SharedSessionContractImplementor session, CollectionPersister collectionPersister) {
+		super.endCollectionLoad( resultSetId, session, collectionPersister );
 	}
 }

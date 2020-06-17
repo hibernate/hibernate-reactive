@@ -5,17 +5,11 @@
  */
 package org.hibernate.reactive.loader;
 
-import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
 import org.hibernate.dialect.pagination.LimitHandler;
 import org.hibernate.dialect.pagination.LimitHelper;
 import org.hibernate.dialect.pagination.NoopLimitHandler;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.RowSelection;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.*;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
@@ -27,9 +21,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-
-import static org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor.toParameterArray;
 
 /**
  * Defines common reactive operations inherited by all kinds of loaders.
@@ -66,7 +57,32 @@ public interface ReactiveLoader {
 			queryParameters.setReadOnly( persistenceContext.isDefaultReadOnly() );
 		}
 		persistenceContext.beforeLoad();
-		return doReactiveQuery( sql, session, queryParameters, returnProxies, forcedResultTransformer )
+
+		final List<AfterLoadAction> afterLoadActions = new ArrayList<>();
+
+		return executeReactiveQueryStatement(
+				sql,
+				queryParameters,
+				afterLoadActions,
+				session
+		)
+				.thenCompose( resultSet -> {
+						try {
+							discoverTypes( queryParameters, resultSet );
+							return reactiveProcessResultSet(
+									resultSet,
+									queryParameters,
+									session,
+									returnProxies,
+									forcedResultTransformer,
+									afterLoadActions
+							);
+						}
+						catch (SQLException sqle) {
+							//don't log or convert it - just pass it on to the caller
+							throw new JDBCException( "could not load batch", sqle );
+						}
+				})
 				.whenComplete( (list, e) -> persistenceContext.afterLoad() )
 				.thenCompose( list ->
 						// only initialize non-lazy collections after everything else has been refreshed
@@ -76,52 +92,11 @@ public interface ReactiveLoader {
 				.whenComplete( (list, e) -> persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig) );
 	}
 
-	default CompletionStage<List<Object>> doReactiveQuery(
-			String sql,
-			final SessionImplementor session,
-			final QueryParameters queryParameters,
-			final boolean returnProxies,
-			final ResultTransformer forcedResultTransformer) throws HibernateException {
-
-		final RowSelection selection = queryParameters.getRowSelection();
-		final int maxRows = LimitHelper.hasMaxRows( selection ) ?
-				selection.getMaxRows() :
-				Integer.MAX_VALUE;
-
-		final List<AfterLoadAction> afterLoadActions = new ArrayList<>();
-
-		return executeReactiveQueryStatement(
-				sql,
-				queryParameters,
-				afterLoadActions,
-				session,
-				resultSet -> {
-					try {
-						discoverTypes( queryParameters, resultSet );
-						return processResultSet(
-								resultSet,
-								queryParameters,
-								session,
-								returnProxies,
-								forcedResultTransformer,
-								maxRows,
-								afterLoadActions
-						);
-					}
-					catch (SQLException sqle) {
-						//don't log or convert it - just pass it on to the caller
-						throw new JDBCException( "could not load batch", sqle );
-					}
-				}
-		);
-	}
-
-	default CompletionStage<List<Object>> executeReactiveQueryStatement(
+	default CompletionStage<ResultSet> executeReactiveQueryStatement(
 			String sqlStatement,
 			QueryParameters queryParameters,
 			List<AfterLoadAction> afterLoadActions,
-			SessionImplementor session,
-			Function<ResultSet, List<Object>> transformer) {
+			SessionImplementor session) {
 
 		// Processing query filters.
 		queryParameters.processFilters( sqlStatement, session );
@@ -135,8 +110,7 @@ public interface ReactiveLoader {
 
 		return session.unwrap(ReactiveSession.class)
 				.getReactiveConnection()
-				.selectJdbc( sql, toParameterArray(queryParameters, session) )
-				.thenApply( transformer );
+				.selectJdbc( sql, toParameterArray(queryParameters, session) );
 	}
 
 	default LimitHandler limitHandler(RowSelection selection, SharedSessionContractImplementor session) {
@@ -144,13 +118,27 @@ public interface ReactiveLoader {
 		return LimitHelper.useLimit( limitHandler, selection ) ? limitHandler : NoopLimitHandler.INSTANCE;
 	}
 
-	List<Object> processResultSet(ResultSet rs,
-								  QueryParameters queryParameters,
-								  SharedSessionContractImplementor session,
-								  boolean returnProxies,
-								  ResultTransformer forcedResultTransformer,
-								  int maxRows,
-								  List<AfterLoadAction> afterLoadActions) throws SQLException;
+	default CompletionStage<List<Object>> reactiveProcessResultSet(
+			ResultSet rs,
+			QueryParameters queryParameters,
+			SharedSessionContractImplementor session,
+			boolean returnProxies,
+			ResultTransformer forcedResultTransformer,
+			List<AfterLoadAction> afterLoadActions) throws SQLException {
+
+		return getReactiveResultSetProcessor().reactiveExtractResults(
+				rs,
+				session,
+				queryParameters,
+				null,
+				returnProxies,
+				queryParameters.isReadOnly( session ),
+				forcedResultTransformer,
+				afterLoadActions
+		);
+	}
+
+	ReactiveResultSetProcessor getReactiveResultSetProcessor();
 
 	/**
 	 * Used by query loaders to add stuff like locking and hints/comments

@@ -8,18 +8,25 @@ package org.hibernate.reactive.loader.entity.impl;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
-import org.hibernate.engine.spi.LoadQueryInfluencers;
-import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.*;
+import org.hibernate.event.service.spi.EventListenerRegistry;
+import org.hibernate.event.spi.*;
 import org.hibernate.loader.entity.plan.AbstractLoadPlanBasedEntityLoader;
 import org.hibernate.loader.plan.exec.internal.EntityLoadQueryDetails;
+import org.hibernate.loader.plan.exec.process.internal.AbstractRowReader;
+import org.hibernate.loader.plan.exec.process.internal.HydratedEntityRegistration;
+import org.hibernate.loader.plan.exec.process.internal.ResultSetProcessingContextImpl;
+import org.hibernate.loader.plan.exec.process.internal.ResultSetProcessorImpl;
+import org.hibernate.loader.plan.exec.process.spi.ReaderCollector;
 import org.hibernate.loader.plan.exec.query.internal.QueryBuildingParametersImpl;
+import org.hibernate.loader.plan.exec.query.spi.NamedParameterContext;
 import org.hibernate.loader.plan.exec.query.spi.QueryBuildingParameters;
+import org.hibernate.loader.plan.exec.spi.AliasResolutionContext;
+import org.hibernate.loader.plan.spi.LoadPlan;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.reactive.loader.ReactiveLoader;
+import org.hibernate.reactive.loader.ReactiveResultSetProcessor;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
@@ -121,14 +128,31 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		}
 	}
 
+	private final ReactiveResultSetProcessor reactiveResultSetProcessor;
+
 	private ReactivePlanEntityLoader(
 			SessionFactoryImplementor factory,
 			OuterJoinLoadable persister,
 			String[] uniqueKeyColumnNames,
 			Type uniqueKeyType,
 			QueryBuildingParameters buildingParameters) throws MappingException {
-		super( persister, factory, uniqueKeyColumnNames, uniqueKeyType, buildingParameters );
+		super(
+				persister,
+				factory,
+				uniqueKeyColumnNames,
+				uniqueKeyType,
+				buildingParameters,
+				(loadPlan, aliasResolutionContext, readerCollector, shouldUseOptionalEntityInstance, hadSubselectFetches)
+						-> new ReactiveLoadPlanBasedResultSetProcessor(
+								loadPlan,
+								aliasResolutionContext,
+								new ReactiveRowReader( readerCollector ),
+								shouldUseOptionalEntityInstance,
+								hadSubselectFetches
+						)
+		);
 		this.persister = persister;
+		this.reactiveResultSetProcessor = (ReactiveResultSetProcessor) getStaticLoadQuery().getResultSetProcessor();
 	}
 
 	private ReactivePlanEntityLoader(
@@ -137,8 +161,23 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 			ReactivePlanEntityLoader entityLoaderTemplate,
 			Type uniqueKeyType,
 			QueryBuildingParameters buildingParameters) throws MappingException {
-		super( persister, factory, entityLoaderTemplate.getStaticLoadQuery(), uniqueKeyType, buildingParameters );
+		super(
+				persister,
+				factory,
+				entityLoaderTemplate.getStaticLoadQuery(),
+				uniqueKeyType,
+				buildingParameters,
+				(loadPlan, aliasResolutionContext, readerCollector, shouldUseOptionalEntityInstance, hadSubselectFetches)
+						-> new ReactiveLoadPlanBasedResultSetProcessor(
+						loadPlan,
+						aliasResolutionContext,
+						new ReactiveRowReader( readerCollector ),
+						shouldUseOptionalEntityInstance,
+						hadSubselectFetches
+				)
+		);
 		this.persister = persister;
+		this.reactiveResultSetProcessor = (ReactiveResultSetProcessor) getStaticLoadQuery().getResultSetProcessor();
 	}
 
 	@Override
@@ -206,26 +245,8 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		return super.getFactory();
 	}
 
-	@Override @SuppressWarnings("unchecked")
-	public List<Object> processResultSet(ResultSet resultSet,
-										 QueryParameters queryParameters,
-										 SharedSessionContractImplementor session,
-										 boolean returnProxies,
-										 ResultTransformer forcedResultTransformer,
-										 int maxRows,
-										 List<AfterLoadAction> afterLoadActions) throws SQLException {
-		return getStaticLoadQuery()
-				.getResultSetProcessor()
-				.extractResults(
-						resultSet,
-						session,
-						queryParameters,
-						null,
-						false,
-						false,
-						null,
-						afterLoadActions
-				);
+	public ReactiveResultSetProcessor getReactiveResultSetProcessor() {
+		return reactiveResultSetProcessor;
 	}
 
 	@Override
@@ -235,5 +256,174 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 								List<AfterLoadAction> afterLoadActions) {
 		//TODO!!!
 		return sql;
+	}
+
+	private static class ReactiveLoadPlanBasedResultSetProcessor extends ResultSetProcessorImpl
+			implements ReactiveResultSetProcessor {
+
+		private final ReactiveRowReader rowReader;
+
+		public ReactiveLoadPlanBasedResultSetProcessor(
+				LoadPlan loadPlan,
+				AliasResolutionContext aliasResolutionContext,
+				ReactiveRowReader rowReader,
+				boolean shouldUseOptionalEntityInstance,
+				boolean hadSubselectFetches) {
+			super(
+					loadPlan,
+					aliasResolutionContext,
+					rowReader,
+					shouldUseOptionalEntityInstance,
+					hadSubselectFetches
+			);
+			this.rowReader = rowReader;
+		}
+
+		@Override
+		public List<Object> extractResults(
+				ResultSet resultSet,
+				final SharedSessionContractImplementor session,
+				QueryParameters queryParameters,
+				NamedParameterContext namedParameterContext,
+				boolean returnProxies,
+				boolean readOnly,
+				ResultTransformer forcedResultTransformer,
+				List<AfterLoadAction> afterLoadActionList) throws SQLException {
+			throw new UnsupportedOperationException( "#reactiveExtractResults should be used instead" );
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public CompletionStage<List<Object>> reactiveExtractResults(
+				ResultSet resultSet,
+				final SharedSessionContractImplementor session,
+				QueryParameters queryParameters,
+				NamedParameterContext namedParameterContext,
+				boolean returnProxies,
+				boolean readOnly,
+				ResultTransformer forcedResultTransformer,
+				List<AfterLoadAction> afterLoadActionList) throws SQLException {
+
+			handlePotentiallyEmptyCollectionRootReturns( queryParameters.getCollectionKeys(), resultSet, session );
+
+			final ResultSetProcessingContextImpl context = createResultSetProcessingContext(
+					resultSet,
+					session,
+					queryParameters,
+					namedParameterContext,
+					returnProxies,
+					readOnly
+			);
+
+			final List loadResults = extractRows( resultSet, queryParameters, context );
+
+			return CompletionStages.nullFuture()
+					.thenCompose( v ->  rowReader.reactiveFinishUp( this, context, afterLoadActionList) )
+					.thenApply( vv -> {
+						context.wrapUp();
+						return loadResults;
+					});
+		}
+	}
+
+	private static class ReactiveRowReader extends AbstractRowReader {
+
+		private final ReaderCollector readerCollector;
+
+		public ReactiveRowReader(ReaderCollector readerCollector) {
+			super( readerCollector );
+			this.readerCollector = readerCollector;
+		}
+
+		@Override
+		protected Object readLogicalRow(ResultSet resultSet, ResultSetProcessingContextImpl context) throws SQLException {
+			return readerCollector.getReturnReader().read( resultSet, context ) ;
+		}
+
+		@Override
+		public void finishUp(ResultSetProcessingContextImpl context, List<AfterLoadAction> afterLoadActionList) {
+			throw new UnsupportedOperationException( "Use #reactiveFinishUp instead." );
+		}
+
+		public CompletionStage<Void> reactiveFinishUp(
+				ReactiveLoadPlanBasedResultSetProcessor resultSetProcessor,
+				ResultSetProcessingContextImpl context,
+				List<AfterLoadAction> afterLoadActionList) {
+			final List<HydratedEntityRegistration> hydratedEntityRegistrations = context.getHydratedEntityRegistrationList();
+
+			// for arrays, we should end the collection load before resolving the entities, since the
+			// actual array instances are not instantiated during loading
+			finishLoadingArrays( context );
+
+			// IMPORTANT: reuse the same event instances for performance!
+			final PreLoadEvent preLoadEvent;
+			final PostLoadEvent postLoadEvent;
+			if ( context.getSession().isEventSource() ) {
+				preLoadEvent = new PreLoadEvent( (EventSource) context.getSession() );
+				postLoadEvent = new PostLoadEvent( (EventSource) context.getSession() );
+			}
+			else {
+				preLoadEvent = null;
+				postLoadEvent = null;
+			}
+
+			// now finish loading the entities (2-phase load)
+			return CompletionStages.nullFuture()
+					.thenCompose( v -> reactivePerformTwoPhaseLoad(
+							resultSetProcessor,
+							preLoadEvent,
+							context,
+							hydratedEntityRegistrations ) )
+					.thenApply( vv -> {
+
+						// now we can finalize loading collections
+						finishLoadingCollections( context );
+
+						// and trigger the afterInitialize() hooks
+						afterInitialize( context, hydratedEntityRegistrations );
+
+						// finally, perform post-load operations
+						postLoad( postLoadEvent, context, hydratedEntityRegistrations, afterLoadActionList );
+						return null;
+					});
+		}
+
+		public CompletionStage<Void> reactivePerformTwoPhaseLoad(
+				ReactiveLoadPlanBasedResultSetProcessor resultSetProcessor,
+				PreLoadEvent preLoadEvent,
+				ResultSetProcessingContextImpl context,
+				List<HydratedEntityRegistration> hydratedEntityRegistrations) {
+			final int numberOfHydratedObjects = hydratedEntityRegistrations == null
+					? 0
+					: hydratedEntityRegistrations.size();
+			//log.tracev( "Total objects hydrated: {0}", numberOfHydratedObjects );
+
+			CompletionStage<Void> stage = CompletionStages.nullFuture();
+
+			if ( numberOfHydratedObjects == 0 ) {
+				return stage;
+			}
+
+			final SharedSessionContractImplementor session = context.getSession();
+			final Iterable<PreLoadEventListener> listeners = session
+					.getFactory()
+					.getServiceRegistry()
+					.getService( EventListenerRegistry.class )
+					.getEventListenerGroup( EventType.PRE_LOAD )
+					.listeners();
+
+			for ( HydratedEntityRegistration registration : hydratedEntityRegistrations ) {
+				final EntityEntry entityEntry = session.getPersistenceContext().getEntry( registration.getInstance() );
+				stage = stage.thenCompose( v -> resultSetProcessor.initializeEntity(
+						registration.getInstance(),
+						false,
+						session,
+						preLoadEvent,
+						listeners
+				));
+			}
+
+			return stage;
+		}
 	}
 }

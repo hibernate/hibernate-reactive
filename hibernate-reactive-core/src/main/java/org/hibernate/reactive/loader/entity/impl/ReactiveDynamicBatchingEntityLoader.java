@@ -92,7 +92,7 @@ class ReactiveDynamicBatchingEntityLoader extends ReactiveEntityLoader {
 	}
 
 	@Override
-	protected boolean isSubselectLoadingEnabled() {
+	public boolean isSubselectLoadingEnabled() {
 		return persister.hasSubselectLoadableCollections();
 	}
 
