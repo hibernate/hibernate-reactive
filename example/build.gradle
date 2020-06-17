@@ -25,6 +25,7 @@ dependencies {
 buildscript {
     repositories {
         mavenCentral()
+        mavenLocal()
     }
     dependencies {
         classpath "org.hibernate:hibernate-gradle-plugin:${hibernateOrmVersion}"

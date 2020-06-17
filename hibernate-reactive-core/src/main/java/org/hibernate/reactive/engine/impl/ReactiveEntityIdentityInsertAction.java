@@ -12,7 +12,6 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 import java.util.concurrent.CompletionStage;
@@ -45,19 +44,20 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 
 	@Override
 	public CompletionStage<Void> reactiveExecute() throws HibernateException {
-		return reactiveNullifyTransientReferencesIfNotAlready().thenCompose( v-> {
 
-			final EntityPersister persister = getPersister();
-			final SharedSessionContractImplementor session = getSession();
-			final Object instance = getInstance();
+		CompletionStage<Void> stage = reactiveNullifyTransientReferencesIfNotAlready();
 
-			setVeto( preInsert() );
+		final EntityPersister persister = getPersister();
+		final SharedSessionContractImplementor session = getSession();
+		final Object instance = getInstance();
 
-			// Don't need to lock the cache here, since if someone
-			// else inserted the same pk first, the insert would fail
+		setVeto( preInsert() );
 
-			if ( !isVeto() ) {
-				return ((ReactiveEntityPersister) persister).insertReactive( getState(), instance, session )
+		// Don't need to lock the cache here, since if someone
+		// else inserted the same pk first, the insert would fail
+
+		if ( !isVeto() ) {
+			return stage.thenCompose( v -> ( (ReactiveEntityPersister) persister ).insertReactive( getState(), instance, session ) )
 					.thenAccept( generatedId -> {
 						setGeneratedId(generatedId);
 						if (persister.hasInsertGeneratedProperties()) {
@@ -85,9 +85,8 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 			else {
 				postInsert();
 				markExecuted();
-				return CompletionStages.nullFuture();
+				return stage;
 			}
-		} );
 	}
 
 	@Override

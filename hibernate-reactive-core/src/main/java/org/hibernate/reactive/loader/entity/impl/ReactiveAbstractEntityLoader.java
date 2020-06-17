@@ -7,16 +7,15 @@ package org.hibernate.reactive.loader.entity.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
-import org.hibernate.engine.spi.LoadQueryInfluencers;
-import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.*;
 import org.hibernate.loader.entity.AbstractEntityLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
+import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.Loadable;
 import org.hibernate.persister.entity.OuterJoinLoadable;
-import org.hibernate.reactive.loader.ReactiveLoader;
+import org.hibernate.reactive.ReactiveLoaderBasedLoader;
+import org.hibernate.reactive.loader.ReactiveLoaderBasedResultSetProcessor;
+import org.hibernate.reactive.loader.ReactiveResultSetProcessor;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
@@ -36,7 +35,9 @@ import static org.hibernate.pretty.MessageHelper.infoString;
  * @see org.hibernate.loader.entity.AbstractEntityLoader
  */
 public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
-		implements ReactiveUniqueEntityLoader, ReactiveLoader {
+		implements ReactiveUniqueEntityLoader, ReactiveLoaderBasedLoader {
+
+	private final ReactiveLoaderBasedResultSetProcessor resultSetProcessor;
 
 	protected ReactiveAbstractEntityLoader(
 			OuterJoinLoadable persister,
@@ -44,6 +45,7 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers) {
 		super( persister, uniqueKeyType, factory, loadQueryInfluencers );
+		resultSetProcessor = new ReactiveLoaderBasedResultSetProcessor( this );
 	}
 
 	protected CompletionStage<List<Object>> doReactiveQueryAndInitializeNonLazyCollections(
@@ -182,22 +184,59 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 		return super.preprocessSQL(sql, queryParameters, factory, afterLoadActions);
 	}
 
-	@Override @SuppressWarnings("unchecked")
+	@Override
 	public List<Object> processResultSet(ResultSet resultSet,
 										 QueryParameters queryParameters,
 										 SharedSessionContractImplementor session,
 										 boolean returnProxies,
 										 ResultTransformer forcedResultTransformer,
 										 int maxRows, List<AfterLoadAction> afterLoadActions) throws SQLException {
-		return super.processResultSet(
-				resultSet,
+		throw new UnsupportedOperationException( "use #reactiveProcessResultSet instead." );
+	}
+
+	@Override
+	public ReactiveResultSetProcessor getReactiveResultSetProcessor() {
+		return resultSetProcessor;
+	}
+
+	@Override
+	public boolean isSubselectLoadingEnabled() {
+		return super.isSubselectLoadingEnabled();
+	}
+
+	@Override
+	public List<Object> getRowsFromResultSet(
+			ResultSet rs,
+			QueryParameters queryParameters,
+			SharedSessionContractImplementor session,
+			boolean returnProxies,
+			ResultTransformer forcedResultTransformer,
+			int maxRows,
+			List<Object> hydratedObjects,
+			List<EntityKey[]> subselectResultKeys) throws SQLException {
+		return super.getRowsFromResultSet(
+				rs,
 				queryParameters,
 				session,
 				returnProxies,
 				forcedResultTransformer,
 				maxRows,
-				afterLoadActions
+				hydratedObjects,
+				subselectResultKeys
 		);
+	}
+
+	@Override
+	public void createSubselects(
+			final List keys,
+			final QueryParameters queryParameters,
+			final SharedSessionContractImplementor session) {
+		super.createSubselects( keys, queryParameters, session );
+	}
+
+	@Override
+	public void endCollectionLoad(Object resultSetId, SharedSessionContractImplementor session, CollectionPersister collectionPersister) {
+		super.endCollectionLoad( resultSetId, session, collectionPersister );
 	}
 
 	@Override
