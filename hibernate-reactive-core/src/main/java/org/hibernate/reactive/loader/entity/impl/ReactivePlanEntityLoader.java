@@ -258,6 +258,9 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		return sql;
 	}
 
+	/**
+	 * A "reactive" version of hibernate-orm's {@link ResultSetProcessorImpl}
+	 */
 	private static class ReactiveLoadPlanBasedResultSetProcessor extends ResultSetProcessorImpl
 			implements ReactiveResultSetProcessor {
 
@@ -292,6 +295,9 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 			throw new UnsupportedOperationException( "#reactiveExtractResults should be used instead" );
 		}
 
+		/**
+		 * This method is based on {@link ResultSetProcessorImpl#extractResults}
+		 */
 		@Override
 		@SuppressWarnings("unchecked")
 		public CompletionStage<List<Object>> reactiveExtractResults(
@@ -326,6 +332,9 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		}
 	}
 
+	/**
+	 * A "reactive" version of hibernate-orm's {@link AbstractRowReader}
+	 */
 	private static class ReactiveRowReader extends AbstractRowReader {
 
 		private final ReaderCollector readerCollector;
@@ -345,6 +354,9 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 			throw new UnsupportedOperationException( "Use #reactiveFinishUp instead." );
 		}
 
+		/**
+		 * This method is based on {@link AbstractRowReader#finishUp}
+		 */
 		public CompletionStage<Void> reactiveFinishUp(
 				ReactiveLoadPlanBasedResultSetProcessor resultSetProcessor,
 				ResultSetProcessingContextImpl context,
@@ -388,6 +400,9 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 					});
 		}
 
+		/**
+		 * This method is based on {@link AbstractRowReader#performTwoPhaseLoad}
+		 */
 		public CompletionStage<Void> reactivePerformTwoPhaseLoad(
 				ReactiveLoadPlanBasedResultSetProcessor resultSetProcessor,
 				PreLoadEvent preLoadEvent,
