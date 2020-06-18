@@ -24,6 +24,10 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * An interface intended to unify how a ResultSet is processed by
+ * by {@link ReactiveLoader} implementations..
+ */
 public interface ReactiveResultSetProcessor {
 
 	CoreMessageLogger LOG = CoreLogging.messageLogger(ReactiveLoaderBasedResultSetProcessor.class);

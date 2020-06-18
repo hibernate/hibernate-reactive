@@ -48,6 +48,9 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 				.listeners();
 	}
 
+	/**
+	 * This method is based on {@link Loader#processResultSet}
+	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public CompletionStage<List<Object>> reactiveExtractResults(
@@ -91,6 +94,9 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 				});
 	}
 
+	/**
+	 * This method is based on {@link Loader#initializeEntitiesAndCollections}
+	 */
 	private CompletionStage<Void> reactiveInitializeEntitiesAndCollections(
 			final List<Object> hydratedObjects,
 			final Object resultSetId,
