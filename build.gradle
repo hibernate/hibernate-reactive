@@ -51,6 +51,7 @@ subprojects {
         // Only enable these for local development, never push it:
         // mavenLocal()
         // jcenter()
+        // maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
         mavenCentral()
     }
     
