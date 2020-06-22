@@ -24,7 +24,7 @@ public class MutinyMain {
 		// standard JPA configuration properties specified in
 		// resources/META-INF/persistence.xml
 		SessionFactory factory =
-				createEntityManagerFactory( persitenceUnitName( args ) )
+				createEntityManagerFactory( persistenceUnitName( args ) )
 						.unwrap(SessionFactory.class);
 
 		// define some test data
@@ -135,7 +135,7 @@ public class MutinyMain {
 	 * @param args the first element is the persistence unit name if present
 	 * @return the selected persistence unit name or the default one
 	 */
-	public static String persitenceUnitName(String[] args) {
+	public static String persistenceUnitName(String[] args) {
 		return args.length > 0 ? args[0] : "postgresql-example";
 	}
 }
