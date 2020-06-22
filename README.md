@@ -345,17 +345,17 @@ all associations.
 
 There is no block optimization for the `SEQUENCE` and `TABLE` id generators.
 
-### Batch inserts and updates
+#### Batch inserts and updates
 
 Currently there is no support for batched inserts and updates. The setting
 `hibernate.jdbc.batch_size` is ignored.
 
-### Query language
+#### Query language
 
 HQL `update` and `delete` queries which affect multiple tables (due to the
 use of `TABLE_PER_CLASS` or `JOINED` inheritance mapping) are not working.
 
-### Subselect fetching
+#### Subselect fetching
 
 Subselect fetching `@Fetch(SUBSELECT)` is not yet working.
 
