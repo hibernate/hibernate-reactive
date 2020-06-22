@@ -10,6 +10,7 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.cfg.Configuration;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.persistence.CascadeType;
@@ -85,6 +86,31 @@ public class EagerTest extends BaseReactiveTest {
 							context.assertTrue( Hibernate.isInitialized( element.node ) );
 							context.assertTrue( Hibernate.isInitialized( element.node.elements ) );
 							context.assertEquals( 3, element.node.elements.size() );
+						} )
+		);
+	}
+
+	@Test @Ignore
+	public void testEagerParentFetchQuery(TestContext context) {
+
+		Node basik = new Node("Child");
+		basik.parent = new Node("Parent");
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+
+		test(context,
+				openSession()
+						.thenCompose(s -> s.persist(basik))
+						.thenCompose(s -> s.flush())
+						.thenCompose(v -> openSession())
+						.thenCompose(s -> s.createQuery( "from Element", Element.class ).getResultList())
+						.thenAccept( elements -> {
+							for (Element element: elements) {
+								context.assertTrue( Hibernate.isInitialized( element.node ) );
+								context.assertTrue( Hibernate.isInitialized( element.node.elements ) );
+								context.assertEquals( 3, element.node.elements.size() );
+							}
 						} )
 		);
 	}
