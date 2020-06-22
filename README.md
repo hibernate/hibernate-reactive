@@ -341,28 +341,27 @@ features:
 Instead, use `@OneToMany(mappedBy=...)` together with `@ManyToOne` for 
 all associations.
 
-#### Eager association fetching
-
-Hibernate Reactive does not support eager association fetching via 
-subsequent SQL select for `@ManyToOne` (or `@OneToOne`) associations, 
-so the following mappings are disallowed:
-
-- `@ManyToOne(fetch=EAGER) @Fetch(SELECT)`, and 
-- `@ManyToOne(fetch=EAGER) @Fetch(SUBSELECT)`.
-
-Instead, you must choose between:
-
-- lazy fetching, for example, `@ManyToOne @Fetch(SELECT)` or
-  `@ManyToOne @Fetch(SUBSELECT)`, or
-- eager fetching via outer join, `@ManyToOne(fetch=EAGER)`.
-
-As usual, we recommend that all association mappings be declared lazy.
-
 #### Identifier generation
 
 There is no block optimization for the `SEQUENCE` and `TABLE` id generators.
 
+### Batch inserts and updates
+
+Currently there is no support for batched inserts and updates. The setting
+`hibernate.jdbc.batch_size` is ignored.
+
+### Query language
+
+HQL `update` and `delete` queries which affect multiple tables (due to the
+use of `TABLE_PER_CLASS` or `JOINED` inheritance mapping) are not working.
+
+### Subselect fetching
+
+Subselect fetching `@Fetch(SUBSELECT)` is not yet working.
+
 #### Caching
+
+The query cache is not yet supported.
 
 Note that you should not use Hibernate Reactive with a second-level cache 
 implementation which performs blocking IO, for example passivation to the
