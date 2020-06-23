@@ -51,7 +51,13 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 		this.factory = factory;
 		this.selectClause = selectClause;
 		this.resultSetProcessor = new ReactiveLoaderBasedResultSetProcessor( this ) {
-			public CompletionStage<List<Object>> reactiveExtractResults(ResultSet rs, SharedSessionContractImplementor session, QueryParameters queryParameters, NamedParameterContext namedParameterContext, boolean returnProxies, boolean readOnly, ResultTransformer forcedResultTransformer, List<AfterLoadAction> afterLoadActionList) throws SQLException {
+			public CompletionStage<List<Object>> reactiveExtractResults(ResultSet rs,
+																		SharedSessionContractImplementor session,
+																		QueryParameters queryParameters,
+																		NamedParameterContext namedParameterContext,
+																		boolean returnProxies, boolean readOnly,
+																		ResultTransformer forcedResultTransformer,
+																		List<AfterLoadAction> afterLoadActionList) throws SQLException {
 				final RowSelection rowSelection = queryParameters.getRowSelection();
 				final ResultSet resultSetPreprocessed = preprocessResultSet(
 						rs,
@@ -60,7 +66,16 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 						false,
 						session
 				);
-				return super.reactiveExtractResults( resultSetPreprocessed, session, queryParameters, namedParameterContext, returnProxies, readOnly, forcedResultTransformer, afterLoadActionList );
+				return super.reactiveExtractResults(
+						resultSetPreprocessed,
+						session,
+						queryParameters,
+						namedParameterContext,
+						returnProxies,
+						readOnly,
+						forcedResultTransformer,
+						afterLoadActionList
+				);
 			}
 		};
 	}
