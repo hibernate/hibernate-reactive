@@ -67,7 +67,6 @@ public interface ReactiveLoader {
 				session
 		)
 				.thenCompose( resultSet -> {
-						try {
 							discoverTypes( queryParameters, resultSet );
 							return reactiveProcessResultSet(
 									resultSet,
@@ -77,11 +76,6 @@ public interface ReactiveLoader {
 									forcedResultTransformer,
 									afterLoadActions
 							);
-						}
-						catch (SQLException sqle) {
-							//don't log or convert it - just pass it on to the caller
-							throw new JDBCException( "could not load batch", sqle );
-						}
 				})
 				.whenComplete( (list, e) -> persistenceContext.afterLoad() )
 				.thenCompose( list ->
@@ -124,18 +118,24 @@ public interface ReactiveLoader {
 			SharedSessionContractImplementor session,
 			boolean returnProxies,
 			ResultTransformer forcedResultTransformer,
-			List<AfterLoadAction> afterLoadActions) throws SQLException {
-
-		return getReactiveResultSetProcessor().reactiveExtractResults(
-				rs,
-				session,
-				queryParameters,
-				null,
-				returnProxies,
-				queryParameters.isReadOnly( session ),
-				forcedResultTransformer,
-				afterLoadActions
-		);
+			List<AfterLoadAction> afterLoadActions) {
+		try {
+			return getReactiveResultSetProcessor()
+					.reactiveExtractResults(
+							rs,
+							session,
+							queryParameters,
+							null,
+							returnProxies,
+							queryParameters.isReadOnly( session ),
+							forcedResultTransformer,
+							afterLoadActions
+					);
+		}
+		catch (SQLException sqle) {
+			//don't log or convert it - just pass it on to the caller
+			throw new JDBCException( "could not load batch", sqle );
+		}
 	}
 
 	ReactiveResultSetProcessor getReactiveResultSetProcessor();
