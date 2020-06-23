@@ -59,11 +59,10 @@ public interface ReactiveResultSetProcessor {
 				entity,
 				entityEntry,
 				session,
-				(entityType, value, session1, owner, overridingEager) -> (
-						entityType.isEager( overridingEager )
+				(entityType, value, session1, owner, overridingEager)
+						-> entityType.isEager( overridingEager )
 								? ((ReactiveSession) session1).reactiveGet( entityType.getReturnedClass(), (Serializable) value )
 								: entityType.resolve(value, session1, owner, overridingEager)
-				)
 		);
 
 		CompletionStage<Void> stage = CompletionStages.nullFuture();
@@ -73,23 +72,17 @@ public interface ReactiveResultSetProcessor {
 			if ( hydratedState[ i ] instanceof CompletionStage ) {
 				final int iConstant = i;
 				stage = stage.thenCompose( v -> (CompletionStage<Object>) hydratedState[ iConstant ] )
-						.thenApply( initializedEntity -> {
-							hydratedState[ iConstant ] = initializedEntity;
-							return null;
-						});
+						.thenAccept( initializedEntity -> hydratedState[ iConstant ] = initializedEntity );
 			}
 		}
 
-		return stage.thenApply( v -> {
-				TwoPhaseLoad.initializeEntityFromEntityEntryLoadedState(
-						entity,
-						entityEntry,
-						readOnly,
-						session,
-						preLoadEvent,
-						listeners
-				);
-				return null;
-		});
+		return stage.thenAccept( v -> TwoPhaseLoad.initializeEntityFromEntityEntryLoadedState(
+				entity,
+				entityEntry,
+				readOnly,
+				session,
+				preLoadEvent,
+				listeners
+		) );
 	}
 }

@@ -86,12 +86,12 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 						session,
 						queryParameters.isReadOnly(session),
 						afterLoadActionList))
-				.thenApply(vv -> {
+				.thenAccept(v -> {
 					if (createSubselects) {
 						loader.createSubselects(subselectResultKeys, queryParameters, session);
 					}
-					return results;
-				});
+				})
+				.thenApply(v -> results);
 	}
 
 	/**
@@ -146,7 +146,7 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 			}
 		}
 
-		return stage.thenApply(v -> {
+		return stage.thenAccept(v -> {
 			if (collectionPersisters != null) {
 				for (CollectionPersister collectionPersister : collectionPersisters) {
 					if (!collectionPersister.isArray()) {
@@ -187,7 +187,6 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 					}
 				}
 			}
-			return null;
 		});
 	}
 }
