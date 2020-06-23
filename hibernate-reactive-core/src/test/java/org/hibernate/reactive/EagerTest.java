@@ -63,6 +63,9 @@ public class EagerTest extends BaseReactiveTest {
 						.thenAccept( node -> {
 							context.assertTrue( Hibernate.isInitialized( node.elements ) );
 							context.assertEquals( 3, node.elements.size() );
+							for ( Element element : node.elements ) {
+								context.assertTrue( element.node == node );
+							}
 						} )
 		);
 	}
@@ -155,7 +158,7 @@ public class EagerTest extends BaseReactiveTest {
 		Integer id;
 
 		@ManyToOne
-//		@Fetch(FetchMode.SELECT)
+		@Fetch(FetchMode.SELECT)
 		Node node;
 
 		public Element(Node node) {
