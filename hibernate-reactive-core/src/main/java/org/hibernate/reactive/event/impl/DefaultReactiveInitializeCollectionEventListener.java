@@ -81,7 +81,8 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 						} );
 			}
 		}
-		throw new AssertionError("Shouldn't be here");
+		// Collection was already initialized.
+		return CompletionStages.nullFuture();
 	}
 
 	/**
