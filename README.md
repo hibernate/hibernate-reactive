@@ -355,10 +355,6 @@ Currently there is no support for batched inserts and updates. The setting
 HQL `update` and `delete` queries which affect multiple tables (due to the
 use of `TABLE_PER_CLASS` or `JOINED` inheritance mapping) are not working.
 
-#### Subselect fetching
-
-Subselect fetching `@Fetch(SUBSELECT)` is not yet working.
-
 #### Caching
 
 The query cache is not yet supported.
