@@ -29,6 +29,7 @@ import org.hibernate.service.spi.Stoppable;
 
 import java.net.URI;
 import java.sql.ResultSet;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
@@ -285,6 +286,11 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		@Override
 		public CompletionStage<Integer> update(String sql, Object[] paramValues) {
 			return connection().thenCompose( conn -> conn.update(sql, paramValues) );
+		}
+
+		@Override
+		public CompletionStage<Integer[]> update(String sql, List<Object[]> paramValues) {
+			return connection().thenCompose( conn -> conn.update( sql, paramValues ) );
 		}
 
 		@Override

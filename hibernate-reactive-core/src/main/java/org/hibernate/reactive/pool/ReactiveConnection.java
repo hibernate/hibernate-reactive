@@ -9,6 +9,7 @@ import org.hibernate.Incubating;
 
 import java.sql.ResultSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -25,6 +26,7 @@ public interface ReactiveConnection {
 
 	CompletionStage<Integer> update(String sql);
 	CompletionStage<Integer> update(String sql, Object[] paramValues);
+	CompletionStage<Integer[]> update(String sql, List<Object[]> paramValues);
 	CompletionStage<Long> updateReturning(String sql, Object[] paramValues);
 
 	CompletionStage<Result> select(String sql);

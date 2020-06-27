@@ -22,6 +22,8 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
@@ -53,6 +55,15 @@ public class SqlClientConnection implements ReactiveConnection {
 	@Override
 	public CompletionStage<Integer> update(String sql, Object[] paramValues) {
 		return update( sql, Tuple.wrap( paramValues ) );
+	}
+
+	@Override
+	public CompletionStage<Integer[]> update(String sql, List<Object[]> batchParamValues) {
+		final List<Tuple> tuples = new ArrayList<>( batchParamValues.size() );
+		for ( Object[] paramValues : batchParamValues) {
+			tuples.add( Tuple.wrap( paramValues ) );
+		}
+		return updateBatch( sql, tuples );
 	}
 
 	@Override
@@ -100,6 +111,32 @@ public class SqlClientConnection implements ReactiveConnection {
 		return preparedQuery( sql, parameters ).thenApply(SqlResult::rowCount);
 	}
 
+	public CompletionStage<Integer[]> updateBatch(String sql, List<Tuple> parametersBatch) {
+		return preparedQueryBatch( sql, parametersBatch ).thenApply(result -> {
+
+			final Integer[] updateCounts = new Integer[ parametersBatch.size() ];
+
+			int i = 0;
+			RowSet resultNext = result;
+			if ( parametersBatch.size() > 0 ) {
+				do {
+					updateCounts[ i++ ] = resultNext.rowCount();
+					resultNext = resultNext.next();
+				} while ( resultNext != null && i < parametersBatch.size() );
+			}
+
+			if ( resultNext != null ) {
+				throw new IllegalStateException( "Number of results is greater than number of batched parameters." );
+			}
+
+			if ( i != parametersBatch.size() ) {
+				throw new IllegalStateException( "Number of results is not equal to number of batched parameters." );
+			}
+
+			return updateCounts;
+		});
+	}
+
 	public CompletionStage<Long> updateReturning(String sql, Tuple parameters) {
 		return preparedQuery( sql, parameters )
 				.thenApply( rows -> {
@@ -115,6 +152,14 @@ public class SqlClientConnection implements ReactiveConnection {
 		String processedSql = usePostgresStyleParameters ? Parameters.process( sql, parameters.size() ) : sql;
 		return Handlers.toCompletionStage(
 				handler -> client().preparedQuery( processedSql ).execute( parameters, handler )
+		);
+	}
+
+	public CompletionStage<RowSet<Row>> preparedQueryBatch(String sql, List<Tuple> parameters) {
+		feedback(sql);
+		String processedSql = usePostgresStyleParameters ? Parameters.process( sql, parameters.size() ) : sql;
+		return Handlers.toCompletionStage(
+				handler -> client().preparedQuery( processedSql ).executeBatch( parameters, handler )
 		);
 	}
 
