@@ -186,7 +186,6 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	protected CompletionStage<Void> entityIsPersistent(MergeEvent event, MergeContext copyCache) {
 		LOG.trace( "Ignoring persistent instance" );
 
-		//TODO: check that entry.getIdentifier().equals(requestedId)
 
 		final Object entity = event.getEntity();
 		final EventSource source = event.getSession();
@@ -335,8 +334,6 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 								});
 					}
 					else {
-						//TODO: we should throw an exception if we really *know* for sure
-						//      that this is a detached instance, rather than just assuming
 						//throw new StaleObjectStateException(entityName, id);
 
 						// we got here because we assumed that an instance
@@ -365,9 +362,6 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			final PersistentAttributeInterceptor incomingInterceptor = ( (PersistentAttributeInterceptable) incoming ).$$_hibernate_getInterceptor();
 			final PersistentAttributeInterceptor managedInterceptor = ( (PersistentAttributeInterceptable) managed ).$$_hibernate_getInterceptor();
 
-			// todo - do we need to specially handle the case where both `incoming` and `managed` are initialized, but
-			//		with different attributes initialized?
-			// 		- for now, assume we do not...
 
 			// if the managed entity is not a proxy, we can just return it
 			if ( ! ( managedInterceptor instanceof EnhancementAsProxyLazinessInterceptor ) ) {
@@ -380,7 +374,6 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			}
 
 			// otherwise, force initialization
-			//TODO: probably needs to be made async!
 			return persister.initializeEnhancedEntityUsedAsProxy( managed, null, source );
 		}
 
@@ -418,8 +411,6 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 				persister.getVersion( entity )
 		);
 
-		// TODO : perhaps we should additionally require that the incoming entity
-		// version be equivalent to the defined unsaved-value?
 		return changed && existsInDatabase( target, source, persister );
 	}
 
