@@ -200,7 +200,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			}
 		}
 
-		// TODO : shouldn't inserts be Expectations.NONE?
 		final Expectation expectation = appropriateExpectation( delegate().getInsertResultCheckStyles()[j] );
 //		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
 //		final boolean useBatch = expectation.canBeBatched() &&
@@ -264,7 +263,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		String identifierColumnName = delegate().getIdentifierColumnNames()[0];
 		ReactiveConnection connection = getReactiveConnection(session);
 		if ( factory.getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
-			//TODO: wooooo this is awful ... I believe the problem is fixed in Hibernate 6
 			if ( dialect instanceof PostgreSQL81Dialect) {
 				sql = sql + " returning " + identifierColumnName;
 			}
@@ -513,7 +511,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				}
 			}
 			else if ( isAllOrDirtyOptimisticLocking() && oldFields != null ) {
-				boolean[] versionability = delegate().getPropertyVersionability(); //TODO: is this really necessary????
+				boolean[] versionability = delegate().getPropertyVersionability(); 
 				boolean[] includeOldField = delegate().getEntityMetamodel().getOptimisticLockStyle() == OptimisticLockStyle.ALL
 						? delegate().getPropertyUpdateability()
 						: includeProperty;
@@ -521,7 +519,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				for (int i = 0; i < delegate().getEntityMetamodel().getPropertySpan(); i++ ) {
 					boolean include = includeOldField[i] &&
 							delegate().isPropertyOfTable( i, j ) &&
-							versionability[i]; //TODO: is this really necessary????
+							versionability[i]; 
 					if ( include ) {
 						boolean[] settable = types[i].toColumnNullness( oldFields[i], delegate().getFactory() );
 						types[i].nullSafeSet(
