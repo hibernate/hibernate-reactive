@@ -148,7 +148,6 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 
 		event.setPropertyValues( values );
 
-		//TODO: avoid this for non-new instances where mightBeDirty==false
 		boolean substitute = wrapCollections( session, persister, types, values );
 
 		if ( isUpdateNecessary( event, mightBeDirty ) ) {
@@ -452,7 +451,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 
 			int[] dirtyProperties = event.getDirtyProperties();
 			if ( dirtyProperties != null && dirtyProperties.length != 0 ) {
-				return true; //TODO: suck into event class
+				return true; 
 			}
 			else {
 				return hasDirtyCollections( event, persister, status );
@@ -511,7 +510,6 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 					int[] dirty = persister.resolveAttributeIndexes( ( (SelfDirtinessTracker) entity ).$$_hibernate_getDirtyAttributes() );
 
 					// HHH-12051 - filter non-updatable attributes
-					// TODO: add Updateability to EnhancementContext and skip dirty tracking of those attributes
 					int count = 0;
 					for ( int i : dirty ) {
 						if ( persister.getPropertyUpdateability()[i] ) {
@@ -706,7 +704,6 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 			}
 			return snapshot;
 		}
-		// TODO: optimize away this lookup for entities w/o unsaved-value="undefined"
 		final EntityKey entityKey = session.generateEntityKey( id, persister );
 		return persistenceContext.getCachedDatabaseSnapshot( entityKey );
 	}
