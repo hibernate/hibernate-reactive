@@ -260,6 +260,11 @@ public class MutinySessionImpl implements Mutiny.Session {
 			case ALWAYS:
 				delegate.setHibernateFlushMode(FlushMode.ALWAYS);
 				break;
+			//missing default case
+        		default:
+           			 // add default case
+           			break;
+
 		}
 		return this;
 	}
