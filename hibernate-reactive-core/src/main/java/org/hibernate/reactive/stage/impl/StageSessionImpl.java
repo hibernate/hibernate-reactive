@@ -253,6 +253,11 @@ public class StageSessionImpl implements Stage.Session {
 			case ALWAYS:
 				delegate.setHibernateFlushMode(org.hibernate.FlushMode.ALWAYS);
 				break;
+			//missing default case
+        		default:
+            			// add default case
+            			break;
+
 		}
 		return this;
 	}
