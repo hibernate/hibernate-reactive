@@ -18,7 +18,6 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
-import org.hibernate.reactive.stage.Stage;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,31 +34,29 @@ public abstract class BaseMutinyTest {
 	private org.hibernate.SessionFactory sessionFactory;
 	private ReactiveConnectionPool poolProvider;
 
-	protected static void test(TestContext context, Uni<?> cs) {
-		// this will be added to TestContext in the next vert.x release
+	protected static void test(TestContext context, Uni<?> uni) {
 		Async async = context.async();
-		cs.convert()
-				.toCompletionStage()
-				.whenComplete( (res, err) -> {
-					if ( res instanceof Stage.Session ) {
-						Stage.Session s = (Stage.Session) res;
-						if ( s.isOpen() ) {
-							s.close();
+		uni.subscribe().with(
+				res -> {
+					if ( res instanceof Mutiny.Session) {
+						Mutiny.Session session = (Mutiny.Session) res;
+						if ( session.isOpen() ) {
+							session.close();
 						}
 					}
-					if ( err != null ) {
-						context.fail( err );
-					}
-					else {
-						async.complete();
-					}
-				} );
+					async.complete();
+				},
+				throwable -> {
+					context.fail( throwable );
+				}
+		);
 	}
 
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
 		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
 		configuration.setProperty( Settings.URL, DatabaseConfiguration.getJdbcUrl() );
+
 		//Use JAVA_TOOL_OPTIONS='-Dhibernate.show_sql=true'
 		configuration.setProperty( Settings.SHOW_SQL, System.getProperty(Settings.SHOW_SQL, "false") );
 		return configuration;
