@@ -28,6 +28,7 @@ import org.hibernate.engine.query.spi.sql.NativeSQLQueryReturn;
 import org.hibernate.engine.query.spi.sql.NativeSQLQueryRootReturn;
 import org.hibernate.engine.query.spi.sql.NativeSQLQueryScalarReturn;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
+import org.hibernate.engine.spi.ExceptionConverter;
 import org.hibernate.engine.spi.NamedQueryDefinition;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.QueryParameters;
@@ -67,6 +68,7 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.Query;
 import org.hibernate.query.internal.ParameterMetadataImpl;
+import org.hibernate.reactive.common.ReactiveExceptionConverter;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
@@ -100,6 +102,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -115,6 +118,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	private transient ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
 	private final ReactiveConnection reactiveConnection;
+
+	//Lazily initialized
+	private transient ExceptionConverter exceptionConverter;
 
 	public ReactiveSessionImpl(SessionFactoryImpl delegate, SessionCreationOptions options,
 							   ReactiveConnection connection) {
@@ -853,11 +859,21 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
-					if ( e instanceof RuntimeException ) {
-						throw getExceptionConverter().convert( (RuntimeException) e );
+					if ( e instanceof CompletionException ) {
+						if ( e.getCause() instanceof RuntimeException ) {
+							e = getExceptionConverter().convert( (RuntimeException) e.getCause() );
+						}
 					}
 					return CompletionStages.returnNullorRethrow( e );
 				} );
+	}
+
+	@Override
+	public ExceptionConverter getExceptionConverter() {
+		if ( exceptionConverter == null ) {
+			exceptionConverter = new ReactiveExceptionConverter( this );
+		}
+		return exceptionConverter;
 	}
 
 	@Override
