@@ -378,7 +378,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Deprecated
 	@Override
 	public void initializeCollection(PersistentCollection collection, boolean writing) {
-		throw getExceptionConverter().convert( new UnsupportedOperationException( "ReactiveSessionImpl#initializeCollection not supported, use reactiveInitializeCollection instead" ) );
+		String message = "Collection cannot be initialized";
+		if ( collection != null) {
+			message +=  ": " + collection.getRole();
+		}
+		throw new LazyInitializationException( message );
 	}
 
 	public CompletionStage<Void> reactiveInitializeCollection(PersistentCollection collection, boolean writing) {
