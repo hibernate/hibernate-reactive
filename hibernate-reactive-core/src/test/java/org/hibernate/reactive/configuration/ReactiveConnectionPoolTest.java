@@ -11,9 +11,9 @@ import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
-import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.pool.impl.SqlClientPool;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.hibernate.reactive.testing.TestingRegistryRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,10 +25,13 @@ import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
-import static org.junit.Assume.assumeTrue;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.*;
 
 @RunWith(VertxUnitRunner.class)
 public class ReactiveConnectionPoolTest {
+
+	@Rule
+	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
 
 	@Rule
 	public Timeout rule = Timeout.seconds( 3600 );
@@ -62,9 +65,6 @@ public class ReactiveConnectionPoolTest {
 
 	@Test
 	public void configureWithJdbcUrl(TestContext context) {
-		// This test doesn't need to rotate across all DBs and has PG-specific logic in it
-		assumeTrue( DatabaseConfiguration.dbType() == DBType.POSTGRESQL );
-
 		String url = DatabaseConfiguration.getJdbcUrl();
 		Map<String,Object> config = new HashMap<>();
 		config.put( Settings.URL, url );
@@ -74,9 +74,6 @@ public class ReactiveConnectionPoolTest {
 
 	@Test
 	public void configureWithCredentials(TestContext context) {
-		// This test doesn't need to rotate across all DBs and has PG-specific logic in it
-		assumeTrue( DatabaseConfiguration.dbType() == DBType.POSTGRESQL );
-
 		// Set up URL with invalid credentials so we can ensure that
 		// explicit USER and PASS settings take precedence over credentials in the URL
 		String url = DatabaseConfiguration.getJdbcUrl();
@@ -95,9 +92,6 @@ public class ReactiveConnectionPoolTest {
 
 	@Test
 	public void configureWithWrongCredentials(TestContext context) {
-		// This test doesn't need to rotate across all DBs and has PG-specific logic in it
-		assumeTrue( DatabaseConfiguration.dbType() == DBType.POSTGRESQL );
-
 		thrown.expect( CompletionException.class );
 		thrown.expectMessage( "io.vertx.pgclient.PgException:" );
 		thrown.expectMessage( "\"bogus\"" );

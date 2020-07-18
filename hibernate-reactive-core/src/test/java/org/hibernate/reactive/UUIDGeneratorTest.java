@@ -7,6 +7,10 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+
+import org.junit.Rule;
 import org.junit.Test;
 
 import javax.persistence.Column;
@@ -17,11 +21,11 @@ import javax.persistence.Version;
 import java.util.Objects;
 import java.util.UUID;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
-import static org.junit.Assume.assumeFalse;
 
 public class UUIDGeneratorTest extends BaseReactiveTest {
+
+	@Rule // Storing UUID doesn't work with DB2
+	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( DatabaseConfiguration.DBType.DB2 );
 
 	@Override
 	protected Configuration constructConfiguration() {
@@ -32,9 +36,6 @@ public class UUIDGeneratorTest extends BaseReactiveTest {
 
 	@Test
 	public void testUUIDGenerator(TestContext context) {
-
-		assumeFalse( dbType() == DBType.DB2 );
-
 		TableId b = new TableId();
 		b.string = "Hello World";
 

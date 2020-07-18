@@ -9,8 +9,6 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
-import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -20,7 +18,6 @@ import javax.persistence.metamodel.EntityType;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assume.assumeFalse;
 
 public class MutinySessionTest extends BaseMutinyTest {
 
@@ -103,11 +100,6 @@ public class MutinySessionTest extends BaseMutinyTest {
 
 	@Test
 	public void reactiveFindWithLock(TestContext context) {
-		// TODO @AGG
-		// The DB2 driver does not yet support a few types (BigDecimal, BigInteger, LocalTime)
-		// so we need to keep a separate copy around for testing DB2 (DB2BasicTest)
-		assumeFalse( DatabaseConfiguration.dbType() == DBType.DB2 );
-
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
