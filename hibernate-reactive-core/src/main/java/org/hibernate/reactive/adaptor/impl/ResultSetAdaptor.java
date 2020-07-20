@@ -250,12 +250,14 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public <T> T getObject(int columnIndex, Class<T> type) {
-		return row.get(type, columnIndex);
+		T object = row.get(type, columnIndex);
+		return (wasNull=object==null) ? null : object;
 	}
 
 	@Override
 	public <T> T getObject(String columnLabel, Class<T> type) {
-		return row.get( type, row.getColumnIndex(columnLabel) );
+		T object = row.get( type, row.getColumnIndex(columnLabel) );
+		return (wasNull=object==null) ? null : object;
 	}
 
 	@Override
@@ -404,12 +406,14 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Object getObject(int columnIndex) {
-		return row.getValue( columnIndex );
+		Object object = row.getValue( columnIndex );
+		return (wasNull=object==null) ? null : object;
 	}
 
 	@Override
 	public Object getObject(String columnLabel) {
-		return row.getValue( columnLabel );
+		Object object = row.getValue( columnLabel );
+		return (wasNull=object==null) ? null : object;
 	}
 
 	@Override
