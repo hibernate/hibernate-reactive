@@ -10,6 +10,7 @@ import java.math.BigInteger;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Consumer;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -85,6 +86,14 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testUUIDType(TestContext context) throws Exception {
+		Basic basic = new Basic();
+		basic.uuid = UUID.fromString( "123e4567-e89b-42d3-a456-556642440000" );
+
+		testField( context, basic, found -> context.assertEquals( basic.uuid, found.uuid ) );
+	}
+
+	@Test
 	public void testDecimalType(TestContext context) throws Exception {
 		Basic basic = new Basic();
 		basic.bigDecimal = new BigDecimal( 12.12d );
@@ -134,6 +143,8 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 		@Id @GeneratedValue Integer id;
 		@Version Integer version;
 		String string;
+
+		UUID uuid;
 
 		@Column(name="dessimal")
 		BigDecimal bigDecimal;
