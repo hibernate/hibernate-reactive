@@ -10,6 +10,7 @@ import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowIterator;
 import io.vertx.sqlclient.RowSet;
 import org.hibernate.cfg.NotYetImplementedException;
+import org.hibernate.engine.jdbc.BlobProxy;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -637,7 +638,10 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Blob getBlob(String columnLabel) {
-		throw new UnsupportedOperationException();
+		Buffer buffer = (Buffer) row.getValue( columnLabel );
+		return ( wasNull = buffer == null )
+				? null
+				: BlobProxy.generateProxy( buffer.getBytes() );
 	}
 
 	@Override

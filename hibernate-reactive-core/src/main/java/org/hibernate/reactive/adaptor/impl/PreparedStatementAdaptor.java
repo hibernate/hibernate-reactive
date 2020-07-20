@@ -6,8 +6,12 @@
 package org.hibernate.reactive.adaptor.impl;
 
 import io.vertx.core.buffer.Buffer;
-import org.hibernate.AssertionFailure;
 
+import org.hibernate.AssertionFailure;
+import org.hibernate.HibernateException;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -309,8 +313,24 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 	}
 
 	@Override
-	public void setBinaryStream(int parameterIndex, InputStream x, long length) {
-		throw new UnsupportedOperationException();
+	public void setBinaryStream(int parameterIndex, InputStream is, long length) {
+		try {
+			put( parameterIndex, convertToBuffer( is ) );
+		}
+		catch (IOException e) {
+			throw new HibernateException( e );
+		}
+	}
+
+	private static Buffer convertToBuffer(InputStream is) throws IOException {
+		ByteArrayOutputStream bytesStream = new ByteArrayOutputStream();
+		int nRead;
+		byte[] data = new byte[1024];
+		while ( ( nRead = is.read( data, 0, data.length ) ) != -1 ) {
+			bytesStream.write( data, 0, nRead );
+		}
+		bytesStream.flush();
+		return Buffer.buffer( bytesStream.toByteArray() );
 	}
 
 	@Override
