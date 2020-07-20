@@ -7,8 +7,11 @@ package org.hibernate.reactive.types;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Time;
+import java.text.SimpleDateFormat;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -18,6 +21,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Lob;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 import javax.persistence.Version;
 
 import org.hibernate.cfg.Configuration;
@@ -120,6 +125,20 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 		) );
 	}
 
+	@Test
+	public void testDateAsTimeType(TestContext context) throws Exception {
+		Date date = new Date();
+
+		Basic basic = new Basic();
+		basic.dateAsTime = date;
+
+		testField( context, basic, found -> {
+			SimpleDateFormat timeSdf = new SimpleDateFormat( "HH:mm:ss" );
+			context.assertTrue( found.dateAsTime instanceof Time );
+			context.assertEquals( timeSdf.format( date ), timeSdf.format( found.dateAsTime ) );
+		} );
+	}
+
 	/**
 	 * Persist the entity, find it and execute the assertions
 	 */
@@ -150,8 +169,11 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 		BigDecimal bigDecimal;
 		@Column(name="inteja")
 		BigInteger bigInteger;
+
 		@Column(name="localtyme")
 		private LocalTime localTime;
+		@Temporal(TemporalType.TIME)
+		Date dateAsTime;
 
 		@Lob @Column(length = 100_000) protected byte[] pic;
 		@Lob @Column(length = 100_000) protected String book;
@@ -181,7 +203,6 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 		public void setId(Integer id) {
 			this.id = id;
 		}
-
 
 		@Override
 		public String toString() {

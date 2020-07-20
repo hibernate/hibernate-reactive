@@ -8,10 +8,13 @@ package org.hibernate.reactive.types;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.URL;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Objects;
 import java.util.TimeZone;
 import java.util.function.Consumer;
@@ -201,12 +204,67 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testDateAsTimestampType(TestContext context) throws Exception {
+		Date date = new Date();
+		Basic basic = new Basic();
+		basic.dateAsTimestamp = date;
+
+		testField( context, basic, found -> {
+			context.assertTrue( found.dateAsTimestamp instanceof Timestamp );
+			context.assertEquals( date, found.dateAsTimestamp );
+		} );
+	}
+
+	@Test
 	public void testTimeZoneType(TestContext context) throws Exception {
 		TimeZone timeZone = TimeZone.getTimeZone( "America/Los_Angeles" );
 		Basic basic = new Basic();
 		basic.timeZone = timeZone;
 
 		testField( context, basic, found -> context.assertEquals( basic.timeZone, found.timeZone ) );
+	}
+
+	@Test
+	public void testCalendarAsDateType(TestContext context) throws Exception {
+		Calendar calendar = GregorianCalendar.getInstance();
+		calendar.set( Calendar.DAY_OF_MONTH,  15);
+		calendar.set( Calendar.MONTH,  7);
+		calendar.set( Calendar.YEAR,  2002);
+
+		// TemporalType#Date only deals with year/month/day
+		int expectedYear = calendar.get( Calendar.YEAR );
+		int expectedMonth = calendar.get( Calendar.MONTH );
+		int expectedDay = calendar.get( Calendar.DAY_OF_MONTH );
+
+		Basic basic = new Basic();
+		basic.calendarAsDate = calendar;
+
+		testField( context, basic, found -> {
+			context.assertEquals( expectedDay, found.calendarAsDate.get( Calendar.DAY_OF_MONTH ) );
+			context.assertEquals( expectedMonth, found.calendarAsDate.get( Calendar.MONTH ) );
+			context.assertEquals( expectedYear, found.calendarAsDate.get( Calendar.YEAR ) );
+		} );
+	}
+
+	@Test
+	public void testCalendarAsTimestampType(TestContext context) throws Exception {
+		Calendar calendar = GregorianCalendar.getInstance();
+		calendar.set( Calendar.DAY_OF_MONTH, 15 );
+		calendar.set( Calendar.MONTH, 7 );
+		calendar.set( Calendar.YEAR, 2002 );
+		final String expected = format( calendar );
+		Basic basic = new Basic();
+		basic.calendarAsTimestamp = calendar;
+
+		testField( context, basic, found -> {
+			String actual = format( found.calendarAsTimestamp );
+			context.assertEquals( expected, actual );
+		} );
+	}
+
+	private static String format(Calendar calendar) {
+		SimpleDateFormat sdf = new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ss.SSS" );
+		return sdf.format( calendar.getTime() );
 	}
 
 	@Test
@@ -438,6 +496,14 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 		@Temporal(TemporalType.DATE)
 		Date date;
+		@Temporal(TemporalType.TIMESTAMP)
+		Date dateAsTimestamp;
+
+		@Temporal(TemporalType.DATE)
+		Calendar calendarAsDate;
+		@Temporal(TemporalType.TIMESTAMP)
+		Calendar calendarAsTimestamp;
+
 		@Column(name = "localdayte")
 		LocalDate localDate;
 		@Column(name = "alocalDT")
@@ -560,6 +626,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 			return Objects.hash( string );
 		}
 	}
+
 
 	@Converter
 	private static class BigIntegerAsString implements AttributeConverter<BigInteger, String> {
