@@ -33,7 +33,7 @@ ext {
     }
     // For ORM, we need a parsed version (to get the family, ...)
     hibernateOrmVersion = Version.parseProjectVersion( project.hibernateOrmVersion )
-    vertxVersion = '3.9.1'
+    vertxVersion = '3.9.2'
     testcontainersVersion = '1.14.3'
     baselineJavaVersion = 1.8
 }
