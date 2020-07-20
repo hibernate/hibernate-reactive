@@ -234,7 +234,7 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setDate(int parameterIndex, Date x, Calendar cal) {
-		throw new UnsupportedOperationException();
+		put( parameterIndex, x.toLocalDate() );
 	}
 
 	@Override
@@ -244,7 +244,7 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) {
-		throw new UnsupportedOperationException();
+		put( parameterIndex, x.toLocalDateTime() );
 	}
 
 	@Override
