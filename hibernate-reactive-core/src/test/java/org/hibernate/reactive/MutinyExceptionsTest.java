@@ -5,12 +5,12 @@
  */
 package org.hibernate.reactive;
 
-import java.util.concurrent.CompletionException;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.PersistenceException;
 
+import org.hibernate.HibernateException;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 
@@ -28,6 +28,10 @@ public class MutinyExceptionsTest extends BaseMutinyTest {
 		return configuration;
 	}
 
+	Class<?> getExpectedException() {
+		return PersistenceException.class;
+	}
+
 	@Test
 	public void testDuplicateKeyException(TestContext context) {
 		test( context, openSession()
@@ -37,9 +41,7 @@ public class MutinyExceptionsTest extends BaseMutinyTest {
 				.onItem().produceUni( session -> session.flush() )
 				.onItem().invoke( ignore -> context.fail( "Expected exception not thrown" ) )
 				.onFailure().recoverWithItem( err -> {
-					context.assertEquals( CompletionException.class, err.getClass() );
-					context.assertTrue( err.getCause() instanceof PersistenceException
-							, "Expected instance of " + PersistenceException.class.getName() + " but was " + err.getCause().getClass() );
+					context.assertEquals( getExpectedException(), err.getClass() );
 					return null;
 				} )
 		);
@@ -71,6 +73,12 @@ public class MutinyExceptionsTest extends BaseMutinyTest {
 	// I don't think we need to support this case but at the moment it would require more work to
 	// disable the behaviour.
 	public static class Native51ExceptionHandlingTest extends MutinyExceptionsTest {
+
+		@Override
+		Class<?> getExpectedException() {
+			return HibernateException.class;
+		}
+
 		@Override
 		protected Configuration constructConfiguration() {
 			Configuration configuration = super.constructConfiguration();
