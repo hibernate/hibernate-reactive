@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -30,17 +32,26 @@ public class IdentityGeneratorTest extends BaseReactiveTest {
 		return configuration;
 	}
 
-	private CompletionStage<?> populateDb() {
-		final Object[] identities = new EntityWithIdentity[ENTITY_NUMBER];
+	private CompletionStage<?> populateDb(TestContext context) {
+		final List<EntityWithIdentity> identities = new ArrayList<>( ENTITY_NUMBER );
 		for ( int i = 0; i < ENTITY_NUMBER; i++ ) {
-			identities[i] = new EntityWithIdentity( i );
+			identities.add( new EntityWithIdentity( i ) );
 		}
-		return getSessionFactory().withTransaction( (session, tx) -> session.persist( identities ) );
+		return getSessionFactory()
+				.withTransaction( (session, tx) -> session.persist( identities.toArray() ) )
+				.thenAccept( ignore -> {
+					Long assignedId = 0L;
+					for ( EntityWithIdentity identity : identities ) {
+						context.assertNotNull( identity.id );
+						context.assertTrue( identity.id > assignedId );
+						assignedId = identity.id;
+					}
+				} );
 	}
 
 	@Test
 	public void testIdentityGenerator(TestContext context) {
-		test( context, populateDb()
+		test( context, populateDb( context )
 				.thenCompose( $ -> openSession() )
 				.thenCompose( session ->
 					  session.createQuery( "FROM EntityWithIdentity ORDER BY position ASC", EntityWithIdentity.class )
