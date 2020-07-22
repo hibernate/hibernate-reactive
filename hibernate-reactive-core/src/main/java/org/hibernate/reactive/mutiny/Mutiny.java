@@ -146,7 +146,7 @@ public interface Mutiny {
 		 * @return the resulting rows via a {@link Multi}
 		 */
 		default Multi<R> getResults() {
-			return getResultList().onItem().produceMulti( list -> Multi.createFrom().iterable(list) );
+			return getResultList().onItem().transformToMulti( list -> Multi.createFrom().iterable( list ) );
 		}
 
 		/**

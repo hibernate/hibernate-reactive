@@ -376,14 +376,14 @@ public class MutinySessionImpl implements Mutiny.Session {
 					// have to capture the error here and pass it along,
 					// since we can't just return a CompletionStage that
 					// rolls back the transaction from the handle() function
-					.on().termination( this::processError )
+					.onTermination().invoke( this::processError )
 					// finally, commit or rollback the transaction, and
 					// then rethrow the caught error if necessary
 					.flatMap(
 							result -> end()
 									// make sure that if rollback() throws,
 									// the original error doesn't get swallowed
-									.on().termination( this::processError )
+									.onTermination().invoke( this::processError )
 									// finally rethrow the original error, if any
 									.map( v -> returnOrRethrow( error, result ) )
 					);
