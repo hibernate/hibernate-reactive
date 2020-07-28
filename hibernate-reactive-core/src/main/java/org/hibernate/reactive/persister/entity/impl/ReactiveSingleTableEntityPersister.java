@@ -187,9 +187,10 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public boolean check(int rows, Serializable id, int tableNumber,
-						 Expectation expectation, PreparedStatement statement) throws HibernateException {
-		return super.check(rows, id, tableNumber, expectation, statement);
+	public boolean check(
+			int rows, Serializable id, int tableNumber,
+			Expectation expectation, PreparedStatement statement, String sql) throws HibernateException {
+		return super.check(rows, id, tableNumber, expectation, statement, sql);
 	}
 
 	@Override

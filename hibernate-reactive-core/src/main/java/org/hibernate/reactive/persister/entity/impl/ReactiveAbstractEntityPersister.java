@@ -225,7 +225,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				.update( sql, params )
 				.thenAccept( count -> {
 					try {
-						expectation.verifyOutcome(count, new PreparedStatementAdaptor(), -1);
+						expectation.verifyOutcome( count, new PreparedStatementAdaptor(), -1, sql );
 					}
 					catch (SQLException e) {
 						//can't actually occur!
@@ -355,7 +355,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		return getReactiveConnection(session)
 				.update( sql, params )
-				.thenAccept( count -> check( count, id, j, expectation, new PreparedStatementAdaptor() ) );
+				.thenAccept( count -> check( count, id, j, expectation, new PreparedStatementAdaptor(), sql ) );
 	}
 
 	default CompletionStage<?> deleteReactive(
@@ -544,7 +544,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		return getReactiveConnection(session)
 				.update( sql, params )
-				.thenApply( count -> check( count, id, j, expectation, new PreparedStatementAdaptor() ) );
+				.thenApply( count -> check( count, id, j, expectation, new PreparedStatementAdaptor(), sql ) );
 	}
 
 	boolean check(
@@ -552,7 +552,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Serializable id,
 			int tableNumber,
 			Expectation expectation,
-			PreparedStatement statement) throws HibernateException;
+			PreparedStatement statement, String sql) throws HibernateException;
 
 	default CompletionStage<?> updateReactive(
 			final Serializable id,
