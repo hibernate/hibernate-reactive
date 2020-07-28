@@ -28,7 +28,7 @@ Hibernate Reactive has been tested with:
 - PostgreSQL 12
 - MySQL 8
 - DB2 11.5
-- [Hibernate ORM](https://hibernate.org/orm/) 5.4.17.Final
+- [Hibernate ORM](https://hibernate.org/orm/) 5.4.19.Final
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 3.9.2
 - [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 3.9.2
 - [Vert.x Reactive DB2 Client](https://vertx.io/docs/vertx-db2-client/java/) 3.9.2
