@@ -1,4 +1,352 @@
 [[getting-started]]
 = Getting started
 
-NOTE: This section is still incomplete.
+:example: https://github.com/hibernate/hibernate-reactive/tree/master/example
+
+Before you start, we recommend taking a quick look at the example
+program in the {example}[`example`] directory, which shows off all
+the "bits" you'll need to get your own program up and running.
+
+== Setting up a reactive Hibernate project
+
+Setting up a project that uses Hibernate Reactive isn't hard at all.
+
+If you're using Hibernate Reactive outside of the Quarkus environment,
+you'll need to:
+
+- include Hibernate Reactive itself along with the appropriate Vert.x
+  reactive database client as dependencies of your project, and
+- configure Hibernate Reactive with information about your database,
+  using Hibernate configuration properties.
+
+Or, if you're using Hibernate Reactive in Quarkus.... TODO
+
+=== Including Hibernate Reactive in your project build
+
+:build: https://github.com/hibernate/hibernate-reactive/blob/master/example/build.gradle
+:slf4j: http://www.slf4j.org/
+
+Add the following dependency to your project:
+
+    org.hibernate.reactive:hibernate-reactive-core:{version}
+
+Where `{version}` is the version of Hibernate Reactive you're using.
+
+You'll also need to add a dependency for the Vert.x reactive database
+driver for your database, for example:
+
+- `io.vertx:vertx-pg-client` for Postgres,
+- `io.vertx:vertx-mysql-client` for MySQL, or
+- `io.vertx:vertx-db2-client` for DB2.
+
+Optionally, you might also add:
+
+- an {slf4j}[SLF4J] logging implementation, for example,
+  `org.slf4j:slf4j-log4j12`,
+- `org.hibernate:hibernate-jpamodelgen` if you're using the JPA criteria
+  query API, and/or
+- the Hibernate bytecode enhancer if you want to use field-level lazy
+  fetching.
+
+TIP: Field-level lazy fetching is an advanced feature that most programs
+don't need. Stick to the basics for now.
+
+There's an example {build}[Gradle build] included in the example program.
+
+=== Configuration
+
+:xml: https://github.com/hibernate/hibernate-reactive/blob/master/example/src/main/resources/META-INF/persistence.xml
+
+Hibernate Reactive is configured via the standard JPA `persistence.xml`
+document which must be placed, as usual, in the `/META-INF` directory.
+
+The only configuration specific to Hibernate Reactive is the persistence
+`<provider>` element, which must be explicit:
+
+    <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
+
+Otherwise, configuration is almost completely transparent. Configure
+Hibernate exactly as you usually would, noting that most configuration
+properties related to JDBC or JTA aren't relevant in the context of
+Hibernate Reactive.
+
+Configuration properties of particular interest include:
+
+- `javax.persistence.jdbc.url`, the JDBC URL of your database,
+- `javax.persistence.jdbc.user` and `javax.persistence.jdbc.password`,
+the database credentials, and
+- `hibernate.connection.pool_size`, the size of the Vert.x reactive
+connection pool.
+
+The Vert.x database client has built-in connection pooling and prepared
+statement caching. When it comes time for performance tuning, you can
+further customize the pool and cache via the following properties:
+
+- `hibernate.vertx.pool.max_wait_queue_size`
+- `hibernate.vertx.prepared_statement_cache.max_size`
+- `hibernate.vertx.prepared_statement_cache.sql_limit`
+
+TIP: But for now, just leave these settings alone.
+
+An example {xml}[`persistence.xml`] file is included in the example
+program.
+
+=== Logging the generated SQL
+
+To see the generated SQL as it's sent to the database, either:
+
+- set the property `hibernate.show_sql` to `true`, or
+- enable debug-level logging for the category `org.hibernate.SQL`
+  in for your preferred SLF4J logging implementation.
+
+== Writing the Java code
+
+With that out of the way, we're all set to write some Java code!
+
+As is the case in any project that uses Hibernate, your
+persistence-related code comes in two main pieces:
+
+. a representation of your data model in Java, which takes the form
+  of a set of annotated entity classes, and
+. a larger number of functions which interact with Hibernate's APIs
+  to perform the persistence operations associated with your various
+  transactions.
+
+The first part, the data or "domain" model, is usually easier to write,
+but doing a great and very clean job of it will strongly affect your
+success in the second part.
+
+TIP: Take your time with this code, and try to produce a Java model
+that's as close as reasonable to the relational data model. Avoid using
+exotic or advanced mapping features when they're not really needed. And
+don't forget that most associations should be mapped for lazy fetching
+by default.
+
+The second part is much trickier. This code must:
+
+- manage transactions and reactive sessions,
+- construct reactive streams by chaining persistence operations invoked
+  on the reactive session,
+- fetch and prepare data needed by the UI, and
+- handle failures.
+
+TIP: Some responsibility for transaction and session management, and for
+recovery from certain kinds of failure, can be best handled in some sort
+of framework code.
+
+=== Mapping entity classes
+
+We won't have much to say about the entity classes here, simply because
+the principles behind mapping entity classes in Hibernate Reactive,
+along with the actual mapping annotations you'll use, are all identical
+to regular Hibernate ORM or other implementations of JPA.
+
+[source,java]
+----
+@Entity
+@Table(name="authors")
+class Author {
+    @Id @GeneratedValue
+    Integer id;
+
+    @NotNull @Size(max=100)
+    String name;
+
+    @OneToMany(mappedBy = "author", cascade = PERSIST)
+    List<Book> books = new ArrayList<>();
+
+    Author(String name) {
+        this.name = name;
+    }
+
+    Author() {}
+}
+----
+
+You're quite free to mix and match:
+
+- the regular JPA mapping annotations defined in the package
+  `javax.persistence` with
+- the advanced mapping annotations in `org.hibernate.annotations`.
+
+Most mapping annotations are already supported in Hibernate Reactive,
+though there are still a handful of limitations at this time.
+
+=== Identifier generation
+
+One area where the functionality of Hibernate Reactive diverges from plain
+Hibernate is in the area of id generation. Custom identifier generators
+written to work with Hibernate ORM and JDBC will not work in the reactive
+environment.
+
+- Sequence, table, and `UUID` id generation is built in, along with support
+  for assigned ids, and these id generation strategies may be selected using
+  the usual JPA mapping annotations.
+- Custom id generators may be defined by implementing `ReactiveIdentifierGenerator`
+  and declaring the custom implementation using `@GenericGenerator`.
+
+=== Obtaining a reactive session factory
+
+:Mutiny: https://smallrye.io/smallrye-mutiny/
+
+Reactive sessions must be obtained from a reactive `SessionFactory`.
+
+First, obtain a JPA `EntityManagerFactory` just as you normally would, for
+example, by calling:
+
+[java]
+----
+EntityManagerFactory emf = Persistence.createEntityManagerFactory("example");
+----
+
+Now, `unwrap()` the reactive `SessionFactory`:
+
+[java]
+----
+Stage.SessionFactory sessionFactory = emf.unwrap(Stage.SessionFactory.class);
+----
+
+The type `Stage.SessionFactory` gives access to reactive APIs based on
+Java's `CompletionStage`.
+
+If you prefer to use the {Mutiny}[Mutiny]-based API, `unwrap()` the type
+`Mutiny.SessionFactory`:
+
+[java]
+----
+Mutiny.SessionFactory sessionFactory = emf.unwrap(Mutiny.SessionFactory.class);
+----
+
+=== Obtaining a reactive session
+
+Persistence operations are exposed via a reactive `Session` object. It's very
+important to understand that most operations of this interface are non-blocking,
+and the operations against the database are never performed synchronously.
+
+To obtain a reactive `Session` from the `SessionFactory`, use `withSession()`:
+
+[java]
+----
+sessionFactory.withSession(
+        session -> ... //do some work
+);
+----
+
+Alternatively, you may use `openSession()`, but you must remember to `close()`
+the session when you're done.
+
+[java]
+----
+sessionFactory.openSession()
+        .thenCompose(
+            session -> ... //do some work
+                    .whenComplete( ($,e) -> session.close() )
+        );
+----
+
+=== Using the reactive session
+
+The `Session` interface has methods with the same names as methods of the
+JPA `EntityManager`. However, each of these methods returns its result via
+a `CompletionStage` (or Mutiny `Uni`), for example:
+
+[java]
+----
+session1.find(Book.class, book.id)
+        .thenAccept( book -> System.out.println(book.title + " is a great book!") )
+----
+
+Methods with no meaningful return value return a reference to the `Session`:
+
+[java]
+----
+session2.persist(book)
+        .thenCompose( $ -> session2.flush() )
+        .whenComplete( ($,e) -> session2.close() )
+----
+
+That `createQuery()` method produces a reactive `Query`, allowing HQL / JPQL
+queries to be executed asynchronously, always returning their results via a
+`CompletionStage`:
+
+[java]
+----
+session3.createQuery("select title from Book order by title desc")
+        .getResultList()
+        .thenAccept(System.out::println)
+----
+
+If you already know Hibernate, and if you already have some experience with
+reactive programming, there's not much new to learn here: you should
+immediately feel right at home.
+
+=== Fetching lazy associations
+
+In Hibernate ORM, lazy associations are fetched transparently when the
+association is fist accessed within a session.In Hibernate Reactive,
+association fetching is an asynchronous process that produces a result
+via a `CompletionStage` (or Mutiny `Uni`).
+
+Therefore, lazy fetching is an explicit operation named `fetch()`,
+a static method of `Stage` and `Mutiny`:
+
+[java]
+----
+session4.find(Author.class, author.id)
+        .thenCompose( author -> Stage.fetch(author.books) )
+        .thenAccept( books -> ... )
+----
+
+Of course, this isn't necessary if you fetch the association eagerly.
+
+TIP: It's very important to make sure you've fetched all the data that
+will be needed before passing control to the process that renders the
+UI! There is no transparent lazy fetching in Hibernate Reactive, so
+patterns like "open session in view" will _not help at all_.
+
+=== Field-level lazy fetching
+
+Similarly, field-level lazy fetching&mdash;an advanced feature, which
+is only supported in conjunction with Hibernate's optional compile-time
+bytecode enhancer&mdash;is also an explicit operation:
+
+[java]
+----
+session5.find(Book.class, book.id)
+        .thenCompose( book -> session.fetch(book, Book_.isbn) )
+        .thenAccept( isbn -> ... )
+----
+
+Note that the field to fetch is identified by a JPA metamodel `Attribute`.
+
+TIP: We don't encourage you to use field-level lazy fetching unless you
+have very specific requirements.
+
+=== Transactions
+
+The `withTransaction()` method performs work within the scope of a database
+transaction.
+
+[java]
+----
+session.withTransaction( tx -> session.persist(book) )
+----
+
+The session is automatically flushed at the end of the transaction.
+
+For extra convenience, there's a method that opens a session and starts a
+transaction in one call:
+
+[java]
+----
+sessionFactory.withTransaction( (session, tx) -> session.persist(book) )
+----
+
+== Next steps
+
+:Quarkus: https://quarkus.io/
+:Panache: https://quarkus.io/guides/hibernate-orm-panache
+
+Hibernate Reactive is now integrated in {Quarkus}[Quarkus] and {Panache}[Panache].
+Configuration works slightly differently in Quarkus, so be sure to check the Quarkus
+documentation for details.

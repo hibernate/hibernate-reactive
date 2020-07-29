@@ -1,4 +1,20 @@
 [[preface]]
 = Preface
 
-NOTE: This section is still incomplete.
+Hibernate Reactive is a reactive API for Hibernate ORM, supporting non-blocking database drivers and a reactive style of
+interaction with the database.
+
+Hibernate Reactive is intended for use in a reactive programming environment like Vert.x, where interaction with the
+database should occur in a non-blocking fashion. Persistence operations are orchestrated via the construction of a
+reactive stream rather than via direct invocation of synchronous functions in procedural Java code. The reactive stream
+is represented using a chain of Java ``CompletionStage``s or Mutiny ``Uni``s and ``Multi``s.
+
+Java persistence frameworks like JDBC, JPA and Hibernate ORM were designed to use blocking IO for interaction with the
+database, and are therefore not appropriate for use in a reactive environment. As far as we know, Hibernate Reactive
+is the first true ORM implementation designed to take advantage of non-blocking database clients. Out of the box, the
+Vert.x clients for PostgreSQL, MySQL, and DB2 are supported, though the architecture is not limited to these drivers.
+
+This programming paradigm holds the potential for improved scalability, and more controlled degradation under peak load,
+in some runtime scenarios. However, in general, one should not expect to see an immediate performance gain in all
+performance tests. Indeed, many programs will *not* benefit from the programming model, and those which do benefit might
+only benefit in very specific load scenarios.
