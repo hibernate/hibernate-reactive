@@ -235,7 +235,7 @@ and declaring the custom implementation using `@GenericGenerator`.
 There is a very simple example program in the [`example`][example] 
 directory.
 
-[example]: https://github.com/hibernate/hibernate-reactive/tree/master/example 
+[example]: https://github.com/hibernate/hibernate-reactive/tree/master/example
 
 ## Gradle build
 
