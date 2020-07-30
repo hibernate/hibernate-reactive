@@ -6,6 +6,7 @@
 package org.hibernate.reactive.types;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
 import java.sql.Timestamp;
@@ -321,6 +322,16 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testBigDecimalWithUserType(TestContext context) throws Exception {
+		Basic basic = new Basic();
+		basic.bigDecimalAsString = BigDecimal.TEN;
+
+		testField( context, basic, found -> {
+			context.assertEquals( BigInteger.TEN.floatValue(), found.bigDecimalAsString.floatValue() );
+		} );
+	}
+
+	@Test
 	public void testSerializableType(TestContext context) throws Exception {
 		String[] thing = { "hello", "world" };
 
@@ -511,6 +522,9 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 		@Convert(converter = BigIntegerAsString.class)
 		BigInteger bigIntegerAsString;
+
+		@Type(type="org.hibernate.reactive.types.BigDecimalAsString")
+		BigDecimal bigDecimalAsString;
 
 		Cover cover;
 		@Enumerated(value = EnumType.STRING)
