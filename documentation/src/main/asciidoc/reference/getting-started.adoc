@@ -39,12 +39,21 @@ driver for your database, for example:
 - `io.vertx:vertx-mysql-client` for MySQL, or
 - `io.vertx:vertx-db2-client` for DB2.
 
+You don't need to depend on the JDBC driver for your database (but you
+can if you like).
+
+=== Optional dependencies
+
 Optionally, you might also add:
 
 - an {slf4j}[SLF4J] logging implementation, for example,
   `org.slf4j:slf4j-log4j12`,
 - `org.hibernate:hibernate-jpamodelgen` if you're using the JPA criteria
-  query API, and/or
+  query API,
+- `org.hibernate.validator:hibernate-validator` and
+  `org.glassfish:jakarta.el` if you're using Hibernate Validator,
+- `org.hibernate:query-validator` to enable compile-time checking of your
+  HQL queries, and/or
 - the Hibernate bytecode enhancer if you want to use field-level lazy
   fetching.
 
@@ -74,19 +83,9 @@ Configuration properties of particular interest include:
 
 - `javax.persistence.jdbc.url`, the JDBC URL of your database,
 - `javax.persistence.jdbc.user` and `javax.persistence.jdbc.password`,
-the database credentials, and
-- `hibernate.connection.pool_size`, the size of the Vert.x reactive
-connection pool.
-
-The Vert.x database client has built-in connection pooling and prepared
-statement caching. When it comes time for performance tuning, you can
-further customize the pool and cache via the following properties:
-
-- `hibernate.vertx.pool.max_wait_queue_size`
-- `hibernate.vertx.prepared_statement_cache.max_size`
-- `hibernate.vertx.prepared_statement_cache.sql_limit`
-
-TIP: But for now, just leave these settings alone.
+the database credentials,
+- `javax.persistence.schema-generation.database.action`, for enabling
+  automatic schema export.
 
 An example {xml}[`persistence.xml`] file is included in the example
 program.
@@ -98,6 +97,29 @@ To see the generated SQL as it's sent to the database, either:
 - set the property `hibernate.show_sql` to `true`, or
 - enable debug-level logging for the category `org.hibernate.SQL`
   in for your preferred SLF4J logging implementation.
+
+For example, if you're using Log4J via `slf4j-log4j12`, add this line:
+
+    log4j.logger.org.hibernate.SQL=DEBUG
+
+to your `log4j.properties` file.
+
+=== Tuning the Vert.x pool
+
+The Vert.x database client has built-in connection pooling and prepared
+statement caching.
+
+- Use `hibernate.connection.pool_size` to set the size of the reactive
+  connection pool.
+
+When it comes time for performance tuning, you can further customize the
+pool and cache via the following properties:
+
+- `hibernate.vertx.pool.max_wait_queue_size`
+- `hibernate.vertx.prepared_statement_cache.max_size`
+- `hibernate.vertx.prepared_statement_cache.sql_limit`
+
+TIP: But for now, just leave these three settings alone.
 
 == Writing the Java code
 
@@ -118,11 +140,12 @@ success in the second part.
 
 TIP: Take your time with this code, and try to produce a Java model
 that's as close as reasonable to the relational data model. Avoid using
-exotic or advanced mapping features when they're not really needed. And
-don't forget that most associations should be mapped for lazy fetching
-by default.
+exotic or advanced mapping features when they're not really needed.
+When in the slightest doubt, map a foreign key relationship using
+`@ManyToOne` with `@OneToMany(mappedBy=...)` in preference to more
+complicated association mappings.
 
-The second part is much trickier. This code must:
+The second part of the code is much trickier to get right. This code must:
 
 - manage transactions and reactive sessions,
 - construct reactive streams by chaining persistence operations invoked
@@ -139,7 +162,9 @@ of framework code.
 We won't have much to say about the entity classes here, simply because
 the principles behind mapping entity classes in Hibernate Reactive,
 along with the actual mapping annotations you'll use, are all identical
-to regular Hibernate ORM or other implementations of JPA.
+to regular Hibernate ORM and other implementations of JPA.
+
+For example:
 
 [source,java]
 ----
@@ -176,14 +201,28 @@ though there are still a handful of limitations at this time.
 
 One area where the functionality of Hibernate Reactive diverges from plain
 Hibernate is in the area of id generation. Custom identifier generators
-written to work with Hibernate ORM and JDBC will not work in the reactive
+written to work with Hibernate ORM and JDBC will _not_ work in the reactive
 environment.
 
-- Sequence, table, and `UUID` id generation is built in, along with support
-  for assigned ids, and these id generation strategies may be selected using
-  the usual JPA mapping annotations.
+- Sequence, table, and `UUID` id generation is built in, and these id
+  generation strategies may be selected using the usual JPA mapping
+  annotations: `@GeneratedValue`, `@TableGenerator`, `@SequenceGenerator`.
+- Natural ids&mdash;including composite ids&mdash;may be assigned by the
+  program in the usual way.
 - Custom id generators may be defined by implementing `ReactiveIdentifierGenerator`
   and declaring the custom implementation using `@GenericGenerator`.
+
+=== Custom types
+
+Hibernate custom types based on the `UserType` interface are similarly
+targeted toward JDBC. Hibernate Reactive features an adaptor that exposes a
+partial implementation of JDBC to the `UserType` implementation.
+
+Therefore, _some_ existing `UserType` implementations will work in Hibernate
+Reactive, depending upon precisely which features of JDBC they depend on.
+
+TIP: Where possible, use a JPA `AttributeConverter` instead of a `UserType`,
+since JPA converters are not in any way tied to JDBC.
 
 === Obtaining a reactive session factory
 
@@ -267,7 +306,7 @@ session2.persist(book)
 
 That `createQuery()` method produces a reactive `Query`, allowing HQL / JPQL
 queries to be executed asynchronously, always returning their results via a
-`CompletionStage`:
+`CompletionStage` (or `Uni`):
 
 [java]
 ----
@@ -283,12 +322,12 @@ immediately feel right at home.
 === Fetching lazy associations
 
 In Hibernate ORM, lazy associations are fetched transparently when the
-association is fist accessed within a session.In Hibernate Reactive,
-association fetching is an asynchronous process that produces a result
-via a `CompletionStage` (or Mutiny `Uni`).
+association is fist accessed within a session. In Hibernate Reactive, lazy
+association fetching is an asynchronous process that produces a result via
+a `CompletionStage` (or `Uni`).
 
-Therefore, lazy fetching is an explicit operation named `fetch()`,
-a static method of `Stage` and `Mutiny`:
+Therefore, lazy fetching is an explicit operation named `fetch()`, a static
+method of `Stage` and `Mutiny`:
 
 [java]
 ----
@@ -322,6 +361,25 @@ Note that the field to fetch is identified by a JPA metamodel `Attribute`.
 TIP: We don't encourage you to use field-level lazy fetching unless you
 have very specific requirements.
 
+=== A reminder about performance
+
+As always, achieving high performance in ORM means minimizing the number
+of round trips to the database. This goal should be uppermost in your
+mind whenever you're writing data access code with Hibernate. The most
+fundamental rule of thumb in ORM is:
+
+- explicitly specify all the data you're going to need right at the start
+of a session/transaction, and fetch it immediately in one or two queries,
+- and only then start navigating associations between persistent entities.
+
+TIP: Don't forget that most associations should be mapped for lazy
+fetching by default. If you need eager fetching in some particular
+transaction, use `left join fetch` in HQL, a fetch profile, a JPA
+`EntityGraph`, or `fetch()` in a criteria query.
+
+It follows from this tip that you shouldn't need to use `Stage.fetch()`
+or `Mutiny.fetch()` very often!
+
 === Transactions
 
 The `withTransaction()` method performs work within the scope of a database
@@ -341,6 +399,9 @@ transaction in one call:
 ----
 sessionFactory.withTransaction( (session, tx) -> session.persist(book) )
 ----
+
+Note that these are "resource local" transactions, delegated to the underlying
+Vert.x database client.
 
 == Next steps
 
