@@ -25,6 +25,8 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.Version;
 
+import io.vertx.core.json.JsonObject;
+import org.hibernate.annotations.Type;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
@@ -139,6 +141,14 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 		} );
 	}
 
+	@Test
+	public void testJsonType(TestContext context) throws Exception {
+		Basic basic = new Basic();
+		basic.jsonObj = new JsonObject().put("int", 123).put("str", "hello");
+
+		testField( context, basic, found -> context.assertEquals( basic.jsonObj, found.jsonObj) );
+	}
+
 	/**
 	 * Persist the entity, find it and execute the assertions
 	 */
@@ -177,6 +187,10 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 
 		@Lob @Column(length = 100_000) protected byte[] pic;
 		@Lob @Column(length = 100_000) protected String book;
+
+		@Type(type="org.hibernate.reactive.types.Json")
+		@Column(columnDefinition = "json")
+		private JsonObject jsonObj;
 
 		public Basic() {
 		}
