@@ -179,8 +179,8 @@ immediately feel right at home.
 
 ### Fetching lazy associations
 
-In Hibernate ORM, lazy associations are fetched transparently when the
-association is fist accessed within a session. In Hibernate Reactive, 
+In Hibernate ORM, a lazy association is fetched transparently when the
+association is first accessed within a session. In Hibernate Reactive, 
 association fetching is an asynchronous process that produces a result
 via a `CompletionStage` (or Mutiny `Uni`).
 
