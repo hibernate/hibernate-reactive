@@ -28,7 +28,9 @@ Or, if you're using Hibernate Reactive in Quarkus.... TODO
 
 Add the following dependency to your project:
 
-    org.hibernate.reactive:hibernate-reactive-core:{version}
+----
+org.hibernate.reactive:hibernate-reactive-core:{version}
+----
 
 Where `{version}` is the version of Hibernate Reactive you're using.
 
@@ -72,7 +74,10 @@ document which must be placed, as usual, in the `/META-INF` directory.
 The only configuration specific to Hibernate Reactive is the persistence
 `<provider>` element, which must be explicit:
 
-    <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
+[source,xml]
+----
+<provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
+----
 
 Otherwise, configuration is almost completely transparent. Configure
 Hibernate exactly as you usually would, noting that most configuration
@@ -92,17 +97,25 @@ program.
 
 === Logging the generated SQL
 
+:log4j: https://github.com/hibernate/hibernate-reactive/blob/master/example/src/main/resources/log4j.properties
+
 To see the generated SQL as it's sent to the database, either:
 
 - set the property `hibernate.show_sql` to `true`, or
 - enable debug-level logging for the category `org.hibernate.SQL`
   in for your preferred SLF4J logging implementation.
 
-For example, if you're using Log4J via `slf4j-log4j12`, add this line:
+For example, if you're using Log4J via `slf4j-log4j12` (as above in
+<<_optional_dependencies>>), add this line to your `log4j.properties`
+file:
 
-    log4j.logger.org.hibernate.SQL=DEBUG
+[source,properties]
+----
+log4j.logger.org.hibernate.SQL=DEBUG
+----
 
-to your `log4j.properties` file.
+An example {log4j}[`log4j.properties`] file is included in the example
+program.
 
 === Tuning the Vert.x pool
 
@@ -224,31 +237,48 @@ Reactive, depending upon precisely which features of JDBC they depend on.
 TIP: Where possible, use a JPA `AttributeConverter` instead of a `UserType`,
 since JPA converters are not in any way tied to JDBC.
 
-=== Obtaining a reactive session factory
+=== APIs for chaining reactive operations
 
 :Mutiny: https://smallrye.io/smallrye-mutiny/
 
-Reactive sessions must be obtained from a reactive `SessionFactory`.
+When you write persistence logic using Hibernate Reactive, you'll be working
+with a reactive `Session` most of the time. Just to make things a little more
+confusing for new users, the reactive `Session` and its related interfaces all
+come in two flavors:
 
-First, obtain a JPA `EntityManagerFactory` just as you normally would, for
-example, by calling:
+- `Stage.Session` and friends provide a reactive API based around Java's
+`CompletionStage`, and
+- `Mutiny.Session` and friends provide an API based on {Mutiny}[Mutiny].
+
+You'll need to decide which API you want to use!
+
+TIP: If you take the time to look over the types `Stage.Session` and
+`Mutiny.Session`, you'll notice they're almost identical. Choosing between
+them is a matter of deciding which reactive API you want to use for working
+with reactive streams. Your decision won't affect what you can do with
+Hibernate Reactive.
+
+=== Obtaining a reactive session factory
+
+Whatever you decide, the first step to getting a reactive session is to obtain
+a JPA `EntityManagerFactory` just as you usually would in plain ol' regular JPA,
+for example, by calling:
 
 [java]
 ----
 EntityManagerFactory emf = Persistence.createEntityManagerFactory("example");
 ----
 
-Now, `unwrap()` the reactive `SessionFactory`:
+Now, `unwrap()` the reactive `SessionFactory`. If you want to use
+``CompletionStage``s for chaining reactive operations, ask for a
+`Stage.SessionFactory`:
 
 [java]
 ----
 Stage.SessionFactory sessionFactory = emf.unwrap(Stage.SessionFactory.class);
 ----
 
-The type `Stage.SessionFactory` gives access to reactive APIs based on
-Java's `CompletionStage`.
-
-If you prefer to use the {Mutiny}[Mutiny]-based API, `unwrap()` the type
+Or, if you prefer to use the Mutiny-based API, `unwrap()` the type
 `Mutiny.SessionFactory`:
 
 [java]
@@ -256,11 +286,26 @@ If you prefer to use the {Mutiny}[Mutiny]-based API, `unwrap()` the type
 Mutiny.SessionFactory sessionFactory = emf.unwrap(Mutiny.SessionFactory.class);
 ----
 
+Reactive sessions may be obtained from the resulting reactive `SessionFactory`.
+
+TIP: It's also possible to construct a reactive `SessionFactory` via programmatic
+configuration based on Hibernate's `ServiceRegistry` architecture, by using a
+`ReactiveServiceRegistryBuilder`. But that's outside the scope of this document.
+
 === Obtaining a reactive session
 
 Persistence operations are exposed via a reactive `Session` object. It's very
 important to understand that most operations of this interface are non-blocking,
-and the operations against the database are never performed synchronously.
+and execution of SQL against the database is never performed synchronously.
+Persistence operations that belong to a single unit of work must be chained by
+composition within a single reactive stream.
+
+Also remember that a Hibernate session is a lightweight object that should be
+created, used, and then discarded within a single logical unit of work.
+
+TIP: That is to say, you should reuse the same session across multiple
+persistence operations within a single reactive stream representing a certain
+unit of work, but don't share a session between different reactive streams!
 
 To obtain a reactive `Session` from the `SessionFactory`, use `withSession()`:
 
@@ -286,8 +331,30 @@ sessionFactory.openSession()
 === Using the reactive session
 
 The `Session` interface has methods with the same names as methods of the
-JPA `EntityManager`. However, each of these methods returns its result via
-a `CompletionStage` (or Mutiny `Uni`), for example:
+JPA `EntityManager`. You might already be familiar with the following session
+operations defined by JPA:
+
+- `find()` obtains a persistent object given its id (its primary key),
+- `persist()` makes a transient object persistent and schedules a SQL
+  insert statement,
+- `remove()` makes a persistent object transient and schedules a SQL
+  delete statement,
+- `merge()` copies the state of a transient object to a corresponding
+   persistent instance and returns the persistent object,
+- `refresh()` refreshes the persistent state of an object,
+- `lock()` obtains a pessimistic lock on a persistent object,
+- `flush()` synchronizes the database state with the current session by
+   executing SQL insert, update, and delete statements, and
+- `detach()` detaches a persistent object from a session without affecting
+   the database.
+
+If you're not familiar with these operations, don't despair! Their semantics
+are defined in the JPA specification, and in the API documentation, and are
+explained in innumerable articles and blog posts.
+
+Now, _here's where Hibernate Reactive is different:_ in the reactive API, each
+of these methods returns its result in a non-blocking fashion via a Java
+`CompletionStage` (or Mutiny `Uni`). For example:
 
 [java]
 ----
@@ -295,14 +362,35 @@ session1.find(Book.class, book.id)
         .thenAccept( book -> System.out.println(book.title + " is a great book!") )
 ----
 
-Methods with no meaningful return value return a reference to the `Session`:
+On the other hand, methods with no meaningful return value just return a
+reference to the `Session`, allowing chaining with `thenCompose()`:
 
 [java]
 ----
-session2.persist(book)
-        .thenCompose( $ -> session2.flush() )
-        .whenComplete( ($,e) -> session2.close() )
+sessionFactory.openSession()
+        .thenCompose( session -> session.flush() )
+        .whenComplete( (session,e) -> session.close() )
 ----
+
+TIP: The session will be flushed automatically at the end of a unit of work
+if&mdash;and _only_ if&mdash;you use a transaction, as described below in
+<<_transactions>>. If you don't use a transaction, and forget to flush the
+session explicitly, your persistence operations might never be sent to the
+database!
+
+If you already know Hibernate, and if you already have some experience with
+reactive programming, there's not much new to learn here: you should
+immediately feel right at home.
+
+=== Queries
+
+Naturally, the `Session` interface is a factory for `Query` instances which
+allow you to set query parameters and execute queries and DML statements:
+
+- `createQuery()` lets you run HQL and JPQL queries and DML statements,
+- `createNativeQuery()` lets you run native SQL queries and DML statements,
+  and
+- `createNamedQuery()` lets you run a named HQL or SQL query.
 
 That `createQuery()` method produces a reactive `Query`, allowing HQL / JPQL
 queries to be executed asynchronously, always returning their results via a
@@ -315,16 +403,32 @@ session3.createQuery("select title from Book order by title desc")
         .thenAccept(System.out::println)
 ----
 
-If you already know Hibernate, and if you already have some experience with
-reactive programming, there's not much new to learn here: you should
-immediately feel right at home.
+TIP: The Hibernate Reactive `Query` API doesn't support `java.util.Date`
+or its subclasses in `java.sql`, nor `java.util.Calendar`. Always use
+`java.time` types for binding temporally-typed query parameters.
+
+For  JPA criteria queries, you must first obtain the `CriteriaBuilder` using
+`SessionFactory.getCriteriaBuilder()`, and execute your query using
+`Session.createQuery()`.
+
+[java]
+----
+CriteriaQuery<Book> query = factory.getCriteriaBuilder().createQuery(Book.class);
+Root<Author> a = query.from(Author.class);
+Join<Author,Book> b = a.join(Author_.books);
+query.where( a.get(Author_.name).in("Neal Stephenson", "William Gibson") );
+query.select(b);
+return session.createQuery(query).getResultList().thenAccept(
+        books -> books.forEach(book -> out.println(book.title))
+);
+----
 
 === Fetching lazy associations
 
-In Hibernate ORM, lazy associations are fetched transparently when the
-association is fist accessed within a session. In Hibernate Reactive, lazy
-association fetching is an asynchronous process that produces a result via
-a `CompletionStage` (or `Uni`).
+In Hibernate ORM, a lazy association is fetched transparently when the
+association is first accessed within a session. In Hibernate Reactive, on
+the other hand, lazy association fetching is an asynchronous process that
+produces a result via a `CompletionStage` (or `Uni`).
 
 Therefore, lazy fetching is an explicit operation named `fetch()`, a static
 method of `Stage` and `Mutiny`:
