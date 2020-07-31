@@ -532,9 +532,11 @@ public interface Mutiny {
 
 		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query
-		 * string.
+		 * string or HQL/JPQL update or delete statement. In the case of an
+		 * update or delete, the returned {@link Query} must be executed using
+		 * {@link Query#executeUpdate()} which returns an affected row count.
 		 *
-		 * @param queryString The HQL/JPQL query
+		 * @param queryString The HQL/JPQL query, update or delete statement
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 *
@@ -617,12 +619,22 @@ public interface Mutiny {
 		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
 
 		/**
-		 * Create an instance of {@link Mutiny.Query} for the given SQL update, insert,
-		 * or delete DML statement.
+		 * Create an instance of {@link Query} for the given  SQL query string,
+		 * or SQL update, insert, or delete statement. In the case of an update,
+		 * insert or delete, the returned {@link Query} must be executed using
+		 * {@link Query#executeUpdate()} which returns an affected row count.
+		 * In the case of a query:
 		 *
-		 * @param queryString The SQL update, insert, or delete statement
+		 * <ul>
+		 * <li>If the result set has a single column, the results will be returned
+		 * as scalars.</li>
+		 * <li>Otherwise, if the result set has multiple columns, the results will
+		 * be returned as elements of arrays of type {@code Object[]}.</li>
+		 * </ul>
+		 *
+		 * @param queryString The SQL select, update, insert, or delete statement
 		 */
-		Query<Integer> createNativeQuery(String queryString);
+		<R> Query<R> createNativeQuery(String queryString);
 
 		/**
 		 * Create an instance of {@link Mutiny.Query} for the given criteria query.

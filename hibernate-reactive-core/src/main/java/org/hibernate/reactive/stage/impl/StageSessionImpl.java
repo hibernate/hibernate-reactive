@@ -203,7 +203,7 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public Stage.Query<Integer> createNativeQuery(String sql) {
+	public <R> Stage.Query<R> createNativeQuery(String sql) {
 		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql ) );
 	}
 
