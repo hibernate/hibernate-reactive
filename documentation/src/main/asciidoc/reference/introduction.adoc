@@ -15,6 +15,8 @@ program in the {example}[`example`] directory, which shows off all the
 
 == Setting up a reactive Hibernate project
 
+:skeleton: https://code.quarkus.io/?g=org.acme&a=code-with-quarkus&v=1.0.0-SNAPSHOT&b=MAVEN&c=org.acme.ExampleResource&s=r1s.8XW.fmW.ih0&cn=code.quarkus.io
+
 If you're using Hibernate Reactive outside of the Quarkus environment,
 you'll need to:
 
@@ -23,7 +25,8 @@ you'll need to:
 - configure Hibernate Reactive with information about your database,
   using Hibernate configuration properties.
 
-Or, if you're using Hibernate Reactive in Quarkus.... TODO
+Or, if you want to use Hibernate Reactive in Quarkus, you can generate
+a preconfigured skeleton project {skeleton}[right here].
 
 === Including Hibernate Reactive in your project build
 
