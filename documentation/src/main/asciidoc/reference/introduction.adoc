@@ -260,6 +260,18 @@ them is a matter of deciding which reactive API you want to use for working
 with reactive streams. Your decision won't affect what you can do with
 Hibernate Reactive.
 
+In this introduction, our code examples usually use `CompletionStage`, since
+that's what more people are already familiar with. But please don't take that
+as a recommendation.
+
+When we use the term _reactive stream_ in this document, we mean:
+
+- a chain of ``CompletionStage``s, or
+- a chain of Mutiny ``Uni``s and ``Multi``s
+
+that is built by the program in order to service a particular request,
+transaction, or unit of work.
+
 === Obtaining a reactive session factory
 
 Whatever you decide, the first step to getting a reactive session is to obtain
