@@ -1,5 +1,5 @@
 [[getting-started]]
-= Getting started
+= Introduction to Hibernate Reactive
 
 :example: https://github.com/hibernate/hibernate-reactive/tree/master/example
 

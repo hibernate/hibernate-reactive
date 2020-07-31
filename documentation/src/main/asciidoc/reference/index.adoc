@@ -11,7 +11,7 @@ include::preface.adoc[]
 
 :numbered:
 
-include::getting-started.adoc[]
+include::introduction.adoc[]
 
 :leveloffset: -1
 
