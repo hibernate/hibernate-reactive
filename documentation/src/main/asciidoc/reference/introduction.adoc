@@ -3,13 +3,17 @@
 
 :example: https://github.com/hibernate/hibernate-reactive/tree/master/example
 
-Before you start, we recommend taking a quick look at the example
-program in the {example}[`example`] directory, which shows off all
-the "bits" you'll need to get your own program up and running.
+Creating a new project with Hibernate Reactive isn't hard at all. In this
+short guide, we'll cover all the basic work involved in:
+
+- setting up and configuring a project, and then
+- writing Java code to define a data model and access the database.
+
+But, before you start, we recommend taking a quick look at the example
+program in the {example}[`example`] directory, which shows off all the
+"bits" you'll need to get your own program up and running.
 
 == Setting up a reactive Hibernate project
-
-Setting up a project that uses Hibernate Reactive isn't hard at all.
 
 If you're using Hibernate Reactive outside of the Quarkus environment,
 you'll need to:
@@ -105,7 +109,7 @@ To see the generated SQL as it's sent to the database, either:
 
 - set the property `hibernate.show_sql` to `true`, or
 - enable debug-level logging for the category `org.hibernate.SQL`
-  in for your preferred SLF4J logging implementation.
+  using your preferred SLF4J logging implementation.
 
 For example, if you're using Log4J via `slf4j-log4j12` (as above in
 <<_optional_dependencies>>), add this line to your `log4j.properties`
