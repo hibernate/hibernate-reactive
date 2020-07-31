@@ -24,7 +24,6 @@ Or, if you're using Hibernate Reactive in Quarkus.... TODO
 === Including Hibernate Reactive in your project build
 
 :build: https://github.com/hibernate/hibernate-reactive/blob/master/example/build.gradle
-:slf4j: http://www.slf4j.org/
 
 Add the following dependency to your project:
 
@@ -46,6 +45,9 @@ can if you like).
 
 === Optional dependencies
 
+:slf4j: http://www.slf4j.org/
+:enhancer: https://docs.jboss.org/hibernate/orm/5.4/topical/html_single/bytecode/BytecodeEnhancement.html
+
 Optionally, you might also add:
 
 - an {slf4j}[SLF4J] logging implementation, for example,
@@ -56,8 +58,8 @@ Optionally, you might also add:
   `org.glassfish:jakarta.el` if you're using Hibernate Validator,
 - `org.hibernate:query-validator` to enable compile-time checking of your
   HQL queries, and/or
-- the Hibernate bytecode enhancer if you want to use field-level lazy
-  fetching.
+- the Hibernate {enhancer}[bytecode enhancer] if you want to use field-level
+  lazy fetching.
 
 TIP: Field-level lazy fetching is an advanced feature that most programs
 don't need. Stick to the basics for now.
