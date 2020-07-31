@@ -30,7 +30,7 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * An {@link ReactiveEntityPersister} backed by {@link UnionSubclassEntityPersister}
- * amd {@link ReactiveAbstractEntityPersister}.
+ * and {@link ReactiveAbstractEntityPersister}.
  */
 public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPersister
 		implements ReactiveAbstractEntityPersister {

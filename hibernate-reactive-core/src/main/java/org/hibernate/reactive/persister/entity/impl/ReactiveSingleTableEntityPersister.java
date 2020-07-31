@@ -32,7 +32,7 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * An {@link ReactiveEntityPersister} backed by {@link SingleTableEntityPersister}
- *  * amd {@link ReactiveAbstractEntityPersister}.
+ * and {@link ReactiveAbstractEntityPersister}.
  */
 public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersister
 		implements ReactiveAbstractEntityPersister {
