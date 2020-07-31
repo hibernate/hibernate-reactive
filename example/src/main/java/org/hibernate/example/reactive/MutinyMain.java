@@ -103,7 +103,7 @@ public class MutinyMain {
 					query.where( a.get(Author_.name).in("Neal Stephenson", "William Gibson") );
 					query.select(b);
 					return session.createQuery(query).getResultList().onItem().invoke(
-							books -> books.forEach(book -> out.println(book.title) )
+							books -> books.forEach( book -> out.println(book.title) )
 					);
 				}
 		)
