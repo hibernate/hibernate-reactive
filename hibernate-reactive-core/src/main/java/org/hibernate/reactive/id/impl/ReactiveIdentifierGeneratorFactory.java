@@ -92,8 +92,7 @@ public class ReactiveIdentifierGeneratorFactory extends DefaultIdentifierGenerat
 			reactiveGenerator = new SequenceReactiveIdentifierGenerator();
 		}
 		else if (generator instanceof SelectGenerator) {
-			//TODO: this is easy to fix!
-			throw new HibernateException("SelectGenerator is not yet supported in Hibernate Reactive");
+			throw new HibernateException("SelectGenerator is not supported in Hibernate Reactive");
 		}
 		else {
 			//nothing to do
