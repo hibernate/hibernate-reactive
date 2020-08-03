@@ -124,7 +124,7 @@ public class Main {
 		factory.withTransaction(
 				// retrieve a Book and delete it
 				(session, tx) -> session.find(Book.class, book2.id)
-						.thenCompose( book -> session.remove(book) )
+						.thenCompose(session::remove)
 		)
 				.toCompletableFuture().join();
 
