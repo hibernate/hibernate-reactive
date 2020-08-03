@@ -5,37 +5,19 @@
  */
 package org.hibernate.reactive.types;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.Time;
-import java.text.SimpleDateFormat;
-import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.function.Consumer;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Lob;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.Version;
-
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.unit.TestContext;
 import org.hibernate.annotations.Type;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import io.vertx.ext.unit.TestContext;
+import javax.persistence.*;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 
@@ -93,55 +75,6 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testUUIDType(TestContext context) throws Exception {
-		Basic basic = new Basic();
-		basic.uuid = UUID.fromString( "123e4567-e89b-42d3-a456-556642440000" );
-
-		testField( context, basic, found -> context.assertEquals( basic.uuid, found.uuid ) );
-	}
-
-	@Test
-	public void testDecimalType(TestContext context) throws Exception {
-		Basic basic = new Basic();
-		basic.bigDecimal = new BigDecimal( 12.12d );
-
-		testField( context, basic, found -> context.assertEquals( basic.bigDecimal.floatValue(), found.bigDecimal.floatValue() ) );
-	}
-
-	@Test
-	public void testBigIntegerType(TestContext context) throws Exception {
-		Basic basic = new Basic();
-		basic.bigInteger = BigInteger.valueOf( 123L);
-
-		testField( context, basic, found -> context.assertEquals( basic.bigInteger, found.bigInteger ) );
-	}
-
-	@Test
-	public void testLocalTimeType(TestContext context) throws Exception {
-		Basic basic = new Basic();
-		basic.localTime = LocalTime.now();
-
-		testField( context, basic, found -> context.assertEquals(
-				basic.localTime.truncatedTo( ChronoUnit.MINUTES ),
-				found.localTime.truncatedTo( ChronoUnit.MINUTES )
-		) );
-	}
-
-	@Test
-	public void testDateAsTimeType(TestContext context) throws Exception {
-		Date date = new Date();
-
-		Basic basic = new Basic();
-		basic.dateAsTime = date;
-
-		testField( context, basic, found -> {
-			SimpleDateFormat timeSdf = new SimpleDateFormat( "HH:mm:ss" );
-			context.assertTrue( found.dateAsTime instanceof Time );
-			context.assertEquals( timeSdf.format( date ), timeSdf.format( found.dateAsTime ) );
-		} );
-	}
-
-	@Test
 	public void testJsonType(TestContext context) throws Exception {
 		Basic basic = new Basic();
 		basic.jsonObj = new JsonObject().put("int", 123).put("str", "hello");
@@ -172,18 +105,6 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 		@Id @GeneratedValue Integer id;
 		@Version Integer version;
 		String string;
-
-		UUID uuid;
-
-		@Column(name="dessimal")
-		BigDecimal bigDecimal;
-		@Column(name="inteja")
-		BigInteger bigInteger;
-
-		@Column(name="localtyme")
-		private LocalTime localTime;
-		@Temporal(TemporalType.TIME)
-		Date dateAsTime;
 
 		@Lob @Column(length = 100_000) protected byte[] pic;
 		@Lob @Column(length = 100_000) protected String book;

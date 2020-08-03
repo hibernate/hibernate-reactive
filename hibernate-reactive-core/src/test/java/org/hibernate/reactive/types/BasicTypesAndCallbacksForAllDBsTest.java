@@ -5,53 +5,27 @@
  */
 package org.hibernate.reactive.types;
 
+import io.vertx.ext.unit.TestContext;
+import org.hibernate.annotations.Type;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.BaseReactiveTest;
+import org.junit.After;
+import org.junit.Test;
+
+import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.Objects;
-import java.util.TimeZone;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.function.Consumer;
-import javax.persistence.AttributeConverter;
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Converter;
-import javax.persistence.Embeddable;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.PostLoad;
-import javax.persistence.PostPersist;
-import javax.persistence.PostRemove;
-import javax.persistence.PostUpdate;
-import javax.persistence.PrePersist;
-import javax.persistence.PreRemove;
-import javax.persistence.PreUpdate;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.Transient;
-import javax.persistence.Version;
-
-import org.hibernate.annotations.Type;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.BaseReactiveTest;
-
-import org.junit.After;
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
 
 /**
  * Test all the types and lifecycle callbacks that we expect to work on all supported DBs
@@ -345,6 +319,55 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testUUIDType(TestContext context) throws Exception {
+		Basic basic = new Basic();
+		basic.uuid = UUID.fromString( "123e4567-e89b-42d3-a456-556642440000" );
+
+		testField( context, basic, found -> context.assertEquals( basic.uuid, found.uuid ) );
+	}
+
+	@Test
+	public void testDecimalType(TestContext context) throws Exception {
+		Basic basic = new Basic();
+		basic.bigDecimal = new BigDecimal( 12.12d );
+
+		testField( context, basic, found -> context.assertEquals( basic.bigDecimal.floatValue(), found.bigDecimal.floatValue() ) );
+	}
+
+	@Test
+	public void testBigIntegerType(TestContext context) throws Exception {
+		Basic basic = new Basic();
+		basic.bigInteger = BigInteger.valueOf( 123L);
+
+		testField( context, basic, found -> context.assertEquals( basic.bigInteger, found.bigInteger ) );
+	}
+
+	@Test
+	public void testLocalTimeType(TestContext context) throws Exception {
+		Basic basic = new Basic();
+		basic.localTime = LocalTime.now();
+
+		testField( context, basic, found -> context.assertEquals(
+				basic.localTime.truncatedTo( ChronoUnit.MINUTES ),
+				found.localTime.truncatedTo( ChronoUnit.MINUTES )
+		) );
+	}
+
+	@Test
+	public void testDateAsTimeType(TestContext context) throws Exception {
+		Date date = new Date();
+
+		Basic basic = new Basic();
+		basic.dateAsTime = date;
+
+		testField( context, basic, found -> {
+			SimpleDateFormat timeSdf = new SimpleDateFormat( "HH:mm:ss" );
+			context.assertTrue( found.dateAsTime instanceof Time);
+			context.assertEquals( timeSdf.format( date ), timeSdf.format( found.dateAsTime ) );
+		} );
+	}
+
+	@Test
 	public void testCallbacksAndVersioning(TestContext context) {
 		Basic parent = new Basic( "Parent" );
 		Basic basik = new Basic( "Hello World" );
@@ -539,6 +562,18 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 		@javax.persistence.Basic
 		Serializable thing;
+
+		UUID uuid;
+
+		@Column(name="dessimal")
+		BigDecimal bigDecimal;
+		@Column(name="inteja")
+		BigInteger bigInteger;
+
+		@Column(name="localtyme")
+		private LocalTime localTime;
+		@Temporal(TemporalType.TIME)
+		Date dateAsTime;
 
 		@Transient
 		boolean prePersisted;
