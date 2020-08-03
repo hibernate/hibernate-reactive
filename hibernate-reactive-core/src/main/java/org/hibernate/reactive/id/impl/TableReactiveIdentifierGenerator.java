@@ -21,7 +21,7 @@ import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
@@ -66,7 +66,7 @@ public class TableReactiveIdentifierGenerator
 	private boolean sequenceEmulator;
 
 	@Override
-	public CompletionStage<Long> generate(ReactiveSession session, Object entity) {
+	public CompletionStage<Long> generate(ReactiveConnectionSupplier session, Object entity) {
 		Object[] param = segmentColumnName == null ? new Object[] {} : new Object[] {segmentValue};
 		ReactiveConnection connection = session.getReactiveConnection();
 		return connection.selectLong( selectQuery, param )

@@ -11,7 +11,7 @@ import org.hibernate.annotations.Parameter;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.id.Configurable;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
@@ -72,7 +72,7 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 	public static class Thousands implements ReactiveIdentifierGenerator<Integer>, Configurable {
 		int current = 0;
 		@Override
-		public CompletionStage<Integer> generate(ReactiveSession session, Object entity) {
+		public CompletionStage<Integer> generate(ReactiveConnectionSupplier session, Object entity) {
 			current += 1000;
 			return CompletionStages.completedFuture(current);
 		}

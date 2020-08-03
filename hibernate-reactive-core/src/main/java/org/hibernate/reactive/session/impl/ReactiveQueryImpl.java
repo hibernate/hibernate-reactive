@@ -20,7 +20,7 @@ import org.hibernate.query.criteria.internal.compile.ExplicitParameterInfo;
 import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
 import org.hibernate.query.internal.QueryImpl;
 import org.hibernate.reactive.session.ReactiveQuery;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 
@@ -125,8 +125,8 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		return reactiveProducer().reactiveList( expandedQuery, makeReactiveQueryParametersForExecution( expandedQuery ) );
 	}
 
-	private ReactiveSession reactiveProducer() {
-		return (ReactiveSession) getProducer();
+	private ReactiveQueryExecutor reactiveProducer() {
+		return (ReactiveQueryExecutor) getProducer();
 	}
 
 	/**

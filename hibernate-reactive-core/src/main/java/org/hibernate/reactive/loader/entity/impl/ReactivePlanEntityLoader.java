@@ -210,7 +210,7 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		final QueryParameters parameters = buildQueryParameters( id, optionalObject, lockOptions, readOnly );
 		String sql = getStaticLoadQuery().getSqlStatement();
 
-		return doReactiveQueryAndInitializeNonLazyCollections( sql, (SessionImplementor) session, parameters )
+		return doReactiveQueryAndInitializeNonLazyCollections( sql, (SharedSessionContractImplementor) session, parameters )
 				.thenApply( results -> extractEntityResult( results, id ) )
 				.handle( (list, err) -> {
 					CompletionStages.logSqlException( err,

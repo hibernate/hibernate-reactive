@@ -18,15 +18,9 @@ import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.ResultSetMappingDefinition;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.query.spi.QueryPlanCache;
-import org.hibernate.engine.query.spi.sql.NativeSQLQueryCollectionReturn;
-import org.hibernate.engine.query.spi.sql.NativeSQLQueryConstructorReturn;
-import org.hibernate.engine.query.spi.sql.NativeSQLQueryReturn;
-import org.hibernate.engine.query.spi.sql.NativeSQLQueryRootReturn;
-import org.hibernate.engine.query.spi.sql.NativeSQLQueryScalarReturn;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.ExceptionConverter;
 import org.hibernate.engine.spi.NamedQueryDefinition;
@@ -193,15 +187,25 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <T> ReactiveNativeQueryImpl<T> createReactiveNativeQuery(String sqlString) {
-		return getReactiveNativeQueryImplementor( sqlString, false );
-	}
-
-	@Override
-	public <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping) {
 		checkOpen();
 		pulseTransactionCoordinator();
 		delayedAfterCompletion();
 
+		try {
+			ParameterMetadata params = getFactory().getQueryPlanCache()
+					.getSQLParameterMetadata(sqlString, false);
+			ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>(sqlString, false, this, params );
+			query.setComment( "dynamic native SQL query" );
+			applyQuerySettingsAndHints( query );
+			return query;
+		}
+		catch ( RuntimeException he ) {
+			throw getExceptionConverter().convert( he );
+		}
+	}
+
+	@Override
+	public <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping) {
 		try {
 			ReactiveNativeQuery<T> query = createReactiveNativeQuery( sqlString );
 			query.setResultSetMapping( resultSetMapping );
@@ -214,83 +218,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
-		ResultSetMappingDefinition mapping = getFactory().getNamedQueryRepository()
-				.getResultSetMappingDefinition( mappingName );
-		if (mapping==null) {
-			throw new IllegalArgumentException("result set mapping does not exist: " + mappingName);
-		}
-
-		if ( resultType!=null ) {
-			Class<?> mappedResultType = getResultType(mapping);
-			if ( !resultType.equals(mappedResultType) ) {
-				throw new IllegalArgumentException("incorrect result type for result set mapping: "
-						+ mappingName + " has type " + mappedResultType.getName() );
-			}
-		}
-
-		return new ResultSetMapping<T>() {
-			@Override
-			public String getName() {
-				return mappingName;
-			}
-			@Override
-			public Class<T> getResultType() {
-				return resultType;
-			}
-		};
-	}
-
-	private Class<?> getResultType(ResultSetMappingDefinition mapping) {
-		Class<?> mappedResultType = null;
-		for ( NativeSQLQueryReturn queryReturn: mapping.getQueryReturns() ) {
-			if (queryReturn instanceof NativeSQLQueryScalarReturn) {
-				if (mappedResultType != null) {
-					return Object[].class;
-				}
-				else {
-					mappedResultType = ((NativeSQLQueryScalarReturn) queryReturn).getType().getReturnedClass();
-				}
-			}
-			else if (queryReturn instanceof NativeSQLQueryRootReturn) {
-				if (mappedResultType != null) {
-					return Object[].class;
-				}
-				else {
-					NativeSQLQueryRootReturn entityReturn = (NativeSQLQueryRootReturn) queryReturn;
-					String entityName = entityReturn.getReturnEntityName();
-					mappedResultType = getFactory().getMetamodel().entityPersister(entityName).getMappedClass();
-				}
-			}
-			else if (queryReturn instanceof NativeSQLQueryCollectionReturn) {
-				if (mappedResultType != null) {
-					return Object[].class;
-				}
-				else {
-					NativeSQLQueryCollectionReturn collectionReturn = (NativeSQLQueryCollectionReturn) queryReturn;
-					String entityName = collectionReturn.getOwnerEntityName();
-					String propertyName = collectionReturn.getOwnerProperty();
-					String role = entityName + '.' + propertyName;
-					mappedResultType = getFactory().getMetamodel().collectionPersister(role).getElementClass();
-				}
-			}
-			else if (queryReturn instanceof NativeSQLQueryConstructorReturn) {
-				if (mappedResultType != null) {
-					return Object[].class;
-				}
-				else {
-					mappedResultType = ((NativeSQLQueryConstructorReturn) queryReturn).getTargetClass();
-				}
-			}
-		}
-		return mappedResultType;
+		return ResultSetMappings.resultSetMapping( resultType, mappingName, getFactory() );
 	}
 
 	@Override
 	public <T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultClass) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
 		try {
 			ReactiveNativeQuery<T> query = createReactiveNativeQuery( sqlString );
 			handleNativeQueryResult( query, resultClass );
@@ -307,26 +239,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 		else {
 			query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
-		}
-	}
-
-	private <T> ReactiveNativeQueryImpl<T> getReactiveNativeQueryImplementor(
-			String queryString,
-			boolean isOrdinalParameterZeroBased) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
-		try {
-			ParameterMetadata params = getFactory().getQueryPlanCache()
-					.getSQLParameterMetadata( queryString, isOrdinalParameterZeroBased );
-			ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>( queryString, false, this, params );
-			query.setComment( "dynamic native SQL query" );
-			applyQuerySettingsAndHints( query );
-			return query;
-		}
-		catch ( RuntimeException he ) {
-			throw getExceptionConverter().convert( he );
 		}
 	}
 
@@ -360,10 +272,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
 		try {
 			// do the translation
 			final ReactiveQueryImpl<R> query = createReactiveQuery( queryString );

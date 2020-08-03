@@ -12,6 +12,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
+import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.metamodel.Metamodel;
@@ -55,6 +56,32 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 						reactiveConnection
 				) )
 				.map( MutinySessionImpl::new );
+	}
+
+	@Override
+	public Mutiny.StatelessSession createStatelessSession() {
+		ReactiveConnectionPool pool = delegate.getServiceRegistry()
+				.getService(ReactiveConnectionPool.class);
+		return new MutinyStatelessSessionImpl(
+				new ReactiveStatelessSessionImpl(
+						delegate,
+						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
+						pool.getProxyConnection()
+				)
+		);
+	}
+
+	@Override
+	public Uni<Mutiny.StatelessSession> openStatelessSession() throws HibernateException {
+		ReactiveConnectionPool pool = delegate.getServiceRegistry()
+				.getService(ReactiveConnectionPool.class);
+		return Uni.createFrom().completionStage( pool.getConnection() )
+				.map( reactiveConnection -> new ReactiveStatelessSessionImpl(
+						delegate,
+						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
+						reactiveConnection
+				) )
+				.map( MutinyStatelessSessionImpl::new );
 	}
 
 	@Override

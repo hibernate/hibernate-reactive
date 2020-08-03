@@ -12,7 +12,6 @@ import org.hibernate.engine.query.spi.EntityGraphQueryHint;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.RowSelection;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.hql.internal.QueryExecutionRequestException;
 import org.hibernate.hql.internal.ast.HqlSqlWalker;
@@ -109,7 +108,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 			queryParametersToUse = queryParameters;
 		}
 
-		return queryLoader.reactiveList( (SessionImplementor) session, queryParametersToUse )
+		return queryLoader.reactiveList( session, queryParametersToUse )
 				.thenApply(results -> {
 					if ( needsDistincting ) {
 						int includedCount = -1;

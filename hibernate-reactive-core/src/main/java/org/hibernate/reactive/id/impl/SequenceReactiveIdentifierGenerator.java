@@ -11,7 +11,7 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.id.Configurable;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
@@ -44,7 +44,7 @@ public class SequenceReactiveIdentifierGenerator
 	}
 
 	@Override
-	public CompletionStage<Long> generate(ReactiveSession session, Object entity) {
+	public CompletionStage<Long> generate(ReactiveConnectionSupplier session, Object entity) {
 		return session.getReactiveConnection().selectLong( sql, new Object[0] );
 	}
 }
