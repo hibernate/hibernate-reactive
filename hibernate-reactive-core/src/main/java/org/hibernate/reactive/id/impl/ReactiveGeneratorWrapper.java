@@ -10,7 +10,7 @@ import org.hibernate.boot.model.relational.ExportableProducer;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
@@ -34,7 +34,7 @@ public class ReactiveGeneratorWrapper<T> implements
 	}
 
 	@Override
-	public CompletionStage<T> generate(ReactiveSession session, Object entity) {
+	public CompletionStage<T> generate(ReactiveConnectionSupplier session, Object entity) {
 		return reactiveGenerator.generate(session, entity);
 	}
 

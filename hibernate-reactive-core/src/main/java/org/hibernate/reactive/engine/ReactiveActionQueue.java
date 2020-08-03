@@ -21,7 +21,7 @@ import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.engine.impl.*;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.*;
 
@@ -670,7 +670,7 @@ public class ReactiveActionQueue {
 		} ).thenRun( () -> {
 			list.clear();
 //			session.getJdbcCoordinator().executeBatch();
-		} ).thenCompose( v -> ( (ReactiveSession) session ).getReactiveConnection().executeBatch() );
+		} ).thenCompose( v -> ( (ReactiveConnectionSupplier) session ).getReactiveConnection().executeBatch() );
 	}
 
 	/**

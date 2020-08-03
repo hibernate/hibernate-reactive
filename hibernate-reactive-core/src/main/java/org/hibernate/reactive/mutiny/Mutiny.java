@@ -27,6 +27,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.Metamodel;
+import java.io.Serializable;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -872,6 +873,177 @@ public interface Mutiny {
 	}
 
 	/**
+	 * A non-blocking counterpart to the Hibernate
+	 * {@link org.hibernate.StatelessSession} interface, which provides a
+	 * command-oriented API for performing bulk operations against a database.
+	 * <p/>
+	 * A stateless session does not implement a first-level cache nor interact
+	 * with any second-level cache, nor does it implement transactional
+	 * write-behind or automatic dirty checking, nor do operations cascade to
+	 * associated instances. Collections are ignored by a stateless session.
+	 * Operations performed via a stateless session bypass Hibernate's event
+	 * model and interceptors. Stateless sessions are vulnerable to data
+	 * aliasing effects, due to the lack of a first-level cache.
+	 * <p/>
+	 * For certain kinds of transactions, a stateless session may perform slightly
+	 * faster than a stateful session.
+	 *
+	 * @see org.hibernate.StatelessSession
+	 */
+	interface StatelessSession extends AutoCloseable {
+
+		/**
+		 * Retrieve a row.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param id The id of the entity to retrieve
+		 *
+		 * @return a detached entity instance, via a {@code Uni}
+		 *
+		 * @see org.hibernate.StatelessSession#get(Class, Serializable)
+		 */
+		<T> Uni<T> get(Class<T> entityClass, Object id);
+
+		/**
+		 * Retrieve a row, obtaining the specified lock mode.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param id The id of the entity to retrieve
+		 * @param lockMode The lock mode to apply to the entity
+		 *
+		 * @return a detached entity instance, via a {@code Uni}
+		 *
+		 * @see org.hibernate.StatelessSession#get(Class, Serializable, LockMode)
+		 */
+		<T> Uni<T> get(Class<T> entityClass, Object id, LockMode lockMode);
+
+		/**
+		 * Create an instance of {@link Query} for the given HQL/JPQL query
+		 * string or HQL/JPQL update or delete statement. In the case of an
+		 * update or delete, the returned {@link Query} must be executed using
+		 * {@link Query#executeUpdate()} which returns an affected row count.
+		 *
+		 * @param queryString The HQL/JPQL query, update or delete statement
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see Session#createQuery(String)
+		 */
+		<R> Query<R> createQuery(String queryString);
+
+		/**
+		 * Create an instance of {@link Query} for the given HQL/JPQL query
+		 * string.
+		 *
+		 * @param queryString The HQL/JPQL query
+		 * @param resultType the Java type returned in each row of query results
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see Session#createQuery(String, Class)
+		 */
+		<R> Query<R> createQuery(String queryString, Class<R> resultType);
+
+		/**
+		 * Create an instance of {@link Query} for the given  SQL query string,
+		 * or SQL update, insert, or delete statement. In the case of an update,
+		 * insert or delete, the returned {@link Query} must be executed using
+		 * {@link Query#executeUpdate()} which returns an affected row count.
+		 * In the case of a query:
+		 *
+		 * @param queryString The SQL select, update, insert, or delete statement
+		 *
+		 * @see Session#createNativeQuery(String)
+		 */
+		<R> Query<R> createNativeQuery(String queryString);
+
+		/**
+		 * Create an instance of {@link Query} for the given SQL query string,
+		 * using the given {@code resultType} to interpret the results.
+		 *
+		 * @param queryString The SQL query
+		 * @param resultType the Java type returned in each row of query results
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see Session#createNativeQuery(String, Class)
+		 */
+		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType);
+
+		/**
+		 * Create an instance of {@link Query} for the given SQL query string,
+		 * using the given {@link ResultSetMapping} to interpret the result set.
+		 *
+		 * @param queryString The SQL query
+		 * @param resultSetMapping the result set mapping
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see Session#createNativeQuery(String, ResultSetMapping)
+		 */
+		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
+
+		/**
+		 * Insert a row.
+		 *
+		 * @param entity a new transient instance
+		 *
+		 * @see org.hibernate.StatelessSession#insert(Object)
+		 */
+		Uni<StatelessSession> insert(Object entity);
+
+		/**
+		 * Delete a row.
+		 *
+		 * @param entity a detached entity instance
+		 *
+		 * @see org.hibernate.StatelessSession#delete(Object)
+		 */
+		Uni<StatelessSession> delete(Object entity);
+
+		/**
+		 * Update a row.
+		 *
+		 * @param entity a detached entity instance
+		 *
+		 * @see org.hibernate.StatelessSession#update(Object)
+		 */
+		Uni<StatelessSession> update(Object entity);
+
+		/**
+		 * Refresh the entity instance state from the database.
+		 *
+		 * @param entity The entity to be refreshed.
+		 *
+		 * @see org.hibernate.StatelessSession#refresh(Object)
+		 */
+		Uni<StatelessSession> refresh(Object entity);
+
+		/**
+		 * Refresh the entity instance state from the database.
+		 *
+		 * @param entity The entity to be refreshed.
+		 * @param lockMode The LockMode to be applied.
+		 *
+		 * @see org.hibernate.StatelessSession#refresh(Object, LockMode)
+		 */
+		Uni<StatelessSession> refresh(Object entity, LockMode lockMode);
+
+		/**
+		 * Obtain a native SQL result set mapping defined via the annotation
+		 * {@link javax.persistence.SqlResultSetMapping}.
+		 */
+		<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
+
+		/**
+		 * Close the reactive session and release the underlying database
+		 * connection.
+		 */
+		@Override
+		void close();
+	}
+
+	/**
 	 * Allows code within {@link Session#withTransaction(Function)} to mark a
 	 * transaction for rollback. A transaction marked for rollback will
 	 * never be committed.
@@ -944,6 +1116,10 @@ public interface Mutiny {
 		 * The client must close the session using {@link Session#close()}.
 		 */
 		Uni<Session> openSession();
+
+		StatelessSession createStatelessSession();
+
+		Uni<StatelessSession> openStatelessSession();
 
 		/**
 		 * Perform work using a {@link Session reactive session}.

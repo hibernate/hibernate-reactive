@@ -12,15 +12,9 @@ import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.UnknownProfileException;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
-import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
-import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
-import org.hibernate.reactive.pool.ReactiveConnection;
 
 import javax.persistence.EntityGraph;
 import javax.persistence.metamodel.Attribute;
@@ -34,15 +28,13 @@ import java.util.concurrent.CompletionStage;
  * {@link org.hibernate.reactive.stage.Stage.Session reactive session}.
  * <p>
  * This is primarily an internal contract between the various subsystems
- * of Hibernate Reactive, though it also occurs in the schema of some
- * extension points such as
- * {@link org.hibernate.reactive.id.ReactiveIdentifierGenerator}.
+ * of Hibernate Reactive.
  *
  *  @see org.hibernate.reactive.stage.Stage.Session
  *  @see org.hibernate.reactive.mutiny.Mutiny.Session
  */
 @Incubating
-public interface ReactiveSession  {
+public interface ReactiveSession extends ReactiveConnectionSupplier, ReactiveQueryExecutor {
 
 	ReactiveActionQueue getReactiveActionQueue();
 
@@ -109,17 +101,6 @@ public interface ReactiveSession  {
 			Class<T> entityClass,
 			Object... primaryKey);
 
-	<T> CompletionStage<List<T>> reactiveList(String query, QueryParameters parameters);
-
-	<T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters parameters);
-
-	CompletionStage<Integer> executeReactiveUpdate(String expandedQuery, QueryParameters parameters);
-
-	CompletionStage<Integer> executeReactiveUpdate(NativeSQLQuerySpecification specification,
-												   QueryParameters parameters);
-
-	ReactiveConnection getReactiveConnection();
-
 	void setHibernateFlushMode(FlushMode flushMode);
 	FlushMode getHibernateFlushMode();
 
@@ -156,8 +137,6 @@ public interface ReactiveSession  {
 	<T> EntityGraph<T> createEntityGraph(Class<T> entity, String name);
 	<T> EntityGraph<T> getEntityGraph(Class<T> entity, String name);
 
-	<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
-
 	void clear();
 
 	boolean isDirty();
@@ -165,6 +144,4 @@ public interface ReactiveSession  {
 	void close();
 
 	Dialect getDialect();
-	SessionFactoryImplementor getFactory();
-	SharedSessionContractImplementor getSharedContract();
 }

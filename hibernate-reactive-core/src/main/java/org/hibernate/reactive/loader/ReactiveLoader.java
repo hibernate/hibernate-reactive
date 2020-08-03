@@ -13,7 +13,7 @@ import org.hibernate.engine.spi.*;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.transform.ResultTransformer;
 
 import java.sql.ResultSet;
@@ -33,14 +33,14 @@ public interface ReactiveLoader {
 
 	default CompletionStage<List<Object>> doReactiveQueryAndInitializeNonLazyCollections(
 			final String sql,
-			final SessionImplementor session,
+			final SharedSessionContractImplementor session,
 			final QueryParameters queryParameters) {
 		return doReactiveQueryAndInitializeNonLazyCollections(sql, session, queryParameters, false, null);
 	}
 
 	default CompletionStage<List<Object>> doReactiveQueryAndInitializeNonLazyCollections(
 			final String sql,
-			final SessionImplementor session,
+			final SharedSessionContractImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies,
 			final ResultTransformer forcedResultTransformer) {
@@ -90,7 +90,7 @@ public interface ReactiveLoader {
 			String sqlStatement,
 			QueryParameters queryParameters,
 			List<AfterLoadAction> afterLoadActions,
-			SessionImplementor session) {
+			SharedSessionContractImplementor session) {
 
 		// Processing query filters.
 		queryParameters.processFilters( sqlStatement, session );
@@ -100,10 +100,9 @@ public interface ReactiveLoader {
 		String sql = limitHandler.processSql( queryParameters.getFilteredSQL(), queryParameters.getRowSelection() );
 
 		// Adding locks and comments.
-		sql = preprocessSQL( sql, queryParameters, session.getSessionFactory(), afterLoadActions );
+		sql = preprocessSQL( sql, queryParameters, session.getFactory(), afterLoadActions );
 
-		return session.unwrap(ReactiveSession.class)
-				.getReactiveConnection()
+		return ((ReactiveConnectionSupplier) session).getReactiveConnection()
 				.selectJdbc( sql, toParameterArray(queryParameters, session) );
 	}
 

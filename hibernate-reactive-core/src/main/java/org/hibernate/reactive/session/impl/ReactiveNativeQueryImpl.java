@@ -17,7 +17,7 @@ import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadat
 import org.hibernate.query.internal.NativeQueryImpl;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveQuery;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.transform.ResultTransformer;
 
 import javax.persistence.EntityGraph;
@@ -110,8 +110,8 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 		);
 	}
 
-	private ReactiveSession reactiveProducer() {
-		return (ReactiveSession) getProducer();
+	private ReactiveQueryExecutor reactiveProducer() {
+		return (ReactiveQueryExecutor) getProducer();
 	}
 
 	@Override

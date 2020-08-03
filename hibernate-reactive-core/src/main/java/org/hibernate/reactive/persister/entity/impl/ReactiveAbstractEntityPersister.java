@@ -35,7 +35,7 @@ import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.Delete;
 import org.hibernate.sql.SimpleSelect;
@@ -90,7 +90,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	default ReactiveConnection getReactiveConnection(SharedSessionContractImplementor session) {
-		return ((ReactiveSession) session).getReactiveConnection();
+		return ((ReactiveConnectionSupplier) session).getReactiveConnection();
 	}
 
 	@Override
@@ -152,7 +152,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 								jj,
 								delegate().generateInsertString( notNull, jj ),
 								session
-						));
+						)
+				);
 			}
 		}
 		else {
@@ -167,7 +168,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 								jj,
 								delegate().getSQLInsertStrings()[jj],
 								session
-						));
+						)
+				);
 			}
 		}
 		return insertStage;
@@ -239,7 +241,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		SessionFactoryImplementor factory = session.getFactory();
 		Dialect dialect = factory.getJdbcServices().getDialect();
 		String identifierColumnName = delegate().getIdentifierColumnNames()[0];
-		ReactiveConnection connection = getReactiveConnection(session);
+		ReactiveConnection connection = getReactiveConnection( session );
 		if ( factory.getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
 			//TODO: wooooo this is awful ... I believe the problem is fixed in Hibernate 6
 			if ( dialect instanceof PostgreSQL81Dialect) {
@@ -943,7 +945,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			) );
 		}
 
-		return ((ReactiveSession) session).getReactiveConnection()
+		return getReactiveConnection( session )
 				.selectJdbc( lazySelect, params )
 				.thenApply( resultSet -> {
 					try {

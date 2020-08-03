@@ -12,7 +12,6 @@ import org.hibernate.cache.spi.QueryKey;
 import org.hibernate.cache.spi.QueryResultsCache;
 import org.hibernate.dialect.pagination.LimitHandler;
 import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
@@ -45,13 +44,14 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 	CoreMessageLogger log = CoreLogging.messageLogger( Loader.class );
 
 	default CompletionStage<List<Object>> doReactiveList(
-			final String sql, final String queryIdentifier,
-			final SessionImplementor session,
+			final String sql,
+			final String queryIdentifier,
+			final SharedSessionContractImplementor session,
 			final QueryParameters queryParameters,
 			final ResultTransformer forcedResultTransformer)
 			throws HibernateException {
 
-		final StatisticsImplementor statistics = session.getSessionFactory().getStatistics();
+		final StatisticsImplementor statistics = session.getFactory().getStatistics();
 		final boolean stats = statistics.isStatisticsEnabled();
 		final long startTime = stats ? System.nanoTime() : 0;
 
@@ -73,29 +73,30 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 			String sql, String queryIdentifier,
 			SharedSessionContractImplementor session,
 			QueryParameters queryParameters) {
-		return doReactiveList( sql, queryIdentifier, (SessionImplementor) session, queryParameters, null )
+		return doReactiveList( sql, queryIdentifier, session, queryParameters, null )
 				.thenApply( result -> getResultList( result, queryParameters.getResultTransformer() ) );
 	}
 
 	default CompletionStage<List<Object>> reactiveListUsingQueryCache(
-			final String sql, final String queryIdentifier,
-			final SessionImplementor session,
+			final String sql,
+			final String queryIdentifier,
+			final SharedSessionContractImplementor session,
 			final QueryParameters queryParameters,
 			final Set<Serializable> querySpaces,
 			final Type[] resultTypes) {
 
-		QueryResultsCache queryCache = session.getSessionFactory().getCache()
+		QueryResultsCache queryCache = session.getFactory().getCache()
 				.getQueryResultsCache( queryParameters.getCacheRegion() );
 
 		QueryKey key = queryKey( sql, session, queryParameters );
 
-		List<Object> cachedList = getResultFromQueryCache( session, queryParameters, querySpaces, resultTypes, queryCache, key );
+		List<Object> cachedList = getReactiveResultFromQueryCache( session, queryParameters, querySpaces, resultTypes, queryCache, key );
 
 		CompletionStage<List<Object>> list;
 		if ( cachedList == null ) {
 			list = doReactiveList( sql, queryIdentifier, session, queryParameters, key.getResultTransformer() )
 					.thenApply( cachableList -> {
-						putResultInQueryCache( session, queryParameters, resultTypes, queryCache, key, cachableList );
+						putReactiveResultInQueryCache( session, queryParameters, resultTypes, queryCache, key, cachableList );
 						return cachableList;
 					} );
 		}
@@ -133,7 +134,7 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 		}
 	}
 
-	default QueryKey queryKey(String sql, SessionImplementor session, QueryParameters queryParameters) {
+	default QueryKey queryKey(String sql, SharedSessionContractImplementor session, QueryParameters queryParameters) {
 		return QueryKey.generateQueryKey(
 				sql,
 				queryParameters,
@@ -153,9 +154,9 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 
 	boolean[] includeInResultRow();
 
-	List<Object> getResultFromQueryCache(SessionImplementor session, QueryParameters queryParameters, Set<Serializable> querySpaces, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key);
+	List<Object> getReactiveResultFromQueryCache(SharedSessionContractImplementor session, QueryParameters queryParameters, Set<Serializable> querySpaces, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key);
 
-	void putResultInQueryCache(SessionImplementor session, QueryParameters queryParameters, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key, List<Object> cachableList);
+	void putReactiveResultInQueryCache(SharedSessionContractImplementor session, QueryParameters queryParameters, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key, List<Object> cachableList);
 
 	ResultTransformer resolveResultTransformer(ResultTransformer resultTransformer);
 

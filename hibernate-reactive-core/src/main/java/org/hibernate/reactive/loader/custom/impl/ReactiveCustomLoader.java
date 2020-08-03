@@ -57,7 +57,7 @@ public class ReactiveCustomLoader extends CustomLoader implements CachingReactiv
 										 SharedSessionContractImplementor session,
 										 boolean returnProxies,
 										 ResultTransformer forcedResultTransformer,
-										 int maxRows, List<AfterLoadAction> afterLoadActions) throws SQLException {
+										 int maxRows, List<AfterLoadAction> afterLoadActions) {
 		throw new UnsupportedOperationException( "use #reactiveProcessResultSet instead." );
 	}
 
@@ -87,12 +87,12 @@ public class ReactiveCustomLoader extends CustomLoader implements CachingReactiv
 	}
 
 	@Override @SuppressWarnings("unchecked")
-	public List<Object> getResultFromQueryCache(SessionImplementor session, QueryParameters queryParameters, Set<Serializable> querySpaces, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key) {
+	public List<Object> getReactiveResultFromQueryCache(SharedSessionContractImplementor session, QueryParameters queryParameters, Set<Serializable> querySpaces, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key) {
 		return super.getResultFromQueryCache(session, queryParameters, querySpaces, resultTypes, queryCache, key);
 	}
 
 	@Override
-	public void putResultInQueryCache(SessionImplementor session, QueryParameters queryParameters, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key, List<Object> cachableList) {
+	public void putReactiveResultInQueryCache(SharedSessionContractImplementor session, QueryParameters queryParameters, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key, List<Object> cachableList) {
 		super.putResultInQueryCache(session, queryParameters, resultTypes, queryCache, key, cachableList);
 	}
 

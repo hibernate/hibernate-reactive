@@ -81,7 +81,7 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 	}
 
 	public CompletionStage<List<Object>> reactiveList(
-			SessionImplementor session,
+			SharedSessionContractImplementor session,
 			QueryParameters queryParameters) throws HibernateException {
 		checkQuery( queryParameters );
 		return reactiveList(
@@ -98,7 +98,7 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 	 * @see QueryLoader#list(SharedSessionContractImplementor, QueryParameters, Set, Type[])
 	 */
 	protected CompletionStage<List<Object>> reactiveList(
-			final SessionImplementor session,
+			final SharedSessionContractImplementor session,
 			final QueryParameters queryParameters,
 			final Set<Serializable> querySpaces,
 			final Type[] resultTypes) throws HibernateException {
@@ -143,12 +143,12 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 	}
 
 	@Override @SuppressWarnings("unchecked")
-	public List<Object> getResultFromQueryCache(SessionImplementor session, QueryParameters queryParameters, Set<Serializable> querySpaces, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key) {
+	public List<Object> getReactiveResultFromQueryCache(SharedSessionContractImplementor session, QueryParameters queryParameters, Set<Serializable> querySpaces, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key) {
 		return super.getResultFromQueryCache(session, queryParameters, querySpaces, resultTypes, queryCache, key);
 	}
 
 	@Override
-	public void putResultInQueryCache(SessionImplementor session, QueryParameters queryParameters, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key, List<Object> cachableList) {
+	public void putReactiveResultInQueryCache(SharedSessionContractImplementor session, QueryParameters queryParameters, Type[] resultTypes, QueryResultsCache queryCache, QueryKey key, List<Object> cachableList) {
 		super.putResultInQueryCache(session, queryParameters, resultTypes, queryCache, key, cachableList);
 	}
 

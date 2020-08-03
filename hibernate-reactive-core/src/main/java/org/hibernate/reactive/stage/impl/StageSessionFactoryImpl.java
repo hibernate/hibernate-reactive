@@ -10,6 +10,7 @@ import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
+import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 import org.hibernate.reactive.stage.Stage;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -44,6 +45,18 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		);
 	}
 
+	public Stage.StatelessSession createStatelessSession() {
+		ReactiveConnectionPool pool = delegate.getServiceRegistry()
+				.getService(ReactiveConnectionPool.class);
+		return new StageStatelessSessionImpl(
+				new ReactiveStatelessSessionImpl(
+						delegate,
+						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
+						pool.getProxyConnection()
+				)
+		);
+	}
+
 	@Override
 	public CompletionStage<Stage.Session> openSession() throws HibernateException {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
@@ -55,6 +68,19 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 						reactiveConnection
 				) )
 				.thenApply( StageSessionImpl::new );
+	}
+
+	@Override
+	public CompletionStage<Stage.StatelessSession> openStatelessSession() throws HibernateException {
+		ReactiveConnectionPool pool = delegate.getServiceRegistry()
+				.getService(ReactiveConnectionPool.class);
+		return pool.getConnection()
+				.thenApply( reactiveConnection -> new ReactiveStatelessSessionImpl(
+						delegate,
+						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
+						reactiveConnection
+				) )
+				.thenApply( StageStatelessSessionImpl::new );
 	}
 
 	@Override
