@@ -537,6 +537,37 @@ Note that these are "resource local" transactions, delegated to the underlying
 Vert.x database client. At present Hibernate Reactive does not integrate with
 container-managed transactions.
 
+== Stateless sessions
+
+An arguably-underappreciated feature of Hibernate is the `StatelessSession`
+interface, which provides a command-oriented, more bare-metal approach to
+interacting with the database.
+
+You may obtain a reactive stateless session from the `SessionFactory`:
+
+[java]
+----
+Stage.StatelessSession ss = getSessionFactory().createStatelessSession();
+----
+
+A stateless session:
+
+- doesn't have a first-level cache (persistence context), nor does it interact
+  with any second-level caches, and
+- doesn't implement transactional write-behind or automatic dirty checking,
+  so all operations are executed immediately when they're explicitly called.
+
+In certain circumstances, this makes stateless sessions easier to work with.
+
+Even better, the absence of a persistence context means that you can safely
+perform bulk-processing tasks without allocating huge quantities of memory.
+
+However, you should be aware of the following limitations:
+
+- persistence operations never cascade to associated instances,
+- collections are completely ignored, and
+- operations performed via a stateless session bypass callbacks.
+
 == Next steps
 
 :Quarkus: https://quarkus.io/
