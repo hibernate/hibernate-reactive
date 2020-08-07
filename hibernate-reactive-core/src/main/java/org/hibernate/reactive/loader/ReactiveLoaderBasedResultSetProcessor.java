@@ -11,6 +11,7 @@ import org.hibernate.engine.internal.TwoPhaseLoad;
 import org.hibernate.engine.spi.*;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.*;
+import org.hibernate.graph.spi.GraphImplementor;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.loader.plan.exec.query.spi.NamedParameterContext;
@@ -24,6 +25,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -121,45 +123,54 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 		//important: reuse the same event instances for performance!
 		final PreLoadEvent pre;
 		final PostLoadEvent post;
-		if (session.isEventSource()) {
-			pre = new PreLoadEvent((EventSource) session);
-			post = new PostLoadEvent((EventSource) session);
-		} else {
+		if ( session.isEventSource() ) {
+			pre = new PreLoadEvent( (EventSource) session );
+			post = new PostLoadEvent( (EventSource) session );
+		}
+		else {
 			pre = null;
 			post = null;
 		}
 
-		if (hydratedObjects != null) {
-			int hydratedObjectsSize = hydratedObjects.size();
-			LOG.tracev("Total objects hydrated: {0}", hydratedObjectsSize);
+		if ( hydratedObjects != null && !hydratedObjects.isEmpty() ) {
+			if ( LOG.isTraceEnabled() ) {
+				long hydratedObjectsSize = hydratedObjects.stream().filter(Objects::nonNull).count();
+				LOG.tracev("Total objects hydrated: {0}", hydratedObjectsSize);
+			}
 
-			if (hydratedObjectsSize != 0) {
-
-				for (Object hydratedObject : hydratedObjects) {
-					stage = stage.thenCompose(v ->
-							initializeEntity(hydratedObject, readOnly, session, pre, listeners)
+			GraphImplementor<?> fetchGraphLoadContextToRestore = session.getFetchGraphLoadContext();
+			for ( Object hydratedObject : hydratedObjects ) {
+				if ( hydratedObject == null ) {
+					// This is a hack to signal that we're starting to process a new row
+					session.setFetchGraphLoadContext( fetchGraphLoadContextToRestore );
+				}
+				else {
+					stage = stage.thenCompose(
+							v -> initializeEntity( hydratedObject, readOnly, session, pre, listeners )
 					);
 				}
 
 			}
 		}
 
-		return stage.thenAccept(v -> {
-			if (collectionPersisters != null) {
-				for (CollectionPersister collectionPersister : collectionPersisters) {
-					if (!collectionPersister.isArray()) {
+		return stage.thenAccept( v -> {
+			if ( collectionPersisters != null ) {
+				for ( CollectionPersister collectionPersister : collectionPersisters ) {
+					if ( !collectionPersister.isArray() ) {
 						//for sets, we should end the collection load after resolving
 						//the entities, since we might call hashCode() on the elements
 						//TODO: or we could do this polymorphically, and have two
 						//      different operations implemented differently for arrays
-						loader.endCollectionLoad(resultSetId, session, collectionPersister);
+						loader.endCollectionLoad( resultSetId, session, collectionPersister );
 					}
 				}
 			}
 
-			if (hydratedObjects != null) {
-				for (Object hydratedObject : hydratedObjects) {
-					TwoPhaseLoad.afterInitialize(hydratedObject, session);
+			if ( hydratedObjects != null ) {
+				for ( Object hydratedObject : hydratedObjects ) {
+					if ( hydratedObject != null ) {
+						TwoPhaseLoad.afterInitialize( hydratedObject, session );
+					}
 				}
 			}
 
@@ -168,23 +179,26 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 			// endCollectionLoad to ensure the collection is in the
 			// persistence context.
 			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-			if (hydratedObjects != null && hydratedObjects.size() > 0) {
-				for (Object hydratedObject : hydratedObjects) {
-					TwoPhaseLoad.postLoad(hydratedObject, session, post);
-					if (afterLoadActions != null) {
-						for (AfterLoadAction afterLoadAction : afterLoadActions) {
-							final EntityEntry entityEntry = persistenceContext.getEntry(hydratedObject);
-							if (entityEntry == null) {
-								// big problem
-								throw new HibernateException(
-										"Could not locate EntityEntry immediately after two-phase load"
-								);
+			if ( hydratedObjects != null && !hydratedObjects.isEmpty() ) {
+				for ( Object hydratedObject : hydratedObjects ) {
+					if ( hydratedObject != null ) {
+						TwoPhaseLoad.postLoad( hydratedObject, session, post );
+						if ( afterLoadActions != null ) {
+							for ( AfterLoadAction afterLoadAction : afterLoadActions ) {
+								final EntityEntry entityEntry = persistenceContext.getEntry( hydratedObject );
+								if ( entityEntry == null ) {
+									// big problem
+									throw new HibernateException(
+											"Could not locate EntityEntry immediately after two-phase load"
+									);
+								}
+								Loadable persister = (Loadable) entityEntry.getPersister();
+								afterLoadAction.afterLoad( session, hydratedObject, persister );
 							}
-							afterLoadAction.afterLoad(session, hydratedObject, (Loadable) entityEntry.getPersister());
 						}
 					}
 				}
 			}
-		});
+		} );
 	}
 }
