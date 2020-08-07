@@ -526,7 +526,8 @@ sessionFactory.withTransaction( (session, tx) -> session.persist(book) )
 ----
 
 Note that these are "resource local" transactions, delegated to the underlying
-Vert.x database client.
+Vert.x database client. At present Hibernate Reactive does not integrate with
+container-managed transactions.
 
 == Next steps
 
