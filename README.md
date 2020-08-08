@@ -93,9 +93,11 @@ Configuration properties of particular interest include:
 
 - `javax.persistence.jdbc.url`, the JDBC URL of your database,
 - `javax.persistence.jdbc.user` and `javax.persistence.jdbc.password`,
-  the database credentials, and
+  the database credentials,
 - `hibernate.connection.pool_size`, the size of the Vert.x reactive
-  connection pool.
+  connection pool, and
+- `hibernate.jdbc.batch_size`, the maximum batch size for SQL statement
+  batching.
 
 The Vert.x database client has built-in connection pooling and prepared 
 statement caching. During performance tuning, you can further customize 
@@ -356,11 +358,6 @@ all associations.
 #### Identifier generation
 
 There is no block optimization for the `SEQUENCE` and `TABLE` id generators.
-
-#### Batch inserts and updates
-
-Currently there is no support for batched inserts and updates. The setting
-`hibernate.jdbc.batch_size` is ignored.
 
 #### Query language
 
