@@ -7,6 +7,7 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.LockMode;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
 import org.junit.Test;
@@ -26,6 +27,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( GuineaPig.class );
+		configuration.setProperty(AvailableSettings.STATEMENT_BATCH_SIZE, "5");
 		return configuration;
 	}
 
@@ -380,6 +382,41 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.whenComplete( (v,e) -> session.close() )
 								.thenCompose( v -> selectNameFromId( 5 ) )
 								.thenAccept( name -> context.assertEquals( NEW_NAME, name ) ) )
+		);
+	}
+
+	@Test
+	public void testBatching(TestContext context) {
+		test(
+				context,
+				openSession()
+						.thenCompose( s -> s.persist( new GuineaPig(11, "One") ) )
+						.thenCompose( s -> s.persist( new GuineaPig(22, "Two") ) )
+						.thenCompose( s -> s.persist( new GuineaPig(33, "Three") ) )
+						.thenCompose( s -> s.<Long>createQuery("select count(*) from GuineaPig")
+								.getSingleResult()
+								.thenAccept( count -> context.assertEquals(3l, count) )
+								.thenAccept( v -> s.close() )
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.<GuineaPig>createQuery("from GuineaPig")
+								.getResultList()
+								.thenAccept( list -> list.forEach( pig -> pig.setName("Zero") ) )
+								.thenCompose( v -> s.<Long>createQuery("select count(*) from GuineaPig where name='Zero'")
+										.getSingleResult()
+										.thenAccept( count -> context.assertEquals(3l, count) )
+										.thenAccept( vv -> s.close() )
+								) )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.<GuineaPig>createQuery("from GuineaPig")
+								.getResultList()
+								.thenAccept( list -> list.forEach(s::remove) )
+								.thenCompose( v -> s.<Long>createQuery("select count(*) from GuineaPig")
+										.getSingleResult()
+										.thenAccept( count -> context.assertEquals(0l, count) )
+										.thenAccept( vv -> s.close() )
+								)
+						)
 		);
 	}
 

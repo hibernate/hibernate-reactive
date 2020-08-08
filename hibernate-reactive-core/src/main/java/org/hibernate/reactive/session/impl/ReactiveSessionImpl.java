@@ -85,6 +85,7 @@ import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.CriteriaQueryOptions;
@@ -125,7 +126,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public ReactiveSessionImpl(SessionFactoryImpl delegate, SessionCreationOptions options,
 							   ReactiveConnection connection) {
 		super( delegate, options );
-		reactiveConnection = connection;
+		Integer batchSize = getConfiguredJdbcBatchSize();
+		reactiveConnection = batchSize==null || batchSize<2 ? connection :
+				new BatchingConnection( connection, batchSize );
 	}
 
 	@Override

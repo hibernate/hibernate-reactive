@@ -37,8 +37,8 @@ public class SqlClientConnection implements ReactiveConnection {
 	private static PropertyKind<Long> mySqlLastInsertedId;
 
 	private final boolean showSQL;
-	private boolean formatSQL;
-	private boolean usePostgresStyleParameters;
+	private final boolean formatSQL;
+	private final boolean usePostgresStyleParameters;
 
 	private final SqlConnection connection;
 	private Transaction transaction;
@@ -64,6 +64,13 @@ public class SqlClientConnection implements ReactiveConnection {
 			tuples.add( Tuple.wrap( paramValues ) );
 		}
 		return updateBatch( sql, tuples );
+	}
+
+	@Override
+	public CompletionStage<Void> update(String sql, Object[] paramValues,
+										boolean allowBatching, Expectation expectation) {
+		return update( sql, paramValues )
+				.thenAccept( rowCount -> expectation.verifyOutcome( rowCount,-1, sql ) );
 	}
 
 	@Override
@@ -275,5 +282,10 @@ public class SqlClientConnection implements ReactiveConnection {
 			}
 			return result;
 		}
+	}
+
+	@Override
+	public CompletionStage<Void> executeBatch() {
+		return CompletionStages.nullFuture();
 	}
 }

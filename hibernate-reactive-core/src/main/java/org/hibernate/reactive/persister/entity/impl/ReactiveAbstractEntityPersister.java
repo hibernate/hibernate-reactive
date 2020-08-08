@@ -200,15 +200,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		// TODO : shouldn't inserts be Expectations.NONE?
 		final Expectation expectation = appropriateExpectation( delegate().getInsertResultCheckStyles()[j] );
-//		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
-//		final boolean useBatch = expectation.canBeBatched()
-//				&& jdbcBatchSizeToUse > 1
-//				&& getIdentifierGenerator().supportsJdbcBatchInserts();
-//
-//		BasicBatchKey insertBatchKey = useBatch ?
-//				new BasicBatchKey(getEntityName() + "#INSERT", expectation ) :
-//				null;
-
+		boolean useBatch = expectation.canBeBatched() && getIdentifierGenerator().supportsJdbcBatchInserts();
 //		final boolean callable = delegate.isInsertCallable( j );
 
 		Object[] params = PreparedStatementAdaptor.bind( insert -> {
@@ -218,23 +210,13 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		} );
 
 		return getReactiveConnection( session )
-				.update( sql, params )
-				.thenAccept( count -> {
-					try {
-						expectation.verifyOutcome( count, new PreparedStatementAdaptor(), -1, sql );
-					}
-					catch (SQLException e) {
-						//can't actually occur!
-						throw new JDBCException( "error while verifying result count", e );
-					}
-				});
+				.update( sql, params, useBatch, new InsertExpectation( expectation, this ) );
 	}
 
 	/**
 	 * Perform an SQL INSERT, and then retrieve a generated identifier.
 	 * <p>
-	 * This form is used for PostInsertIdentifierGenerator-style ids (IDENTITY,
-	 * select, etc).
+	 * This form is used for PostInsertIdentifierGenerator-style ids.
 	 */
 	default CompletionStage<Serializable> insertReactive(
 			Object[] fields,
@@ -294,13 +276,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		final boolean useVersion = j == 0 && delegate().isVersioned();
 //		final boolean callable = delegate.isDeleteCallable( j );
 		final Expectation expectation = appropriateExpectation( delegate().getDeleteResultCheckStyles()[j] );
-//		final boolean useBatch = j == 0 && delegate.isBatchable() && expectation.canBeBatched();
-//		if ( useBatch && deleteBatchKey == null ) {
-//			deleteBatchKey = new BasicBatchKey(
-//					delegate.getEntityName() + "#DELETE",
-//					expectation
-//			);
-//		}
+		final boolean useBatch = j == 0 && isBatchable() && expectation.canBeBatched();
 
 		if ( log.isTraceEnabled() ) {
 			log.tracev( "Deleting entity: {0}", infoString(delegate(), id, delegate().getFactory() ) );
@@ -347,9 +323,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			}
 		} );
 
-		return getReactiveConnection(session)
-				.update( sql, params )
-				.thenAccept( count -> check( count, id, j, expectation, new PreparedStatementAdaptor(), sql ) );
+		return getReactiveConnection( session )
+				.update( sql, params, useBatch, new DeleteExpectation( id, expectation, this ) );
 	}
 
 	default CompletionStage<?> deleteReactive(
@@ -454,14 +429,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			final SharedSessionContractImplementor session) {
 
 		final Expectation expectation = appropriateExpectation( delegate().getUpdateResultCheckStyles()[j] );
-//		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
-//		final boolean useBatch = expectation.canBeBatched() && isBatchable() && jdbcBatchSizeToUse > 1;
-//		if ( useBatch && updateBatchKey == null ) {
-//			updateBatchKey = new BasicBatchKey(
-//					delegate.getEntityName() + "#UPDATE",
-//					expectation
-//			);
-//		}
+		final boolean useBatch = expectation.canBeBatched() && isBatchable();
 //		final boolean callable = delegate.isUpdateCallable( j );
 		final boolean useVersion = j == 0 && delegate().isVersioned();
 
@@ -471,13 +439,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				log.tracev( "Existing version: {0} -> New version:{1}", oldVersion, fields[delegate().getVersionProperty()] );
 			}
 		}
-
-//			if ( useBatch ) {
-//				update = session
-//						.getJdbcCoordinator()
-//						.getBatch( updateBatchKey )
-//						.getBatchStatement( sql, callable );
-//			}
 
 		Object[] params = PreparedStatementAdaptor.bind( update -> {
 			int index = 1;
@@ -528,14 +489,10 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			}
 		} );
 
-//				if ( useBatch ) {
-//					session.getJdbcCoordinator().getBatch( updateBatchKey ).addToBatch();
-//					return true;
-//				}
-
-		return getReactiveConnection(session)
-				.update( sql, params )
-				.thenApply( count -> check( count, id, j, expectation, new PreparedStatementAdaptor(), sql ) );
+		UpdateExpectation result = new UpdateExpectation(id, expectation, this);
+		return getReactiveConnection( session )
+				.update( sql, params, useBatch, result )
+				.thenApply( v -> useBatch || result.isSuccessful() );
 	}
 
 	boolean check(
@@ -651,7 +608,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 								oldVersion,
 								updateStrings[jj],
 								session
-						));
+						)
+				);
 			}
 		}
 		return updateStage;
@@ -1060,4 +1018,66 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	String[][] getLazyPropertyColumnAliases();
 
 	String getSQLLazySelectString(String fetchGroup);
+
+	boolean isBatchable();
+
+	class UpdateExpectation implements ReactiveConnection.Expectation {
+		private boolean successful;
+
+		private final Serializable id;
+		private final Expectation expectation;
+		private final ReactiveAbstractEntityPersister persister;
+
+		public UpdateExpectation(Serializable id, Expectation expectation, ReactiveAbstractEntityPersister persister) {
+			this.id = id;
+			this.expectation = expectation;
+			this.persister = persister;
+		}
+
+		@Override
+		public void verifyOutcome(int rowCount, int batchPosition, String batchSql) {
+			successful = persister.check( rowCount, id, batchPosition, expectation, new PreparedStatementAdaptor(), batchSql );
+		}
+
+		public boolean isSuccessful() {
+			return successful;
+		}
+	}
+
+	class DeleteExpectation implements ReactiveConnection.Expectation {
+		private final Serializable id;
+		private final Expectation expectation;
+		private final ReactiveAbstractEntityPersister persister;
+
+		public DeleteExpectation(Serializable id, Expectation expectation, ReactiveAbstractEntityPersister persister) {
+			this.id = id;
+			this.expectation = expectation;
+			this.persister = persister;
+		}
+
+		@Override
+		public void verifyOutcome(int rowCount, int batchPosition, String batchSql) {
+			persister.check( rowCount, id, batchPosition, expectation, null, batchSql );
+		}
+	}
+
+	class InsertExpectation implements ReactiveConnection.Expectation {
+		private final Expectation expectation;
+		private ReactiveAbstractEntityPersister persister;
+
+		public InsertExpectation(Expectation expectation, ReactiveAbstractEntityPersister persister) {
+			this.expectation = expectation;
+			this.persister = persister;
+		}
+
+		@Override
+		public void verifyOutcome(int rowCount, int batchPosition, String batchSql) {
+			try {
+				expectation.verifyOutcome( rowCount, null, batchPosition, batchSql );
+			} catch (SQLException e) {
+				//can't actually occur!
+				throw new JDBCException("error while verifying result count", e);
+			}
+		}
+	}
 }
