@@ -58,7 +58,7 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	@Override
-	public CompletionStage<Integer[]> update(String sql, List<Object[]> batchParamValues) {
+	public CompletionStage<int[]> update(String sql, List<Object[]> batchParamValues) {
 		final List<Tuple> tuples = new ArrayList<>( batchParamValues.size() );
 		for ( Object[] paramValues : batchParamValues) {
 			tuples.add( Tuple.wrap( paramValues ) );
@@ -111,13 +111,13 @@ public class SqlClientConnection implements ReactiveConnection {
 		return preparedQuery( sql, parameters ).thenApply(SqlResult::rowCount);
 	}
 
-	public CompletionStage<Integer[]> updateBatch(String sql, List<Tuple> parametersBatch) {
+	public CompletionStage<int[]> updateBatch(String sql, List<Tuple> parametersBatch) {
 		return preparedQueryBatch( sql, parametersBatch ).thenApply(result -> {
 
-			final Integer[] updateCounts = new Integer[ parametersBatch.size() ];
+			final int[] updateCounts = new int[ parametersBatch.size() ];
 
 			int i = 0;
-			RowSet resultNext = result;
+			RowSet<Row> resultNext = result;
 			if ( parametersBatch.size() > 0 ) {
 				do {
 					updateCounts[ i++ ] = resultNext.rowCount();
