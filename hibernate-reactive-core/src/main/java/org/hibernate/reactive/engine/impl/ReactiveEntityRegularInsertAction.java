@@ -10,7 +10,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityInsertAction;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.entry.CacheEntry;
-import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -78,11 +77,12 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 							entry.postInsert( getState() );
 
 							if ( persister.hasInsertGeneratedProperties() ) {
-								persister.processInsertGeneratedProperties( id, instance, getState(), session );
-								if ( persister.isVersionPropertyGenerated() ) {
-									setVersion( Versioning.getVersion( getState(), persister ) );
-								}
-								entry.postUpdate( instance, getState(), getVersion() );
+								throw new UnsupportedOperationException("generated attributes not supported in Hibernate Reactive");
+//								persister.processInsertGeneratedProperties( id, instance, getState(), session );
+//								if ( persister.isVersionPropertyGenerated() ) {
+//									setVersion( Versioning.getVersion( getState(), persister ) );
+//								}
+//								entry.postUpdate( instance, getState(), getVersion() );
 							}
 
 							persistenceContext.registerInsertedKey( persister, getId() );

@@ -61,7 +61,8 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 					.thenAccept( generatedId -> {
 						setGeneratedId(generatedId);
 						if (persister.hasInsertGeneratedProperties()) {
-							persister.processInsertGeneratedProperties(generatedId, instance, getState(), session);
+							throw new UnsupportedOperationException("generated attributes not supported in Hibernate Reactive");
+//							persister.processInsertGeneratedProperties(generatedId, instance, getState(), session);
 						}
 						//need to do that here rather than in the save event listener to let
 						//the post insert events to have a id-filled entity when IDENTITY is used (EJB3)

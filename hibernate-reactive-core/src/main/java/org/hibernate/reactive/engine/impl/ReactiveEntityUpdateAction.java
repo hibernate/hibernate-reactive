@@ -10,7 +10,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityUpdateAction;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.entry.CacheEntry;
-import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.*;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
@@ -116,10 +115,11 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 				if ( persister.hasUpdateGeneratedProperties() ) {
 					// this entity defines property generation, so process those generated
 					// values...
-					persister.processUpdateGeneratedProperties( id, instance, getState(), session );
-					if ( persister.isVersionPropertyGenerated() ) {
-						setNextVersion( Versioning.getVersion( getState(), persister ) );
-					}
+					throw new UnsupportedOperationException("generated attributes not supported in Hibernate Reactive");
+//					persister.processUpdateGeneratedProperties( id, instance, getState(), session );
+//					if ( persister.isVersionPropertyGenerated() ) {
+//						setNextVersion( Versioning.getVersion( getState(), persister ) );
+//					}
 				}
 				// have the entity entry doAfterTransactionCompletion post-update processing, passing it the
 				// update state and the new version (if one).
