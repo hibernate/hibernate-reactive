@@ -22,10 +22,17 @@ import java.util.concurrent.CompletionStage;
 @Incubating
 public interface ReactiveConnection {
 
+	@FunctionalInterface
+	interface Expectation {
+		void verifyOutcome(int rowCount, int batchPosition, String sql);
+	}
+
 	CompletionStage<Void> execute(String sql);
 
 	CompletionStage<Integer> update(String sql);
 	CompletionStage<Integer> update(String sql, Object[] paramValues);
+	CompletionStage<Void> update(String sql, Object[] paramValues,
+								 boolean allowBatching, Expectation expectation);
 	CompletionStage<int[]> update(String sql, List<Object[]> paramValues);
 	CompletionStage<Long> updateReturning(String sql, Object[] paramValues);
 
@@ -41,6 +48,8 @@ public interface ReactiveConnection {
 	CompletionStage<Void> beginTransaction();
 	CompletionStage<Void> commitTransaction();
 	CompletionStage<Void> rollbackTransaction();
+
+	CompletionStage<Void> executeBatch();
 
 	void close();
 

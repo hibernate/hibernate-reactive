@@ -289,6 +289,11 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		}
 
 		@Override
+		public CompletionStage<Void> update(String sql, Object[] paramValues, boolean allowBatching, Expectation expectation) {
+			return connection().thenCompose( conn -> conn.update(sql, paramValues, false, expectation) );
+		}
+
+		@Override
 		public CompletionStage<int[]> update(String sql, List<Object[]> paramValues) {
 			return connection().thenCompose( conn -> conn.update( sql, paramValues ) );
 		}
@@ -331,6 +336,11 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		@Override
 		public CompletionStage<Void> rollbackTransaction() {
 			return connection().thenCompose(ReactiveConnection::rollbackTransaction);
+		}
+
+		@Override
+		public CompletionStage<Void> executeBatch() {
+			return connection().thenCompose(ReactiveConnection::executeBatch);
 		}
 
 		@Override
