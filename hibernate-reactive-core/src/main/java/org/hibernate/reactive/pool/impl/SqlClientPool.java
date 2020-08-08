@@ -289,7 +289,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		}
 
 		@Override
-		public CompletionStage<Integer[]> update(String sql, List<Object[]> paramValues) {
+		public CompletionStage<int[]> update(String sql, List<Object[]> paramValues) {
 			return connection().thenCompose( conn -> conn.update( sql, paramValues ) );
 		}
 

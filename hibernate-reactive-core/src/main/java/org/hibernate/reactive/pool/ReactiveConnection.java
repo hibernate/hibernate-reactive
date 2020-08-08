@@ -26,7 +26,7 @@ public interface ReactiveConnection {
 
 	CompletionStage<Integer> update(String sql);
 	CompletionStage<Integer> update(String sql, Object[] paramValues);
-	CompletionStage<Integer[]> update(String sql, List<Object[]> paramValues);
+	CompletionStage<int[]> update(String sql, List<Object[]> paramValues);
 	CompletionStage<Long> updateReturning(String sql, Object[] paramValues);
 
 	CompletionStage<Result> select(String sql);
