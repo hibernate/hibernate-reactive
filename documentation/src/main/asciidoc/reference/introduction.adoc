@@ -99,7 +99,9 @@ Configuration properties of particular interest include:
 - `javax.persistence.jdbc.user` and `javax.persistence.jdbc.password`,
 the database credentials,
 - `javax.persistence.schema-generation.database.action`, for enabling
-  automatic schema export.
+  automatic schema export, and
+- `hibernate.jdbc.batch_size`, the maximum batch size for SQL statement
+  batching.
 
 An example {xml}[`persistence.xml`] file is included in the example
 program.
