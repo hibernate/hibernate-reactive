@@ -42,6 +42,7 @@ import org.hibernate.sql.SimpleSelect;
 import org.hibernate.sql.Update;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.type.Type;
+import org.hibernate.type.VersionType;
 import org.jboss.logging.Logger;
 
 import javax.persistence.metamodel.Attribute;
@@ -93,8 +94,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	@Override
-	default CompletionStage<Serializable> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session)
-			throws HibernateException {
+	default CompletionStage<Serializable> insertReactive(Object[] fields, Object object,
+														 SharedSessionContractImplementor session) {
 		// apply any pre-insert in-memory value generation
 		preInsertInMemoryValueGeneration( fields, object, session );
 
@@ -103,21 +104,21 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		if ( delegate().getEntityMetamodel().isDynamicInsert() ) {
 			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
 			boolean[] notNull = delegate().getPropertiesToInsert( fields );
-			stage = stage.thenCompose( n -> insertReactive( fields, notNull, delegate().generateInsertString( true, notNull ), object, session ) );
+			stage = stage.thenCompose( n -> insertReactive( fields, notNull, delegate().generateInsertString( true, notNull ), session ) );
 			for ( int j = 1; j < span; j++ ) {
 				final int jj = j;
 				stage = stage.thenCompose( id ->
-						insertReactive(id, fields, notNull, jj, delegate().generateInsertString(notNull, jj), object, session)
+						insertReactive(id, fields, notNull, jj, delegate().generateInsertString(notNull, jj), session)
 							.thenApply( v -> id ));
 			}
 		}
 		else {
 			// For the case of dynamic-insert="false", use the static SQL
-			stage = stage.thenCompose( n -> insertReactive( fields, delegate().getPropertyInsertability(), delegate().getSQLIdentityInsertString(), object, session ) );
+			stage = stage.thenCompose( n -> insertReactive( fields, delegate().getPropertyInsertability(), delegate().getSQLIdentityInsertString(), session ) );
 			for ( int j = 1; j < span; j++ ) {
 				final int jj = j;
 				stage = stage.thenCompose( id ->
-						insertReactive(id, fields, delegate().getPropertyInsertability(), jj, delegate().getSQLInsertStrings()[jj], object, session)
+						insertReactive(id, fields, delegate().getPropertyInsertability(), jj, delegate().getSQLInsertStrings()[jj], session)
 								.thenApply( v -> id ));
 			}
 		}
@@ -150,7 +151,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 								notNull,
 								jj,
 								delegate().generateInsertString( notNull, jj ),
-								object,
 								session
 						));
 			}
@@ -166,7 +166,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 								delegate().getPropertyInsertability(),
 								jj,
 								delegate().getSQLInsertStrings()[jj],
-								object,
 								session
 						));
 			}
@@ -180,8 +179,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			boolean[] notNull,
 			int j,
 			String sql,
-			Object object,
-			SharedSessionContractImplementor session) throws HibernateException {
+			SharedSessionContractImplementor session) {
 
 		if ( delegate().isInverseTable( j ) ) {
 			return CompletionStages.nullFuture();
@@ -203,16 +201,14 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		// TODO : shouldn't inserts be Expectations.NONE?
 		final Expectation expectation = appropriateExpectation( delegate().getInsertResultCheckStyles()[j] );
 //		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
-//		final boolean useBatch = expectation.canBeBatched() &&
-//				jdbcBatchSizeToUse > 1 &&
-//				delegate.getIdentifierGenerator().supportsJdbcBatchInserts();
+//		final boolean useBatch = expectation.canBeBatched()
+//				&& jdbcBatchSizeToUse > 1
+//				&& getIdentifierGenerator().supportsJdbcBatchInserts();
+//
+//		BasicBatchKey insertBatchKey = useBatch ?
+//				new BasicBatchKey(getEntityName() + "#INSERT", expectation ) :
+//				null;
 
-//		if ( useBatch && insertBatchKey == null ) {
-//			insertBatchKey = new BasicBatchKey(
-//					delegate.getEntityName() + "#INSERT",
-//					expectation
-//			);
-//		}
 //		final boolean callable = delegate.isInsertCallable( j );
 
 		Object[] params = PreparedStatementAdaptor.bind( insert -> {
@@ -244,8 +240,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Object[] fields,
 			boolean[] notNull,
 			String sql,
-			Object object,
-			SharedSessionContractImplementor session) throws HibernateException {
+			SharedSessionContractImplementor session) {
 
 		if ( log.isTraceEnabled() ) {
 			log.tracev( "Inserting entity: {0}", infoString(delegate()) );
@@ -289,10 +284,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Serializable id,
 			Object version,
 			int j,
-			Object object,
 			String sql,
 			SharedSessionContractImplementor session,
-			Object[] loadedState) throws HibernateException {
+			Object[] loadedState) {
 
 		if ( delegate().isInverseTable( j ) ) {
 			return CompletionStages.nullFuture();
@@ -360,8 +354,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	default CompletionStage<?> deleteReactive(
 			Serializable id, Object version, Object object,
-			SharedSessionContractImplementor session)
-			throws HibernateException {
+			SharedSessionContractImplementor session) {
 		final int span = delegate().getTableSpan();
 		boolean isImpliedOptimisticLocking = !delegate().getEntityMetamodel().isVersioned() && isAllOrDirtyOptimisticLocking();
 		Object[] loadedState = null;
@@ -399,7 +392,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 							id,
 							version,
 							jj,
-							object,
 							deleteStrings[jj],
 							session,
 							state
@@ -458,9 +450,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			final boolean[] includeProperty,
 			final int j,
 			final Object oldVersion,
-			final Object object,
 			final String sql,
-			final SharedSessionContractImplementor session) throws HibernateException {
+			final SharedSessionContractImplementor session) {
 
 		final Expectation expectation = appropriateExpectation( delegate().getUpdateResultCheckStyles()[j] );
 //		final int jdbcBatchSizeToUse = session.getConfiguredJdbcBatchSize();
@@ -563,7 +554,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			final Object oldVersion,
 			final Object object,
 			final Object rowId,
-			final SharedSessionContractImplementor session) throws HibernateException {
+			final SharedSessionContractImplementor session) {
 
 		// apply any pre-update in-memory value generation
 		if ( delegate().getEntityMetamodel().hasPreUpdateGeneratedValues() ) {
@@ -658,7 +649,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 								propsToUpdate,
 								jj,
 								oldVersion,
-								object,
 								updateStrings[jj],
 								session
 						));
@@ -677,29 +667,28 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			final boolean[] includeProperty,
 			final int j,
 			final Object oldVersion,
-			final Object object,
 			final String sql,
-			final SharedSessionContractImplementor session) throws HibernateException {
+			final SharedSessionContractImplementor session) {
 
 		if ( !delegate().isInverseTable( j ) ) {
 
 			if ( delegate().isNullableTable( j ) && delegate().isAllNull( oldFields, j ) && oldFields != null ) {
 				// don't bother trying to update, we know there is no row there yet
 				if ( !delegate().isAllNull( fields, j ) ) {
-					return insertReactive( id, fields, delegate().getPropertyInsertability(), j, delegate().getSQLInsertStrings()[j], object, session );
+					return insertReactive( id, fields, delegate().getPropertyInsertability(), j, delegate().getSQLInsertStrings()[j], session );
 				}
 			}
 			else if ( delegate().isNullableTable( j ) && delegate().isAllNull( fields, j ) ) {
 				// All fields are null, we can just delete the row
-				return deleteReactive( id, oldVersion, j, object, delegate().getSQLDeleteStrings()[j], session, null );
+				return deleteReactive( id, oldVersion, j, delegate().getSQLDeleteStrings()[j], session, null );
 			}
 			else {
-				return updateReactive( id, fields, oldFields, rowId, includeProperty, j, oldVersion, object, sql, session )
+				return updateReactive( id, fields, oldFields, rowId, includeProperty, j, oldVersion, sql, session )
 						.thenApply( updated -> {
 							if ( !updated && !delegate().isAllNull( fields, j ) ) {
 								// Nothing has been updated because the row isn't in the db
 								// Run an insert instead
-								return insertReactive( id, fields, delegate().getPropertyInsertability(), j, delegate().getSQLInsertStrings()[j], object, session );
+								return insertReactive( id, fields, delegate().getPropertyInsertability(), j, delegate().getSQLInsertStrings()[j], session );
 							}
 							return null;
 						} );
@@ -818,6 +807,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		} );
 	}
 
+	@Override
+	VersionType<Object> getVersionType();
+
 	default Object nextVersionForLock(LockMode lockMode, Serializable id, Object version, Object entity,
 									  SharedSessionContractImplementor session) {
 		if ( lockMode == LockMode.PESSIMISTIC_FORCE_INCREMENT ) {
@@ -825,13 +817,14 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				throw new IllegalArgumentException("increment locks not supported for unversioned entity");
 			}
 
-			Object  nextVersion = getVersionType().next( version, session);
+			VersionType<Object> versionType = getVersionType();
+			Object nextVersion = versionType.next( version, session);
 
 			if ( log.isTraceEnabled() ) {
 				log.trace(
 						"Forcing version increment [" + infoString( this, id, getFactory() ) + "; "
-								+ getVersionType().toLoggableString( version, getFactory() ) + " -> "
-								+ getVersionType().toLoggableString( nextVersion, getFactory() ) + "]"
+								+ versionType.toLoggableString( version, getFactory() ) + " -> "
+								+ versionType.toLoggableString( nextVersion, getFactory() ) + "]"
 				);
 			}
 
@@ -972,9 +965,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		@SuppressWarnings("deprecation")
 		final Set<String> initializedLazyAttributeNames = interceptor.getInitializedLazyAttributeNames();
 
-		Object[] params = PreparedStatementAdaptor.bind( statement -> {
-			getIdentifierType().nullSafeSet( statement, id, 1, session );
-		} );
+		Object[] params = PreparedStatementAdaptor.bind(
+				statement -> getIdentifierType().nullSafeSet( statement, id, 1, session )
+		);
 
 		String lazySelect = getSQLLazySelectString( fetchGroup );
 
