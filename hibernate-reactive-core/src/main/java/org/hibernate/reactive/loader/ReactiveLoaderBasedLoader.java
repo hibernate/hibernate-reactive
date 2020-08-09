@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive;
+package org.hibernate.reactive.loader;
 
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.QueryParameters;
@@ -11,7 +11,6 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.reactive.loader.ReactiveLoader;
 import org.hibernate.transform.ResultTransformer;
 
 import java.sql.ResultSet;
@@ -19,8 +18,8 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * An interface intended for {@link ReactiveLoader} implementations that also
- * extend a {@link org.hibernate.loader.Loader} implementation.
+ * An interface intended for {@link org.hibernate.reactive.loader.ReactiveLoader} implementations
+ * that also extend a {@link org.hibernate.loader.Loader} implementation.
  *
  * @author Gail Badner
  */

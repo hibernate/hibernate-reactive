@@ -17,7 +17,6 @@ import org.hibernate.loader.plan.exec.query.spi.NamedParameterContext;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.Loadable;
-import org.hibernate.reactive.ReactiveLoaderBasedLoader;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 
@@ -52,7 +51,6 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 	 * This method is based on {@link Loader#processResultSet}
 	 */
 	@Override
-	@SuppressWarnings("unchecked")
 	public CompletionStage<List<Object>> reactiveExtractResults(
 			ResultSet rs,
 			SharedSessionContractImplementor session,
@@ -69,7 +67,7 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 		final List<EntityKey[]> subselectResultKeys = createSubselects ? new ArrayList<>() : null;
 		final List<Object> hydratedObjects = entitySpan == 0 ? null : new ArrayList<>(entitySpan * 10);
 
-		final List results = loader.getRowsFromResultSet(
+		final List<Object> results = loader.getRowsFromResultSet(
 				rs,
 				queryParameters,
 				session,
