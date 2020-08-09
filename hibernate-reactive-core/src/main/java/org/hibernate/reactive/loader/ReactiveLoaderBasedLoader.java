@@ -18,7 +18,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * An interface intended for {@link org.hibernate.reactive.loader.ReactiveLoader} implementations
+ * An interface intended for {@link ReactiveLoader} implementations
  * that also extend a {@link org.hibernate.loader.Loader} implementation.
  *
  * @author Gail Badner
