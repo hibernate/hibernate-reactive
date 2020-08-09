@@ -240,11 +240,6 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		return qp;
 	}
 
-	@Override
-	public SessionFactoryImplementor getFactory() {
-		return super.getFactory();
-	}
-
 	public ReactiveResultSetProcessor getReactiveResultSetProcessor() {
 		return reactiveResultSetProcessor;
 	}
@@ -291,7 +286,7 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 				boolean returnProxies,
 				boolean readOnly,
 				ResultTransformer forcedResultTransformer,
-				List<AfterLoadAction> afterLoadActionList) throws SQLException {
+				List<AfterLoadAction> afterLoadActionList) {
 			throw new UnsupportedOperationException( "#reactiveExtractResults should be used instead" );
 		}
 
@@ -299,7 +294,6 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		 * This method is based on {@link ResultSetProcessorImpl#extractResults}
 		 */
 		@Override
-		@SuppressWarnings("unchecked")
 		public CompletionStage<List<Object>> reactiveExtractResults(
 				ResultSet resultSet,
 				final SharedSessionContractImplementor session,
@@ -321,7 +315,7 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 					readOnly
 			);
 
-			final List loadResults = extractRows( resultSet, queryParameters, context );
+			final List<Object> loadResults = extractRows( resultSet, queryParameters, context );
 
 			return CompletionStages.nullFuture()
 					.thenCompose( v ->  rowReader.reactiveFinishUp( this, context, afterLoadActionList) )
@@ -428,14 +422,14 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 					.listeners();
 
 			for ( HydratedEntityRegistration registration : hydratedEntityRegistrations ) {
-				final EntityEntry entityEntry = session.getPersistenceContext().getEntry( registration.getInstance() );
+//				final EntityEntry entityEntry = session.getPersistenceContext().getEntry( registration.getInstance() );
 				stage = stage.thenCompose( v -> resultSetProcessor.initializeEntity(
 						registration.getInstance(),
 						false,
 						session,
 						preLoadEvent,
 						listeners
-				));
+				) );
 			}
 
 			return stage;
