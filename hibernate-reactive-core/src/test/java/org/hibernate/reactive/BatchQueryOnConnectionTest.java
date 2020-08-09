@@ -8,6 +8,8 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -17,8 +19,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+
 public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 	private static final int BATCH_SIZE = 20;
+
+	@Rule
+	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2 );
 
 	@Test
 	public void testBatchInsertSizeEqMultiple(TestContext context) {
