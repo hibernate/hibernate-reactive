@@ -253,6 +253,18 @@ To publish Hibernate Reactive to your local Maven repository, run:
 
     ./gradlew publishToMavenLocal
 
+### Building documentation
+
+To build the API and Reference documentation type:
+
+    ./gradlew assembleDocumentation
+
+You'll find the generated documentation in the subdirectory
+`release/build/documentation`.
+
+    open release/build/documentation/reference/html_single/index.html
+    open release/build/documentation/javadocs/index.html
+
 ### Running tests
 
 To run the tests, you'll need to decide which RDBMS you want to test 
