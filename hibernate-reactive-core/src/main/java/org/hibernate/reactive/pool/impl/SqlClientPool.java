@@ -19,7 +19,6 @@ import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.ServiceRegistryAwareService;
@@ -34,6 +33,7 @@ import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
@@ -51,7 +51,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	private boolean showSQL;
 	private boolean formatSQL;
 	private ServiceRegistryImplementor serviceRegistry;
-	private Map configurationValues;
+	private Map<?,?> configurationValues;
 	private boolean usePostgresStyleParameters;
 
 	public SqlClientPool() {}
@@ -79,12 +79,12 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		}
 	}
 
-	protected Pool createPool(Map configurationValues) {
+	protected Pool createPool(Map<?,?> configurationValues) {
 		Vertx vertx = serviceRegistry.getService( VertxInstance.class ).getVertx();
 		return configurePool( configurationValues, vertx );
 	}
 
-	protected Pool configurePool(Map configurationValues, Vertx vertx) {
+	protected Pool configurePool(Map<?,?> configurationValues, Vertx vertx) {
 		URI uri = jdbcUrl(configurationValues);
 		SqlConnectOptions connectOptions = sqlConnectOptions( uri );
 		PoolOptions poolOptions = poolOptions( configurationValues );
@@ -101,13 +101,13 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		}
 	}
 
-	private URI jdbcUrl(Map configurationValues) {
+	private URI jdbcUrl(Map<?,?> configurationValues) {
 		final String url = ConfigurationHelper.getString( Settings.URL, configurationValues );
 		CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000011: SQL Client URL [%s]", url );
 		return parse( url );
 	}
 
-	private PoolOptions poolOptions(Map configurationValues) {
+	private PoolOptions poolOptions(Map<?,?> configurationValues) {
 		PoolOptions poolOptions = new PoolOptions();
 
 		final int poolSize = ConfigurationHelper.getInt( Settings.POOL_SIZE, configurationValues, DEFAULT_POOL_SIZE );
@@ -267,80 +267,80 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	private class ProxyConnection implements ReactiveConnection {
 		private ReactiveConnection connection;
 
-		CompletionStage<ReactiveConnection> connection() {
+		private <T> CompletionStage<T> withConnection(Function<ReactiveConnection,CompletionStage<T>> operation) {
 			return connection == null ?
-					getConnection().thenApply(conn -> connection = conn) :
-					CompletionStages.completedFuture(connection);
+					getConnection().thenApply(newConnection -> connection = newConnection).thenCompose(operation) :
+					operation.apply(connection);
 		}
 
 		@Override
 		public CompletionStage<Void> execute(String sql) {
-			return connection().thenCompose( conn -> conn.execute(sql) );
+			return withConnection( conn -> conn.execute(sql) );
 		}
 
 		@Override
 		public CompletionStage<Integer> update(String sql) {
-			return connection().thenCompose( conn -> conn.update(sql) );
+			return withConnection( conn -> conn.update(sql) );
 		}
 
 		@Override
 		public CompletionStage<Integer> update(String sql, Object[] paramValues) {
-			return connection().thenCompose( conn -> conn.update(sql, paramValues) );
+			return withConnection( conn -> conn.update(sql, paramValues) );
 		}
 
 		@Override
 		public CompletionStage<Void> update(String sql, Object[] paramValues, boolean allowBatching, Expectation expectation) {
-			return connection().thenCompose( conn -> conn.update(sql, paramValues, false, expectation) );
+			return withConnection( conn -> conn.update(sql, paramValues, false, expectation) );
 		}
 
 		@Override
 		public CompletionStage<int[]> update(String sql, List<Object[]> paramValues) {
-			return connection().thenCompose( conn -> conn.update( sql, paramValues ) );
+			return withConnection( conn -> conn.update(sql, paramValues) );
 		}
 
 		@Override
 		public CompletionStage<Long> updateReturning(String sql, Object[] paramValues) {
-			return connection().thenCompose( conn -> conn.updateReturning(sql, paramValues) );
+			return withConnection( conn -> conn.updateReturning(sql, paramValues) );
 		}
 
 		@Override
 		public CompletionStage<Result> select(String sql) {
-			return connection().thenCompose( conn -> conn.select(sql) );
+			return withConnection( conn -> conn.select(sql) );
 		}
 
 		@Override
 		public CompletionStage<Result> select(String sql, Object[] paramValues) {
-			return connection().thenCompose( conn -> conn.select(sql) );
+			return withConnection( conn -> conn.select(sql) );
 		}
 
 		@Override
 		public CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues) {
-			return connection().thenCompose( conn -> conn.selectJdbc(sql, paramValues) );
+			return withConnection( conn -> conn.selectJdbc(sql, paramValues) );
 		}
 
 		@Override
 		public CompletionStage<Long> selectLong(String sql, Object[] paramValues) {
-			return connection().thenCompose( conn -> conn.selectLong(sql, paramValues) );
+			return withConnection( conn -> conn.selectLong(sql, paramValues) );
 		}
 
 		@Override
 		public CompletionStage<Void> beginTransaction() {
-			return connection().thenCompose(ReactiveConnection::beginTransaction);
+			return withConnection(ReactiveConnection::beginTransaction);
 		}
 
 		@Override
 		public CompletionStage<Void> commitTransaction() {
-			return connection().thenCompose(ReactiveConnection::commitTransaction);
+			return withConnection(ReactiveConnection::commitTransaction);
 		}
 
 		@Override
 		public CompletionStage<Void> rollbackTransaction() {
-			return connection().thenCompose(ReactiveConnection::rollbackTransaction);
+			return withConnection(ReactiveConnection::rollbackTransaction);
 		}
 
 		@Override
 		public CompletionStage<Void> executeBatch() {
-			return connection().thenCompose(ReactiveConnection::executeBatch);
+			return withConnection(ReactiveConnection::executeBatch);
 		}
 
 		@Override
