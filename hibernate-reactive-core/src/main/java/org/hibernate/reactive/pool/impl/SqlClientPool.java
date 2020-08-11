@@ -266,11 +266,21 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 
 	private class ProxyConnection implements ReactiveConnection {
 		private ReactiveConnection connection;
+		private boolean connected;
 
 		private <T> CompletionStage<T> withConnection(Function<ReactiveConnection,CompletionStage<T>> operation) {
-			return connection == null ?
-					getConnection().thenApply(newConnection -> connection = newConnection).thenCompose(operation) :
-					operation.apply(connection);
+			if (!connected) {
+				connected = true;
+				return getConnection()
+						.thenApply(newConnection -> connection = newConnection)
+						.thenCompose(operation);
+			}
+			else {
+				if (connection == null) {
+					throw new IllegalStateException("session is currently connecting to database");
+				}
+				return operation.apply(connection);
+			}
 		}
 
 		@Override
