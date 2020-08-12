@@ -59,7 +59,8 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 	@Entity
 	@SequenceGenerator(name = "seq",
 			sequenceName = "test_id_seq",
-			initialValue = 5)
+			initialValue = 5,
+			allocationSize = 1)
 	public static class SequenceId {
 		@Id @GeneratedValue(generator = "seq")
 		Integer id;
