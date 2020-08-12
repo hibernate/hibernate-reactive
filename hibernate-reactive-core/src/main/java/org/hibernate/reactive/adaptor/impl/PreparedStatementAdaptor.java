@@ -184,7 +184,6 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 	@Override
 	public void setObject(int parameterIndex, Object x, int targetSqlType) {
 		put( parameterIndex, x );
-//		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -384,33 +383,31 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 	}
 
 	@Override
-	public void close() {
-
-	}
+	public void close() {}
 
 	@Override
 	public int getMaxFieldSize() {
-		throw new UnsupportedOperationException();
+		return 0;
 	}
 
 	@Override
 	public void setMaxFieldSize(int max) {
-
-	}
-
-	@Override
-	public int getMaxRows() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setMaxRows(int max) {
+	public int getMaxRows() {
+		return 0;
+	}
 
+	@Override
+	public void setMaxRows(int max) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public void setEscapeProcessing(boolean enable) {
-
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -420,27 +417,25 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setQueryTimeout(int seconds) {
-
-	}
-
-	@Override
-	public void cancel() {
-
-	}
-
-	@Override
-	public SQLWarning getWarnings() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void clearWarnings() {
-
+	public void cancel() {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setCursorName(String name) {
+	public SQLWarning getWarnings() {
+		return null;
+	}
 
+	@Override
+	public void clearWarnings() {}
+
+	@Override
+	public void setCursorName(String name) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -455,7 +450,7 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public int getUpdateCount() {
-		return 0;
+		return -1;
 	}
 
 	@Override
@@ -465,42 +460,42 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public int getFetchDirection() {
-		return 0;
+		return ResultSet.FETCH_FORWARD;
 	}
 
 	@Override
 	public void setFetchDirection(int direction) {
-
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public int getFetchSize() {
-		return 0;
+		return 1;
 	}
 
 	@Override
 	public void setFetchSize(int rows) {
-
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public int getResultSetConcurrency() {
-		throw new UnsupportedOperationException();
+		return ResultSet.CONCUR_READ_ONLY;
 	}
 
 	@Override
 	public int getResultSetType() {
-		throw new UnsupportedOperationException();
+		return ResultSet.TYPE_FORWARD_ONLY;
 	}
 
 	@Override
 	public void addBatch(String sql) {
-
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public void clearBatch() {
-
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -555,7 +550,7 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public int getResultSetHoldability() {
-		return 0;
+		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 
 	@Override
@@ -570,6 +565,7 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setPoolable(boolean poolable) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -578,7 +574,7 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public boolean isCloseOnCompletion() {
-		throw new UnsupportedOperationException();
+		return false;
 	}
 
 	@Override
