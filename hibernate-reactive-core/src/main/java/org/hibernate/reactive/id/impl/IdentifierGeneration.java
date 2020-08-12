@@ -18,7 +18,6 @@ import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.internal.util.StringHelper;
-import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.provider.Settings;
@@ -35,6 +34,8 @@ import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.id.enhanced.SequenceStyleGenerator.CATALOG;
 import static org.hibernate.id.enhanced.SequenceStyleGenerator.SCHEMA;
+import static org.hibernate.internal.util.config.ConfigurationHelper.getBoolean;
+import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
 
 public class IdentifierGeneration {
 
@@ -46,12 +47,12 @@ public class IdentifierGeneration {
 	 * @return The sequence name
 	 */
 	static QualifiedName determineSequenceName(Properties params, ServiceRegistry serviceRegistry) {
-		final String sequencePerEntitySuffix = ConfigurationHelper.getString( SequenceStyleGenerator.CONFIG_SEQUENCE_PER_ENTITY_SUFFIX, params, SequenceStyleGenerator.DEF_SEQUENCE_SUFFIX );
+		final String sequencePerEntitySuffix =
+				getString( SequenceStyleGenerator.CONFIG_SEQUENCE_PER_ENTITY_SUFFIX, params,
+						SequenceStyleGenerator.DEF_SEQUENCE_SUFFIX );
 
 		String fallbackSequenceName = SequenceStyleGenerator.DEF_SEQUENCE_NAME;
-		final Boolean preferGeneratorNameAsDefaultName = serviceRegistry.getService( ConfigurationService.class )
-				.getSetting( Settings.PREFER_GENERATOR_NAME_AS_DEFAULT_SEQUENCE_NAME, StandardConverters.BOOLEAN, true );
-		if ( preferGeneratorNameAsDefaultName ) {
+		if ( preferGeneratorNameAsDefaultName(serviceRegistry) ) {
 			final String generatorName = params.getProperty( IdentifierGenerator.GENERATOR_NAME );
 			if ( StringHelper.isNotEmpty( generatorName ) ) {
 				fallbackSequenceName = generatorName;
@@ -59,11 +60,12 @@ public class IdentifierGeneration {
 		}
 
 		// JPA_ENTITY_NAME value honors <class ... entity-name="..."> (HBM) and @Entity#name (JPA) overrides.
-		final String defaultSequenceName = ConfigurationHelper.getBoolean( SequenceStyleGenerator.CONFIG_PREFER_SEQUENCE_PER_ENTITY, params, false )
-				? params.getProperty( SequenceStyleGenerator.JPA_ENTITY_NAME ) + sequencePerEntitySuffix
-				: fallbackSequenceName;
+		final String defaultSequenceName =
+				getBoolean( SequenceStyleGenerator.CONFIG_PREFER_SEQUENCE_PER_ENTITY, params, false )
+						? params.getProperty( SequenceStyleGenerator.JPA_ENTITY_NAME ) + sequencePerEntitySuffix
+						: fallbackSequenceName;
 
-		final String sequenceName = ConfigurationHelper.getString( SequenceStyleGenerator.SEQUENCE_PARAM, params, defaultSequenceName );
+		final String sequenceName = getString( SequenceStyleGenerator.SEQUENCE_PARAM, params, defaultSequenceName );
 		if ( sequenceName.contains( "." ) ) {
 			return QualifiedNameParser.INSTANCE.parse( sequenceName );
 		}
@@ -71,10 +73,10 @@ public class IdentifierGeneration {
 			JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
 			// todo : need to incorporate implicit catalog and schema names
 			final Identifier catalog = jdbcEnvironment.getIdentifierHelper().toIdentifier(
-					ConfigurationHelper.getString( CATALOG, params )
+					getString( CATALOG, params )
 			);
 			final Identifier schema =  jdbcEnvironment.getIdentifierHelper().toIdentifier(
-					ConfigurationHelper.getString( SCHEMA, params )
+					getString( SCHEMA, params )
 			);
 			return new QualifiedNameParser.NameParts(
 					catalog,
@@ -86,16 +88,14 @@ public class IdentifierGeneration {
 
 	static QualifiedName determineTableName(Properties params, ServiceRegistry serviceRegistry) {
 		String fallbackTableName = TableGenerator.DEF_TABLE;
-		final Boolean preferGeneratorNameAsDefaultName = serviceRegistry.getService( ConfigurationService.class )
-				.getSetting( Settings.PREFER_GENERATOR_NAME_AS_DEFAULT_SEQUENCE_NAME, StandardConverters.BOOLEAN, true );
-		if ( preferGeneratorNameAsDefaultName ) {
+		if ( preferGeneratorNameAsDefaultName(serviceRegistry) ) {
 			final String generatorName = params.getProperty( IdentifierGenerator.GENERATOR_NAME );
 			if ( StringHelper.isNotEmpty( generatorName ) ) {
 				fallbackTableName = generatorName;
 			}
 		}
 
-		String tableName = ConfigurationHelper.getString( TableGenerator.TABLE_PARAM, params, fallbackTableName );
+		String tableName = getString( TableGenerator.TABLE_PARAM, params, fallbackTableName );
 
 		QualifiedNameParser.NameParts qualifiedTableName;
 		if ( tableName.contains( "." ) ) {
@@ -105,10 +105,10 @@ public class IdentifierGeneration {
 			JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
 			// todo : need to incorporate implicit catalog and schema names
 			final Identifier catalog = jdbcEnvironment.getIdentifierHelper().toIdentifier(
-					ConfigurationHelper.getString( CATALOG, params )
+					getString( CATALOG, params )
 			);
 			final Identifier schema = jdbcEnvironment.getIdentifierHelper().toIdentifier(
-					ConfigurationHelper.getString( SCHEMA, params )
+					getString( SCHEMA, params )
 			);
 			qualifiedTableName = new QualifiedNameParser.NameParts(
 					catalog,
@@ -117,6 +117,12 @@ public class IdentifierGeneration {
 			);
 		}
 		return qualifiedTableName;
+	}
+
+	private static Boolean preferGeneratorNameAsDefaultName(ServiceRegistry serviceRegistry) {
+		return serviceRegistry.getService(ConfigurationService.class)
+				.getSetting( Settings.PREFER_GENERATOR_NAME_AS_DEFAULT_SEQUENCE_NAME,
+						StandardConverters.BOOLEAN, true );
 	}
 
 	@SuppressWarnings("unchecked")
@@ -136,7 +142,7 @@ public class IdentifierGeneration {
 			if ( generatedId instanceof Long ) {
 				Long longId = (Long) generatedId;
 				Type identifierType = persister.getIdentifierType();
-				if (identifierType == LongType.INSTANCE) {
+				if ( identifierType == LongType.INSTANCE ) {
 					return longId;
 				}
 				else if ( identifierType == IntegerType.INSTANCE ) {
@@ -157,7 +163,7 @@ public class IdentifierGeneration {
 		}
 		else {
 			Serializable assignedId = persister.getIdentifier( entity, session );
-			if (assignedId == null) {
+			if ( assignedId == null ) {
 				throw new IdentifierGenerationException(
 						"ids for this class must be manually assigned before calling save(): "
 								+ persister.getEntityName()
