@@ -13,6 +13,8 @@ import org.hibernate.service.ServiceRegistry;
 import org.hibernate.tool.schema.internal.exec.GenerationTarget;
 import org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -22,8 +24,9 @@ import java.util.concurrent.CompletionStage;
  * @author Gavin King
  */
 public class ReactiveGenerationTarget implements GenerationTarget {
-	private ServiceRegistry registry;
+	private final ServiceRegistry registry;
 	private CompletionStage<ReactiveConnection> commands;
+	private Set<String> statements;
 
 	CoreMessageLogger log = CoreLogging.messageLogger( GenerationTargetToDatabase.class );
 
@@ -34,24 +37,31 @@ public class ReactiveGenerationTarget implements GenerationTarget {
 	@Override
 	public void prepare() {
 		commands = registry.getService( ReactiveConnectionPool.class ).getConnection();
+		statements = new HashSet<>();
 	}
 
 	@Override
 	public void accept(String command) {
-		commands = commands.thenCompose(
-				connection -> connection.execute( command )
-						.handle( (r, e) -> {
-							if ( e != null ) {
-								log.warnf("HRX000021: DDL command failed [%s]", e.getMessage() );
-							}
-							return null;
-						} )
-						.thenApply( v -> connection )
-		);
+		// avoid executing duplicate DDL statements
+		// (hack specifically to avoid multiple
+		// inserts into a sequence emulation table)
+		if ( statements.add( command ) ) {
+			commands = commands.thenCompose(
+					connection -> connection.execute( command )
+							.handle( (r, e) -> {
+								if ( e != null ) {
+									log.warnf("HRX000021: DDL command failed [%s]", e.getMessage() );
+								}
+								return null;
+							} )
+							.thenApply( v -> connection )
+			);
+		}
 	}
 
 	@Override
 	public void release() {
+		statements = null;
 		if ( commands != null ) {
 			commands.whenComplete( (c, e) -> c.close() )
 					.toCompletableFuture()
