@@ -16,6 +16,7 @@ import org.hibernate.id.Configurable;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.internal.util.StringHelper;
+import org.hibernate.jdbc.TooManyRowsAffectedException;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -89,17 +90,32 @@ public class TableReactiveIdentifierGenerator
 	public CompletionStage<Long> generate(ReactiveConnectionSupplier session, Object entity) {
 		long local = next();
 		if ( local >= 0 ) {
+			// We don't need to update or initialize the hi
+			// value in the table, so just increment the lo
+			// value and return the next id in the block
 			return CompletionStages.completedFuture(local);
 		}
 
+		// We need to read the current hi value from the table
+		// and update it by the specified increment, but we
+		// need to do it atomically, and without depending on
+		// transaction rollback.
 		Object[] param = segmentColumnName == null ? new Object[] {} : new Object[] {segmentValue};
 		ReactiveConnection connection = session.getReactiveConnection();
+		// 1) select the current hi value
 		return connection.selectLong( selectQuery, param )
+				// 2) attempt to update the hi value
 				.thenCompose( result -> {
 					Object[] params;
 					String sql;
 					long id;
 					if ( result == null ) {
+						// if there is no row in the table, insert one
+						// TODO: This not threadsafe, and can result in
+						// multiple rows being inserted simultaneously.
+						// It might be better to just throw an exception
+						// here, and require that the table was populated
+						// when it was created
 						id = initialValue;
 						long insertedValue = storeLastUsedValue ? id - increment : id;
 						params = segmentColumnName == null ?
@@ -108,6 +124,7 @@ public class TableReactiveIdentifierGenerator
 						sql = insertQuery;
 					}
 					else {
+						// otherwise, update the existing row
 						long currentValue = result;
 						long updatedValue = currentValue + increment;
 						id = storeLastUsedValue ? updatedValue : currentValue;
@@ -117,13 +134,21 @@ public class TableReactiveIdentifierGenerator
 						sql = updateQuery;
 					}
 					return connection.update( sql, params )
+							// 3) check the updated row count to detect simultaneous update
 							.thenCompose(
-									rowCount -> rowCount==1
-											//we successfully obtained the next hi value
-											? CompletionStages.completedFuture( next(id) )
-											//someone else grabbed the next hi value
-											//so retry everything from scratch
-											: generate( session, entity )
+									rowCount -> {
+										switch (rowCount) {
+											case 1:
+												//we successfully obtained the next hi value
+												return CompletionStages.completedFuture( next(id) );
+											case 0:
+												//someone else grabbed the next hi value
+												//so retry everything from scratch
+												return generate( session, entity );
+											default:
+												throw new TooManyRowsAffectedException( "multiple rows in id table", 1, rowCount );
+										}
+									}
 							);
 				} );
 	}
@@ -165,7 +190,7 @@ public class TableReactiveIdentifierGenerator
 
 		// allow physical naming strategies a chance to kick in
 		renderedTableName = jdbcEnvironment.getQualifiedObjectNameFormatter()
-				.format(qualifiedTableName, dialect );
+				.format( qualifiedTableName, dialect );
 
 		selectQuery = buildSelectQuery( dialect );
 		updateQuery = buildUpdateQuery( dialect );
