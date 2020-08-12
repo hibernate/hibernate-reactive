@@ -355,10 +355,6 @@ features:
 Instead, use `@OneToMany(mappedBy=...)` together with `@ManyToOne` for 
 all associations.
 
-#### Identifier generation
-
-There is no block optimization for the `SEQUENCE` and `TABLE` id generators.
-
 #### Query language
 
 HQL `update` and `delete` queries which affect multiple tables (due to the
