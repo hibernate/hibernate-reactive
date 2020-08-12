@@ -7,7 +7,6 @@ package org.hibernate.reactive.id.impl;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.MappingException;
 import org.hibernate.boot.model.relational.QualifiedName;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.config.spi.ConfigurationService;
@@ -17,11 +16,11 @@ import org.hibernate.id.Configurable;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.internal.util.StringHelper;
-import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
@@ -35,6 +34,9 @@ import static org.hibernate.id.enhanced.TableGenerator.DEF_SEGMENT_VALUE;
 import static org.hibernate.id.enhanced.TableGenerator.SEGMENT_COLUMN_PARAM;
 import static org.hibernate.id.enhanced.TableGenerator.SEGMENT_VALUE_PARAM;
 import static org.hibernate.id.enhanced.TableGenerator.TABLE;
+import static org.hibernate.internal.util.config.ConfigurationHelper.getBoolean;
+import static org.hibernate.internal.util.config.ConfigurationHelper.getInt;
+import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineSequenceName;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineTableName;
 
@@ -44,13 +46,15 @@ import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineTable
  * where different logical sequences are represented by different
  * rows ("segments"), or as an emulated sequence generator with
  * just one row and one column.
+ * <p>
+ * This implementation supports block allocation, but does not
+ * guarantee that generated identifiers are sequential.
  */
 public class TableReactiveIdentifierGenerator
 		implements ReactiveIdentifierGenerator<Long>, Configurable {
 
 	private boolean storeLastUsedValue;
 
-	private QualifiedName qualifiedTableName;
 	private String renderedTableName;
 
 	private String segmentColumnName;
@@ -58,37 +62,70 @@ public class TableReactiveIdentifierGenerator
 
 	private String valueColumnName;
 	private long initialValue;
+	private int increment;
 
 	private String selectQuery;
 	private String insertQuery;
 	private String updateQuery;
 
-	private boolean sequenceEmulator;
+	private int loValue;
+	private long hiValue;
+
+	private final boolean sequenceEmulator;
+
+	private synchronized long next() {
+		return loValue>0 && loValue<increment
+				? hiValue + loValue++
+				: -1; //flag value indicating that we need to hit db
+	}
+
+	private synchronized long next(long hi) {
+		hiValue = hi;
+		loValue = 1;
+		return hi;
+	}
 
 	@Override
 	public CompletionStage<Long> generate(ReactiveConnectionSupplier session, Object entity) {
+		long local = next();
+		if ( local >= 0 ) {
+			return CompletionStages.completedFuture(local);
+		}
+
 		Object[] param = segmentColumnName == null ? new Object[] {} : new Object[] {segmentValue};
 		ReactiveConnection connection = session.getReactiveConnection();
 		return connection.selectLong( selectQuery, param )
 				.thenCompose( result -> {
+					Object[] params;
+					String sql;
+					long id;
 					if ( result == null ) {
-						long initializationValue = storeLastUsedValue ? initialValue - 1 : initialValue;
-						Object[] params = segmentColumnName == null ?
-								new Object[] {initializationValue} :
-								new Object[] {segmentValue, initializationValue};
-						return connection.update( insertQuery, params )
-								.thenApply( v -> initialValue );
+						id = initialValue;
+						long insertedValue = storeLastUsedValue ? id - increment : id;
+						params = segmentColumnName == null ?
+								new Object[] {insertedValue} :
+								new Object[] {segmentValue, insertedValue};
+						sql = insertQuery;
 					}
 					else {
 						long currentValue = result;
-						long updatedValue = currentValue + 1;
-						Object[] params = segmentColumnName == null ?
+						long updatedValue = currentValue + increment;
+						id = storeLastUsedValue ? updatedValue : currentValue;
+						params = segmentColumnName == null ?
 								new Object[] {updatedValue, currentValue} :
 								new Object[] {updatedValue, currentValue, segmentValue};
-						return connection.update( updateQuery, params )
-								.thenApply( v -> storeLastUsedValue ? updatedValue : currentValue );
+						sql = updateQuery;
 					}
-				});
+					return connection.update( sql, params )
+							.thenCompose(
+									rowCount -> rowCount==1
+											//we successfully obtained the next hi value
+											? CompletionStages.completedFuture( next(id) )
+											//someone else grabbed the next hi value
+											//so retry everything from scratch
+											: generate( session, entity )
+							);
+				} );
 	}
 
 	TableReactiveIdentifierGenerator(boolean sequenceEmulator) {
@@ -96,10 +133,11 @@ public class TableReactiveIdentifierGenerator
 	}
 
 	@Override
-	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) throws MappingException {
+	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) {
 		JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
 		Dialect dialect = jdbcEnvironment.getDialect();
 
+		QualifiedName qualifiedTableName;
 		if (sequenceEmulator) {
 			//it's a SequenceStyleGenerator backed by a table
 			qualifiedTableName = determineSequenceName( params, serviceRegistry );
@@ -107,6 +145,7 @@ public class TableReactiveIdentifierGenerator
 			segmentColumnName = null;
 			segmentValue = null;
 			initialValue = determineInitialValueForSequenceEmulation( params );
+			increment = determineIncrementForSequenceEmulation( params );
 
 			storeLastUsedValue = false;
 		}
@@ -117,14 +156,16 @@ public class TableReactiveIdentifierGenerator
 			valueColumnName = determineValueColumnNameForTable( params, jdbcEnvironment );
 			segmentValue = determineSegmentValue( params );
 			initialValue = determineInitialValueForTable( params );
+			increment = determineIncrementForTable( params );
 
 			storeLastUsedValue = serviceRegistry.getService( ConfigurationService.class )
-					.getSetting( Settings.TABLE_GENERATOR_STORE_LAST_USED, StandardConverters.BOOLEAN, true );
+					.getSetting( Settings.TABLE_GENERATOR_STORE_LAST_USED,
+							StandardConverters.BOOLEAN, true );
 		}
 
 		// allow physical naming strategies a chance to kick in
 		renderedTableName = jdbcEnvironment.getQualifiedObjectNameFormatter()
-				.format( qualifiedTableName, dialect );
+				.format(qualifiedTableName, dialect );
 
 		selectQuery = buildSelectQuery( dialect );
 		updateQuery = buildUpdateQuery( dialect );
@@ -132,17 +173,17 @@ public class TableReactiveIdentifierGenerator
 	}
 
 	protected String determineSegmentColumnName(Properties params, JdbcEnvironment jdbcEnvironment) {
-		final String name = ConfigurationHelper.getString( SEGMENT_COLUMN_PARAM, params, DEF_SEGMENT_COLUMN );
+		final String name = getString( SEGMENT_COLUMN_PARAM, params, DEF_SEGMENT_COLUMN );
 		return jdbcEnvironment.getIdentifierHelper().toIdentifier( name ).render( jdbcEnvironment.getDialect() );
 	}
 
 	protected String determineValueColumnNameForTable(Properties params, JdbcEnvironment jdbcEnvironment) {
-		final String name = ConfigurationHelper.getString(TableGenerator.VALUE_COLUMN_PARAM, params, TableGenerator.DEF_VALUE_COLUMN );
+		final String name = getString( TableGenerator.VALUE_COLUMN_PARAM, params, TableGenerator.DEF_VALUE_COLUMN );
 		return jdbcEnvironment.getIdentifierHelper().toIdentifier( name ).render( jdbcEnvironment.getDialect() );
 	}
 
 	static String determineValueColumnNameForSequenceEmulation(Properties params, JdbcEnvironment jdbcEnvironment) {
-		final String name = ConfigurationHelper.getString( SequenceStyleGenerator.VALUE_COLUMN_PARAM, params, SequenceStyleGenerator.DEF_VALUE_COLUMN );
+		final String name = getString( SequenceStyleGenerator.VALUE_COLUMN_PARAM, params, SequenceStyleGenerator.DEF_VALUE_COLUMN );
 		return jdbcEnvironment.getIdentifierHelper().toIdentifier( name ).render( jdbcEnvironment.getDialect() );
 	}
 
@@ -155,16 +196,24 @@ public class TableReactiveIdentifierGenerator
 	}
 
 	protected String determineDefaultSegmentValue(Properties params) {
-		final boolean preferSegmentPerEntity = ConfigurationHelper.getBoolean( CONFIG_PREFER_SEGMENT_PER_ENTITY, params, false );
+		final boolean preferSegmentPerEntity = getBoolean( CONFIG_PREFER_SEGMENT_PER_ENTITY, params, false );
 		return preferSegmentPerEntity ? params.getProperty( TABLE ) : DEF_SEGMENT_VALUE;
 	}
 
 	protected int determineInitialValueForTable(Properties params) {
-		return ConfigurationHelper.getInt( TableGenerator.INITIAL_PARAM, params, TableGenerator.DEFAULT_INITIAL_VALUE );
+		return getInt( TableGenerator.INITIAL_PARAM, params, TableGenerator.DEFAULT_INITIAL_VALUE );
 	}
 
 	protected int determineInitialValueForSequenceEmulation(Properties params) {
-		return ConfigurationHelper.getInt( SequenceStyleGenerator.INITIAL_PARAM, params, SequenceStyleGenerator.DEFAULT_INITIAL_VALUE );
+		return getInt( SequenceStyleGenerator.INITIAL_PARAM, params, SequenceStyleGenerator.DEFAULT_INITIAL_VALUE );
+	}
+
+	protected int determineIncrementForTable(Properties params) {
+		return getInt( TableGenerator.INCREMENT_PARAM, params, TableGenerator.DEFAULT_INITIAL_VALUE );
+	}
+
+	protected int determineIncrementForSequenceEmulation(Properties params) {
+		return getInt( SequenceStyleGenerator.INCREMENT_PARAM, params, SequenceStyleGenerator.DEFAULT_INITIAL_VALUE );
 	}
 
 	protected String buildSelectQuery(Dialect dialect) {
@@ -175,9 +224,12 @@ public class TableReactiveIdentifierGenerator
 			query += " where " + StringHelper.qualify(alias, segmentColumnName) + "=?";
 		}
 
-		return dialect.applyLocksToSql( query,
-						new LockOptions( LockMode.PESSIMISTIC_WRITE ).setAliasSpecificLockMode( alias, LockMode.PESSIMISTIC_WRITE ),
-						Collections.singletonMap( alias, new String[] { valueColumnName } ) );
+		return dialect.applyLocksToSql(
+				query,
+				new LockOptions( LockMode.PESSIMISTIC_WRITE )
+						.setAliasSpecificLockMode( alias, LockMode.PESSIMISTIC_WRITE ),
+				Collections.singletonMap( alias, new String[] { valueColumnName } )
+		);
 	}
 
 	protected String buildUpdateQuery(Dialect dialect) {

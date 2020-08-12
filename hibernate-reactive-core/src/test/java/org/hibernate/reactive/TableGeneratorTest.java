@@ -60,7 +60,8 @@ public class TableGeneratorTest extends BaseReactiveTest {
 	@TableGenerator(name = "tab",
 			valueColumnName = "nextid",
 			table = "test_id_tab",
-			initialValue = 5)
+			initialValue = 5,
+			allocationSize = 1)
 	public static class TableId {
 		@Id @GeneratedValue(generator = "tab")
 		Integer id;
