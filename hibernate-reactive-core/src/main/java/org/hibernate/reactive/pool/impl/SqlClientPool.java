@@ -270,13 +270,15 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 
 		private <T> CompletionStage<T> withConnection(Function<ReactiveConnection,CompletionStage<T>> operation) {
 			if (!connected) {
-				connected = true;
+				connected = true; // we're not allowed to fetch two connections!
 				return getConnection()
 						.thenApply(newConnection -> connection = newConnection)
 						.thenCompose(operation);
 			}
 			else {
 				if (connection == null) {
+					// we're already in the process of fetching a connection,
+					// so this must be an illegal concurrent call
 					throw new IllegalStateException("session is currently connecting to database");
 				}
 				return operation.apply(connection);

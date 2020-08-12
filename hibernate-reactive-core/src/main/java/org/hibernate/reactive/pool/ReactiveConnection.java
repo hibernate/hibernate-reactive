@@ -16,6 +16,13 @@ import java.util.concurrent.CompletionStage;
  * Abstracts over reactive database connections, defining
  * operations that allow queries to be executed asynchronously
  * via {@link CompletionStage}.
+ * <p>
+ * It is illegal to perform two non-blocking operations concurrently
+ * with a single {@code ReactiveConnection}. Instead, the second
+ * operation must be chained on completion of the first operation.
+ * This restriction might be relaxed in future, and is due to the
+ * implementation of the {@code ProxyConnection} returned by
+ * {@link org.hibernate.reactive.pool.impl.SqlClientPool#getProxyConnection()}.
  *
  * @see ReactiveConnectionPool
  */
