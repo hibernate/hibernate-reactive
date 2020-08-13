@@ -177,8 +177,8 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 			connectOptions.setPassword( password );
 		}
 
-		//enable the prepared statement cache by default (except for DB2) and MySQL
-		connectOptions.setCachePreparedStatements( !scheme.equals( "db2" ) && !scheme.equals( "mysql" ) );
+		//enable the prepared statement cache by default
+		connectOptions.setCachePreparedStatements( true );
 
 		final Integer cacheMaxSize = ConfigurationHelper.getInteger( Settings.PREPARED_STATEMENT_CACHE_MAX_SIZE, configurationValues );
 		if (cacheMaxSize!=null) {
