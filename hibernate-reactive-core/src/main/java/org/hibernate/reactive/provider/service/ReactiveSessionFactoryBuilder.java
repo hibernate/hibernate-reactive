@@ -33,6 +33,8 @@ public class ReactiveSessionFactoryBuilder
 
 		this.metadata = metadata;
 		this.delegate = delegate;
+
+		delegate.applyMultiTableBulkIdStrategy( new NoJdbcMultiTableBulkIdStrategy() );
 	}
 
 	@Override
