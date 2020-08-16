@@ -14,7 +14,6 @@ import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
-import org.hibernate.graph.internal.RootGraphImpl;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.criteria.internal.compile.ExplicitParameterInfo;
 import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
@@ -33,7 +32,6 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import static java.util.Collections.emptyMap;
-import static org.hibernate.jpa.QueryHints.HINT_FETCHGRAPH;
 import static org.hibernate.reactive.session.ReactiveQuery.convertQueryException;
 import static org.hibernate.reactive.session.ReactiveQuery.extractUniqueResult;
 
@@ -52,12 +50,20 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 	private Map<ParameterExpression<?>, ExplicitParameterInfo<?>> explicitParameterInfoMap;
 	private final QueryType type;
 
+	private static QueryType queryType(String queryString) {
+		queryString = queryString.trim().toLowerCase();
+		return queryString.startsWith("insert")
+				|| queryString.startsWith("update")
+				|| queryString.startsWith("delete")
+				? QueryType.INSERT_UPDATE_DELETE
+				: QueryType.SELECT;
+	}
+
 	public ReactiveQueryImpl(SharedSessionContractImplementor producer,
 							 ParameterMetadata parameterMetadata,
-							 String queryString,
-							 QueryType type) {
+							 String queryString) {
 		super( producer, parameterMetadata, queryString );
-		this.type = type;
+		this.type = queryType( queryString );
 	}
 
 	@Override
@@ -274,7 +280,7 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 
 	@Override
 	public void setPlan(EntityGraph<R> entityGraph) {
-		applyGraph( (RootGraph) entityGraph, GraphSemantic.FETCH );
-		applyEntityGraphQueryHint( new EntityGraphQueryHint( HINT_FETCHGRAPH, (RootGraphImpl) entityGraph ) );
+		applyGraph( (RootGraph<?>) entityGraph, GraphSemantic.FETCH );
+		applyEntityGraphQueryHint( new EntityGraphQueryHint( GraphSemantic.FETCH.getJpaHintName(), entityGraph ) );
 	}
 }

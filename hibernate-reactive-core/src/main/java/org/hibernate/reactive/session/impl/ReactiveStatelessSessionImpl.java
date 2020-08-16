@@ -17,36 +17,31 @@ import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.id.IdentifierGenerationException;
-import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.StatelessSessionImpl;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.loader.custom.sql.SQLCustomQuery;
-import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.Query;
 import org.hibernate.query.internal.ParameterMetadataImpl;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
-import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
+import org.hibernate.reactive.id.impl.IdentifierGeneration;
 import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
-import org.hibernate.type.IntegerType;
-import org.hibernate.type.LongType;
-import org.hibernate.type.Type;
 
 import javax.persistence.Tuple;
 import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
 
 /**
  * An {@link ReactiveStatelessSession} implemented by extension of
@@ -123,47 +118,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
                 } );
     }
 
-    private CompletionStage<Serializable> generateId(Object entity, EntityPersister persister) {
-        IdentifierGenerator generator = persister.getIdentifierGenerator();
-        return generator instanceof ReactiveIdentifierGenerator
-                ? ( (ReactiveIdentifierGenerator<Serializable>) generator ).generate( this, entity )
-                : CompletionStages.completedFuture( generator.generate( this, entity ) );
-    }
-
-    public Serializable assignIdIfNecessary(Object generatedId, Object entity) {
-        EntityPersister persister = getEntityPersister(null, entity);
-        if ( generatedId != null ) {
-            if ( generatedId instanceof Long ) {
-                Long longId = (Long) generatedId;
-                Type identifierType = persister.getIdentifierType();
-                if ( identifierType == LongType.INSTANCE )  {
-                    return longId;
-                }
-                else if ( identifierType == IntegerType.INSTANCE ) {
-                    return longId.intValue();
-                }
-                else {
-                    throw new HibernateException("cannot generate identifiers of type "
-                            + identifierType.getReturnedClass().getSimpleName()
-                            + " for: "
-                            + persister.getEntityName());
-                }
-            }
-            else {
-                return (Serializable) generatedId;
-            }
-        }
-        else {
-            Serializable assignedId = persister.getIdentifier( entity, this );
-            if (assignedId == null) {
-                throw new IdentifierGenerationException(
-                        "ids for this class must be manually assigned before calling save(): "
-                                + persister.getEntityName() );
-            }
-            return assignedId;
-        }
-    }
-
     @Override
     public ReactiveEntityPersister getEntityPersister(String entityName, Object object) throws HibernateException {
         return (ReactiveEntityPersister) super.getEntityPersister(entityName, object);
@@ -173,7 +127,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     public CompletionStage<Void> reactiveInsert(Object entity) {
         checkOpen();
         ReactiveEntityPersister persister = getEntityPersister( null, entity );
-        return generateId( entity, persister )
+        return IdentifierGeneration.generateId( entity, persister, this, this )
                 .thenCompose( id -> {
                     Object[] state = persister.getPropertyValues(entity);
                     if ( persister.isVersioned() ) {
@@ -190,10 +144,10 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
                     if ( persister.isIdentifierAssignedByInsert() ) {
                         return persister.insertReactive( state, entity, this )
-                                .thenAccept( generatedId -> assignIdIfNecessary(entity, generatedId) );
+                                .thenAccept( generatedId -> assignIdIfNecessary( entity, generatedId, persister,this ) );
                     }
                     else {
-                        id = assignIdIfNecessary( id, entity );
+                        id = assignIdIfNecessary( id, entity, persister,this );
                         persister.setIdentifier( entity, id, this );
                         return persister.insertReactive( id, state, entity, this )
                                 .thenApply( v-> null );
@@ -266,15 +220,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
                 .whenComplete( (v,e) -> getLoadQueryInfluencers().setInternalFetchProfile( previousFetchProfile ) );
     }
 
-    private static QueryType queryType(String queryString) {
-        queryString = queryString.trim().toLowerCase();
-        return queryString.startsWith("insert")
-                || queryString.startsWith("update")
-                || queryString.startsWith("delete")
-                ? QueryType.INSERT_UPDATE_DELETE
-                : QueryType.SELECT;
-    }
-
     @Override
     public <R> ReactiveQueryImpl<R> createReactiveQuery(String queryString) {
         checkOpen();
@@ -283,7 +228,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
             ParameterMetadataImpl paramMetadata =
                     getQueryPlan( queryString, false ).getParameterMetadata();
             ReactiveQueryImpl<R> query =
-                    new ReactiveQueryImpl<>( this, paramMetadata, queryString, queryType(queryString) );
+                    new ReactiveQueryImpl<>( this, paramMetadata, queryString );
             applyQuerySettingsAndHints( query );
             query.setComment( queryString );
             return query;

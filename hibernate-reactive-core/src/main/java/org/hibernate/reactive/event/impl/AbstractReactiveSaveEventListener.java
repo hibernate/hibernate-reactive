@@ -6,7 +6,6 @@
 package org.hibernate.reactive.event.impl;
 
 
-import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.NonUniqueObjectException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
@@ -21,8 +20,6 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.WrapVisitor;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.id.IdentifierGenerationException;
-import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
@@ -33,17 +30,17 @@ import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityIdentityInsertAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityRegularInsertAction;
-import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
-import org.hibernate.type.IntegerType;
-import org.hibernate.type.LongType;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
+import static org.hibernate.reactive.id.impl.IdentifierGeneration.generateId;
 
 /**
  * Functionality common to persist and merge event listeners.
@@ -92,36 +89,6 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		);
 	}
 
-	private static Serializable assignIdIfNecessary(Object generatedId, Object entity, String entityName, EventSource source) {
-		EntityPersister persister = source.getEntityPersister(entityName, entity);
-		if ( generatedId != null ) {
-			if (generatedId instanceof Long) {
-				Long longId = (Long) generatedId;
-				Type identifierType = persister.getIdentifierType();
-				if (identifierType == LongType.INSTANCE) {
-					return longId;
-				}
-				else if (identifierType == IntegerType.INSTANCE) {
-					return longId.intValue();
-				}
-				else {
-					throw new HibernateException("cannot generate identifiers of type "
-							+ identifierType.getReturnedClass().getSimpleName() + " for: " + entityName);
-				}
-			}
-			else {
-				return (Serializable) generatedId;
-			}
-		}
-		else {
-			Serializable assignedId = persister.getIdentifier( entity, source.getSession() );
-			if (assignedId == null) {
-				throw new IdentifierGenerationException("ids for this class must be manually assigned before calling save(): " + entityName);
-			}
-			return assignedId;
-		}
-	}
-
 	/**
 	 * Prepares the save call using a newly generated id.
 	 *
@@ -151,11 +118,11 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 
 		EntityPersister persister = source.getEntityPersister( entityName, entity );
 		boolean autoincrement = persister.isIdentifierAssignedByInsert();
-		return generateId( entity, source, persister )
+		return generateId( entity, persister, (ReactiveSession) source, source.getSession() )
 				.thenCompose(id ->
 						reactivePerformSave(
 								entity,
-								autoincrement ? null : assignIdIfNecessary( id, entity, entityName, source ),
+								autoincrement ? null : assignIdIfNecessary( id, entity, persister, source.getSession() ),
 								persister,
 								autoincrement,
 								context,
@@ -163,13 +130,6 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 								!autoincrement || requiresImmediateIdAccess
 						)
 				);
-	}
-
-	private static CompletionStage<?> generateId(Object entity, EventSource source, EntityPersister persister) {
-		IdentifierGenerator generator = persister.getIdentifierGenerator();
-		return generator instanceof ReactiveIdentifierGenerator
-				? ( (ReactiveIdentifierGenerator<?>) generator ).generate( (ReactiveSession) source, entity )
-				: CompletionStages.completedFuture( generator.generate( source.getSession(), entity ) );
 	}
 
 	/**
