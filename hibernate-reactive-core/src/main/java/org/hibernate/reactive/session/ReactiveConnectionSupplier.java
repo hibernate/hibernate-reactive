@@ -13,5 +13,8 @@ import org.hibernate.reactive.pool.ReactiveConnection;
  */
 @Incubating
 public interface ReactiveConnectionSupplier {
+    /**
+     * Obtain the {@link ReactiveConnection} that is associated with the current session.
+     */
     ReactiveConnection getReactiveConnection();
 }

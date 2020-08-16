@@ -20,7 +20,6 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
-import org.hibernate.engine.query.spi.QueryPlanCache;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.ExceptionConverter;
 import org.hibernate.engine.spi.NamedQueryDefinition;
@@ -194,7 +193,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		try {
 			ParameterMetadata params = getFactory().getQueryPlanCache()
 					.getSQLParameterMetadata(sqlString, false);
-			ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>(sqlString, false, this, params );
+			ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>( sqlString, false, this, params );
 			query.setComment( "dynamic native SQL query" );
 			applyQuerySettingsAndHints( query );
 			return query;
@@ -317,8 +316,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	protected ReactiveHQLQueryPlan getQueryPlan(String query, boolean shallow) throws HibernateException {
-		QueryPlanCache queryPlanCache = getFactory().getQueryPlanCache();
-		return (ReactiveHQLQueryPlan) queryPlanCache.getHQLQueryPlan( query, shallow, getLoadQueryInfluencers().getEnabledFilters() );
+		return (ReactiveHQLQueryPlan) super.getQueryPlan( query, shallow );
 	}
 
 	//TODO: parameterize the SessionFactory constructor by ReactiveNativeSQLQueryPlan::new
@@ -345,12 +343,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		parameters.validateParameters();
 
 		HQLQueryPlan plan = parameters.getQueryPlan();
-		if ( plan == null ) {
-			plan = getQueryPlan( query, false );
-		}
-		ReactiveHQLQueryPlan reactivePlan = (ReactiveHQLQueryPlan) plan;
+		ReactiveHQLQueryPlan reactivePlan = plan == null
+				? getQueryPlan( query, false )
+				: (ReactiveHQLQueryPlan) plan;
 
-		return reactiveAutoFlushIfRequired( plan.getQuerySpaces() )
+		return reactiveAutoFlushIfRequired( reactivePlan.getQuerySpaces() )
 				// FIXME: I guess I can fix this as a separate issue
 //				dontFlushFromFind++;   //stops flush being called multiple times if this method is recursively called
 				.thenCompose( v -> reactivePlan.performReactiveList(parameters, this ) )

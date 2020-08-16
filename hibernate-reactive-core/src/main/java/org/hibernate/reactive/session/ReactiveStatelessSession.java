@@ -21,7 +21,8 @@ import java.util.concurrent.CompletionStage;
  *  @see org.hibernate.reactive.mutiny.Mutiny.Session
  */
 @Incubating
-public interface ReactiveStatelessSession extends ReactiveConnectionSupplier, ReactiveQueryExecutor {
+public interface ReactiveStatelessSession extends ReactiveQueryExecutor {
+
     <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id);
 
     <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id, LockMode lockMode);

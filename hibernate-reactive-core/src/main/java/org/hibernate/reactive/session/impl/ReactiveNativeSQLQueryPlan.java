@@ -5,14 +5,13 @@
  */
 package org.hibernate.reactive.session.impl;
 
-import org.hibernate.HibernateException;
 import org.hibernate.engine.query.spi.NativeSQLQueryPlan;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.param.ParameterBinder;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 
 import java.util.concurrent.CompletionStage;
 
@@ -28,11 +27,12 @@ public class ReactiveNativeSQLQueryPlan extends NativeSQLQueryPlan {
 	}
 
 	@Override
-	public int performExecuteUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
+	public int performExecuteUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) {
 		throw new UnsupportedOperationException( "Use performExecuteReactiveUpdate instead" );
 	}
 
-	public CompletionStage<Integer> performExecuteReactiveUpdate(QueryParameters queryParameters, ReactiveSession session) {
+	public CompletionStage<Integer> performExecuteReactiveUpdate(QueryParameters queryParameters,
+																 ReactiveQueryExecutor session) {
 		SharedSessionContractImplementor sessionContract = session.getSharedContract();
 
 		coordinateSharedCacheCleanup(sessionContract);
