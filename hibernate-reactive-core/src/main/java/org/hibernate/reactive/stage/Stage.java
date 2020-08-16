@@ -861,17 +861,28 @@ public interface Stage {
 	 * A non-blocking counterpart to the Hibernate
 	 * {@link org.hibernate.StatelessSession} interface, which provides a
 	 * command-oriented API for performing bulk operations against a database.
-	 * <p/>
+	 * <p>
 	 * A stateless session does not implement a first-level cache nor interact
 	 * with any second-level cache, nor does it implement transactional
 	 * write-behind or automatic dirty checking, nor do operations cascade to
 	 * associated instances. Collections are ignored by a stateless session.
 	 * Operations performed via a stateless session bypass Hibernate's event
-	 * model and interceptors. Stateless sessions are vulnerable to data
-	 * aliasing effects, due to the lack of a first-level cache.
-	 * <p/>
-	 * For certain kinds of transactions, a stateless session may perform slightly
-	 * faster than a stateful session.
+	 * model and interceptors.
+	 * <p>
+	 * For certain kinds of work, a stateless session may perform slightly
+	 * better than a stateful session.
+	 * <p>
+	 * In particular, for a session which loads many entities, use of a
+	 * {@code StatelessSession} alleviates the need to call:
+	 * <ul>
+	 * <li>{@link Session#clear()} or {@link Session#detach(Object)} to perform
+	 * first-level cache management, and
+	 * <li>{@link Session#setCacheMode(CacheMode)} to bypass interaction with
+	 * the second-level cache.
+	 * </ul>
+	 * <p>
+	 * Stateless sessions are vulnerable to data aliasing effects, due to the
+	 * lack of a first-level cache.
 	 *
 	 * @see org.hibernate.StatelessSession
 	 */
