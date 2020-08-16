@@ -6,6 +6,7 @@
 package org.hibernate.reactive.session;
 
 import org.hibernate.Incubating;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -23,17 +24,16 @@ import java.util.concurrent.CompletionStage;
  * @see SharedSessionContractImplementor
  */
 @Incubating
-public interface ReactiveQueryExecutor {
+public interface ReactiveQueryExecutor extends ReactiveConnectionSupplier {
 
     SessionFactoryImplementor getFactory();
     SharedSessionContractImplementor getSharedContract();
+    Dialect getDialect();
 
     <T> CompletionStage<List<T>> reactiveList(String query, QueryParameters parameters);
-
     <T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters parameters);
 
     CompletionStage<Integer> executeReactiveUpdate(String expandedQuery, QueryParameters parameters);
-
     CompletionStage<Integer> executeReactiveUpdate(NativeSQLQuerySpecification specification,
                                                    QueryParameters parameters);
 

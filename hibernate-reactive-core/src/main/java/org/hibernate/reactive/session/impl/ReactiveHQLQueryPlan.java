@@ -17,7 +17,7 @@ import org.hibernate.hql.spi.QueryTranslator;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.ArrayList;
@@ -65,12 +65,12 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 	@Deprecated
 	@Override
 	public List<Object> performList(
-			QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
+			QueryParameters queryParameters, SharedSessionContractImplementor session) {
 		throw new UnsupportedOperationException( "Use performReactiveList instead" );
 	}
 
 	@Override
-	public int performExecuteUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
+	public int performExecuteUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) {
 		throw new UnsupportedOperationException( "Use performExecuteReactiveUpdate instead" );
 	}
 
@@ -78,7 +78,9 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 	 * @see HQLQueryPlan#performList(QueryParameters, SharedSessionContractImplementor)
 	 * @throws HibernateException
 	 */
-	public CompletionStage<List<Object>> performReactiveList(QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
+	public CompletionStage<List<Object>> performReactiveList(QueryParameters queryParameters,
+															 SharedSessionContractImplementor session)
+			throws HibernateException {
 		if ( log.isTraceEnabled() ) {
 			log.tracev( "Find: {0}", getSourceQuery() );
 			queryParameters.traceParameters( session.getFactory() );
@@ -136,10 +138,15 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 		return combinedStage.thenApply( ignore -> combinedResults );
 	}
 
-	private void needsLimitLoop(QueryParameters queryParameters, List<Object> combinedResults, IdentitySet distinction, AtomicInteger includedCount, List<Object> tmpList) {
+	private void needsLimitLoop(QueryParameters queryParameters,
+								List<Object> combinedResults,
+								IdentitySet distinction,
+								AtomicInteger includedCount,
+								List<Object> tmpList) {
 		// NOTE : firstRow is zero-based
-		final int first = queryParameters.getRowSelection().getFirstRow() == null ? 0 : queryParameters.getRowSelection().getFirstRow();
-		final int max = queryParameters.getRowSelection().getMaxRows() == null ? -1 : queryParameters.getRowSelection().getMaxRows();
+		RowSelection rowSelection = queryParameters.getRowSelection();
+		final int first = rowSelection.getFirstRow() == null ? 0 : rowSelection.getFirstRow();
+		final int max = rowSelection.getMaxRows() == null ? -1 : rowSelection.getMaxRows();
 		for ( final Object result : tmpList ) {
 			if ( !distinction.add( result ) ) {
 				continue;
@@ -155,7 +162,8 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 		}
 	}
 
-	public CompletionStage<Integer> performExecuteReactiveUpdate(QueryParameters queryParameters, ReactiveSession session) {
+	public CompletionStage<Integer> performExecuteReactiveUpdate(QueryParameters queryParameters,
+																 ReactiveQueryExecutor session) {
 		if ( log.isTraceEnabled() ) {
 			log.tracev( "Execute update: {0}", getSourceQuery() );
 			queryParameters.traceParameters( session.getFactory() );

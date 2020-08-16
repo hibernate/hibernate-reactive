@@ -24,6 +24,7 @@ import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.param.ParameterSpecification;
 import org.hibernate.reactive.loader.hql.impl.ReactiveQueryLoader;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.jboss.logging.Logger;
@@ -141,7 +142,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 				});
 	}
 
-	public CompletionStage<Integer> executeReactiveUpdate(QueryParameters queryParameters, ReactiveSession session) {
+	public CompletionStage<Integer> executeReactiveUpdate(QueryParameters queryParameters, ReactiveQueryExecutor session) {
 		errorIfSelect();
 
 		// Multiple UPDATE SQL strings are not supported yet
@@ -170,7 +171,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 
 	// TODO: it would be nice to be able to override getCollectedParameterSpecifications().
 	//       To do that, we would need to add protected method, QueryTranslatorImpl#getFactory
-	private List<ParameterSpecification> getCollectedParameterSpecifications(ReactiveSession session) {
+	private List<ParameterSpecification> getCollectedParameterSpecifications(ReactiveQueryExecutor session) {
 		// Currently, ORM returns null for getCollectedParameterSpecifications() a StatementExecute
 		List<ParameterSpecification> parameterSpecifications = getCollectedParameterSpecifications();
 		if ( parameterSpecifications == null ) {

@@ -11,7 +11,6 @@ import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.UnknownProfileException;
-import org.hibernate.dialect.Dialect;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
@@ -34,7 +33,7 @@ import java.util.concurrent.CompletionStage;
  *  @see org.hibernate.reactive.mutiny.Mutiny.Session
  */
 @Incubating
-public interface ReactiveSession extends ReactiveConnectionSupplier, ReactiveQueryExecutor {
+public interface ReactiveSession extends ReactiveQueryExecutor {
 
 	ReactiveActionQueue getReactiveActionQueue();
 
@@ -142,6 +141,4 @@ public interface ReactiveSession extends ReactiveConnectionSupplier, ReactiveQue
 	boolean isDirty();
 	boolean isOpen();
 	void close();
-
-	Dialect getDialect();
 }

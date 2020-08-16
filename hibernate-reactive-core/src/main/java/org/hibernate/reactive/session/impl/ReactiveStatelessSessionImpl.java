@@ -10,6 +10,7 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.cache.spi.access.EntityDataAccess;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
@@ -23,6 +24,7 @@ import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.StatelessSessionImpl;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.loader.custom.CustomQuery;
+import org.hibernate.loader.custom.sql.SQLCustomQuery;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.Query;
@@ -76,6 +78,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     }
 
     @Override
+    public Dialect getDialect() {
+        return getJdbcServices().getDialect();
+    }
+
+    @Override
     public SharedSessionContractImplementor getSharedContract() {
         return this;
     }
@@ -88,6 +95,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     @Override
     public ReactiveConnection getReactiveConnection() {
         return proxyConnection;
+    }
+
+    @Override
+    public void checkTransactionNeededForUpdateOperation(String exceptionMessage) {
+        //no-op because we don't support transactions
     }
 
     @Override
@@ -352,10 +364,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         parameters.validateParameters();
 
         HQLQueryPlan plan = parameters.getQueryPlan();
-        if ( plan == null ) {
-            plan = getQueryPlan( query, false );
-        }
-        ReactiveHQLQueryPlan reactivePlan = (ReactiveHQLQueryPlan) plan;
+        ReactiveHQLQueryPlan reactivePlan = plan == null
+                ? getQueryPlan( query, false )
+                : (ReactiveHQLQueryPlan) plan;
 
         return reactivePlan.performReactiveList(parameters, this )
                 .whenComplete( (list, x) -> {
@@ -385,13 +396,42 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     }
 
     @Override
-    public CompletionStage<Integer> executeReactiveUpdate(String expandedQuery, QueryParameters parameters) {
-        throw new UnsupportedOperationException();
+    protected ReactiveHQLQueryPlan getQueryPlan(String query, boolean shallow) throws HibernateException {
+        return (ReactiveHQLQueryPlan) super.getQueryPlan( query, shallow );
     }
 
     @Override
-    public CompletionStage<Integer> executeReactiveUpdate(NativeSQLQuerySpecification specification, QueryParameters parameters) {
-        throw new UnsupportedOperationException();
+    public CompletionStage<Integer> executeReactiveUpdate(String query, QueryParameters parameters) {
+        checkOpen();
+        parameters.validateParameters();
+        ReactiveHQLQueryPlan reactivePlan = getQueryPlan( query, false );
+        return reactivePlan.performExecuteReactiveUpdate( parameters, this )
+                .whenComplete( (count, x) -> {
+                    getPersistenceContext().clear();
+                    afterOperation( x == null );
+                } );
+    }
+
+    @Override
+    public CompletionStage<Integer> executeReactiveUpdate(NativeSQLQuerySpecification specification,
+                                                          QueryParameters parameters) {
+        checkOpen();
+        parameters.validateParameters();
+
+        ReactiveNativeSQLQueryPlan reactivePlan = //getNativeQueryPlan( specification );
+                new ReactiveNativeSQLQueryPlan(
+                        specification.getQueryString(),
+                        new SQLCustomQuery(
+                                specification.getQueryString(),
+                                specification.getQueryReturns(),
+                                specification.getQuerySpaces(),
+                                getFactory()
+                        ) );
+        return  reactivePlan.performExecuteReactiveUpdate( parameters, this )
+                .whenComplete( (count, x) -> {
+                    getPersistenceContext().clear();
+                    afterOperation( x == null );
+                } );
     }
 
     @Override
