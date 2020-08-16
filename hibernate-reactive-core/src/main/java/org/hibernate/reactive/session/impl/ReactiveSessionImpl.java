@@ -241,15 +241,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 	}
 
-	private static QueryType queryType(String queryString) {
-		queryString = queryString.trim().toLowerCase();
-		return queryString.startsWith("insert")
-			|| queryString.startsWith("update")
-			|| queryString.startsWith("delete")
-				? QueryType.INSERT_UPDATE_DELETE
-				: QueryType.SELECT;
-	}
-
 	@Override
 	public <R> ReactiveQueryImpl<R> createReactiveQuery(String queryString) {
 		checkOpen();
@@ -258,7 +249,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 		try {
 			ParameterMetadataImpl paramMetadata = getQueryPlan( queryString, false ).getParameterMetadata();
-			ReactiveQueryImpl<R> query = new ReactiveQueryImpl<>( this, paramMetadata, queryString, queryType(queryString) );
+			ReactiveQueryImpl<R> query = new ReactiveQueryImpl<>( this, paramMetadata, queryString );
 			applyQuerySettingsAndHints( query );
 			query.setComment( queryString );
 			return query;
@@ -430,7 +421,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private <T> ReactiveQuery<T> createReactiveQuery(NamedQueryDefinition queryDefinition) {
 		String queryString = queryDefinition.getQueryString();
 		ParameterMetadataImpl paramMetadata = getQueryPlan( queryString, false ).getParameterMetadata();
-		ReactiveQueryImpl<T> query = new ReactiveQueryImpl<>( this, paramMetadata, queryString, queryType( queryString ) );
+		ReactiveQueryImpl<T> query = new ReactiveQueryImpl<>( this, paramMetadata, queryString );
 		applyQuerySettingsAndHints( query );
 		query.setHibernateFlushMode( queryDefinition.getFlushMode() );
 		query.setComment( queryDefinition.getComment() != null ? queryDefinition.getComment() : queryDefinition.getName() );

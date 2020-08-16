@@ -5,21 +5,33 @@
  */
 package org.hibernate.reactive.id.impl;
 
+import org.hibernate.HibernateException;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.boot.model.relational.QualifiedName;
 import org.hibernate.boot.model.relational.QualifiedNameParser;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.id.IdentifierGenerationException;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
+import org.hibernate.type.IntegerType;
+import org.hibernate.type.LongType;
+import org.hibernate.type.Type;
 
+import java.io.Serializable;
 import java.util.Properties;
+import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.id.enhanced.SequenceStyleGenerator.CATALOG;
 import static org.hibernate.id.enhanced.SequenceStyleGenerator.SCHEMA;
@@ -105,5 +117,53 @@ public class IdentifierGeneration {
 			);
 		}
 		return qualifiedTableName;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static CompletionStage<Serializable> generateId(Object entity, EntityPersister persister,
+														   ReactiveConnectionSupplier connectionSupplier,
+														   SharedSessionContractImplementor session) {
+		IdentifierGenerator generator = persister.getIdentifierGenerator();
+		return generator instanceof ReactiveIdentifierGenerator
+				? ( (ReactiveIdentifierGenerator<Serializable>) generator ).generate( connectionSupplier, entity )
+				: CompletionStages.completedFuture( generator.generate( session, entity ) );
+	}
+
+	public static Serializable assignIdIfNecessary(Object generatedId, Object entity,
+													EntityPersister persister,
+													SharedSessionContractImplementor session) {
+		if ( generatedId != null ) {
+			if ( generatedId instanceof Long ) {
+				Long longId = (Long) generatedId;
+				Type identifierType = persister.getIdentifierType();
+				if (identifierType == LongType.INSTANCE) {
+					return longId;
+				}
+				else if ( identifierType == IntegerType.INSTANCE ) {
+					return longId.intValue();
+				}
+				else {
+					throw new HibernateException(
+							"cannot generate identifiers of type "
+									+ identifierType.getReturnedClass().getSimpleName()
+									+ " for: "
+									+ persister.getEntityName()
+					);
+				}
+			}
+			else {
+				return (Serializable) generatedId;
+			}
+		}
+		else {
+			Serializable assignedId = persister.getIdentifier( entity, session );
+			if (assignedId == null) {
+				throw new IdentifierGenerationException(
+						"ids for this class must be manually assigned before calling save(): "
+								+ persister.getEntityName()
+				);
+			}
+			return assignedId;
+		}
 	}
 }
