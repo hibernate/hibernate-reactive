@@ -8,7 +8,6 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.annotations.Filter;
 import org.hibernate.cfg.Configuration;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.persistence.*;
@@ -125,7 +124,7 @@ public class FilterTest extends BaseReactiveTest {
 		);
 	}
 
-	@Test @Ignore("parameter binding for collection fetching with filters is broken")
+	@Test
 	public void testFilterCollectionFetchWithParameter(TestContext context) {
 
 		Node basik = new Node("Child");

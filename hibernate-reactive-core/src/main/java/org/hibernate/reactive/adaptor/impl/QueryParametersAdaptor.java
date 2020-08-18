@@ -16,8 +16,8 @@ public class QueryParametersAdaptor {
 
 	public static Object[] toParameterArray(QueryParameters queryParameters, SharedSessionContractImplementor session) {
 		return PreparedStatementAdaptor.bind( adaptor -> {
-			Type[] types = queryParameters.getPositionalParameterTypes();
-			Object[] values = queryParameters.getPositionalParameterValues();
+			Type[] types = queryParameters.getFilteredPositionalParameterTypes();
+			Object[] values = queryParameters.getFilteredPositionalParameterValues();
 			int n = 1;
 			for (int i = 0; i < types.length; i++) {
 				Type type = types[i];
