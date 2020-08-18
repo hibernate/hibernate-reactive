@@ -326,7 +326,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		} );
 
 		return getReactiveConnection( session )
-				.update( sql, params, useBatch, new DeleteExpectation( id, expectation, this ) );
+				.update( sql, params, useBatch, new DeleteExpectation( id, j, expectation, this ) );
 	}
 
 	default CompletionStage<?> deleteReactive(
@@ -491,7 +491,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			}
 		} );
 
-		UpdateExpectation result = new UpdateExpectation(id, expectation, this);
+		UpdateExpectation result = new UpdateExpectation( id, j, expectation, this );
 		return getReactiveConnection( session )
 				.update( sql, params, useBatch, result )
 				.thenApply( v -> useBatch || result.isSuccessful() );
@@ -1027,18 +1027,21 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		private boolean successful;
 
 		private final Serializable id;
+		private final int table;
 		private final Expectation expectation;
 		private final ReactiveAbstractEntityPersister persister;
 
-		public UpdateExpectation(Serializable id, Expectation expectation, ReactiveAbstractEntityPersister persister) {
+		public UpdateExpectation(Serializable id, int table, Expectation expectation,
+								 ReactiveAbstractEntityPersister persister) {
 			this.id = id;
+			this.table = table;
 			this.expectation = expectation;
 			this.persister = persister;
 		}
 
 		@Override
 		public void verifyOutcome(int rowCount, int batchPosition, String batchSql) {
-			successful = persister.check( rowCount, id, batchPosition, expectation, new PreparedStatementAdaptor(), batchSql );
+			successful = persister.check( rowCount, id, table, expectation, new PreparedStatementAdaptor(), batchSql );
 		}
 
 		public boolean isSuccessful() {
@@ -1048,24 +1051,27 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	class DeleteExpectation implements ReactiveConnection.Expectation {
 		private final Serializable id;
+		private final int table;
 		private final Expectation expectation;
 		private final ReactiveAbstractEntityPersister persister;
 
-		public DeleteExpectation(Serializable id, Expectation expectation, ReactiveAbstractEntityPersister persister) {
+		public DeleteExpectation(Serializable id, int table, Expectation expectation,
+								 ReactiveAbstractEntityPersister persister) {
 			this.id = id;
+			this.table = table;
 			this.expectation = expectation;
 			this.persister = persister;
 		}
 
 		@Override
 		public void verifyOutcome(int rowCount, int batchPosition, String batchSql) {
-			persister.check( rowCount, id, batchPosition, expectation, null, batchSql );
+			persister.check( rowCount, id, table, expectation, null, batchSql );
 		}
 	}
 
 	class InsertExpectation implements ReactiveConnection.Expectation {
 		private final Expectation expectation;
-		private ReactiveAbstractEntityPersister persister;
+		private final ReactiveAbstractEntityPersister persister;
 
 		public InsertExpectation(Expectation expectation, ReactiveAbstractEntityPersister persister) {
 			this.expectation = expectation;
