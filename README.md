@@ -47,15 +47,20 @@ been released.
 The [Introduction to Hibernate Reactive][introduction] covers everything 
 you need to know to get started, including:
 
-- setting up a project that uses Hibernate Reactive and the Vert.x reactive 
-  SQL client for your database,
-- configuring Hibernate Reactive to access your database,
-- writing Java code to define the entities of your data model, and 
-- writing reactive data access code.
+- [setting up a project][build] that uses Hibernate Reactive and the Vert.x 
+  reactive SQL client for your database,
+- [configuring][config] Hibernate Reactive to access your database,
+- writing Java code to [define the entities][model] of your data model, and 
+- writing reactive data access code [using a reactive session][session].
 
 We recommend you start there!
 
 [introduction]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc
+
+[build]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc#including-hibernate-reactive-in-your-project-build
+[config]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc#configuration
+[model]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc#mapping-entity-classes
+[session]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc#using-the-reactive-session
 
 ## Example program
 
