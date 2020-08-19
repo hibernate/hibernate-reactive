@@ -543,10 +543,10 @@ It follows from this tip that you shouldn't need to use `Stage.fetch()`
 or `Mutiny.fetch()` very often!
 
 TIP: Of course, Hibernate provides many other features that help you
-minimize round trips to the database: DML SQL statement batching, batch
-fetching, subselect fetching, bulk update and delete queries, and direct
-execution of native SQL are all things that can help reduce the number
-of queries sent to the database.
+minimize round trips to the database: DML SQL statement batching, the
+second-level cache, batch fetching, subselect fetching, bulk update and
+delete queries, and direct execution of native SQL are all things that
+can help reduce the number of queries sent to the database.
 
 === Transactions
 
