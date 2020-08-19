@@ -7,6 +7,7 @@ package org.hibernate.reactive.session.impl;
 
 import org.hibernate.Filter;
 import org.hibernate.HibernateException;
+import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.engine.query.spi.EntityGraphQueryHint;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.spi.QueryParameters;
@@ -76,7 +77,6 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 
 	/**
 	 * @see HQLQueryPlan#performList(QueryParameters, SharedSessionContractImplementor)
-	 * @throws HibernateException
 	 */
 	public CompletionStage<List<Object>> performReactiveList(QueryParameters queryParameters,
 															 SharedSessionContractImplementor session)
@@ -176,6 +176,12 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 		CompletionStage<Integer> combinedStage = CompletionStages.completedFuture(0);
 		for ( QueryTranslator translator : translators ) {
 			ReactiveQueryTranslatorImpl reactiveTranslator = (ReactiveQueryTranslatorImpl) translator;
+
+			session.addBulkCleanupAction( new BulkOperationCleanupAction(
+					session.getSharedContract(),
+					reactiveTranslator.getQuerySpaces()
+			) );
+
 			combinedStage = combinedStage
 					.thenCompose(
 							count -> reactiveTranslator.executeReactiveUpdate( queryParameters, session )

@@ -9,6 +9,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.UnresolvableObjectException;
+import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.Versioning;
@@ -313,7 +314,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
                 ? getQueryPlan( query, false )
                 : (ReactiveHQLQueryPlan) plan;
 
-        return reactivePlan.performReactiveList(parameters, this )
+        return reactivePlan.performReactiveList( parameters, this )
                 .whenComplete( (list, x) -> {
                     getPersistenceContext().clear();
                     afterOperation( x == null );
@@ -380,13 +381,18 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     }
 
     @Override
-    public List<?> list(String query, QueryParameters queryParameters) throws HibernateException {
+    public void addBulkCleanupAction(BulkOperationCleanupAction action) {
+        action.getAfterTransactionCompletionProcess()
+                .doAfterTransactionCompletion( true, this );
+    }
+
+    @Override
+    public List<?> list(String query, QueryParameters queryParameters) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<?> listCustomQuery(CustomQuery customQuery, QueryParameters queryParameters)
-            throws HibernateException {
+    public List<?> listCustomQuery(CustomQuery customQuery, QueryParameters queryParameters) {
         throw new UnsupportedOperationException();
     }
 

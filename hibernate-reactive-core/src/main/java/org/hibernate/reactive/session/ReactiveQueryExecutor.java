@@ -6,6 +6,7 @@
 package org.hibernate.reactive.session;
 
 import org.hibernate.Incubating;
+import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.QueryParameters;
@@ -39,4 +40,5 @@ public interface ReactiveQueryExecutor extends ReactiveConnectionSupplier {
 
     <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
 
+    void addBulkCleanupAction(BulkOperationCleanupAction action);
 }

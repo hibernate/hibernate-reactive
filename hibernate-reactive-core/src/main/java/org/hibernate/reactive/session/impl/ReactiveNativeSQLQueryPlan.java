@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.session.impl;
 
+import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.engine.query.spi.NativeSQLQueryPlan;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -35,7 +36,10 @@ public class ReactiveNativeSQLQueryPlan extends NativeSQLQueryPlan {
 																 ReactiveQueryExecutor session) {
 		SharedSessionContractImplementor sessionContract = session.getSharedContract();
 
-		coordinateSharedCacheCleanup(sessionContract);
+		session.addBulkCleanupAction( new BulkOperationCleanupAction(
+				session.getSharedContract(),
+				getCustomQuery().getQuerySpaces()
+		) );
 
 		if ( queryParameters.isCallable() ) {
 			throw new IllegalArgumentException("callable not yet supported for native queries");
