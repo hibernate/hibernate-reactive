@@ -64,7 +64,9 @@ Optionally, you might also add:
 - `org.hibernate.validator:hibernate-validator` and
   `org.glassfish:jakarta.el` if you're using Hibernate Validator,
 - `org.hibernate:query-validator` to enable compile-time checking of your
-  HQL queries, and/or
+  HQL queries,
+- `org.hibernate:hibernate-jcache`, along with a JCache implementation like
+  `org.ehcache:ehcache`, if you need a second-level cache, and/or
 - the Hibernate {enhancer}[bytecode enhancer] if you want to use field-level
   lazy fetching.
 
@@ -144,6 +146,39 @@ pool and cache via the following properties:
 - `hibernate.vertx.prepared_statement_cache.sql_limit`
 
 TIP: But for now, just leave these three settings alone.
+
+=== Enabling the second-level cache
+
+Hibernate Reactive supports second-level cache implementations that
+perform no blocking I/O.
+
+IMPORTANT: Make sure you disable any disk-based storage or distributed
+replication used by your preferred cache implementation. A second-level
+cache which uses blocking I/O to interact with the network or disk-based
+storage will at least partially negate the advantages of the reactive
+programming model.
+
+Configuring Hibernate's second-level cache is a rather involved topic,
+and quite outside the scope of this document. But in case it helps, we're
+testing Hibernate Reactive with the following configuration, which uses
+EHCache as the cache implementation:
+
+|===
+| Property name                            | Property value
+
+| `hibernate.cache.use_second_level_cache` | `true`
+| `hibernate.cache.region.factory_class`   | `org.hibernate.cache.jcache.JCacheRegionFactory`
+| `hibernate.javax.cache.provider`         | `org.ehcache.jsr107.EhcacheCachingProvider`
+| `hibernate.javax.cache.uri`              | `/ehcache.xml`
+|===
+
+If you're using EHCache, you'll also need to include an `ehcache.xml` file
+that explicitly configures the behavior of each cache region belonging to
+your entities and collections.
+
+TIP: Don't forget that you need to explicitly mark each entity that will
+be stored in the second-level cache with the `@Cache` annotation from
+`org.hibernate.annotations`.
 
 == Writing the Java code
 
