@@ -32,6 +32,8 @@ dependencies {
     testImplementation "io.vertx:vertx-pg-client:${vertxVersion}"
     testImplementation "io.vertx:vertx-mysql-client:${vertxVersion}"
     testImplementation "io.vertx:vertx-db2-client:${vertxVersion}"
+    testImplementation "org.hibernate:hibernate-jcache:${hibernateOrmVersion}"
+    testImplementation "org.ehcache:ehcache:3.8.1"
 
     // Testcontainers
     testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
