@@ -84,20 +84,17 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 		getProducer().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
 
 		beforeQuery();
-		return doExecuteReactiveUpdate()
+		return reactiveProducer()
+				.executeReactiveUpdate( generateQuerySpecification(), getQueryParameters() )
 				.whenComplete( (count, error) -> afterQuery() )
 				.handle( (count, error) -> convertQueryException( count, error, this ) );
-	}
-
-	//copy pasted between here and ReactiveQueryImpl
-	private CompletionStage<Integer> doExecuteReactiveUpdate() {
-		return reactiveProducer().executeReactiveUpdate( generateQuerySpecification(), getQueryParameters() );
 	}
 
 	@Override
 	public CompletionStage<List<R>> getReactiveResultList() {
 		beforeQuery();
-		return reactiveProducer().<R>reactiveList( generateQuerySpecification(), getQueryParameters() )
+		return reactiveProducer()
+				.<R>reactiveList( generateQuerySpecification(), getQueryParameters() )
 				.whenComplete( (list, err) -> afterQuery() )
 				.handle( (list, error) -> convertQueryException( list, error, this ) );
 	}

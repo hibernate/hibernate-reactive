@@ -66,6 +66,10 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		this.type = queryType( queryString );
 	}
 
+	private String expandedQuery() {
+		return getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() );
+	}
+
 	@Override
 	public void setParameterMetadata(InterpretedParameterMetadata parameterMetadata) {
 		explicitParameterInfoMap = parameterMetadata.explicitParameterInfoMap();
@@ -73,7 +77,7 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 
 	@Override
 	public CompletionStage<R> getReactiveSingleResult() {
-		if (type!=null && type!=QueryType.SELECT) {
+		if ( type!=null && type!=QueryType.SELECT ) {
 			throw new UnsupportedOperationException("not a select query");
 		}
 		return getReactiveResultList().thenApply( list -> extractUniqueResult( list, this ) );
@@ -81,27 +85,23 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 
 	@Override
 	public CompletionStage<Integer> executeReactiveUpdate() {
-		if (type!=null && type!=QueryType.INSERT_UPDATE_DELETE) {
+		if ( type!=null && type!=QueryType.INSERT_UPDATE_DELETE ) {
 			throw new UnsupportedOperationException("not an insert/update/delete query");
 		}
 
 		getProducer().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
 
 		beforeQuery();
-		return doExecuteReactiveUpdate()
+		String expanded = expandedQuery();
+		return reactiveProducer()
+				.executeReactiveUpdate( expanded, makeReactiveQueryParametersForExecution(expanded) )
 				.whenComplete( (count, error) -> afterQuery() )
 				.handle( (count, error) -> convertQueryException( count, error, this ) );
 	}
 
-	//copy pasted between here and ReactiveNativeQueryImpl
-	private CompletionStage<Integer> doExecuteReactiveUpdate() {
-		final String expandedQuery = getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() );
-		return reactiveProducer().executeReactiveUpdate( expandedQuery, makeQueryParametersForExecution( expandedQuery ) );
-	}
-
 	@Override
 	public CompletionStage<List<R>> getReactiveResultList() {
-		if (type!=null && type!=QueryType.SELECT) {
+		if ( type!=null && type!=QueryType.SELECT ) {
 			throw new UnsupportedOperationException("not a select query");
 		}
 		beforeQuery();
@@ -114,21 +114,23 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		if ( getMaxResults() == 0 ) {
 			return CompletionStages.completedFuture( Collections.emptyList() );
 		}
+		else {
+			// disable this check for now because I don't have a
+			// way figure out if there is a transaction in process,
+			// and anyway we don't really care about this check
+	//		LockMode lockMode = getLockOptions().getLockMode();
+	//		if ( lockMode != null && lockMode != LockMode.NONE ) {
+	//			// note that this check doesn't get done for aliased locks,
+	//			// but that's the same as in hibernate-core so don't care
+	//			if ( !getProducer().isTransactionInProgress() ) {
+	//				throw new TransactionRequiredException( "no transaction is in progress" );
+	//			}
+	//		}
 
-		// disable this check for now because I don't have a
-		// way figure out if there is a transaction in process,
-		// and anyway we don't really care about this check
-//		LockMode lockMode = getLockOptions().getLockMode();
-//		if ( lockMode != null && lockMode != LockMode.NONE ) {
-//			// note that this check doesn't get done for aliased locks,
-//			// but that's the same as in hibernate-core so don't care
-//			if ( !getProducer().isTransactionInProgress() ) {
-//				throw new TransactionRequiredException( "no transaction is in progress" );
-//			}
-//		}
-
-		final String expandedQuery = getQueryParameterBindings().expandListValuedParameters( getQueryString(), getProducer() );
-		return reactiveProducer().reactiveList( expandedQuery, makeReactiveQueryParametersForExecution( expandedQuery ) );
+			String expanded = expandedQuery();
+			return reactiveProducer()
+					.reactiveList( expanded, makeReactiveQueryParametersForExecution(expanded) );
+		}
 	}
 
 	private ReactiveQueryExecutor reactiveProducer() {
