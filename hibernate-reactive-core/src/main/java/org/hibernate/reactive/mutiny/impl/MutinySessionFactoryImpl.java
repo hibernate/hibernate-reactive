@@ -6,6 +6,7 @@
 package org.hibernate.reactive.mutiny.impl;
 
 import io.smallrye.mutiny.Uni;
+import org.hibernate.Cache;
 import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -104,6 +105,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	@Override
 	public Metamodel getMetamodel() {
 		return delegate.getMetamodel();
+	}
+
+	@Override
+	public Cache getCache() {
+		return delegate.getCache();
 	}
 
 	@Override

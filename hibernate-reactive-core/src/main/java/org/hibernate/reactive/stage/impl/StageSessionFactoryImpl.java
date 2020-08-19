@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import org.hibernate.Cache;
 import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
@@ -103,6 +104,11 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	@Override
 	public Metamodel getMetamodel() {
 		return delegate.getMetamodel();
+	}
+
+	@Override
+	public Cache getCache() {
+		return delegate.getCache();
 	}
 
 	@Override

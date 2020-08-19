@@ -7,6 +7,7 @@ package org.hibernate.reactive.mutiny;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import org.hibernate.Cache;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -1167,6 +1168,12 @@ public interface Mutiny {
 		 * Obtain the JPA {@link Metamodel} for the persistence unit.
 		 */
 		Metamodel getMetamodel();
+
+		/**
+		 * Obtain the {@link Cache} object for managing the second-level
+		 * cache.
+		 */
+		Cache getCache();
 
 		/**
 		 * Destroy the session factory and clean up its connection pool.
