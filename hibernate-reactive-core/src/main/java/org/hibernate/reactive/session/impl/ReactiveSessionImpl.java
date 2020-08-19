@@ -16,6 +16,7 @@ import org.hibernate.MappingException;
 import org.hibernate.ObjectDeletedException;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
+import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
@@ -341,7 +342,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		return reactiveAutoFlushIfRequired( reactivePlan.getQuerySpaces() )
 				// FIXME: I guess I can fix this as a separate issue
 //				dontFlushFromFind++;   //stops flush being called multiple times if this method is recursively called
-				.thenCompose( v -> reactivePlan.performReactiveList(parameters, this ) )
+				.thenCompose( v -> reactivePlan.performReactiveList( parameters, this ) )
 				.whenComplete( (list, x) -> {
 //					dontFlushFromFind--;
 					afterOperation( x == null );
@@ -543,6 +544,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					afterOperation( x == null );
 					delayedAfterCompletion();
 				} );
+	}
+
+	@Override
+	public void addBulkCleanupAction(BulkOperationCleanupAction action) {
+		getReactiveActionQueue().addAction( action );
 	}
 
 	@Override
