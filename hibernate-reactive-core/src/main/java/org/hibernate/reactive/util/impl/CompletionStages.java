@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.util.impl;
 
+import com.ibm.asyncutil.iteration.AsyncIterator;
 import com.ibm.asyncutil.iteration.AsyncTrampoline;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
@@ -40,10 +41,10 @@ public class CompletionStages {
 	}
 
 	// singleton instances:
-	private static CompletionStage<Void> VOID = completedFuture( null );
-	private static CompletionStage<Integer> ZERO = completedFuture( 0 );
-	private static CompletionStage<Boolean> TRUE = completedFuture( true );
-	private static CompletionStage<Boolean> FALSE = completedFuture( false );
+	private static final CompletionStage<Void> VOID = completedFuture( null );
+	private static final CompletionStage<Integer> ZERO = completedFuture( 0 );
+	private static final CompletionStage<Boolean> TRUE = completedFuture( true );
+	private static final CompletionStage<Boolean> FALSE = completedFuture( false );
 
 	public static CompletionStage<Void> voidFuture() {
 		return VOID;
@@ -99,6 +100,24 @@ public class CompletionStages {
 		}
 	}
 
+	public static <T> CompletionStage<Integer> total(int start, int end, Function<Integer,CompletionStage<Integer>> consumer) {
+		return AsyncIterator.range( start, end )
+				.thenCompose( (i) -> consumer.apply( i.intValue() ) )
+				.fold(0, (total, next) -> total+next );
+	}
+
+	public static <T> CompletionStage<Integer> total(T[] array, Function<T,CompletionStage<Integer>> consumer) {
+		return AsyncIterator.range( 0, array.length )
+				.thenCompose( (i) -> consumer.apply( array[i.intValue()] ) )
+				.fold(0, (total, next) -> total+next );
+	}
+
+	public static <T> CompletionStage<Void> loop(T[] array, Function<T,CompletionStage<?>> consumer) {
+//		return AsyncIterator.range( 0, array.length )
+//				.forEach( (i) -> consumer.apply( array[i.intValue()]) );
+		return loop( Arrays.stream(array), consumer );
+	}
+
 	public static <T> CompletionStage<Void> loop(Iterator<T> iterator, Function<T,CompletionStage<?>> consumer) {
 		if ( iterator.hasNext() ) {
 			return AsyncTrampoline.asyncWhile( () -> consumer.apply( iterator.next() )
@@ -107,10 +126,6 @@ public class CompletionStages {
 		else {
 			return voidFuture();
 		}
-	}
-
-	public static <T> CompletionStage<Void> loop(T[] array, Function<T,CompletionStage<?>> consumer) {
-		return loop( Arrays.stream(array), consumer );
 	}
 
 	public static <T> CompletionStage<Void> loop(Iterable<T> iterable, Function<T,CompletionStage<?>> consumer) {

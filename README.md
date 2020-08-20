@@ -185,11 +185,6 @@ features:
 Instead, use `@OneToMany(mappedBy=...)` together with `@ManyToOne` for 
 all associations.
 
-#### Query language
-
-HQL `update` and `delete` queries which affect multiple tables (due to the
-use of `TABLE_PER_CLASS` or `JOINED` inheritance mapping) are not working.
-
 #### Caching
 
 The query cache is not yet supported.
@@ -200,8 +195,6 @@ filesystem or distributed replication.
 
 #### Driver-specific limitations
 
-You might run into some [limitations of the Vert.x DB2 client][] when using 
+You might run into some limitations of the Vert.x DB2 client when using 
 Hibernate Reactive with DB2.
-
-[limitations of the Vert.x DB2 client]: https://github.com/eclipse-vertx/vertx-sql-client/blob/master/vertx-db2-client/src/main/asciidoc/index.adoc#reactive-db2-client
 

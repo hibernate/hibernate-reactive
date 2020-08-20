@@ -18,23 +18,26 @@ import org.hibernate.hql.internal.ast.HqlSqlWalker;
 import org.hibernate.hql.internal.ast.QuerySyntaxException;
 import org.hibernate.hql.internal.ast.QueryTranslatorImpl;
 import org.hibernate.hql.internal.ast.SqlGenerator;
+import org.hibernate.hql.internal.ast.exec.MultiTableDeleteExecutor;
+import org.hibernate.hql.internal.ast.exec.MultiTableUpdateExecutor;
+import org.hibernate.hql.internal.ast.exec.StatementExecutor;
 import org.hibernate.hql.internal.ast.tree.QueryNode;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.param.ParameterSpecification;
+import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
+import org.hibernate.reactive.bulk.StatementsWithParameters;
 import org.hibernate.reactive.loader.hql.impl.ReactiveQueryLoader;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.jboss.logging.Logger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-
-import static org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor.toParameterArray;
 
 public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 
@@ -45,12 +48,15 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 			ReactiveQueryTranslatorImpl.class.getName()
 	);
 
+	private final SessionFactoryImplementor factory;
+
 	public ReactiveQueryTranslatorImpl(
 			String queryIdentifier,
 			String query,
 			Map enabledFilters,
 			SessionFactoryImplementor factory) {
 		super( queryIdentifier, query, enabledFilters, factory );
+		this.factory = factory;
 	}
 
 	public ReactiveQueryTranslatorImpl(
@@ -59,11 +65,12 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 			Map enabledFilters,
 			SessionFactoryImplementor factory, EntityGraphQueryHint entityGraphQueryHint) {
 		super( queryIdentifier, query, enabledFilters, factory, entityGraphQueryHint );
+		this.factory = factory;
 	}
 
 	@Override
 	protected QueryLoader createQueryLoader(HqlSqlWalker w, SessionFactoryImplementor factory) {
-		this.queryLoader = new ReactiveQueryLoader( this, factory, w.getSelectClause() );
+		queryLoader = new ReactiveQueryLoader( this, factory, w.getSelectClause() );
 		return queryLoader;
 	}
 
@@ -77,7 +84,9 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 		throw new UnsupportedOperationException("Use #reactiveList instead");
 	}
 
-	public CompletionStage<List<Object>> reactiveList(SharedSessionContractImplementor session, QueryParameters queryParameters) throws HibernateException {
+	public CompletionStage<List<Object>> reactiveList(SharedSessionContractImplementor session,
+													  QueryParameters queryParameters)
+			throws HibernateException {
 		// Delegate to the QueryLoader...
 		errorIfDML();
 
@@ -94,8 +103,8 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 			boolean fail = session.getFactory().getSessionFactoryOptions().isFailOnPaginationOverCollectionFetchEnabled();
 			if (fail) {
 				throw new HibernateException("firstResult/maxResults specified with collection fetch. " +
-													 "In memory pagination was about to be applied. " +
-													 "Failing because 'Fail on pagination over collection fetch' is enabled.");
+						"In memory pagination was about to be applied. " +
+						"Failing because 'Fail on pagination over collection fetch' is enabled.");
 			}
 			else {
 				LOG.firstOrMaxResultsSpecifiedWithCollectionFetch();
@@ -110,7 +119,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 		}
 
 		return queryLoader.reactiveList( session, queryParametersToUse )
-				.thenApply(results -> {
+				.thenApply( results -> {
 					if ( needsDistincting ) {
 						int includedCount = -1;
 						// NOTE : firstRow is zero-based
@@ -139,51 +148,99 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 						return tmp;
 					}
 					return results;
-				});
+				} );
 	}
 
-	public CompletionStage<Integer> executeReactiveUpdate(QueryParameters queryParameters, ReactiveQueryExecutor session) {
+	public CompletionStage<Integer> executeReactiveUpdate(QueryParameters queryParameters,
+														  ReactiveQueryExecutor session) {
 		errorIfSelect();
 
-		// Multiple UPDATE SQL strings are not supported yet
-		String sql = getSqlStatements()[0];
+		StatementsWithParameters statementsWithParameters = getUpdateHandler();
+		String[] statements = statementsWithParameters.getStatements();
+		ParameterSpecification[][] specifications = statementsWithParameters.getParameterSpecifications();
 
-		Object[] parameterValues = toParameterArray(
-				queryParameters,
-				getCollectedParameterSpecifications( session ),
-				session.getSharedContract()
-		);
-		return CompletionStages.zeroFuture().thenCompose(
-				count -> session.getReactiveConnection()
-						.update( sql, parameterValues )
-						.thenApply( updateCount -> count + updateCount )
+		return CompletionStages.total(
+				0, statements.length,
+				i -> {
+					String sql = statements[i];
+					Object[] arguments = QueryParametersAdaptor.arguments(
+							queryParameters,
+							specifications[i],
+							session.getSharedContract()
+					);
+					return session.getReactiveConnection()
+							.update( sql, arguments )
+							.handle( (value, error) -> {
+								if ( sql.startsWith("create ") || sql.startsWith("drop ") ) {
+									// ignore errors creating tables, since a create
+									// table fails when the table already exists
+									// also ignore meaningless row counts
+									return 0;
+								}
+								else {
+									return CompletionStages.returnOrRethrow( error, value );
+								}
+							} );
+				}
 		);
 	}
 
+	private StatementsWithParameters getUpdateHandler() {
+		StatementExecutor executor = getStatementExecutor();
+		if (executor instanceof MultiTableUpdateExecutor) {
+			return (StatementsWithParameters) ((MultiTableUpdateExecutor) executor).getUpdateHandler();
+		}
+		else if (executor instanceof MultiTableDeleteExecutor) {
+			return (StatementsWithParameters) ((MultiTableDeleteExecutor) executor).getDeleteHandler();
+		}
+		else {
+			return new StatementsWithParameters() {
+				final String[] statements = executor.getSqlStatements();
+				final ParameterSpecification[] parameterSpecifications =
+						getCollectedParameterSpecifications().toArray( new ParameterSpecification[0] );
+				@Override
+				public String[] getStatements() {
+					return statements;
+				}
+
+				@Override
+				public ParameterSpecification[][] getParameterSpecifications() {
+					ParameterSpecification[][] result = new ParameterSpecification[statements.length][];
+					Arrays.fill( result, parameterSpecifications );
+					return result;
+				}
+			};
+		}
+	}
+
+
 	/**
-	 * @deprecated Use {@link #executeReactiveUpdate(QueryParameters queryParameters, ReactiveSession session)}
+	 * @deprecated Use {@link #executeReactiveUpdate(QueryParameters, ReactiveQueryExecutor)}
 	 */
 	@Deprecated
 	@Override
-	public int executeUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) throws HibernateException {
+	public int executeUpdate(QueryParameters queryParameters, SharedSessionContractImplementor session) {
 		throw new UnsupportedOperationException("Use executeReactiveUpdate instead ");
 	}
 
-	// TODO: it would be nice to be able to override getCollectedParameterSpecifications().
-	//       To do that, we would need to add protected method, QueryTranslatorImpl#getFactory
-	private List<ParameterSpecification> getCollectedParameterSpecifications(ReactiveQueryExecutor session) {
-		// Currently, ORM returns null for getCollectedParameterSpecifications() a StatementExecute
-		List<ParameterSpecification> parameterSpecifications = getCollectedParameterSpecifications();
+	@Override
+	public List<ParameterSpecification> getCollectedParameterSpecifications() {
+		List<ParameterSpecification> parameterSpecifications = super.getCollectedParameterSpecifications();
 		if ( parameterSpecifications == null ) {
-			final SqlGenerator gen = new SqlGenerator( session.getFactory() );
+			// Currently, ORM returns null for getCollectedParameterSpecifications() with a StatementExecutor
+			// TODO: the following looks bad, I think it reparses the query
+			SqlGenerator gen = new SqlGenerator( factory );
 			try {
 				gen.statement( (AST) getSqlAST() );
-				parameterSpecifications = gen.getCollectedParameters();
-			} catch (RecognitionException e) {
+				return gen.getCollectedParameters();
+			}
+			catch (RecognitionException e) {
 				throw QuerySyntaxException.convert(e);
 			}
 		}
-		return parameterSpecifications;
+		else {
+			return parameterSpecifications;
+		}
 	}
 
 	//TODO: Change scope in ORM

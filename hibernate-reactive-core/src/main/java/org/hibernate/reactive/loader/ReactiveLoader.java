@@ -157,6 +157,6 @@ public interface ReactiveLoader {
 	default void discoverTypes(QueryParameters queryParameters, ResultSet resultSet) {}
 
 	default Object[] toParameterArray(QueryParameters queryParameters, SharedSessionContractImplementor session) {
-		return QueryParametersAdaptor.toParameterArray( queryParameters, session );
+		return QueryParametersAdaptor.arguments( queryParameters, session );
 	}
 }
