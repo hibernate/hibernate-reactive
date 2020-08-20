@@ -130,11 +130,68 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 						}));
 	}
 
-	@Entity
-//	@Table(name = SpellBook.TABLE)
+	@Test
+	public void testQueryUpdate(TestContext context) {
+		final SpellBook spells = new SpellBook( 6, "Necronomicon", true, new Date() );
+//		final Author author = new Author( "Abdul Alhazred", spells );
+
+		test( context,
+				openSession()
+						.thenCompose( s -> s.persist(spells) )
+//						.thenCompose( s -> s.persist(author) )
+						.thenCompose( s -> s.flush() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.createQuery("update Book set title=title||' II' where title='Necronomicon'").executeUpdate() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.find(Book.class, 6))
+						.thenAccept( book -> {
+							context.assertNotNull(book);
+							context.assertTrue(book instanceof SpellBook);
+							context.assertEquals(book.getTitle(), "Necronomicon II");
+						} )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.createQuery("delete Book where title='Necronomicon II'").executeUpdate() )
+						.thenCompose( v -> openSession() )
+						.thenCompose(s -> s.find(Book.class, 6))
+						.thenAccept( book -> context.assertNull(book) )
+		);
+	}
+
+	@Test
+	public void testQueryUpdateWithParameters(TestContext context) {
+		final SpellBook spells = new SpellBook( 6, "Necronomicon", true, new Date() );
+//		final Author author = new Author( "Abdul Alhazred", spells );
+
+		test( context,
+				openSession()
+						.thenCompose( s -> s.persist(spells) )
+//						.thenCompose( s -> s.persist(author) )
+						.thenCompose( s -> s.flush() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.createQuery("update Book set title=title||:sfx where title=:tit")
+								.setParameter("sfx", " II")
+								.setParameter("tit", "Necronomicon")
+								.executeUpdate() )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.find(Book.class, 6))
+						.thenAccept( book -> {
+							context.assertNotNull(book);
+							context.assertTrue(book instanceof SpellBook);
+							context.assertEquals(book.getTitle(), "Necronomicon II");
+						} )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.createQuery("delete Book where title=:tit")
+								.setParameter("tit", "Necronomicon II")
+								.executeUpdate() )
+						.thenCompose( v -> openSession() )
+						.thenCompose(s -> s.find(Book.class, 6))
+						.thenAccept( book -> context.assertNull(book) )
+		);
+	}
+
+	@Entity(name = "SpellBook")
 	@DiscriminatorValue("S")
 	public static class SpellBook extends Book {
-//		public static final String TABLE = "SpellBook";
 
 		private boolean forbidden;
 
@@ -150,11 +207,10 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
-	@Table(name = Book.TABLE)
+	@Entity(name = "Book")
+	@Table(name = "BookST")
 	@DiscriminatorValue("N")
 	public static class Book {
-		public static final String TABLE = "Book";
 
 		@Id private Integer id;
 		private String title;

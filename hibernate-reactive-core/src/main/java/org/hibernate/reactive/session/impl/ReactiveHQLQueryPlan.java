@@ -46,7 +46,8 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 			String hql,
 			boolean shallow,
 			Map<String, Filter> enabledFilters,
-			SessionFactoryImplementor factory, EntityGraphQueryHint entityGraphQueryHint) {
+			SessionFactoryImplementor factory,
+			EntityGraphQueryHint entityGraphQueryHint) {
 		super( hql, shallow, enabledFilters, factory, entityGraphQueryHint );
 	}
 
@@ -121,7 +122,8 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 		else {
 			distinction = null;
 		}
-		AtomicInteger includedCount = new AtomicInteger( -1 );
+
+		AtomicInteger includedCount = new AtomicInteger();
 		return CompletionStages.loop(
 				translators,
 				translator -> ((ReactiveQueryTranslatorImpl) translator)
@@ -150,7 +152,7 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 			if ( !distinction.add( result ) ) {
 				continue;
 			}
-			int included = includedCount.addAndGet( 1 );
+			int included = includedCount.getAndIncrement();
 			if ( included < first ) {
 				continue;
 			}
@@ -167,26 +169,22 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 			log.tracev( "Execute update: {0}", getSourceQuery() );
 			queryParameters.traceParameters( session.getFactory() );
 		}
+
 		QueryTranslator[] translators = getTranslators();
 		if ( translators.length != 1 ) {
 			log.splitQueries( getSourceQuery(), translators.length );
 		}
 
-		CompletionStage<Integer> combinedStage = CompletionStages.zeroFuture();
-		for ( QueryTranslator translator : translators ) {
-			ReactiveQueryTranslatorImpl reactiveTranslator = (ReactiveQueryTranslatorImpl) translator;
-
-			session.addBulkCleanupAction( new BulkOperationCleanupAction(
-					session.getSharedContract(),
-					reactiveTranslator.getQuerySpaces()
-			) );
-
-			combinedStage = combinedStage
-					.thenCompose(
-							count -> reactiveTranslator.executeReactiveUpdate( queryParameters, session )
-									.thenApply( updateCount -> count + updateCount )
-					);
-		}
-		return combinedStage;
+		return CompletionStages.total(
+				translators,
+				translator -> {
+					session.addBulkCleanupAction( new BulkOperationCleanupAction(
+							session.getSharedContract(),
+							translator.getQuerySpaces()
+					) );
+					return ((ReactiveQueryTranslatorImpl) translator)
+							.executeReactiveUpdate( queryParameters, session );
+				}
+		);
 	}
 }
