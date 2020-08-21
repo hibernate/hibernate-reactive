@@ -104,8 +104,6 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 			final boolean readOnly,
 			List<AfterLoadAction> afterLoadActions) throws HibernateException {
 
-		CompletionStage<Void> stage = CompletionStages.voidFuture();
-
 		final CollectionPersister[] collectionPersisters = loader.getCollectionPersisters();
 		if (collectionPersisters != null) {
 			for (CollectionPersister collectionPersister : collectionPersisters) {
@@ -132,6 +130,7 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 			post = null;
 		}
 
+		CompletionStage<Void> stage;
 		if ( hydratedObjects != null && !hydratedObjects.isEmpty() ) {
 			if ( LOG.isTraceEnabled() ) {
 				long hydratedObjectsSize = hydratedObjects.stream().filter(Objects::nonNull).count();
@@ -139,18 +138,21 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 			}
 
 			GraphImplementor<?> fetchGraphLoadContextToRestore = session.getFetchGraphLoadContext();
-			for ( Object hydratedObject : hydratedObjects ) {
+			stage = CompletionStages.loop(
+					hydratedObjects,
+					hydratedObject -> {
 				if ( hydratedObject == null ) {
 					// This is a hack to signal that we're starting to process a new row
 					session.setFetchGraphLoadContext( fetchGraphLoadContextToRestore );
+					return CompletionStages.voidFuture(); //TODO: ugly!
 				}
 				else {
-					stage = stage.thenCompose(
-							v -> initializeEntity( hydratedObject, readOnly, session, pre, listeners )
-					);
+					return initializeEntity( hydratedObject, readOnly, session, pre, listeners );
 				}
-
-			}
+			} );
+		}
+		else {
+			stage = CompletionStages.voidFuture();
 		}
 
 		return stage.thenAccept( v -> {

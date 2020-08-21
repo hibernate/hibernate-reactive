@@ -55,6 +55,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.IntStream;
 
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.pretty.MessageHelper.infoString;
@@ -100,29 +101,51 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		preInsertInMemoryValueGeneration( fields, object, session );
 
 		final int span = delegate().getTableSpan();
-		CompletionStage<Serializable> stage = CompletionStages.nullFuture();
 		if ( delegate().getEntityMetamodel().isDynamicInsert() ) {
 			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
 			boolean[] notNull = delegate().getPropertiesToInsert( fields );
-			stage = stage.thenCompose( n -> insertReactive( fields, notNull, delegate().generateInsertString( true, notNull ), session ) );
-			for ( int j = 1; j < span; j++ ) {
-				final int jj = j;
-				stage = stage.thenCompose( id ->
-						insertReactive(id, fields, notNull, jj, delegate().generateInsertString(notNull, jj), session)
-							.thenApply( v -> id ));
-			}
+			return insertReactive(
+					fields,
+					notNull,
+					delegate().generateInsertString( true, notNull ),
+					session
+			)
+			.thenCompose(
+					id -> CompletionStages.loop(
+							1, span,
+							table -> insertReactive(
+									id,
+									fields,
+									notNull,
+									table,
+									delegate().generateInsertString( notNull, table ),
+									session
+							)
+					).thenApply( v -> id )
+			);
 		}
 		else {
 			// For the case of dynamic-insert="false", use the static SQL
-			stage = stage.thenCompose( n -> insertReactive( fields, delegate().getPropertyInsertability(), delegate().getSQLIdentityInsertString(), session ) );
-			for ( int j = 1; j < span; j++ ) {
-				final int jj = j;
-				stage = stage.thenCompose( id ->
-						insertReactive(id, fields, delegate().getPropertyInsertability(), jj, delegate().getSQLInsertStrings()[jj], session)
-								.thenApply( v -> id ));
-			}
+			return insertReactive(
+					fields,
+					delegate().getPropertyInsertability(),
+					delegate().getSQLIdentityInsertString(),
+					session
+			)
+			.thenCompose(
+					id -> CompletionStages.loop(
+							1, span,
+							table -> insertReactive(
+									id,
+									fields,
+									delegate().getPropertyInsertability(),
+									table,
+									delegate().getSQLInsertStrings()[table],
+									session
+							)
+					).thenApply( v -> id )
+			);
 		}
-		return stage;
 	}
 
 	void preInsertInMemoryValueGeneration(Object[] fields, Object object,
@@ -137,42 +160,36 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		// apply any pre-insert in-memory value generation
 		preInsertInMemoryValueGeneration( fields, object, session );
 
-		CompletionStage<?> insertStage = CompletionStages.voidFuture();
 		final int span = delegate().getTableSpan();
 		if ( delegate().getEntityMetamodel().isDynamicInsert() ) {
 			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
 			boolean[] notNull = delegate().getPropertiesToInsert( fields );
-			for ( int j = 0; j < span; j++ ) {
-				int jj = j;
-				insertStage = insertStage.thenCompose(
-						v -> insertReactive(
-								id,
-								fields,
-								notNull,
-								jj,
-								delegate().generateInsertString( notNull, jj ),
-								session
-						)
-				);
-			}
+			return CompletionStages.loop(
+					0, span,
+					table -> insertReactive(
+							id,
+							fields,
+							notNull,
+							table,
+							delegate().generateInsertString( notNull, table ),
+							session
+					)
+			);
 		}
 		else {
 			// For the case of dynamic-insert="false", use the static SQL
-			for ( int j = 0; j < span; j++ ) {
-				int jj = j;
-				insertStage = insertStage.thenCompose(
-						v -> insertReactive(
-								id,
-								fields,
-								delegate().getPropertyInsertability(),
-								jj,
-								delegate().getSQLInsertStrings()[jj],
-								session
-						)
-				);
-			}
+			return CompletionStages.loop(
+					0, span,
+					table -> insertReactive(
+							id,
+							fields,
+							delegate().getPropertyInsertability(),
+							table,
+							delegate().getSQLInsertStrings()[table],
+							session
+					)
+			);
 		}
-		return insertStage;
 	}
 
 	default CompletionStage<?> insertReactive(
@@ -359,23 +376,18 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			deleteStrings = delegate().getSQLDeleteStrings();
 		}
 
-		CompletionStage<?> deleteStage = CompletionStages.voidFuture();
-		for ( int j = span - 1; j >= 0; j-- ) {
-			// For now we assume there is only one delete query
-			int jj = j;
-			Object[] state = loadedState;
-			deleteStage = deleteStage.thenCompose(
-					v-> deleteReactive(
-							id,
-							version,
-							jj,
-							deleteStrings[jj],
-							session,
-							state
-					));
-		}
-
-		return deleteStage;
+		Object[] state = loadedState;
+		return CompletionStages.loop(
+				IntStream.iterate(span-1, (i) -> i-1 ).limit( span ),
+				table -> deleteReactive(
+						id,
+						version,
+						table,
+						deleteStrings[table],
+						session,
+						state
+				)
+		);
 	}
 
 	default boolean isAllOrDirtyOptimisticLocking() {
@@ -593,28 +605,21 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			propsToUpdate = delegate().getPropertyUpdateability( object );
 		}
 
-		CompletionStage<?> updateStage = CompletionStages.voidFuture();
-		for ( int j = 0; j < span; j++ ) {
-			// Now update only the tables with dirty properties (and the table with the version number)
-			if ( tableUpdateNeeded[j] ) {
-				// We assume there is only one table for now
-				final int jj = j;
-				updateStage = updateStage.thenCompose(
-						v -> updateOrInsertReactive(
-								id,
-								fields,
-								oldFields,
-								jj == 0 ? rowId : null,
-								propsToUpdate,
-								jj,
-								oldVersion,
-								updateStrings[jj],
-								session
-						)
-				);
-			}
-		}
-		return updateStage;
+		// Now update only the tables with dirty properties (and the table with the version number)
+		return CompletionStages.loop(
+				IntStream.range(0, span).filter( i-> tableUpdateNeeded[i] ),
+				table -> updateOrInsertReactive(
+						id,
+						fields,
+						oldFields,
+						table == 0 ? rowId : null,
+						propsToUpdate,
+						table,
+						oldVersion,
+						updateStrings[table],
+						session
+				)
+		);
 	}
 
 	String[] getUpdateStrings(boolean byRowId, boolean hasUninitializedLazyProperties);

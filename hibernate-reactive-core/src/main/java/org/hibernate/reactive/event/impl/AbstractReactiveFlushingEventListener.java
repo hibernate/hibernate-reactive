@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.event.impl;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
@@ -127,17 +128,20 @@ public abstract class AbstractReactiveFlushingEventListener {
 
 		LOG.debug( "Processing flush-time cascades" );
 
-		CompletionStage<Void> stage = CompletionStages.voidFuture();
-		final IdentitySet copiedAlready = new IdentitySet( 10 );
+		IdentitySet copiedAlready = new IdentitySet( 10 );
 		//safe from concurrent modification because of how concurrentEntries() is implemented on IdentityMap
-		for ( Map.Entry<Object, EntityEntry> me : persistenceContext.reentrantSafeEntityEntries() ) {
-			EntityEntry entry = me.getValue();
-			Status status = entry.getStatus();
-			if ( status == Status.MANAGED || status == Status.SAVING || status == Status.READ_ONLY ) {
-				stage = stage.thenCompose( v -> cascadeOnFlush( session, entry.getPersister(), me.getKey(), copiedAlready ) );
-			}
-		}
-		return stage;
+		return CompletionStages.loop(
+				Arrays.stream( persistenceContext.reentrantSafeEntityEntries() )
+						.filter( entry -> flushable( entry.getValue() ) ),
+				entry -> cascadeOnFlush( session, entry.getValue().getPersister(), entry.getKey(), copiedAlready )
+		);
+	}
+
+	private static boolean flushable(EntityEntry entry) {
+		Status status = entry.getStatus();
+		return status == Status.MANAGED
+			|| status == Status.SAVING
+			|| status == Status.READ_ONLY;
 	}
 
 	/**

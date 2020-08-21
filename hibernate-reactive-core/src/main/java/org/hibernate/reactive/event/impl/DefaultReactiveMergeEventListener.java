@@ -31,6 +31,7 @@ import org.hibernate.type.TypeHelper;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.IntStream;
 
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultMergeEventListener}.
@@ -444,22 +445,25 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			final Object target,
 			final SessionImplementor source,
 			final MergeContext mergeContext) {
-		CompletionStage<Void> stage = CompletionStages.voidFuture();
-		// If entity == target, then nothing needs to be fetched.
-		if ( entity != target ) {
+		CompletionStage<Void> stage;
+		if (entity == target) {
+			// If entity == target, then nothing needs to be fetched.
+			stage = CompletionStages.voidFuture();
+		}
+		else {
 			ReactiveSession session = source.unwrap(ReactiveSession.class);
 			final Object[] mergeState = persister.getPropertyValues(entity);
 			final Object[] managedState = persister.getPropertyValues(target);
-			for (int i = 0; i < mergeState.length; i++) {
-				Object fetchable = managedState[i];
-				// Cascade-merge mappings do not determine what needs to be fetched.
-				// The value only needs to be fetched if the incoming value (mergeState[i])
-				// is initialized, but its corresponding managed state is not initialized.
-				// Initialization must be done before copyValues executes.
-				if ( Hibernate.isInitialized( mergeState[i] ) && !Hibernate.isInitialized( managedState[i] ) ) {
-					stage = stage.thenCompose( v -> session.reactiveFetch( fetchable, true ) ).thenApply(ignore -> null);
-				}
-			}
+			stage = CompletionStages.loop(
+					IntStream.range(0, mergeState.length)
+							// Cascade-merge mappings do not determine what needs to be fetched.
+							// The value only needs to be fetched if the incoming value (mergeState[i])
+							// is initialized, but its corresponding managed state is not initialized.
+							// Initialization must be done before copyValues executes.
+							.filter( i-> Hibernate.isInitialized( mergeState[i] )
+										&& !Hibernate.isInitialized( managedState[i] ) ),
+					i -> session.reactiveFetch( managedState[i], true )
+			);
 		}
 		return stage.thenAccept( v -> copyValues( persister, entity, target, source, mergeContext ) );
 	}

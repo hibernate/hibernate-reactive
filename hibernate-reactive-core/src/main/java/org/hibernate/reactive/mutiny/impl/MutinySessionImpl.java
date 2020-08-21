@@ -452,21 +452,18 @@ public class MutinySessionImpl implements Mutiny.Session {
 		return delegate.isOpen();
 	}
 
-	private <T> CompletionStage<T> applyToAll(
-			Function<Object, CompletionStage<T>> op,
+	private CompletionStage<Void> applyToAll(
+			Function<Object, CompletionStage<?>> op,
 			Object[] entity) {
 		if ( entity.length==0 ) {
 			return CompletionStages.nullFuture();
 		}
 		else if ( entity.length==1 ) {
-			return op.apply( entity[0] );
+			return op.apply( entity[0] ).thenApply( v -> null );
 		}
-
-		CompletionStage<T> stage = CompletionStages.nullFuture();
-		for (Object e: entity) {
-			stage = stage.thenCompose( v -> op.apply(e) );
+		else {
+			return CompletionStages.loop( entity, op );
 		}
-		return stage;
 	}
 
 }

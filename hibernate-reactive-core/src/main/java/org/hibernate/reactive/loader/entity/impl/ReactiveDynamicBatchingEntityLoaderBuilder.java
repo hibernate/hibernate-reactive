@@ -179,7 +179,7 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 		}
 
 		CompletionStage<Void> stage = CompletionStages.voidFuture();
-
+		//TODO: Trampoline this!
 		int idPosition = 0;
 		while ( numberOfIdsLeft > 0 ) {
 			int batchSize =  Math.min( numberOfIdsLeft, maxBatchSize );
@@ -272,7 +272,7 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 		final List<Integer> elementPositionsLoadedByBatch = new ArrayList<>();
 
 		CompletionStage<?> stage = CompletionStages.voidFuture();
-
+		//TODO: Trampoline this!
 		for ( int i = 0; i < ids.length; i++ ) {
 			final Serializable id = ids[i];
 			final EntityKey entityKey = new EntityKey( id, persister );

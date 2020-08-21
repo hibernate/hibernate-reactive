@@ -5,13 +5,18 @@
  */
 package org.hibernate.reactive.util.impl;
 
+import com.ibm.asyncutil.iteration.AsyncTrampoline;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class CompletionStages {
 
@@ -92,5 +97,35 @@ public class CompletionStages {
 			log.error( "failed to execute statement [" + sql + "]");
 			log.error( message.get(), t );
 		}
+	}
+
+	public static <T> CompletionStage<Void> loop(Iterator<T> iterator, Function<T,CompletionStage<?>> consumer) {
+		if ( iterator.hasNext() ) {
+			return AsyncTrampoline.asyncWhile( () -> consumer.apply( iterator.next() )
+					.thenApply( r -> iterator.hasNext() ));
+		}
+		else {
+			return voidFuture();
+		}
+	}
+
+	public static <T> CompletionStage<Void> loop(T[] array, Function<T,CompletionStage<?>> consumer) {
+		return loop( Arrays.stream(array), consumer );
+	}
+
+	public static <T> CompletionStage<Void> loop(Iterable<T> iterable, Function<T,CompletionStage<?>> consumer) {
+		return loop( iterable.iterator(), consumer );
+	}
+
+	public static <T> CompletionStage<Void> loop(Stream<T> stream, Function<T,CompletionStage<?>> consumer) {
+		return loop( stream.iterator(), consumer );
+	}
+
+	public static CompletionStage<Void> loop(IntStream stream, Function<Integer,CompletionStage<?>> consumer) {
+		return loop( stream.iterator(), consumer );
+	}
+
+	public static CompletionStage<Void> loop(int start, int end, Function<Integer,CompletionStage<?>> consumer) {
+		return loop( IntStream.range(start, end), consumer );
 	}
 }
