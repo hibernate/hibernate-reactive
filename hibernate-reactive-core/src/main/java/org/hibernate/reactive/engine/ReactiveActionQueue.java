@@ -296,7 +296,7 @@ public class ReactiveActionQueue {
 	}
 
 	private CompletionStage<Void> addInsertAction(ReactiveEntityInsertAction insert) {
-		CompletionStage<Void> ret = CompletionStages.nullFuture();
+		CompletionStage<Void> ret = CompletionStages.voidFuture();
 		if ( insert.isEarlyInsert() ) {
 			// For early inserts, must execute inserts before finding non-nullable transient entities.
 			// TODO: find out why this is necessary
@@ -338,7 +338,7 @@ public class ReactiveActionQueue {
 		else {
 			LOG.trace( "Adding resolved non-early insert action." );
 			addAction( ReactiveEntityInsertAction.class, insert );
-			ret = CompletionStages.nullFuture();
+			ret = CompletionStages.voidFuture();
 		}
 
 		return ret.thenCompose( v -> {
@@ -526,7 +526,7 @@ public class ReactiveActionQueue {
 		if ( insertions != null && !insertions.isEmpty() ) {
 			return executeActions( insertions );
 		}
-		return CompletionStages.nullFuture();
+		return CompletionStages.voidFuture();
 	}
 
 	/**
@@ -540,7 +540,7 @@ public class ReactiveActionQueue {
 					"About to execute actions, but there are unresolved entity insert actions." ) );
 		}
 
-		CompletionStage<Void> ret = CompletionStages.nullFuture();
+		CompletionStage<Void> ret = CompletionStages.voidFuture();
 		for ( ListProvider<? extends ReactiveExecutable> listProvider : EXECUTABLE_LISTS_MAP.values() ) {
 			ExecutableList<? extends ReactiveExecutable> l = listProvider.get( this );
 			if ( l != null && !l.isEmpty() ) {
@@ -642,7 +642,7 @@ public class ReactiveActionQueue {
 		// todo : consider ways to improve the double iteration of Executables here:
 		//		1) we explicitly iterate list here to perform Executable#execute()
 		//		2) ExecutableList#getQuerySpaces also iterates the Executables to collect query spaces.
-		CompletionStage<Void> ret = CompletionStages.nullFuture();
+		CompletionStage<Void> ret = CompletionStages.voidFuture();
 		for ( E e : list ) {
 			ret = ret.thenCompose( v -> e.reactiveExecute().whenComplete( (v2, x) -> {
 				if ( e.getBeforeTransactionCompletionProcess() != null ) {

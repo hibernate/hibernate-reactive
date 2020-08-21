@@ -202,7 +202,7 @@ public class SqlClientConnection implements ReactiveConnection {
 	@Override
 	public CompletionStage<Void> beginTransaction() {
 		transaction = connection.begin();
-		return CompletionStages.nullFuture();
+		return CompletionStages.voidFuture();
 //		return execute("begin");
 	}
 
@@ -286,6 +286,6 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> executeBatch() {
-		return CompletionStages.nullFuture();
+		return CompletionStages.voidFuture();
 	}
 }

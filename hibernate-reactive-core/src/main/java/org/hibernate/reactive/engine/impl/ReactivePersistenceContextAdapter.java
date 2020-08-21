@@ -47,7 +47,7 @@ public class ReactivePersistenceContextAdapter extends StatefulPersistenceContex
 	}
 
 	private class NonLazyCollectionInitializer implements Consumer<PersistentCollection> {
-		CompletionStage<Void> stage = CompletionStages.nullFuture();
+		CompletionStage<Void> stage = CompletionStages.voidFuture();
 
 		@Override
 		public void accept(PersistentCollection nonLazyCollection) {

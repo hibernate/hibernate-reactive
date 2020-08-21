@@ -72,7 +72,7 @@ public final class ForeignKeys {
 		 */
 		public CompletionStage<Void> nullifyTransientReferences(final Object[] values) {
 			CompletionStage<Void> result = nullifyTransientReferences(null, values, persister.getPropertyTypes(), persister.getPropertyNames());
-			return result==null ? CompletionStages.nullFuture() : result;
+			return result==null ? CompletionStages.voidFuture() : result;
 		}
 
 		/**

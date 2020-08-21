@@ -153,7 +153,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 				getCollectedParameterSpecifications( session ),
 				session.getSharedContract()
 		);
-		return CompletionStages.completedFuture(0).thenCompose(
+		return CompletionStages.zeroFuture().thenCompose(
 				count -> session.getReactiveConnection()
 						.update( sql, parameterValues )
 						.thenApply( updateCount -> count + updateCount )

@@ -69,7 +69,7 @@ public class DefaultReactivePersistEventListener
 			LazyInitializer li = ( (HibernateProxy) object ).getHibernateLazyInitializer();
 			if ( li.isUninitialized() ) {
 				if ( li.getSession() == source ) {
-					return CompletionStages.nullFuture(); //NOTE EARLY EXIT!
+					return CompletionStages.voidFuture(); //NOTE EARLY EXIT!
 				}
 				else {
 					return CompletionStages.failedFuture( new PersistentObjectException( "uninitialized proxy passed to persist()" ) );
@@ -153,7 +153,7 @@ public class DefaultReactivePersistEventListener
 		if ( createCache.add( entity ) ) {
 			return justCascade( createCache, source, entity, persister );
 		}
-		return CompletionStages.nullFuture();
+		return CompletionStages.voidFuture();
 	}
 
 	private CompletionStage<Void> justCascade(IdentitySet createCache, EventSource source, Object entity, EntityPersister persister) {
@@ -178,7 +178,7 @@ public class DefaultReactivePersistEventListener
 			return reactiveSaveWithGeneratedId( entity, event.getEntityName(), createCache, source, false )
 					.thenApply( v -> null );
 		}
-		return CompletionStages.nullFuture();
+		return CompletionStages.voidFuture();
 	}
 
 	private CompletionStage<Void> entityIsDeleted(PersistEvent event, IdentitySet createCache) {
@@ -201,7 +201,7 @@ public class DefaultReactivePersistEventListener
 		if ( createCache.add( entity ) ) {
 			return justCascade( createCache, source, entity, persister );
 		}
-		return CompletionStages.nullFuture();
+		return CompletionStages.voidFuture();
 	}
 
 	@Override

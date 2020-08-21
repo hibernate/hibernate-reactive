@@ -45,7 +45,7 @@ class ReactivePaddedBatchingCollectionInitializer extends ReactiveCollectionLoad
 		final int numberOfIds = ArrayHelper.countNonNull( batch );
 		if ( numberOfIds <= 1 ) {
 			loaders[batchSizes.length-1].loadCollection( session, id, persister.getKeyType() );
-			return CompletionStages.nullFuture();
+			return CompletionStages.voidFuture();
 		}
 
 		// Uses the first batch-size bigger than the number of actual ids in the batch

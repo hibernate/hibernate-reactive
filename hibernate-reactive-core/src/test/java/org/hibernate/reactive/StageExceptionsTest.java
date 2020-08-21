@@ -43,7 +43,7 @@ public class StageExceptionsTest extends BaseReactiveTest {
 			  				context.assertNotNull( err );
 			  				context.assertTrue( err.getClass().isAssignableFrom( CompletionException.class) );
 							context.assertTrue( expectedException.isAssignableFrom( err.getCause().getClass() ), "Expected " + expectedException.getName() + " but was " + err );
-							return CompletionStages.nullFuture();
+							return CompletionStages.voidFuture();
 			  	} )
 		);
 	}

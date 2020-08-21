@@ -15,13 +15,14 @@ import java.util.function.Supplier;
 
 public class CompletionStages {
 
-	private static CoreMessageLogger log = CoreLogging.messageLogger("org.hibernate.reactive.errors");
+	private static final CoreMessageLogger log =
+			CoreLogging.messageLogger("org.hibernate.reactive.errors");
 
 	public static <T, R> CompletionStage<R> zipArray(
 			Function<? super Object[], ? extends R> zipper,
-			@SuppressWarnings("unchecked") CompletionStage<? extends T>... sources) {
+			CompletionStage<? extends T>... sources) {
 		Object[] results = new Object[sources.length];
-		CompletionStage<?> state = nullFuture();
+		CompletionStage<?> state = voidFuture();
 		for ( int i = 0; i < sources.length; i++ ) {
 			CompletionStage<? extends T> completionStage = sources[i];
 			int finalI = i;
@@ -33,15 +34,29 @@ public class CompletionStages {
 		return state.thenApply( v -> zipper.apply( results ) );
 	}
 
-	public static <T> CompletionStage<T> nullFuture() {
-		return completedFuture( null );
+	// singleton instances:
+	private static CompletionStage<Void> VOID = completedFuture( null );
+	private static CompletionStage<Integer> ZERO = completedFuture( 0 );
+	private static CompletionStage<Boolean> TRUE = completedFuture( true );
+	private static CompletionStage<Boolean> FALSE = completedFuture( false );
+
+	public static CompletionStage<Void> voidFuture() {
+		return VOID;
+	}
+
+	public static CompletionStage<Integer> zeroFuture() {
+		return ZERO;
 	}
 
 	public static CompletionStage<Boolean> trueFuture() {
-		return completedFuture( true );
+		return TRUE;
 	}
 	public static CompletionStage<Boolean> falseFuture() {
-		return completedFuture( false );
+		return FALSE;
+	}
+
+	public static <T> CompletionStage<T> nullFuture() {
+		return completedFuture( null );
 	}
 
 	public static <T> CompletionStage<T> completedFuture(T value) {

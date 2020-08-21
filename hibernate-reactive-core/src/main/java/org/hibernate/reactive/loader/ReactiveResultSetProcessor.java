@@ -65,7 +65,7 @@ public interface ReactiveResultSetProcessor {
 								: entityType.resolve(value, session1, owner, overridingEager)
 		);
 
-		CompletionStage<Void> stage = CompletionStages.nullFuture();
+		CompletionStage<Void> stage = CompletionStages.voidFuture();
 
 		final Object[] hydratedState = entityEntry.getLoadedState();
 		for ( int i = 0 ; i < hydratedState.length ; i++ ) {

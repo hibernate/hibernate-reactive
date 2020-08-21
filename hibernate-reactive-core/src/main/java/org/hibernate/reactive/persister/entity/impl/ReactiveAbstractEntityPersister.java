@@ -137,7 +137,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		// apply any pre-insert in-memory value generation
 		preInsertInMemoryValueGeneration( fields, object, session );
 
-		CompletionStage<?> insertStage = CompletionStages.nullFuture();
+		CompletionStage<?> insertStage = CompletionStages.voidFuture();
 		final int span = delegate().getTableSpan();
 		if ( delegate().getEntityMetamodel().isDynamicInsert() ) {
 			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
@@ -184,13 +184,13 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			SharedSessionContractImplementor session) {
 
 		if ( delegate().isInverseTable( j ) ) {
-			return CompletionStages.nullFuture();
+			return CompletionStages.voidFuture();
 		}
 
 		//note: it is conceptually possible that a UserType could map null to
 		//	  a non-null value, so the following is arguable:
 		if ( delegate().isNullableTable( j ) && delegate().isAllNull( fields, j ) ) {
-			return CompletionStages.nullFuture();
+			return CompletionStages.voidFuture();
 		}
 
 		if ( log.isTraceEnabled() ) {
@@ -273,7 +273,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Object[] loadedState) {
 
 		if ( delegate().isInverseTable( j ) ) {
-			return CompletionStages.nullFuture();
+			return CompletionStages.voidFuture();
 		}
 		final boolean useVersion = j == 0 && delegate().isVersioned();
 //		final boolean callable = delegate.isDeleteCallable( j );
@@ -292,7 +292,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				log.tracev( "Delete handled by foreign key constraint: {0}", delegate().getTableName( j ) );
 			}
 			//EARLY EXIT!
-			return CompletionStages.nullFuture();
+			return CompletionStages.voidFuture();
 		}
 
 		//Render the SQL query
@@ -359,7 +359,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			deleteStrings = delegate().getSQLDeleteStrings();
 		}
 
-		CompletionStage<?> deleteStage = CompletionStages.nullFuture();
+		CompletionStage<?> deleteStage = CompletionStages.voidFuture();
 		for ( int j = span - 1; j >= 0; j-- ) {
 			// For now we assume there is only one delete query
 			int jj = j;
@@ -593,7 +593,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			propsToUpdate = delegate().getPropertyUpdateability( object );
 		}
 
-		CompletionStage<?> updateStage = CompletionStages.nullFuture();
+		CompletionStage<?> updateStage = CompletionStages.voidFuture();
 		for ( int j = 0; j < span; j++ ) {
 			// Now update only the tables with dirty properties (and the table with the version number)
 			if ( tableUpdateNeeded[j] ) {
@@ -656,7 +656,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		// Nothing to do;
-		return CompletionStages.nullFuture();
+		return CompletionStages.voidFuture();
 	}
 
 	default String generateSelectLockString(LockOptions lockOptions) {
@@ -721,7 +721,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				writeLock = true;
 				break;
 			case NONE:
-				return CompletionStages.nullFuture();
+				return CompletionStages.voidFuture();
 			default:
 				throw new IllegalArgumentException("lock mode not supported");
 		}

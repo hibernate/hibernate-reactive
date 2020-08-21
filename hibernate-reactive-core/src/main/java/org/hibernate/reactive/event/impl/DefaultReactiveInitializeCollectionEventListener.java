@@ -62,7 +62,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 				if ( LOG.isTraceEnabled() ) {
 					LOG.trace( "Collection initialized from cache" );
 				}
-				return CompletionStages.nullFuture();
+				return CompletionStages.voidFuture();
 			}
 			else {
 				if ( LOG.isTraceEnabled() ) {
@@ -82,7 +82,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 			}
 		}
 		// Collection was already initialized.
-		return CompletionStages.nullFuture();
+		return CompletionStages.voidFuture();
 	}
 
 	/**

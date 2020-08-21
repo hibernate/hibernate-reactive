@@ -751,7 +751,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public CompletionStage<Void> reactiveAutoflush() {
 		return getHibernateFlushMode().lessThan( FlushMode.COMMIT )
-				? CompletionStages.nullFuture()
+				? CompletionStages.voidFuture()
 				: doFlush();
 	}
 
@@ -968,7 +968,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@SuppressWarnings("unchecked")
 	private <E,L,RL,P> CompletionStage<Void> fire(E event, P extra, EventType<L> eventType,
 												  Function<RL, BiFunction<E, P, CompletionStage<Void>>> fun) {
-		CompletionStage<Void> ret = CompletionStages.nullFuture();
+		CompletionStage<Void> ret = CompletionStages.voidFuture();
 		for ( L listener : eventListeners(eventType) ) {
 			//to preserve atomicity of the Session methods
 			//call apply() from within the arg of thenCompose()
