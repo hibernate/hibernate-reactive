@@ -54,7 +54,7 @@ public class DefaultReactiveFlushEventListener extends AbstractReactiveFlushingE
 						}
 					} );
 		}
-		return CompletionStages.nullFuture();
+		return CompletionStages.voidFuture();
 	}
 
 	@Override

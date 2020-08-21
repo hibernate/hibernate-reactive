@@ -181,7 +181,7 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 
 		}
 		else {
-			return CompletionStages.nullFuture();
+			return CompletionStages.voidFuture();
 		}
 	}
 

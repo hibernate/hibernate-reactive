@@ -90,7 +90,7 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 						} );
 			}
 			else {
-				insertStage = CompletionStages.nullFuture();
+				insertStage = CompletionStages.voidFuture();
 			}
 
 			return insertStage.thenApply( res -> {

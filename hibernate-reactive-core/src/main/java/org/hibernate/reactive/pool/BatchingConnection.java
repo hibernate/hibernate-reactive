@@ -44,7 +44,7 @@ public class BatchingConnection implements ReactiveConnection {
     @Override
     public CompletionStage<Void> executeBatch() {
         if ( !hasBatch() ) {
-            return CompletionStages.nullFuture();
+            return CompletionStages.voidFuture();
         }
         else {
             String sql = batchedSql;
@@ -74,12 +74,12 @@ public class BatchingConnection implements ReactiveConnection {
         if ( allowBatching && batchSize>0 ) {
             if ( !hasBatch() ) {
                 newBatch( sql, paramValues, expectation );
-                return CompletionStages.nullFuture();
+                return CompletionStages.voidFuture();
             }
             else {
                 if ( batchedSql.equals(sql) && batchParamValues.size()<batchSize ) {
                     batchParamValues.add(paramValues);
-                    return CompletionStages.nullFuture();
+                    return CompletionStages.voidFuture();
                 }
                 else {
                     CompletionStage<Void> lastBatch = executeBatch();

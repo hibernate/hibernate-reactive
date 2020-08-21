@@ -156,7 +156,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 				!(event.getEntityId() instanceof DelayedPostInsertIdentifier) ) {
 			return checkIdClass( persister, event, loadType, idClass );
 		}
-		return CompletionStages.nullFuture();
+		return CompletionStages.voidFuture();
 	}
 
 	protected EntityPersister getPersister(final LoadEvent event) {

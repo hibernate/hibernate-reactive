@@ -99,7 +99,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 					LOG.trace( "Ignoring uninitialized proxy" );
 					event.setResult( source.load( li.getEntityName(), li.getIdentifier() ) );
 					//EARLY EXIT!
-					return CompletionStages.nullFuture();
+					return CompletionStages.voidFuture();
 				}
 				else {
 					entity = li.getImplementation();
@@ -114,7 +114,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 					//no need to go async, AFAICT ?
 					event.setResult(source.load(proxyInterceptor.getEntityName(), (Serializable) proxyInterceptor.getIdentifier()));
 					//EARLY EXIT!
-					return CompletionStages.nullFuture();
+					return CompletionStages.voidFuture();
 				}
 				else {
 					entity = original;
@@ -180,7 +180,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 
 		}
 
-		return CompletionStages.nullFuture();
+		return CompletionStages.voidFuture();
 	}
 
 	protected CompletionStage<Void> entityIsPersistent(MergeEvent event, MergeContext copyCache) {
@@ -444,7 +444,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			final Object target,
 			final SessionImplementor source,
 			final MergeContext mergeContext) {
-		CompletionStage<Void> stage = CompletionStages.nullFuture();
+		CompletionStage<Void> stage = CompletionStages.voidFuture();
 		// If entity == target, then nothing needs to be fetched.
 		if ( entity != target ) {
 			ReactiveSession session = source.unwrap(ReactiveSession.class);
@@ -556,7 +556,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	@Override
 	protected CompletionStage<Void> cascadeAfterSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything)
 			throws HibernateException {
-		return CompletionStages.nullFuture();
+		return CompletionStages.voidFuture();
 	}
 
 	/**
@@ -565,7 +565,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	@Override
 	protected CompletionStage<Void> cascadeBeforeSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything)
 			throws HibernateException {
-		return CompletionStages.nullFuture();
+		return CompletionStages.voidFuture();
 	}
 
 }

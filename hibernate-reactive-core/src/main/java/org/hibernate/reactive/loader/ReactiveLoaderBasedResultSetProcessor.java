@@ -79,7 +79,7 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 				hydratedObjects,
 				subselectResultKeys );
 
-		return CompletionStages.nullFuture()
+		return CompletionStages.voidFuture()
 				.thenCompose(v -> reactiveInitializeEntitiesAndCollections(
 						hydratedObjects,
 						rs,
@@ -104,7 +104,7 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 			final boolean readOnly,
 			List<AfterLoadAction> afterLoadActions) throws HibernateException {
 
-		CompletionStage<Void> stage = CompletionStages.nullFuture();
+		CompletionStage<Void> stage = CompletionStages.voidFuture();
 
 		final CollectionPersister[] collectionPersisters = loader.getCollectionPersisters();
 		if (collectionPersisters != null) {

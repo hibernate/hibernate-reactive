@@ -177,7 +177,7 @@ public class DefaultReactiveDeleteEventListener
 
 			if ( entityEntry.getStatus() == Status.DELETED || entityEntry.getStatus() == Status.GONE ) {
 				LOG.trace( "Object was already deleted" );
-				return CompletionStages.nullFuture();
+				return CompletionStages.voidFuture();
 			}
 			final EntityPersister persister = entityEntry.getPersister();
 			Serializable id = entityEntry.getId();
@@ -251,7 +251,7 @@ public class DefaultReactiveDeleteEventListener
 		LOG.handlingTransientEntity();
 		if ( transientEntities.contains( entity ) ) {
 			LOG.trace( "Already handled transient entity; skipping" );
-			return CompletionStages.nullFuture();
+			return CompletionStages.voidFuture();
 		}
 		transientEntities.add( entity );
 		return cascadeBeforeDelete( session, persister, entity, null, transientEntities )

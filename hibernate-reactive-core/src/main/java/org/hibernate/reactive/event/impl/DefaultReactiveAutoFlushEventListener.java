@@ -35,7 +35,7 @@ public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlush
 		final SessionEventListenerManager eventListenerManager = source.getEventListenerManager();
 
 		eventListenerManager.partialFlushStart();
-		CompletionStage<Void> autoFlushStage = CompletionStages.nullFuture();
+		CompletionStage<Void> autoFlushStage = CompletionStages.voidFuture();
 		if ( flushMightBeNeeded( source ) ) {
 			// Need to get the number of collection removals before flushing to executions
 			// (because flushing to executions can add collection removal actions to the action queue).
@@ -63,7 +63,7 @@ public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlush
 							LOG.trace( "Don't need to execute flush" );
 							event.setFlushRequired( false );
 							actionQueue.clearFromFlushNeededCheck( oldSize );
-							return CompletionStages.nullFuture();
+							return CompletionStages.voidFuture();
 						}
 					} );
 		}

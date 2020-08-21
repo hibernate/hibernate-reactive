@@ -122,7 +122,7 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 			distinction = null;
 		}
 		AtomicInteger includedCount = new AtomicInteger( -1 );
-		CompletionStage<Void> combinedStage = CompletionStages.nullFuture();
+		CompletionStage<Void> combinedStage = CompletionStages.voidFuture();
 		for ( QueryTranslator translator : translators ) {
 			ReactiveQueryTranslatorImpl reactiveTranslator = (ReactiveQueryTranslatorImpl) translator;
 			combinedStage = combinedStage.thenCompose( v -> reactiveTranslator.reactiveList( session, queryParametersToUse ) )
@@ -173,7 +173,7 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 			log.splitQueries( getSourceQuery(), translators.length );
 		}
 
-		CompletionStage<Integer> combinedStage = CompletionStages.completedFuture(0);
+		CompletionStage<Integer> combinedStage = CompletionStages.zeroFuture();
 		for ( QueryTranslator translator : translators ) {
 			ReactiveQueryTranslatorImpl reactiveTranslator = (ReactiveQueryTranslatorImpl) translator;
 

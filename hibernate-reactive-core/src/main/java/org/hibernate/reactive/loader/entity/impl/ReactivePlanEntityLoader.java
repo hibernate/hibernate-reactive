@@ -317,7 +317,7 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 
 			final List<Object> loadResults = extractRows( resultSet, queryParameters, context );
 
-			return CompletionStages.nullFuture()
+			return CompletionStages.voidFuture()
 					.thenCompose( v ->  rowReader.reactiveFinishUp( this, context, afterLoadActionList) )
 					.thenApply( vv -> {
 						context.wrapUp();
@@ -374,7 +374,7 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 			}
 
 			// now finish loading the entities (2-phase load)
-			return CompletionStages.nullFuture()
+			return CompletionStages.voidFuture()
 					.thenCompose( v -> reactivePerformTwoPhaseLoad(
 							resultSetProcessor,
 							preLoadEvent,
@@ -407,7 +407,7 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 					: hydratedEntityRegistrations.size();
 			//log.tracev( "Total objects hydrated: {0}", numberOfHydratedObjects );
 
-			CompletionStage<Void> stage = CompletionStages.nullFuture();
+			CompletionStage<Void> stage = CompletionStages.voidFuture();
 
 			if ( numberOfHydratedObjects == 0 ) {
 				return stage;

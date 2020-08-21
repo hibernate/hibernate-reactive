@@ -178,7 +178,7 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 					);
 		}
 
-		CompletionStage<Void> stage = CompletionStages.nullFuture();
+		CompletionStage<Void> stage = CompletionStages.voidFuture();
 
 		int idPosition = 0;
 		while ( numberOfIdsLeft > 0 ) {
@@ -271,7 +271,7 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 		final List<Serializable> idsInBatch = new ArrayList<>();
 		final List<Integer> elementPositionsLoadedByBatch = new ArrayList<>();
 
-		CompletionStage<?> stage = CompletionStages.nullFuture();
+		CompletionStage<?> stage = CompletionStages.voidFuture();
 
 		for ( int i = 0; i < ids.length; i++ ) {
 			final Serializable id = ids[i];

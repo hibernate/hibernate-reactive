@@ -62,7 +62,7 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable {
 					} );
 		}
 		else {
-			return CompletionStages.nullFuture();
+			return CompletionStages.voidFuture();
 		}
 	}
 

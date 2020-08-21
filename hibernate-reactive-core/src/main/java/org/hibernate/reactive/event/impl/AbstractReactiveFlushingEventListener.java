@@ -55,7 +55,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 		//		during-flush callbacks more leniency in regards to initializing proxies and
 		//		lazy collections during their processing.
 		// For more information, see HHH-2763
-		return CompletionStages.nullFuture()
+		return CompletionStages.voidFuture()
 				.thenCompose(v -> {
 					session.getJdbcCoordinator().flushBeginning();
 					session.getPersistenceContext().setFlushing( true );
@@ -127,7 +127,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 
 		LOG.debug( "Processing flush-time cascades" );
 
-		CompletionStage<Void> stage = CompletionStages.nullFuture();
+		CompletionStage<Void> stage = CompletionStages.voidFuture();
 		final IdentitySet copiedAlready = new IdentitySet( 10 );
 		//safe from concurrent modification because of how concurrentEntries() is implemented on IdentityMap
 		for ( Map.Entry<Object, EntityEntry> me : persistenceContext.reentrantSafeEntityEntries() ) {

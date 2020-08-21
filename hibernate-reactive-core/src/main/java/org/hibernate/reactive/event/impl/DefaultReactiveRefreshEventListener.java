@@ -77,14 +77,14 @@ public class DefaultReactiveRefreshEventListener
 			if ( isTransient ) {
 				source.setReadOnly( event.getObject(), source.isDefaultReadOnly() );
 			}
-			return CompletionStages.nullFuture();
+			return CompletionStages.voidFuture();
 		}
 
 		final Object object = persistenceContext.unproxyAndReassociate( event.getObject() );
 
 		if ( refreshedAlready.contains( object ) ) {
 			LOG.trace( "Already refreshed" );
-			return CompletionStages.nullFuture();
+			return CompletionStages.voidFuture();
 		}
 
 		final EntityEntry e = persistenceContext.getEntry( object );

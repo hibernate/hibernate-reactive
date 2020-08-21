@@ -92,7 +92,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 		}
 
 		CompletionStage<?> updateAR = veto
-				? CompletionStages.nullFuture()
+				? CompletionStages.voidFuture()
 				: ((ReactiveEntityPersister) persister).updateReactive( id, getState(), getDirtyFields(), hasDirtyCollection(), getPreviousState(), previousVersion, instance, getRowId(), session );
 
 		return updateAR.thenApply( res -> {

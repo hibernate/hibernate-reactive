@@ -49,7 +49,7 @@ public final class Cascade<C> {
 	private final C context;
 	private CascadePoint cascadePoint;
 
-	private CompletionStage<Void> stage = CompletionStages.nullFuture();
+	private CompletionStage<Void> stage = CompletionStages.voidFuture();
 
 	/**
 	 * 	@param persister The parent's entity persister
@@ -75,7 +75,7 @@ public final class Cascade<C> {
 			Object entity,
 			EventSource session) {
 
-		CompletionStage<?> beforeDelete = CompletionStages.nullFuture();
+		CompletionStage<?> beforeDelete = CompletionStages.voidFuture();
 		if ( persister.hasCascades() ) {
 			CascadeStyle[] cascadeStyles = persister.getPropertyCascadeStyles();
 			Object[] state = persister.getPropertyValues( entity );
@@ -97,7 +97,7 @@ public final class Cascade<C> {
 	 * which is specific to each CascadingAction type
 	 */
 	public CompletionStage<Void> cascade() throws HibernateException {
-		return CompletionStages.nullFuture().thenCompose(v -> {
+		return CompletionStages.voidFuture().thenCompose(v -> {
 			CacheMode cacheMode = eventSource.getCacheMode();
 			if (action==CascadingActions.DELETE) {
 				eventSource.setCacheMode( CacheMode.GET );
