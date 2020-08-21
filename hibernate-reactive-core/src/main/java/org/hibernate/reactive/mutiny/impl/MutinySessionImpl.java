@@ -296,6 +296,17 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
+	public Mutiny.Session setBatchSize(Integer batchSize) {
+		delegate.setBatchSize(batchSize);
+		return this;
+	}
+
+	@Override
+	public Integer getBatchSize() {
+		return delegate.getBatchSize();
+	}
+
+	@Override
 	public Mutiny.Session detach(Object entity) {
 		delegate.detach(entity);
 		return this;

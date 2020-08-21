@@ -1324,4 +1324,14 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 		return (RootGraphImplementor<T>) entityGraph;
 	}
+
+	@Override
+	public Integer getBatchSize() {
+		return getJdbcBatchSize();
+	}
+
+	@Override
+	public void setBatchSize(Integer batchSize) {
+		setJdbcBatchSize(batchSize);
+	}
 }
