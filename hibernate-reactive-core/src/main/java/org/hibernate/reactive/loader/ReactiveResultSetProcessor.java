@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.IntStream;
 
 /**
  * An interface intended to unify how a ResultSet is processed by
@@ -65,24 +66,22 @@ public interface ReactiveResultSetProcessor {
 								: entityType.resolve(value, session1, owner, overridingEager)
 		);
 
-		CompletionStage<Void> stage = CompletionStages.voidFuture();
-
 		final Object[] hydratedState = entityEntry.getLoadedState();
-		for ( int i = 0 ; i < hydratedState.length ; i++ ) {
-			if ( hydratedState[ i ] instanceof CompletionStage ) {
-				final int iConstant = i;
-				stage = stage.thenCompose( v -> (CompletionStage<Object>) hydratedState[ iConstant ] )
-						.thenAccept( initializedEntity -> hydratedState[ iConstant ] = initializedEntity );
-			}
-		}
-
-		return stage.thenAccept( v -> TwoPhaseLoad.initializeEntityFromEntityEntryLoadedState(
-				entity,
-				entityEntry,
-				readOnly,
-				session,
-				preLoadEvent,
-				listeners
-		) );
+		return CompletionStages.loop(
+				IntStream.range( 0, hydratedState.length )
+						.filter( i-> hydratedState[ i ] instanceof CompletionStage ),
+				i -> ( (CompletionStage<Object>) hydratedState[ i ] )
+						.thenAccept( initializedEntity -> hydratedState[ i ] = initializedEntity )
+		)
+		.thenAccept(
+				v -> TwoPhaseLoad.initializeEntityFromEntityEntryLoadedState(
+						entity,
+						entityEntry,
+						readOnly,
+						session,
+						preLoadEvent,
+						listeners
+				)
+		);
 	}
 }

@@ -122,20 +122,19 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 			distinction = null;
 		}
 		AtomicInteger includedCount = new AtomicInteger( -1 );
-		CompletionStage<Void> combinedStage = CompletionStages.voidFuture();
-		for ( QueryTranslator translator : translators ) {
-			ReactiveQueryTranslatorImpl reactiveTranslator = (ReactiveQueryTranslatorImpl) translator;
-			combinedStage = combinedStage.thenCompose( v -> reactiveTranslator.reactiveList( session, queryParametersToUse ) )
-					.thenAccept( tmpList -> {
-						if ( needsLimit ) {
-							needsLimitLoop( queryParameters, combinedResults, distinction, includedCount, tmpList );
-						}
-						else {
-							combinedResults.addAll( tmpList );
-						}
-					} );
-		}
-		return combinedStage.thenApply( ignore -> combinedResults );
+		return CompletionStages.loop(
+				translators,
+				translator -> ((ReactiveQueryTranslatorImpl) translator)
+						.reactiveList( session, queryParametersToUse )
+						.thenAccept( tmpList -> {
+							if ( needsLimit ) {
+								needsLimitLoop( queryParameters, combinedResults, distinction, includedCount, tmpList );
+							}
+							else {
+								combinedResults.addAll( tmpList );
+							}
+						} )
+		).thenApply( v -> combinedResults );
 	}
 
 	private void needsLimitLoop(QueryParameters queryParameters,

@@ -407,10 +407,8 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 					: hydratedEntityRegistrations.size();
 			//log.tracev( "Total objects hydrated: {0}", numberOfHydratedObjects );
 
-			CompletionStage<Void> stage = CompletionStages.voidFuture();
-
 			if ( numberOfHydratedObjects == 0 ) {
-				return stage;
+				return CompletionStages.voidFuture();
 			}
 
 			final SharedSessionContractImplementor session = context.getSession();
@@ -421,18 +419,16 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 					.getEventListenerGroup( EventType.PRE_LOAD )
 					.listeners();
 
-			for ( HydratedEntityRegistration registration : hydratedEntityRegistrations ) {
-//				final EntityEntry entityEntry = session.getPersistenceContext().getEntry( registration.getInstance() );
-				stage = stage.thenCompose( v -> resultSetProcessor.initializeEntity(
-						registration.getInstance(),
-						false,
-						session,
-						preLoadEvent,
-						listeners
-				) );
-			}
-
-			return stage;
+			return CompletionStages.loop(
+					hydratedEntityRegistrations,
+					registration -> resultSetProcessor.initializeEntity(
+							registration.getInstance(),
+							false,
+							session,
+							preLoadEvent,
+							listeners
+					)
+			);
 		}
 	}
 }
