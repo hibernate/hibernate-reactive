@@ -289,6 +289,17 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public Stage.Session setBatchSize(Integer batchSize) {
+		delegate.setBatchSize(batchSize);
+		return this;
+	}
+
+	@Override
+	public Integer getBatchSize() {
+		return delegate.getBatchSize();
+	}
+
+	@Override
 	public Stage.Session detach(Object entity) {
 		delegate.detach(entity);
 		return this;

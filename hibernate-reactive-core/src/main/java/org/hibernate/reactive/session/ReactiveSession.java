@@ -106,6 +106,9 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 	void setCacheMode(CacheMode cacheMode);
 	CacheMode getCacheMode();
 
+	Integer getBatchSize();
+	void setBatchSize(Integer batchSize);
+
 	<T> T getReference(Class<T> entityClass, Object id);
 
 	void detach(Object entity);
