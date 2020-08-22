@@ -370,8 +370,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				context,
 				populateDB()
 						.thenCompose( v -> openSession() )
-						.thenCompose( session ->
-							session.find( GuineaPig.class, 5 )
+						.thenCompose( session -> session.find( GuineaPig.class, 5 )
 								.thenAccept( pig -> {
 									context.assertNotNull( pig );
 									// Checking we are actually changing the name
@@ -380,8 +379,34 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								} )
 								.thenCompose( v -> session.flush() )
 								.whenComplete( (v,e) -> session.close() )
-								.thenCompose( v -> selectNameFromId( 5 ) )
-								.thenAccept( name -> context.assertEquals( NEW_NAME, name ) ) )
+						)
+						.thenCompose( v -> selectNameFromId( 5 ) )
+						.thenAccept( name -> context.assertEquals( NEW_NAME, name ) )
+		);
+	}
+
+	@Test
+	public void reactiveUpdateVersion(TestContext context) {
+		final String NEW_NAME = "Tina";
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, 5 )
+								.thenAccept( pig -> {
+									context.assertNotNull( pig );
+									// Checking we are actually changing the name
+									context.assertNotEquals( pig.getName(), NEW_NAME );
+									context.assertEquals( pig.version, 0 );
+									pig.setName( NEW_NAME );
+									pig.version = 10; //ignored by Hibernate
+								} )
+								.thenCompose( v -> session.flush() )
+								.whenComplete( (v,e) -> session.close() )
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.find( GuineaPig.class, 5 )
+								.thenAccept( pig -> context.assertEquals( pig.version, 1 ) ) )
 		);
 	}
 

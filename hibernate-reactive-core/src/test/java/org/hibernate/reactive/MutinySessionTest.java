@@ -321,8 +321,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 				context,
 				populateDB()
 						.flatMap( v -> openSession() )
-						.flatMap( session ->
-							session.find( GuineaPig.class, 5 )
+						.flatMap( session -> session.find( GuineaPig.class, 5 )
 								.map( pig -> {
 									context.assertNotNull( pig );
 									// Checking we are actually changing the name
@@ -332,8 +331,32 @@ public class MutinySessionTest extends BaseMutinyTest {
 								} )
 								.flatMap( v -> session.flush() )
 								.onTermination().invoke( (s, e, c) -> session.close() )
-								.flatMap( v -> selectNameFromId( 5 ) )
-								.map( name -> context.assertEquals( NEW_NAME, name ) ) )
+						)
+						.flatMap( v -> selectNameFromId( 5 ) )
+						.map( name -> context.assertEquals( NEW_NAME, name ) )
+		);
+	}
+
+	@Test
+	public void reactiveUpdateVersion(TestContext context) {
+		final String NEW_NAME = "Tina";
+		test(
+				context,
+				populateDB()
+						.flatMap( v -> openSession() )
+						.flatMap( session -> session.find( GuineaPig.class, 5 )
+								.map( pig -> {
+									context.assertNotNull( pig );
+									// Checking we are actually changing the name
+									context.assertNotEquals( pig.getName(), NEW_NAME );
+									pig.setName( NEW_NAME );
+									return null;
+								} )
+								.flatMap( v -> session.flush() )
+								.onTermination().invoke( (s, e, c) -> session.close() )
+						)
+						.flatMap( v -> selectNameFromId( 5 ) )
+						.map( name -> context.assertEquals( NEW_NAME, name ) )
 		);
 	}
 
