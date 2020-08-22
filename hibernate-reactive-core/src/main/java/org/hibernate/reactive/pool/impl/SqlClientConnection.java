@@ -6,6 +6,7 @@
 package org.hibernate.reactive.pool.impl;
 
 import io.vertx.sqlclient.PropertyKind;
+import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowIterator;
 import io.vertx.sqlclient.RowSet;
@@ -40,12 +41,15 @@ public class SqlClientConnection implements ReactiveConnection {
 	private final boolean formatSQL;
 	private final boolean usePostgresStyleParameters;
 
+	private final Pool pool;
 	private final SqlConnection connection;
 	private Transaction transaction;
 
 	SqlClientConnection(SqlConnection connection,
+						Pool pool,
 						boolean showSQL, boolean formatSQL,
 						boolean usePostgresStyleParameters) {
+		this.pool = pool;
 		this.showSQL = showSQL;
 		this.connection = connection;
 		this.formatSQL = formatSQL;
@@ -107,6 +111,11 @@ public class SqlClientConnection implements ReactiveConnection {
 	@Override
 	public CompletionStage<Void> execute(String sql) {
 		return preparedQuery( sql ).thenApply( ignore -> null );
+	}
+
+	@Override
+	public CompletionStage<Void> executeOutsideTransaction(String sql) {
+		return preparedQueryOutsideTransaction( sql ).thenApply( ignore -> null );
 	}
 
 	@Override
@@ -174,6 +183,13 @@ public class SqlClientConnection implements ReactiveConnection {
 		feedback(sql);
 		return Handlers.toCompletionStage(
 				handler -> client().preparedQuery( sql ).execute( handler )
+		);
+	}
+
+	public CompletionStage<RowSet<Row>> preparedQueryOutsideTransaction(String sql) {
+		feedback(sql);
+		return Handlers.toCompletionStage(
+				handler -> pool.preparedQuery( sql ).execute( handler )
 		);
 	}
 

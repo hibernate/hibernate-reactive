@@ -29,6 +29,7 @@ import org.hibernate.param.ParameterSpecification;
 import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.bulk.StatementsWithParameters;
 import org.hibernate.reactive.loader.hql.impl.ReactiveQueryLoader;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.jboss.logging.Logger;
@@ -156,33 +157,45 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 		errorIfSelect();
 
 		StatementsWithParameters statementsWithParameters = getUpdateHandler();
-		String[] statements = statementsWithParameters.getStatements();
+		String[] statements = statementsWithParameters.getSqlStatements();
 		ParameterSpecification[][] specifications = statementsWithParameters.getParameterSpecifications();
 
 		return CompletionStages.total(
 				0, statements.length,
-				i -> {
-					String sql = statements[i];
-					Object[] arguments = QueryParametersAdaptor.arguments(
-							queryParameters,
-							specifications[i],
-							session.getSharedContract()
-					);
-					return session.getReactiveConnection()
-							.update( sql, arguments )
-							.handle( (value, error) -> {
-								if ( sql.startsWith("create ") || sql.startsWith("drop ") ) {
-									// ignore errors creating tables, since a create
-									// table fails when the table already exists
-									// also ignore meaningless row counts
-									return 0;
-								}
-								else {
-									return CompletionStages.returnOrRethrow( error, value );
-								}
-							} );
-				}
+				i -> executeStatement(
+						statements[i],
+						QueryParametersAdaptor.arguments(
+								queryParameters,
+								specifications[i],
+								session.getSharedContract()
+						),
+						statementsWithParameters,
+						session
+				)
 		);
+	}
+
+	private CompletionStage<Integer> executeStatement(String sql,
+													  Object[] arguments,
+													  StatementsWithParameters statementsWithParameters,
+													  ReactiveQueryExecutor session) {
+		ReactiveConnection connection = session.getReactiveConnection();
+		if ( !statementsWithParameters.isSchemaDefinitionStatement( sql ) ) {
+			return connection.update( sql, arguments );
+		}
+		else if ( statementsWithParameters.isTransactionalStatement( sql ) ) {
+			// a DML statement that should be executed within the
+			// transaction (local temporary tables)
+			return connection.execute( sql ).thenApply( v -> 0 );
+		}
+		else {
+			// a DML statement that should be executed outside the
+			// transaction (global temporary tables)
+			return connection.executeOutsideTransaction( sql )
+					// ignore errors creating tables, since a create
+					// table fails whenever the table already exists
+					.handle( (v, x) -> 0 );
+		}
 	}
 
 	private StatementsWithParameters getUpdateHandler() {
@@ -198,8 +211,9 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 				final String[] statements = executor.getSqlStatements();
 				final ParameterSpecification[] parameterSpecifications =
 						getCollectedParameterSpecifications().toArray( new ParameterSpecification[0] );
+
 				@Override
-				public String[] getStatements() {
+				public String[] getSqlStatements() {
 					return statements;
 				}
 
@@ -208,6 +222,11 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 					ParameterSpecification[][] result = new ParameterSpecification[statements.length][];
 					Arrays.fill( result, parameterSpecifications );
 					return result;
+				}
+
+				@Override
+				public boolean isSchemaDefinitionStatement(String statement) {
+					return false;
 				}
 			};
 		}

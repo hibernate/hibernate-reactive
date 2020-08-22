@@ -36,6 +36,8 @@ public interface ReactiveConnection {
 
 	CompletionStage<Void> execute(String sql);
 
+	CompletionStage<Void> executeOutsideTransaction(String sql);
+
 	CompletionStage<Integer> update(String sql);
 	CompletionStage<Integer> update(String sql, Object[] paramValues);
 	CompletionStage<Void> update(String sql, Object[] paramValues,
