@@ -39,10 +39,9 @@ class ReactiveIdTableSupport extends IdTableSupportStandardImpl {
             return "create temporary table if not exists";
         }
         else if (dialect instanceof DB297Dialect) {
-            //TODO: use 'create global temporary table ... not logged'
-//				return "create global temporary table";
-            return "create table";
-        } else {
+            return "create global temporary table";
+        }
+        else {
             return "create local temporary table";
         }
     }
@@ -55,6 +54,9 @@ class ReactiveIdTableSupport extends IdTableSupportStandardImpl {
         else if (dialect instanceof MySQL8Dialect) {
             return "drop temporary table";
         }
+        else if (dialect instanceof DB297Dialect) {
+            return "drop table";
+        }
         else {
             return "drop table";
         }
@@ -63,9 +65,10 @@ class ReactiveIdTableSupport extends IdTableSupportStandardImpl {
     @Override
     public String getCreateIdTableStatementOptions() {
         if (dialect instanceof DB297Dialect) {
-            //TODO: use 'create global temporary table ... not logged'
-//				return "not logged";
+            return "not logged";
         }
-        return null;
+        else {
+            return null;
+        }
     }
 }

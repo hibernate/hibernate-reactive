@@ -1,0 +1,1 @@
+create user temporary tablespace hreact1 managed by system using ('hreact')

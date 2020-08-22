@@ -81,10 +81,16 @@ public abstract class BaseReactiveTest {
 		);
 	}
 
+	private static boolean doneTablespace;
+
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
 		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
 		configuration.setProperty( Settings.URL, DatabaseConfiguration.getJdbcUrl() );
+		if ( DatabaseConfiguration.dbType() == DBType.DB2 && !doneTablespace ) {
+			configuration.setProperty(Settings.HBM2DDL_IMPORT_FILES, "/db2.sql");
+			doneTablespace = true;
+		}
 		//Use JAVA_TOOL_OPTIONS='-Dhibernate.show_sql=true'
 		configuration.setProperty( Settings.SHOW_SQL, System.getProperty(Settings.SHOW_SQL, "false") );
 		return configuration;

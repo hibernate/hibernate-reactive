@@ -236,8 +236,8 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		);
 	}
 
-	private SqlClientConnection newConnection(SqlConnection ar) {
-		return new SqlClientConnection( ar, showSQL, formatSQL, usePostgresStyleParameters );
+	private SqlClientConnection newConnection(SqlConnection connection) {
+		return new SqlClientConnection( connection, pool, showSQL, formatSQL, usePostgresStyleParameters );
 	}
 
 	@Override
@@ -288,6 +288,11 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		@Override
 		public CompletionStage<Void> execute(String sql) {
 			return withConnection( conn -> conn.execute(sql) );
+		}
+
+		@Override
+		public CompletionStage<Void> executeOutsideTransaction(String sql) {
+			return withConnection( conn -> conn.executeOutsideTransaction(sql) );
 		}
 
 		@Override
