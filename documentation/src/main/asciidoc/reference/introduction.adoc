@@ -78,6 +78,8 @@ There's an example {build}[Gradle build] included in the example program.
 === Configuration
 
 :xml: https://github.com/hibernate/hibernate-reactive/blob/master/example/src/main/resources/META-INF/persistence.xml
+:configuration-properties: https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#configurations
+
 
 Hibernate Reactive is configured via the standard JPA `persistence.xml`
 document which must be placed, as usual, in the `/META-INF` directory.
@@ -92,9 +94,11 @@ The only configuration specific to Hibernate Reactive is the persistence
 
 Otherwise, configuration is almost completely transparent. Configure
 Hibernate exactly as you usually would, noting that most configuration
-properties related to JDBC or JTA aren't relevant in the context of
-Hibernate Reactive.
+properties directly related to JDBC or JTA aren't relevant in the context
+of Hibernate Reactive.
 
+A full list of configuration properties recognized by Hibernate may be
+found in the {configuration-properties}[documentation for Hibernate ORM].
 Configuration properties of particular interest include:
 
 - `javax.persistence.jdbc.url`, the JDBC URL of your database,
@@ -149,6 +153,8 @@ TIP: But for now, just leave these three settings alone.
 
 === Enabling the second-level cache
 
+:second-level-cache: https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#caching
+
 Hibernate Reactive supports second-level cache implementations that
 perform no blocking I/O.
 
@@ -179,6 +185,9 @@ your entities and collections.
 TIP: Don't forget that you need to explicitly mark each entity that will
 be stored in the second-level cache with the `@Cache` annotation from
 `org.hibernate.annotations`.
+
+You can find much more information about the second-level cache in the
+{second-level-cache}[documentation for Hibernate ORM].
 
 == Writing the Java code
 
@@ -218,6 +227,8 @@ of framework code.
 
 === Mapping entity classes
 
+:mapping-annotations: https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#annotations
+
 We won't have much to say about the entity classes here, simply because
 the principles behind mapping entity classes in Hibernate Reactive,
 along with the actual mapping annotations you'll use, are all identical
@@ -253,8 +264,10 @@ You're quite free to mix and match:
   `javax.persistence` with
 - the advanced mapping annotations in `org.hibernate.annotations`.
 
-Most mapping annotations are already supported in Hibernate Reactive,
-though there are still a handful of limitations at this time.
+A full list of object/relational mapping annotations may be found in the
+{mapping-annotations}[documentation for Hibernate ORM]. Most mapping
+annotations are already supported in Hibernate Reactive, though there are
+still a handful of limitations at this time.
 
 === Identifier generation
 
@@ -525,6 +538,8 @@ have very specific requirements.
 
 === A reminder about performance
 
+:association-fetching: https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#fetching
+
 As always, achieving high performance in ORM means minimizing the number
 of round trips to the database. This goal should be uppermost in your
 mind whenever you're writing data access code with Hibernate. The most
@@ -547,6 +562,9 @@ minimize round trips to the database: DML SQL statement batching, the
 second-level cache, batch fetching, subselect fetching, bulk update and
 delete queries, and direct execution of native SQL are all things that
 can help reduce the number of queries sent to the database.
+
+You can find much more information about association fetching in the
+{association-fetching}[documentation for Hibernate ORM].
 
 === Transactions
 
