@@ -14,7 +14,6 @@ import org.hibernate.event.spi.PostLoadEvent;
 import org.hibernate.event.spi.PostLoadEventListener;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
-import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.impl.ReactiveEntityIncrementVersionProcess;
 import org.hibernate.reactive.engine.impl.ReactiveEntityVerifyVersionProcess;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -48,17 +47,8 @@ public class DefaultReactivePostLoadEventListener implements PostLoadEventListen
 			throw new AssertionFailure( "possible non-threadsafe access to the session" );
 		}
 
-		final LockMode lockMode = entry.getLockMode();
-		if ( LockMode.PESSIMISTIC_FORCE_INCREMENT.equals( lockMode ) ) {
-			final EntityPersister persister = entry.getPersister();
-			final Object nextVersion = persister.forceVersionIncrement(
-					entry.getId(),
-					entry.getVersion(),
-					session
-			);
-			entry.forceLocked( entity, nextVersion );
-		}
-		else if ( LockMode.OPTIMISTIC_FORCE_INCREMENT.equals( lockMode ) ) {
+		LockMode lockMode = entry.getLockMode();
+		if ( LockMode.OPTIMISTIC_FORCE_INCREMENT.equals( lockMode ) ) {
 			((ReactiveSession) session).getReactiveActionQueue()
 					.registerProcess( new ReactiveEntityIncrementVersionProcess( entity ) );
 		}

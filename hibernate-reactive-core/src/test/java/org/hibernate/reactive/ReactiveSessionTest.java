@@ -227,6 +227,27 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void reactiveFindWithPessimisticIncrementLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> getSessionFactory().withTransaction(
+								(session, transaction) -> session.find( GuineaPig.class, expectedPig.getId(), LockMode.PESSIMISTIC_FORCE_INCREMENT )
+										.thenAccept( actualPig -> {
+											assertThatPigsAreEqual( context, expectedPig, actualPig );
+											context.assertEquals( session.getLockMode( actualPig ), LockMode.FORCE ); //grrr, lame
+											context.assertEquals( 1, actualPig.version );
+										} )
+								)
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
+						.thenAccept( actualPig -> context.assertEquals( 1, actualPig.version ) )
+		);
+	}
+
+	@Test
 	public void reactiveFindWithOptimisticIncrementLock(TestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
