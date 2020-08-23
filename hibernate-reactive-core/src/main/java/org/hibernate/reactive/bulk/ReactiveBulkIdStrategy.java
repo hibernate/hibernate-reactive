@@ -5,11 +5,14 @@
  */
 package org.hibernate.reactive.bulk;
 
+import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.spi.MetadataBuildingOptions;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.config.spi.ConfigurationService;
+import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.connections.spi.JdbcConnectionAccess;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.QueryParameters;
@@ -23,6 +26,7 @@ import org.hibernate.hql.internal.ast.tree.UpdateStatement;
 import org.hibernate.hql.spi.id.AbstractMultiTableBulkIdStrategyImpl;
 import org.hibernate.hql.spi.id.AbstractTableBasedBulkIdHandler;
 import org.hibernate.hql.spi.id.MultiTableBulkIdStrategy;
+import org.hibernate.hql.spi.id.global.GlobalTemporaryTableBulkIdStrategy;
 import org.hibernate.hql.spi.id.local.IdTableInfoImpl;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.mapping.PersistentClass;
@@ -30,6 +34,9 @@ import org.hibernate.mapping.Table;
 import org.hibernate.param.ParameterSpecification;
 import org.hibernate.persister.collection.AbstractCollectionPersister;
 import org.hibernate.persister.entity.Queryable;
+import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.Delete;
 import org.hibernate.sql.Update;
 import org.hibernate.type.CollectionType;
@@ -59,6 +66,9 @@ public class ReactiveBulkIdStrategy
 
 	private final boolean db2;
 	private final Set<String> createdGlobalTemporaryTables = new HashSet<>();
+	private final List<String> dropTableStatements = new ArrayList<>();
+
+	private StandardServiceRegistry serviceRegistry;
 
 //	private boolean useSessionIdColumn() {
 //		return db2;
@@ -74,7 +84,9 @@ public class ReactiveBulkIdStrategy
 	}
 
 	@Override
-	protected void initialize(MetadataBuildingOptions buildingOptions, SessionFactoryOptions sessionFactoryOptions) {}
+	protected void initialize(MetadataBuildingOptions buildingOptions, SessionFactoryOptions sessionFactoryOptions) {
+		serviceRegistry = buildingOptions.getServiceRegistry();
+	}
 
 	@Override
 	protected IdTableInfoImpl buildIdTableInfo(
@@ -94,7 +106,25 @@ public class ReactiveBulkIdStrategy
 	}
 
 	@Override
-	public void release(JdbcServices jdbcServices, JdbcConnectionAccess connectionAccess) {}
+	public void release(JdbcServices jdbcServices, JdbcConnectionAccess connectionAccess) {
+		if ( serviceRegistry!=null && !dropTableStatements.isEmpty() ) {
+			boolean dropIdTables = serviceRegistry.getService( ConfigurationService.class )
+					.getSetting(
+							GlobalTemporaryTableBulkIdStrategy.DROP_ID_TABLES,
+							StandardConverters.BOOLEAN,
+							false
+					);
+			if ( dropIdTables ) {
+				ReactiveConnection connection =
+						serviceRegistry.getService( ReactiveConnectionPool.class )
+								.getProxyConnection();
+				CompletionStages.loop( dropTableStatements, connection::execute )
+						.whenComplete( (v, e) -> connection.close() )
+						.handle( (v, e) -> null ) //ignore errors
+						.toCompletableFuture().join();
+			}
+		}
+	}
 
 	@Override
 	public UpdateHandler buildUpdateHandler(SessionFactoryImplementor factory, HqlSqlWalker walker) {
@@ -351,6 +381,7 @@ public class ReactiveBulkIdStrategy
 				parameterSpecifications.add( NO_PARAMS );
 				statements.add( tableInfo.getIdTableCreationStatement() );
 				parameterSpecifications.add( NO_PARAMS );
+				dropTableStatements.add( tableInfo.getIdTableDropStatement() );
 			}
 		}
 		else {
