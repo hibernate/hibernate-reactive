@@ -13,6 +13,7 @@ import org.hibernate.MappingException;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
+import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
@@ -402,9 +403,11 @@ public class StageSessionImpl implements Stage.Session {
 		}
 
 		CompletionStage<Void> end() {
-			return rollback
-					? delegate.getReactiveConnection().rollbackTransaction()
-					: delegate.getReactiveConnection().commitTransaction();
+			ReactiveActionQueue actionQueue = delegate.getReactiveActionQueue();
+			return actionQueue.beforeTransactionCompletion()
+					.thenApply( v -> delegate.getReactiveConnection() )
+					.thenCompose( c -> rollback ? c.rollbackTransaction() : c.commitTransaction() )
+					.thenCompose( v -> actionQueue.afterTransactionCompletion( !rollback ) );
 		}
 
 		<R> R processError(R result, Throwable e) {

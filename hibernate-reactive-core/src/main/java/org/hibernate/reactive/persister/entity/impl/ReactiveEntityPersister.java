@@ -78,7 +78,7 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	/**
 	 * Obtain a pessimistic lock without blocking
 	 */
-	CompletionStage<?> lockReactive(
+	CompletionStage<Void> lockReactive(
 			Serializable id,
 			Object version,
 			Object object,
@@ -104,6 +104,9 @@ public interface ReactiveEntityPersister extends EntityPersister {
 
 	ReactiveUniqueEntityLoader getAppropriateLoader(LockOptions lockOptions,
 													SharedSessionContractImplementor session);
+
+	CompletionStage<Object> reactiveGetCurrentVersion(Serializable id,
+													  SharedSessionContractImplementor session);
 
 	/**
 	 * Get the current database state of the object, in a "hydrated" form, without
