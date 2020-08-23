@@ -517,6 +517,20 @@ public class ReactiveActionQueue {
 		beforeTransactionProcesses.register( process );
 	}
 
+	public void registerProcess(ReactiveAfterTransactionCompletionProcess process) {
+		if ( afterTransactionProcesses == null ) {
+			afterTransactionProcesses = new AfterTransactionCompletionProcessQueue( session );
+		}
+		afterTransactionProcesses.registerReactive( process );
+	}
+
+	public void registerProcess(ReactiveBeforeTransactionCompletionProcess process) {
+		if ( beforeTransactionProcesses == null ) {
+			beforeTransactionProcesses = new BeforeTransactionCompletionProcessQueue( session );
+		}
+		beforeTransactionProcesses.registerReactive( process );
+	}
+
 	/**
 	 * Perform all currently queued entity-insertion actions.
 	 *
@@ -576,25 +590,27 @@ public class ReactiveActionQueue {
 	 *
 	 * @param success Was the transaction successful.
 	 */
-	public void afterTransactionCompletion(boolean success) {
+	public CompletionStage<Void> afterTransactionCompletion(boolean success) {
 		if ( !isTransactionCoordinatorShared ) {
 			// Execute completion actions only in transaction owner (aka parent session).
 			if ( afterTransactionProcesses != null ) {
-				afterTransactionProcesses.afterTransactionCompletion( success );
+				return afterTransactionProcesses.afterTransactionCompletion( success );
 			}
 		}
+		return CompletionStages.voidFuture();
 	}
 
 	/**
 	 * Execute any registered {@link org.hibernate.action.spi.BeforeTransactionCompletionProcess}
 	 */
-	public void beforeTransactionCompletion() {
+	public CompletionStage<Void> beforeTransactionCompletion() {
 		if ( !isTransactionCoordinatorShared ) {
 			// Execute completion actions only in transaction owner (aka parent session).
 			if ( beforeTransactionProcesses != null ) {
-				beforeTransactionProcesses.beforeTransactionCompletion();
+				return beforeTransactionProcesses.beforeTransactionCompletion();
 			}
 		}
+		return CompletionStages.voidFuture();
 	}
 
 	/**
@@ -917,11 +933,12 @@ public class ReactiveActionQueue {
 		}
 	}
 
-	private abstract static class AbstractTransactionCompletionProcessQueue<T> {
+	private abstract static class AbstractTransactionCompletionProcessQueue<T,U> {
 		protected SessionImplementor session;
 		// Concurrency handling required when transaction completion process is dynamically registered
 		// inside event listener (HHH-7478).
 		protected Queue<T> processes = new ConcurrentLinkedQueue<>();
+		protected Queue<U> reactiveProcesses = new ConcurrentLinkedQueue<>();
 
 		private AbstractTransactionCompletionProcessQueue(SessionImplementor session) {
 			this.session = session;
@@ -934,8 +951,15 @@ public class ReactiveActionQueue {
 			processes.add( process );
 		}
 
+		public void registerReactive(U process) {
+			if ( process == null ) {
+				return;
+			}
+			reactiveProcesses.add( process );
+		}
+
 		public boolean hasActions() {
-			return !processes.isEmpty();
+			return !processes.isEmpty() && !reactiveProcesses.isEmpty();
 		}
 	}
 
@@ -943,12 +967,13 @@ public class ReactiveActionQueue {
 	 * Encapsulates behavior needed for before transaction processing
 	 */
 	private static class BeforeTransactionCompletionProcessQueue
-			extends AbstractTransactionCompletionProcessQueue<BeforeTransactionCompletionProcess> {
+			extends AbstractTransactionCompletionProcessQueue<BeforeTransactionCompletionProcess,
+														ReactiveBeforeTransactionCompletionProcess> {
 		private BeforeTransactionCompletionProcessQueue(SessionImplementor session) {
 			super( session );
 		}
 
-		public void beforeTransactionCompletion() {
+		public CompletionStage<Void> beforeTransactionCompletion() {
 			while ( !processes.isEmpty() ) {
 				try {
 					processes.poll().doBeforeTransactionCompletion( session );
@@ -960,6 +985,10 @@ public class ReactiveActionQueue {
 					throw new AssertionFailure( "Unable to perform beforeTransactionCompletion callback", e );
 				}
 			}
+			return CompletionStages.loop(
+					reactiveProcesses,
+					process -> process.doBeforeTransactionCompletion( session )
+			).whenComplete( (v, e) -> reactiveProcesses.clear() );
 		}
 	}
 
@@ -967,8 +996,9 @@ public class ReactiveActionQueue {
 	 * Encapsulates behavior needed for after transaction processing
 	 */
 	private static class AfterTransactionCompletionProcessQueue
-			extends AbstractTransactionCompletionProcessQueue<AfterTransactionCompletionProcess> {
-		private Set<Serializable> querySpacesToInvalidate = new HashSet<>();
+			extends AbstractTransactionCompletionProcessQueue<AfterTransactionCompletionProcess,
+															ReactiveAfterTransactionCompletionProcess> {
+		private final Set<Serializable> querySpacesToInvalidate = new HashSet<>();
 
 		private AfterTransactionCompletionProcessQueue(SessionImplementor session) {
 			super( session );
@@ -978,7 +1008,7 @@ public class ReactiveActionQueue {
 			querySpacesToInvalidate.add( space );
 		}
 
-		public void afterTransactionCompletion(boolean success) {
+		public CompletionStage<Void> afterTransactionCompletion(boolean success) {
 			while ( !processes.isEmpty() ) {
 				try {
 					processes.poll().doAfterTransactionCompletion( success, session );
@@ -999,6 +1029,11 @@ public class ReactiveActionQueue {
 				);
 			}
 			querySpacesToInvalidate.clear();
+
+			return CompletionStages.loop(
+					reactiveProcesses,
+					process -> process.doAfterTransactionCompletion( success, session )
+			).whenComplete( (v, e) -> reactiveProcesses.clear() );
 		}
 	}
 

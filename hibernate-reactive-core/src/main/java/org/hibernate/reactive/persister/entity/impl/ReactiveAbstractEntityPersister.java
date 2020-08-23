@@ -696,7 +696,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	@Override
-	default CompletionStage<?> lockReactive(
+	default CompletionStage<Void> lockReactive(
 			Serializable id,
 			Object version,
 			Object object,
@@ -834,6 +834,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 //				.thenApply( resultSet -> !resultSet.hasNext() );
 //	}
 
+	@Override
 	default CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Serializable id,
 																  SharedSessionContractImplementor session) {
 		if ( log.isTraceEnabled() ) {
@@ -850,6 +851,39 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return getReactiveConnection( session )
 				.selectJdbc( delegate().getSQLSnapshotSelectString(), params )
 				.thenApply( (resultSet) -> processSnapshot(session, resultSet) );
+	}
+
+	@Override
+	default CompletionStage<Object> reactiveGetCurrentVersion(Serializable id,
+															  SharedSessionContractImplementor session) {
+		if ( log.isTraceEnabled() ) {
+			log.tracev(
+					"Getting version: {0}",
+					infoString( this, id, getFactory() )
+			);
+		}
+
+		Object[] params = PreparedStatementAdaptor.bind(
+				statement -> getIdentifierType().nullSafeSet( statement, id, 1, session )
+		);
+
+		return getReactiveConnection( session )
+				.selectJdbc( delegate().getVersionSelectString(), params )
+				.thenApply( (resultSet) -> {
+					try {
+						if ( !resultSet.next() ) {
+							return null;
+						}
+						if ( !isVersioned() ) {
+							return this;
+						}
+						return getVersionType().nullSafeGet( resultSet, getVersionColumnName(), session, null );
+					}
+					catch (SQLException sqle) {
+						//can never happen
+						throw new JDBCException("error reading version", sqle);
+					}
+				} );
 	}
 
 	//would be nice of we could just reuse this code from AbstractEntityPersister

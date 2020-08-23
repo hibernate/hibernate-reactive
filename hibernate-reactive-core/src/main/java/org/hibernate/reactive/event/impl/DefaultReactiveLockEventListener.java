@@ -164,13 +164,15 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 				ck = null;
 			}
 
-			return ((ReactiveEntityPersister) persister).lockReactive(
-					entry.getId(),
-					entry.getVersion(),
-					object,
-					lockOptions,
-					source
-			).thenAccept( v -> entry.setLockMode(requestedLockMode) )
+			return ((ReactiveEntityPersister) persister)
+					.lockReactive(
+							entry.getId(),
+							entry.getVersion(),
+							object,
+							lockOptions,
+							source
+					)
+					.thenAccept( v -> entry.setLockMode(requestedLockMode) )
 					.whenComplete( (r, e) -> {
 						// the database now holds a lock + the object is flushed from the cache,
 						// so release the soft lock

@@ -227,6 +227,48 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void reactiveFindWithOptimisticIncrementLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> getSessionFactory().withTransaction(
+								(session, transaction) -> session.find( GuineaPig.class, expectedPig.getId(), LockMode.OPTIMISTIC_FORCE_INCREMENT )
+										.thenAccept( actualPig -> {
+											assertThatPigsAreEqual( context, expectedPig, actualPig );
+											context.assertEquals( session.getLockMode( actualPig ), LockMode.OPTIMISTIC_FORCE_INCREMENT );
+											context.assertEquals( 0, actualPig.version );
+										} )
+								)
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
+						.thenAccept( actualPig -> context.assertEquals( 1, actualPig.version ) )
+		);
+	}
+
+	@Test
+	public void reactiveFindWithOptimisticVerifyLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> getSessionFactory().withTransaction(
+								(session, transaction) -> session.find( GuineaPig.class, expectedPig.getId(), LockMode.OPTIMISTIC )
+										.thenAccept( actualPig -> {
+											assertThatPigsAreEqual( context, expectedPig, actualPig );
+											context.assertEquals( session.getLockMode( actualPig ), LockMode.OPTIMISTIC );
+											context.assertEquals( 0, actualPig.version );
+										} )
+								)
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
+						.thenAccept( actualPig -> context.assertEquals( 0, actualPig.version ) )
+		);
+	}
+
+	@Test
 	public void reactiveQueryWithLock(TestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
