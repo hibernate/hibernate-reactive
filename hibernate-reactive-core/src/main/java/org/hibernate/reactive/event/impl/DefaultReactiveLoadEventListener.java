@@ -126,27 +126,41 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			final LoadEvent event,
 			final LoadEventListener.LoadType loadType) throws HibernateException {
 
-		final EntityPersister persister = getPersister( event );
-
+		final ReactiveEntityPersister persister = (ReactiveEntityPersister) getPersister( event );
 		if ( persister == null ) {
 			throw new HibernateException( "Unable to locate persister: " + event.getEntityClassName() );
 		}
 
-		return checkId( event, loadType, persister ).thenCompose(
+		CompletionStage<Void> result = checkId( event, loadType, persister ).thenCompose(
 				vd -> doOnLoad( persister, event, loadType )
 						.thenAccept( event::setResult )
 						.handle( (v, x) -> {
-							if ( x instanceof HibernateException ) {
+							if ( event.getResult() instanceof CompletionStage ) {
+								throw new AssertionFailure("Unexpected CompletionStage");
+							}
+
+							if (x instanceof HibernateException) {
 								LOG.unableToLoadCommand( (HibernateException) x );
 							}
-							CompletionStages.returnNullorRethrow( x );
+							return CompletionStages.returnNullorRethrow( x );
+						} )
+		);
 
-							if ( event.getResult() instanceof CompletionStage ) {
-								throw new AssertionFailure( "Unexpected CompletionStage" );
-							}
-
-							return v;
-						} ));
+		if ( event.getLockMode() == LockMode.PESSIMISTIC_FORCE_INCREMENT
+				|| event.getLockMode() == LockMode.FORCE ) {
+			return result.thenCompose(
+					v -> persister.lockReactive(
+							event.getEntityId(),
+							persister.getVersion( event.getResult() ),
+							event.getResult(),
+							event.getLockOptions(),
+							event.getSession()
+					)
+			);
+		}
+		else {
+			return result;
+		}
 	}
 
 	private CompletionStage<Void> checkId(LoadEvent event, LoadType loadType, EntityPersister persister) {

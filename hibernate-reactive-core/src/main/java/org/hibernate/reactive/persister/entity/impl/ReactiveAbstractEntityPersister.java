@@ -802,15 +802,19 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 	}
 
-	default CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
+	default CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions,
+												 SharedSessionContractImplementor session) {
 		return reactiveLoad( id, optionalObject, lockOptions, session, null );
 	}
 
-	default CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
+	default CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions,
+												 SharedSessionContractImplementor session, Boolean readOnly) {
 		if ( log.isTraceEnabled() ) {
 			log.tracev( "Fetching entity: {0}", infoString( this, id, getFactory() ) );
 		}
-		return getAppropriateLoader( lockOptions, session ).load( id, optionalObject, session, lockOptions, readOnly );
+
+		return getAppropriateLoader( lockOptions, session )
+				.load( id, optionalObject, session, lockOptions, readOnly );
 	}
 
 	@Override
