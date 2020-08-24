@@ -290,14 +290,25 @@ public interface Mutiny {
 		 * Asynchronously return the persistent instance of the given entity
 		 * class with the given identifier, requesting the given {@link LockMode}.
 		 *
+		 * @param entityClass The entity type
+		 * @param id an identifier
+		 * @param lockMode the requested {@link LockMode}
+		 *
+		 * @return a persistent instance or null via a {@code Uni}
+		 *
 		 * @see #find(Class,Object)
+		 * @see #lock(Object, LockMode) this discussion of lock modes
 		 */
 		<T> Uni<T> find(Class<T> entityClass, Object id, LockMode lockMode);
 
 		/**
-		 * Asynchronously return the persistent instance of the given entity
-		 * class with the given identifier, using the given {@link EntityGraph}
+		 * Asynchronously return the persistent instance with the given
+		 * identifier of an entity class, using the given {@link EntityGraph}
 		 * as a fetch plan.
+		 *
+		 * @param entityGraph an {@link EntityGraph} specifying the entity
+		 *                    and associations to be fetched
+		 * @param id an identifier
 		 *
 		 * @see #find(Class,Object)
 		 */
@@ -310,6 +321,7 @@ public interface Mutiny {
 		 *
 		 * @param entityClass The entity type
 		 * @param ids the identifiers
+		 *
 		 * @return a list of persistent instances and nulls via a {@code Uni}
 		 */
 		<T> Uni<List<T>> find(Class<T> entityClass, Object... ids);
@@ -450,8 +462,13 @@ public interface Mutiny {
 		 * this operation may be used to:
 		 *
 		 * <ul>
-		 * <li>perform a version check with {@link LockMode#READ}, or
-		 * <li>upgrade to a pessimistic lock with {@link LockMode#PESSIMISTIC_WRITE}.
+		 * <li>perform a version check with {@link LockMode#PESSIMISTIC_READ},
+		 * <li>upgrade to a pessimistic lock with {@link LockMode#PESSIMISTIC_WRITE},
+		 * <li>force a version increment with {@link LockMode#PESSIMISTIC_FORCE_INCREMENT},
+		 * <li>schedule a version check just before the end of the transaction with
+		 * {@link LockMode#OPTIMISTIC}, or
+		 * <li>schedule a version increment just before the end of the transaction
+		 * with {@link LockMode#OPTIMISTIC_FORCE_INCREMENT}.
 		 * </ul>
 		 *
 		 * This operation cascades to associated instances if the association is
