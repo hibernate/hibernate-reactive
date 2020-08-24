@@ -252,7 +252,8 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 					boolean substitute = substituteValuesIfNecessary( entity, id, values, persister, source );
 
 					if ( persister.hasCollections() ) {
-						substitute = substitute || visitCollectionsBeforeSave( entity, id, values, types, source );
+						boolean substituteBecauseOfCollections = visitCollectionsBeforeSave( entity, id, values, types, source );
+						substitute = substitute || substituteBecauseOfCollections;
 					}
 
 					if ( substitute ) {
