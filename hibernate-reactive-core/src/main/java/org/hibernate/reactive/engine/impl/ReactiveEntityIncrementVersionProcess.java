@@ -8,9 +8,9 @@ package org.hibernate.reactive.engine.impl;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.reactive.engine.ReactiveBeforeTransactionCompletionProcess;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.concurrent.CompletionStage;
@@ -40,7 +40,7 @@ public class ReactiveEntityIncrementVersionProcess implements ReactiveBeforeTran
 	 * @param session The session on which the transaction is preparing to complete.
 	 */
 	@Override
-	public CompletionStage<Void> doBeforeTransactionCompletion(SessionImplementor session) {
+	public CompletionStage<Void> doBeforeTransactionCompletion(ReactiveSession session) {
 		final EntityEntry entry = session.getPersistenceContext().getEntry( object );
 		// Don't increment version for an entity that is not in the PersistenceContext;
 		if ( entry == null ) {
@@ -53,7 +53,7 @@ public class ReactiveEntityIncrementVersionProcess implements ReactiveBeforeTran
 						entry.getVersion(),
 						object,
 						new LockOptions(LockMode.PESSIMISTIC_FORCE_INCREMENT),
-						session
+						session.getSharedContract()
 				);
 	}
 }

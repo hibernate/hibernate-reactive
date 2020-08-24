@@ -28,8 +28,11 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;
 import org.hibernate.reactive.engine.impl.ForeignKeys;
+import org.hibernate.reactive.engine.impl.ReactiveEntityIncrementVersionProcess;
+import org.hibernate.reactive.engine.impl.ReactiveEntityVerifyVersionProcess;
 import org.hibernate.reactive.event.ReactiveLockEventListener;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.jboss.logging.Logger;
 
@@ -136,34 +139,59 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 				);
 			}
 
-			final EntityPersister persister = entry.getPersister();
-
 			if ( log.isTraceEnabled() ) {
 				log.tracev(
 						"Locking {0} in mode: {1}",
-						MessageHelper.infoString( persister, entry.getId(), source.getFactory() ),
+						MessageHelper.infoString( entry.getPersister(), entry.getId(), source.getFactory() ),
 						requestedLockMode
 				);
 			}
 
-			final boolean cachingEnabled = persister.canWriteToCache();
-			final SoftLock lock;
-			final Object ck;
-			if ( cachingEnabled ) {
-				EntityDataAccess cache = persister.getCacheAccessStrategy();
-				ck = cache.generateCacheKey(
-						entry.getId(),
-						persister,
-						source.getFactory(),
-						source.getTenantIdentifier()
-				);
-				lock = cache.lockItem( source, ck, entry.getVersion() );
+			switch (requestedLockMode) {
+				case OPTIMISTIC:
+					( (ReactiveSession) source ).getReactiveActionQueue()
+							.registerProcess( new ReactiveEntityVerifyVersionProcess(object) );
+					entry.setLockMode( requestedLockMode );
+					return CompletionStages.voidFuture();
+				case OPTIMISTIC_FORCE_INCREMENT:
+					( (ReactiveSession) source ).getReactiveActionQueue()
+							.registerProcess( new ReactiveEntityIncrementVersionProcess(object) );
+					entry.setLockMode( requestedLockMode );
+					return CompletionStages.voidFuture();
+				default:
+					return doUpgradeLock( object, entry, lockOptions, source );
 			}
-			else {
-				lock = null;
-				ck = null;
-			}
+		}
+		else {
+			return CompletionStages.voidFuture();
+		}
+	}
 
+	private CompletionStage<Void> doUpgradeLock(Object object, EntityEntry entry,
+											  LockOptions lockOptions,
+											  EventSource source) {
+
+		final EntityPersister persister = entry.getPersister();
+
+		final boolean canWriteToCache = persister.canWriteToCache();
+		final SoftLock lock;
+		final Object cacheKey;
+		if ( canWriteToCache ) {
+			EntityDataAccess cache = persister.getCacheAccessStrategy();
+			cacheKey = cache.generateCacheKey(
+					entry.getId(),
+					persister,
+					source.getFactory(),
+					source.getTenantIdentifier()
+			);
+			lock = cache.lockItem( source, cacheKey, entry.getVersion() );
+		}
+		else {
+			cacheKey = null;
+			lock = null;
+		}
+
+		try {
 			return ((ReactiveEntityPersister) persister)
 					.lockReactive(
 							entry.getId(),
@@ -172,18 +200,21 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 							lockOptions,
 							source
 					)
-					.thenAccept( v -> entry.setLockMode(requestedLockMode) )
+					.thenAccept( v -> entry.setLockMode( lockOptions.getLockMode() ) )
 					.whenComplete( (r, e) -> {
 						// the database now holds a lock + the object is flushed from the cache,
 						// so release the soft lock
-						if ( cachingEnabled ) {
-							persister.getCacheAccessStrategy().unlockItem( source, ck, lock );
+						if ( canWriteToCache ) {
+							persister.getCacheAccessStrategy().unlockItem( source, cacheKey, lock );
 						}
 					} );
-
 		}
-		else {
-			return CompletionStages.voidFuture();
+		catch (HibernateException he) {
+			//in case lockReactive() throws an exception
+			if ( canWriteToCache ) {
+				persister.getCacheAccessStrategy().unlockItem( source, cacheKey, lock );
+			}
+			throw he;
 		}
 	}
 

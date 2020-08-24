@@ -146,8 +146,11 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 						} )
 		);
 
+		// if a pessimistic version increment was requested, we need
+		// to go back to the database immediately and update the row
 		if ( event.getLockMode() == LockMode.PESSIMISTIC_FORCE_INCREMENT
 				|| event.getLockMode() == LockMode.FORCE ) {
+			// TODO: should we call CachedDomainDataAccess.lockItem() ?
 			return result.thenCompose(
 					v -> persister.lockReactive(
 							event.getEntityId(),
@@ -519,21 +522,22 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			final EntityKey keyToLoad,
 			final LoadEventListener.LoadType options,
 			final SessionImplementor source) {
-		final SoftLock lock;
-		final Object ck;
-		final EntityDataAccess cache = persister.getCacheAccessStrategy();
+
 		final boolean canWriteToCache = persister.canWriteToCache();
+		final SoftLock lock;
+		final Object cacheKey;
 		if ( canWriteToCache ) {
-			ck = cache.generateCacheKey(
+			EntityDataAccess cache = persister.getCacheAccessStrategy();
+			cacheKey = cache.generateCacheKey(
 					event.getEntityId(),
 					persister,
 					source.getFactory(),
 					source.getTenantIdentifier()
 			);
-			lock = cache.lockItem( source, ck, null );
+			lock = cache.lockItem( source, cacheKey, null );
 		}
 		else {
-			ck = null;
+			cacheKey = null;
 			lock = null;
 		}
 
@@ -541,7 +545,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			return load( event, persister, keyToLoad, options )
 					.whenComplete( (v, x) -> {
 						if ( canWriteToCache ) {
-							cache.unlockItem( source, ck, lock );
+							persister.getCacheAccessStrategy().unlockItem( source, cacheKey, lock );
 						}
 					} )
 					.thenApply( entity -> source.getPersistenceContextInternal().proxyFor( persister, keyToLoad, entity ) );
@@ -549,7 +553,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		catch (HibernateException he) {
 			//in case load() throws an exception
 			if ( canWriteToCache ) {
-				cache.unlockItem( source, ck, lock );
+				persister.getCacheAccessStrategy().unlockItem( source, cacheKey, lock );
 			}
 			throw he;
 		}

@@ -21,13 +21,10 @@ import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.engine.impl.*;
-import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.*;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
@@ -162,7 +159,7 @@ public class ReactiveActionQueue {
 	// NOTE: ExecutableList fields must be instantiated via ListProvider#init or #getOrInit
 	//       to ensure that they are instantiated consistently.
 
-	private SessionImplementor session;
+	private final ReactiveSession session;
 	private UnresolvedEntityInsertActions unresolvedInsertions;
 	// Object insertions, updates, and deletions have list semantics because
 	// they must happen in the right order so as to respect referential
@@ -190,7 +187,7 @@ public class ReactiveActionQueue {
 	 *
 	 * @param session The session "owning" this queue.
 	 */
-	public ReactiveActionQueue(SessionImplementor session) {
+	public ReactiveActionQueue(ReactiveSession session) {
 		this.session = session;
 		isTransactionCoordinatorShared = false;
 	}
@@ -238,45 +235,46 @@ public class ReactiveActionQueue {
 		return q == null ? "ExecutableList{size=0}" : q.toString();
 	}
 
-	/**
-	 * Used by the owning session to explicitly control deserialization of the action queue.
-	 *
-	 * @param ois The stream from which to read the action queue
-	 * @param session The session to which the action queue belongs
-	 *
-	 * @return The deserialized action queue
-	 *
-	 * @throws IOException indicates a problem reading from the stream
-	 * @throws ClassNotFoundException Generally means we were unable to locate user classes.
-	 */
-	public static ReactiveActionQueue deserialize(ObjectInputStream ois, SessionImplementor session)
-			throws IOException, ClassNotFoundException {
-		final boolean traceEnabled = LOG.isTraceEnabled();
-		if ( traceEnabled ) {
-			LOG.trace( "Deserializing action-queue" );
-		}
-		ReactiveActionQueue rtn = new ReactiveActionQueue( session );
-
-		rtn.unresolvedInsertions = UnresolvedEntityInsertActions.deserialize( ois, session );
-
-		for ( ListProvider<?> provider : EXECUTABLE_LISTS_MAP.values() ) {
-			ExecutableList<?> l = provider.get( rtn );
-			boolean notNull = ois.readBoolean();
-			if ( notNull ) {
-				if ( l == null ) {
-					l = provider.init( rtn );
-				}
-				l.readExternal( ois );
-
-				if ( traceEnabled ) {
-					LOG.tracev( "Deserialized [{0}] entries", l.size() );
-				}
-				l.afterDeserialize( session );
-			}
-		}
-
-		return rtn;
-	}
+//	/**
+//	 * Used by the owning session to explicitly control deserialization of the action queue.
+//	 *
+//	 * @param ois The stream from which to read the action queue
+//	 * @param session The session to which the action queue belongs
+//	 *
+//	 * @return The deserialized action queue
+//	 *
+//	 * @throws IOException indicates a problem reading from the stream
+//	 * @throws ClassNotFoundException Generally means we were unable to locate user classes.
+//	 */
+//	public static ReactiveActionQueue deserialize(ObjectInputStream ois,
+//												  SessionImplementor session, ReactiveSession session)
+//			throws IOException, ClassNotFoundException {
+//		final boolean traceEnabled = LOG.isTraceEnabled();
+//		if ( traceEnabled ) {
+//			LOG.trace( "Deserializing action-queue" );
+//		}
+//		ReactiveActionQueue rtn = new ReactiveActionQueue( session, session );
+//
+//		rtn.unresolvedInsertions = UnresolvedEntityInsertActions.deserialize( ois, session );
+//
+//		for ( ListProvider<?> provider : EXECUTABLE_LISTS_MAP.values() ) {
+//			ExecutableList<?> l = provider.get( rtn );
+//			boolean notNull = ois.readBoolean();
+//			if ( notNull ) {
+//				if ( l == null ) {
+//					l = provider.init( rtn );
+//				}
+//				l.readExternal( ois );
+//
+//				if ( traceEnabled ) {
+//					LOG.tracev( "Deserialized [{0}] entries", l.size() );
+//				}
+//				l.afterDeserialize( session );
+//			}
+//		}
+//
+//		return rtn;
+//	}
 
 	public void clear() {
 		for ( ListProvider<?> listProvider : EXECUTABLE_LISTS_MAP.values() ) {
@@ -344,15 +342,15 @@ public class ReactiveActionQueue {
 		return ret.thenCompose( v -> {
 			if ( !insert.isVeto() ) {
 				CompletionStage<Void> comp = insert.reactiveMakeEntityManaged();
-				if ( unresolvedInsertions != null ) {
-					for ( AbstractEntityInsertAction resolvedAction : unresolvedInsertions.resolveDependentActions(
-							insert.getInstance(),
-							session
-					) ) {
-						comp = comp.thenCompose( v2 -> addResolvedEntityInsertAction( (ReactiveEntityRegularInsertAction) resolvedAction ) );
-					}
+				if ( unresolvedInsertions == null ) {
+					return comp;
 				}
-				return comp;
+				else {
+					return comp.thenCompose( vv -> CompletionStages.loop(
+							unresolvedInsertions.resolveDependentActions( insert.getInstance(), session.getSharedContract() ),
+							resolvedAction -> addResolvedEntityInsertAction( (ReactiveEntityRegularInsertAction) resolvedAction )
+					) );
+				}
 			}
 			else {
 				throw new EntityActionVetoException(
@@ -461,18 +459,14 @@ public class ReactiveActionQueue {
 
 	private void registerCleanupActions(Executable executable) {
 		if ( executable.getBeforeTransactionCompletionProcess() != null ) {
-			if ( beforeTransactionProcesses == null ) {
-				beforeTransactionProcesses = new BeforeTransactionCompletionProcessQueue( session );
-			}
+			beforeTransactionProcesses();
 			beforeTransactionProcesses.register( executable.getBeforeTransactionCompletionProcess() );
 		}
 		if ( session.getFactory().getSessionFactoryOptions().isQueryCacheEnabled() ) {
 			invalidateSpaces( convertTimestampSpaces( executable.getPropertySpaces() ) );
 		}
 		if ( executable.getAfterTransactionCompletionProcess() != null ) {
-			if ( afterTransactionProcesses == null ) {
-				afterTransactionProcesses = new AfterTransactionCompletionProcessQueue( session );
-			}
+			afterTransactionProcesses();
 			afterTransactionProcesses.register( executable.getAfterTransactionCompletionProcess() );
 		}
 	}
@@ -504,31 +498,33 @@ public class ReactiveActionQueue {
 	}
 
 	public void registerProcess(AfterTransactionCompletionProcess process) {
-		if ( afterTransactionProcesses == null ) {
-			afterTransactionProcesses = new AfterTransactionCompletionProcessQueue( session );
-		}
-		afterTransactionProcesses.register( process );
+		afterTransactionProcesses().register( process );
 	}
 
 	public void registerProcess(BeforeTransactionCompletionProcess process) {
-		if ( beforeTransactionProcesses == null ) {
-			beforeTransactionProcesses = new BeforeTransactionCompletionProcessQueue( session );
-		}
-		beforeTransactionProcesses.register( process );
+		beforeTransactionProcesses().register( process );
 	}
 
 	public void registerProcess(ReactiveAfterTransactionCompletionProcess process) {
-		if ( afterTransactionProcesses == null ) {
-			afterTransactionProcesses = new AfterTransactionCompletionProcessQueue( session );
-		}
-		afterTransactionProcesses.registerReactive( process );
+		afterTransactionProcesses().registerReactive( process );
 	}
 
 	public void registerProcess(ReactiveBeforeTransactionCompletionProcess process) {
-		if ( beforeTransactionProcesses == null ) {
+		beforeTransactionProcesses().registerReactive( process );
+	}
+
+	private BeforeTransactionCompletionProcessQueue beforeTransactionProcesses() {
+		if (beforeTransactionProcesses == null) {
 			beforeTransactionProcesses = new BeforeTransactionCompletionProcessQueue( session );
 		}
-		beforeTransactionProcesses.registerReactive( process );
+		return beforeTransactionProcesses;
+	}
+
+	private AfterTransactionCompletionProcessQueue afterTransactionProcesses() {
+		if (afterTransactionProcesses == null) {
+			afterTransactionProcesses = new AfterTransactionCompletionProcessQueue( session );
+		}
+		return afterTransactionProcesses;
 	}
 
 	/**
@@ -662,16 +658,10 @@ public class ReactiveActionQueue {
 		for ( E e : list ) {
 			ret = ret.thenCompose( v -> e.reactiveExecute().whenComplete( (v2, x) -> {
 				if ( e.getBeforeTransactionCompletionProcess() != null ) {
-					if ( beforeTransactionProcesses == null ) {
-						beforeTransactionProcesses = new BeforeTransactionCompletionProcessQueue( session );
-					}
-					beforeTransactionProcesses.register( e.getBeforeTransactionCompletionProcess() );
+					beforeTransactionProcesses().register( e.getBeforeTransactionCompletionProcess() );
 				}
 				if ( e.getAfterTransactionCompletionProcess() != null ) {
-					if ( afterTransactionProcesses == null ) {
-						afterTransactionProcesses = new AfterTransactionCompletionProcessQueue( session );
-					}
-					afterTransactionProcesses.register( e.getAfterTransactionCompletionProcess() );
+					afterTransactionProcesses().register( e.getAfterTransactionCompletionProcess() );
 				}
 			} ) );
 		}
@@ -686,7 +676,7 @@ public class ReactiveActionQueue {
 		} ).thenRun( () -> {
 			list.clear();
 //			session.getJdbcCoordinator().executeBatch();
-		} ).thenCompose( v -> ( (ReactiveConnectionSupplier) session ).getReactiveConnection().executeBatch() );
+		} ).thenCompose( v -> session.getReactiveConnection().executeBatch() );
 	}
 
 	/**
@@ -705,13 +695,10 @@ public class ReactiveActionQueue {
 	private void invalidateSpaces(Serializable[] spaces) {
 		if ( spaces != null && spaces.length > 0 ) {
 			for ( Serializable s : spaces ) {
-				if ( afterTransactionProcesses == null ) {
-					afterTransactionProcesses = new AfterTransactionCompletionProcessQueue( session );
-				}
-				afterTransactionProcesses.addSpaceToInvalidate( s );
+				afterTransactionProcesses().addSpaceToInvalidate( s );
 			}
 			// Performance win: If we are processing an ExecutableList, this will only be called once
-			session.getFactory().getCache().getTimestampsCache().preInvalidate( spaces, session );
+			session.getFactory().getCache().getTimestampsCache().preInvalidate( spaces, session.getSharedContract() );
 		}
 	}
 
@@ -775,31 +762,25 @@ public class ReactiveActionQueue {
 		return insertions.size();
 	}
 
-	public TransactionCompletionProcesses getTransactionCompletionProcesses() {
-		if ( beforeTransactionProcesses == null ) {
-			beforeTransactionProcesses = new BeforeTransactionCompletionProcessQueue( session );
-		}
-		if ( afterTransactionProcesses == null ) {
-			afterTransactionProcesses = new AfterTransactionCompletionProcessQueue( session );
-		}
-		return new TransactionCompletionProcesses( beforeTransactionProcesses, afterTransactionProcesses );
-	}
-
-	/**
-	 * Bind transaction completion processes to make them shared between primary and secondary session.
-	 * Transaction completion processes are always executed by transaction owner (primary session),
-	 * but can be registered using secondary session too.
-	 *
-	 * @param processes Transaction completion processes.
-	 * @param isTransactionCoordinatorShared Flag indicating shared transaction context.
-	 */
-	public void setTransactionCompletionProcesses(
-			TransactionCompletionProcesses processes,
-			boolean isTransactionCoordinatorShared) {
-		this.isTransactionCoordinatorShared = isTransactionCoordinatorShared;
-		this.beforeTransactionProcesses = processes.beforeTransactionCompletionProcesses;
-		this.afterTransactionProcesses = processes.afterTransactionCompletionProcesses;
-	}
+//	public TransactionCompletionProcesses getTransactionCompletionProcesses() {
+//		return new TransactionCompletionProcesses( beforeTransactionProcesses(), afterTransactionProcesses() );
+//	}
+//
+//	/**
+//	 * Bind transaction completion processes to make them shared between primary and secondary session.
+//	 * Transaction completion processes are always executed by transaction owner (primary session),
+//	 * but can be registered using secondary session too.
+//	 *
+//	 * @param processes Transaction completion processes.
+//	 * @param isTransactionCoordinatorShared Flag indicating shared transaction context.
+//	 */
+//	public void setTransactionCompletionProcesses(
+//			TransactionCompletionProcesses processes,
+//			boolean isTransactionCoordinatorShared) {
+//		this.isTransactionCoordinatorShared = isTransactionCoordinatorShared;
+//		this.beforeTransactionProcesses = processes.beforeTransactionCompletionProcesses;
+//		this.afterTransactionProcesses = processes.afterTransactionCompletionProcesses;
+//	}
 
 	public void sortCollectionActions() {
 		if ( isOrderUpdatesEnabled() ) {
@@ -883,7 +864,7 @@ public class ReactiveActionQueue {
 		if ( rescuedEntity instanceof HibernateProxy ) {
 			LazyInitializer initializer = ( (HibernateProxy) rescuedEntity ).getHibernateLazyInitializer();
 			if ( !initializer.isUninitialized() ) {
-				rescuedEntity = initializer.getImplementation( session );
+				rescuedEntity = initializer.getImplementation( session.getSharedContract() );
 			}
 		}
 		if ( deletions != null ) {
@@ -907,40 +888,41 @@ public class ReactiveActionQueue {
 		throw new AssertionFailure( "Unable to perform un-delete for instance " + entry.getEntityName() );
 	}
 
-	/**
-	 * Used by the owning session to explicitly control serialization of the action queue
-	 *
-	 * @param oos The stream to which the action queue should get written
-	 *
-	 * @throws IOException Indicates an error writing to the stream
-	 */
-	public void serialize(ObjectOutputStream oos) throws IOException {
-		LOG.trace( "Serializing action-queue" );
-		if ( unresolvedInsertions == null ) {
-			unresolvedInsertions = new UnresolvedEntityInsertActions();
-		}
-		unresolvedInsertions.serialize( oos );
-
-		for ( ListProvider<?> p : EXECUTABLE_LISTS_MAP.values() ) {
-			ExecutableList<?> l = p.get( this );
-			if ( l == null ) {
-				oos.writeBoolean( false );
-			}
-			else {
-				oos.writeBoolean( true );
-				l.writeExternal( oos );
-			}
-		}
-	}
+//	/**
+//	 * Used by the owning session to explicitly control serialization of the action queue
+//	 *
+//	 * @param oos The stream to which the action queue should get written
+//	 *
+//	 * @throws IOException Indicates an error writing to the stream
+//	 */
+//	public void serialize(ObjectOutputStream oos) throws IOException {
+//		LOG.trace( "Serializing action-queue" );
+//		if ( unresolvedInsertions == null ) {
+//			unresolvedInsertions = new UnresolvedEntityInsertActions();
+//		}
+//		unresolvedInsertions.serialize( oos );
+//
+//		for ( ListProvider<?> p : EXECUTABLE_LISTS_MAP.values() ) {
+//			ExecutableList<?> l = p.get( this );
+//			if ( l == null ) {
+//				oos.writeBoolean( false );
+//			}
+//			else {
+//				oos.writeBoolean( true );
+//				l.writeExternal( oos );
+//			}
+//		}
+//	}
 
 	private abstract static class AbstractTransactionCompletionProcessQueue<T,U> {
-		protected SessionImplementor session;
+		final ReactiveSession session;
+
 		// Concurrency handling required when transaction completion process is dynamically registered
 		// inside event listener (HHH-7478).
 		protected Queue<T> processes = new ConcurrentLinkedQueue<>();
 		protected Queue<U> reactiveProcesses = new ConcurrentLinkedQueue<>();
 
-		private AbstractTransactionCompletionProcessQueue(SessionImplementor session) {
+		private AbstractTransactionCompletionProcessQueue(ReactiveSession session) {
 			this.session = session;
 		}
 
@@ -959,7 +941,7 @@ public class ReactiveActionQueue {
 		}
 
 		public boolean hasActions() {
-			return !processes.isEmpty() && !reactiveProcesses.isEmpty();
+			return !processes.isEmpty() || !reactiveProcesses.isEmpty();
 		}
 	}
 
@@ -969,14 +951,14 @@ public class ReactiveActionQueue {
 	private static class BeforeTransactionCompletionProcessQueue
 			extends AbstractTransactionCompletionProcessQueue<BeforeTransactionCompletionProcess,
 														ReactiveBeforeTransactionCompletionProcess> {
-		private BeforeTransactionCompletionProcessQueue(SessionImplementor session) {
+		private BeforeTransactionCompletionProcessQueue(ReactiveSession session) {
 			super( session );
 		}
 
 		public CompletionStage<Void> beforeTransactionCompletion() {
 			while ( !processes.isEmpty() ) {
 				try {
-					processes.poll().doBeforeTransactionCompletion( session );
+					processes.poll().doBeforeTransactionCompletion( session.getSharedContract() );
 				}
 				catch (HibernateException he) {
 					throw he;
@@ -1000,7 +982,7 @@ public class ReactiveActionQueue {
 															ReactiveAfterTransactionCompletionProcess> {
 		private final Set<Serializable> querySpacesToInvalidate = new HashSet<>();
 
-		private AfterTransactionCompletionProcessQueue(SessionImplementor session) {
+		private AfterTransactionCompletionProcessQueue(ReactiveSession session) {
 			super( session );
 		}
 
@@ -1011,7 +993,7 @@ public class ReactiveActionQueue {
 		public CompletionStage<Void> afterTransactionCompletion(boolean success) {
 			while ( !processes.isEmpty() ) {
 				try {
-					processes.poll().doAfterTransactionCompletion( success, session );
+					processes.poll().doAfterTransactionCompletion( success, session.getSharedContract() );
 				}
 				catch (CacheException ce) {
 					LOG.unableToReleaseCacheLock( ce );
@@ -1025,7 +1007,7 @@ public class ReactiveActionQueue {
 			if ( session.getFactory().getSessionFactoryOptions().isQueryCacheEnabled() ) {
 				session.getFactory().getCache().getTimestampsCache().invalidate(
 						querySpacesToInvalidate.toArray(new Serializable[0]),
-						session
+						session.getSharedContract()
 				);
 			}
 			querySpacesToInvalidate.clear();
@@ -1037,20 +1019,20 @@ public class ReactiveActionQueue {
 		}
 	}
 
-	/**
-	 * Wrapper class allowing to bind the same transaction completion process queues in different sessions.
-	 */
-	public static class TransactionCompletionProcesses {
-		private final BeforeTransactionCompletionProcessQueue beforeTransactionCompletionProcesses;
-		private final AfterTransactionCompletionProcessQueue afterTransactionCompletionProcesses;
-
-		private TransactionCompletionProcesses(
-				BeforeTransactionCompletionProcessQueue beforeTransactionCompletionProcessQueue,
-				AfterTransactionCompletionProcessQueue afterTransactionCompletionProcessQueue) {
-			this.beforeTransactionCompletionProcesses = beforeTransactionCompletionProcessQueue;
-			this.afterTransactionCompletionProcesses = afterTransactionCompletionProcessQueue;
-		}
-	}
+//	/**
+//	 * Wrapper class allowing to bind the same transaction completion process queues in different sessions.
+//	 */
+//	public static class TransactionCompletionProcesses {
+//		private final BeforeTransactionCompletionProcessQueue beforeTransactionCompletionProcesses;
+//		private final AfterTransactionCompletionProcessQueue afterTransactionCompletionProcesses;
+//
+//		private TransactionCompletionProcesses(
+//				BeforeTransactionCompletionProcessQueue beforeTransactionCompletionProcessQueue,
+//				AfterTransactionCompletionProcessQueue afterTransactionCompletionProcessQueue) {
+//			this.beforeTransactionCompletionProcesses = beforeTransactionCompletionProcessQueue;
+//			this.afterTransactionCompletionProcesses = afterTransactionCompletionProcessQueue;
+//		}
+//	}
 
 	/**
 	 * Order the {@link #insertions} queue such that we group inserts against the same entity together (without

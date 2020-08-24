@@ -11,6 +11,8 @@ import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.UnknownProfileException;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
@@ -36,6 +38,11 @@ import java.util.concurrent.CompletionStage;
 public interface ReactiveSession extends ReactiveQueryExecutor {
 
 	ReactiveActionQueue getReactiveActionQueue();
+
+	PersistenceContext getPersistenceContext();
+
+	@Override
+	SessionImplementor getSharedContract();
 
 	<T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
 

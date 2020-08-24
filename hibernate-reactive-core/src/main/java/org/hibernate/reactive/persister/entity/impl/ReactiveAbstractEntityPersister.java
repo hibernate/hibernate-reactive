@@ -640,12 +640,26 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			if ( delegate().isNullableTable( j ) && delegate().isAllNull( oldFields, j ) && oldFields != null ) {
 				// don't bother trying to update, we know there is no row there yet
 				if ( !delegate().isAllNull( fields, j ) ) {
-					return insertReactive( id, fields, delegate().getPropertyInsertability(), j, delegate().getSQLInsertStrings()[j], session );
+					return insertReactive(
+							id,
+							fields,
+							delegate().getPropertyInsertability(),
+							j,
+							delegate().getSQLInsertStrings()[j],
+							session
+					);
 				}
 			}
 			else if ( delegate().isNullableTable( j ) && delegate().isAllNull( fields, j ) ) {
 				// All fields are null, we can just delete the row
-				return deleteReactive( id, oldVersion, j, delegate().getSQLDeleteStrings()[j], session, null );
+				return deleteReactive(
+						id,
+						oldVersion,
+						j,
+						delegate().getSQLDeleteStrings()[j],
+						session,
+						null
+				);
 			}
 			else {
 				return updateReactive( id, fields, oldFields, rowId, includeProperty, j, oldVersion, sql, session )
@@ -653,7 +667,14 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 							if ( !updated && !delegate().isAllNull( fields, j ) ) {
 								// Nothing has been updated because the row isn't in the db
 								// Run an insert instead
-								return insertReactive( id, fields, delegate().getPropertyInsertability(), j, delegate().getSQLInsertStrings()[j], session );
+								return insertReactive(
+										id,
+										fields,
+										delegate().getPropertyInsertability(),
+										j,
+										delegate().getSQLInsertStrings()[j],
+										session
+								);
 							}
 							return null;
 						} );
@@ -701,7 +722,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Object version,
 			Object object,
 			LockOptions lockOptions,
-			SharedSessionContractImplementor session) throws HibernateException {
+			SharedSessionContractImplementor session)
+			throws HibernateException {
 
 		LockMode lockMode = lockOptions.getLockMode();
 
@@ -710,29 +732,47 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		String sql;
 		boolean writeLock;
 		switch (lockMode) {
-			case READ:
+			// 0) noop
+			case NONE:
+				return CompletionStages.voidFuture();
+			// 1) select ... for share
 			case PESSIMISTIC_READ:
+			// 2) select ... for update
 			case PESSIMISTIC_WRITE:
-			case UPGRADE_NOWAIT:
-			case UPGRADE_SKIPLOCKED:
 			case UPGRADE:
+			// 3) select ... for nowait
+			case UPGRADE_NOWAIT:
+			// 4) select ... for update skip locked
+			case UPGRADE_SKIPLOCKED:
+				// TODO: introduce separate support for PESSIMISTIC_READ
+				// the current implementation puts the version number in
+				// the where clause and the id in the select list, whereas
+				// it would be better to actually select and check the
+				// version number (same problem in hibernate-core)
 				sql = generateSelectLockString( lockOptions );
 				writeLock = false;
 				break;
+			// 5) update ... set version
 			case PESSIMISTIC_FORCE_INCREMENT:
 			case FORCE:
-			case WRITE:
 				sql = generateUpdateLockString( lockOptions );
 				writeLock = true;
 				break;
-			case NONE:
-				return CompletionStages.voidFuture();
+			// 6) OPTIMISTIC locks are converted to pessimistic
+			//    locks obtained in the before completion phase
+			case OPTIMISTIC:
+			case OPTIMISTIC_FORCE_INCREMENT:
+				throw new AssertionFailure("optimistic lock mode is not supported here");
+			// 7) READ and WRITE are obtained implicitly by
+			//    other operations
+			case READ:
+			case WRITE:
+				throw new AssertionFailure("implicit lock mode is not supported here");
 			default:
-				throw new IllegalArgumentException("lock mode not supported");
+				throw new AssertionFailure("illegal lock mode");
 		}
 
-		PreparedStatementAdaptor statement = new PreparedStatementAdaptor();
-		try {
+		Object[] arguments = PreparedStatementAdaptor.bind( statement -> {
 			int offset = 1;
 			if ( writeLock ) {
 				getVersionType().nullSafeSet( statement, nextVersion, offset, session );
@@ -743,23 +783,15 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			if ( isVersioned() ) {
 				getVersionType().nullSafeSet( statement, version, offset, session );
 			}
-		}
-		catch ( SQLException e) {
-			throw new HibernateException( e );
-		}
-		Object[] parameters = statement.getParametersAsArray();
+		} );
 
 		ReactiveConnection connection = getReactiveConnection( session );
-		CompletionStage<Boolean> lock;
-		if (writeLock) {
-			lock = connection.update(sql, parameters).thenApply(affected -> affected > 0);
-		}
-		else {
-			lock = connection.select(sql, parameters).thenApply(Iterator::hasNext);
-		}
+		CompletionStage<Boolean> lock = writeLock
+				? connection.update( sql, arguments ).thenApply( affected -> affected > 0 )
+				: connection.select( sql, arguments ).thenApply( Iterator::hasNext );
 
-		return lock.thenAccept( found -> {
-			if (!found) {
+		return lock.thenAccept( rowExisted -> {
+			if ( !rowExisted ) {
 				throw new StaleObjectStateException( getEntityName(), id );
 			}
 		} ).handle( (r ,e) -> {
@@ -818,7 +850,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	@Override
-	default CompletionStage<List<Object>> reactiveMultiLoad(Serializable[] ids, SessionImplementor session, MultiLoadOptions loadOptions) {
+	default CompletionStage<List<Object>> reactiveMultiLoad(Serializable[] ids,
+															SessionImplementor session,
+															MultiLoadOptions loadOptions) {
 		return ReactiveDynamicBatchingEntityLoaderBuilder.INSTANCE.multiLoad(this, ids, session, loadOptions);
 	}
 
@@ -953,22 +987,27 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			throw new AssertionFailure( "no lazy properties" );
 		}
 
-		final PersistentAttributeInterceptor interceptor = ( (PersistentAttributeInterceptable) entity ).$$_hibernate_getInterceptor();
-		assert interceptor != null : "Expecting bytecode interceptor to be non-null";
+		final PersistentAttributeInterceptor interceptor =
+				( (PersistentAttributeInterceptable) entity ).$$_hibernate_getInterceptor();
+		if ( interceptor == null ) {
+			throw new AssertionFailure( "Expecting bytecode interceptor to be non-null" );
+		}
 
 		log.tracef( "Initializing lazy properties from datastore (triggered for `%s`)", fieldName );
 
-		final String fetchGroup = getEntityMetamodel().getBytecodeEnhancementMetadata()
-				.getLazyAttributesMetadata()
-				.getFetchGroupName( fieldName );
-		final List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors = getEntityMetamodel().getBytecodeEnhancementMetadata()
-				.getLazyAttributesMetadata()
-				.getFetchGroupAttributeDescriptors( fetchGroup );
+		 String fetchGroup =
+				 getEntityMetamodel().getBytecodeEnhancementMetadata()
+						 .getLazyAttributesMetadata()
+						 .getFetchGroupName( fieldName );
+		List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors =
+				getEntityMetamodel().getBytecodeEnhancementMetadata()
+						.getLazyAttributesMetadata()
+						.getFetchGroupAttributeDescriptors( fetchGroup );
 
 		@SuppressWarnings("deprecation")
-		final Set<String> initializedLazyAttributeNames = interceptor.getInitializedLazyAttributeNames();
+		Set<String> initializedLazyAttributeNames = interceptor.getInitializedLazyAttributeNames();
 
-		Object[] params = PreparedStatementAdaptor.bind(
+		Object[] arguments = PreparedStatementAdaptor.bind(
 				statement -> getIdentifierType().nullSafeSet( statement, id, 1, session )
 		);
 
@@ -989,7 +1028,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		return getReactiveConnection( session )
-				.selectJdbc( lazySelect, params )
+				.selectJdbc( lazySelect, arguments )
 				.thenApply( resultSet -> {
 					try {
 						resultSet.next();
@@ -1009,19 +1048,23 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				} );
 	}
 
-	default Object initLazyProperty(String fieldName, Object entity, SharedSessionContractImplementor session, EntityEntry entry, PersistentAttributeInterceptor interceptor, List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors, Set<String> initializedLazyAttributeNames, ResultSet rs)  {
+	default Object initLazyProperty(String fieldName, Object entity,
+									SharedSessionContractImplementor session,
+									EntityEntry entry,
+									PersistentAttributeInterceptor interceptor,
+									List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors,
+									Set<String> initializedLazyAttributeNames,
+									ResultSet resultSet)  {
 		for ( LazyAttributeDescriptor fetchGroupAttributeDescriptor: fetchGroupAttributeDescriptors ) {
-			final boolean previousInitialized =
-					initializedLazyAttributeNames.contains( fetchGroupAttributeDescriptor.getName() );
 
-			if ( previousInitialized ) {
+			if ( initializedLazyAttributeNames.contains( fetchGroupAttributeDescriptor.getName() ) ) {
 				continue;
 			}
 
 			final Object selectedValue;
 			try {
 				selectedValue = fetchGroupAttributeDescriptor.getType().nullSafeGet(
-						rs,
+						resultSet,
 						getLazyPropertyColumnAliases()[ fetchGroupAttributeDescriptor.getLazyIndex() ],
 						session,
 						entity
