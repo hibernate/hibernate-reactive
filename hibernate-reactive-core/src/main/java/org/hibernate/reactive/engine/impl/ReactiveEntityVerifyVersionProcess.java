@@ -7,10 +7,10 @@ package org.hibernate.reactive.engine.impl;
 
 import org.hibernate.dialect.lock.OptimisticEntityLockException;
 import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.engine.ReactiveBeforeTransactionCompletionProcess;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.concurrent.CompletionStage;
@@ -35,7 +35,7 @@ public class ReactiveEntityVerifyVersionProcess implements ReactiveBeforeTransac
 	}
 
 	@Override
-	public CompletionStage<Void> doBeforeTransactionCompletion(SessionImplementor session) {
+	public CompletionStage<Void> doBeforeTransactionCompletion(ReactiveSession session) {
 		final EntityEntry entry = session.getPersistenceContext().getEntry( object );
 		// Don't check version for an entity that is not in the PersistenceContext;
 		if ( entry == null ) {
@@ -43,7 +43,7 @@ public class ReactiveEntityVerifyVersionProcess implements ReactiveBeforeTransac
 		}
 
 		return ( (ReactiveEntityPersister) entry.getPersister() )
-				.reactiveGetCurrentVersion( entry.getId(), session )
+				.reactiveGetCurrentVersion( entry.getId(), session.getSharedContract() )
 				.thenAccept( latestVersion -> {
 					if ( !entry.getVersion().equals( latestVersion ) ) {
 						throw new OptimisticEntityLockException(

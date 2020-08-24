@@ -269,6 +269,52 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void reactiveLockWithOptimisticIncrement(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> getSessionFactory().withTransaction(
+								(session, transaction) -> session.find( GuineaPig.class, expectedPig.getId() )
+										.thenCompose( actualPig -> session.lock( actualPig, LockMode.OPTIMISTIC_FORCE_INCREMENT )
+												.thenAccept( vv -> {
+													assertThatPigsAreEqual( context, expectedPig, actualPig );
+													context.assertEquals( session.getLockMode( actualPig ), LockMode.OPTIMISTIC_FORCE_INCREMENT );
+													context.assertEquals( 0, actualPig.version );
+												} )
+										)
+								)
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
+						.thenAccept( actualPig -> context.assertEquals( 1, actualPig.version ) )
+		);
+	}
+
+	@Test
+	public void reactiveLockWithIncrement(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> getSessionFactory().withTransaction(
+								(session, transaction) -> session.find( GuineaPig.class, expectedPig.getId() )
+										.thenCompose( actualPig -> session.lock( actualPig, LockMode.PESSIMISTIC_FORCE_INCREMENT )
+												.thenAccept( vv -> {
+													assertThatPigsAreEqual( context, expectedPig, actualPig );
+													context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_FORCE_INCREMENT );
+													context.assertEquals( 1, actualPig.version );
+												} )
+										)
+								)
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
+						.thenAccept( actualPig -> context.assertEquals( 1, actualPig.version ) )
+		);
+	}
+
+	@Test
 	public void reactiveFindWithOptimisticVerifyLock(TestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
@@ -281,6 +327,121 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 											context.assertEquals( session.getLockMode( actualPig ), LockMode.OPTIMISTIC );
 											context.assertEquals( 0, actualPig.version );
 										} )
+								)
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
+						.thenAccept( actualPig -> context.assertEquals( 0, actualPig.version ) )
+		);
+	}
+
+	@Test
+	public void reactiveLockWithOptimisticVerify(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> getSessionFactory().withTransaction(
+								(session, transaction) -> session.find( GuineaPig.class, expectedPig.getId() )
+										.thenCompose( actualPig -> session.lock( actualPig, LockMode.OPTIMISTIC )
+											.thenAccept( vv -> {
+												assertThatPigsAreEqual( context, expectedPig, actualPig );
+												context.assertEquals( session.getLockMode( actualPig ), LockMode.OPTIMISTIC );
+												context.assertEquals( 0, actualPig.version );
+											} )
+										)
+								)
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
+						.thenAccept( actualPig -> context.assertEquals( 0, actualPig.version ) )
+		);
+	}
+
+	@Test
+	public void reactiveFindWithPessimisticRead(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> getSessionFactory().withTransaction(
+								// does a select ... for share
+								(session, transaction) -> session.find( GuineaPig.class, expectedPig.getId(), LockMode.PESSIMISTIC_READ )
+										.thenAccept( actualPig -> {
+											assertThatPigsAreEqual( context, expectedPig, actualPig );
+											context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_READ );
+											context.assertEquals( 0, actualPig.version );
+										} )
+								)
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
+						.thenAccept( actualPig -> context.assertEquals( 0, actualPig.version ) )
+		);
+	}
+
+	@Test
+	public void reactiveLockWithPessimisticRead(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> getSessionFactory().withTransaction(
+								// does a select ... for share
+								(session, transaction) -> session.find( GuineaPig.class, expectedPig.getId() )
+										.thenCompose( actualPig -> session.lock( actualPig, LockMode.PESSIMISTIC_READ )
+												.thenAccept( vv -> {
+													assertThatPigsAreEqual( context, expectedPig, actualPig );
+													context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_READ );
+													context.assertEquals( 0, actualPig.version );
+												} )
+										)
+								)
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
+						.thenAccept( actualPig -> context.assertEquals( 0, actualPig.version ) )
+		);
+	}
+
+	@Test
+	public void reactiveFindWithPessimisticWrite(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> getSessionFactory().withTransaction(
+								// does a select ... for update
+								(session, transaction) -> session.find( GuineaPig.class, expectedPig.getId(), LockMode.PESSIMISTIC_WRITE )
+										.thenAccept( actualPig -> {
+											assertThatPigsAreEqual( context, expectedPig, actualPig );
+											context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+											context.assertEquals( 0, actualPig.version );
+										} )
+								)
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
+						.thenAccept( actualPig -> context.assertEquals( 0, actualPig.version ) )
+		);
+	}
+
+	@Test
+	public void reactiveLockWithPessimisticWrite(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenCompose( v -> getSessionFactory().withTransaction(
+								// does a select ... for update
+								(session, transaction) -> session.find( GuineaPig.class, expectedPig.getId() )
+										.thenCompose( actualPig -> session.lock( actualPig, LockMode.PESSIMISTIC_WRITE )
+												.thenAccept( vv -> {
+													assertThatPigsAreEqual( context, expectedPig, actualPig );
+													context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+													context.assertEquals( 0, actualPig.version );
+												} )
+										)
 								)
 						)
 						.thenCompose( v -> openSession() )

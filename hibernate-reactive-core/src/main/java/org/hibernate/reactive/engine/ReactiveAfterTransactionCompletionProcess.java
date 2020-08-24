@@ -5,13 +5,14 @@
  */
 package org.hibernate.reactive.engine;
 
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.reactive.session.ReactiveSession;
 
 import java.util.concurrent.CompletionStage;
 
 /**
  * Contract representing some process that needs to occur during after transaction completion.
  *
+ * @author Gavin King
  * @author Steve Ebersole
  */
 public interface ReactiveAfterTransactionCompletionProcess {
@@ -21,5 +22,5 @@ public interface ReactiveAfterTransactionCompletionProcess {
 	 * @param success Did the transaction complete successfully?  True means it did.
 	 * @param session The session on which the transaction is completing.
 	 */
-	CompletionStage<Void> doAfterTransactionCompletion(boolean success, SharedSessionContractImplementor session);
+	CompletionStage<Void> doAfterTransactionCompletion(boolean success, ReactiveSession session);
 }
