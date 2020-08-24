@@ -440,9 +440,6 @@ public interface Stage {
 		 *
 		 * This operation cascades to associated instances if the association is
 		 * mapped with {@link org.hibernate.annotations.CascadeType#LOCK}.
-		 * <p>
-		 * Note that the optimistic lock modes {@link LockMode#OPTIMISTIC} and
-		 * {@link LockMode#OPTIMISTIC_FORCE_INCREMENT} are not currently supported.
 		 *
 		 * @param entity a persistent or transient instance
 		 * @param lockMode the lock level
