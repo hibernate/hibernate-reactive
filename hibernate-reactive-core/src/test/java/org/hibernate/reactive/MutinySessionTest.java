@@ -315,6 +315,37 @@ public class MutinySessionTest extends BaseMutinyTest {
 	}
 
 	@Test
+	public void reactiveRemoveManagedEntityWithTx1(TestContext context) {
+		test(
+				context,
+				populateDB()
+						.flatMap( i ->
+								getSessionFactory().withTransaction( (session, transaction) ->
+										session.find( GuineaPig.class, 5 )
+												.onItem().transformToUni( aloi -> session.remove( aloi ) )
+								)
+						)
+						.flatMap( v -> selectNameFromId( 5 ) )
+						.onItem().invoke( context::assertNull )
+		);
+	}
+
+	@Test
+	public void reactiveRemoveManagedEntityWithTx2(TestContext context) {
+		test(
+				context,
+				populateDB()
+						.flatMap( i ->
+								getSessionFactory().withTransaction( (session, transaction) ->
+										session.find( GuineaPig.class, 5 ).flatMap( session::remove )
+								)
+						)
+						.flatMap( v -> selectNameFromId( 5 ) )
+						.map( context::assertNull )
+		);
+	}
+
+	@Test
 	public void reactiveUpdate(TestContext context) {
 		final String NEW_NAME = "Tina";
 		test(
