@@ -35,10 +35,10 @@ public class MutinyExceptionsTest extends BaseMutinyTest {
 	@Test
 	public void testDuplicateKeyException(TestContext context) {
 		test( context, openSession()
-				.onItem().transformToUni( session -> session.persist( new Person( "testFLush1", "unique" ) ) )
-				.onItem().transformToUni( session -> session.flush() )
-				.onItem().transformToUni( session -> session.persist( new Person( "testFlush2", "unique" ) ) )
-				.onItem().transformToUni( session -> session.flush() )
+				.onItem().invokeUni( session -> session.persist( new Person( "testFLush1", "unique" ) ) )
+				.onItem().invokeUni( session -> session.flush() )
+				.onItem().invokeUni( session -> session.persist( new Person( "testFlush2", "unique" ) ) )
+				.onItem().invokeUni( session -> session.flush() )
 				.onItem().invoke( ignore -> context.fail( "Expected exception not thrown" ) )
 				.onFailure().recoverWithItem( err -> {
 					context.assertEquals( getExpectedException(), err.getClass() );
