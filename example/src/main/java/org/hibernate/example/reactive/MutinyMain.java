@@ -64,7 +64,7 @@ public class MutinyMain {
 				// retrieve an Author
 				session -> session.find(Author.class, author2.id)
 						// lazily fetch their books
-						.flatMap( author -> fetch(author.books)
+						.chain( author -> fetch(author.books)
 								// print some info
 								.invoke( books -> {
 									out.println(author.name + " wrote " + books.size() + " books");
@@ -113,7 +113,7 @@ public class MutinyMain {
 				// retrieve a Book
 				(session, tx) -> session.find(Book.class, book2.id)
 						// delete the Book
-						.flatMap( book -> session.remove(book) )
+						.chain( book -> session.remove(book) )
 		)
 				.await().indefinitely();
 
@@ -121,7 +121,7 @@ public class MutinyMain {
 				// delete all the Books in a transaction
 				(session, tx) -> session.createQuery("delete Book").executeUpdate()
 						//delete all the Authors
-						.flatMap( $ -> session.createQuery("delete Author").executeUpdate() )
+						.chain( $ -> session.createQuery("delete Author").executeUpdate() )
 		)
 				.await().indefinitely();
 

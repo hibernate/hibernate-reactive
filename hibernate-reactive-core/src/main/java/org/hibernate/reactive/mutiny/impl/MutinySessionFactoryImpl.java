@@ -87,7 +87,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
-		return openSession().flatMap(
+		return openSession().chain(
 				session -> work.apply( session ).eventually( session::close )
 		);
 	}

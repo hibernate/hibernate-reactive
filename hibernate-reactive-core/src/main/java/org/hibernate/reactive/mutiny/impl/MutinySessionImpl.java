@@ -381,16 +381,16 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
 			return begin()
-					.flatMap( v -> work.apply( this ) )
+					.chain( v -> work.apply( this ) )
 					// only flush() if the work completed with no exception
-					.flatMap( result -> flush().map( v -> result ) )
+					.chain( result -> flush().map( v -> result ) )
 					// have to capture the error here and pass it along,
 					// since we can't just return a CompletionStage that
 					// rolls back the transaction from the handle() function
 					.onTermination().invoke( this::processError )
 					// finally, commit or rollback the transaction, and
 					// then rethrow the caught error if necessary
-					.flatMap(
+					.chain(
 							result -> end()
 									// make sure that if rollback() throws,
 									// the original error doesn't get swallowed

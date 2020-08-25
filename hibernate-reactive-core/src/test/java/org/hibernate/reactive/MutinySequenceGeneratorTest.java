@@ -33,10 +33,10 @@ public class MutinySequenceGeneratorTest extends BaseMutinyTest {
 
 		test( context,
 				openSession()
-				.flatMap(s -> s.persist(b))
-				.flatMap(s -> s.flush())
-				.flatMap( v -> openSession())
-				.flatMap( s2 ->
+				.chain(s -> s.persist(b))
+				.chain(s -> s.flush())
+				.chain( v -> openSession())
+				.chain( s2 ->
 					s2.find( SequenceId.class, b.getId() )
 						.map( bb -> {
 							context.assertNotNull( bb );
@@ -47,14 +47,14 @@ public class MutinySequenceGeneratorTest extends BaseMutinyTest {
 							bb.string = "Goodbye";
 							return null;
 						})
-						.flatMap(vv -> s2.flush())
-						.flatMap(vv -> s2.find( SequenceId.class, b.getId() ))
+						.chain(vv -> s2.flush())
+						.chain(vv -> s2.find( SequenceId.class, b.getId() ))
 						.map( bt -> {
 							context.assertEquals( bt.version, 1 );
 							return null;
 						}))
-				.flatMap( v -> openSession())
-				.flatMap( s3 -> s3.find( SequenceId.class, b.getId() ) )
+				.chain( v -> openSession())
+				.chain( s3 -> s3.find( SequenceId.class, b.getId() ) )
 				.map( bb -> {
 					context.assertEquals(bb.version, 1);
 					context.assertEquals(bb.string, "Goodbye");

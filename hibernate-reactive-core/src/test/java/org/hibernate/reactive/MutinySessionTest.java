@@ -83,8 +83,8 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.flatMap( i -> openSession() )
-						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId() )
+						.chain( i -> openSession() )
+						.chain( session -> session.find( GuineaPig.class, expectedPig.getId() )
 								.invoke( actualPig -> {
 									assertThatPigsAreEqual( context, expectedPig, actualPig );
 									context.assertTrue( session.contains( actualPig ) );
@@ -104,8 +104,8 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.flatMap( v -> openSession() )
-						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId(), LockMode.PESSIMISTIC_WRITE )
+						.chain( v -> openSession() )
+						.chain( session -> session.find( GuineaPig.class, expectedPig.getId(), LockMode.PESSIMISTIC_WRITE )
 								.invoke( actualPig -> {
 									assertThatPigsAreEqual( context, expectedPig, actualPig );
 									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
@@ -121,9 +121,9 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.flatMap( v -> openSession() )
-						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId() )
-								.flatMap( pig -> session.refresh(pig, LockMode.PESSIMISTIC_WRITE).map( v -> pig ) )
+						.chain( v -> openSession() )
+						.chain( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.chain( pig -> session.refresh(pig, LockMode.PESSIMISTIC_WRITE).map( v -> pig ) )
 								.invoke( actualPig -> {
 									assertThatPigsAreEqual( context, expectedPig, actualPig );
 									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
@@ -139,9 +139,9 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.flatMap( v -> openSession() )
-						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId() )
-								.flatMap( pig -> session.lock(pig, LockMode.PESSIMISTIC_READ).map( v -> pig ) )
+						.chain( v -> openSession() )
+						.chain( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.chain( pig -> session.lock(pig, LockMode.PESSIMISTIC_READ).map( v -> pig ) )
 								.invoke( actualPig -> {
 									assertThatPigsAreEqual( context, expectedPig, actualPig );
 									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_READ );
@@ -157,9 +157,9 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.flatMap( v -> openSession() )
-						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId() )
-								.flatMap( pig -> session.lock(pig, LockMode.PESSIMISTIC_WRITE).map( v -> pig ) )
+						.chain( v -> openSession() )
+						.chain( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.chain( pig -> session.lock(pig, LockMode.PESSIMISTIC_WRITE).map( v -> pig ) )
 								.invoke( actualPig -> {
 									assertThatPigsAreEqual( context, expectedPig, actualPig );
 									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
@@ -187,9 +187,9 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				openSession()
-						.flatMap( s -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
-						.flatMap( s -> s.flush().eventually(s::close) )
-						.flatMap( v -> selectNameFromId( 10 ) )
+						.chain( s -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
+						.chain( s -> s.flush().eventually(s::close) )
+						.chain( v -> selectNameFromId( 10 ) )
 						.invoke( selectRes -> context.assertEquals( "Tulip", selectRes ) )
 		);
 	}
@@ -199,13 +199,13 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				openSession()
-						.flatMap(
+						.chain(
 								s -> s.withTransaction(
 										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
 //												.thenCompose( vv -> s.flush() )
 								)
 						)
-						.flatMap( vv -> selectNameFromId( 10 ) )
+						.chain( vv -> selectNameFromId( 10 ) )
 						.invoke( selectRes -> context.assertEquals( "Tulip", selectRes ) )
 		);
 	}
@@ -215,18 +215,18 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				openSession()
-						.flatMap(
+						.chain(
 								s -> s.withTransaction(
 										t -> s.persist( new ReactiveSessionTest.GuineaPig( 10, "Tulip" ) )
-												.flatMap( vv -> s.flush() )
+												.chain( vv -> s.flush() )
 												.map( vv -> {
 													throw new RuntimeException();
-												})
+												} )
 								)
 										.eventually( () -> s.close() )
 						)
 						.on().failure().recoverWithItem((Object)null)
-						.flatMap( vv -> selectNameFromId( 10 ) )
+						.chain( vv -> selectNameFromId( 10 ) )
 						.invoke( context::assertNull )
 		);
 	}
@@ -236,15 +236,15 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				openSession()
-						.flatMap(
+						.chain(
 								s -> s.withTransaction(
 										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
-												.flatMap( vv -> s.flush() )
+												.chain( vv -> s.flush() )
 												.invoke( vv -> t.markForRollback() )
 								)
 										.eventually( () -> s.close() )
 						)
-						.flatMap( vv -> selectNameFromId( 10 ) )
+						.chain( vv -> selectNameFromId( 10 ) )
 						.invoke( context::assertNull )
 		);
 	}
@@ -268,12 +268,12 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.flatMap( v -> selectNameFromId( 5 ) )
+						.chain( v -> selectNameFromId( 5 ) )
 						.invoke( context::assertNotNull )
-						.flatMap( v -> openSession() )
-						.flatMap( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
-						.flatMap( session -> session.flush().eventually(session::close) )
-						.flatMap( v -> selectNameFromId( 5 ) )
+						.chain( v -> openSession() )
+						.chain( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
+						.chain( session -> session.flush().eventually(session::close) )
+						.chain( v -> selectNameFromId( 5 ) )
 						.invoke( context::assertNull )
 		);
 	}
@@ -298,13 +298,13 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.flatMap( v -> openSession() )
-						.flatMap( session ->
+						.chain( v -> openSession() )
+						.chain( session ->
 							session.find( GuineaPig.class, 5 )
-								.flatMap( aloi -> session.remove( aloi ) )
-								.flatMap( v -> session.flush() )
+								.chain( aloi -> session.remove( aloi ) )
+								.chain( v -> session.flush() )
 								.eventually( () -> session.close() )
-								.flatMap( v -> selectNameFromId( 5 ) )
+								.chain( v -> selectNameFromId( 5 ) )
 								.invoke( context::assertNull ) )
 		);
 	}
@@ -329,12 +329,12 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.flatMap( i ->
+						.chain( i ->
 								getSessionFactory().withTransaction( (session, transaction) ->
-										session.find( GuineaPig.class, 5 ).flatMap( session::remove )
+										session.find( GuineaPig.class, 5 ).chain( session::remove )
 								)
 						)
-						.flatMap( v -> selectNameFromId( 5 ) )
+						.chain( v -> selectNameFromId( 5 ) )
 						.invoke( context::assertNull )
 		);
 	}
@@ -345,8 +345,8 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.flatMap( v -> openSession() )
-						.flatMap( session -> session.find( GuineaPig.class, 5 )
+						.chain( v -> openSession() )
+						.chain( session -> session.find( GuineaPig.class, 5 )
 								.map( pig -> {
 									context.assertNotNull( pig );
 									// Checking we are actually changing the name
@@ -354,10 +354,10 @@ public class MutinySessionTest extends BaseMutinyTest {
 									pig.setName( NEW_NAME );
 									return null;
 								} )
-								.flatMap( v -> session.flush() )
+								.chain( v -> session.flush() )
 								.eventually( () -> session.close() )
 						)
-						.flatMap( v -> selectNameFromId( 5 ) )
+						.chain( v -> selectNameFromId( 5 ) )
 						.invoke( name -> context.assertEquals( NEW_NAME, name ) )
 		);
 	}
@@ -368,8 +368,8 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.flatMap( v -> openSession() )
-						.flatMap( session -> session.find( GuineaPig.class, 5 )
+						.chain( v -> openSession() )
+						.chain( session -> session.find( GuineaPig.class, 5 )
 								.map( pig -> {
 									context.assertNotNull( pig );
 									// Checking we are actually changing the name
@@ -377,10 +377,10 @@ public class MutinySessionTest extends BaseMutinyTest {
 									pig.setName( NEW_NAME );
 									return null;
 								} )
-								.flatMap( v -> session.flush() )
+								.chain( v -> session.flush() )
 								.eventually( () -> session.close() )
 						)
-						.flatMap( v -> selectNameFromId( 5 ) )
+						.chain( v -> selectNameFromId( 5 ) )
 						.invoke( name -> context.assertEquals( NEW_NAME, name ) )
 		);
 	}
@@ -391,7 +391,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.flatMap( v -> getSessionFactory().withTransaction(
+						.chain( v -> getSessionFactory().withTransaction(
 								(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class)
 										.setLockMode(LockMode.PESSIMISTIC_WRITE)
 										.getSingleResult()
@@ -410,7 +410,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.flatMap(
+						.chain(
 								v -> getSessionFactory().withTransaction(
 										(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class)
 												.setLockMode("pig", LockMode.PESSIMISTIC_WRITE )
@@ -433,7 +433,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 
 		test( context,
 				getSessionFactory().withTransaction( (session, transaction) -> session.persist(foo, bar, baz) )
-						.flatMap( v -> getSessionFactory().withSession(
+						.chain( v -> getSessionFactory().withSession(
 								session -> session.createQuery("from GuineaPig", GuineaPig.class).getResults()
 										.invoke( pig -> {
 											context.assertNotNull(pig);
