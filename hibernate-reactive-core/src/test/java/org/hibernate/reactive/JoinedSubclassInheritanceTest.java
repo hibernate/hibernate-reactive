@@ -112,26 +112,26 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 //		final Author author = new Author( "Abdul Alhazred", spells );
 
 		test( context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s -> s.persist(spells) )
 //						.thenCompose( s -> s.persist(author) )
 						.thenCompose( s -> s.flush() )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.withTransaction( t -> s.createQuery("update SpellBook set title='x' where forbidden=false").executeUpdate() ) )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.withTransaction( t -> s.createQuery("update SpellBook set forbidden=false where title='Necronomicon'").executeUpdate() ) )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.withTransaction( t -> s.createQuery("update Book set title=title||' II' where title='Necronomicon'").executeUpdate() ) )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find(Book.class, 6))
 						.thenAccept( book -> {
 							context.assertNotNull(book);
 							context.assertTrue(book instanceof SpellBook);
 							context.assertEquals(book.getTitle(), "Necronomicon II");
 						} )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.withTransaction( t -> s.createQuery("delete Book where title='Necronomicon II'").executeUpdate() ) )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose(s -> s.find(Book.class, 6))
 						.thenAccept( book -> context.assertNull(book) )
 		);
@@ -143,32 +143,32 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 //		final Author author = new Author( "Abdul Alhazred", spells );
 
 		test( context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s -> s.persist(spells) )
 //						.thenCompose( s -> s.persist(author) )
 						.thenCompose( s -> s.flush() )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.withTransaction( t -> s.createQuery("update SpellBook set forbidden=:fob where title=:tit")
 								.setParameter("fob", false)
 								.setParameter("tit", "Necronomicon")
 								.executeUpdate() ) )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.withTransaction( t -> s.createQuery("update Book set title=title||:sfx where title=:tit")
 								.setParameter("sfx", " II")
 								.setParameter("tit", "Necronomicon")
 								.executeUpdate() ) )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find(Book.class, 6))
 						.thenAccept( book -> {
 							context.assertNotNull(book);
 							context.assertTrue(book instanceof SpellBook);
 							context.assertEquals(book.getTitle(), "Necronomicon II");
 						} )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.withTransaction( t -> s.createQuery("delete Book where title=:tit")
 								.setParameter("tit", "Necronomicon II")
 								.executeUpdate() ) )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose(s -> s.find(Book.class, 6))
 						.thenAccept( book -> context.assertNull(book) )
 		);
