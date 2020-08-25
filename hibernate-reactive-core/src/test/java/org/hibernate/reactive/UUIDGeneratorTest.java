@@ -21,6 +21,8 @@ import javax.persistence.Version;
 import java.util.Objects;
 import java.util.UUID;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 
 public class UUIDGeneratorTest extends BaseReactiveTest {
 
@@ -40,10 +42,10 @@ public class UUIDGeneratorTest extends BaseReactiveTest {
 		b.string = "Hello World";
 
 		test( context,
-				openSession()
+				completedFuture( openSession() )
 				.thenCompose(s -> s.persist(b))
 				.thenCompose(s -> s.flush())
-				.thenCompose( v -> openSession())
+				.thenApply( v -> openSession())
 				.thenCompose( s2 ->
 					s2.find( TableId.class, b.getId() )
 						.thenAccept( bb -> {
@@ -59,7 +61,7 @@ public class UUIDGeneratorTest extends BaseReactiveTest {
 						.thenAccept( bt -> {
 							context.assertEquals( bt.version, 1 );
 						}))
-				.thenCompose( v -> openSession())
+				.thenApply( v -> openSession())
 				.thenCompose( s3 -> s3.find( TableId.class, b.getId() ) )
 				.thenAccept( bb -> {
 					context.assertEquals(bb.version, 1);

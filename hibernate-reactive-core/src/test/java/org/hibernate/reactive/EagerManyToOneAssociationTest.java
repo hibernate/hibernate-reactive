@@ -12,6 +12,8 @@ import org.junit.Test;
 import javax.persistence.*;
 import java.util.Objects;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 
 	@Override
@@ -29,18 +31,18 @@ public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s -> s.persist( book ) )
 						.thenCompose( s -> s.persist( author ) )
 						.thenCompose( s -> s.flush() )
-						.thenCompose( v -> openSession())
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( Author.class, author.getId() ) )
 						.thenAccept( optionalAuthor -> {
 							context.assertNotNull( optionalAuthor );
 							context.assertEquals( author, optionalAuthor );
 							context.assertEquals( book, optionalAuthor.getBook()  );
 						} )
-						.thenCompose( v -> openSession())
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, book.getId() ) )
 						.thenAccept( optionalBook -> {
 							context.assertNotNull( optionalBook );
@@ -57,12 +59,12 @@ public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s -> s.persist( goodOmens ) )
 						.thenCompose( s -> s.persist( terryPratchett ) )
 						.thenCompose( s -> s.persist( neilGaiman ) )
 						.thenCompose( s -> s.flush() )
-						.thenCompose( v -> openSession())
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( Author.class, neilGaiman.getId() ) )
 						.thenAccept( optionalAuthor -> {
 							context.assertNotNull( optionalAuthor );

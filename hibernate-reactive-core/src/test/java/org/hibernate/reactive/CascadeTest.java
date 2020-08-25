@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 public class CascadeTest extends BaseReactiveTest {
 
 	@Override
@@ -51,19 +53,19 @@ public class CascadeTest extends BaseReactiveTest {
 		basik.elements.add(new Element(basik));
 
 		test( context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(basik))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose( s -> s.createQuery("select distinct n from Node n left join fetch n.elements").getResultList())
 						.thenAccept( list -> context.assertEquals( list.size(), 2 ) )
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose( s -> s.createQuery("select distinct n, e from Node n join n.elements e").getResultList())
 						.thenAccept( list -> context.assertEquals( list.size(), 3 ) )
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose( s -> s.createQuery("select distinct n.id, e.id from Node n join n.elements e").getResultList())
 						.thenAccept( list -> context.assertEquals( list.size(), 3 ) )
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose( s -> s.createQuery("select max(e.id), min(e.id), sum(e.id) from Node n join n.elements e group by n.id order by n.id").getResultList())
 						.thenAccept( list -> context.assertEquals( list.size(), 1 ) )
 		);
@@ -79,14 +81,14 @@ public class CascadeTest extends BaseReactiveTest {
 		basik.elements.add( new Element(basik) );
 
 		test( context,
-				openSession()
+				completedFuture( openSession() )
 				.thenCompose(s -> s.persist(basik))
 				.thenApply(s -> { context.assertTrue(basik.prePersisted && !basik.postPersisted); return s; } )
 				.thenApply(s -> { context.assertTrue(basik.parent.prePersisted && !basik.parent.postPersisted); return s; } )
 				.thenCompose(s -> s.flush())
 				.thenApply(s -> { context.assertTrue(basik.prePersisted && basik.postPersisted); return s; } )
 				.thenApply(s -> { context.assertTrue(basik.parent.prePersisted && basik.parent.postPersisted); return s; } )
-				.thenCompose(v -> openSession())
+				.thenApply(v -> openSession())
 				.thenCompose(s2 ->
 					s2.find( Node.class, basik.getId() )
 						.thenCompose( node -> {
@@ -107,7 +109,7 @@ public class CascadeTest extends BaseReactiveTest {
 										context.assertEquals( node.version, 1 );
 									});
 						}))
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s2 ->
 								s2.find( Node.class, basik.getId() )
 										.thenCompose( node -> {
@@ -129,7 +131,7 @@ public class CascadeTest extends BaseReactiveTest {
 																});
 													});
 										}))
-				.thenCompose(v -> openSession())
+				.thenApply(v -> openSession())
 				.thenCompose(s3 ->
 					s3.find( Node.class, basik.getId() )
 						.thenCompose( node -> {
@@ -150,7 +152,7 @@ public class CascadeTest extends BaseReactiveTest {
 									.thenCompose(v -> s3.flush())
 									.thenAccept(v -> context.assertTrue( node.postRemoved && node.preRemoved ) );
 						}))
-				.thenCompose(v -> openSession())
+				.thenApply(v -> openSession())
 				.thenCompose(s4 ->
 						s4.find( Node.class, basik.getId() )
 							.thenAccept(context::assertNull))

@@ -89,7 +89,7 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 		test(
 				context,
 				getSessionFactory().withTransaction( (s, t) -> s.persist( original ) )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s2 -> s2.find( Basic.class,  original.id )
 								.thenAccept( found -> {
 									context.assertNotNull( found );

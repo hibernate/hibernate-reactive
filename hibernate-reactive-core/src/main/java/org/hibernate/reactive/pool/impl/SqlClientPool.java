@@ -322,7 +322,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 
 		@Override
 		public CompletionStage<Result> select(String sql, Object[] paramValues) {
-			return withConnection( conn -> conn.select(sql) );
+			return withConnection( conn -> conn.select(sql, paramValues) );
 		}
 
 		@Override

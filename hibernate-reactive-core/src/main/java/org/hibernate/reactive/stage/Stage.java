@@ -1119,29 +1119,27 @@ public interface Stage {
 		 * interaction point between the user's program and Hibernate
 		 * Reactive.
 		 * <p>
-		 * The underlying database connection is obtained lazily
-		 * when the returned {@link Session} needs to access the
-		 * database.
+		 * The underlying database connection is obtained lazily when
+		 * the returned {@link Session} needs to access the database.
 		 * <p>
-		 * The client must close the session using {@link Session#close()}.
+		 * The client must explicitly close the session by calling
+		 * {@link Session#close()}.
+		 *
+		 * @see #withSession(Function)
 		 */
-		Session createSession();
+		Session openSession();
 
 		/**
-		 * Obtain a new {@link Session reactive session}, the main
-		 * interaction point between the user's program and Hibernate
-		 * Reactive.
+		 * Obtain a {@link StatelessSession reactive stateless session}.
 		 * <p>
-		 * The underlying database connection is obtained before the
-		 * {@link Session} is returned via a {@link CompletionStage}.
+		 * The underlying database connection is obtained lazily when
+		 * the returned {@link StatelessSession} needs to access the
+		 * database.
 		 * <p>
-		 * The client must close the session using {@link Session#close()}.
+		 * The client must explicitly close the session by calling
+		 * {@link StatelessSession#close()}.
 		 */
-		CompletionStage<Session> openSession();
-
-		StatelessSession createStatelessSession();
-
-		CompletionStage<StatelessSession> openStatelessSession();
+		StatelessSession openStatelessSession();
 
 		/**
 		 * Perform work using a {@link Session reactive session}.

@@ -34,7 +34,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	}
 
 	@Override
-	public Mutiny.Session createSession() {
+	public Mutiny.Session openSession() {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return new MutinySessionImpl(
@@ -46,8 +46,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		);
 	}
 
-	@Override
-	public Uni<Mutiny.Session> openSession() throws HibernateException {
+	Uni<Mutiny.Session> newSession() throws HibernateException {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return Uni.createFrom().completionStage( pool.getConnection() )
@@ -60,7 +59,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	}
 
 	@Override
-	public Mutiny.StatelessSession createStatelessSession() {
+	public Mutiny.StatelessSession openStatelessSession() {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return new MutinyStatelessSessionImpl(
@@ -72,8 +71,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		);
 	}
 
-	@Override
-	public Uni<Mutiny.StatelessSession> openStatelessSession() throws HibernateException {
+	Uni<Mutiny.StatelessSession> newStatelessSession() throws HibernateException {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return Uni.createFrom().completionStage( pool.getConnection() )
@@ -87,7 +85,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
-		return openSession().chain(
+		return newSession().chain(
 				session -> work.apply( session ).eventually( session::close )
 		);
 	}

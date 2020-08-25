@@ -18,6 +18,8 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 public class HQLUpdateQueryTest extends BaseReactiveTest {
 
 	Flour spelt = new Flour( 1, "Spelt", "An ancient grain, is a hexaploid species of wheat.", "Wheat flour" );
@@ -33,7 +35,7 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 
 	@Before
 	public void populateDb(TestContext context) {
-		test( context, openSession()
+		test( context, completedFuture( openSession() )
 				.thenCompose( s -> s.persist( spelt ) )
 				.thenCompose( s -> s.persist( rye ) )
 				.thenCompose( s -> s.persist( almond ) )
@@ -42,7 +44,7 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 
 	@After
 	public void cleanDb(TestContext context) {
-		test( context, openSession()
+		test( context, completedFuture( openSession() )
 				.thenCompose( s -> s.remove( spelt ) )
 				.thenCompose( s -> s.remove( rye ) )
 				.thenCompose( s -> s.remove( almond ) )
@@ -54,14 +56,14 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 		String updatedDescription =  "Most rye breads use a mix of rye and wheat flours";
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "UPDATE Flour SET description = '" + updatedDescription + "' WHERE id = " + rye.getId()  ) )
 						.thenCompose( qr -> {
 							context.assertNotNull( qr );
 							return qr.executeUpdate();
 						} )
 						.thenAccept( resultCount -> context.assertEquals( 1, resultCount ))
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( Flour.class, rye.getId() ) )
 						.thenAccept( result -> context.assertEquals( updatedDescription, result.getDescription() ) )
 		);
@@ -72,7 +74,7 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 		String updatedDescription =  "Most rye breads use a mix of rye and wheat flours";
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "UPDATE Flour SET description = :updatedDescription WHERE id = :id" )
 								.setParameter("updatedDescription", updatedDescription)
 								.setParameter("id", rye.getId()) )
@@ -81,7 +83,7 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 							return qr.executeUpdate();
 						} )
 						.thenAccept( resultCount -> context.assertEquals( 1, resultCount ))
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( Flour.class, rye.getId() ) )
 						.thenAccept( result -> context.assertEquals( updatedDescription, result.getDescription() ) )
 		);
@@ -99,7 +101,7 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 		insertQueryBuilder.append( " from Flour where id = " + rye.getId() );
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( insertQueryBuilder.toString() ) )
 						.thenCompose( qr -> {
 							context.assertNotNull( qr );
@@ -107,11 +109,11 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 						} )
 						.thenAccept( resultCount -> context.assertEquals( 1, resultCount ))
 						// Check if it's really be inserted
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( Flour.class, chestnut.getId() ) )
 						.thenAccept( result -> context.assertEquals( chestnut, result ) )
 						// Cleanup db
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenAccept( s -> s.remove( chestnut ) )
 		);
 	}
@@ -120,14 +122,14 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 	public void testDeleteQuery(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "DELETE FROM Flour WHERE id = " + rye.getId() ) )
 						.thenCompose( qr -> {
 							context.assertNotNull( qr );
 							return qr.executeUpdate();
 						} )
 						.thenAccept( resoultCount -> context.assertEquals( 1, resoultCount ) )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( Flour.class, rye.getId() ) )
 						.thenAccept( result -> context.assertNull( result ) )
 		);

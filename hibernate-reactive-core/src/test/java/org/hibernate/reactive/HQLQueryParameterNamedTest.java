@@ -16,6 +16,8 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import java.util.Objects;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 /**
  * Tests queries using named parameters like ":name",
  * as defined by the JPA specification.
@@ -35,7 +37,7 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 
 	@Before
 	public void populateDb(TestContext context) {
-		test( context, openSession()
+		test( context, completedFuture( openSession() )
 				.thenCompose( s -> s.persist( spelt ) )
 				.thenCompose( s -> s.persist( rye ) )
 				.thenCompose( s -> s.persist( almond ) )
@@ -44,7 +46,7 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 
 	@After
 	public void cleanDb(TestContext context) {
-		test( context, openSession()
+		test( context, completedFuture( openSession() )
 				.thenCompose( s -> s.remove( spelt ) )
 				.thenCompose( s -> s.remove( rye ) )
 				.thenCompose( s -> s.remove( almond ) )
@@ -56,7 +58,7 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 		Flour semolina = new Flour( 678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s -> s.persist( semolina ) )
 						.thenCompose( s ->
 								s.createQuery( "from Flour where id = :id" )
@@ -73,7 +75,7 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 	public void testSelectScalarValues(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s ->
 								s.createQuery( "SELECT 'Prova' FROM Flour WHERE id = :id" )
 										.setParameter( "id", rye.getId() ) )
@@ -89,7 +91,7 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 	public void testSelectWithMultipleScalarValues(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s ->
 								s.createQuery( "SELECT 'Prova', f.id FROM Flour f WHERE f.id = :id" )
 										.setParameter("id", rye.getId() ))
@@ -109,7 +111,7 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 	public void testSingleResultQueryOnId(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "FROM Flour WHERE id = :id" ).setParameter( "id", 1) )
 						.thenCompose( qr -> {
 							context.assertNotNull( qr );
@@ -123,7 +125,7 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 	public void testSingleResultQueryOnName(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "FROM Flour WHERE name = :name" ).setParameter( "name", "Almond") )
 						.thenCompose( qr -> {
 							context.assertNotNull( qr );
@@ -137,7 +139,7 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 	public void testSingleResultMultipleParameters(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "FROM Flour WHERE name = :name and description = :desc" )
 								.setParameter( "name", almond.getName() )
 								.setParameter( "desc", almond.getDescription() )
@@ -154,7 +156,7 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 	public void testSingleResultMultipleParametersReversed(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "FROM Flour WHERE name = :name and description = :desc" )
 								.setParameter( "desc", almond.getDescription() )
 								.setParameter( "name", almond.getName() )
@@ -171,7 +173,7 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 	public void testSingleResultMultipleParametersReused(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "FROM Flour WHERE name = :name or cast(:name as string) is null" )
 								.setParameter( "name", almond.getName() )
 						)
@@ -187,7 +189,7 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 	public void testPlaceHolderInString(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "select ':', ':name', f FROM Flour f WHERE f.name = :name" )
 								.setParameter( "name", almond.getName() )
 						)
@@ -210,7 +212,7 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 	public void testPlaceHolderAndSingleQuoteInString(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery("select ''':', ''':name''', f FROM Flour f WHERE f.name = :name")
 								.setParameter( "name", almond.getName() )
 						)

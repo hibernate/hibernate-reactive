@@ -17,6 +17,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 /**
  * This test uses a complicated model that requires Hibernate to delay
  * inserts until non-nullable transient entity dependencies are resolved.
@@ -94,14 +96,14 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 	public void testPersist(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(b))
 						.thenApply( s -> {
 							bId = b.id;
 							return s;
 						})
 						.thenCompose(s -> s.flush())
-						.thenCompose(ignore -> check( openSession(), context ))
+						.thenCompose(ignore -> check( completedFuture(openSession()), context ))
 		);
 	}
 
@@ -109,7 +111,7 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 	public void testMergeTransient(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.merge(b)
 								.thenApply(bMerged -> {
 									this.bId = bMerged.id;
@@ -117,7 +119,7 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 								})
 						)
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> check(openSession(), context))
+						.thenCompose(v -> check(completedFuture(openSession()), context))
 		);
 	}
 
@@ -125,17 +127,17 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 	public void testMergeDetached(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(b))
 						.thenApply( s -> {
 							bId = b.id;
 							return s;
 						})
 						.thenCompose(s -> s.flush())
-						.thenCompose(ignore -> openSession()
+						.thenCompose(ignore -> completedFuture( openSession() )
 								.thenCompose(s2 -> s2.merge(b))
 						)
-						.thenCompose(v -> check(openSession(), context))
+						.thenCompose(v -> check(completedFuture(openSession()), context))
 		);
 	}
 
@@ -145,20 +147,20 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(b))
 						.thenApply( s -> {
 							bId = b.id;
 							return s;
 						})
 						.thenCompose(s -> s.flush())
-						.thenCompose(ignore -> check( openSession(), context ))
+						.thenCompose(ignore -> check( completedFuture(openSession()), context ))
 						.thenAccept(ignore -> {
 							// Cascade-remove is not configured, so remove all associations.
 							// Everything will need to be merged, then deleted in the proper order
 							prepareEntitiesForDelete();
 						})
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s2 -> s2.merge(b).thenApply(merged -> {
 							b = merged;
 							return s2;
