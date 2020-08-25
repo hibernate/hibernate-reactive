@@ -85,7 +85,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 				populateDB()
 						.flatMap( i -> openSession() )
 						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId() )
-								.onItem().invoke( actualPig -> {
+								.invoke( actualPig -> {
 									assertThatPigsAreEqual( context, expectedPig, actualPig );
 									context.assertTrue( session.contains( actualPig ) );
 									context.assertFalse( session.contains( expectedPig ) );
@@ -93,7 +93,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 									session.detach( actualPig );
 									context.assertFalse( session.contains( actualPig ) );
 								} )
-								.onTermination().invoke( (v, err, c) -> session.close() )
+								.eventually( () -> session.close() )
 						)
 		);
 	}
@@ -106,11 +106,11 @@ public class MutinySessionTest extends BaseMutinyTest {
 				populateDB()
 						.flatMap( v -> openSession() )
 						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId(), LockMode.PESSIMISTIC_WRITE )
-								.onItem().invoke( actualPig -> {
+								.invoke( actualPig -> {
 									assertThatPigsAreEqual( context, expectedPig, actualPig );
 									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
 								} )
-								.onTermination().invoke( (v, err, c) -> session.close() )
+								.eventually( () -> session.close() )
 						)
 		);
 	}
@@ -124,11 +124,11 @@ public class MutinySessionTest extends BaseMutinyTest {
 						.flatMap( v -> openSession() )
 						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId() )
 								.flatMap( pig -> session.refresh(pig, LockMode.PESSIMISTIC_WRITE).map( v -> pig ) )
-								.onItem().invoke( actualPig -> {
+								.invoke( actualPig -> {
 									assertThatPigsAreEqual( context, expectedPig, actualPig );
 									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
 								} )
-								.onTermination().invoke( (v, err, c) -> session.close() )
+								.eventually( () -> session.close() )
 						)
 		);
 	}
@@ -142,11 +142,11 @@ public class MutinySessionTest extends BaseMutinyTest {
 						.flatMap( v -> openSession() )
 						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId() )
 								.flatMap( pig -> session.lock(pig, LockMode.PESSIMISTIC_READ).map( v -> pig ) )
-								.onItem().invoke( actualPig -> {
+								.invoke( actualPig -> {
 									assertThatPigsAreEqual( context, expectedPig, actualPig );
 									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_READ );
 								} )
-								.onTermination().invoke( (v, err, c) -> session.close() )
+								.eventually( () -> session.close() )
 						)
 		);
 	}
@@ -160,11 +160,11 @@ public class MutinySessionTest extends BaseMutinyTest {
 						.flatMap( v -> openSession() )
 						.flatMap( session -> session.find( GuineaPig.class, expectedPig.getId() )
 								.flatMap( pig -> session.lock(pig, LockMode.PESSIMISTIC_WRITE).map( v -> pig ) )
-								.onItem().invoke( actualPig -> {
+								.invoke( actualPig -> {
 									assertThatPigsAreEqual( context, expectedPig, actualPig );
 									context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
 								} )
-								.onTermination().invoke( (v, err, c) -> session.close() )
+								.eventually( () -> session.close() )
 						)
 		);
 	}
@@ -188,8 +188,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 				context,
 				openSession()
 						.flatMap( s -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
-						.flatMap( s -> s.flush() )
-						.onTermination().invoke( (s, e, c) -> s.close() )
+						.flatMap( s -> s.flush().eventually(s::close) )
 						.flatMap( v -> selectNameFromId( 10 ) )
 						.map( selectRes -> context.assertEquals( "Tulip", selectRes ) )
 		);
@@ -224,7 +223,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 													throw new RuntimeException();
 												})
 								)
-										.onTermination().invoke( (v, e, c) -> s.close() )
+										.eventually( () -> s.close() )
 						)
 						.on().failure().recoverWithItem((Object)null)
 						.flatMap( vv -> selectNameFromId( 10 ) )
@@ -243,7 +242,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 												.flatMap( vv -> s.flush() )
 												.map( vv -> { t.markForRollback(); return null; } )
 								)
-										.onTermination().invoke( (v, e, c) -> s.close() )
+										.eventually( () -> s.close() )
 						)
 						.flatMap( vv -> selectNameFromId( 10 ) )
 						.map( context::assertNull )
@@ -275,8 +274,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 						.map( name -> context.assertNotNull( name ) )
 						.flatMap( v -> openSession() )
 						.flatMap( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
-						.flatMap( session -> session.flush() )
-						.onTermination().invoke( (session, err, c) -> session.close() )
+						.flatMap( session -> session.flush().eventually(session::close) )
 						.flatMap( v -> selectNameFromId( 5 ) )
 						.map( ret -> context.assertNull( ret ) )
 		);
@@ -305,12 +303,12 @@ public class MutinySessionTest extends BaseMutinyTest {
 				populateDB()
 						.flatMap( v -> openSession() )
 						.flatMap( session ->
-							session.find( GuineaPig.class, 5 )
-								.flatMap( aloi -> session.remove( aloi ) )
-								.flatMap( v -> session.flush() )
-								.onTermination().invoke( (v, e, c) -> session.close() )
-								.flatMap( v -> selectNameFromId( 5 ) )
-								.map(context::assertNull) )
+								session.find( GuineaPig.class, 5 )
+										.flatMap( aloi -> session.remove( aloi ) )
+										.flatMap( v -> session.flush() )
+										.eventually( () -> session.close() )
+										.flatMap( v -> selectNameFromId( 5 ) )
+										.map(context::assertNull) )
 		);
 	}
 
@@ -330,7 +328,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 									return null;
 								} )
 								.flatMap( v -> session.flush() )
-								.onTermination().invoke( (s, e, c) -> session.close() )
+								.eventually( () -> session.close() )
 						)
 						.flatMap( v -> selectNameFromId( 5 ) )
 						.map( name -> context.assertEquals( NEW_NAME, name ) )
@@ -353,7 +351,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 									return null;
 								} )
 								.flatMap( v -> session.flush() )
-								.onTermination().invoke( (s, e, c) -> session.close() )
+								.eventually( () -> session.close() )
 						)
 						.flatMap( v -> selectNameFromId( 5 ) )
 						.map( name -> context.assertEquals( NEW_NAME, name ) )
@@ -370,7 +368,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 								(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class)
 										.setLockMode(LockMode.PESSIMISTIC_WRITE)
 										.getSingleResult()
-										.onItem().invoke( actualPig -> {
+										.invoke( actualPig -> {
 											assertThatPigsAreEqual( context, expectedPig, actualPig );
 											context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
 										} )
@@ -390,7 +388,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 										(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class)
 												.setLockMode("pig", LockMode.PESSIMISTIC_WRITE )
 												.getSingleResult()
-												.onItem().invoke( actualPig -> {
+												.invoke( actualPig -> {
 													assertThatPigsAreEqual( context, expectedPig, actualPig );
 													context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
 												} )
@@ -410,15 +408,15 @@ public class MutinySessionTest extends BaseMutinyTest {
 				getSessionFactory().withTransaction( (session, transaction) -> session.persist(foo, bar, baz) )
 						.flatMap( v -> getSessionFactory().withSession(
 								session -> session.createQuery("from GuineaPig", GuineaPig.class).getResults()
-										.onItem().invoke( pig -> {
+										.invoke( pig -> {
 											context.assertNotNull(pig);
 											i.getAndIncrement();
 										} )
 										.collectItems().asList()
-										.onItem().invoke( list -> {
+										.invoke( list -> {
 											context.assertEquals(3, i.get());
 											context.assertEquals(3, list.size());
-										})
+										} )
 						) )
 		);
 	}

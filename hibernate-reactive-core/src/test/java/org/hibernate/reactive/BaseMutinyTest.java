@@ -96,7 +96,7 @@ public abstract class BaseMutinyTest {
 			session.close();
 		}
 		return getSessionFactory().openSession()
-				.onItem().invoke( s -> session = s );
+				.invoke( s -> session = s );
 	}
 
 	protected Mutiny.SessionFactory getSessionFactory() {
