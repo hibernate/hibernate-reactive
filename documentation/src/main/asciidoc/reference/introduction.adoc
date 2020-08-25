@@ -317,9 +317,21 @@ them is a matter of deciding which reactive API you want to use for working
 with reactive streams. Your decision won't affect what you can do with
 Hibernate Reactive.
 
+These are the most important operations on reactive streams that you'll need
+all the time when working with Hibernate Reactive:
+
+|===
+| Purpose                                  | Java `CompletionStage` | Mutiny `Uni`
+
+| Chain non-blocking operations            | `thenCompose()`        | `chain()`
+| Transform streamed items                 | `thenApply()`          | `map()`
+| Perform an action using streamed items   | `thenAccept()`         | `invoke()`
+| Perform cleanup (similar to `finally`)   | `whenComplete()`       | `eventually()`
+|===
+
 In this introduction, our code examples usually use `CompletionStage`, since
 that's what more people are already familiar with. But please don't take that
-as a recommendation.
+as a recommendation for what _you_ should do.
 
 When we use the term _reactive stream_ in this document, we mean:
 
