@@ -26,6 +26,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 /**
  * This test uses a complicated model that requires Hibernate to delay
  * inserts until non-nullable transient entity dependencies are resolved.
@@ -103,7 +105,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 	public void testPersist(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(b))
 						.thenApply( s -> {
 							bId = b.id;
@@ -119,7 +121,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 	public void testMergeTransient(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.merge(b)
 								.thenApply(bMerged -> {
 									this.bId = bMerged.id;
@@ -155,7 +157,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 	public void testMergeDetachedAssociationsUninitialized(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(b))
 						.thenApply( s -> {
 							bId = b.id;
@@ -163,7 +165,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 						})
 						.thenCompose(s -> s.flush())
 						.thenAccept(s -> s.close())
-						.thenCompose(ignore -> openSession()
+						.thenCompose(ignore -> completedFuture( openSession() )
 								.thenCompose(s2 -> s2.merge(b))
 						)
 						.thenCompose(v -> check(context))
@@ -175,7 +177,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(b))
 						.thenApply( s -> {
 							bId = b.id;
@@ -189,7 +191,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 							// Everything will need to be merged, then deleted in the proper order
 							prepareEntitiesForDelete();
 						})
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s2 -> s2.merge(b).thenApply(merged -> {
 							b = merged;
 							return s2;

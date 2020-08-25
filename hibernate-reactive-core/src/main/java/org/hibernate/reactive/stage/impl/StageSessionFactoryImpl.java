@@ -6,7 +6,6 @@
 package org.hibernate.reactive.stage.impl;
 
 import org.hibernate.Cache;
-import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
@@ -27,14 +26,14 @@ import java.util.function.Function;
  */
 public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
-	private SessionFactoryImpl delegate;
+	private final SessionFactoryImpl delegate;
 
 	public StageSessionFactoryImpl(SessionFactoryImpl delegate) {
 		this.delegate = delegate;
 	}
 
 	@Override
-	public Stage.Session createSession() {
+	public Stage.Session openSession() {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return new StageSessionImpl(
@@ -46,7 +45,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		);
 	}
 
-	public Stage.StatelessSession createStatelessSession() {
+	public Stage.StatelessSession openStatelessSession() {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return new StageStatelessSessionImpl(
@@ -58,8 +57,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		);
 	}
 
-	@Override
-	public CompletionStage<Stage.Session> openSession() throws HibernateException {
+	CompletionStage<Stage.Session> newSession() {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return pool.getConnection()
@@ -71,8 +69,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 				.thenApply( StageSessionImpl::new );
 	}
 
-	@Override
-	public CompletionStage<Stage.StatelessSession> openStatelessSession() throws HibernateException {
+	CompletionStage<Stage.StatelessSession> newStatelessSession() {
 		ReactiveConnectionPool pool = delegate.getServiceRegistry()
 				.getService(ReactiveConnectionPool.class);
 		return pool.getConnection()
@@ -86,7 +83,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	@Override
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
-		return openSession().thenCompose(
+		return newSession().thenCompose(
 				session -> work.apply(session).whenComplete( (r, e) -> session.close() )
 		);
 	}

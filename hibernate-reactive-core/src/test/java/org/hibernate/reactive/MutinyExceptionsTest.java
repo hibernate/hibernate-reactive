@@ -10,6 +10,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.PersistenceException;
 
+import io.smallrye.mutiny.Uni;
 import org.hibernate.HibernateException;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
@@ -34,7 +35,7 @@ public class MutinyExceptionsTest extends BaseMutinyTest {
 
 	@Test
 	public void testDuplicateKeyException(TestContext context) {
-		test( context, openSession()
+		test( context, Uni.createFrom().item(openSession())
 				.onItem().invokeUni( session -> session.persist( new Person( "testFLush1", "unique" ) ) )
 				.onItem().invokeUni( session -> session.flush() )
 				.onItem().invokeUni( session -> session.persist( new Person( "testFlush2", "unique" ) ) )

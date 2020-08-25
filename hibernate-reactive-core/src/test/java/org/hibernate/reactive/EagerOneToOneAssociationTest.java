@@ -12,6 +12,8 @@ import org.junit.Test;
 import javax.persistence.*;
 import java.util.Objects;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 
 	@Override
@@ -31,11 +33,11 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s -> s.persist( mostPopularBook ) )
 						.thenCompose( s -> s.persist( author ) )
 						.thenCompose( s -> s.flush() )
-						.thenCompose( v -> openSession())
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, 5 ) )
 						.thenAccept(context::assertNotNull)
 		);

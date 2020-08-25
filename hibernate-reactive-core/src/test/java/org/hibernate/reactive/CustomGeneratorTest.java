@@ -12,7 +12,6 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.id.Configurable;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 import org.junit.Test;
@@ -24,6 +23,8 @@ import javax.persistence.Version;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class CustomGeneratorTest extends BaseReactiveTest {
 
@@ -41,10 +42,10 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 		b.string = "Hello World";
 
 		test( context,
-				openSession()
+				completedFuture( openSession() )
 				.thenCompose(s -> s.persist(b))
 				.thenCompose(s -> s.flush())
-				.thenCompose( v -> openSession())
+				.thenApply( v -> openSession() )
 				.thenCompose( s2 ->
 					s2.find( CustomId.class, b.getId() )
 						.thenAccept( bb -> {
@@ -60,7 +61,7 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 						.thenAccept( bt -> {
 							context.assertEquals( bt.version, 1 );
 						}))
-				.thenCompose( v -> openSession())
+				.thenApply( v -> openSession() )
 				.thenCompose( s3 -> s3.find( CustomId.class, b.getId() ) )
 				.thenAccept( bb -> {
 					context.assertEquals(bb.version, 1);
@@ -74,7 +75,7 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 		@Override
 		public CompletionStage<Integer> generate(ReactiveConnectionSupplier session, Object entity) {
 			current += 1000;
-			return CompletionStages.completedFuture(current);
+			return completedFuture(current);
 		}
 		@Override
 		public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) {

@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 public class BatchFetchTest extends BaseReactiveTest {
 
 	@Override
@@ -55,10 +57,10 @@ public class BatchFetchTest extends BaseReactiveTest {
 		basik.parent.elements.add(new Element(basik.parent));
 
 		test( context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(basik))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> s.createQuery("from Node n order by id", Node.class)
 								.getResultList()
 								.thenCompose( list -> {
@@ -74,7 +76,7 @@ public class BatchFetchTest extends BaseReactiveTest {
 									} );
 								})
 						)
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> s.createQuery("from Element e order by id", Element.class)
 								.getResultList()
 								.thenCompose( list -> {

@@ -26,7 +26,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	@Test
 	public void testStatelessSession(TestContext context) {
 		GuineaPig pig = new GuineaPig("Aloi");
-		Stage.StatelessSession ss = getSessionFactory().createStatelessSession();
+		Stage.StatelessSession ss = getSessionFactory().openStatelessSession();
 		test(
 				context,
 				ss.insert(pig)
@@ -59,7 +59,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	@Test
 	public void testStatelessSessionWithNative(TestContext context) {
 		GuineaPig pig = new GuineaPig("Aloi");
-		Stage.StatelessSession ss = getSessionFactory().createStatelessSession();
+		Stage.StatelessSession ss = getSessionFactory().openStatelessSession();
 		test(
 				context,
 				ss.insert(pig)

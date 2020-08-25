@@ -52,7 +52,7 @@ public class IdentityGeneratorTest extends BaseReactiveTest {
 	@Test
 	public void testIdentityGenerator(TestContext context) {
 		test( context, populateDb( context )
-				.thenCompose( $ -> openSession() )
+				.thenApply( $ -> openSession() )
 				.thenCompose( session ->
 					  session.createQuery( "FROM EntityWithIdentity ORDER BY position ASC", EntityWithIdentity.class )
 					  .getResultList() )

@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
@@ -32,10 +33,10 @@ public class MutinySequenceGeneratorTest extends BaseMutinyTest {
 		b.string = "Hello World";
 
 		test( context,
-				openSession()
+				Uni.createFrom().item( openSession() )
 				.chain(s -> s.persist(b))
 				.chain(s -> s.flush())
-				.chain( v -> openSession())
+				.map( v -> openSession())
 				.chain( s2 ->
 					s2.find( SequenceId.class, b.getId() )
 						.map( bb -> {
@@ -53,7 +54,7 @@ public class MutinySequenceGeneratorTest extends BaseMutinyTest {
 							context.assertEquals( bt.version, 1 );
 							return null;
 						}))
-				.chain( v -> openSession())
+				.map( v -> openSession())
 				.chain( s3 -> s3.find( SequenceId.class, b.getId() ) )
 				.map( bb -> {
 					context.assertEquals(bb.version, 1);

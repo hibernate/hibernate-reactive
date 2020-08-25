@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 
 	protected Configuration constructConfiguration() {
@@ -45,12 +47,12 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(goodOmens))
 						.thenCompose(s -> s.persist(neilGaiman))
 						.thenCompose(s -> s.persist(terryPratchett))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> s.find(Book.class, goodOmens.getId())
 								.thenCompose(
 										book -> s.fetch(book.getAuthors())
@@ -74,12 +76,12 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 		goodOmens.getAuthors().add( terryPratchett );
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s -> s.persist(goodOmens) )
 						.thenCompose( s -> s.persist(neilGaiman) )
 						.thenCompose( s -> s.persist(terryPratchett) )
 						.thenCompose( s -> s.flush() )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, goodOmens.getId() )
 								.thenCompose(
 										book -> Stage.fetch( book.getAuthors())
@@ -103,12 +105,12 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(goodOmens))
 						.thenCompose(s -> s.persist(neilGaiman))
 						.thenCompose(s -> s.persist(terryPratchett))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose( s -> s.find( s.getEntityGraph(Book.class, "withAuthors"), goodOmens.getId() ) )
 						.thenAccept(book -> {
 							context.assertTrue( Hibernate.isInitialized(book.authors) );
@@ -131,12 +133,12 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(goodOmens))
 						.thenCompose(s -> s.persist(neilGaiman))
 						.thenCompose(s -> s.persist(terryPratchett))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose( s -> {
 							EntityGraph<Book> graph = s.createEntityGraph(Book.class);
 							graph.addAttributeNodes("authors");
@@ -163,7 +165,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(goodOmens))
 						.thenCompose(s -> s.persist(neilGaiman))
 						.thenCompose(s -> s.persist(terryPratchett))
@@ -204,12 +206,12 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(goodOmens))
 						.thenCompose(s -> s.persist(neilGaiman))
 						.thenCompose(s -> s.persist(terryPratchett))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose( s -> s.enableFetchProfile("withAuthors").find(Book.class, goodOmens.getId() ) )
 						.thenAccept(book -> {
 							context.assertTrue( Hibernate.isInitialized(book.authors) );

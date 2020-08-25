@@ -34,6 +34,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 public class EagerTest extends BaseReactiveTest {
 
 	@Override
@@ -55,10 +57,10 @@ public class EagerTest extends BaseReactiveTest {
 		basik.elements.add(new Element(basik));
 
 		test(context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(basik))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> s.find( Node.class, basik.getId() ))
 						.thenAccept( node -> {
 							context.assertTrue( Hibernate.isInitialized( node.elements ) );
@@ -80,10 +82,10 @@ public class EagerTest extends BaseReactiveTest {
 		basik.elements.add(new Element(basik));
 
 		test(context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(basik))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> s.find( Element.class, basik.elements.get(0).id ))
 						.thenAccept( element -> {
 							context.assertTrue( Hibernate.isInitialized( element.node ) );
@@ -103,10 +105,10 @@ public class EagerTest extends BaseReactiveTest {
 		basik.elements.add(new Element(basik));
 
 		test(context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(basik))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> s.createQuery( "from Element", Element.class ).getResultList())
 						.thenAccept( elements -> {
 							for (Element element: elements) {
@@ -128,10 +130,10 @@ public class EagerTest extends BaseReactiveTest {
 		basik.elements.add(new Element(basik));
 
 		test(context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(basik))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> s.createQuery("from Node order by id", Node.class).getResultList())
 						.thenAccept(list -> {
 							context.assertEquals(list.size(), 2);
@@ -139,7 +141,7 @@ public class EagerTest extends BaseReactiveTest {
 							context.assertEquals(list.get(0).elements.size(), 3);
 							context.assertEquals(list.get(1).elements.size(), 0);
 						})
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> s.createQuery("select distinct n, e from Node n join n.elements e order by n.id").getResultList())
 						.thenAccept(list -> {
 							context.assertEquals(list.size(), 3);

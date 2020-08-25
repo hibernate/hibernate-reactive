@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 public class FilterTest extends BaseReactiveTest {
 
 	@Override
@@ -39,10 +41,10 @@ public class FilterTest extends BaseReactiveTest {
 		basik.elements.get(0).deleted = true;
 
 		test(context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(basik))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> {
 							s.enableFilter("current");
 							return s.createQuery("select distinct n from Node n left join fetch n.elements order by n.id")
@@ -53,7 +55,7 @@ public class FilterTest extends BaseReactiveTest {
 							context.assertEquals(list.size(), 2);
 							context.assertEquals(((Node) list.get(0)).elements.size(), 2);
 						})
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> {
 							s.enableFilter("current");
 							return s.createQuery("select distinct n, e from Node n join n.elements e").getResultList();
@@ -77,10 +79,10 @@ public class FilterTest extends BaseReactiveTest {
 		basik.elements.get(2).region = "oceania";
 
 		test(context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(basik))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> {
 							s.enableFilter("region").setParameter("region", "oceania");
 							return s.createQuery("select distinct n from Node n left join fetch n.elements order by n.id")
@@ -91,7 +93,7 @@ public class FilterTest extends BaseReactiveTest {
 							context.assertEquals(list.size(), 2);
 							context.assertEquals(((Node) list.get(0)).elements.size(), 2);
 						})
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> {
 							s.enableFilter("region").setParameter("region", "oceania");
 							return s.createQuery("select distinct n, e from Node n join n.elements e").getResultList();
@@ -111,10 +113,10 @@ public class FilterTest extends BaseReactiveTest {
 		basik.elements.get(0).deleted = true;
 
 		test(context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(basik))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> {
 							s.enableFilter("current");
 							return s.find( Node.class, basik.getId() )
@@ -139,10 +141,10 @@ public class FilterTest extends BaseReactiveTest {
 		basik.elements.get(2).region = "oceania";
 
 		test(context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(basik))
 						.thenCompose(s -> s.flush())
-						.thenCompose(v -> openSession())
+						.thenApply(v -> openSession())
 						.thenCompose(s -> {
 							s.enableFilter("region").setParameter("region", "oceania");
 							return s.find( Node.class, basik.getId() )

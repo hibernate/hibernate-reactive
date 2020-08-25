@@ -12,6 +12,8 @@ import org.junit.Test;
 import javax.persistence.*;
 import java.util.Objects;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 public class SequenceGeneratorTest extends BaseReactiveTest {
 
 	@Override
@@ -28,10 +30,10 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 		b.string = "Hello World";
 
 		test( context,
-				openSession()
+				completedFuture( openSession() )
 				.thenCompose(s -> s.persist(b))
 				.thenCompose(s -> s.flush())
-				.thenCompose( v -> openSession())
+				.thenApply( v -> openSession())
 				.thenCompose( s2 ->
 					s2.find( SequenceId.class, b.getId() )
 						.thenAccept( bb -> {
@@ -47,7 +49,7 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 						.thenAccept( bt -> {
 							context.assertEquals( bt.version, 1 );
 						}))
-				.thenCompose( v -> openSession())
+				.thenApply( v -> openSession())
 				.thenCompose( s3 -> s3.find( SequenceId.class, b.getId() ) )
 				.thenAccept( bb -> {
 					context.assertEquals(bb.version, 1);

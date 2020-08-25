@@ -18,6 +18,8 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 public class HQLQueryTest extends BaseReactiveTest {
 
 	Flour spelt = new Flour( 1, "Spelt", "An ancient grain, is a hexaploid species of wheat.", "Wheat flour" );
@@ -33,7 +35,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 
 	@Before
 	public void populateDb(TestContext context) {
-		test( context, openSession()
+		test( context, completedFuture( openSession() )
 				.thenCompose( s -> s.persist( spelt ) )
 				.thenCompose( s -> s.persist( rye ) )
 				.thenCompose( s -> s.persist( almond ) )
@@ -42,7 +44,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 
 	@After
 	public void cleanDb(TestContext context) {
-		test( context, openSession()
+		test( context, completedFuture( openSession() )
 				.thenCompose( s -> s.remove( spelt ) )
 				.thenCompose( s -> s.remove( rye ) )
 				.thenCompose( s -> s.remove( almond ) )
@@ -54,7 +56,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 		Flour semolina = new Flour( 678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s -> s.persist( semolina ) )
 						.thenCompose( s -> s.createQuery( "from Flour where id = " + semolina.getId() ).getSingleResult()
 									.thenAccept( found -> context.assertEquals( semolina, found ) )
@@ -70,7 +72,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 		Flour semolina = new Flour( 678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s -> s.persist( semolina ) )
 						.thenCompose( s -> s.createQuery( "from Flour order by name" ).getResultList()
 									.thenAccept( results -> {
@@ -92,7 +94,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	public void testSelectScalarValues(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "SELECT 'Prova' FROM Flour WHERE id = " + rye.getId() ) )
 						.thenCompose( qr -> {
 							context.assertNotNull( qr );
@@ -106,7 +108,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	public void testSelectWithMultipleScalarValues(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "SELECT 'Prova', f.id FROM Flour f WHERE f.id = " + rye.getId() ) )
 						.thenCompose( qr -> {
 							context.assertNotNull( qr );
@@ -124,7 +126,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	public void testSingleResultQueryOnId(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "FROM Flour WHERE id = 1" ) )
 						.thenCompose( qr -> {
 							context.assertNotNull( qr );
@@ -138,7 +140,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	public void testSingleResultQueryOnName(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "FROM Flour WHERE name = 'Almond'" ) )
 						.thenCompose( qr -> {
 							context.assertNotNull( qr );
@@ -152,7 +154,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	public void testFromQuery(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenApply( s -> s.createQuery( "FROM Flour ORDER BY name" ) )
 						.thenCompose( qr -> {
 							context.assertNotNull( qr );

@@ -27,6 +27,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Consumer;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 /**
  * Test all the types and lifecycle callbacks that we expect to work on all supported DBs
  */
@@ -52,7 +54,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		test(
 				context,
 				getSessionFactory().withTransaction( (s, t) -> s.persist( original ) )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s2 -> s2.find( Basic.class, original.id )
 								.thenAccept( found -> {
 									context.assertNotNull( found );
@@ -376,7 +378,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s -> s.persist( basik.parent ) )
 						.thenCompose( s -> s.persist( basik ) )
 						.thenApply( s -> {
@@ -396,7 +398,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 							context.assertTrue( basik.parent.prePersisted && basik.parent.postPersisted );
 							return s;
 						} )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s2 ->
 											  s2.find( Basic.class, basik.getId() )
 													  .thenCompose( basic -> {
@@ -419,7 +421,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 																	  context.assertEquals( basic.version, 1 );
 																  } );
 													  } ) )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s3 ->
 											  s3.find( Basic.class, basik.getId() )
 													  .thenCompose( basic -> {
@@ -432,7 +434,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 																  .thenCompose( v -> s3.flush() )
 																  .thenAccept( v -> context.assertTrue( basic.postRemoved && basic.preRemoved ) );
 													  } ) )
-						.thenCompose( v -> openSession() )
+						.thenApply( v -> openSession() )
 						.thenCompose( s4 ->
 											  s4.find( Basic.class, basik.getId() )
 													  .thenAccept( context::assertNull ) )

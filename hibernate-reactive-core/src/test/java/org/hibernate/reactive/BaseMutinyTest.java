@@ -91,12 +91,12 @@ public abstract class BaseMutinyTest {
 		sessionFactory.close();
 	}
 
-	protected Uni<Mutiny.Session> openSession() {
+	protected Mutiny.Session openSession() {
 		if ( session != null ) {
 			session.close();
 		}
-		return getSessionFactory().openSession()
-				.invoke( s -> session = s );
+		session = getSessionFactory().openSession();
+		return session;
 	}
 
 	protected Mutiny.SessionFactory getSessionFactory() {

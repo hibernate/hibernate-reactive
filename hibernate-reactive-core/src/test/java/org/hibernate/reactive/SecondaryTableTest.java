@@ -13,6 +13,8 @@ import javax.persistence.*;
 import java.util.Date;
 import java.util.Objects;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 public class SecondaryTableTest extends BaseReactiveTest {
 
 	@Override
@@ -30,11 +32,11 @@ public class SecondaryTableTest extends BaseReactiveTest {
 
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s -> s.persist( book ) )
 						.thenCompose( s -> s.persist( author ) )
 						.thenCompose( s -> s.flush() )
-						.thenCompose( v -> openSession())
+						.thenApply( v -> openSession())
 						.thenCompose( s2 -> s2.find( Author.class, author.getId() ) )
 						.thenAccept( auth -> {
 							context.assertNotNull( auth );
@@ -52,7 +54,7 @@ public class SecondaryTableTest extends BaseReactiveTest {
 
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s -> s.persist( book ))
 						.thenCompose( s -> s.persist( author ) )
 						.thenCompose( s -> s.flush() )
@@ -73,11 +75,11 @@ public class SecondaryTableTest extends BaseReactiveTest {
 		final Author author = new Author( "Charlie Mackesy", novel );
 
 		test( context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(novel))
 						.thenCompose(s -> s.persist(author))
 						.thenCompose(s -> s.flush())
-						.thenCompose( v -> openSession())
+						.thenApply( v -> openSession())
 						.thenCompose(s -> s.find(Book.class, 6))
 						.thenAccept(book -> {
 							context.assertNotNull(book);
@@ -92,11 +94,11 @@ public class SecondaryTableTest extends BaseReactiveTest {
 		final Author author = new Author( "Abdul Alhazred", spells );
 
 		test( context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose(s -> s.persist(spells))
 						.thenCompose(s -> s.persist(author))
 						.thenCompose(s -> s.flush())
-						.thenCompose( v -> openSession())
+						.thenApply( v -> openSession())
 						.thenCompose(s -> s.find(Book.class, 6))
 						.thenAccept(book -> {
 							context.assertNotNull(book);

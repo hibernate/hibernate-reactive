@@ -61,7 +61,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.onItem().transformToUni( i -> openSession() )
+						.onItem().transform( i -> openSession() )
 						.onItem().invokeUni( session -> session.find( GuineaPig.class, expectedPig.getId() )
 						.onItem().invoke( actualPig -> {
 							assertThatPigsAreEqual( context, expectedPig, actualPig );
@@ -83,7 +83,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.chain( i -> openSession() )
+						.map( i -> openSession() )
 						.chain( session -> session.find( GuineaPig.class, expectedPig.getId() )
 								.invoke( actualPig -> {
 									assertThatPigsAreEqual( context, expectedPig, actualPig );
@@ -104,7 +104,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.chain( v -> openSession() )
+						.map( v -> openSession() )
 						.chain( session -> session.find( GuineaPig.class, expectedPig.getId(), LockMode.PESSIMISTIC_WRITE )
 								.invoke( actualPig -> {
 									assertThatPigsAreEqual( context, expectedPig, actualPig );
@@ -121,7 +121,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.chain( v -> openSession() )
+						.map( v -> openSession() )
 						.chain( session -> session.find( GuineaPig.class, expectedPig.getId() )
 								.chain( pig -> session.refresh(pig, LockMode.PESSIMISTIC_WRITE).map( v -> pig ) )
 								.invoke( actualPig -> {
@@ -139,7 +139,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.chain( v -> openSession() )
+						.map( v -> openSession() )
 						.chain( session -> session.find( GuineaPig.class, expectedPig.getId() )
 								.chain( pig -> session.lock(pig, LockMode.PESSIMISTIC_READ).map( v -> pig ) )
 								.invoke( actualPig -> {
@@ -157,7 +157,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.chain( v -> openSession() )
+						.map( v -> openSession() )
 						.chain( session -> session.find( GuineaPig.class, expectedPig.getId() )
 								.chain( pig -> session.lock(pig, LockMode.PESSIMISTIC_WRITE).map( v -> pig ) )
 								.invoke( actualPig -> {
@@ -173,7 +173,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 	public void reactivePersist1(TestContext context) {
 		test(
 				context,
-				openSession()
+				Uni.createFrom().item( openSession() )
 						.onItem().invokeUni( s -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
 						.onItem().invokeUni( s -> s.flush() )
 						.onTermination().invoke( (s, e, c) -> s.close() )
@@ -186,7 +186,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 	public void reactivePersist2(TestContext context) {
 		test(
 				context,
-				openSession()
+				Uni.createFrom().item( openSession() )
 						.chain( s -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
 						.chain( s -> s.flush().eventually(s::close) )
 						.chain( v -> selectNameFromId( 10 ) )
@@ -198,7 +198,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 	public void reactivePersistInTx(TestContext context) {
 		test(
 				context,
-				openSession()
+				Uni.createFrom().item( openSession() )
 						.chain(
 								s -> s.withTransaction(
 										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
@@ -214,7 +214,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 	public void reactiveRollbackTx(TestContext context) {
 		test(
 				context,
-				openSession()
+				Uni.createFrom().item( openSession() )
 						.chain(
 								s -> s.withTransaction(
 										t -> s.persist( new ReactiveSessionTest.GuineaPig( 10, "Tulip" ) )
@@ -235,7 +235,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 	public void reactiveMarkedRollbackTx(TestContext context) {
 		test(
 				context,
-				openSession()
+				Uni.createFrom().item( openSession() )
 						.chain(
 								s -> s.withTransaction(
 										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
@@ -255,7 +255,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 				context,
 				populateDB()
 						.onItem().invokeUni( v -> selectNameFromId( 5 ).onItem().invoke( context::assertNotNull ) )
-						.onItem().transformToUni( v -> openSession() )
+						.onItem().transform( v -> openSession() )
 						.onItem().invokeUni( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
 						.onItem().invokeUni( session -> session.flush() )
 						.onTermination().invoke( (session, err, c) -> session.close() )
@@ -270,7 +270,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 				populateDB()
 						.chain( v -> selectNameFromId( 5 ) )
 						.invoke( context::assertNotNull )
-						.chain( v -> openSession() )
+						.map( v -> openSession() )
 						.chain( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
 						.chain( session -> session.flush().eventually(session::close) )
 						.chain( v -> selectNameFromId( 5 ) )
@@ -283,7 +283,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.onItem().transformToUni( v -> openSession() )
+						.onItem().transform( v -> openSession() )
 						.onItem().invokeUni( session ->
 								session.find( GuineaPig.class, 5 )
 										.onItem().invokeUni( aloi -> session.remove( aloi ) )
@@ -298,7 +298,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.chain( v -> openSession() )
+						.map( v -> openSession() )
 						.chain( session ->
 							session.find( GuineaPig.class, 5 )
 								.chain( aloi -> session.remove( aloi ) )
@@ -345,7 +345,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.chain( v -> openSession() )
+						.map( v -> openSession() )
 						.chain( session -> session.find( GuineaPig.class, 5 )
 								.map( pig -> {
 									context.assertNotNull( pig );
@@ -368,7 +368,7 @@ public class MutinySessionTest extends BaseMutinyTest {
 		test(
 				context,
 				populateDB()
-						.chain( v -> openSession() )
+						.map( v -> openSession() )
 						.chain( session -> session.find( GuineaPig.class, 5 )
 								.map( pig -> {
 									context.assertNotNull( pig );

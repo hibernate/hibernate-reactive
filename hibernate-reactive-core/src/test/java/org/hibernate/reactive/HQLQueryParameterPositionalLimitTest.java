@@ -16,6 +16,8 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import java.util.Objects;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 /**
  * Tests queries using positional parameters like "?1, ?2, ...",
  * as defined by the JPA specification, along with limit parameters.
@@ -38,7 +40,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 
 	@Before
 	public void populateDb(TestContext context) {
-		test( context, openSession()
+		test( context, completedFuture( openSession() )
 				.thenCompose( s -> s.persist( spelt ) )
 				.thenCompose( s -> s.persist( rye ) )
 				.thenCompose( s -> s.persist( almond ) )
@@ -47,7 +49,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 
 	@After
 	public void cleanDb(TestContext context) {
-		test( context, openSession()
+		test( context, completedFuture( openSession() )
 				.thenCompose( s -> s.remove( spelt ) )
 				.thenCompose( s -> s.remove( rye ) )
 				.thenCompose( s -> s.remove( almond ) )
@@ -58,7 +60,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testNoResults(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s ->
 								s.createQuery( "from Flour where id = ?1" ).setMaxResults( 0 )
 										.setParameter( 1, rye.getId() )
@@ -72,7 +74,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testFirstResultNoResults(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s ->
 								s.createQuery( "from Flour" )
 										.setMaxResults( 0 )
@@ -87,7 +89,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testFirstResultSingleResult(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s ->
 								s.createQuery( "from Flour where name != ?1 order by id" )
 										.setParameter( 1, spelt.getName() )
@@ -102,7 +104,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testFirstResultMultipleResults(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s ->
 								s.createQuery( "from Flour order by id" )
 										.setFirstResult( 1 )
@@ -120,7 +122,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testFirstResultMaxResultsSingleResult(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s ->
 								s.createQuery( "from Flour order by id" )
 										.setFirstResult( 1 )
@@ -137,7 +139,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testFirstResultMaxResultsMultipleResults(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s ->
 								s.createQuery( "from Flour order by id" )
 										.setFirstResult( 1 )
@@ -156,7 +158,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testFirstResultMaxResultsExtra(TestContext context) {
 		test(
 				context,
-				openSession()
+				completedFuture( openSession() )
 						.thenCompose( s ->
 								s.createQuery( "from Flour order by id" )
 										.setFirstResult( 1 )
