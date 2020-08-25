@@ -49,14 +49,14 @@ public class MutinyMain {
 				// retrieve a Book
 				session -> session.find(Book.class, book1.id)
 						// print its title
-						.onItem().invoke( book -> out.println(book.title + " is a great book!") )
+						.invoke( book -> out.println(book.title + " is a great book!") )
 		)
 				.await().indefinitely();
 
 		factory.withSession(
 				// retrieve both Authors at once
 				session -> session.find(Author.class, author1.id, author2.id)
-						.onItem().invoke( authors -> authors.forEach( author -> out.println(author.name) ) )
+						.invoke( authors -> authors.forEach( author -> out.println(author.name) ) )
 		)
 				.await().indefinitely();
 
@@ -66,7 +66,7 @@ public class MutinyMain {
 						// lazily fetch their books
 						.flatMap( author -> fetch(author.books)
 								// print some info
-								.onItem().invoke( books -> {
+								.invoke( books -> {
 									out.println(author.name + " wrote " + books.size() + " books");
 									books.forEach( book -> out.println(book.title) );
 								} )
@@ -78,7 +78,7 @@ public class MutinyMain {
 				// query the Book titles
 				session -> session.createQuery("select title, author.name from Book order by title desc", Object[].class)
 						.getResultList()
-						.onItem().invoke( rows -> rows.forEach(
+						.invoke( rows -> rows.forEach(
 								row -> out.printf("%s (%s)\n", row[0], row[1])
 						) )
 		)
@@ -88,7 +88,7 @@ public class MutinyMain {
 				// query the entire Book entities
 				session -> session.createQuery("from Book book join fetch book.author order by book.title desc", Book.class)
 						.getResultList()
-						.onItem().invoke( books -> books.forEach(
+						.invoke( books -> books.forEach(
 								b -> out.printf("%s: %s (%s)\n", b.isbn, b.title, b.author.name)
 						) )
 		)
@@ -102,7 +102,7 @@ public class MutinyMain {
 					Join<Author,Book> b = a.join(Author_.books);
 					query.where( a.get(Author_.name).in("Neal Stephenson", "William Gibson") );
 					query.select(b);
-					return session.createQuery(query).getResultList().onItem().invoke(
+					return session.createQuery(query).getResultList().invoke(
 							books -> books.forEach( book -> out.println(book.title) )
 					);
 				}
