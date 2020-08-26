@@ -404,11 +404,12 @@ the session when you're done.
 
 [java]
 ----
-sessionFactory.openSession()
-        .thenCompose(
-            session -> ... //do some work
-                    .whenComplete( ($,e) -> session.close() )
-        );
+Session session = sessionFactory.openSession();
+session.find(Book.class, id)
+        .thenAccept(
+            book -> ... //do something with the book
+        )
+        .whenComplete( (v,e) -> session.close() );
 ----
 
 === Using the reactive session
@@ -451,8 +452,10 @@ reference to the `Session`, allowing chaining with `thenCompose()`:
 [java]
 ----
 sessionFactory.openSession()
-        .thenCompose( session -> session.flush() )
-        .whenComplete( (session,e) -> session.close() )
+        .find(Book.class, id)
+            .thenCompose( book -> session.remove(book) )
+            .thenCompose( session -> session.flush() )
+            .whenComplete( (session,e) -> session.close() )
 ----
 
 TIP: The session will be flushed automatically at the end of a unit of work
