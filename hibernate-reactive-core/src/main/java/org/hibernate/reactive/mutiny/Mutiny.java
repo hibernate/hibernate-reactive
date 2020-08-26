@@ -17,6 +17,7 @@ import org.hibernate.collection.internal.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.reactive.common.AutoCloseable;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.session.ReactiveSession;
 
@@ -1071,6 +1072,12 @@ public interface Mutiny {
 		 * {@link javax.persistence.SqlResultSetMapping}.
 		 */
 		<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
+
+		/**
+		 * @return false if {@link #close()} has been called
+		 */
+		@Override
+		boolean isOpen();
 
 		/**
 		 * Close the reactive session and release the underlying database

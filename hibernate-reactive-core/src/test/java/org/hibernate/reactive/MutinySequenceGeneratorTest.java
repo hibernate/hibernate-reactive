@@ -17,7 +17,7 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Version;
 import java.util.Objects;
 
-public class MutinySequenceGeneratorTest extends BaseMutinyTest {
+public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {
@@ -33,10 +33,10 @@ public class MutinySequenceGeneratorTest extends BaseMutinyTest {
 		b.string = "Hello World";
 
 		test( context,
-				Uni.createFrom().item( openSession() )
+				Uni.createFrom().item( openMutinySession() )
 				.chain(s -> s.persist(b))
 				.chain(s -> s.flush())
-				.map( v -> openSession())
+				.map( v -> openMutinySession() )
 				.chain( s2 ->
 					s2.find( SequenceId.class, b.getId() )
 						.map( bb -> {
@@ -54,7 +54,7 @@ public class MutinySequenceGeneratorTest extends BaseMutinyTest {
 							context.assertEquals( bt.version, 1 );
 							return null;
 						}))
-				.map( v -> openSession())
+				.map( v -> openMutinySession() )
 				.chain( s3 -> s3.find( SequenceId.class, b.getId() ) )
 				.map( bb -> {
 					context.assertEquals(bb.version, 1);

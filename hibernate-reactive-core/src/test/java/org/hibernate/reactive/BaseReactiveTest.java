@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
@@ -12,6 +13,8 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
+import org.hibernate.reactive.common.AutoCloseable;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
@@ -36,15 +39,15 @@ public abstract class BaseReactiveTest {
 	@Rule
 	public Timeout rule = Timeout.seconds( 5 * 60 );
 
-	private Stage.Session session;
+	private AutoCloseable session;
 	private ReactiveConnection connection;
 	private org.hibernate.SessionFactory sessionFactory;
 	private ReactiveConnectionPool poolProvider;
 
-	protected static void test(TestContext context, CompletionStage<?> cs) {
+	protected static void test(TestContext context, CompletionStage<?> work) {
 		// this will be added to TestContext in the next vert.x release
 		Async async = context.async();
-		cs.whenComplete( (res, err) -> {
+		work.whenComplete( (res, err) -> {
 			if ( res instanceof Stage.Session ) {
 				Stage.Session s = (Stage.Session) res;
 				if ( s.isOpen() ) {
@@ -58,6 +61,24 @@ public abstract class BaseReactiveTest {
 				async.complete();
 			}
 		} );
+	}
+
+	protected static void test(TestContext context, Uni<?> uni) {
+		Async async = context.async();
+		uni.subscribe().with(
+				res -> {
+					if ( res instanceof Mutiny.Session) {
+						Mutiny.Session session = (Mutiny.Session) res;
+						if ( session.isOpen() ) {
+							session.close();
+						}
+					}
+					async.complete();
+				},
+				throwable -> {
+					context.fail( throwable );
+				}
+		);
 	}
 
 	protected Configuration constructConfiguration() {
@@ -88,24 +109,22 @@ public abstract class BaseReactiveTest {
 	 * A user would surely only have one schema for each table.
 	 */
 	private void mysqlConfiguration(StandardServiceRegistry registry) {
-		registry.getService( ConnectionProvider.class ); //force the NoJdbcConnectionProvider to load first
-		registry.getService( SchemaManagementTool.class )
-				.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) {
-					@Override
-					public void prepare() {
-						super.prepare();
-						if ( dbType() == DBType.MYSQL ) {
+		if ( dbType() == DBType.MYSQL ) {
+			registry.getService( ConnectionProvider.class ); //force the NoJdbcConnectionProvider to load first
+			registry.getService( SchemaManagementTool.class )
+					.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) {
+						@Override
+						public void prepare() {
+							super.prepare();
 							accept("set foreign_key_checks = 0");
 						}
-					}
-					@Override
-					public void release() {
-						if ( dbType() == DBType.MYSQL ) {
+						@Override
+						public void release() {
 							accept("set foreign_key_checks = 1");
+							super.release();
 						}
-						super.release();
-					}
-				} );
+					} );
+		}
 	}
 
 	@After
@@ -135,12 +154,26 @@ public abstract class BaseReactiveTest {
 		if ( session != null && session.isOpen() ) {
 			session.close();
 		}
-		session = getSessionFactory().openSession();
-		return session;
+		Stage.Session newSession = getSessionFactory().openSession();
+		this.session = newSession;
+		return newSession;
 	}
 
 	protected CompletionStage<ReactiveConnection> connection() {
 		return poolProvider.getConnection().thenApply( c -> connection = c );
+	}
+
+	protected Mutiny.Session openMutinySession() {
+		if ( session != null ) {
+			session.close();
+		}
+		Mutiny.Session newSession = getMutinySessionFactory().openSession();
+		this.session = newSession;
+		return newSession;
+	}
+
+	protected Mutiny.SessionFactory getMutinySessionFactory() {
+		return sessionFactory.unwrap( Mutiny.SessionFactory.class );
 	}
 
 }

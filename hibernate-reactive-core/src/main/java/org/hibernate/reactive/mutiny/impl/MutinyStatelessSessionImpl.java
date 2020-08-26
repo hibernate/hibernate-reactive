@@ -93,4 +93,9 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
     public void close() {
         delegate.close();
     }
+
+    @Override
+    public boolean isOpen() {
+        return delegate.isOpen();
+    }
 }

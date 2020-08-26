@@ -19,7 +19,7 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-public class MutinyExceptionsTest extends BaseMutinyTest {
+public class MutinyExceptionsTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {
@@ -35,7 +35,7 @@ public class MutinyExceptionsTest extends BaseMutinyTest {
 
 	@Test
 	public void testDuplicateKeyException(TestContext context) {
-		test( context, Uni.createFrom().item(openSession())
+		test( context, Uni.createFrom().item( openMutinySession() )
 				.onItem().invokeUni( session -> session.persist( new Person( "testFLush1", "unique" ) ) )
 				.onItem().invokeUni( session -> session.flush() )
 				.onItem().invokeUni( session -> session.persist( new Person( "testFlush2", "unique" ) ) )

@@ -47,6 +47,8 @@ public interface ReactiveStatelessSession extends ReactiveQueryExecutor {
 
     <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping);
 
+    boolean isOpen();
+
     void close();
 
 }

@@ -28,7 +28,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 
-public class LazyInitializationExceptionWithMutiny extends BaseMutinyTest {
+public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {
@@ -42,7 +42,7 @@ public class LazyInitializationExceptionWithMutiny extends BaseMutinyTest {
 	public void populateDB(TestContext context) {
 		Async async = context.async();
 		Artist artemisia = new Artist( "Artemisia Gentileschi" );
-		getSessionFactory().withTransaction( (session, tx) -> session.persist( artemisia ) )
+		getMutinySessionFactory().withTransaction( (session, tx) -> session.persist( artemisia ) )
 				.subscribe().with(
 						success -> async.complete(),
 						failure -> context.fail( failure ) );
@@ -51,7 +51,7 @@ public class LazyInitializationExceptionWithMutiny extends BaseMutinyTest {
 	@After
 	public void cleanDB(TestContext context) {
 		Async async = context.async();
-		getSessionFactory().withTransaction( (session, tx) -> session.createQuery( "delete from Artist" ).executeUpdate() )
+		getMutinySessionFactory().withTransaction( (session, tx) -> session.createQuery( "delete from Artist" ).executeUpdate() )
 				.subscribe().with(
 				success -> async.complete(),
 				failure -> context.fail( failure ) );
@@ -59,7 +59,7 @@ public class LazyInitializationExceptionWithMutiny extends BaseMutinyTest {
 
 	@Test
 	public void testLazyInitializationException(TestContext context) throws Exception {
-		test( context, Uni.createFrom().item( openSession() )
+		test( context, Uni.createFrom().item( openMutinySession() )
 				.onItem().invokeUni( session ->
 				  	session.createQuery( "from Artist", Artist.class )
 						.getSingleResult()
@@ -76,7 +76,7 @@ public class LazyInitializationExceptionWithMutiny extends BaseMutinyTest {
 
 	@Test
 	public void testLazyInitializationExceptionNotThrown(TestContext context) throws Exception {
-		test( context, Uni.createFrom().item( openSession() )
+		test( context, Uni.createFrom().item( openMutinySession() )
 				.onItem().invokeUni( session -> session.createQuery( "from Artist", Artist.class )
 						.getSingleResult()
 						// We are checking `.getPaintings()` but not doing anything with it and therefore it should work.
