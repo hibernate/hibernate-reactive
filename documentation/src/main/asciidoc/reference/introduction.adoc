@@ -615,7 +615,7 @@ You may obtain a reactive stateless session from the `SessionFactory`:
 
 [java]
 ----
-Stage.StatelessSession ss = getSessionFactory().createStatelessSession();
+Stage.StatelessSession ss = getSessionFactory().openStatelessSession();
 ----
 
 A stateless session:
