@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.bulk;
+package org.hibernate.reactive.bulk.impl;
 
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.spi.MetadataBuildingOptions;
@@ -34,6 +34,7 @@ import org.hibernate.mapping.Table;
 import org.hibernate.param.ParameterSpecification;
 import org.hibernate.persister.collection.AbstractCollectionPersister;
 import org.hibernate.persister.entity.Queryable;
+import org.hibernate.reactive.bulk.StatementsWithParameters;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.util.impl.CompletionStages;
