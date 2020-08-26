@@ -41,11 +41,18 @@ org.hibernate.reactive:hibernate-reactive-core:{version}
 Where `{version}` is the version of Hibernate Reactive you're using.
 
 You'll also need to add a dependency for the Vert.x reactive database
-driver for your database, for example:
+driver for your database, one of the following options:
 
-- `io.vertx:vertx-pg-client` for Postgres,
-- `io.vertx:vertx-mysql-client` for MySQL, or
-- `io.vertx:vertx-db2-client` for DB2.
+|===
+| Database   | Driver dependency
+
+| PostgreSQL | `io.vertx:vertx-pg-client:{vertx-version}`
+| MySQL      | `io.vertx:vertx-mysql-client:{vertx-version}`
+| DB2        | `io.vertx:vertx-db2-client:{vertx-version}`
+|===
+
+Where `{vertx-version}` is the version of Vert.x compatible with the
+version of Hibernate Reactive you're using.
 
 You don't need to depend on the JDBC driver for your database (but you
 can if you like).
@@ -55,20 +62,20 @@ can if you like).
 :slf4j: http://www.slf4j.org/
 :enhancer: https://docs.jboss.org/hibernate/orm/5.4/topical/html_single/bytecode/BytecodeEnhancement.html
 
-Optionally, you might also add:
+Optionally, you might also add any of the following additional features:
 
-- an {slf4j}[SLF4J] logging implementation, for example,
-  `org.slf4j:slf4j-log4j12`,
-- `org.hibernate:hibernate-jpamodelgen` if you're using the JPA criteria
-  query API,
-- `org.hibernate.validator:hibernate-validator` and
-  `org.glassfish:jakarta.el` if you're using Hibernate Validator,
-- `org.hibernate:query-validator` to enable compile-time checking of your
-  HQL queries,
-- `org.hibernate:hibernate-jcache`, along with a JCache implementation like
-  `org.ehcache:ehcache`, if you need a second-level cache, and/or
-- the Hibernate {enhancer}[bytecode enhancer] if you want to use field-level
-  lazy fetching.
+|===
+| Optional feature | Dependencies
+
+| An {slf4j}[SLF4J] logging implementation | `org.slf4j:slf4j-log4j12` or `org.slf4j:slf4j-jdk14`
+| The Hibernate metamodel generator, if you're using the JPA criteria query API | `org.hibernate:hibernate-jpamodelgen`
+| Hibernate Validator | `org.hibernate.validator:hibernate-validator` and `org.glassfish:jakarta.el`
+| Compile-time checking for your HQL queries | `org.hibernate:query-validator`
+| Second-level cache support via JCache and EHCache | `org.hibernate:hibernate-jcache` along with `org.ehcache:ehcache`
+|===
+
+You might also add the Hibernate {enhancer}[bytecode enhancer] to your
+Gradle build if you want to use field-level  lazy fetching.
 
 TIP: Field-level lazy fetching is an advanced feature that most programs
 don't need. Stick to the basics for now.
@@ -101,13 +108,14 @@ A full list of configuration properties recognized by Hibernate may be
 found in the {configuration-properties}[documentation for Hibernate ORM].
 Configuration properties of particular interest include:
 
-- `javax.persistence.jdbc.url`, the JDBC URL of your database,
-- `javax.persistence.jdbc.user` and `javax.persistence.jdbc.password`,
-the database credentials,
-- `javax.persistence.schema-generation.database.action`, for enabling
-  automatic schema export, and
-- `hibernate.jdbc.batch_size`, the maximum batch size for SQL statement
-  batching.
+|===
+| Configuration property name                                         | Purpose
+
+| `javax.persistence.jdbc.url`                                        | JDBC URL of your database
+| `javax.persistence.jdbc.user` and `javax.persistence.jdbc.password` | Your database credentials
+| `javax.persistence.schema-generation.database.action`               | Value `create` enables automatic schema export
+| `hibernate.jdbc.batch_size`                                         | Maximum batch size for SQL statement batching
+|===
 
 An example {xml}[`persistence.xml`] file is included in the example
 program.
@@ -137,17 +145,25 @@ program.
 === Tuning the Vert.x pool
 
 The Vert.x database client has built-in connection pooling and prepared
-statement caching.
+statement caching. You might want to control the size of the connection
+pool:
 
-- Use `hibernate.connection.pool_size` to set the size of the reactive
-  connection pool.
+|===
+| Configuration property name      | Purpose
+
+| `hibernate.connection.pool_size` | The maximum size of the reactive connection pool
+|===
 
 When it comes time for performance tuning, you can further customize the
 pool and cache via the following properties:
 
-- `hibernate.vertx.pool.max_wait_queue_size`
-- `hibernate.vertx.prepared_statement_cache.max_size`
-- `hibernate.vertx.prepared_statement_cache.sql_limit`
+|===
+| Configuration property name                          | Purpose
+
+| `hibernate.vertx.pool.max_wait_queue_size`           | The maximum connection requests allowed in the wait queue
+| `hibernate.vertx.prepared_statement_cache.max_size`  | The maximum size of the prepared statement cache
+| `hibernate.vertx.prepared_statement_cache.sql_limit` | The maximum length of prepared statement SQL string that will be cached
+|===
 
 TIP: But for now, just leave these three settings alone.
 
@@ -170,7 +186,7 @@ testing Hibernate Reactive with the following configuration, which uses
 EHCache as the cache implementation:
 
 |===
-| Property name                            | Property value
+| Configuration property name              | Property value
 
 | `hibernate.cache.use_second_level_cache` | `true`
 | `hibernate.cache.region.factory_class`   | `org.hibernate.cache.jcache.JCacheRegionFactory`
