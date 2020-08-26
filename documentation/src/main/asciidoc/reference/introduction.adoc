@@ -117,11 +117,10 @@ Configuration properties of particular interest include:
 | `hibernate.jdbc.batch_size`                                         | Maximum batch size for SQL statement batching
 |===
 
-NOTE: These configuration properties have `jdbc` in their names, but of
-course there's no JDBC in Hibernate Reactive, and these are simply the
-legacy property names defined by the JPA specification and Hibernate ORM.
-In particular, Hibernate Reactive itself parses and interprets the JDBC
-URL.
+These configuration properties have `jdbc` in their names, but of course
+there's no JDBC in Hibernate Reactive, and these are simply the legacy
+property names defined by the JPA specification and Hibernate ORM. In
+particular, Hibernate Reactive itself parses and interprets the JDBC URL.
 
 An example {xml}[`persistence.xml`] file is included in the example
 program.
