@@ -117,6 +117,10 @@ Configuration properties of particular interest include:
 | `hibernate.jdbc.batch_size`                                         | Maximum batch size for SQL statement batching
 |===
 
+NOTE: These configuration properties have `jdbc` in their names, but of
+course there's no JDBC in Hibernate Reactive, and these are simply the
+legacy property names defined by the JPA specification and Hibernate ORM.
+
 An example {xml}[`persistence.xml`] file is included in the example
 program.
 
@@ -183,7 +187,7 @@ programming model.
 Configuring Hibernate's second-level cache is a rather involved topic,
 and quite outside the scope of this document. But in case it helps, we're
 testing Hibernate Reactive with the following configuration, which uses
-EHCache as the cache implementation:
+EHCache as the cache implementation, as above in <<_optional_dependencies>>:
 
 |===
 | Configuration property name              | Property value
