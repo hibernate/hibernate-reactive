@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.bulk;
+package org.hibernate.reactive.bulk.impl;
 
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
