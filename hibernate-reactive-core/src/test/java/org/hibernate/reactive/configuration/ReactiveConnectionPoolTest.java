@@ -9,6 +9,8 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
+import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
@@ -56,6 +58,9 @@ public class ReactiveConnectionPoolTest {
 	}
 
 	private ReactiveConnectionPool configureAndStartPool(Map<String, Object> config) {
+		DefaultSqlClientPoolConfiguration poolConfig = new DefaultSqlClientPoolConfiguration();
+		poolConfig.configure( config );
+		registryRule.addService( SqlClientPoolConfiguration.class, poolConfig );
 		SqlClientPool reactivePool = new SqlClientPool();
 		reactivePool.injectServices( registryRule.getServiceRegistry() );
 		reactivePool.configure( config );

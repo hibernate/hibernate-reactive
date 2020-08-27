@@ -25,6 +25,9 @@ import org.hibernate.service.spi.ServiceBinding;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.junit.rules.ExternalResource;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class TestingRegistryRule extends ExternalResource {
 
     private Vertx vertx;
@@ -48,13 +51,72 @@ public class TestingRegistryRule extends ExternalResource {
         return registry;
     }
 
+    public <T> void addService (Class<T> type, T instance) {
+        registry.add( type, instance );
+    }
+
     //TODO extract into its own class and evolve as necessary?
     private static class Registry implements ServiceRegistryImplementor {
 
-        private final ProvidedVertxInstance vertxService;
+        private final Map<Class<?>, Object> services = new HashMap<>();
 
         public Registry(Vertx vertx) {
-            this.vertxService = new ProvidedVertxInstance( vertx );
+            add( VertxInstance.class, new ProvidedVertxInstance( vertx ) );
+            add( JdbcEnvironment.class, new JdbcEnvironment() {
+                @Override
+                public Dialect getDialect() {
+                    return new MySQL8Dialect();
+                }
+
+                @Override
+                public ExtractedDatabaseMetaData getExtractedDatabaseMetaData() {
+                    return null;
+                }
+
+                @Override
+                public Identifier getCurrentCatalog() {
+                    return null;
+                }
+
+                @Override
+                public Identifier getCurrentSchema() {
+                    return null;
+                }
+
+                @Override
+                public QualifiedObjectNameFormatter getQualifiedObjectNameFormatter() {
+                    return null;
+                }
+
+                @Override
+                public IdentifierHelper getIdentifierHelper() {
+                    return null;
+                }
+
+                @Override
+                public NameQualifierSupport getNameQualifierSupport() {
+                    return null;
+                }
+
+                @Override
+                public SqlExceptionHelper getSqlExceptionHelper() {
+                    return null;
+                }
+
+                @Override
+                public LobCreatorBuilder getLobCreatorBuilder() {
+                    return null;
+                }
+
+                @Override
+                public TypeInfo getTypeInfoForJdbcCode(int jdbcTypeCode) {
+                    return null;
+                }
+            } );
+        }
+
+        <T> void add(Class<T> type, T instance) {
+            services.put( type, instance );
         }
 
         @Override
@@ -63,19 +125,13 @@ public class TestingRegistryRule extends ExternalResource {
         }
 
         @Override
-        public void destroy() {
-
-        }
+        public void destroy() {}
 
         @Override
-        public void registerChild(ServiceRegistryImplementor child) {
-
-        }
+        public void registerChild(ServiceRegistryImplementor child) {}
 
         @Override
-        public void deRegisterChild(ServiceRegistryImplementor child) {
-
-        }
+        public void deRegisterChild(ServiceRegistryImplementor child) {}
 
         @Override
         public ServiceRegistry getParentServiceRegistry() {
@@ -84,61 +140,9 @@ public class TestingRegistryRule extends ExternalResource {
 
         @Override @SuppressWarnings("unchecked")
         public <R extends Service> R getService(Class<R> serviceRole) {
-            if ( serviceRole == VertxInstance.class ) {
-                return (R) vertxService;
-            }
-            else if ( serviceRole == JdbcEnvironment.class ) {
-                return (R) new JdbcEnvironment() {
-                    @Override
-                    public Dialect getDialect() {
-                        return new MySQL8Dialect();
-                    }
-
-                    @Override
-                    public ExtractedDatabaseMetaData getExtractedDatabaseMetaData() {
-                        return null;
-                    }
-
-                    @Override
-                    public Identifier getCurrentCatalog() {
-                        return null;
-                    }
-
-                    @Override
-                    public Identifier getCurrentSchema() {
-                        return null;
-                    }
-
-                    @Override
-                    public QualifiedObjectNameFormatter getQualifiedObjectNameFormatter() {
-                        return null;
-                    }
-
-                    @Override
-                    public IdentifierHelper getIdentifierHelper() {
-                        return null;
-                    }
-
-                    @Override
-                    public NameQualifierSupport getNameQualifierSupport() {
-                        return null;
-                    }
-
-                    @Override
-                    public SqlExceptionHelper getSqlExceptionHelper() {
-                        return null;
-                    }
-
-                    @Override
-                    public LobCreatorBuilder getLobCreatorBuilder() {
-                        return null;
-                    }
-
-                    @Override
-                    public TypeInfo getTypeInfoForJdbcCode(int jdbcTypeCode) {
-                        return null;
-                    }
-                };
+            Object service = services.get(serviceRole);
+            if ( service != null ) {
+                return (R) service;
             }
             else {
                 throw new IllegalArgumentException( "This is a mock service - need to explicitly handle any service we might need during testing" );

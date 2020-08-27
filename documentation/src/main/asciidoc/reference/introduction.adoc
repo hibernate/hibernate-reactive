@@ -172,6 +172,15 @@ pool and cache via the following properties:
 
 TIP: But for now, just leave these three settings alone.
 
+Finally, for more advanced cases, you can write your own code to configure
+the Vert.x client by  implementing `SqlClientPoolConfiguration`.
+
+|===
+| Configuration property name      | Purpose
+
+| `hibernate.vertx.pool.configuration_class` | A class implementing `SqlClientPoolConfiguration`
+|===
+
 === Enabling the second-level cache
 
 :second-level-cache: https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#caching
