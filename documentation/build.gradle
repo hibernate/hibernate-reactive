@@ -49,12 +49,14 @@ task aggregateJavadocs(type: Javadoc, group: 'Documentation') {
 		use = true
 		options.encoding = 'UTF-8'
 
+		def matcher = hibernateOrmVersion =~ /\d+\.\d+/
+		def ormMinorVersion = matcher.find() ? matcher.group() : "5.4";
+
 		links = [
 				'https://docs.oracle.com/javase/8/docs/api/',
 				'http://docs.jboss.org/hibernate/beanvalidation/spec/2.0/api/',
 				'https://javaee.github.io/javaee-spec/javadocs/',
-				// Need toString() to avoid ClassCastException from GStringImpl to String (!?)
-				"https://docs.jboss.org/hibernate/orm/${hibernateOrmVersion.family}/javadocs/".toString()
+				"https://docs.jboss.org/hibernate/orm/" + ormMinorVersion + "/javadocs/"
 		]
 		
 		if ( JavaVersion.current().isJava11Compatible() ) {
