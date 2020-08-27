@@ -36,4 +36,8 @@ public interface Settings extends AvailableSettings {
 	 */
 	String MAX_WAIT_QUEUE_SIZE = "hibernate.vertx.pool.max_wait_queue_size";
 
+	/**
+	 * Specifies a {@link org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration} class.
+	 */
+	String SQL_CLIENT_POOL_CONFIG = "hibernate.vertx.pool.configuration_class";
 }
