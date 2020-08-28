@@ -12,15 +12,6 @@ public interface TestableDatabase {
 
 	String getJdbcUrl();
 
-	/**
-	 * Builds a prepared statement SQL string in a portable way. For example,
-	 * DB2 and MySQL use syntax like "SELECT * FROM FOO WHERE BAR = ?" but
-	 * PostgreSQL uses syntax like "SELECT * FROM FOO WHERE BAR = $1"
-	 *
-	 * @param parts The parts of the SQL not including the parameter tokens. For example:
-	 * <code>statement("SELECT * FROM FOO WHERE BAR = ", "")</code>
-	 */
-	default String statement(String... parts) {
-		return String.join( "?", parts );
-	}
+	String getUri();
+
 }

@@ -24,21 +24,48 @@ class MySQLDatabase implements TestableDatabase {
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
 			.withReuse( true );
 
+	private String getRegularJdbcUrl() {
+		return "jdbc:mysql://localhost:3306/" + mysql.getDatabaseName();
+	}
+
 	@Override
 	public String getJdbcUrl() {
+		String address;
 		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
 			mysql.start();
-			return buildUrlWithCredentials( mysql.getJdbcUrl() );
+			address = mysql.getJdbcUrl();
 		}
 		else {
-			return buildUrlWithCredentials( "jdbc:mysql://localhost:3306/" + mysql.getDatabaseName() );
+			address = getRegularJdbcUrl();
 		}
+		return buildJdbcUrlWithCredentials( address );
 	}
 
-	static String buildUrlWithCredentials(String jdbcUrl) {
+	@Override
+	public String getUri() {
+		String address;
+		if ( DatabaseConfiguration.USE_DOCKER ) {
+			// Calling start() will start the container (if not already started)
+			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
+			mysql.start();
+			address = mysql.getJdbcUrl();
+		}
+		else {
+			address = getRegularJdbcUrl();
+		}
+		return buildUriWithCredentials( address );
+	}
+
+
+
+	static String buildJdbcUrlWithCredentials(String jdbcUrl) {
 		return jdbcUrl + "?user=" + mysql.getUsername() + "&password=" + mysql.getPassword() + "&serverTimezone=UTC";
+	}
+
+	private static String buildUriWithCredentials(String jdbcUrl) {
+		return "mysql://" + mysql.getUsername() + ":" + mysql.getPassword() + "@" + jdbcUrl.substring(13);
 	}
 
 	private MySQLDatabase() {

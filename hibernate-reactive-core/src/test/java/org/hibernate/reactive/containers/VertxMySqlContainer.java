@@ -75,7 +75,7 @@ class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
     }
 
     public String getVertxUrl() {
-    	return MySQLDatabase.buildUrlWithCredentials(getJdbcUrl().replace( "jdbc:", "" ));
+    	return MySQLDatabase.buildJdbcUrlWithCredentials( getJdbcUrl().replace( "jdbc:", "" ) );
     }
 
     public SqlConnection createVertxConnection() {
