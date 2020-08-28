@@ -25,6 +25,11 @@ public interface SqlClientPoolConfiguration extends Service {
     PoolOptions poolOptions();
     /**
      * The {@link SqlConnectOptions} used to configure the {@code Pool}
+     *
+     * @param uri A {@link URI} representing the JDBC URL or connection URI
+     *            specified in the configuration properties, usually via
+     *            {@link org.hibernate.cfg.Environment#JPA_JDBC_URL}, or
+     *            {@code null} if not specified.
      */
     SqlConnectOptions connectOptions(URI uri);
 }

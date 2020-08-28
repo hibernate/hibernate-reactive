@@ -86,9 +86,9 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 
 	protected Pool configurePool(Map<?,?> configurationValues, Vertx vertx) {
 
-		SqlClientPoolConfiguration poolConfiguration = serviceRegistry.getService(SqlClientPoolConfiguration.class);
+		URI uri = jdbcUrl( configurationValues );
 
-		URI uri = jdbcUrl(configurationValues);
+		SqlClientPoolConfiguration poolConfiguration = serviceRegistry.getService(SqlClientPoolConfiguration.class);
 		SqlConnectOptions connectOptions = poolConfiguration.connectOptions( uri );
 		PoolOptions poolOptions = poolConfiguration.poolOptions();
 
