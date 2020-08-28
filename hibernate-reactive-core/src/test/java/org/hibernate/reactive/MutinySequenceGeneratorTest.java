@@ -48,8 +48,8 @@ public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 							bb.string = "Goodbye";
 							return null;
 						})
-						.chain(vv -> s2.flush())
-						.chain(vv -> s2.find( SequenceId.class, b.getId() ))
+						.then(() -> s2.flush())
+						.then(() -> s2.find( SequenceId.class, b.getId() ))
 						.map( bt -> {
 							context.assertEquals( bt.version, 1 );
 							return null;

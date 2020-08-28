@@ -121,7 +121,7 @@ public class MutinyMain {
 				// delete all the Books in a transaction
 				(session, tx) -> session.createQuery("delete Book").executeUpdate()
 						//delete all the Authors
-						.chain( $ -> session.createQuery("delete Author").executeUpdate() )
+						.then( () -> session.createQuery("delete Author").executeUpdate() )
 		)
 				.await().indefinitely();
 

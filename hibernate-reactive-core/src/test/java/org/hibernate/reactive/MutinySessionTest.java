@@ -189,7 +189,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 				Uni.createFrom().item( openMutinySession() )
 						.chain( s -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
 						.chain( s -> s.flush().eventually(s::close) )
-						.chain( v -> selectNameFromId( 10 ) )
+						.then( () -> selectNameFromId( 10 ) )
 						.invoke( selectRes -> context.assertEquals( "Tulip", selectRes ) )
 		);
 	}
@@ -205,7 +205,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 //												.thenCompose( vv -> s.flush() )
 								)
 						)
-						.chain( vv -> selectNameFromId( 10 ) )
+						.then( () -> selectNameFromId( 10 ) )
 						.invoke( selectRes -> context.assertEquals( "Tulip", selectRes ) )
 		);
 	}
@@ -218,7 +218,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 						.chain(
 								s -> s.withTransaction(
 										t -> s.persist( new ReactiveSessionTest.GuineaPig( 10, "Tulip" ) )
-												.chain( vv -> s.flush() )
+												.then( () -> s.flush() )
 												.map( vv -> {
 													throw new RuntimeException();
 												} )
@@ -226,7 +226,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 										.eventually( () -> s.close() )
 						)
 						.on().failure().recoverWithItem((Object)null)
-						.chain( vv -> selectNameFromId( 10 ) )
+						.then( () -> selectNameFromId( 10 ) )
 						.invoke( context::assertNull )
 		);
 	}
@@ -239,12 +239,12 @@ public class MutinySessionTest extends BaseReactiveTest {
 						.chain(
 								s -> s.withTransaction(
 										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
-												.chain( vv -> s.flush() )
+												.then( () -> s.flush() )
 												.invoke( vv -> t.markForRollback() )
 								)
 										.eventually( () -> s.close() )
 						)
-						.chain( vv -> selectNameFromId( 10 ) )
+						.then( () -> selectNameFromId( 10 ) )
 						.invoke( context::assertNull )
 		);
 	}
@@ -268,12 +268,12 @@ public class MutinySessionTest extends BaseReactiveTest {
 		test(
 				context,
 				populateDB()
-						.chain( v -> selectNameFromId( 5 ) )
+						.then( () -> selectNameFromId( 5 ) )
 						.invoke( context::assertNotNull )
 						.map( v -> openMutinySession() )
 						.chain( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
 						.chain( session -> session.flush().eventually(session::close) )
-						.chain( v -> selectNameFromId( 5 ) )
+						.then( () -> selectNameFromId( 5 ) )
 						.invoke( context::assertNull )
 		);
 	}
@@ -302,9 +302,9 @@ public class MutinySessionTest extends BaseReactiveTest {
 						.chain( session ->
 							session.find( GuineaPig.class, 5 )
 								.chain( aloi -> session.remove( aloi ) )
-								.chain( v -> session.flush() )
+								.then( () -> session.flush() )
 								.eventually( () -> session.close() )
-								.chain( v -> selectNameFromId( 5 ) )
+								.then( () -> selectNameFromId( 5 ) )
 								.invoke( context::assertNull ) )
 		);
 	}
@@ -334,7 +334,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 										session.find( GuineaPig.class, 5 ).chain( session::remove )
 								)
 						)
-						.chain( v -> selectNameFromId( 5 ) )
+						.then( () -> selectNameFromId( 5 ) )
 						.invoke( context::assertNull )
 		);
 	}
@@ -354,10 +354,10 @@ public class MutinySessionTest extends BaseReactiveTest {
 									pig.setName( NEW_NAME );
 									return null;
 								} )
-								.chain( v -> session.flush() )
+								.then( () -> session.flush() )
 								.eventually( () -> session.close() )
 						)
-						.chain( v -> selectNameFromId( 5 ) )
+						.then( () -> selectNameFromId( 5 ) )
 						.invoke( name -> context.assertEquals( NEW_NAME, name ) )
 		);
 	}
@@ -377,10 +377,10 @@ public class MutinySessionTest extends BaseReactiveTest {
 									pig.setName( NEW_NAME );
 									return null;
 								} )
-								.chain( v -> session.flush() )
+								.then( () -> session.flush() )
 								.eventually( () -> session.close() )
 						)
-						.chain( v -> selectNameFromId( 5 ) )
+						.then( () -> selectNameFromId( 5 ) )
 						.invoke( name -> context.assertEquals( NEW_NAME, name ) )
 		);
 	}
@@ -391,7 +391,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 		test(
 				context,
 				populateDB()
-						.chain( v -> getMutinySessionFactory().withTransaction(
+						.then( () -> getMutinySessionFactory().withTransaction(
 								(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class)
 										.setLockMode(LockMode.PESSIMISTIC_WRITE)
 										.getSingleResult()
@@ -410,8 +410,8 @@ public class MutinySessionTest extends BaseReactiveTest {
 		test(
 				context,
 				populateDB()
-						.chain(
-								v -> getMutinySessionFactory().withTransaction(
+						.then(
+								() -> getMutinySessionFactory().withTransaction(
 										(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class)
 												.setLockMode("pig", LockMode.PESSIMISTIC_WRITE )
 												.getSingleResult()
@@ -433,7 +433,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 
 		test( context,
 				getMutinySessionFactory().withTransaction( (session, transaction) -> session.persist(foo, bar, baz) )
-						.chain( v -> getMutinySessionFactory().withSession(
+						.then( () -> getMutinySessionFactory().withSession(
 								session -> session.createQuery("from GuineaPig", GuineaPig.class).getResults()
 										.invoke( pig -> {
 											context.assertNotNull(pig);

@@ -381,7 +381,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
 			return begin()
-					.chain( v -> work.apply( this ) )
+					.then( () -> work.apply( this ) )
 					// only flush() if the work completed with no exception
 					.chain( result -> flush().map( v -> result ) )
 					// have to capture the error here and pass it along,
