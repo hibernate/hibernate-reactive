@@ -26,33 +26,46 @@ class PostgreSQLDatabase implements TestableDatabase {
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
 			.withReuse( true );
 
+	private String getRegularJdbcUrl() {
+		return "jdbc:postgresql://localhost:5432/" + postgresql.getDatabaseName() + "?loggerLevel=OFF";
+	}
+
 	@Override
 	public String getJdbcUrl() {
+		String address;
 		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
 			postgresql.start();
-			return buildJdbcUrlWithCredentials( postgresql.getJdbcUrl() );
+			address = postgresql.getJdbcUrl();
 		}
 		else {
-			return buildJdbcUrlWithCredentials( "jdbc:postgresql://localhost:5432/" + postgresql.getDatabaseName() + "?loggerLevel=OFF" );
+			address = getRegularJdbcUrl();
 		}
+		return buildJdbcUrlWithCredentials( address );
+	}
+
+	@Override
+	public String getUri() {
+		String address;
+		if ( DatabaseConfiguration.USE_DOCKER ) {
+			// Calling start() will start the container (if not already started)
+			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
+			postgresql.start();
+			address = postgresql.getJdbcUrl();
+		}
+		else {
+			address = getRegularJdbcUrl();
+		}
+		return buildUriWithCredentials( address );
 	}
 
 	private static String buildJdbcUrlWithCredentials(String jdbcUrl) {
 		return jdbcUrl + "&user=" + postgresql.getUsername() + "&password=" + postgresql.getPassword();
 	}
 
-	@Override
-	public String statement(String... parts) {
-		StringBuilder sb = new StringBuilder();
-		for ( int i = 0; i < parts.length; i++ ) {
-			if ( i > 0 ) {
-				sb.append( "$" ).append( ( i ) );
-			}
-			sb.append( parts[i] );
-		}
-		return sb.toString();
+	private static String buildUriWithCredentials(String jdbcUrl) {
+		return "postgresql://" + postgresql.getUsername() + ":" + postgresql.getPassword() + "@" + jdbcUrl.substring(18);
 	}
 
 	private PostgreSQLDatabase() {

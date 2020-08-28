@@ -27,21 +27,48 @@ class DB2Database implements TestableDatabase {
 		      .acceptLicense()
 		      .withReuse(true);
 
+	private String getRegularJdbcUrl() {
+		return "jdbc:db2://localhost:50000/" + db2.getDatabaseName();
+	}
+
 	@Override
 	public String getJdbcUrl() {
+		String address;
 		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
 			db2.start();
-			return buildJdbcUrlWithCredentials( db2.getJdbcUrl() );
+			address = db2.getJdbcUrl();
 		}
 		else {
-			return buildJdbcUrlWithCredentials( "jdbc:db2://localhost:50000/" + db2.getDatabaseName() );
+			address = getRegularJdbcUrl();
 		}
+		return buildJdbcUrlWithCredentials( address );
 	}
+
+	@Override
+	public String getUri() {
+		String address;
+		if ( DatabaseConfiguration.USE_DOCKER ) {
+			// Calling start() will start the container (if not already started)
+			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
+			db2.start();
+			address = db2.getJdbcUrl();
+		}
+		else {
+			address = getRegularJdbcUrl();
+		}
+		return buildUriWithCredentials( address );
+	}
+
+
 
 	private static String buildJdbcUrlWithCredentials(String jdbcUrl) {
 		return jdbcUrl + ":user=" + db2.getUsername() + ";password=" + db2.getPassword() + ";";
+	}
+
+	private static String buildUriWithCredentials(String jdbcUrl) {
+		return "db2://" + db2.getUsername() + ":" + db2.getPassword() + "@" + jdbcUrl.substring(11);
 	}
 
 	private DB2Database() {

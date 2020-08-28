@@ -17,7 +17,7 @@ public class DatabaseConfiguration {
 
 	public static final boolean USE_DOCKER = Boolean.getBoolean("docker");
 
-	public static enum DBType {
+	public enum DBType {
 		DB2( DB2Database.INSTANCE ),
 		MYSQL( MySQLDatabase.INSTANCE ),
 		POSTGRESQL( PostgreSQLDatabase.INSTANCE, "POSTGRES", "PG" );
@@ -78,15 +78,8 @@ public class DatabaseConfiguration {
 		return dbType().configuration.getJdbcUrl();
 	}
 
-	/**
-	 * Builds a prepared statement SQL string in a portable way. For example,
-	 * DB2 and MySQL use syntax like "SELECT * FROM FOO WHERE BAR = ?" but
-	 * PostgreSQL uses syntax like "SELECT * FROM FOO WHERE BAR = $1"
-	 * @param parts The parts of the SQL not including the parameter tokens. For example:
-	 * <code>statement("SELECT * FROM FOO WHERE BAR = ", "")</code>
-	 */
-	public static String statement(String... parts) {
-		return dbType().configuration.statement( parts );
+	public static String getUri() {
+		return dbType().configuration.getUri();
 	}
 
 	private DatabaseConfiguration() {
