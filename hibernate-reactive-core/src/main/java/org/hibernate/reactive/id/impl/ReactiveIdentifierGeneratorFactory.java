@@ -71,12 +71,15 @@ public class ReactiveIdentifierGeneratorFactory extends DefaultIdentifierGenerat
 		return result;
 	}
 
-	private static IdentifierGenerator augmentWithReactiveGenerator(IdentifierGenerator generator, Type type, Properties params, ServiceRegistryImplementor serviceRegistry) {
+	private static IdentifierGenerator augmentWithReactiveGenerator(IdentifierGenerator generator,
+																	Type type,
+																	Properties params,
+																	ServiceRegistryImplementor serviceRegistry) {
 		ReactiveIdentifierGenerator<?> reactiveGenerator;
 		if (generator instanceof SequenceStyleGenerator) {
 			DatabaseStructure structure = ((SequenceStyleGenerator) generator).getDatabaseStructure();
 			if (structure instanceof TableStructure) {
-				reactiveGenerator = new TableReactiveIdentifierGenerator(true);
+				reactiveGenerator = new EmulatedSequenceReactiveIdentifierGenerator();
 			}
 			else if (structure instanceof SequenceStructure) {
 				reactiveGenerator = new SequenceReactiveIdentifierGenerator();
@@ -86,7 +89,7 @@ public class ReactiveIdentifierGeneratorFactory extends DefaultIdentifierGenerat
 			}
 		}
 		else if (generator instanceof TableGenerator) {
-			reactiveGenerator = new TableReactiveIdentifierGenerator(false);
+			reactiveGenerator = new TableReactiveIdentifierGenerator();
 		}
 		else if (generator instanceof SequenceGenerator) {
 			reactiveGenerator = new SequenceReactiveIdentifierGenerator();

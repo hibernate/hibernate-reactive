@@ -13,7 +13,6 @@ import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.id.Configurable;
-import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.jdbc.TooManyRowsAffectedException;
@@ -38,15 +37,11 @@ import static org.hibernate.id.enhanced.TableGenerator.TABLE;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getBoolean;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getInt;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
-import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineSequenceName;
-import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineTableName;
 
 /**
- * Support for JPA's {@link javax.persistence.TableGenerator}. This
- * generator functions in two different modes: as a table generator
- * where different logical sequences are represented by different
- * rows ("segments"), or as an emulated sequence generator with
- * just one row and one column.
+ * Support for JPA's {@link javax.persistence.TableGenerator}.
+ * Persistence is managed via a table which may hold multiple
+ * rows distinguished by a "segment" column value.
  * <p>
  * This implementation supports block allocation, but does not
  * guarantee that generated identifiers are sequential.
@@ -56,12 +51,12 @@ public class TableReactiveIdentifierGenerator
 
 	private boolean storeLastUsedValue;
 
-	private String renderedTableName;
+	String renderedTableName;
 
-	private String segmentColumnName;
+	String segmentColumnName;
 	private String segmentValue;
 
-	private String valueColumnName;
+	String valueColumnName;
 	private long initialValue;
 	private int increment;
 
@@ -71,8 +66,6 @@ public class TableReactiveIdentifierGenerator
 
 	private int loValue;
 	private long hiValue;
-
-	private final boolean sequenceEmulator;
 
 	private synchronized long next() {
 		return loValue>0 && loValue<increment
@@ -100,10 +93,9 @@ public class TableReactiveIdentifierGenerator
 		// and update it by the specified increment, but we
 		// need to do it atomically, and without depending on
 		// transaction rollback.
-		Object[] param = segmentColumnName == null ? new Object[] {} : new Object[] {segmentValue};
 		ReactiveConnection connection = session.getReactiveConnection();
 		// 1) select the current hi value
-		return connection.selectLong( selectQuery, param )
+		return connection.selectLong( selectQuery, selectParameters() )
 				// 2) attempt to update the hi value
 				.thenCompose( result -> {
 					Object[] params;
@@ -118,9 +110,7 @@ public class TableReactiveIdentifierGenerator
 						// when it was created
 						id = initialValue;
 						long insertedValue = storeLastUsedValue ? id - increment : id;
-						params = segmentColumnName == null ?
-								new Object[] {insertedValue} :
-								new Object[] {segmentValue, insertedValue};
+						params = insertParameters( insertedValue );
 						sql = insertQuery;
 					}
 					else {
@@ -128,9 +118,7 @@ public class TableReactiveIdentifierGenerator
 						long currentValue = result;
 						long updatedValue = currentValue + increment;
 						id = storeLastUsedValue ? updatedValue : currentValue;
-						params = segmentColumnName == null ?
-								new Object[] {updatedValue, currentValue} :
-								new Object[] {updatedValue, currentValue, segmentValue};
+						params = updateParameters( currentValue, updatedValue );
 						sql = updateQuery;
 					}
 					return connection.update( sql, params )
@@ -153,48 +141,45 @@ public class TableReactiveIdentifierGenerator
 				} );
 	}
 
-	TableReactiveIdentifierGenerator(boolean sequenceEmulator) {
-		this.sequenceEmulator = sequenceEmulator;
-	}
-
 	@Override
 	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) {
 		JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
 		Dialect dialect = jdbcEnvironment.getDialect();
 
-		QualifiedName qualifiedTableName;
-		if (sequenceEmulator) {
-			//it's a SequenceStyleGenerator backed by a table
-			qualifiedTableName = determineSequenceName( params, serviceRegistry );
-			valueColumnName = determineValueColumnNameForSequenceEmulation( params, jdbcEnvironment );
-			segmentColumnName = null;
-			segmentValue = null;
-			initialValue = determineInitialValueForSequenceEmulation( params );
-			increment = determineIncrementForSequenceEmulation( params );
+		QualifiedName qualifiedTableName = determineTableName( params, serviceRegistry );
+		segmentColumnName = determineSegmentColumnName( params, jdbcEnvironment );
+		valueColumnName = determineValueColumnNameForTable( params, jdbcEnvironment );
+		segmentValue = determineSegmentValue( params );
+		initialValue = determineInitialValue( params );
+		increment = determineIncrement( params );
 
-			storeLastUsedValue = false;
-		}
-		else {
-			//It's a regular TableGenerator
-			qualifiedTableName = determineTableName( params, serviceRegistry );
-			segmentColumnName = determineSegmentColumnName( params, jdbcEnvironment );
-			valueColumnName = determineValueColumnNameForTable( params, jdbcEnvironment );
-			segmentValue = determineSegmentValue( params );
-			initialValue = determineInitialValueForTable( params );
-			increment = determineIncrementForTable( params );
-
-			storeLastUsedValue = serviceRegistry.getService( ConfigurationService.class )
-					.getSetting( Settings.TABLE_GENERATOR_STORE_LAST_USED,
-							StandardConverters.BOOLEAN, true );
-		}
+		storeLastUsedValue = determineStoreLastUsedValue( serviceRegistry );
 
 		// allow physical naming strategies a chance to kick in
 		renderedTableName = jdbcEnvironment.getQualifiedObjectNameFormatter()
 				.format( qualifiedTableName, dialect );
 
-		selectQuery = buildSelectQuery( dialect );
-		updateQuery = buildUpdateQuery( dialect );
-		insertQuery = buildInsertQuery( dialect );
+		selectQuery = applyLocksToSelect( dialect, "tbl", buildSelectQuery() );
+		updateQuery = buildUpdateQuery();
+		insertQuery = buildInsertQuery();
+	}
+
+	private String applyLocksToSelect(Dialect dialect, String alias, String query) {
+		return dialect.applyLocksToSql(
+				query,
+				new LockOptions(LockMode.PESSIMISTIC_WRITE)
+						.setAliasSpecificLockMode(alias, LockMode.PESSIMISTIC_WRITE),
+				Collections.singletonMap(alias, new String[]{valueColumnName})
+		);
+	}
+
+	protected Boolean determineStoreLastUsedValue(ServiceRegistry serviceRegistry) {
+		return serviceRegistry.getService(ConfigurationService.class)
+				.getSetting( Settings.TABLE_GENERATOR_STORE_LAST_USED, StandardConverters.BOOLEAN, true );
+	}
+
+	protected QualifiedName determineTableName(Properties params, ServiceRegistry serviceRegistry) {
+		return IdentifierGeneration.determineTableName( params, serviceRegistry );
 	}
 
 	protected String determineSegmentColumnName(Properties params, JdbcEnvironment jdbcEnvironment) {
@@ -204,11 +189,6 @@ public class TableReactiveIdentifierGenerator
 
 	protected String determineValueColumnNameForTable(Properties params, JdbcEnvironment jdbcEnvironment) {
 		final String name = getString( TableGenerator.VALUE_COLUMN_PARAM, params, TableGenerator.DEF_VALUE_COLUMN );
-		return jdbcEnvironment.getIdentifierHelper().toIdentifier( name ).render( jdbcEnvironment.getDialect() );
-	}
-
-	static String determineValueColumnNameForSequenceEmulation(Properties params, JdbcEnvironment jdbcEnvironment) {
-		final String name = getString( SequenceStyleGenerator.VALUE_COLUMN_PARAM, params, SequenceStyleGenerator.DEF_VALUE_COLUMN );
 		return jdbcEnvironment.getIdentifierHelper().toIdentifier( name ).render( jdbcEnvironment.getDialect() );
 	}
 
@@ -225,57 +205,39 @@ public class TableReactiveIdentifierGenerator
 		return preferSegmentPerEntity ? params.getProperty( TABLE ) : DEF_SEGMENT_VALUE;
 	}
 
-	protected int determineInitialValueForTable(Properties params) {
+	protected int determineInitialValue(Properties params) {
 		return getInt( TableGenerator.INITIAL_PARAM, params, TableGenerator.DEFAULT_INITIAL_VALUE );
 	}
 
-	protected int determineInitialValueForSequenceEmulation(Properties params) {
-		return getInt( SequenceStyleGenerator.INITIAL_PARAM, params, SequenceStyleGenerator.DEFAULT_INITIAL_VALUE );
-	}
-
-	protected int determineIncrementForTable(Properties params) {
+	protected int determineIncrement(Properties params) {
 		return getInt( TableGenerator.INCREMENT_PARAM, params, TableGenerator.DEFAULT_INCREMENT_SIZE );
 	}
 
-	protected int determineIncrementForSequenceEmulation(Properties params) {
-		return getInt( SequenceStyleGenerator.INCREMENT_PARAM, params, SequenceStyleGenerator.DEFAULT_INCREMENT_SIZE );
+	protected Object[] updateParameters(long currentValue, long updatedValue) {
+		return new Object[]{ updatedValue, currentValue, segmentValue };
 	}
 
-	protected String buildSelectQuery(Dialect dialect) {
-		final String alias = "tbl";
-		String query = "select " + StringHelper.qualify( alias, valueColumnName ) +
-				" from " + renderedTableName + ' ' + alias;
-		if (segmentColumnName != null) {
-			query += " where " + StringHelper.qualify(alias, segmentColumnName) + "=?";
-		}
-
-		return dialect.applyLocksToSql(
-				query,
-				new LockOptions( LockMode.PESSIMISTIC_WRITE )
-						.setAliasSpecificLockMode( alias, LockMode.PESSIMISTIC_WRITE ),
-				Collections.singletonMap( alias, new String[] { valueColumnName } )
-		);
+	protected Object[] insertParameters(long insertedValue) {
+		return new Object[]{ segmentValue, insertedValue };
 	}
 
-	protected String buildUpdateQuery(Dialect dialect) {
-		String update = "update " + renderedTableName
-				+ " set " + valueColumnName + "=?"
-				+ " where " + valueColumnName + "=?";
-		if (segmentColumnName != null) {
-			update += " and " + segmentColumnName + "=?";
-		}
-		return update;
+	protected Object[] selectParameters() {
+		return new Object[]{ segmentValue };
 	}
 
-	protected String buildInsertQuery(Dialect dialect) {
-		String insert = "insert into " + renderedTableName;
-		if (segmentColumnName != null) {
-			insert += " (" + segmentColumnName + ", " + valueColumnName + ") " + " values (?, ?)";
-		}
-		else {
-			insert += " (" + valueColumnName + ") " + " values (?)";
-		}
-		return insert;
+	protected String buildSelectQuery() {
+		return "select tbl." + valueColumnName + " from " + renderedTableName + " tbl"
+				+ " where tbl." + segmentColumnName + "=?";
+	}
+
+	protected String buildUpdateQuery() {
+		return "update " + renderedTableName + " set " + valueColumnName + "=?"
+				+ " where " + valueColumnName + "=?  and " + segmentColumnName + "=?";
+	}
+
+	protected String buildInsertQuery() {
+		return "insert into " + renderedTableName + " (" + segmentColumnName + ", " + valueColumnName + ") "
+				+ " values (?, ?)";
 	}
 
 }
