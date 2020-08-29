@@ -234,11 +234,11 @@ public class TableReactiveIdentifierGenerator
 	}
 
 	protected int determineIncrementForTable(Properties params) {
-		return getInt( TableGenerator.INCREMENT_PARAM, params, TableGenerator.DEFAULT_INITIAL_VALUE );
+		return getInt( TableGenerator.INCREMENT_PARAM, params, TableGenerator.DEFAULT_INCREMENT_SIZE );
 	}
 
 	protected int determineIncrementForSequenceEmulation(Properties params) {
-		return getInt( SequenceStyleGenerator.INCREMENT_PARAM, params, SequenceStyleGenerator.DEFAULT_INITIAL_VALUE );
+		return getInt( SequenceStyleGenerator.INCREMENT_PARAM, params, SequenceStyleGenerator.DEFAULT_INCREMENT_SIZE );
 	}
 
 	protected String buildSelectQuery(Dialect dialect) {

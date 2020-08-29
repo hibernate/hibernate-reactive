@@ -81,6 +81,6 @@ public class SequenceReactiveIdentifierGenerator
 	}
 
 	protected int determineIncrementForSequenceEmulation(Properties params) {
-		return getInt( SequenceStyleGenerator.INCREMENT_PARAM, params, SequenceStyleGenerator.DEFAULT_INITIAL_VALUE );
+		return getInt( SequenceStyleGenerator.INCREMENT_PARAM, params, SequenceStyleGenerator.DEFAULT_INCREMENT_SIZE );
 	}
 }
