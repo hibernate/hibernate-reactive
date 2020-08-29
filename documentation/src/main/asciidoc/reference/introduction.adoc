@@ -454,25 +454,25 @@ operations defined by JPA:
 |===
 | Method name and parameters | Effect
 
-| `find(Class, Object)` | Obtain a persistent object given its type and its id
-                          (primary key)
-| `persist(Object)`     | Make a transient object persistent and schedule a SQL
-                          `insert` statement for later execution
-| `remove(Object)`      | Make a persistent object transient and schedule a SQL
-                          `delete` statement for later execution
-| `merge(Object)`       | Copy the state of a given transient object to a
-                          corresponding persistent instance and return the
-                          persistent object
-| `refresh(Object)`     | Refresh the persistent state of an object using a new
-                          SQL `select` to retrieve the current state from the
-                          database
-| `lock(Object)`        | Obtain a pessimistic lock on a persistent object
-| `flush()`             | Detect changes made to persistent objects association
-                          with the session and synchronize the database state
-                          with the state of the session by executing SQL `insert`,
-                          `update`, and `delete` statements
-| `detach(Object)`      | Disassociate a persistent object from a session without
-                          affecting the database
+| `find(Class,Object)` | Obtain a persistent object given its type and its id
+                         (primary key)
+| `persist(Object)`    | Make a transient object persistent and schedule a SQL
+                         `insert` statement for later execution
+| `remove(Object)`     | Make a persistent object transient and schedule a SQL
+                         `delete` statement for later execution
+| `merge(Object)`      | Copy the state of a given transient object to a
+                         corresponding persistent instance and return the
+                         persistent object
+| `refresh(Object)`    | Refresh the persistent state of an object using a new
+                         SQL `select` to retrieve the current state from the
+                         database
+| `lock(Object)`       | Obtain a pessimistic lock on a persistent object
+| `flush()`            | Detect changes made to persistent objects association
+                         with the session and synchronize the database state
+                         with the state of the session by executing SQL `insert`,
+                         `update`, and `delete` statements
+| `detach(Object)`     | Disassociate a persistent object from a session without
+                         affecting the database
 |===
 
 If you're not familiar with these operations, don't despair! Their semantics
@@ -519,10 +519,13 @@ allow you to set query parameters and execute queries and DML statements:
 |===
 | Method name           | Effect
 
-| `createQuery()`       | Lets you run HQL and JPQL queries and DML statements
-| `createNativeQuery()` | Lets you run native SQL queries and DML statements
-| `createNamedQuery()`  | Lets you run a named HQL or SQL query defined in a
-                          `@NamedQuery` annotations
+| `createQuery()`       | Obtain a `Query` for executing a query or DML
+                          statement written in HQL or JPQL
+| `createNativeQuery()` | Obtain a `Query` for executing a query or DML
+                          statement written in the native SQL dialect of
+                          your database
+| `createNamedQuery()`  | Obtain a `Query` for executing a named HQL or SQL
+                          query defined by a `@NamedQuery` annotation
 |===
 
 That `createQuery()` method produces a reactive `Query`, allowing HQL / JPQL
@@ -535,6 +538,21 @@ session3.createQuery("select title from Book order by title desc")
         .getResultList()
         .thenAccept(System.out::println)
 ----
+
+The `Query` interface defines the following important operations:
+
+|===
+| Method name         | Effect
+
+| `setParameter()`    | Set an argument of a query parameter
+| `setMaxResults()`   | Limit the number of results returned by the query
+| `setFirstResult()`  | Specify a certain number of initial results to
+be skipped (for result pagination)
+| `getSingleResult()` | Execute a query and obtain the single result
+| `getResultList()`   | Execute a query and obtain the results as a list
+| `executeUpdate()`   | Execute a DML statement and obtain the number of
+affected rows
+|===
 
 TIP: The Hibernate Reactive `Query` API doesn't support `java.util.Date`
 or its subclasses in `java.sql`, nor `java.util.Calendar`. Always use
