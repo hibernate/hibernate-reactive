@@ -496,15 +496,14 @@ session1.find(Book.class, book.id)
 ----
 
 On the other hand, methods with no meaningful return value just return a
-reference to the `Session`, allowing chaining with `thenCompose()`:
+reference to the `Session`, again via a `CompletionStage` (or `Uni`).
 
 [java]
 ----
-sessionFactory.openSession()
-        .find(Book.class, id)
-            .thenCompose( book -> session.remove(book) )
-            .thenCompose( session -> session.flush() )
-            .whenComplete( (session,e) -> session.close() )
+session2.find(Book.class, id)
+        .thenCompose( book -> session.remove(book) )
+        .thenCompose( s -> session.flush() )
+        .whenComplete( (s,e) -> session.close() )
 ----
 
 TIP: The session will be flushed automatically at the end of a unit of work
