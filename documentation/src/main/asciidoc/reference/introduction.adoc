@@ -425,7 +425,10 @@ To obtain a reactive `Session` from the `SessionFactory`, use `withSession()`:
 [java]
 ----
 sessionFactory.withSession(
-        session -> ... //do some work
+        session -> session.find(Book.class, id)
+                .thenAccept(
+                    book -> ... //do something with the book
+                )
 );
 ----
 
@@ -448,19 +451,29 @@ The `Session` interface has methods with the same names as methods of the
 JPA `EntityManager`. You might already be familiar with the following session
 operations defined by JPA:
 
-- `find()` obtains a persistent object given its id (its primary key),
-- `persist()` makes a transient object persistent and schedules a SQL
-  insert statement,
-- `remove()` makes a persistent object transient and schedules a SQL
-  delete statement,
-- `merge()` copies the state of a transient object to a corresponding
-   persistent instance and returns the persistent object,
-- `refresh()` refreshes the persistent state of an object,
-- `lock()` obtains a pessimistic lock on a persistent object,
-- `flush()` synchronizes the database state with the current session by
-   executing SQL insert, update, and delete statements, and
-- `detach()` detaches a persistent object from a session without affecting
-   the database.
+|===
+| Method name and parameters | Effect
+
+| `find(Class, Object)` | Obtain a persistent object given its type and its id
+                          (primary key)
+| `persist(Object)`     | Make a transient object persistent and schedule a SQL
+                          `insert` statement for later execution
+| `remove(Object)`      | Make a persistent object transient and schedule a SQL
+                          `delete` statement for later execution
+| `merge(Object)`       | Copy the state of a given transient object to a
+                          corresponding persistent instance and return the
+                          persistent object
+| `refresh(Object)`     | Refresh the persistent state of an object using a new
+                          SQL `select` to retrieve the current state from the
+                          database
+| `lock(Object)`        | Obtain a pessimistic lock on a persistent object
+| `flush()`             | Detect changes made to persistent objects association
+                          with the session and synchronize the database state
+                          with the state of the session by executing SQL `insert`,
+                          `update`, and `delete` statements
+| `detach(Object)`      | Disassociate a persistent object from a session without
+                          affecting the database
+|===
 
 If you're not familiar with these operations, don't despair! Their semantics
 are defined in the JPA specification, and in the API documentation, and are
@@ -503,10 +516,14 @@ immediately feel right at home.
 Naturally, the `Session` interface is a factory for `Query` instances which
 allow you to set query parameters and execute queries and DML statements:
 
-- `createQuery()` lets you run HQL and JPQL queries and DML statements,
-- `createNativeQuery()` lets you run native SQL queries and DML statements,
-  and
-- `createNamedQuery()` lets you run a named HQL or SQL query.
+|===
+| Method name           | Effect
+
+| `createQuery()`       | Lets you run HQL and JPQL queries and DML statements
+| `createNativeQuery()` | Lets you run native SQL queries and DML statements
+| `createNamedQuery()`  | Lets you run a named HQL or SQL query defined in a
+                          `@NamedQuery` annotations
+|===
 
 That `createQuery()` method produces a reactive `Query`, allowing HQL / JPQL
 queries to be executed asynchronously, always returning their results via a
