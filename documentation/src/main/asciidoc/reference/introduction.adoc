@@ -258,6 +258,7 @@ of framework code.
 === Mapping entity classes
 
 :mapping-annotations: https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#annotations
+:bean-validation: https://docs.jboss.org/hibernate/stable/validator/reference/en-US/html_single/#chapter-bean-constraints
 
 We won't have much to say about the entity classes here, simply because
 the principles behind mapping entity classes in Hibernate Reactive,
@@ -292,12 +293,16 @@ You're quite free to mix and match:
 
 - the regular JPA mapping annotations defined in the package
   `javax.persistence` with
-- the advanced mapping annotations in `org.hibernate.annotations`.
+- the advanced mapping annotations in `org.hibernate.annotations`, and even
+- annotations like `@NotNull` and `@Size` defined by Bean Validation.
 
 A full list of object/relational mapping annotations may be found in the
 {mapping-annotations}[documentation for Hibernate ORM]. Most mapping
 annotations are already supported in Hibernate Reactive, though there are
 still a handful of limitations at this time.
+
+Information about Bean Validation annotations may be found in the
+{bean-validation}[documentation for Hibernate Validator].
 
 === Identifier generation
 
