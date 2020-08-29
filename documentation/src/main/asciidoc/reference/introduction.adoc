@@ -556,7 +556,8 @@ affected rows
 
 TIP: The Hibernate Reactive `Query` API doesn't support `java.util.Date`
 or its subclasses in `java.sql`, nor `java.util.Calendar`. Always use
-`java.time` types for binding temporally-typed query parameters.
+`java.time` types like `LocalDate` or `LocalDateTime` for specifying
+arguments to temporally-typed query parameters.
 
 For  JPA criteria queries, you must first obtain the `CriteriaBuilder` using
 `SessionFactory.getCriteriaBuilder()`, and execute your query using
