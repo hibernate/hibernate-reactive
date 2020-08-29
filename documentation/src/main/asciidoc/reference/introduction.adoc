@@ -482,7 +482,8 @@ operations defined by JPA:
 
 If you're not familiar with these operations, don't despair! Their semantics
 are defined in the JPA specification, and in the API documentation, and are
-explained in innumerable articles and blog posts.
+explained in innumerable articles and blog posts. But if you already have some
+experience with Hibernate or JPA, you're right at home!
 
 Now, _here's where Hibernate Reactive is different:_ in the reactive API, each
 of these methods returns its result in a non-blocking fashion via a Java
@@ -512,9 +513,34 @@ if&mdash;and _only_ if&mdash;you use a transaction, as described below in
 session explicitly, your persistence operations might never be sent to the
 database!
 
-If you already know Hibernate, and if you already have some experience with
-reactive programming, there's not much new to learn here: you should
-immediately feel right at home.
+An _extremely_ common mistake when using reactive streams is to forget to
+chain the return value of a "void-like" method. For example, in the following
+code, the `flush()` operation is never executed, because `thenAccept()`
+doesn't chain its return value to the tip of the stream.
+
+[java]
+----
+session.find(Book.class, id)
+        .thenCompose( book -> session.remove(book) )
+        .thenAccept( session -> session.flush() )   //OOPS, WRONG!!
+        .whenComplete( (session,e) -> session.close() )
+----
+
+The same problem occurs in the following code, but this time it's `remove()`
+that never gets called:
+
+[java]
+----
+session.find(Book.class, id)
+        .thenCompose( book -> {
+            session.remove(book);   //OOPS, WRONG!!
+            return session.flush();
+        } )
+----
+
+If you already have some experience with reactive programming, there's nothing
+new to learn here. But if you _are_ new to reactive programming, just be aware
+that you're going to make this mistake, in some form, _at least_ once!
 
 === Queries
 
