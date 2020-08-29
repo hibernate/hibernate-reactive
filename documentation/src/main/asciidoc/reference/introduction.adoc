@@ -360,7 +360,7 @@ all the time when working with Hibernate Reactive:
 
 | Chain non-blocking operations            | `thenCompose()`        | `chain()` or `then()`
 | Transform streamed items                 | `thenApply()`          | `map()`
-| Perform an action using streamed items   | `thenAccept()`         | `invoke()`
+| Perform an action using streamed items   | `thenAccept()`         | `invoke()` or `invokeUni()`
 | Perform cleanup (similar to `finally`)   | `whenComplete()`       | `eventually()`
 |===
 
