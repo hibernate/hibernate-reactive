@@ -383,7 +383,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 			return begin()
 					.then( () -> work.apply( this ) )
 					// only flush() if the work completed with no exception
-					.chain( result -> flush().map( v -> result ) )
+					.invokeUni( result -> flush() )
 					// have to capture the error here and pass it along,
 					// since we can't just return a CompletionStage that
 					// rolls back the transaction from the handle() function
