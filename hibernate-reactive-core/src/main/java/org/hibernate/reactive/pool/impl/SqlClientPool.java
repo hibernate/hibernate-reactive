@@ -148,9 +148,23 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		return new SqlClientConnection( connection, pool, showSQL, formatSQL, usePostgresStyleParameters );
 	}
 
+	/**
+	 * Unimplemented operation. Must be overridden by subclasses
+	 * which support multitenancy.
+	 */
+	@Override
+	public CompletionStage<ReactiveConnection> getConnection(String tenantId) {
+		throw new UnsupportedOperationException("multitenancy not supported by built-in SqlClientPool");
+	}
+
 	@Override
 	public ReactiveConnection getProxyConnection() {
 		return new ProxyConnection();
+	}
+
+	@Override
+	public ReactiveConnection getProxyConnection(String tenantId) {
+		return new ProxyConnection( tenantId );
 	}
 
 	@Override
@@ -172,16 +186,30 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		return URI.create( url );
 	}
 
-	private class ProxyConnection implements ReactiveConnection {
+	/**
+	 * A proxy {@link ReactiveConnection} that initializes the
+	 * underlying connection lazily.
+	 */
+	protected class ProxyConnection implements ReactiveConnection {
 		private ReactiveConnection connection;
 		private boolean connected;
+		private final String tenantId;
+
+		public ProxyConnection() {
+			tenantId = null;
+		}
+
+		public ProxyConnection(String tenantId) {
+			this.tenantId = tenantId;
+		}
 
 		private <T> CompletionStage<T> withConnection(Function<ReactiveConnection,CompletionStage<T>> operation) {
 			if (!connected) {
 				connected = true; // we're not allowed to fetch two connections!
-				return getConnection()
-						.thenApply(newConnection -> connection = newConnection)
-						.thenCompose(operation);
+				CompletionStage<ReactiveConnection> connection =
+						tenantId==null ? getConnection() : getConnection( tenantId );
+				return connection.thenApply( newConnection -> this.connection = newConnection )
+						.thenCompose( operation );
 			}
 			else {
 				if (connection == null) {

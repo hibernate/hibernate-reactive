@@ -12,7 +12,6 @@ import org.hibernate.bytecode.internal.ProxyFactoryFactoryInitiator;
 import org.hibernate.cache.internal.RegionFactoryInitiator;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
 import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
-import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.dialect.internal.DialectFactoryInitiator;
 import org.hibernate.engine.jdbc.dialect.internal.DialectResolverInitiator;
@@ -23,6 +22,7 @@ import org.hibernate.jmx.internal.JmxServiceInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfigurationInitiator;
+import org.hibernate.reactive.provider.service.NoJdbcMultiTenantConnectionProviderInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.NoJdbcConnectionProviderInitiator;
 import org.hibernate.reactive.provider.service.NoJdbcEnvironmentInitiator;
@@ -88,8 +88,8 @@ public final class ReactiveServiceInitiators {
 
         //Custom for Hibernate Reactive:
         serviceInitiators.add( NoJdbcConnectionProviderInitiator.INSTANCE );
+        serviceInitiators.add( NoJdbcMultiTenantConnectionProviderInitiator.INSTANCE );
 
-        serviceInitiators.add( MultiTenantConnectionProviderInitiator.INSTANCE );
         serviceInitiators.add( DialectResolverInitiator.INSTANCE );
         serviceInitiators.add( DialectFactoryInitiator.INSTANCE );
         serviceInitiators.add( BatchBuilderInitiator.INSTANCE );

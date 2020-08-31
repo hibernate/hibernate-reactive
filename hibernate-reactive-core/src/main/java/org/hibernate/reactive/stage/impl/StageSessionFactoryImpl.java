@@ -6,7 +6,9 @@
 package org.hibernate.reactive.stage.impl;
 
 import org.hibernate.Cache;
+import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
@@ -34,53 +36,65 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	@Override
 	public Stage.Session openSession() {
-		ReactiveConnectionPool pool = delegate.getServiceRegistry()
-				.getService(ReactiveConnectionPool.class);
+		SessionCreationOptions options = options();
 		return new StageSessionImpl(
-				new ReactiveSessionImpl(
-						delegate,
-						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
-						pool.getProxyConnection()
-				)
+				new ReactiveSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) )
+		);
+	}
+
+	@Override
+	public Stage.Session openSession(String tenantId) {
+		return new StageSessionImpl(
+				new ReactiveSessionImpl( delegate, options(), proxyConnection( tenantId ) )
 		);
 	}
 
 	public Stage.StatelessSession openStatelessSession() {
-		ReactiveConnectionPool pool = delegate.getServiceRegistry()
-				.getService(ReactiveConnectionPool.class);
+		SessionCreationOptions options = options();
 		return new StageStatelessSessionImpl(
-				new ReactiveStatelessSessionImpl(
-						delegate,
-						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
-						pool.getProxyConnection()
-				)
+				new ReactiveStatelessSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) )
 		);
 	}
 
 	CompletionStage<Stage.Session> newSession() {
-		ReactiveConnectionPool pool = delegate.getServiceRegistry()
-				.getService(ReactiveConnectionPool.class);
-		return pool.getConnection()
-				.thenApply( reactiveConnection -> new ReactiveSessionImpl(
-						delegate,
-						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
-						reactiveConnection
-				) )
+		SessionCreationOptions options = options();
+		return connection( options.getTenantIdentifier() )
+				.thenApply( connection -> new ReactiveSessionImpl( delegate, options, connection ) )
+				.thenApply( StageSessionImpl::new );
+	}
+
+	CompletionStage<Stage.Session> newSession(String tenantId) {
+		return connection( tenantId )
+				.thenApply( connection -> new ReactiveSessionImpl( delegate, options(), connection ) )
 				.thenApply( StageSessionImpl::new );
 	}
 
 	CompletionStage<Stage.StatelessSession> newStatelessSession() {
-		ReactiveConnectionPool pool = delegate.getServiceRegistry()
-				.getService(ReactiveConnectionPool.class);
-		return pool.getConnection()
-				.thenApply( reactiveConnection -> new ReactiveStatelessSessionImpl(
-						delegate,
-						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
-						reactiveConnection
-				) )
+		SessionCreationOptions options = options();
+		return connection( options.getTenantIdentifier() )
+				.thenApply( connection -> new ReactiveStatelessSessionImpl( delegate, options, connection ) )
 				.thenApply( StageStatelessSessionImpl::new );
 	}
 
+	private SessionCreationOptions options() {
+		return new SessionFactoryImpl.SessionBuilderImpl<>( delegate );
+	}
+
+	private ReactiveConnectionPool pool() {
+		return delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
+	}
+
+	private CompletionStage<ReactiveConnection> connection(String tenantId) {
+		return tenantId == null
+				? pool().getConnection()
+				: pool().getConnection( tenantId );
+	}
+
+	private ReactiveConnection proxyConnection(String tenantId) {
+		return tenantId==null
+				? pool().getProxyConnection()
+				: pool().getProxyConnection( tenantId );
+	}
 	@Override
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
 		return newSession().thenCompose(
@@ -89,8 +103,20 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	}
 
 	@Override
+	public <T> CompletionStage<T> withSession(String tenantId, Function<Stage.Session, CompletionStage<T>> work) {
+		return newSession( tenantId ).thenCompose(
+				session -> work.apply(session).whenComplete( (r, e) -> session.close() )
+		);
+	}
+
+	@Override
 	public <T> CompletionStage<T> withTransaction(BiFunction<Stage.Session, Stage.Transaction, CompletionStage<T>> work) {
 		return withSession( (s) -> s.withTransaction( (t) -> work.apply(s, t) ) );
+	}
+
+	@Override
+	public <T> CompletionStage<T> withTransaction(String tenantId, BiFunction<Stage.Session, Stage.Transaction, CompletionStage<T>> work) {
+		return withSession( tenantId, (s) -> s.withTransaction( (t) -> work.apply(s, t) ) );
 	}
 
 	@Override

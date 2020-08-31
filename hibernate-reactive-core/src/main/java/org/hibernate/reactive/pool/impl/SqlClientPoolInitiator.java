@@ -22,8 +22,7 @@ public class SqlClientPoolInitiator implements StandardServiceInitiator<Reactive
 
 	public static final SqlClientPoolInitiator INSTANCE = new SqlClientPoolInitiator();
 
-	private SqlClientPoolInitiator() {
-	}
+	public SqlClientPoolInitiator() {}
 
 	@Override
 	public ReactiveConnectionPool initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
