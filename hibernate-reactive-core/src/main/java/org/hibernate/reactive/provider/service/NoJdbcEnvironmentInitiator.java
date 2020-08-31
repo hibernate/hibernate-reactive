@@ -42,17 +42,11 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 	public JdbcEnvironment initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
 		if ( !configurationValues.containsKey( Settings.DIALECT ) ) {
 			String url = configurationValues.getOrDefault( Settings.URL, "" ).toString();
-			Class<? extends Dialect> dialectClass = null;
-			if ( url.startsWith("jdbc:mysql:") ) {
-				dialectClass = MySQL8Dialect.class;
+			if ( url.startsWith("jdbc:") ) {
+				url = url.substring(5);
 			}
-			else if ( url.startsWith("jdbc:postgresql:") ) {
-				dialectClass = PostgreSQL10Dialect.class;
-			}
-			else if ( url.startsWith( "jdbc:db2:" ) ) {
-				dialectClass =  DB297Dialect.class;
-			}
-			//TODO etc
+
+			Class<? extends Dialect> dialectClass = guessDialect(url);
 			if ( dialectClass != null ) {
 				configurationValues.put( Settings.DIALECT, dialectClass.getName() );
 			}
@@ -108,4 +102,18 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 		return new JdbcEnvironmentImpl( registry, dialectFactory.buildDialect(configurationValues, null ) );
 	}
 
+	protected Class<? extends Dialect> guessDialect(String url) {
+		if ( url.startsWith("mysql:") ) {
+			return MySQL8Dialect.class;
+		}
+		else if ( url.startsWith("postgresql:") || url.startsWith("postgres:") ) {
+			return PostgreSQL10Dialect.class;
+		}
+		else if ( url.startsWith("db2:") ) {
+			return  DB297Dialect.class;
+		}
+		else {
+			return null;
+		}
+	}
 }
