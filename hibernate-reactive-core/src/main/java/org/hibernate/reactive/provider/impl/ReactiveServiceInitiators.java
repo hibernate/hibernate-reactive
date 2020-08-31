@@ -31,7 +31,7 @@ import org.hibernate.reactive.provider.service.ReactiveQueryTranslatorFactoryIni
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInitiator;
 import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
-import org.hibernate.reactive.pool.impl.SqlClientPoolInitiator;
+import org.hibernate.reactive.pool.impl.ReactiveConnectionPoolInitiator;
 import org.hibernate.reactive.vertx.impl.VertxInstanceInitiator;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
@@ -61,7 +61,7 @@ public final class ReactiveServiceInitiators {
 
         // Exclusive to Hibernate Reactive:
         serviceInitiators.add( SqlClientPoolConfigurationInitiator.INSTANCE );
-        serviceInitiators.add( SqlClientPoolInitiator.INSTANCE );
+        serviceInitiators.add( ReactiveConnectionPoolInitiator.INSTANCE );
 
         //Custom for Hibernate Reactive:
         serviceInitiators.add( ReactiveSessionFactoryBuilderInitiator.INSTANCE );

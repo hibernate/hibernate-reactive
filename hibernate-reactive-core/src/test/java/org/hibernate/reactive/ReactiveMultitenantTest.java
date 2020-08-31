@@ -8,48 +8,26 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.LockMode;
 import org.hibernate.MultiTenancyStrategy;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.cfg.Environment;
-import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.pool.impl.SqlClientPool;
-import org.hibernate.reactive.pool.impl.SqlClientPoolInitiator;
+import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.junit.Test;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Version;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 public class ReactiveMultitenantTest extends BaseReactiveTest {
-
-    @Override
-    protected void addServices(StandardServiceRegistryBuilder builder) {
-        builder.addInitiator( new SqlClientPoolInitiator() {
-            @Override
-            public ReactiveConnectionPool initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-                return new SqlClientPool() {
-                    @Override
-                    public CompletionStage<ReactiveConnection> getConnection(String tenantId) {
-                        return getConnection();
-                    }
-                };
-            }
-        } );
-    }
 
     @Override
     protected Configuration constructConfiguration() {
         Configuration configuration = super.constructConfiguration();
         configuration.addAnnotatedClass( GuineaPig.class );
-        configuration.setProperty( Environment.MULTI_TENANT, MultiTenancyStrategy.DATABASE.name() );
-        configuration.setProperty( Environment.MULTI_TENANT_IDENTIFIER_RESOLVER, MyCurrentTenantIdentifierResolver.class.getName() );
+        configuration.setProperty( Settings.MULTI_TENANT, MultiTenancyStrategy.DATABASE.name() );
+        configuration.setProperty( Settings.MULTI_TENANT_IDENTIFIER_RESOLVER, MyCurrentTenantIdentifierResolver.class.getName() );
+        configuration.setProperty( Settings.SQL_CLIENT_POOL, MySqlClientPool.class.getName() );
         return configuration;
     }
 
@@ -140,4 +118,5 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
             return Objects.hash( name );
         }
     }
+
 }

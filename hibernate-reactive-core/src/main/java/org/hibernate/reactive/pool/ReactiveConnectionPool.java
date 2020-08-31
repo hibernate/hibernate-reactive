@@ -15,9 +15,13 @@ import java.util.concurrent.CompletionStage;
  * A Hibernate {@link Service} that provides access to pooled
  * {@link ReactiveConnection reactive connections}.
  * <p>
- * A program may integrate a custom {@link ReactiveConnectionPool}
- * with Hibernate Reactive by contributing a new service using a
- * {@link org.hibernate.boot.registry.StandardServiceInitiator}
+ * A custom implementation of {@link ReactiveConnectionPool}
+ * may be specified using the configuration property
+ * {@link org.hibernate.reactive.provider.Settings#SQL_CLIENT_POOL}.
+ * <p>
+ * Alternatively, a program may integrate a custom
+ * {@code ReactiveConnectionPool} by contributing a new service using
+ * a {@link org.hibernate.boot.registry.StandardServiceInitiator}
  * or from code-based Hibernate configuration by calling
  * {@link ReactiveServiceRegistryBuilder#addService}.
  *

@@ -40,4 +40,9 @@ public interface Settings extends AvailableSettings {
 	 * Specifies a {@link org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration} class.
 	 */
 	String SQL_CLIENT_POOL_CONFIG = "hibernate.vertx.pool.configuration_class";
+
+	/**
+	 * Specifies a {@link org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration} class.
+	 */
+	String SQL_CLIENT_POOL = "hibernate.vertx.pool.class";
 }
