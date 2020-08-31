@@ -13,7 +13,6 @@ import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.spi.Driver;
 import org.hibernate.dialect.PostgreSQL9Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
-import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.provider.Settings;
@@ -37,6 +36,7 @@ import java.util.function.Function;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
+import static org.hibernate.internal.CoreLogging.messageLogger;
 
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
@@ -106,7 +106,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 
 	private URI jdbcUrl(Map<?,?> configurationValues) {
 		final String url = ConfigurationHelper.getString( Settings.URL, configurationValues );
-		CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000011: SQL Client URL [%s]", url );
+		messageLogger(SqlClientPool.class).infof( "HRX000011: SQL Client URL [%s]", url );
 		return parse( url );
 	}
 
@@ -114,7 +114,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		String scheme = uri.getScheme(); // "postgresql", "mysql", "db2", etc
 		for (Driver d : ServiceLoader.load( Driver.class )) {
 			String driverName = d.getClass().getCanonicalName();
-			CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000013: Detected driver [%s]", driverName );
+			messageLogger(SqlClientPool.class).infof( "HRX000013: Detected driver [%s]", driverName );
 			switch (driverName) {
 				case "io.vertx.db2client.spi.DB2Driver":
 					if ( "db2".equalsIgnoreCase( scheme ) ) return d;
