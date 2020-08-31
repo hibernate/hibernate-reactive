@@ -193,10 +193,6 @@ Note that you should not use Hibernate Reactive with a second-level cache
 implementation which performs blocking IO, for example passivation to the
 filesystem or distributed replication.
 
-#### Multitenancy
-
-Mulitenancy is not yet supported.
-
 #### Driver-specific limitations
 
 You might run into some limitations of the Vert.x DB2 client when using 

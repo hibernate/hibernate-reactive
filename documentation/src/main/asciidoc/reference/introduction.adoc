@@ -176,7 +176,7 @@ pool and cache via the following properties:
 TIP: But for now, just leave these three settings alone.
 
 Finally, for more advanced cases, you can write your own code to configure
-the Vert.x client by  implementing `SqlClientPoolConfiguration`.
+the Vert.x client by implementing `SqlClientPoolConfiguration`.
 
 |===
 | Configuration property name      | Purpose
@@ -745,6 +745,33 @@ limitations:
 - persistence operations never cascade to associated instances,
 - collections are completely ignored, and
 - operations performed via a stateless session bypass callbacks.
+
+== Custom connection management and multitenancy
+
+Hibernate Reactive supports custom management of reactive connections by letting
+you define your own implementation of `ReactiveConnectionPool`, or extend the
+built-in implementation `SqlClientPool`.
+
+|===
+| Configuration property name | Value
+
+| `hibernate.vertx.pool.class` | A class which implements `ReactiveConnectionPool`
+|===
+
+A common motivation for defining a custom pool is the need to support multitenancy.
+In a multitenant application, the database or database schema depends on the current
+tenant identifier. The easiest way to set this up in Hibernate Reactive is to extend
+`SqlClientPool` and override `getConnection(String tenantId)`.
+
+For multitenancy, you'll also need to set at least one of the following
+configuration properties defined by Hibernate ORM:
+
+|===
+| Configuration property name            | Value
+
+| `hibernate.multiTenancy`               | The multitenancy strategy: `database` or `schema`
+| `hibernate.tenant_identifier_resolver` | (Optional) A class which implements `CurrentTenantIdentifierResolver`
+|===
 
 == Next steps
 
