@@ -122,6 +122,9 @@ there's no JDBC in Hibernate Reactive, and these are simply the legacy
 property names defined by the JPA specification and Hibernate ORM. In
 particular, Hibernate Reactive itself parses and interprets the JDBC URL.
 
+TIP: You don't need to specify `hibernate.dialect`. The correct Hibernate
+`Dialect` will be determined for you by Hibernate Reactive.
+
 An example {xml}[`persistence.xml`] file is included in the example
 program.
 
