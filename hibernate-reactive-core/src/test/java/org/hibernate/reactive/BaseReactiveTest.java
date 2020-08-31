@@ -11,6 +11,7 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.reactive.common.AutoCloseable;
@@ -75,9 +76,7 @@ public abstract class BaseReactiveTest {
 					}
 					async.complete();
 				},
-				throwable -> {
-					context.fail( throwable );
-				}
+				throwable -> context.fail( throwable )
 		);
 	}
 
@@ -99,13 +98,16 @@ public abstract class BaseReactiveTest {
 	@Before
 	public void before() {
 		Configuration configuration = constructConfiguration();
-		StandardServiceRegistry registry = new ReactiveServiceRegistryBuilder()
-				.applySettings( configuration.getProperties() )
-				.build();
-		mysqlConfiguration( registry );
+		StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
+				.applySettings( configuration.getProperties() );
+		addServices( builder );
+		StandardServiceRegistry registry = builder.build();
+		configureServices( registry );
 		sessionFactory = configuration.buildSessionFactory( registry );
 		poolProvider = registry.getService( ReactiveConnectionPool.class );
 	}
+
+	protected void addServices(StandardServiceRegistryBuilder builder) {}
 
 	/*
 	 * MySQL doesn't implement 'drop table cascade constraints'.
@@ -114,7 +116,7 @@ public abstract class BaseReactiveTest {
 	 * have lots of different schemas for the "same" table: Pig, Author, Book.
 	 * A user would surely only have one schema for each table.
 	 */
-	private void mysqlConfiguration(StandardServiceRegistry registry) {
+	protected void configureServices(StandardServiceRegistry registry) {
 		if ( dbType() == DBType.MYSQL ) {
 			registry.getService( ConnectionProvider.class ); //force the NoJdbcConnectionProvider to load first
 			registry.getService( SchemaManagementTool.class )

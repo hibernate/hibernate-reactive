@@ -8,8 +8,10 @@ package org.hibernate.reactive.mutiny.impl;
 import io.smallrye.mutiny.Uni;
 import org.hibernate.Cache;
 import org.hibernate.HibernateException;
+import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
@@ -17,6 +19,7 @@ import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.metamodel.Metamodel;
+import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -35,52 +38,65 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public Mutiny.Session openSession() {
-		ReactiveConnectionPool pool = delegate.getServiceRegistry()
-				.getService(ReactiveConnectionPool.class);
+		SessionCreationOptions options = options();
 		return new MutinySessionImpl(
-				new ReactiveSessionImpl(
-						delegate,
-						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
-						pool.getProxyConnection()
-				)
+				new ReactiveSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) )
+		);
+	}
+
+	@Override
+	public Mutiny.Session openSession(String tenantId) {
+		return new MutinySessionImpl(
+				new ReactiveSessionImpl( delegate, options(), proxyConnection( tenantId ) )
 		);
 	}
 
 	Uni<Mutiny.Session> newSession() throws HibernateException {
-		ReactiveConnectionPool pool = delegate.getServiceRegistry()
-				.getService(ReactiveConnectionPool.class);
-		return Uni.createFrom().completionStage( pool.getConnection() )
-				.map( reactiveConnection -> new ReactiveSessionImpl(
-						delegate,
-						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
-						reactiveConnection
-				) )
+		SessionCreationOptions options = options();
+		return Uni.createFrom().completionStage( connection( options.getTenantIdentifier() ) )
+				.map( reactiveConnection -> new ReactiveSessionImpl( delegate, options, reactiveConnection ) )
+				.map( MutinySessionImpl::new );
+	}
+
+	Uni<Mutiny.Session> newSession(String tenantId) throws HibernateException {
+		return Uni.createFrom().completionStage( connection( tenantId ) )
+				.map( reactiveConnection -> new ReactiveSessionImpl( delegate, options(), reactiveConnection ) )
 				.map( MutinySessionImpl::new );
 	}
 
 	@Override
 	public Mutiny.StatelessSession openStatelessSession() {
-		ReactiveConnectionPool pool = delegate.getServiceRegistry()
-				.getService(ReactiveConnectionPool.class);
+		SessionCreationOptions options = options();
 		return new MutinyStatelessSessionImpl(
-				new ReactiveStatelessSessionImpl(
-						delegate,
-						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
-						pool.getProxyConnection()
-				)
+				new ReactiveStatelessSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) )
 		);
 	}
 
 	Uni<Mutiny.StatelessSession> newStatelessSession() throws HibernateException {
-		ReactiveConnectionPool pool = delegate.getServiceRegistry()
-				.getService(ReactiveConnectionPool.class);
-		return Uni.createFrom().completionStage( pool.getConnection() )
-				.map( reactiveConnection -> new ReactiveStatelessSessionImpl(
-						delegate,
-						new SessionFactoryImpl.SessionBuilderImpl<>(delegate),
-						reactiveConnection
-				) )
+		SessionCreationOptions options = options();
+		return Uni.createFrom().completionStage( connection( options.getTenantIdentifier() ) )
+				.map( reactiveConnection -> new ReactiveStatelessSessionImpl( delegate, options, reactiveConnection ) )
 				.map( MutinyStatelessSessionImpl::new );
+	}
+
+	private SessionCreationOptions options() {
+		return new SessionFactoryImpl.SessionBuilderImpl<>( delegate );
+	}
+
+	private ReactiveConnectionPool pool() {
+		return delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
+	}
+
+	private CompletionStage<ReactiveConnection> connection(String tenantId) {
+		return tenantId == null
+				? pool().getConnection()
+				: pool().getConnection( tenantId );
+	}
+
+	private ReactiveConnection proxyConnection(String tenantId) {
+		return tenantId==null
+				? pool().getProxyConnection()
+				: pool().getProxyConnection( tenantId );
 	}
 
 	@Override
@@ -91,8 +107,20 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	}
 
 	@Override
+	public <T> Uni<T> withSession(String tenantId, Function<Mutiny.Session, Uni<T>> work) {
+		return newSession( tenantId ).chain(
+				session -> work.apply( session ).eventually( session::close )
+		);
+	}
+
+	@Override
 	public <T> Uni<T> withTransaction(BiFunction<Mutiny.Session, Mutiny.Transaction, Uni<T>> work) {
 		return withSession( (s) -> s.withTransaction( (t) -> work.apply(s, t) ) );
+	}
+
+	@Override
+	public <T> Uni<T> withTransaction(String tenantId, BiFunction<Mutiny.Session, Mutiny.Transaction, Uni<T>> work) {
+		return withSession( tenantId, (s) -> s.withTransaction( (t) -> work.apply(s, t) ) );
 	}
 
 	@Override

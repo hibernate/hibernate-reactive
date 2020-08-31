@@ -1137,6 +1137,22 @@ public interface Stage {
 		Session openSession();
 
 		/**
+		 * Obtain a new {@link Session reactive session} for a
+		 * specified tenant.
+		 * <p>
+		 * The underlying database connection is obtained lazily when
+		 * the returned {@link Session} needs to access the database.
+		 * <p>
+		 * The client must explicitly close the session by calling
+		 * {@link Session#close()}.
+		 *
+		 * @param tenantId the id of the tenant
+		 *
+		 * @see #withSession(Function)
+		 */
+		Session openSession(String tenantId);
+
+		/**
 		 * Obtain a {@link StatelessSession reactive stateless session}.
 		 * <p>
 		 * The underlying database connection is obtained lazily when
@@ -1159,6 +1175,18 @@ public interface Stage {
 		<T> CompletionStage<T> withSession(Function<Session, CompletionStage<T>> work);
 
 		/**
+		 * Perform work using a {@link Session reactive session} for a
+		 * specified tenant.
+		 * <p>
+		 * The session will be closed automatically.
+		 *
+		 * @param tenantId the id of the tenant
+		 * @param work a function which accepts the session and returns
+		 *             the result of the work as a {@link CompletionStage}.
+		 */
+		<T> CompletionStage<T> withSession(String tenantId, Function<Session, CompletionStage<T>> work);
+
+		/**
 		 * Perform work using a {@link Session reactive session} within an
 		 * associated {@link Transaction transaction}.
 		 * <p>
@@ -1172,6 +1200,22 @@ public interface Stage {
 		 * @see Session#withTransaction(Function)
 		 */
 		<T> CompletionStage<T> withTransaction(BiFunction<Session, Transaction, CompletionStage<T>> work);
+
+		/**
+		 * Perform work using a {@link Session reactive session} for a
+		 * specified tenant within an associated {@link Transaction transaction}.
+		 * <p>
+		 * The session will be {@link Session#flush() flushed} and closed
+		 * automatically, and the transaction committed automatically.
+		 *
+		 * @param tenantId the id of the tenant
+		 * @param work a function which accepts the session and returns
+		 *             the result of the work as a {@link CompletionStage}.
+		 *
+		 * @see #withSession(Function)
+		 * @see Session#withTransaction(Function)
+		 */
+		<T> CompletionStage<T> withTransaction(String tenantId, BiFunction<Session, Transaction, CompletionStage<T>> work);
 
 		/**
 		 * @return an instance of {@link CriteriaBuilder} for creating
