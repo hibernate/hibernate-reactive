@@ -20,7 +20,8 @@ import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
 
 /**
  * The default {@link SqlClientPoolConfiguration} which configures the
- * {@link io.vertx.sqlclient.Pool} using the configuration properties.
+ * {@link io.vertx.sqlclient.Pool} using the Hibernate ORM configuration
+ * properties defined in {@link Settings}.
  * <p>
  * A custom implementation of {@code SqlClientPoolConfiguration} might
  * choose to extend this class in order to reuse its built-in
@@ -61,32 +62,49 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
         String database = uri.getPath().substring( 1 );
         if ( scheme.equals("db2") && database.indexOf( ':' ) > 0 ) {
+            // DB2 URLs are a bit odd and have the format:
+            // jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
             database = database.substring( 0, database.indexOf( ':' ) );
         }
 
-        // FIXME: Check which values can be null
+        //see if the credentials were specified via properties
         String username = getString( Settings.USER, configurationValues );
         String password = getString( Settings.PASS, configurationValues );
         if (username==null || password==null) {
-            String[] params = {};
-            // DB2 URLs are a bit odd and have the format: jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
-            if ( scheme.equals("db2") ) {
-                int queryIndex = uri.getPath().indexOf(':') + 1;
-                if (queryIndex > 0) {
-                    params = uri.getPath().substring(queryIndex).split(";");
+            //if not, look for URI-style user info first
+            String userInfo = uri.getUserInfo();
+            if (userInfo!=null) {
+                String[] bits = userInfo.split(":");
+                username = bits[0];
+                if (bits.length>1) {
+                    password = bits[1];
                 }
-            } else {
-                params = uri.getQuery().split("&");
             }
-            for (String param : params) {
-                if ( param.startsWith("user=") ) {
-                    username = param.substring(5);
+            else {
+                //check the query for named parameters
+                //in case it's a JDBC-style URL
+                String[] params = {};
+                // DB2 URLs are a bit odd and have the format:
+                // jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
+                if ( scheme.equals("db2") ) {
+                    int queryIndex = uri.getPath().indexOf(':') + 1;
+                    if (queryIndex > 0) {
+                        params = uri.getPath().substring(queryIndex).split(";");
+                    }
                 }
-                if ( param.startsWith("pass=") ) {
-                    password = param.substring(5);
+                else {
+                    params = uri.getQuery().split("&");
                 }
-                if ( param.startsWith("password=") ) {
-                    password = param.substring(9);
+                for (String param : params) {
+                    if ( param.startsWith("user=") ) {
+                        username = param.substring(5);
+                    }
+                    if ( param.startsWith("pass=") ) {
+                        password = param.substring(5);
+                    }
+                    if ( param.startsWith("password=") ) {
+                        password = param.substring(9);
+                    }
                 }
             }
         }
@@ -94,7 +112,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
         int port = uri.getPort();
         if (port==-1) {
             switch (scheme) {
-                case "postgresql": port = 5432; break;
+                case "postgresql": case "postgres": port = 5432; break;
                 case "mysql": port = 3306; break;
                 case "db2": port = 50000; break;
             }
