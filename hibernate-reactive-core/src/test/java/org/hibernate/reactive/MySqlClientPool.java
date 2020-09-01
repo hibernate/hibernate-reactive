@@ -5,14 +5,13 @@
  */
 package org.hibernate.reactive;
 
-import org.hibernate.reactive.pool.ReactiveConnection;
+import io.vertx.sqlclient.Pool;
 import org.hibernate.reactive.pool.impl.SqlClientPool;
 
-import java.util.concurrent.CompletionStage;
 
 public class MySqlClientPool extends SqlClientPool {
     @Override
-    public CompletionStage<ReactiveConnection> getConnection(String tenantId) {
-        return getConnection();
+    protected Pool getTenantPool(String tenantId) {
+        return getPool();
     }
 }
