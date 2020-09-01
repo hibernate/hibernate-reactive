@@ -16,7 +16,7 @@ import java.util.concurrent.CompletionStage;
  * {@link ReactiveConnection reactive connections}.
  * <p>
  * A custom implementation of {@link ReactiveConnectionPool}
- * may be specified using the configuration property
+ * may be selected by setting the configuration property
  * {@link org.hibernate.reactive.provider.Settings#SQL_CLIENT_POOL}.
  * <p>
  * Alternatively, a program may integrate a custom

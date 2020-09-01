@@ -761,7 +761,7 @@ built-in implementation `SqlClientPool`.
 A common motivation for defining a custom pool is the need to support multitenancy.
 In a multitenant application, the database or database schema depends on the current
 tenant identifier. The easiest way to set this up in Hibernate Reactive is to extend
-`SqlClientPool` and override `getConnection(String tenantId)`.
+`SqlClientPool` and override `getTenantPool(String tenantId)`.
 
 For multitenancy, you'll also need to set at least one of the following
 configuration properties defined by Hibernate ORM:

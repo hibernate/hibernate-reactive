@@ -31,27 +31,32 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
     private static final int DEFAULT_POOL_SIZE = 5;
 
-    private Map<?,?> configurationValues;
+    private int poolSize;
+    private Integer maxWaitQueueSize;
+    private Integer cacheMaxSize;
+    private Integer sqlLimit;
+    private String user;
+    private String pass;
 
     @Override
-    public void configure(Map configurationValues) {
-        this.configurationValues = configurationValues;
+    public void configure(Map configuration) {
+        user = getString( Settings.USER, configuration );
+        pass = getString( Settings.PASS, configuration );
+        poolSize = getInt( Settings.POOL_SIZE, configuration, DEFAULT_POOL_SIZE );
+        maxWaitQueueSize = getInteger( Settings.MAX_WAIT_QUEUE_SIZE, configuration );
+        cacheMaxSize = getInteger( Settings.PREPARED_STATEMENT_CACHE_MAX_SIZE, configuration );
+        sqlLimit = getInteger( Settings.PREPARED_STATEMENT_CACHE_SQL_LIMIT, configuration );
     }
 
     @Override
     public PoolOptions poolOptions() {
         PoolOptions poolOptions = new PoolOptions();
-
-        final int poolSize = getInt( Settings.POOL_SIZE, configurationValues, DEFAULT_POOL_SIZE );
         messageLogger(SqlClientPool.class).infof( "HRX000012: Connection pool size: %d", poolSize );
         poolOptions.setMaxSize( poolSize );
-
-        final Integer maxWaitQueueSize = getInteger( Settings.MAX_WAIT_QUEUE_SIZE, configurationValues );
         if (maxWaitQueueSize!=null) {
             messageLogger(SqlClientPool.class).infof( "HRX000013: Connection pool max wait queue size: %d", maxWaitQueueSize );
             poolOptions.setMaxWaitQueueSize(maxWaitQueueSize);
         }
-
         return poolOptions;
     }
 
@@ -68,8 +73,8 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
         }
 
         //see if the credentials were specified via properties
-        String username = getString( Settings.USER, configurationValues );
-        String password = getString( Settings.PASS, configurationValues );
+        String username = user;
+        String password = pass;
         if (username==null || password==null) {
             //if not, look for URI-style user info first
             String userInfo = uri.getUserInfo();
@@ -130,7 +135,6 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
         //enable the prepared statement cache by default (except for DB2) and MySQL
         connectOptions.setCachePreparedStatements( !scheme.equals( "db2" ) && !scheme.equals( "mysql" ) );
 
-        final Integer cacheMaxSize = getInteger( Settings.PREPARED_STATEMENT_CACHE_MAX_SIZE, configurationValues );
         if (cacheMaxSize!=null) {
             if (cacheMaxSize <= 0) {
                 messageLogger(SqlClientPool.class).infof( "HRX000014: Prepared statement cache disabled", cacheMaxSize );
@@ -143,7 +147,6 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
             }
         }
 
-        final Integer sqlLimit = getInteger( Settings.PREPARED_STATEMENT_CACHE_SQL_LIMIT, configurationValues );
         if (sqlLimit!=null) {
             messageLogger(SqlClientPool.class).infof( "HRX000016: Prepared statement cache SQL limit: %d", sqlLimit );
             connectOptions.setPreparedStatementCacheSqlLimit(sqlLimit);
