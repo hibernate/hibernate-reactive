@@ -30,7 +30,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import static java.util.Collections.singletonMap;
-import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
 /**
  * Implements the {@link Mutiny.Session} API. This delegating class is
@@ -377,27 +376,20 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	private class Transaction<T> implements Mutiny.Transaction {
 		boolean rollback;
-		Throwable error;
 
 		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
+			//noinspection Convert2MethodRef
 			return begin()
 					.then( () -> work.apply( this ) )
 					// only flush() if the work completed with no exception
 					.invokeUni( result -> flush() )
-					// have to capture the error here and pass it along,
-					// since we can't just return a CompletionStage that
-					// rolls back the transaction from the handle() function
-					.onTermination().invoke( this::processError )
-					// finally, commit or rollback the transaction, and
-					// then rethrow the caught error if necessary
-					.chain(
-							result -> end()
-									// make sure that if rollback() throws,
-									// the original error doesn't get swallowed
-									.onTermination().invoke( this::processError )
-									// finally rethrow the original error, if any
-									.map( v -> returnOrRethrow( error, result ) )
-					);
+					// in the case of an exception or cancellation
+					// we need to rollback the transaction
+					.onFailure().invokeUni( e -> rollback() )
+					.on().cancellation( () -> rollback() )
+					// finally, when there was no exception,
+					// commit or rollback the transaction
+					.onItem().invokeUni( result -> rollback ? rollback() : commit() );
 		}
 
 		Uni<Void> flush() {
@@ -408,27 +400,12 @@ public class MutinySessionImpl implements Mutiny.Session {
 			return Uni.createFrom().completionStage( delegate.getReactiveConnection().beginTransaction() );
 		}
 
-		Uni<Void> end() {
-			return Uni.createFrom().completionStage( rollback
-					? delegate.getReactiveConnection().rollbackTransaction()
-					: delegate.getReactiveConnection().commitTransaction()
-			);
+		Uni<Void> rollback() {
+			return Uni.createFrom().completionStage( delegate.getReactiveConnection().rollbackTransaction() );
 		}
 
-		<R> R processError(R result, Throwable e, boolean canceled) {
-			if ( canceled ) {
-				rollback = true;
-			}
-			if ( e!=null ) {
-				rollback = true;
-				if (error == null) {
-					error = e;
-				}
-				else {
-					error.addSuppressed(e);
-				}
-			}
-			return result;
+		Uni<Void> commit() {
+			return Uni.createFrom().completionStage( delegate.getReactiveConnection().commitTransaction() );
 		}
 
 		@Override
