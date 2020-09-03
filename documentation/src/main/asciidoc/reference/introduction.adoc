@@ -331,15 +331,17 @@ The most common and useful mapping annotations include:
 | `@Id`             | Specifies that a field of an entity holds the
                       persistent identity of the entity, and maps to
                       the primary key of its table
+| `@EmbeddedId`     | Specifies that a field of an entity holds the
+                      value of a composite primary key
 | `@GeneratedValue` | Specifies that an identifier is a system-generated
                       surrogate key
 | `@Version`        | Specifies that a field of an entity holds a version
                       number used for optimistic locking
-| `@ManyToOne`      | Declares a many to one association to a second
+| `@ManyToOne`      | Declares a many-to-one association to a second
                       entity
-| `@OneToOne`       | Declares a one to one association to a second
+| `@OneToOne`       | Declares a one-to-one association to a second
                       entity
-| `@OneToMany`      | Declares a one to many association to a second
+| `@OneToMany`      | Declares a one-to-many association to a second
                       entity
 | `@Table`          | Specifies a mapping to a database table
 | `@Column`         | Specifies a mapping to a database column
@@ -359,10 +361,20 @@ environment.
 - Sequence, table, and `UUID` id generation is built in, and these id
   generation strategies may be selected using the usual JPA mapping
   annotations: `@GeneratedValue`, `@TableGenerator`, `@SequenceGenerator`.
-- Natural ids&mdash;including composite ids&mdash;may be assigned by the
-  program in the usual way.
 - Custom id generators may be defined by implementing `ReactiveIdentifierGenerator`
   and declaring the custom implementation using `@GenericGenerator`.
+- Natural ids&mdash;including composite ids&mdash;may be assigned by the
+  program in the usual way.
+
+The standard id generation strategies defined by the JPA specification may
+be customized using the following annotations:
+
+|===
+| Annotation           | Purpose
+
+| `@SequenceGenerator` | Configure a generator based on a database sequence
+| `@TableGenerator`    | Configure a generator based on a row of a database table
+|===
 
 For example, sequence id generation may be specified like this:
 
@@ -382,6 +394,10 @@ class Author {
 
 You can find more information in the JPA specification.
 
+If you have very particular requirements, you can check out the Javadoc of
+`ReactiveIdentifierGenerator` for information on how to implement your own
+custom reactive identifier generator.
+
 === Custom types
 
 Hibernate custom types based on the `UserType` interface are similarly
@@ -391,8 +407,44 @@ partial implementation of JDBC to the `UserType` implementation.
 Therefore, _some_ existing `UserType` implementations will work in Hibernate
 Reactive, depending upon precisely which features of JDBC they depend on.
 
-TIP: Where possible, use a JPA `AttributeConverter` instead of a `UserType`,
-since JPA converters are not in any way tied to JDBC.
+TIP: Where possible, use a JPA attribute converter instead of a custom type,
+since attribute converters are not in any way tied to JDBC.
+
+You may specify a custom type by annotating a field of an entity class with
+the Hibernate `@Type` annotation.
+
+=== Attribute converters
+
+Any JPA `AttributeConverter` works in Hibernate Reactive. For example:
+
+[source,java]
+----
+@Converter
+public class BigIntegerAsString implements AttributeConverter<BigInteger, String> {
+    @Override
+    public String convertToDatabaseColumn(BigInteger attribute) {
+        return attribute == null ? null : attribute.toString(2);
+    }
+
+    @Override
+    public BigInteger convertToEntityAttribute(String string) {
+        return string == null ? null : new BigInteger(string, 2);
+    }
+}
+----
+
+You'll need to use one or both of these annotations:
+
+|===
+| Annotation        | Purpose
+
+| `@Converter`      | Declares a class implementing `AttributeConverter`
+| `@Convert`        | Specifies an `AttributeConverter` converter to use
+                      for a field of an entity class
+|===
+
+You'll find more information in the Javadoc for these annotations and in the
+JPA specification.
 
 === APIs for chaining reactive operations
 
