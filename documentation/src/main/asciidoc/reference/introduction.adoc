@@ -130,11 +130,12 @@ The following properties are useful for managing schemas and catalogs:
 |===
 | Configuration property name                           | Purpose
 
-| `hibernate.default_schema`                            | A default schema name for entities which do not explicitly declare one
-| `hibernate.default_catalog`                           | A default catalog name for entities which do not explicitly declare one
-| `hibernate.physical_naming_strategy`                  | A `PhysicalNamingStrategy` implementing your database naming standards
-| `javax.persistence.schema-generation.database.action` | If `create`, automatically export tables, sequences, and constraints
-| `javax.persistence.create-database-schemas`           | If `true`, automatically create schemas and catalogs
+| `hibernate.default_schema`                                 | A default schema name for entities which do not explicitly declare one
+| `hibernate.default_catalog`                                | A default catalog name for entities which do not explicitly declare one
+| `hibernate.physical_naming_strategy`                       | A `PhysicalNamingStrategy` implementing your database naming standards
+| `javax.persistence.schema-generation.database.action`      | If `create`, automatically export tables, sequences, and constraints
+| `javax.persistence.create-database-schemas`                | If `true`, automatically create schemas and catalogs
+| `javax.persistence.schema-generation.create-script-source` | The name of a SQL script to be executed after tables are exported
 |===
 
 An example {xml}[`persistence.xml`] file is included in the example
