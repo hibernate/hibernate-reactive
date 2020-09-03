@@ -65,16 +65,17 @@ public class DefaultReactiveRefreshEventListener
 	public CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, IdentitySet refreshedAlready) {
 
 		final EventSource source = event.getSession();
-		boolean isTransient;
-		if ( event.getEntityName() != null ) {
-			isTransient = !source.contains( event.getEntityName(), event.getObject() );
+		boolean detached = event.getEntityName() != null
+				? !source.contains( event.getEntityName(), event.getObject() )
+				: !source.contains( event.getObject() );
+		if ( detached ) {
+			// Hibernate Reactive doesn't support detached instances in refresh()
+			throw new IllegalArgumentException("unmanaged instance passed to refresh()");
 		}
-		else {
-			isTransient = !source.contains( event.getObject() );
-		}
+
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		if ( persistenceContext.reassociateIfUninitializedProxy( event.getObject() ) ) {
-			if ( isTransient ) {
+			if ( detached ) {
 				source.setReadOnly( event.getObject(), source.isDefaultReadOnly() );
 			}
 			return CompletionStages.voidFuture();

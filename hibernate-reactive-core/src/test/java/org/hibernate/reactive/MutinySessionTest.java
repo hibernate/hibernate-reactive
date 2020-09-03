@@ -9,6 +9,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -249,7 +250,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 		);
 	}
 
-	@Test
+	@Test @Ignore("we don't support remove(detached) anymore")
 	public void reactiveRemoveTransientEntity1(TestContext context) {
 		test(
 				context,
@@ -263,7 +264,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 		);
 	}
 
-	@Test
+	@Test @Ignore("we don't support remove(detached) anymore")
 	public void reactiveRemoveTransientEntity2(TestContext context) {
 		test(
 				context,

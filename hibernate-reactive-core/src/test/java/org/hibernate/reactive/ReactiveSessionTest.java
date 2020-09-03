@@ -10,6 +10,7 @@ import org.hibernate.LockMode;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -557,7 +558,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		);
 	}
 
-	@Test
+	@Test @Ignore("we don't support remove(detached) anymore")
 	public void reactiveRemoveTransientEntity(TestContext context) {
 		test(
 				context,

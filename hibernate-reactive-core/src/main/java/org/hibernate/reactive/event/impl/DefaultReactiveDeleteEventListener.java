@@ -107,6 +107,14 @@ public class DefaultReactiveDeleteEventListener
 
 		final EventSource source = event.getSession();
 
+		boolean detached = event.getEntityName() != null
+				? !source.contains( event.getEntityName(), event.getObject() )
+				: !source.contains( event.getObject() );
+		if ( detached ) {
+			// Hibernate Reactive doesn't support detached instances in refresh()
+			throw new IllegalArgumentException("unmanaged instance passed to refresh()");
+		}
+
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		Object entity = persistenceContext.unproxyAndReassociate( event.getObject() );
 
