@@ -322,6 +322,24 @@ environment.
 - Custom id generators may be defined by implementing `ReactiveIdentifierGenerator`
   and declaring the custom implementation using `@GenericGenerator`.
 
+For example, sequence id generation may be specified like this:
+
+[source,java]
+----
+@Entity
+@Table(name="authors")
+class Author {
+    @Id @GeneratedValue(generator = "authorIds")
+    @SequenceGenerator(name = "authorIds",
+               sequenceName = "author_ids",
+             allocationSize = 20)
+    Integer id;
+    ...
+}
+----
+
+You can find more information in the JPA specification.
+
 === Custom types
 
 Hibernate custom types based on the `UserType` interface are similarly
