@@ -106,6 +106,7 @@ of Hibernate Reactive.
 
 A full list of configuration properties recognized by Hibernate may be
 found in the {configuration-properties}[documentation for Hibernate ORM].
+
 Configuration properties of particular interest include:
 
 |===
@@ -113,7 +114,6 @@ Configuration properties of particular interest include:
 
 | `javax.persistence.jdbc.url`                                        | JDBC URL of your database
 | `javax.persistence.jdbc.user` and `javax.persistence.jdbc.password` | Your database credentials
-| `javax.persistence.schema-generation.database.action`               | Value `create` enables automatic schema export
 | `hibernate.jdbc.batch_size`                                         | Maximum batch size for SQL statement batching
 |===
 
@@ -124,6 +124,18 @@ particular, Hibernate Reactive itself parses and interprets the JDBC URL.
 
 TIP: You don't need to specify `hibernate.dialect`. The correct Hibernate
 `Dialect` will be determined for you by Hibernate Reactive.
+
+The following properties are useful for managing schemas and catalogs:
+
+|===
+| Configuration property name                           | Purpose
+
+| `hibernate.default_schema`                            | A default schema name for entities which do not explicitly declare one
+| `hibernate.default_catalog`                           | A default catalog name for entities which do not explicitly declare one
+| `hibernate.physical_naming_strategy`                  | A `PhysicalNamingStrategy` implementing your database naming standards
+| `javax.persistence.schema-generation.database.action` | If `create`, automatically export tables, sequences, and constraints
+| `javax.persistence.create-database-schemas`           | If `true`, automatically create schemas and catalogs
+|===
 
 An example {xml}[`persistence.xml`] file is included in the example
 program.
