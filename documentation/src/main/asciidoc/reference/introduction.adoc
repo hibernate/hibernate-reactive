@@ -317,6 +317,35 @@ A full list of object/relational mapping annotations may be found in the
 annotations are already supported in Hibernate Reactive, though there are
 still a handful of limitations at this time.
 
+The most common and useful mapping annotations include:
+
+|===
+| Annotation        | Purpose
+
+| `@Entity`         | Declares an entity class (a class with its own
+                      database table an persistent identity)
+| `@Embeddable`     | Declares an embeddable class (a class without its
+                      own persistent identity or database table)
+| `@Inheritance`    | Defines how inheritance hierarchies should be
+                      mapped to database tables
+| `@Id`             | Specifies that a field of an entity holds the
+                      persistent identity of the entity, and maps to
+                      the primary key of its table
+| `@GeneratedValue` | Specifies that an identifier is a system-generated
+                      surrogate key
+| `@Version`        | Specifies that a field of an entity holds a version
+                      number used for optimistic locking
+| `@ManyToOne`      | Declares a many to one association to a second
+                      entity
+| `@OneToOne`       | Declares a one to one association to a second
+                      entity
+| `@OneToMany`      | Declares a one to many association to a second
+                      entity
+| `@Table`          | Specifies a mapping to a database table
+| `@Column`         | Specifies a mapping to a database column
+| `@JoinColumn`     | Specifies a mapping to a database foreign key
+|===
+
 Information about Bean Validation annotations may be found in the
 {bean-validation}[documentation for Hibernate Validator].
 
