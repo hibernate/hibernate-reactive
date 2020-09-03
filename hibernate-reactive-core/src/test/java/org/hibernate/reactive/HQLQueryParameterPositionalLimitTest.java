@@ -50,10 +50,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	@After
 	public void cleanDb(TestContext context) {
 		test( context, completedFuture( openSession() )
-				.thenCompose( s -> s.remove( spelt ) )
-				.thenCompose( s -> s.remove( rye ) )
-				.thenCompose( s -> s.remove( almond ) )
-				.thenCompose( s -> s.flush() ) );
+				.thenCompose( s -> s.createQuery("delete Flour").executeUpdate() ) );
 	}
 
 	@Test

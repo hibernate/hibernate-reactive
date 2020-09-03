@@ -7,6 +7,7 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -117,7 +118,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 		);
 	}
 
-	@Test
+	@Test @Ignore("we don't support remove(detached) anymore")
 	public void reactiveRemoveTransientEntity(TestContext context) {
 		test(
 				context,

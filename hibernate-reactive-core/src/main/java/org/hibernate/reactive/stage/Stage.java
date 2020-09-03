@@ -370,7 +370,9 @@ public interface Stage {
 		 * {@code session.delete(book).thenAccept(v -> session.flush());}
 		 * </pre>
 		 *
-		 * @param entity the instance to be removed
+		 * @param entity the managed persistent instance to be removed
+		 *
+		 * @throws IllegalArgumentException if the given instance is not managed
 		 *
 		 * @see javax.persistence.EntityManager#remove(Object)
 		 */
@@ -421,7 +423,9 @@ public interface Stage {
 		 * <li>after executing direct native SQL in the same session.
 		 * </ul>
 		 *
-		 * @param entity a persistent or detached instance
+		 * @param entity a managed persistent instance
+		 *
+		 * @throws IllegalArgumentException if the given instance is not managed
 		 *
 		 * @see javax.persistence.EntityManager#refresh(Object)
 		 */
@@ -459,8 +463,10 @@ public interface Stage {
 		 * This operation cascades to associated instances if the association is
 		 * mapped with {@link org.hibernate.annotations.CascadeType#LOCK}.
 		 *
-		 * @param entity a persistent or transient instance
+		 * @param entity a managed persistent instance
 		 * @param lockMode the lock level
+		 *
+		 * @throws IllegalArgumentException if the given instance is not managed
 		 */
 		CompletionStage<Session> lock(Object entity, LockMode lockMode);
 
