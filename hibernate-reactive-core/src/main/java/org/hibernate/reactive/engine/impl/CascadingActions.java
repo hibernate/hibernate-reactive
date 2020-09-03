@@ -7,14 +7,20 @@ package org.hibernate.reactive.engine.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
+import org.hibernate.TransientPropertyValueException;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.CollectionType;
+import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
 import org.jboss.logging.Logger;
 
@@ -176,9 +182,39 @@ public class CascadingActions {
 			return delegate.requiresNoCascadeChecking();
 		}
 
+		/**
+		 * @see BaseCascadingAction#noCascade(EventSource, Object, EntityPersister, Type, int)
+		 */
 		@Override
-		public void noCascade(EventSource session, Object parent, EntityPersister persister, Type propertyType, int propertyIndex) {
-			delegate.noCascade( session, parent, persister, propertyType, propertyIndex );
+		public CompletionStage<Void> noCascade(EventSource session, Object parent, EntityPersister persister, Type propertyType, int propertyIndex) {
+			if ( propertyType.isEntityType() ) {
+				Object child = persister.getPropertyValue( parent, propertyIndex );
+				if ( child != null
+						&& !isInManagedState( child, session )
+						&& !(child instanceof HibernateProxy ) ) { //a proxy cannot be transient and it breaks ForeignKeys.isTransient
+					final String childEntityName = ((EntityType) propertyType).getAssociatedEntityName( session.getFactory());
+					return ForeignKeys.isTransient( childEntityName, child, null, session)
+							.thenAccept( isTrans -> {
+								String parentEntityName = persister.getEntityName();
+								String propertyName = persister.getPropertyNames()[propertyIndex];
+								throw new TransientPropertyValueException(
+										"object references an unsaved transient instance - save the transient instance before flushing",
+										childEntityName,
+										parentEntityName,
+										propertyName
+								);
+							} );
+				}
+			}
+			return CompletionStages.nullFuture();
+		}
+
+		private boolean isInManagedState(Object child, EventSource session) {
+			EntityEntry entry = session.getPersistenceContextInternal().getEntry( child );
+			return entry != null &&
+					( entry.getStatus() == Status.MANAGED
+							|| entry.getStatus() == Status.READ_ONLY
+							|| entry.getStatus() == Status.SAVING );
 		}
 
 		@Override

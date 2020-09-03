@@ -192,13 +192,7 @@ public final class Cascade<C> {
 				}
 				else {
 					if ( action.requiresNoCascadeChecking() ) {
-						action.noCascade(
-								eventSource,
-								parent,
-								persister,
-								types[i],
-								i
-						);
+						noCascade( eventSource, parent, persister, types, i );
 					}
 					// If the property is uninitialized, then there cannot be any orphans.
 					if ( action.deleteOrphans() && !isUninitializedProperty ) {
@@ -220,6 +214,15 @@ public final class Cascade<C> {
 		}
 
 		return stage;
+	}
+
+	private void noCascade(
+			final EventSource eventSource,
+			final Object parent,
+			final EntityPersister persister,
+			final Type[] types,
+			final int i) {
+		stage = stage.thenCompose( v -> action.noCascade( eventSource, parent, persister, types[i], i ) );
 	}
 
 	/**
