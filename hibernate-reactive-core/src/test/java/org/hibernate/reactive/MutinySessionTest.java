@@ -9,7 +9,6 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -250,7 +249,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 		);
 	}
 
-	@Test @Ignore("we don't support remove(detached) anymore")
+	@Test
 	public void reactiveRemoveTransientEntity1(TestContext context) {
 		test(
 				context,
@@ -258,13 +257,15 @@ public class MutinySessionTest extends BaseReactiveTest {
 						.onItem().invokeUni( v -> selectNameFromId( 5 ).onItem().invoke( context::assertNotNull ) )
 						.onItem().transform( v -> openMutinySession() )
 						.onItem().invokeUni( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
-						.onItem().invokeUni( session -> session.flush() )
-						.onTermination().invoke( (session, err, c) -> session.close() )
-						.onItem().invokeUni( v -> selectNameFromId( 5 ).onItem().invoke( context::assertNull ) )
+						.onItem().invoke( v -> context.fail() )
+						.onFailure().recoverWithItem( v -> null )
+//						.onItem().invokeUni( session -> session.flush() )
+//						.onTermination().invoke( (session, err, c) -> session.close() )
+//						.onItem().invokeUni( v -> selectNameFromId( 5 ).onItem().invoke( context::assertNull ) )
 		);
 	}
 
-	@Test @Ignore("we don't support remove(detached) anymore")
+	@Test
 	public void reactiveRemoveTransientEntity2(TestContext context) {
 		test(
 				context,
@@ -273,9 +274,11 @@ public class MutinySessionTest extends BaseReactiveTest {
 						.invoke( context::assertNotNull )
 						.map( v -> openMutinySession() )
 						.chain( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
-						.chain( session -> session.flush().eventually(session::close) )
-						.then( () -> selectNameFromId( 5 ) )
-						.invoke( context::assertNull )
+						.onItem().invoke( v -> context.fail() )
+						.onFailure().recoverWithItem( v -> null )
+//						.chain( session -> session.flush().eventually(session::close) )
+//						.then( () -> selectNameFromId( 5 ) )
+//						.invoke( context::assertNull )
 		);
 	}
 
