@@ -13,6 +13,7 @@ import javax.persistence.*;
 import java.util.Objects;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 
@@ -32,9 +33,10 @@ public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( book ) )
-						.thenCompose( s -> s.persist( author ) )
-						.thenCompose( s -> s.flush() )
+						.thenCompose( s -> s.persist( book )
+								.thenCompose( v -> s.persist( author ) )
+								.thenCompose( v -> s.flush() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( Author.class, author.getId() ) )
 						.thenAccept( optionalAuthor -> {
@@ -60,10 +62,12 @@ public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( goodOmens ) )
-						.thenCompose( s -> s.persist( terryPratchett ) )
-						.thenCompose( s -> s.persist( neilGaiman ) )
-						.thenCompose( s -> s.flush() )
+						.thenCompose( s -> voidFuture()
+								.thenCompose( v -> s.persist( goodOmens ) )
+								.thenCompose( v -> s.persist( terryPratchett ) )
+								.thenCompose( v -> s.persist( neilGaiman ) )
+								.thenCompose( v -> s.flush() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( Author.class, neilGaiman.getId() ) )
 						.thenAccept( optionalAuthor -> {

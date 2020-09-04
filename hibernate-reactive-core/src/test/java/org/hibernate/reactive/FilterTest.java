@@ -42,24 +42,23 @@ public class FilterTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose(s -> s.persist(basik))
-						.thenCompose(s -> s.flush())
-						.thenApply(v -> openSession())
-						.thenCompose(s -> {
-							s.enableFilter("current");
-							return s.createQuery("select distinct n from Node n left join fetch n.elements order by n.id")
-									.setComment("Hello World!")
-									.getResultList();
-						})
+						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
+						.thenCompose(v -> completedFuture( openSession() )
+								.thenCompose(s -> {
+									s.enableFilter("current");
+									return s.createQuery("select distinct n from Node n left join fetch n.elements order by n.id")
+											.setComment("Hello World!")
+											.getResultList();
+								}))
 						.thenAccept(list -> {
 							context.assertEquals(list.size(), 2);
 							context.assertEquals(((Node) list.get(0)).elements.size(), 2);
 						})
-						.thenApply(v -> openSession())
-						.thenCompose(s -> {
-							s.enableFilter("current");
-							return s.createQuery("select distinct n, e from Node n join n.elements e").getResultList();
-						})
+						.thenCompose(v -> completedFuture( openSession() )
+								.thenCompose(s -> {
+									s.enableFilter("current");
+									return s.createQuery("select distinct n, e from Node n join n.elements e").getResultList();
+								}))
 						.thenAccept(list -> context.assertEquals(list.size(), 2))
 		);
 	}
@@ -80,24 +79,23 @@ public class FilterTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose(s -> s.persist(basik))
-						.thenCompose(s -> s.flush())
-						.thenApply(v -> openSession())
-						.thenCompose(s -> {
-							s.enableFilter("region").setParameter("region", "oceania");
-							return s.createQuery("select distinct n from Node n left join fetch n.elements order by n.id")
-									.setComment("Hello World!")
-									.getResultList();
-						})
+						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
+						.thenCompose(v -> completedFuture( openSession() )
+								.thenCompose(s -> {
+									s.enableFilter("region").setParameter("region", "oceania");
+									return s.createQuery("select distinct n from Node n left join fetch n.elements order by n.id")
+											.setComment("Hello World!")
+											.getResultList();
+								}))
 						.thenAccept(list -> {
 							context.assertEquals(list.size(), 2);
 							context.assertEquals(((Node) list.get(0)).elements.size(), 2);
 						})
-						.thenApply(v -> openSession())
-						.thenCompose(s -> {
-							s.enableFilter("region").setParameter("region", "oceania");
-							return s.createQuery("select distinct n, e from Node n join n.elements e").getResultList();
-						})
+						.thenCompose(v -> completedFuture( openSession() )
+								.thenCompose(s -> {
+									s.enableFilter("region").setParameter("region", "oceania");
+									return s.createQuery("select distinct n, e from Node n join n.elements e").getResultList();
+								}))
 						.thenAccept(list -> context.assertEquals(list.size(), 2))
 		);
 	}
@@ -114,14 +112,13 @@ public class FilterTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose(s -> s.persist(basik))
-						.thenCompose(s -> s.flush())
-						.thenApply(v -> openSession())
-						.thenCompose(s -> {
-							s.enableFilter("current");
-							return s.find( Node.class, basik.getId() )
-									.thenCompose( node -> s.fetch( node.elements ) );
-						})
+						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
+						.thenCompose(v -> completedFuture( openSession() )
+								.thenCompose(s -> {
+									s.enableFilter("current");
+									return s.find( Node.class, basik.getId() )
+											.thenCompose( node -> s.fetch( node.elements ) );
+								}))
 						.thenAccept( list -> context.assertEquals( 2, list.size() ) )
 		);
 	}
@@ -142,14 +139,13 @@ public class FilterTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose(s -> s.persist(basik))
-						.thenCompose(s -> s.flush())
-						.thenApply(v -> openSession())
-						.thenCompose(s -> {
-							s.enableFilter("region").setParameter("region", "oceania");
-							return s.find( Node.class, basik.getId() )
-									.thenCompose( node -> s.fetch( node.elements ) );
-						})
+						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
+						.thenCompose(v -> completedFuture( openSession() )
+								.thenCompose(s -> {
+									s.enableFilter("region").setParameter("region", "oceania");
+									return s.find( Node.class, basik.getId() )
+											.thenCompose( node -> s.fetch( node.elements ) );
+								}))
 						.thenAccept( list -> context.assertEquals( 2, list.size() ) )
 		);
 	}

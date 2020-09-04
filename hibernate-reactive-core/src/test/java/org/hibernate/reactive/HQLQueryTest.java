@@ -36,10 +36,11 @@ public class HQLQueryTest extends BaseReactiveTest {
 	@Before
 	public void populateDb(TestContext context) {
 		test( context, completedFuture( openSession() )
-				.thenCompose( s -> s.persist( spelt ) )
-				.thenCompose( s -> s.persist( rye ) )
-				.thenCompose( s -> s.persist( almond ) )
-				.thenCompose( s -> s.flush() ) );
+				.thenCompose( s -> s.persist( spelt )
+				.thenCompose( v -> s.persist( rye ) )
+				.thenCompose( v -> s.persist( almond ) )
+				.thenCompose( v -> s.flush() ) )
+		);
 	}
 
 	@After
@@ -54,12 +55,11 @@ public class HQLQueryTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( semolina ) )
-						.thenCompose( s -> s.createQuery( "from Flour where id = " + semolina.getId() ).getSingleResult()
-									.thenAccept( found -> context.assertEquals( semolina, found ) )
-
-									.thenCompose( v -> s.remove( semolina ) )
-									.thenAccept( ss -> ss.flush() )
+						.thenCompose( s -> s.persist( semolina )
+								.thenCompose( v -> s.createQuery( "from Flour where id = " + semolina.getId() ).getSingleResult() )
+								.thenAccept( found -> context.assertEquals( semolina, found ) )
+								.thenCompose( v -> s.remove( semolina ) )
+								.thenAccept( v -> s.flush() )
 						)
 		);
 	}
@@ -70,19 +70,19 @@ public class HQLQueryTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( semolina ) )
-						.thenCompose( s -> s.createQuery( "from Flour order by name" ).getResultList()
-									.thenAccept( results -> {
-										context.assertNotNull( results );
-										context.assertEquals( 4, results.size() );
-										context.assertEquals( almond, results.get( 0 ) );
-										context.assertEquals( rye, results.get( 1 ) );
-										context.assertEquals( semolina, results.get( 2 ) );
-										context.assertEquals( spelt, results.get( 3 ) );
-									} )
-
-									.thenCompose( v -> s.remove( semolina ) )
-									.thenAccept( ss -> ss.flush() )
+						.thenCompose( s -> s.persist( semolina )
+								.thenCompose( v -> s.createQuery( "from Flour order by name" ).getResultList()
+										.thenAccept( results -> {
+											context.assertNotNull( results );
+											context.assertEquals( 4, results.size() );
+											context.assertEquals( almond, results.get( 0 ) );
+											context.assertEquals( rye, results.get( 1 ) );
+											context.assertEquals( semolina, results.get( 2 ) );
+											context.assertEquals( spelt, results.get( 3 ) );
+										} )
+								)
+								.thenCompose( v -> s.remove( semolina ) )
+								.thenAccept( v -> s.flush() )
 						)
 		);
 	}

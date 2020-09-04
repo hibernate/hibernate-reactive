@@ -33,9 +33,10 @@ public class SecondaryTableTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( book ) )
-						.thenCompose( s -> s.persist( author ) )
-						.thenCompose( s -> s.flush() )
+						.thenCompose( s -> s.persist( book )
+								.thenCompose( v -> s.persist( author ) )
+								.thenCompose( v -> s.flush() )
+						)
 						.thenApply( v -> openSession())
 						.thenCompose( s2 -> s2.find( Author.class, author.getId() ) )
 						.thenAccept( auth -> {
@@ -55,10 +56,11 @@ public class SecondaryTableTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( book ))
-						.thenCompose( s -> s.persist( author ) )
-						.thenCompose( s -> s.flush() )
-						.thenCompose( s -> s.find( Author.class, author.getId() ) )
+						.thenCompose( s -> s.persist( book )
+								.thenCompose( v -> s.persist( author ) )
+								.thenCompose( v -> s.flush() )
+								.thenCompose( v -> s.find( Author.class, author.getId() ) )
+						)
 						.thenAccept( auth -> {
 							context.assertNotNull( auth );
 							context.assertEquals( author, auth );
@@ -76,9 +78,10 @@ public class SecondaryTableTest extends BaseReactiveTest {
 
 		test( context,
 				completedFuture( openSession() )
-						.thenCompose(s -> s.persist(novel))
-						.thenCompose(s -> s.persist(author))
-						.thenCompose(s -> s.flush())
+						.thenCompose(s -> s.persist(novel)
+								.thenCompose(v -> s.persist(author))
+								.thenCompose(v -> s.flush())
+						)
 						.thenApply( v -> openSession())
 						.thenCompose(s -> s.find(Book.class, 6))
 						.thenAccept(book -> {
@@ -95,9 +98,10 @@ public class SecondaryTableTest extends BaseReactiveTest {
 
 		test( context,
 				completedFuture( openSession() )
-						.thenCompose(s -> s.persist(spells))
-						.thenCompose(s -> s.persist(author))
-						.thenCompose(s -> s.flush())
+						.thenCompose(s -> s.persist(spells)
+								.thenCompose(v -> s.persist(author))
+								.thenCompose(v -> s.flush())
+						)
 						.thenApply( v -> openSession())
 						.thenCompose(s -> s.find(Book.class, 6))
 						.thenAccept(book -> {

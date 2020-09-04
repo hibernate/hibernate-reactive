@@ -38,10 +38,11 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 	@Before
 	public void populateDb(TestContext context) {
 		test( context, completedFuture( openSession() )
-				.thenCompose( s -> s.persist( spelt ) )
-				.thenCompose( s -> s.persist( rye ) )
-				.thenCompose( s -> s.persist( almond ) )
-				.thenCompose( s -> s.flush() ) );
+				.thenCompose( s -> s.persist( spelt )
+				.thenCompose( v -> s.persist( rye ) )
+				.thenCompose( v -> s.persist( almond ) )
+				.thenCompose( v -> s.flush() ) )
+		);
 	}
 
 	@After
@@ -56,14 +57,14 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( semolina ) )
-						.thenCompose( s ->
-								s.createQuery( "from Flour where id = :id" )
-										.setParameter( "id", semolina.getId())
+						.thenCompose( s -> s.persist( semolina )
+								.thenCompose( v -> s.createQuery( "from Flour where id = :id" )
+										.setParameter( "id", semolina.getId() )
 										.getSingleResult()
-										.thenAccept( found -> context.assertEquals( semolina, found ) )
-										.thenCompose( v -> s.remove( semolina ) )
-										.thenAccept( ss -> ss.flush() )
+								)
+								.thenAccept( found -> context.assertEquals( semolina, found ) )
+								.thenCompose( v -> s.remove( semolina ) )
+								.thenAccept( v -> s.flush() )
 						)
 		);
 	}

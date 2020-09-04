@@ -46,9 +46,9 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> flush() {
+	public CompletionStage<Void> flush() {
 //		checkOpen();
-		return delegate.reactiveFlush().thenApply( v-> this );
+		return delegate.reactiveFlush();
 	}
 
 	@Override
@@ -113,23 +113,23 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> persist(Object entity) {
-		return delegate.reactivePersist( entity ).thenApply( v -> this );
+	public CompletionStage<Void> persist(Object entity) {
+		return delegate.reactivePersist( entity );
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> persist(Object... entity) {
-		return applyToAll( delegate::reactivePersist, entity ).thenApply( v -> this );
+	public CompletionStage<Void> persist(Object... entity) {
+		return applyToAll( delegate::reactivePersist, entity );
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> remove(Object entity) {
-		return delegate.reactiveRemove( entity ).thenApply( v -> this );
+	public CompletionStage<Void> remove(Object entity) {
+		return delegate.reactiveRemove( entity );
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> remove(Object... entity) {
-		return applyToAll( delegate::reactiveRemove, entity ).thenApply( v -> this );
+	public CompletionStage<Void> remove(Object... entity) {
+		return applyToAll( delegate::reactiveRemove, entity );
 	}
 
 	@Override
@@ -139,27 +139,27 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <T> CompletionStage<Void> merge(T... entity) {
-		return applyToAll( delegate::reactiveMerge, entity ).thenApply( v -> null );
+		return applyToAll( delegate::reactiveMerge, entity );
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> refresh(Object entity) {
-		return delegate.reactiveRefresh( entity, LockMode.NONE ).thenApply( v -> this );
+	public CompletionStage<Void> refresh(Object entity) {
+		return delegate.reactiveRefresh( entity, LockMode.NONE );
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> refresh(Object entity, LockMode lockMode) {
-		return delegate.reactiveRefresh( entity, lockMode ).thenApply( v -> this );
+	public CompletionStage<Void> refresh(Object entity, LockMode lockMode) {
+		return delegate.reactiveRefresh( entity, lockMode );
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> refresh(Object... entity) {
-		return applyToAll( e -> delegate.reactiveRefresh( e, LockMode.NONE ), entity ).thenApply( v -> this );
+	public CompletionStage<Void> refresh(Object... entity) {
+		return applyToAll( e -> delegate.reactiveRefresh( e, LockMode.NONE ), entity );
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> lock(Object entity, LockMode lockMode) {
-		return delegate.reactiveLock( entity, lockMode ).thenApply( v -> this );
+	public CompletionStage<Void> lock(Object entity, LockMode lockMode) {
+		return delegate.reactiveLock( entity, lockMode );
 	}
 
 	@Override

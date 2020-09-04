@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.Objects;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class SingleTableInheritanceTest extends BaseReactiveTest {
 
@@ -35,10 +36,12 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( book1 ) )
-						.thenCompose( s -> s.persist( book2 ) )
-						.thenCompose( s -> s.persist( book3 ) )
-						.thenCompose( s -> s.flush() )
+						.thenCompose( s -> voidFuture()
+								.thenCompose( v -> s.persist( book1 ) )
+								.thenCompose( v -> s.persist( book2 ) )
+								.thenCompose( v -> s.persist( book3 ) )
+								.thenCompose( v -> s.flush() )
+						)
 						.thenApply( v -> openSession())
 						.thenCompose( s -> s.find(Book.class, book3.getId(), book1.getId(), book2.getId()) )
 						.thenAccept( list -> {
@@ -58,9 +61,10 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( book ) )
-						.thenCompose( s -> s.persist( author ) )
-						.thenCompose( s -> s.flush() )
+						.thenCompose( s -> s.persist( book )
+								.thenCompose( v -> s.persist( author ) )
+								.thenCompose( v -> s.flush() )
+						)
 						.thenApply( v -> openSession())
 						.thenCompose( s2 -> s2.find( Author.class, author.getId() ) )
 						.thenAccept( auth -> {
@@ -79,10 +83,11 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( book ))
-						.thenCompose( s -> s.persist( author ) )
-						.thenCompose( s -> s.flush() )
-						.thenCompose( s -> s.find( Author.class, author.getId() ) )
+						.thenCompose( s -> s.persist( book )
+								.thenCompose( v -> s.persist( author ) )
+								.thenCompose( v -> s.flush() )
+								.thenCompose( v -> s.find( Author.class, author.getId() ) )
+						)
 						.thenAccept( auth -> {
 							context.assertNotNull( auth );
 							context.assertEquals( author, auth );
@@ -99,9 +104,10 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 
 		test( context,
 				completedFuture( openSession() )
-						.thenCompose(s -> s.persist(novel))
-						.thenCompose(s -> s.persist(author))
-						.thenCompose(s -> s.flush())
+						.thenCompose(s -> s.persist(novel)
+								.thenCompose(v -> s.persist(author))
+								.thenCompose(v -> s.flush())
+						)
 						.thenApply( v -> openSession())
 						.thenCompose(s -> s.find(Book.class, 6))
 						.thenAccept(book -> {
@@ -118,9 +124,10 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 
 		test( context,
 				completedFuture( openSession() )
-						.thenCompose(s -> s.persist(spells))
-						.thenCompose(s -> s.persist(author))
-						.thenCompose(s -> s.flush())
+						.thenCompose(s -> s.persist(spells)
+								.thenCompose(v -> s.persist(author))
+								.thenCompose(v -> s.flush())
+						)
 						.thenApply( v -> openSession())
 						.thenCompose(s -> s.find(Book.class, 6))
 						.thenAccept(book -> {
@@ -137,9 +144,7 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 
 		test( context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist(spells) )
-//						.thenCompose( s -> s.persist(author) )
-						.thenCompose( s -> s.flush() )
+						.thenCompose( s -> s.persist(spells).thenCompose( v -> s.flush() ) )
 						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.createQuery("update Book set title=title||' II' where title='Necronomicon'").executeUpdate() )
 						.thenApply( v -> openSession() )
@@ -164,9 +169,7 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 
 		test( context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist(spells) )
-//						.thenCompose( s -> s.persist(author) )
-						.thenCompose( s -> s.flush() )
+						.thenCompose( s -> s.persist(spells).thenCompose( v -> s.flush() ) )
 						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.createQuery("update Book set title=title||:sfx where title=:tit")
 								.setParameter("sfx", " II")

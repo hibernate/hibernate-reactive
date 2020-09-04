@@ -58,8 +58,7 @@ public class SubselectFetchTest extends BaseReactiveTest {
 
 		test( context,
 				completedFuture( openSession() )
-						.thenCompose(s -> s.persist(basik))
-						.thenCompose(s -> s.flush())
+						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
 						.thenApply(v -> openSession())
 						.thenCompose(s -> s.createQuery("from Node n order by id", Node.class)
 								.getResultList()
