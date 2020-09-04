@@ -348,14 +348,14 @@ public interface Stage {
 		 *
 		 * @see javax.persistence.EntityManager#persist(Object)
 		 */
-		CompletionStage<Session> persist(Object entity);
+		CompletionStage<Void> persist(Object entity);
 
 		/**
 		 * Persist multiple transient entity instances at once.
 		 *
 		 * @see #persist(Object)
 		 */
-		CompletionStage<Session> persist(Object... entities);
+		CompletionStage<Void> persist(Object... entities);
 
 		/**
 		 * Asynchronously remove a persistent instance from the datastore. The
@@ -376,14 +376,14 @@ public interface Stage {
 		 *
 		 * @see javax.persistence.EntityManager#remove(Object)
 		 */
-		CompletionStage<Session> remove(Object entity);
+		CompletionStage<Void> remove(Object entity);
 
 		/**
 		 * Remove multiple entity instances at once.
 		 *
 		 * @see #remove(Object)
 		 */
-		CompletionStage<Session> remove(Object... entities);
+		CompletionStage<Void> remove(Object... entities);
 
 		/**
 		 * Copy the state of the given object onto the persistent instance with
@@ -429,7 +429,7 @@ public interface Stage {
 		 *
 		 * @see javax.persistence.EntityManager#refresh(Object)
 		 */
-		CompletionStage<Session> refresh(Object entity);
+		CompletionStage<Void> refresh(Object entity);
 
 		/**
 		 * Re-read the state of the given instance from the underlying database,
@@ -437,14 +437,14 @@ public interface Stage {
 		 *
 		 * @see #refresh(Object)
 		 */
-		CompletionStage<Session> refresh(Object entity, LockMode lockMode);
+		CompletionStage<Void> refresh(Object entity, LockMode lockMode);
 
 		/**
 		 * Refresh multiple entity instances at once.
 		 *
 		 * @see #refresh(Object)
 		 */
-		CompletionStage<Session> refresh(Object... entities);
+		CompletionStage<Void> refresh(Object... entities);
 
 		/**
 		 * Obtain the specified lock level upon the given object. For example,
@@ -468,7 +468,7 @@ public interface Stage {
 		 *
 		 * @throws IllegalArgumentException if the given instance is not managed
 		 */
-		CompletionStage<Session> lock(Object entity, LockMode lockMode);
+		CompletionStage<Void> lock(Object entity, LockMode lockMode);
 
 		/**
 		 * Force this session to flush asynchronously. Must be called at the
@@ -482,7 +482,7 @@ public interface Stage {
 		 *
 		 * @see javax.persistence.EntityManager#flush()
 		 */
-		CompletionStage<Session> flush();
+		CompletionStage<Void> flush();
 
 		/**
 		 * Asynchronously fetch an association that's configured for lazy loading.

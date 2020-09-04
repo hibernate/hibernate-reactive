@@ -109,9 +109,10 @@ public class CompositeIdTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
-						.thenCompose( s -> s.flush() )
-						.whenComplete( (s,e) -> s.close() )
+						.thenCompose( s -> s.persist( new GuineaPig( 10, "Tulip" ) )
+								.thenCompose( v -> s.flush() )
+								.whenComplete( (v,e) -> s.close() )
+						)
 						.thenCompose( v -> selectNameFromId( 10 ) )
 						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
 		);
@@ -125,9 +126,10 @@ public class CompositeIdTest extends BaseReactiveTest {
 						.thenCompose( v -> selectNameFromId( 5 ) )
 						.thenAccept( context::assertNotNull )
 						.thenApply( v -> openSession() )
-						.thenCompose( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
-						.thenCompose( session -> session.flush() )
-						.whenComplete( (session, err) -> session.close() )
+						.thenCompose( session -> session.remove( new GuineaPig( 5, "Aloi" ) )
+								.thenCompose( v -> session.flush() )
+								.whenComplete( (v, err) -> session.close() )
+						)
 						.thenCompose( v -> selectNameFromId( 5 ) )
 						.thenAccept( context::assertNull )
 						.handle((r, e) -> context.assertNotNull(e))

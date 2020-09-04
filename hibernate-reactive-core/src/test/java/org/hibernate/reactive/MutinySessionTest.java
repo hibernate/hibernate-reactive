@@ -187,8 +187,10 @@ public class MutinySessionTest extends BaseReactiveTest {
 		test(
 				context,
 				Uni.createFrom().item( openMutinySession() )
-						.chain( s -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
-						.chain( s -> s.flush().eventually(s::close) )
+						.chain( s -> s.persist( new GuineaPig( 10, "Tulip" ) )
+								.chain( v -> s.flush() )
+								.eventually(s::close)
+						)
 						.then( () -> selectNameFromId( 10 ) )
 						.invoke( selectRes -> context.assertEquals( "Tulip", selectRes ) )
 		);

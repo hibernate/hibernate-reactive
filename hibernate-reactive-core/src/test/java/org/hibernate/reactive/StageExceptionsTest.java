@@ -22,6 +22,7 @@ import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
+
 public class StageExceptionsTest extends BaseReactiveTest {
 
 	@Override
@@ -37,16 +38,18 @@ public class StageExceptionsTest extends BaseReactiveTest {
 		final Class<PersistenceException> expectedException = PersistenceException.class;
 
 		test( context, completedFuture( openSession() )
-				.thenCompose( session -> session.persist( new MyPerson( "testFLush1", "unique" ) ) )
-				.thenCompose( session -> session.flush() )
-				.thenCompose( session -> session.persist( new MyPerson( "testFlush2", "unique" ) ) )
-				.thenCompose( session -> session.flush() )
-			  	.handle( (res, err) -> {
-			  				context.assertNotNull( err );
-			  				context.assertTrue( err.getClass().isAssignableFrom( CompletionException.class) );
-							context.assertTrue( expectedException.isAssignableFrom( err.getCause().getClass() ), "Expected " + expectedException.getName() + " but was " + err );
-							return CompletionStages.voidFuture();
-			  	} )
+				.thenCompose( session -> session.persist( new MyPerson( "testFLush1", "unique" ) )
+						.thenCompose( v -> session.flush() )
+						.thenCompose( v -> session.persist( new MyPerson( "testFlush2", "unique" ) ) )
+						.thenCompose( v -> session.flush() )
+				)
+				.handle( (res, err) -> {
+					context.assertNotNull( err );
+					context.assertTrue( err.getClass().isAssignableFrom( CompletionException.class) );
+					context.assertTrue( expectedException.isAssignableFrom( err.getCause().getClass() ),
+							"Expected " + expectedException.getName() + " but was " + err );
+					return CompletionStages.voidFuture();
+				} )
 		);
 	}
 

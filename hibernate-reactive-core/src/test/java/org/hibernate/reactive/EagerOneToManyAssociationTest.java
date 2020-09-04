@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 
@@ -61,10 +62,12 @@ public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist(goodOmens) )
-						.thenCompose( s -> s.persist(neilGaiman) )
-						.thenCompose( s -> s.persist(terryPratchett) )
-						.thenCompose( s -> s.flush() )
+						.thenCompose( s -> voidFuture()
+								.thenCompose( v -> s.persist(goodOmens) )
+								.thenCompose( v -> s.persist(neilGaiman) )
+								.thenCompose( v -> s.persist(terryPratchett) )
+								.thenCompose( v -> s.flush() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, goodOmens.getId() ) )
 						.thenAccept( optionalBook -> {

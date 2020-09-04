@@ -34,33 +34,32 @@ public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 
 		test( context,
 				Uni.createFrom().item( openMutinySession() )
-				.chain(s -> s.persist(b))
-				.chain(s -> s.flush())
-				.map( v -> openMutinySession() )
-				.chain( s2 ->
-					s2.find( SequenceId.class, b.getId() )
-						.map( bb -> {
-							context.assertNotNull( bb );
-							context.assertEquals( bb.id, 5 );
-							context.assertEquals( bb.string, b.string );
-							context.assertEquals( bb.version, 0 );
+						.chain( s -> s.persist(b).then(() -> s.flush()) )
+						.map( v -> openMutinySession() )
+						.chain( s2 ->
+								s2.find( SequenceId.class, b.getId() )
+										.map( bb -> {
+											context.assertNotNull( bb );
+											context.assertEquals( bb.id, 5 );
+											context.assertEquals( bb.string, b.string );
+											context.assertEquals( bb.version, 0 );
 
-							bb.string = "Goodbye";
+											bb.string = "Goodbye";
+											return null;
+										})
+										.then(() -> s2.flush())
+										.then(() -> s2.find( SequenceId.class, b.getId() ))
+										.map( bt -> {
+											context.assertEquals( bt.version, 1 );
+											return null;
+										}))
+						.map( v -> openMutinySession() )
+						.chain( s3 -> s3.find( SequenceId.class, b.getId() ) )
+						.map( bb -> {
+							context.assertEquals(bb.version, 1);
+							context.assertEquals(bb.string, "Goodbye");
 							return null;
 						})
-						.then(() -> s2.flush())
-						.then(() -> s2.find( SequenceId.class, b.getId() ))
-						.map( bt -> {
-							context.assertEquals( bt.version, 1 );
-							return null;
-						}))
-				.map( v -> openMutinySession() )
-				.chain( s3 -> s3.find( SequenceId.class, b.getId() ) )
-				.map( bb -> {
-					context.assertEquals(bb.version, 1);
-					context.assertEquals(bb.string, "Goodbye");
-					return null;
-				})
 		);
 	}
 

@@ -364,14 +364,14 @@ public interface Mutiny {
 		 *
 		 * @see javax.persistence.EntityManager#persist(Object)
 		 */
-		Uni<Session> persist(Object entity);
+		Uni<Void> persist(Object entity);
 
 		/**
 		 * Persist multiple transient entity instances at once.
 		 *
 		 * @see #persist(Object)
 		 */
-		Uni<Session> persist(Object... entities);
+		Uni<Void> persist(Object... entities);
 
 		/**
 		 * Asynchronously remove a persistent instance from the datastore. The
@@ -392,14 +392,14 @@ public interface Mutiny {
 		 *
 		 * @see javax.persistence.EntityManager#remove(Object)
 		 */
-		Uni<Session> remove(Object entity);
+		Uni<Void> remove(Object entity);
 
 		/**
 		 * Remove multiple entity instances at once.
 		 *
 		 * @see #remove(Object)
 		 */
-		Uni<Session> remove(Object... entities);
+		Uni<Void> remove(Object... entities);
 
 		/**
 		 * Copy the state of the given object onto the persistent instance with
@@ -445,7 +445,7 @@ public interface Mutiny {
 		 *
 		 * @see javax.persistence.EntityManager#refresh(Object)
 		 */
-		Uni<Session> refresh(Object entity);
+		Uni<Void> refresh(Object entity);
 
 		/**
 		 * Re-read the state of the given instance from the underlying database,
@@ -453,14 +453,14 @@ public interface Mutiny {
 		 *
 		 * @see #refresh(Object)
 		 */
-		Uni<Session> refresh(Object entity, LockMode lockMode);
+		Uni<Void> refresh(Object entity, LockMode lockMode);
 
 		/**
 		 * Refresh multiple entity instances at once.
 		 *
 		 * @see #refresh(Object)
 		 */
-		Uni<Session> refresh(Object... entities);
+		Uni<Void> refresh(Object... entities);
 
 		/**
 		 * Obtain the specified lock level upon the given object. For example,
@@ -484,7 +484,7 @@ public interface Mutiny {
 		 *
 		 * @throws IllegalArgumentException if the given instance is not managed
 		 */
-		Uni<Session> lock(Object entity, LockMode lockMode);
+		Uni<Void> lock(Object entity, LockMode lockMode);
 
 		/**
 		 * Force this session to flush asynchronously. Must be called at the
@@ -498,7 +498,7 @@ public interface Mutiny {
 		 *
 		 * @see javax.persistence.EntityManager#flush()
 		 */
-		Uni<Session> flush();
+		Uni<Void> flush();
 
 		/**
 		 * Asynchronously fetch an association that's configured for lazy loading.

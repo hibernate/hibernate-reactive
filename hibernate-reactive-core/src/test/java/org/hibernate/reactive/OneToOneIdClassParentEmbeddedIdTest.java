@@ -32,9 +32,10 @@ public class OneToOneIdClassParentEmbeddedIdTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( otherEntity ) )
-						.thenCompose( s -> s.persist( anEntity ) )
-						.thenCompose( s -> s.flush() )
+						.thenCompose( s -> s.persist( otherEntity )
+								.thenCompose( v -> s.persist( anEntity ) )
+								.thenCompose( v -> s.flush() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( AnEntity.class, new OtherEntityId( 1 ) )
 								.thenAccept( optionalAnEntity -> {

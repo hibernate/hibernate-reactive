@@ -379,65 +379,52 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( basik.parent ) )
-						.thenCompose( s -> s.persist( basik ) )
-						.thenApply( s -> {
-							context.assertTrue( basik.prePersisted && !basik.postPersisted );
-							return s;
-						} )
-						.thenApply( s -> {
-							context.assertTrue( basik.parent.prePersisted && !basik.parent.postPersisted );
-							return s;
-						} )
-						.thenCompose( s -> s.flush() )
-						.thenApply( s -> {
-							context.assertTrue( basik.prePersisted && basik.postPersisted );
-							return s;
-						} )
-						.thenApply( s -> {
-							context.assertTrue( basik.parent.prePersisted && basik.parent.postPersisted );
-							return s;
-						} )
-						.thenApply( v -> openSession() )
-						.thenCompose( s2 ->
-											  s2.find( Basic.class, basik.getId() )
-													  .thenCompose( basic -> {
-														  context.assertNotNull( basic );
-														  context.assertTrue( basic.loaded );
-														  context.assertEquals( basic.string, basik.string );
-														  context.assertEquals( basic.cover, basik.cover );
-														  context.assertEquals( basic.version, 0 );
+						.thenCompose( s -> s.persist( basik.parent ).thenCompose( v -> s.persist( basik ) )
+								.thenAccept( v -> context.assertTrue( basik.prePersisted && !basik.postPersisted ) )
+								.thenAccept( v -> context.assertTrue( basik.parent.prePersisted && !basik.parent.postPersisted ) )
+								.thenCompose( v -> s.flush() )
+								.thenAccept( v -> context.assertTrue( basik.prePersisted && basik.postPersisted ) )
+								.thenAccept( v -> context.assertTrue( basik.parent.prePersisted && basik.parent.postPersisted ) )
+						)
+						.thenCompose( v -> completedFuture( openSession() )
+								.thenCompose( s2 -> s2.find( Basic.class, basik.getId() )
+										.thenCompose( basic -> {
+											context.assertNotNull( basic );
+											context.assertTrue( basic.loaded );
+											context.assertEquals( basic.string, basik.string );
+											context.assertEquals( basic.cover, basik.cover );
+											context.assertEquals( basic.version, 0 );
 
-														  basic.string = "Goodbye";
-														  basic.cover = Cover.SOFT;
-														  basic.parent = new Basic( "New Parent" );
-														  return s2.persist( basic.parent )
-																  .thenCompose( v -> s2.flush() )
-																  .thenAccept( v -> {
-																	  context.assertNotNull( basic );
-																	  context.assertTrue( basic.postUpdated && basic.preUpdated );
-																	  context.assertFalse( basic.postPersisted && basic.prePersisted );
-																	  context.assertTrue( basic.parent.postPersisted && basic.parent.prePersisted );
-																	  context.assertEquals( basic.version, 1 );
-																  } );
-													  } ) )
-						.thenApply( v -> openSession() )
-						.thenCompose( s3 ->
-											  s3.find( Basic.class, basik.getId() )
-													  .thenCompose( basic -> {
-														  context.assertFalse( basic.postUpdated && basic.preUpdated );
-														  context.assertFalse( basic.postPersisted && basic.prePersisted );
-														  context.assertEquals( basic.version, 1 );
-														  context.assertEquals( basic.string, "Goodbye" );
-														  return s3.remove( basic )
-																  .thenAccept( v -> context.assertTrue( !basic.postRemoved && basic.preRemoved ) )
-																  .thenCompose( v -> s3.flush() )
-																  .thenAccept( v -> context.assertTrue( basic.postRemoved && basic.preRemoved ) );
-													  } ) )
-						.thenApply( v -> openSession() )
-						.thenCompose( s4 ->
-											  s4.find( Basic.class, basik.getId() )
-													  .thenAccept( context::assertNull ) )
+											basic.string = "Goodbye";
+											basic.cover = Cover.SOFT;
+											basic.parent = new Basic( "New Parent" );
+											return s2.persist( basic.parent )
+													.thenCompose( vv -> s2.flush() )
+													.thenAccept( vv -> {
+														context.assertNotNull( basic );
+														context.assertTrue( basic.postUpdated && basic.preUpdated );
+														context.assertFalse( basic.postPersisted && basic.prePersisted );
+														context.assertTrue( basic.parent.postPersisted && basic.parent.prePersisted );
+														context.assertEquals( basic.version, 1 );
+													} );
+										} )
+								) )
+						.thenCompose( v -> completedFuture( openSession() )
+								.thenCompose( s3 -> s3.find( Basic.class, basik.getId() )
+										.thenCompose( basic -> {
+											context.assertFalse( basic.postUpdated && basic.preUpdated );
+											context.assertFalse( basic.postPersisted && basic.prePersisted );
+											context.assertEquals( basic.version, 1 );
+											context.assertEquals( basic.string, "Goodbye" );
+											return s3.remove( basic )
+													.thenAccept( vv -> context.assertTrue( !basic.postRemoved && basic.preRemoved ) )
+													.thenCompose( vv -> s3.flush() )
+													.thenAccept( vv -> context.assertTrue( basic.postRemoved && basic.preRemoved ) );
+										} )
+								) )
+						.thenCompose( v -> completedFuture( openSession() )
+								.thenCompose( s4 -> s4.find( Basic.class, basik.getId() ) )
+								.thenAccept( context::assertNull ) )
 		);
 	}
 

@@ -43,8 +43,7 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 
 		test( context,
 				completedFuture( openSession() )
-				.thenCompose(s -> s.persist(b))
-				.thenCompose(s -> s.flush())
+				.thenCompose(s -> s.persist(b).thenCompose(v -> s.flush()))
 				.thenApply( v -> openSession() )
 				.thenCompose( s2 ->
 					s2.find( CustomId.class, b.getId() )

@@ -41,8 +41,7 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose(s -> s.persist(basik))
-						.thenCompose(s -> s.flush())
+						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
 						.thenApply(v -> openSession())
 						.thenCompose(s -> s.find( Node.class, basik.getId() ))
 						.thenAccept( node -> {
@@ -66,8 +65,7 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose(s -> s.persist(basik))
-						.thenCompose(s -> s.flush())
+						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
 						.thenApply(v -> openSession())
 						.thenCompose(s -> s.find( Element.class, basik.elements.get(0).id ))
 						.thenAccept( element -> {
@@ -89,8 +87,7 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose(s -> s.persist(basik))
-						.thenCompose(s -> s.flush())
+						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
 						.thenApply(v -> openSession())
 						.thenCompose(s -> s.createQuery("from Node order by id", Node.class).getResultList())
 						.thenAccept(list -> {

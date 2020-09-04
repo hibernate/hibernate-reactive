@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 
 public class ReactiveSessionTest extends BaseReactiveTest {
@@ -496,9 +497,10 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
-						.thenCompose( s -> s.flush() )
-						.whenComplete( (s,e) -> s.close() )
+						.thenCompose( s -> s.persist( new GuineaPig( 10, "Tulip" ) )
+								.thenCompose( v -> s.flush() )
+								.whenComplete( (v,e) -> s.close() )
+						)
 						.thenCompose( v -> selectNameFromId( 10 ) )
 						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
 		);
@@ -510,10 +512,8 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				context,
 				completedFuture( openSession() )
 						.thenCompose(
-								s -> s.withTransaction(
-										t -> s.persist( new GuineaPig( 10, "Tulip" ) )
-								)
-										.whenComplete( (v,e) -> s.close() )
+								s -> s.withTransaction( t -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
+										.whenComplete( (vv,e) -> s.close() )
 						)
 						.thenCompose( vv -> selectNameFromId( 10 ) )
 						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
@@ -565,9 +565,10 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> selectNameFromId( 5 ) )
 						.thenAccept( context::assertNotNull )
 						.thenApply( v -> openSession() )
-						.thenCompose( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
-						.thenCompose( session -> session.flush() )
-						.whenComplete( (session, err) -> session.close() )
+						.thenCompose( session -> session.remove( new GuineaPig( 5, "Aloi" ) )
+								.thenCompose( v -> session.flush() )
+								.whenComplete( (v, err) -> session.close() )
+						)
 						.thenCompose( v -> selectNameFromId( 5 ) )
 						.thenAccept( context::assertNull )
 						.handle((r, e) -> context.assertNotNull(e))
@@ -642,13 +643,15 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( new GuineaPig(11, "One") ) )
-						.thenCompose( s -> s.persist( new GuineaPig(22, "Two") ) )
-						.thenCompose( s -> s.persist( new GuineaPig(33, "Three") ) )
-						.thenCompose( s -> s.<Long>createQuery("select count(*) from GuineaPig")
-								.getSingleResult()
-								.thenAccept( count -> context.assertEquals(3l, count) )
-								.thenAccept( v -> s.close() )
+						.thenCompose( s -> voidFuture()
+								.thenCompose( v -> s.persist( new GuineaPig(11, "One") ) )
+								.thenCompose( v -> s.persist( new GuineaPig(22, "Two") ) )
+								.thenCompose( v -> s.persist( new GuineaPig(33, "Three") ) )
+								.thenCompose( v -> s.createQuery("select count(*) from GuineaPig")
+										.getSingleResult()
+										.thenAccept( count -> context.assertEquals(3l, count) )
+								)
+								.thenAccept( vv -> s.close() )
 						)
 						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.<GuineaPig>createQuery("from GuineaPig")

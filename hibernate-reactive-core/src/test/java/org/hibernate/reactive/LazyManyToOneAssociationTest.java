@@ -43,23 +43,21 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( book ) )
-						.thenCompose( s -> s.persist( author ) )
-						.thenCompose( s -> s.flush() )
-						.thenApply( v -> openSession() )
-						.thenCompose( s -> s.enableFetchProfile("withBook").find( Author.class, author.getId() )
-								.thenAccept( optionalAuthor -> {
-									context.assertNotNull( optionalAuthor );
-									context.assertEquals( author, optionalAuthor );
-									context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
-									context.assertEquals( book, optionalAuthor.getBook() );
-								}))
-						.thenApply( v -> openSession() )
-						.thenCompose( s -> s.find( Book.class, book.getId() ) )
+						.thenCompose( s -> s.persist( book ).thenCompose( v -> s.persist( author ) ).thenCompose( v -> s.flush() ) )
+						.thenCompose( v -> completedFuture( openSession() )
+								.thenCompose( s -> s.enableFetchProfile("withBook").find( Author.class, author.getId() ) ) )
+						.thenAccept( optionalAuthor -> {
+							context.assertNotNull( optionalAuthor );
+							context.assertEquals( author, optionalAuthor );
+							context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
+							context.assertEquals( book, optionalAuthor.getBook() );
+						} )
+						.thenCompose( v -> completedFuture( openSession() )
+								.thenCompose( s -> s.find( Book.class, book.getId() ) ) )
 						.thenAccept( optionalBook -> {
 							context.assertNotNull( optionalBook );
 							context.assertEquals( book, optionalBook );
-						})
+						} )
 		);
 	}
 
@@ -71,23 +69,20 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( book ) )
-						.thenCompose( s -> s.persist( author ) )
-						.thenCompose( s -> s.flush() )
-						.thenApply( v -> openSession() )
-						.thenCompose( s -> s.find( s.getEntityGraph(Author.class, "withBook"), author.getId() )
-								.thenAccept( optionalAuthor -> {
-									context.assertNotNull( optionalAuthor );
-									context.assertEquals( author, optionalAuthor );
-									context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
-									context.assertEquals( book, optionalAuthor.getBook() );
-								}))
-						.thenApply( v -> openSession() )
-						.thenCompose( s -> s.find( Book.class, book.getId() ) )
+						.thenCompose( s -> s.persist( book ).thenCompose( v -> s.persist( author ) ).thenCompose( v -> s.flush() ) )
+						.thenCompose( v -> completedFuture( openSession() )
+								.thenCompose( s -> s.find( s.getEntityGraph(Author.class, "withBook"), author.getId() ) ) )
+						.thenAccept( optionalAuthor -> {
+							context.assertNotNull( optionalAuthor );
+							context.assertEquals( author, optionalAuthor );
+							context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
+							context.assertEquals( book, optionalAuthor.getBook() );
+						} )
+						.thenCompose( v -> completedFuture( openSession() ).thenCompose(  s -> s.find( Book.class, book.getId() ) ) )
 						.thenAccept( optionalBook -> {
 							context.assertNotNull( optionalBook );
 							context.assertEquals( book, optionalBook );
-						})
+						} )
 		);
 	}
 
@@ -99,11 +94,8 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( book ) )
-						.thenCompose( s -> s.persist( author ) )
-						.thenCompose( s -> s.flush() )
-						.thenApply( v -> openSession() )
-						.thenCompose( s -> {
+						.thenCompose( s -> s.persist( book ).thenCompose( v -> s.persist( author ) ).thenCompose( v -> s.flush() ) )
+						.thenCompose( v -> completedFuture( openSession() ).thenCompose( s -> {
 							EntityGraph<Author> graph = s.createEntityGraph(Author.class);
 							graph.addAttributeNodes("book");
 							return s.find( graph, author.getId() )
@@ -113,13 +105,13 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 										context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
 										context.assertEquals( book, optionalAuthor.getBook() );
 									});
-						})
-						.thenApply( v -> openSession() )
-						.thenCompose( s -> s.find( Book.class, book.getId() ) )
+						} ) )
+						.thenCompose( v -> completedFuture( openSession() )
+								.thenCompose( s -> s.find( Book.class, book.getId() ) ) )
 						.thenAccept( optionalBook -> {
 							context.assertNotNull( optionalBook );
 							context.assertEquals( book, optionalBook );
-						})
+						} )
 		);
 	}
 
@@ -131,11 +123,9 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( book ) )
-						.thenCompose( s -> s.persist( author ) )
-						.thenCompose( s -> s.flush() )
-						.thenApply( v -> openSession())
-						.thenCompose( s -> s.find( Author.class, author.getId() )
+						.thenCompose( s -> s.persist( book ).thenCompose( v -> s.persist( author ) ).thenCompose( v -> s.flush() ) )
+						.thenCompose( v -> completedFuture( openSession() )
+								.thenCompose( s -> s.find( Author.class, author.getId() )
 								.thenCompose( optionalAuthor -> {
 									context.assertNotNull( optionalAuthor );
 									context.assertEquals( author, optionalAuthor );
@@ -145,14 +135,15 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 												context.assertNotNull( fetchedBook );
 												context.assertEquals( book, fetchedBook );
 												context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
-											});
-								}))
-						.thenApply( v -> openSession())
-						.thenCompose( s -> s.find( Book.class, book.getId() ) )
+											} );
+								} )
+						) )
+						.thenCompose(  v -> completedFuture( openSession() )
+								.thenCompose( s -> s.find( Book.class, book.getId() ) ) )
 						.thenAccept( optionalBook -> {
 							context.assertNotNull( optionalBook );
 							context.assertEquals( book, optionalBook );
-						})
+						} )
 		);
 	}
 
@@ -165,24 +156,24 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( goodOmens ) )
-						.thenCompose( s -> s.persist( terryPratchett ) )
-						.thenCompose( s -> s.persist( neilGaiman ) )
-						.thenCompose( s -> s.flush() )
-						.thenApply( v -> openSession())
-						.thenCompose( s ->
-							s.find( Author.class, neilGaiman.getId() )
-								.thenCompose( optionalAuthor -> {
-									context.assertNotNull( optionalAuthor );
-									context.assertEquals( neilGaiman, optionalAuthor );
-									context.assertFalse( isInitialized( optionalAuthor.getBook() ) );
-									return s.fetch( optionalAuthor.getBook() ).thenAccept(
-											fetchedBook -> {
-												context.assertNotNull( fetchedBook );
-												context.assertEquals( goodOmens, fetchedBook );
-												context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
-											});
-								}))
+						.thenCompose( s -> s.persist( goodOmens )
+						.thenCompose( v -> s.persist( terryPratchett ) )
+						.thenCompose( v -> s.persist( neilGaiman ) )
+						.thenCompose( v -> s.flush() ) )
+						.thenCompose( v -> completedFuture( openSession() )
+								.thenCompose( s -> s.find( Author.class, neilGaiman.getId() )
+										.thenCompose( optionalAuthor -> {
+											context.assertNotNull( optionalAuthor );
+											context.assertEquals( neilGaiman, optionalAuthor );
+											context.assertFalse( isInitialized( optionalAuthor.getBook() ) );
+											return s.fetch( optionalAuthor.getBook() ).thenAccept(
+													fetchedBook -> {
+														context.assertNotNull( fetchedBook );
+														context.assertEquals( goodOmens, fetchedBook );
+														context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
+													} );
+										} )
+						) )
 		);
 	}
 

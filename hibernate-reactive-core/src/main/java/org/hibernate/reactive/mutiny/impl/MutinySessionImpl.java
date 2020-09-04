@@ -45,10 +45,9 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public Uni<Mutiny.Session> flush() {
+	public Uni<Void> flush() {
 //		checkOpen();
-		return Uni.createFrom().completionStage( delegate.reactiveFlush() )
-				.map( v-> this );
+		return Uni.createFrom().completionStage( delegate.reactiveFlush() );
 	}
 
 	@Override
@@ -112,27 +111,23 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public Uni<Mutiny.Session> persist(Object entity) {
-		return Uni.createFrom().completionStage( delegate.reactivePersist( entity ) )
-				.map( v-> this );
+	public Uni<Void> persist(Object entity) {
+		return Uni.createFrom().completionStage( delegate.reactivePersist( entity ) );
 	}
 
 	@Override
-	public Uni<Mutiny.Session> persist(Object... entity) {
-		return Uni.createFrom().completionStage( applyToAll( delegate::reactivePersist, entity ) )
-				.map( v-> this );
+	public Uni<Void> persist(Object... entity) {
+		return Uni.createFrom().completionStage( applyToAll( delegate::reactivePersist, entity ) );
 	}
 
 	@Override
-	public Uni<Mutiny.Session> remove(Object entity) {
-		return Uni.createFrom().completionStage( delegate.reactiveRemove( entity ) )
-				.map( v-> this );
+	public Uni<Void> remove(Object entity) {
+		return Uni.createFrom().completionStage( delegate.reactiveRemove( entity ) );
 	}
 
 	@Override
-	public Uni<Mutiny.Session> remove(Object... entity) {
-		return Uni.createFrom().completionStage( applyToAll( delegate::reactiveRemove, entity ) )
-				.map( v-> this );
+	public Uni<Void> remove(Object... entity) {
+		return Uni.createFrom().completionStage( applyToAll( delegate::reactiveRemove, entity ) );
 	}
 
 	@Override
@@ -142,32 +137,27 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> Uni<Void> merge(T... entity) {
-		return Uni.createFrom().completionStage( applyToAll( delegate::reactiveMerge, entity ) )
-				.map( v-> null );
+		return Uni.createFrom().completionStage( applyToAll( delegate::reactiveMerge, entity ) );
 	}
 
 	@Override
-	public Uni<Mutiny.Session> refresh(Object entity) {
-		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, LockMode.NONE ) )
-				.map( v-> this );
+	public Uni<Void> refresh(Object entity) {
+		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, LockMode.NONE ) );
 	}
 
 	@Override
-	public Uni<Mutiny.Session> refresh(Object entity, LockMode lockMode) {
-		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, lockMode ) )
-				.map( v-> this );
+	public Uni<Void> refresh(Object entity, LockMode lockMode) {
+		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, lockMode ) );
 	}
 
 	@Override
-	public Uni<Mutiny.Session> refresh(Object... entity) {
-		return Uni.createFrom().completionStage( applyToAll( e -> delegate.reactiveRefresh( e, LockMode.NONE ), entity ) )
-				.map( v-> this );
+	public Uni<Void> refresh(Object... entity) {
+		return Uni.createFrom().completionStage( applyToAll( e -> delegate.reactiveRefresh( e, LockMode.NONE ), entity ) );
 	}
 
 	@Override
-	public Uni<Mutiny.Session> lock(Object entity, LockMode lockMode) {
-		return Uni.createFrom().completionStage( delegate.reactiveLock( entity, lockMode ) )
-				.map( v -> this );
+	public Uni<Void> lock(Object entity, LockMode lockMode) {
+		return Uni.createFrom().completionStage( delegate.reactiveLock( entity, lockMode ) );
 	}
 
 	@Override

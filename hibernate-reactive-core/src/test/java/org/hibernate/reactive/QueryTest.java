@@ -70,9 +70,10 @@ public class QueryTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose( session -> session.persist(author1, author2) )
-						.thenCompose( session -> session.flush() )
-						.whenComplete( (session,err) -> session.close() )
+						.thenCompose( session -> session.persist(author1, author2)
+								.thenCompose( v -> session.flush() )
+								.whenComplete( (v,err) -> session.close() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( session -> session.createQuery(query).getResultList() )
 						.thenAccept( books -> {
@@ -120,9 +121,10 @@ public class QueryTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose( session -> session.persist(author1, author2) )
-						.thenCompose( session -> session.flush() )
-						.whenComplete( (session,err) -> session.close() )
+						.thenCompose( session -> session.persist(author1, author2)
+								.thenCompose( v -> session.flush() )
+								.whenComplete( (v,err) -> session.close() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( session -> session.createQuery(query)
 								.setParameter( t, "Snow Crash")
@@ -178,9 +180,10 @@ public class QueryTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose( session -> session.persist(author1, author2) )
-						.thenCompose( session -> session.flush() )
-						.whenComplete( (session,err) -> session.close() )
+						.thenCompose( session -> session.persist(author1, author2)
+								.thenCompose( v -> session.flush() )
+								.whenComplete( (v,err) -> session.close() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( session -> session.createQuery(query)
 								.setParameter("title", "Snow Crash")
@@ -227,9 +230,10 @@ public class QueryTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose( session -> session.persist(author1, author2) )
-						.thenCompose( session -> session.flush() )
-						.whenComplete( (session,err) -> session.close() )
+						.thenCompose( session -> session.persist(author1, author2)
+								.thenCompose( v -> session.flush() )
+								.whenComplete( (v,err) -> session.close() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( session -> session.createQuery(query).getResultList() )
 						.thenAccept( books -> {
@@ -255,10 +259,11 @@ public class QueryTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-					.thenCompose( session -> session.persist(author1, author2) )
-					.thenCompose( session -> session.flush() )
-					.whenComplete( (session,err) -> session.close() )
-					.thenApply( v -> openSession() )
+						.thenCompose( session -> session.persist(author1, author2)
+								.thenCompose( v -> session.flush() )
+								.whenComplete( (v,err) -> session.close() )
+						)
+						.thenApply( v -> openSession() )
 					.thenCompose( session -> session.createNativeQuery("select * from books order by isbn", Book.class).getResultList() )
 					.thenAccept( books -> {
 						context.assertEquals( 3, books.size() );
@@ -284,9 +289,10 @@ public class QueryTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose( session -> session.persist(author1, author2) )
-						.thenCompose( session -> session.flush() )
-						.whenComplete( (session,err) -> session.close() )
+						.thenCompose( session -> session.persist(author1, author2)
+								.thenCompose( v -> session.flush() )
+								.whenComplete( (v,err) -> session.close() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery("select * from books where title=?1 order by isbn", Book.class)
 								.setParameter(1, "Snow Crash")
@@ -323,9 +329,10 @@ public class QueryTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose( session -> session.persist(author1, author2) )
-						.thenCompose( session -> session.flush() )
-						.whenComplete( (session,err) -> session.close() )
+						.thenCompose( session -> session.persist(author1, author2)
+								.thenCompose( v -> session.flush() )
+								.whenComplete( (v,err) -> session.close() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery("select * from books where title=:title order by isbn", Book.class)
 								.setParameter("title", "Snow Crash")
@@ -362,9 +369,10 @@ public class QueryTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose( session -> session.persist(author1, author2) )
-						.thenCompose( session -> session.flush() )
-						.whenComplete( (session,err) -> session.close() )
+						.thenCompose( session -> session.persist(author1, author2)
+								.thenCompose( v -> session.flush() )
+								.whenComplete( (v,err) -> session.close() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery(
 								"select b.title, a.name from books b join authors a on author_id=a.id order by b.isbn",
@@ -434,9 +442,10 @@ public class QueryTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose( session -> session.persist(author1, author2) )
-						.thenCompose( session -> session.flush() )
-						.whenComplete( (session,err) -> session.close() )
+						.thenCompose( session -> session.persist(author1, author2)
+								.thenCompose( v -> session.flush() )
+								.whenComplete( (v,err) -> session.close() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( session -> session.createNamedQuery("title,author (hql)", Object[].class).getResultList() )
 						.thenAccept( books -> {
@@ -471,9 +480,10 @@ public class QueryTest extends BaseReactiveTest {
 
 		test(context,
 				completedFuture( openSession() )
-						.thenCompose( session -> session.persist(author1, author2) )
-						.thenCompose( session -> session.flush() )
-						.whenComplete( (session,err) -> session.close() )
+						.thenCompose( session -> session.persist(author1, author2)
+								.thenCompose( v -> session.flush() )
+								.whenComplete( (v,err) -> session.close() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( session -> session.createNamedQuery("title,author (sql)", Object[].class).getResultList() )
 						.thenAccept( books -> {

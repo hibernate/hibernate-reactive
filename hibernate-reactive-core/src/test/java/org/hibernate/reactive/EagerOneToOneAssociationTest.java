@@ -34,9 +34,10 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 		test(
 				context,
 				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( mostPopularBook ) )
-						.thenCompose( s -> s.persist( author ) )
-						.thenCompose( s -> s.flush() )
+						.thenCompose( s -> s.persist( mostPopularBook )
+								.thenCompose( v -> s.persist( author ) )
+								.thenCompose( v -> s.flush() )
+						)
 						.thenApply( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, 5 ) )
 						.thenAccept(context::assertNotNull)
