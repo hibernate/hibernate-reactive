@@ -555,7 +555,7 @@ composition within a single reactive stream.
 Also remember that a Hibernate session is a lightweight object that should be
 created, used, and then discarded within a single logical unit of work.
 
-TIP: That is to say, you should reuse the same session across multiple
+IMPORTANT: That is to say, you should reuse the same session across multiple
 persistence operations within a single reactive stream representing a certain
 unit of work, but don't share a session between different reactive streams!
 
@@ -586,8 +586,8 @@ session.find(Book.class, id)
 
 === Using the reactive session
 
-The `Session` interface has methods with the same names as methods of the
-JPA `EntityManager`. You might already be familiar with the following session
+The `Session` interface has methods with the same names as methods of the JPA
+`EntityManager`. You might already be familiar with the following session
 operations defined by JPA:
 
 |===
@@ -599,9 +599,9 @@ operations defined by JPA:
                          `insert` statement for later execution
 | `remove(Object)`     | Make a persistent object transient and schedule a SQL
                          `delete` statement for later execution
-| `merge(Object)`      | Copy the state of a given transient object to a
-                         corresponding persistent instance and return the
-                         persistent object
+| `merge(Object)`      | Copy the state of a given detached object to a
+                         corresponding managed persistent instance and return
+                         the persistent object
 | `refresh(Object)`    | Refresh the persistent state of an object using a new
                          SQL `select` to retrieve the current state from the
                          database
