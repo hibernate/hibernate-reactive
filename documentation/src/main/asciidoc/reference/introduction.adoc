@@ -138,8 +138,8 @@ properties:
 | Configuration property name                                | Purpose
 
 | `javax.persistence.schema-generation.database.action`      | If `create`, automatically export tables, sequences, and constraints
-| `javax.persistence.create-database-schemas`                | If `true`, automatically create schemas and catalogs
-| `javax.persistence.schema-generation.create-script-source` | The name of a SQL script to be executed after tables are exported
+| `javax.persistence.create-database-schemas`                | (Optional) If `true`, automatically create schemas and catalogs
+| `javax.persistence.schema-generation.create-script-source` | (Optional) The name of a SQL script to be executed after tables are exported
 |===
 
 This feature is extremely useful for testing.
