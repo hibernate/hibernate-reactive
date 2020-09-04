@@ -629,15 +629,15 @@ session1.find(Book.class, book.id)
         .thenAccept( book -> System.out.println(book.title + " is a great book!") )
 ----
 
-On the other hand, methods with no meaningful return value just return a
-reference to the `Session`, again via a `CompletionStage` (or `Uni`).
+On the other hand, methods with no meaningful return value just return
+`CompletionStage<Void>` (or `Uni<Void>`).
 
 [java]
 ----
 session2.find(Book.class, id)
-        .thenCompose( book -> session.remove(book) )
-        .thenCompose( s -> session.flush() )
-        .whenComplete( (s,e) -> session.close() )
+        .thenCompose( book -> session2.remove(book) )
+        .thenCompose( v -> session2.flush() )
+        .whenComplete( (v,e) -> session2.close() )
 ----
 
 TIP: The session will be flushed automatically at the end of a unit of work
@@ -655,8 +655,8 @@ doesn't chain its return value to the tip of the stream.
 ----
 session.find(Book.class, id)
         .thenCompose( book -> session.remove(book) )
-        .thenAccept( session -> session.flush() )   //OOPS, WRONG!!
-        .whenComplete( (session,e) -> session.close() )
+        .thenAccept( v -> session.flush() )   //OOPS, WRONG!!
+        .whenComplete( (v,e) -> session.close() )
 ----
 
 The same problem occurs in the following code, but this time it's `remove()`
