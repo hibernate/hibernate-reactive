@@ -91,8 +91,11 @@ There's an example {build}[Gradle build] included in the example program.
 Hibernate Reactive is configured via the standard JPA `persistence.xml`
 document which must be placed, as usual, in the `/META-INF` directory.
 
-The only configuration specific to Hibernate Reactive is the persistence
-`<provider>` element, which must be explicit:
+An example {xml}[`persistence.xml`] file is included in the example
+program.
+
+The only configuration really specific to Hibernate Reactive is the
+persistence `<provider>` element, which must be explicit:
 
 [source,xml]
 ----
@@ -106,7 +109,6 @@ of Hibernate Reactive.
 
 A full list of configuration properties recognized by Hibernate may be
 found in the {configuration-properties}[documentation for Hibernate ORM].
-
 Configuration properties of particular interest include:
 
 |===
@@ -125,21 +127,22 @@ particular, Hibernate Reactive itself parses and interprets the JDBC URL.
 TIP: You don't need to specify `hibernate.dialect`. The correct Hibernate
 `Dialect` will be determined for you by Hibernate Reactive.
 
-The following properties are useful for managing schemas and catalogs:
+=== Automatic schema export
+
+You can have Hibernate Reactive infer your database schema from the mapping
+annotation you've specified in your Java code, and export the schema at
+initialization time by specifying one or more of the following configuration
+properties:
 
 |===
-| Configuration property name                           | Purpose
+| Configuration property name                                | Purpose
 
-| `hibernate.default_schema`                                 | A default schema name for entities which do not explicitly declare one
-| `hibernate.default_catalog`                                | A default catalog name for entities which do not explicitly declare one
-| `hibernate.physical_naming_strategy`                       | A `PhysicalNamingStrategy` implementing your database naming standards
 | `javax.persistence.schema-generation.database.action`      | If `create`, automatically export tables, sequences, and constraints
 | `javax.persistence.create-database-schemas`                | If `true`, automatically create schemas and catalogs
 | `javax.persistence.schema-generation.create-script-source` | The name of a SQL script to be executed after tables are exported
 |===
 
-An example {xml}[`persistence.xml`] file is included in the example
-program.
+This feature is extremely useful for testing.
 
 === Logging the generated SQL
 
@@ -185,8 +188,6 @@ pool and cache via the following properties:
 | `hibernate.vertx.prepared_statement_cache.max_size`  | The maximum size of the prepared statement cache
 | `hibernate.vertx.prepared_statement_cache.sql_limit` | The maximum length of prepared statement SQL string that will be cached
 |===
-
-TIP: But for now, just leave these three settings alone.
 
 Finally, for more advanced cases, you can write your own code to configure
 the Vert.x client by implementing `SqlClientPoolConfiguration`.
@@ -234,6 +235,24 @@ be stored in the second-level cache with the `@Cache` annotation from
 
 You can find much more information about the second-level cache in the
 {second-level-cache}[documentation for Hibernate ORM].
+
+=== Minimizing repetitive mapping information
+
+The following properties are very useful for minimizing the amount of
+information you'll need to explicitly specify in `@Table` and `@Column`
+annotations which we'll discuss below in <<_mapping_entity_classes>>:
+
+|===
+| Configuration property name           | Purpose
+
+| `hibernate.default_schema`            | A default schema name for entities which do not explicitly declare one
+| `hibernate.default_catalog`           | A default catalog name for entities which do not explicitly declare one
+| `hibernate.physical_naming_strategy`  | A `PhysicalNamingStrategy` implementing your database naming standards
+|===
+
+TIP: Writing your own `PhysicalNamingStrategy` is an especially good
+way to reduce the clutter of annotations on your entity classes, and
+we think you should do it for any nontrivial data model.
 
 == Writing the Java code
 
