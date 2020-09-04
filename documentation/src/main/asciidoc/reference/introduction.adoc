@@ -116,16 +116,28 @@ Configuration properties of particular interest include:
 
 | `javax.persistence.jdbc.url`                                        | JDBC URL of your database
 | `javax.persistence.jdbc.user` and `javax.persistence.jdbc.password` | Your database credentials
-| `hibernate.jdbc.batch_size`                                         | Maximum batch size for SQL statement batching
 |===
 
 These configuration properties have `jdbc` in their names, but of course
 there's no JDBC in Hibernate Reactive, and these are simply the legacy
-property names defined by the JPA specification and Hibernate ORM. In
-particular, Hibernate Reactive itself parses and interprets the JDBC URL.
+property names defined by the JPA specification. In particular, Hibernate
+Reactive itself parses and interprets the JDBC URL.
 
 TIP: You don't need to specify `hibernate.dialect`. The correct Hibernate
 `Dialect` will be determined for you by Hibernate Reactive.
+
+The Vert.x database client has built-in connection pooling and prepared
+statement caching. You might want to control the size of the connection
+pool:
+
+|===
+| Configuration property name      | Purpose
+
+| `hibernate.connection.pool_size` | The maximum size of the reactive connection pool
+|===
+
+We'll learn about more advanced connection pool tuning later, in
+<<_tuning_the_vert_x_pool>>.
 
 === Automatic schema export
 
@@ -165,76 +177,6 @@ log4j.logger.org.hibernate.SQL=DEBUG
 
 An example {log4j}[`log4j.properties`] file is included in the example
 program.
-
-=== Tuning the Vert.x pool
-
-The Vert.x database client has built-in connection pooling and prepared
-statement caching. You might want to control the size of the connection
-pool:
-
-|===
-| Configuration property name      | Purpose
-
-| `hibernate.connection.pool_size` | The maximum size of the reactive connection pool
-|===
-
-When it comes time for performance tuning, you can further customize the
-pool and cache via the following properties:
-
-|===
-| Configuration property name                          | Purpose
-
-| `hibernate.vertx.pool.max_wait_queue_size`           | The maximum connection requests allowed in the wait queue
-| `hibernate.vertx.prepared_statement_cache.max_size`  | The maximum size of the prepared statement cache
-| `hibernate.vertx.prepared_statement_cache.sql_limit` | The maximum length of prepared statement SQL string that will be cached
-|===
-
-Finally, for more advanced cases, you can write your own code to configure
-the Vert.x client by implementing `SqlClientPoolConfiguration`.
-
-|===
-| Configuration property name      | Purpose
-
-| `hibernate.vertx.pool.configuration_class` | A class implementing `SqlClientPoolConfiguration`
-|===
-
-=== Enabling the second-level cache
-
-:second-level-cache: https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#caching
-
-Hibernate Reactive supports second-level cache implementations that
-perform no blocking I/O.
-
-IMPORTANT: Make sure you disable any disk-based storage or distributed
-replication used by your preferred cache implementation. A second-level
-cache which uses blocking I/O to interact with the network or disk-based
-storage will at least partially negate the advantages of the reactive
-programming model.
-
-Configuring Hibernate's second-level cache is a rather involved topic,
-and quite outside the scope of this document. But in case it helps, we're
-testing Hibernate Reactive with the following configuration, which uses
-EHCache as the cache implementation, as above in <<_optional_dependencies>>:
-
-|===
-| Configuration property name              | Property value
-
-| `hibernate.cache.use_second_level_cache` | `true`
-| `hibernate.cache.region.factory_class`   | `org.hibernate.cache.jcache.JCacheRegionFactory`
-| `hibernate.javax.cache.provider`         | `org.ehcache.jsr107.EhcacheCachingProvider`
-| `hibernate.javax.cache.uri`              | `/ehcache.xml`
-|===
-
-If you're using EHCache, you'll also need to include an `ehcache.xml` file
-that explicitly configures the behavior of each cache region belonging to
-your entities and collections.
-
-TIP: Don't forget that you need to explicitly mark each entity that will
-be stored in the second-level cache with the `@Cache` annotation from
-`org.hibernate.annotations`.
-
-You can find much more information about the second-level cache in the
-{second-level-cache}[documentation for Hibernate ORM].
 
 === Minimizing repetitive mapping information
 
@@ -785,36 +727,6 @@ Note that the field to fetch is identified by a JPA metamodel `Attribute`.
 TIP: We don't encourage you to use field-level lazy fetching unless you
 have very specific requirements.
 
-=== A reminder about performance
-
-:association-fetching: https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#fetching
-
-As always, achieving high performance in ORM means minimizing the number
-of round trips to the database. This goal should be uppermost in your
-mind whenever you're writing data access code with Hibernate. The most
-fundamental rule of thumb in ORM is:
-
-- explicitly specify all the data you're going to need right at the start
-of a session/transaction, and fetch it immediately in one or two queries,
-- and only then start navigating associations between persistent entities.
-
-TIP: Don't forget that most associations should be mapped for lazy
-fetching by default. If you need eager fetching in some particular
-transaction, use `left join fetch` in HQL, a fetch profile, a JPA
-`EntityGraph`, or `fetch()` in a criteria query.
-
-It follows from this tip that you shouldn't need to use `Stage.fetch()`
-or `Mutiny.fetch()` very often!
-
-TIP: Of course, Hibernate provides many other features that help you
-minimize round trips to the database: DML SQL statement batching, the
-second-level cache, batch fetching, subselect fetching, bulk update and
-delete queries, and direct execution of native SQL are all things that
-can help reduce the number of queries sent to the database.
-
-You can find much more information about association fetching in the
-{association-fetching}[documentation for Hibernate ORM].
-
 === Transactions
 
 The `withTransaction()` method performs work within the scope of a database
@@ -838,6 +750,155 @@ sessionFactory.withTransaction( (session, tx) -> session.persist(book) )
 Note that these are "resource local" transactions, delegated to the underlying
 Vert.x database client. At present Hibernate Reactive does not integrate with
 container-managed transactions.
+
+== Tuning and performance
+
+Once you have a program up and running using Hibernate Reactive to access
+the database, it's inevitable that you'll find places where performance is
+disappointing or unacceptable.
+
+Fortunately, most performance problems are relatively easy to solve with
+the tools that Hibernate makes available to you, as long as you keep a
+couple of simple principles in mind.
+
+First and most important: the reason you're using Hibernate Reactive is
+because it makes things easier. If, for a certain problem, it's making
+things _harder_, stop using it. Solve your problem with a different tool
+instead. Just because you're using Hibernate in your program doesn't mean
+you have to use it _everywhere_.
+
+Second: there are two main potential sources of performance bottlenecks in
+a program that uses Hibernate:
+
+- too many round trips to the database, and
+- memory consumption associated with the first-level (session) cache.
+
+So performance tuning primarily involves reducing the number of accesses
+to the database, and/or controlling the size of the session cache.
+
+But before we get to those more advanced topics, we should start by tuning
+the connection pool.
+
+=== Tuning the Vert.x pool
+
+We already saw how to see the size of the Vert.x database connection pool.
+When it comes time for performance tuning, you can further customize the
+pool and prepared statement cache via the following properties:
+
+|===
+| Configuration property name                          | Purpose
+
+| `hibernate.vertx.pool.max_wait_queue_size`           | The maximum connection requests allowed in the wait queue
+| `hibernate.vertx.prepared_statement_cache.max_size`  | The maximum size of the prepared statement cache
+| `hibernate.vertx.prepared_statement_cache.sql_limit` | The maximum length of prepared statement SQL string that will be cached
+|===
+
+Finally, for more advanced cases, you can write your own code to configure
+the Vert.x client by implementing `SqlClientPoolConfiguration`.
+
+|===
+| Configuration property name      | Purpose
+
+| `hibernate.vertx.pool.configuration_class` | A class implementing `SqlClientPoolConfiguration`
+|===
+
+=== Enabling statement batching
+
+An easy way to improve performance of some transactions with almost no
+work at all is to turn on automatic DML statement batching. Batching
+only helps in cases where a program executes many inserts, updates, or
+deletes against the same table in a single transaction.
+
+|===
+| Configuration property name                                         | Purpose
+
+| `hibernate.jdbc.batch_size`                                         | Maximum batch size for SQL statement batching
+|===
+
+=== Association fetching
+
+:association-fetching: https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#fetching
+
+Achieving high performance in ORM means minimizing the number of round
+trips to the database. This goal should be uppermost in your mind
+whenever you're writing data access code with Hibernate. The most
+fundamental rule of thumb in ORM is:
+
+- explicitly specify all the data you're going to need right at the start
+of a session/transaction, and fetch it immediately in one or two queries,
+- and only then start navigating associations between persistent entities.
+
+TIP: Don't forget that most associations should be mapped for lazy
+fetching by default. If you need eager fetching in some particular
+transaction, use `left join fetch` in HQL, a fetch profile, a JPA
+`EntityGraph`, or `fetch()` in a criteria query.
+
+It follows from this tip that you shouldn't need to use `Stage.fetch()`
+or `Mutiny.fetch()` very often!
+
+TIP: Of course, Hibernate provides many other features that help you
+minimize round trips to the database: DML SQL statement batching, the
+second-level cache, batch fetching, subselect fetching, bulk update and
+delete queries, and direct execution of native SQL are all things that
+can help reduce the number of queries sent to the database.
+
+You can find much more information about association fetching in the
+{association-fetching}[documentation for Hibernate ORM].
+
+=== Enabling the second-level cache
+
+:second-level-cache: https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#caching
+
+A classic way to reduce the number of accesses to the database is to
+use a second-level cache, allowing cached data to be shared between
+sessions.
+
+Hibernate Reactive supports second-level cache implementations that
+perform no blocking I/O.
+
+IMPORTANT: Make sure you disable any disk-based storage or distributed
+replication used by your preferred cache implementation. A second-level
+cache which uses blocking I/O to interact with the network or disk-based
+storage will at least partially negate the advantages of the reactive
+programming model.
+
+Configuring Hibernate's second-level cache is a rather involved topic,
+and quite outside the scope of this document. But in case it helps, we're
+testing Hibernate Reactive with the following configuration, which uses
+EHCache as the cache implementation, as above in <<_optional_dependencies>>:
+
+|===
+| Configuration property name              | Property value
+
+| `hibernate.cache.use_second_level_cache` | `true`
+| `hibernate.cache.region.factory_class`   | `org.hibernate.cache.jcache.JCacheRegionFactory`
+| `hibernate.javax.cache.provider`         | `org.ehcache.jsr107.EhcacheCachingProvider`
+| `hibernate.javax.cache.uri`              | `/ehcache.xml`
+|===
+
+If you're using EHCache, you'll also need to include an `ehcache.xml` file
+that explicitly configures the behavior of each cache region belonging to
+your entities and collections.
+
+TIP: Don't forget that you need to explicitly mark each entity that will
+be stored in the second-level cache with the `@Cache` annotation from
+`org.hibernate.annotations`.
+
+You can find much more information about the second-level cache in the
+{second-level-cache}[documentation for Hibernate ORM].
+
+=== Session cache management
+
+Entity instances aren't automatically evicted from the session cache when
+they're no longer needed. (The session cache is quite different to the
+second-level cache in this respect!) Instead, they stay pinned in memory
+until the session they belong to is discarded by your program.
+
+The methods `detach()` and `clear()` allow you to remove entities from the
+session cache, making them available for garbage collection. Since most
+sessions are rather short-lived, you won't need these operations very often.
+And if you find yourself thinking you _do_ need them in a certain situation,
+you should strongly consider an alternative solution: a _stateless session_.
 
 === Stateless sessions
 
