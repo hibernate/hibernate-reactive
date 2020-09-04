@@ -619,6 +619,10 @@ are defined in the JPA specification, and in the API documentation, and are
 explained in innumerable articles and blog posts. But if you already have some
 experience with Hibernate or JPA, you're right at home!
 
+IMPORTANT: Just like in Hibernate ORM, the session is considered to be unusable
+after any of its methods throws an exception. If you receive an exception from
+Hibernate Reactive, you should immediately close and discard the current session.
+
 Now, _here's where Hibernate Reactive is different:_ in the reactive API, each
 of these methods returns its result in a non-blocking fashion via a Java
 `CompletionStage` (or Mutiny `Uni`). For example:
