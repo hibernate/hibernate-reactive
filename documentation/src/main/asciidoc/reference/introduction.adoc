@@ -881,6 +881,50 @@ limitations:
 - collections are completely ignored, and
 - operations performed via a stateless session bypass callbacks.
 
+=== Optimistic and pessimistic locking
+
+Finally, an aspect of behavior under load that we didn't mention above is row-level
+data contention. When many transactions try to read and update the same data, the
+program might become unresponsive with lock escalation, deadlocks, and lock
+acquisition timeout errors.
+
+There's two basic approaches to data concurrency in Hibernate:
+
+- optimistic locking using `@Version` columns, and
+- database-level pessimistic locking using SQL the `for update` syntax.
+
+In the Hibernate community it's _much_ more common to use optimistic locking, and
+Hibernate makes that incredibly easy. However, there's also a place for pessimistic
+locks.
+
+Therefore, the `find()`, `lock()`, and `refresh()` methods of the reactive session
+accept a `LockMode`. You can also specify a `LockMode` for a query. The lock mode
+can be used to request a pessimistic lock, or to customize the behavior of
+optimistic locking:
+
+|===
+| `LockMode` type | Meaning
+
+| `READ`                        | An optimistic lock obtained implicitly whenever
+                                  an entity is read from the database using `select`
+| `OPTIMISTIC`                  | An optimistic lock obtained when an entity is
+                                  read from the database, and verified using a
+                                  `select` to check the version when the
+                                  transaction completes
+| `OPTIMISTIC_FORCE_INCREMENT`  | An optimistic lock obtained when an entity is
+                                  read from the database, and enforced using an
+                                  `update` to increment the version when the
+                                  transaction completes
+| `WRITE`                       | A pessimistic lock obtained implicitly whenever
+                                  an entity is written to the database using
+                                  `update` or `insert`
+| `PESSIMISTIC_READ`            | A pessimistic `for share` lock
+| `PESSIMISTIC_WRITE`           | A pessimistic `for update` lock
+| `PESSIMISTIC_FORCE_INCREMENT` | A pessimistic lock enforced using an immediate
+                                  `update` to increment the version
+|===
+
+
 == Custom connection management and multitenancy
 
 Hibernate Reactive supports custom management of reactive connections by letting
