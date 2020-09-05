@@ -10,7 +10,7 @@ import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
-import org.hibernate.graph.GraphSemantic;
+import org.hibernate.LockOptions;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.metamodel.spi.MetamodelImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
@@ -25,11 +25,9 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Attribute;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import static java.util.Collections.singletonMap;
 
 /**
  * Implements the {@link Mutiny.Session} API. This delegating class is
@@ -92,22 +90,20 @@ public class MutinySessionImpl implements Mutiny.Session {
 		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, ids ) );
 	}
 
-	public <T> Uni<T> find(
-			Class<T> entityClass,
-			Object primaryKey,
-			Map<String, Object> properties) {
-		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, primaryKey, null, properties ) );
+	@Override
+	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey, LockMode lockMode) {
+		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, primaryKey, new LockOptions(lockMode), null ) );
 	}
 
-	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey, LockMode lockMode) {
-		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, primaryKey, lockMode, null ) );
+	@Override
+	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey, LockOptions lockOptions) {
+		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, primaryKey, lockOptions, null ) );
 	}
 
 	@Override
 	public <T> Uni<T> find(EntityGraph<T> entityGraph, Object id) {
 		Class<T> entityClass = ((RootGraphImplementor<T>) entityGraph).getGraphedType().getJavaType();
-		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, id, null,
-				singletonMap( GraphSemantic.FETCH.getJpaHintName(), entityGraph ) ) );
+		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, id, null, entityGraph ) );
 	}
 
 	@Override
@@ -135,29 +131,39 @@ public class MutinySessionImpl implements Mutiny.Session {
 		return Uni.createFrom().completionStage( delegate.reactiveMerge( entity ) );
 	}
 
-	@Override
-	public <T> Uni<Void> merge(T... entity) {
+	@Override @SafeVarargs
+	public final <T> Uni<Void> merge(T... entity) {
 		return Uni.createFrom().completionStage( applyToAll( delegate::reactiveMerge, entity ) );
 	}
 
 	@Override
 	public Uni<Void> refresh(Object entity) {
-		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, LockMode.NONE ) );
+		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, LockOptions.NONE ) );
 	}
 
 	@Override
 	public Uni<Void> refresh(Object entity, LockMode lockMode) {
-		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, lockMode ) );
+		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, new LockOptions(lockMode) ) );
+	}
+
+	@Override
+	public Uni<Void> refresh(Object entity, LockOptions lockOptions) {
+		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, lockOptions ) );
 	}
 
 	@Override
 	public Uni<Void> refresh(Object... entity) {
-		return Uni.createFrom().completionStage( applyToAll( e -> delegate.reactiveRefresh( e, LockMode.NONE ), entity ) );
+		return Uni.createFrom().completionStage( applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entity ) );
 	}
 
 	@Override
 	public Uni<Void> lock(Object entity, LockMode lockMode) {
-		return Uni.createFrom().completionStage( delegate.reactiveLock( entity, lockMode ) );
+		return Uni.createFrom().completionStage( delegate.reactiveLock( entity, new LockOptions(lockMode) ) );
+	}
+
+	@Override
+	public Uni<Void> lock(Object entity, LockOptions lockOptions) {
+		return Uni.createFrom().completionStage( delegate.reactiveLock( entity, lockOptions ) );
 	}
 
 	@Override

@@ -9,8 +9,8 @@ import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
-import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
@@ -25,11 +25,9 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Attribute;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import static java.util.Collections.singletonMap;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
 /**
@@ -93,23 +91,20 @@ public class StageSessionImpl implements Stage.Session {
 		return delegate.reactiveFind( entityClass, ids );
 	}
 
-	public <T> CompletionStage<T> find(
-			Class<T> entityClass,
-			Object primaryKey,
-			Map<String, Object> properties) {
-		return delegate.reactiveFind( entityClass, primaryKey, null, properties );
+	@Override
+	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockMode lockMode) {
+		return delegate.reactiveFind( entityClass, primaryKey, new LockOptions(lockMode), null );
 	}
 
-	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockMode lockMode) {
-		return delegate.reactiveFind( entityClass, primaryKey, lockMode, null );
+	@Override
+	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockOptions lockOptions) {
+		return delegate.reactiveFind( entityClass, primaryKey, lockOptions, null );
 	}
 
 	@Override
 	public <T> CompletionStage<T> find(EntityGraph<T> entityGraph, Object id) {
 		Class<T> entityClass = ((RootGraphImplementor<T>) entityGraph).getGraphedType().getJavaType();
-		return delegate.reactiveFind( entityClass, id, null,
-				singletonMap( GraphSemantic.FETCH.getJpaHintName(), entityGraph )
-		);
+		return delegate.reactiveFind( entityClass, id, null, entityGraph );
 	}
 
 	@Override
@@ -137,29 +132,39 @@ public class StageSessionImpl implements Stage.Session {
 		return delegate.reactiveMerge( entity );
 	}
 
-	@Override
-	public <T> CompletionStage<Void> merge(T... entity) {
+	@Override @SafeVarargs
+	public final <T> CompletionStage<Void> merge(T... entity) {
 		return applyToAll( delegate::reactiveMerge, entity );
 	}
 
 	@Override
 	public CompletionStage<Void> refresh(Object entity) {
-		return delegate.reactiveRefresh( entity, LockMode.NONE );
+		return delegate.reactiveRefresh( entity, LockOptions.NONE );
 	}
 
 	@Override
 	public CompletionStage<Void> refresh(Object entity, LockMode lockMode) {
-		return delegate.reactiveRefresh( entity, lockMode );
+		return delegate.reactiveRefresh( entity, new LockOptions(lockMode) );
+	}
+
+	@Override
+	public CompletionStage<Void> refresh(Object entity, LockOptions lockOptions) {
+		return delegate.reactiveRefresh( entity, lockOptions );
 	}
 
 	@Override
 	public CompletionStage<Void> refresh(Object... entity) {
-		return applyToAll( e -> delegate.reactiveRefresh( e, LockMode.NONE ), entity );
+		return applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entity );
 	}
 
 	@Override
 	public CompletionStage<Void> lock(Object entity, LockMode lockMode) {
-		return delegate.reactiveLock( entity, lockMode );
+		return delegate.reactiveLock( entity, new LockOptions(lockMode) );
+	}
+
+	@Override
+	public CompletionStage<Void> lock(Object entity, LockOptions lockOptions) {
+		return delegate.reactiveLock( entity, lockOptions );
 	}
 
 	@Override

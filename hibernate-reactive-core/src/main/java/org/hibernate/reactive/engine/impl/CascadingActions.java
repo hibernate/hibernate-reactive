@@ -6,7 +6,7 @@
 package org.hibernate.reactive.engine.impl;
 
 import org.hibernate.HibernateException;
-import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.TransientPropertyValueException;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.Status;
@@ -140,14 +140,14 @@ public class CascadingActions {
 	/**
 	 * @see org.hibernate.Session#lock(Object, org.hibernate.LockMode)
 	 */
-	public static final CascadingAction<LockMode> LOCK =
-			new BaseCascadingAction<LockMode>(org.hibernate.engine.spi.CascadingActions.LOCK) {
+	public static final CascadingAction<LockOptions> LOCK =
+			new BaseCascadingAction<LockOptions>(org.hibernate.engine.spi.CascadingActions.LOCK) {
 				@Override
 				public CompletionStage<?> cascade(
 						EventSource session,
 						Object child,
 						String entityName,
-						LockMode context,
+						LockOptions context,
 						boolean isCascadeDeleteEnabled)
 						throws HibernateException {
 					LOG.tracev("Cascading to lock: {0}", entityName);

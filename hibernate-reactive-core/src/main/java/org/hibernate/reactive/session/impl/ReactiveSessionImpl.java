@@ -48,9 +48,7 @@ import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
-import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.internal.util.collections.IdentitySet;
-import org.hibernate.jpa.QueryHints;
 import org.hibernate.jpa.spi.CriteriaQueryTupleTransformer;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.loader.custom.CustomQuery;
@@ -63,10 +61,8 @@ import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.Query;
 import org.hibernate.query.internal.ParameterMetadataImpl;
 import org.hibernate.reactive.common.ResultSetMapping;
-import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
-import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
-import org.hibernate.reactive.event.impl.DefaultReactiveInitializeCollectionEventListener;
+import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.event.ReactiveDeleteEventListener;
 import org.hibernate.reactive.event.ReactiveFlushEventListener;
 import org.hibernate.reactive.event.ReactiveLoadEventListener;
@@ -74,6 +70,8 @@ import org.hibernate.reactive.event.ReactiveLockEventListener;
 import org.hibernate.reactive.event.ReactiveMergeEventListener;
 import org.hibernate.reactive.event.ReactivePersistEventListener;
 import org.hibernate.reactive.event.ReactiveRefreshEventListener;
+import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
+import org.hibernate.reactive.event.impl.DefaultReactiveInitializeCollectionEventListener;
 import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
@@ -89,12 +87,12 @@ import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import javax.persistence.EntityGraph;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.Tuple;
 import javax.persistence.metamodel.Attribute;
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -785,9 +783,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode) {
+	public CompletionStage<Void> reactiveRefresh(Object entity, LockOptions lockOptions) {
 		checkOpen();
-		return fireRefresh( new RefreshEvent( entity, lockMode, this ) );
+		return fireRefresh( new RefreshEvent( entity, lockOptions, this ) );
 	}
 
 	@Override
@@ -845,9 +843,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveLock(Object object, LockMode lockMode) {
+	public CompletionStage<Void> reactiveLock(Object object, LockOptions lockOptions) {
 		checkOpen();
-		return fireLock( new LockEvent( object, lockMode, this ) );
+		return fireLock( new LockEvent( object, lockOptions, this ) );
 	}
 
 	private CompletionStage<Void> fireLock(LockEvent event) {
@@ -875,33 +873,23 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <T> CompletionStage<T> reactiveFind(
 			Class<T> entityClass,
 			Object id,
-			LockMode lockMode,
-			Map<String, Object> properties) {
+			LockOptions lockOptions,
+			EntityGraph<T> fetchGraph) {
 		checkOpen();
 
-		getLoadQueryInfluencers().getEffectiveEntityGraph().applyConfiguredGraph( properties );
+		if ( fetchGraph!=null ) {
+			getLoadQueryInfluencers()
+					.getEffectiveEntityGraph()
+					.applyGraph( (RootGraphImplementor<T>) fetchGraph, GraphSemantic.FETCH );
+		}
 
-		Boolean readOnly = properties == null ? null : (Boolean) properties.get( QueryHints.HINT_READONLY );
-		getLoadQueryInfluencers().setReadOnly( readOnly );
+//		Boolean readOnly = properties == null ? null : (Boolean) properties.get( QueryHints.HINT_READONLY );
+//		getLoadQueryInfluencers().setReadOnly( readOnly );
 
 		final ReactiveIdentifierLoadAccessImpl<T> loadAccess =
 				new ReactiveIdentifierLoadAccessImpl<>(entityClass)
-						.with( determineAppropriateLocalCacheMode( properties ) );
-
-		LockOptions lockOptions;
-		if ( lockMode != null ) {
-//			if ( !LockModeType.NONE.equals( lockModeType) ) {
-//					checkTransactionNeededForUpdateOperation();
-//			}
-			lockOptions = buildLockOptions(
-					LockModeConverter.convertToLockModeType(lockMode),
-					properties
-			);
-			loadAccess.with( lockOptions );
-		}
-		else {
-			lockOptions = null;
-		}
+						.with( determineAppropriateLocalCacheMode(null) )
+						.with( lockOptions );
 
 		return loadAccess.load( (Serializable) id )
 				.handle( (result, e) -> {
