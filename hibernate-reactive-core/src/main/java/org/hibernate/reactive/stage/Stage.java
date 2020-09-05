@@ -11,6 +11,7 @@ import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.collection.internal.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -286,6 +287,21 @@ public interface Stage {
 		 */
 		<T> CompletionStage<T> find(Class<T> entityClass, Object id, LockMode lockMode);
 
+		/**
+		 * Asynchronously return the persistent instance of the given entity
+		 * class with the given identifier, requesting the given {@link LockOptions}.
+		 *
+		 * @param entityClass The entity type
+		 * @param id an identifier
+		 * @param lockOptions the requested {@link LockOptions}
+		 *
+		 * @return a persistent instance or null via a {@code CompletionStage}
+		 *
+		 * @see #find(Class,Object)
+		 * @see #lock(Object, LockMode) this discussion of lock modes
+		 */
+		<T> CompletionStage<T> find(Class<T> entityClass, Object id, LockOptions lockOptions);
+
 		 /**
 		 * Asynchronously return the persistent instance with the given
 		 * identifier of an entity class, using the given {@link EntityGraph}
@@ -435,9 +451,23 @@ public interface Stage {
 		 * Re-read the state of the given instance from the underlying database,
 		 * requesting the given {@link LockMode}.
 		 *
+		 * @param entity a managed persistent entity instance
+		 * @param lockMode the requested lock mode
+		 *
 		 * @see #refresh(Object)
 		 */
 		CompletionStage<Void> refresh(Object entity, LockMode lockMode);
+
+		/**
+		 * Re-read the state of the given instance from the underlying database,
+		 * requesting the given {@link LockOptions}.
+		 *
+		 * @param entity a managed persistent entity instance
+		 * @param lockOptions the requested {@link LockOptions}
+		 *
+		 * @see #refresh(Object)
+		 */
+		CompletionStage<Void> refresh(Object entity, LockOptions lockOptions);
 
 		/**
 		 * Refresh multiple entity instances at once.
@@ -469,6 +499,17 @@ public interface Stage {
 		 * @throws IllegalArgumentException if the given instance is not managed
 		 */
 		CompletionStage<Void> lock(Object entity, LockMode lockMode);
+
+		/**
+		 * Obtain the specified lock level upon the given object, with the given
+		 * {@link LockOptions}.
+		 *
+		 * @param entity a managed persistent instance
+		 * @param lockOptions the requested {@link LockOptions}
+		 *
+		 * @throws IllegalArgumentException if the given instance is not managed
+		 */
+		CompletionStage<Void> lock(Object entity, LockOptions lockOptions);
 
 		/**
 		 * Force this session to flush asynchronously. Must be called at the

@@ -10,6 +10,7 @@ import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.UnknownProfileException;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
@@ -21,7 +22,6 @@ import javax.persistence.EntityGraph;
 import javax.persistence.metamodel.Attribute;
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -66,11 +66,11 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 
 	CompletionStage<Void> reactiveAutoflush();
 
-	CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode);
+	CompletionStage<Void> reactiveRefresh(Object entity, LockOptions lockMode);
 
 	CompletionStage<?> reactiveRefresh(Object child, IdentitySet refreshedAlready);
 
-	CompletionStage<Void> reactiveLock(Object entity, LockMode lockMode);
+	CompletionStage<Void> reactiveLock(Object entity, LockOptions lockMode);
 
 	<T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString);
 
@@ -100,8 +100,8 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 	<T> CompletionStage<T> reactiveFind(
 			Class<T> entityClass,
 			Object primaryKey,
-			LockMode lockMode,
-			Map<String, Object> properties);
+			LockOptions lockOptions,
+			EntityGraph<T> fetchGraph);
 
 	<T> CompletionStage<List<T>> reactiveFind(
 			Class<T> entityClass,
