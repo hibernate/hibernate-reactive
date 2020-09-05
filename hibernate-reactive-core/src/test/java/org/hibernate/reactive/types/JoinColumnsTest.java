@@ -8,7 +8,6 @@ package org.hibernate.reactive.types;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CompletionException;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -21,14 +20,12 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
-import org.hibernate.TransientPropertyValueException;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 
 import org.junit.After;
 import org.junit.Test;
 
-import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 
 public class JoinColumnsTest extends BaseReactiveTest {
@@ -51,7 +48,7 @@ public class JoinColumnsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testWithStages(TestContext context) throws Exception {
+	public void testWithStages(TestContext context) {
 		final SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.name = "Entity name";
 		sampleEntity.firstKeyId = 1L;
@@ -81,7 +78,7 @@ public class JoinColumnsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testWithMutiny(TestContext context) throws Exception {
+	public void testWithMutiny(TestContext context) {
 		final SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.name = "Entity name";
 		sampleEntity.firstKeyId = 1L;
@@ -112,7 +109,7 @@ public class JoinColumnsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testTransientExceptionWithStages(TestContext context) throws Exception {
+	public void testDetachedReferenceWithStages(TestContext context) {
 		final SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.name = "Entity name";
 		sampleEntity.firstKeyId = 1L;
@@ -129,17 +126,11 @@ public class JoinColumnsTest extends BaseReactiveTest {
 							return session.persist( sampleJoinEntity );
 						} )
 				)
-				.handle( (session, throwable) -> {
-					context.assertEquals( CompletionException.class, throwable.getClass() );
-					context.assertEquals( IllegalStateException.class, throwable.getCause().getClass() );
-					context.assertEquals( TransientPropertyValueException.class, throwable.getCause().getCause().getClass() );
-					return null;
-				} )
 		);
 	}
 
 	@Test
-	public void testTransientExceptionWithMutiny(TestContext context) throws Exception {
+	public void testDetachedReferenceWithMutiny(TestContext context) {
 		final SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.name = "Entity name";
 		sampleEntity.firstKeyId = 1L;
@@ -156,17 +147,6 @@ public class JoinColumnsTest extends BaseReactiveTest {
 							return session.persist( sampleJoinEntity );
 						} )
 				)
-				.onItem().invoke( session -> context.fail( "Expected exception not thrown" ) )
-				.onFailure().recoverWithUni( throwable -> {
-					context.assertNotNull( throwable );
-					// These are the exception I'm expecting but, I don't know why, CI throws a different exception:
-					// io.smallrye.mutiny.CompositeException
-					// I couldn't figure out why.
-					//
-					// context.assertEquals( IllegalStateException.class, throwable.getClass() );
-					// context.assertEquals( TransientPropertyValueException.class, throwable.getCause().getClass() );
-					return Uni.createFrom().nullItem();
-				} )
 		);
 	}
 
