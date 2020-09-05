@@ -9,6 +9,7 @@ import io.smallrye.mutiny.Uni;
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.ReactiveQuery;
 
@@ -92,6 +93,12 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 	@Override
 	public Mutiny.Query<R> setLockMode(LockMode lockMode) {
 		delegate.setLockMode( lockMode );
+		return this;
+	}
+
+	@Override
+	public Mutiny.Query<R> setLockOptions(LockOptions lockOptions) {
+		delegate.setLockOptions(lockOptions);
 		return this;
 	}
 

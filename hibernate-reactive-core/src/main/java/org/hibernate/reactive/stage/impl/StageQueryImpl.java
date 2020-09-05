@@ -8,6 +8,7 @@ package org.hibernate.reactive.stage.impl;
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.stage.Stage;
 
@@ -92,6 +93,12 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 	@Override
 	public Stage.Query<R> setLockMode(LockMode lockMode) {
 		delegate.setLockMode( lockMode );
+		return this;
+	}
+
+	@Override
+	public Stage.Query<R> setLockOptions(LockOptions lockOptions) {
+		delegate.setLockOptions(lockOptions);
 		return this;
 	}
 

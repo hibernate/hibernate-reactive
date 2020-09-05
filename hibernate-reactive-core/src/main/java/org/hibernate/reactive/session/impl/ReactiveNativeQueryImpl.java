@@ -8,6 +8,7 @@ package org.hibernate.reactive.session.impl;
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.engine.query.spi.sql.NativeSQLQueryReturn;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
@@ -155,7 +156,14 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public ReactiveQuery<R> setLockMode(LockMode lockMode) {
-		throw new UnsupportedOperationException("LockMode not supported for native SQL queries");
+		setLockOptions( new LockOptions(lockMode) );
+		return this;
+	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> setLockOptions(LockOptions lockOptions) {
+		super.setLockOptions(lockOptions);
+		return this;
 	}
 
 	@Override

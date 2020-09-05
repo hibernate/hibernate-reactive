@@ -10,6 +10,7 @@ import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.hql.internal.QueryExecutionRequestException;
 import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
@@ -67,6 +68,8 @@ public interface ReactiveQuery<R> {
 	ReactiveQuery<R> setLockMode(LockMode lockMode);
 
 	ReactiveQuery<R> setLockMode(String alias, LockMode lockMode);
+
+	ReactiveQuery<R> setLockOptions(LockOptions lockOptions);
 
 	ReactiveQuery<R> setCacheMode(CacheMode cacheMode);
 

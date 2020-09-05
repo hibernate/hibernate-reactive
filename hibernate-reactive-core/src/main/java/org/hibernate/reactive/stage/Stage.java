@@ -171,11 +171,6 @@ public interface Stage {
 		 */
 		Query<R> setComment(String comment);
 
-//		/**
-//		 * Set a query hint.
-//		 */
-//		Query<R> setHint(String hintName, Object value);
-
 		/**
 		 * Set the current {@link CacheMode} in effect while this query
 		 * is being executed.
@@ -215,9 +210,19 @@ public interface Stage {
 		 * Set the {@link LockMode} to use for specified alias (as defined in
 		 * the query's {@code from} clause).
 		 *
+		 * @param alias the from clause alias
+		 * @param lockMode the requested {@link LockMode}
+		 *
 		 * @see org.hibernate.query.Query#setLockMode(String,LockMode)
 		 */
 		Query<R> setLockMode(String alias, LockMode lockMode);
+
+		/**
+		 * Set the {@link LockOptions} to use for the whole query.
+		 *
+		 * @see org.hibernate.query.Query#setLockOptions(LockOptions)
+		 */
+		Query<R> setLockOptions(LockOptions lockOptions);
 
 //		/**
 //		 * Set the {@link EntityGraph} that will be used as a fetch plan for

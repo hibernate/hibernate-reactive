@@ -8,6 +8,7 @@ package org.hibernate.reactive.session.impl;
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.engine.query.spi.EntityGraphQueryHint;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.spi.QueryParameters;
@@ -242,6 +243,12 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 			}
 		}
 		getLockOptions().setLockMode( lockMode );
+		return this;
+	}
+
+	@Override
+	public ReactiveQueryImpl<R> setLockOptions(LockOptions lockOptions) {
+		super.setLockOptions(lockOptions);
 		return this;
 	}
 
