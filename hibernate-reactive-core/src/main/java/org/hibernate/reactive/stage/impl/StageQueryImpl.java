@@ -96,7 +96,7 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 		return this;
 	}
 
-	@Override
+//	@Override
 	public Stage.Query<R> setLockOptions(LockOptions lockOptions) {
 		delegate.setLockOptions(lockOptions);
 		return this;

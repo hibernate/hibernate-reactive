@@ -96,7 +96,7 @@ public class StageSessionImpl implements Stage.Session {
 		return delegate.reactiveFind( entityClass, primaryKey, new LockOptions(lockMode), null );
 	}
 
-	@Override
+//	@Override
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockOptions lockOptions) {
 		return delegate.reactiveFind( entityClass, primaryKey, lockOptions, null );
 	}
@@ -147,7 +147,7 @@ public class StageSessionImpl implements Stage.Session {
 		return delegate.reactiveRefresh( entity, new LockOptions(lockMode) );
 	}
 
-	@Override
+//	@Override
 	public CompletionStage<Void> refresh(Object entity, LockOptions lockOptions) {
 		return delegate.reactiveRefresh( entity, lockOptions );
 	}
@@ -162,7 +162,7 @@ public class StageSessionImpl implements Stage.Session {
 		return delegate.reactiveLock( entity, new LockOptions(lockMode) );
 	}
 
-	@Override
+//	@Override
 	public CompletionStage<Void> lock(Object entity, LockOptions lockOptions) {
 		return delegate.reactiveLock( entity, lockOptions );
 	}
