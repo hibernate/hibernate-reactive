@@ -95,7 +95,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, primaryKey, new LockOptions(lockMode), null ) );
 	}
 
-	@Override
+//	@Override
 	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey, LockOptions lockOptions) {
 		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, primaryKey, lockOptions, null ) );
 	}
@@ -146,7 +146,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, new LockOptions(lockMode) ) );
 	}
 
-	@Override
+//	@Override
 	public Uni<Void> refresh(Object entity, LockOptions lockOptions) {
 		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, lockOptions ) );
 	}
@@ -161,7 +161,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 		return Uni.createFrom().completionStage( delegate.reactiveLock( entity, new LockOptions(lockMode) ) );
 	}
 
-	@Override
+//	@Override
 	public Uni<Void> lock(Object entity, LockOptions lockOptions) {
 		return Uni.createFrom().completionStage( delegate.reactiveLock( entity, lockOptions ) );
 	}

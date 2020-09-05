@@ -96,7 +96,7 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 		return this;
 	}
 
-	@Override
+//	@Override
 	public Mutiny.Query<R> setLockOptions(LockOptions lockOptions) {
 		delegate.setLockOptions(lockOptions);
 		return this;
