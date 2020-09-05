@@ -98,6 +98,40 @@ public class CascadingActions {
 			LOG.tracev( "Cascading to persist on flush: {0}", entityName );
 			return session.unwrap(ReactiveSession.class).reactivePersistOnFlush( child, context );
 		}
+
+		private boolean isInManagedState(Object child, EventSource session) {
+			EntityEntry entry = session.getPersistenceContextInternal().getEntry( child );
+			return entry != null &&
+					( entry.getStatus() == Status.MANAGED
+							|| entry.getStatus() == Status.READ_ONLY
+							|| entry.getStatus() == Status.SAVING );
+		}
+
+		@Override
+		public CompletionStage<Void> noCascade(EventSource session, Object parent, EntityPersister persister, Type propertyType, int propertyIndex) {
+			if ( propertyType.isEntityType() ) {
+				Object child = persister.getPropertyValue( parent, propertyIndex );
+				if ( child != null
+						&& !isInManagedState( child, session )
+						&& !(child instanceof HibernateProxy ) ) { //a proxy cannot be transient and it breaks ForeignKeys.isTransient
+					final String childEntityName = ((EntityType) propertyType).getAssociatedEntityName( session.getFactory() );
+					return ForeignKeys.isTransient( childEntityName, child, null, session)
+							.thenAccept( isTrans -> {
+								if ( isTrans ) {
+									String parentEntityName = persister.getEntityName();
+									String propertyName = persister.getPropertyNames()[propertyIndex];
+									throw new TransientPropertyValueException(
+											"object references an unsaved transient instance - save the transient instance before flushing",
+											childEntityName,
+											parentEntityName,
+											propertyName
+									);
+								}
+							} );
+				}
+			}
+			return CompletionStages.voidFuture();
+		}
 	};
 
 	/**
@@ -187,34 +221,7 @@ public class CascadingActions {
 		 */
 		@Override
 		public CompletionStage<Void> noCascade(EventSource session, Object parent, EntityPersister persister, Type propertyType, int propertyIndex) {
-			if ( propertyType.isEntityType() ) {
-				Object child = persister.getPropertyValue( parent, propertyIndex );
-				if ( child != null
-						&& !isInManagedState( child, session )
-						&& !(child instanceof HibernateProxy ) ) { //a proxy cannot be transient and it breaks ForeignKeys.isTransient
-					final String childEntityName = ((EntityType) propertyType).getAssociatedEntityName( session.getFactory());
-					return ForeignKeys.isTransient( childEntityName, child, null, session)
-							.thenAccept( isTrans -> {
-								String parentEntityName = persister.getEntityName();
-								String propertyName = persister.getPropertyNames()[propertyIndex];
-								throw new TransientPropertyValueException(
-										"object references an unsaved transient instance - save the transient instance before flushing",
-										childEntityName,
-										parentEntityName,
-										propertyName
-								);
-							} );
-				}
-			}
-			return CompletionStages.nullFuture();
-		}
-
-		private boolean isInManagedState(Object child, EventSource session) {
-			EntityEntry entry = session.getPersistenceContextInternal().getEntry( child );
-			return entry != null &&
-					( entry.getStatus() == Status.MANAGED
-							|| entry.getStatus() == Status.READ_ONLY
-							|| entry.getStatus() == Status.SAVING );
+			return CompletionStages.voidFuture();
 		}
 
 		@Override
