@@ -952,6 +952,10 @@ configuration properties defined by Hibernate ORM:
 | `hibernate.tenant_identifier_resolver` | (Optional) A class which implements `CurrentTenantIdentifierResolver`
 |===
 
+If you don't provide a `CurrentTenantIdentifierResolver`, you can specify
+the tenant id explicitly when you call `openSession()`, `withSession()`,
+or `withTransaction()`.
+
 == Next steps
 
 :Quarkus: https://quarkus.io/
