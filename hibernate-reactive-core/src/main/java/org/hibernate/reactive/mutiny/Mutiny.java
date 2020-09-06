@@ -369,6 +369,19 @@ public interface Mutiny {
 		<T> T getReference(Class<T> entityClass, Object id);
 
 		/**
+		 * Return the persistent instance of with the same identity as the
+		 * given instance, which might be detached, assuming that the instance
+		 * is still persistent in the database. This method never results in
+		 * access to the underlying data store, and thus might return a proxy
+		 * that must be initialized explicitly using {@link #fetch(Object)}.
+		 *
+		 * @param entity a detached persistent instance
+		 *
+		 * @return the persistent instance or proxy
+		 */
+		<T> T getReference(T entity);
+
+		/**
 		 * Asynchronously persist the given transient instance, first assigning
 		 * a generated identifier. (Or using the current value of the identifier
 		 * property if the entity has assigned identifiers.)

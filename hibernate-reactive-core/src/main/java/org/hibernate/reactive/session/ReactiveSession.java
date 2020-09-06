@@ -126,11 +126,14 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 	void setReadOnly(Object entityOrProxy, boolean readOnly);
 	boolean isReadOnly(Object entityOrProxy);
 
-	String getEntityName(Object object);
-	Serializable getIdentifier(Object object);
-	boolean contains(Object object);
+	String getEntityName(Object entity);
+	Serializable getIdentifier(Object entity);
+	boolean contains(Object entity);
 
-	LockMode getCurrentLockMode(Object object);
+	<T> Class<? extends T> getEntityClass(T entity);
+	Serializable getEntityId(Object entity);
+
+	LockMode getCurrentLockMode(Object entity);
 
 	Filter enableFilter(String filterName);
 	void disableFilter(String filterName);

@@ -335,8 +335,8 @@ public interface Stage {
 		 * Return the persistent instance of the given entity class with the
 		 * given identifier, assuming that the instance exists. This method
 		 * never results in access to the underlying data store, and thus
-		 * might return a proxied instance that must be initialized explicitly
-		 * using {@link #fetch(Object)}.
+		 * might return a proxy that must be initialized explicitly using
+		 * {@link #fetch(Object)}.
 		 * <p>
 		 * You should not use this method to determine if an instance exists
 		 * (use {@link #find} instead). Use this only to retrieve an instance
@@ -351,6 +351,19 @@ public interface Stage {
 		 * @see javax.persistence.EntityManager#getReference(Class, Object)
 		 */
 		<T> T getReference(Class<T> entityClass, Object id);
+
+		/**
+		 * Return the persistent instance of with the same identity as the
+		 * given instance, which might be detached, assuming that the instance
+		 * is still persistent in the database. This method never results in
+		 * access to the underlying data store, and thus might return a proxy
+		 * that must be initialized explicitly using {@link #fetch(Object)}.
+		 *
+		 * @param entity a detached persistent instance
+		 *
+		 * @return the persistent instance or proxy
+		 */
+		<T> T getReference(T entity);
 
 		/**
 		 * Asynchronously persist the given transient instance, first assigning
