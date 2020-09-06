@@ -1323,4 +1323,28 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public void setBatchSize(Integer batchSize) {
 		setJdbcBatchSize(batchSize);
 	}
+
+	@Override @SuppressWarnings("unchecked")
+	public <T> Class<? extends T> getEntityClass(T entity) {
+		if ( entity instanceof HibernateProxy ) {
+			return ( (HibernateProxy) entity ).getHibernateLazyInitializer()
+					.getPersistentClass();
+		}
+		else {
+			return getEntityPersister(null, entity )
+					.getMappedClass();
+		}
+	}
+
+	@Override
+	public Serializable getEntityId(Object entity) {
+		if ( entity instanceof HibernateProxy ) {
+			return ( (HibernateProxy) entity ).getHibernateLazyInitializer()
+					.getIdentifier();
+		}
+		else {
+			return getEntityPersister(null, entity )
+					.getIdentifier( entity, this );
+		}
+	}
 }

@@ -72,6 +72,11 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public <T> T getReference(T entity) {
+		return delegate.getReference( delegate.getEntityClass(entity), delegate.getEntityId(entity) );
+	}
+
+	@Override
 	public LockMode getLockMode(Object entity) {
 		return delegate.getCurrentLockMode( entity );
 	}
