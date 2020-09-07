@@ -3,15 +3,19 @@
 
 :example: https://github.com/hibernate/hibernate-reactive/tree/master/example
 
-Creating a new project with Hibernate Reactive isn't hard at all. In this
-short guide, we'll cover all the basic work involved in:
+Creating a new project with Hibernate Reactive isn't hard at all. In
+this short guide, we'll cover all the basic work involved in:
 
 - setting up and configuring a project, and then
 - writing Java code to define a data model and access the database.
 
-But, before you start, we recommend taking a quick look at the example
-program in the {example}[`example`] directory, which shows off all the
-"bits" you'll need to get your own program up and running.
+Last, we'll discuss some topics related to performance that you'll need
+to understand when you develop any large-scale project using Hibernate.
+
+But, before you start, we recommend taking a quick look at the very
+simplistic example program in the {example}[`example`] directory, which
+shows off all the "bits" you'll need to get your own program up and
+running.
 
 == Setting up a reactive Hibernate project
 
@@ -20,8 +24,8 @@ program in the {example}[`example`] directory, which shows off all the
 If you're using Hibernate Reactive outside of the Quarkus environment,
 you'll need to:
 
-- include Hibernate Reactive itself along with the appropriate Vert.x
-  reactive database client as dependencies of your project, and
+- include Hibernate Reactive itself, along with the appropriate Vert.x
+  reactive database client, as dependencies of your project, and
 - configure Hibernate Reactive with information about your database,
   using Hibernate configuration properties.
 
@@ -54,8 +58,7 @@ driver for your database, one of the following options:
 Where `{vertxVersion}` is the version of Vert.x compatible with the
 version of Hibernate Reactive you're using.
 
-You don't need to depend on the JDBC driver for your database (but you
-can if you like).
+You don't need to depend on the JDBC driver for your database.
 
 === Optional dependencies
 
@@ -82,7 +85,7 @@ don't need. Stick to the basics for now.
 
 There's an example {build}[Gradle build] included in the example program.
 
-=== Configuration
+=== Basic configuration
 
 :xml: https://github.com/hibernate/hibernate-reactive/blob/master/example/src/main/resources/META-INF/persistence.xml
 :configuration-properties: https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#configurations
@@ -94,22 +97,22 @@ document which must be placed, as usual, in the `/META-INF` directory.
 An example {xml}[`persistence.xml`] file is included in the example
 program.
 
-The only configuration really specific to Hibernate Reactive is the
-persistence `<provider>` element, which must be explicit:
+The only required configuration that's really specific to Hibernate
+Reactive is the persistence `<provider>` element, which must be explicit:
 
 [source,xml]
 ----
 <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
 ----
 
-Otherwise, configuration is almost completely transparent. Configure
-Hibernate exactly as you usually would, noting that most configuration
-properties directly related to JDBC or JTA aren't relevant in the context
-of Hibernate Reactive.
+Otherwise, configuration is almost completely transparent&mdash;you can
+configure Hibernate Reactive pretty much exactly as you would usually
+configure Hibernate ORM core.
 
 A full list of configuration properties recognized by Hibernate may be
 found in the {configuration-properties}[documentation for Hibernate ORM].
-Configuration properties of particular interest include:
+You'll never need to touch most of these. The properties you do need at
+this stage are these three:
 
 |===
 | Configuration property name                                         | Purpose
@@ -138,6 +141,11 @@ pool:
 
 We'll learn about more advanced connection pool tuning later, in
 <<_tuning_the_vert_x_pool>>.
+
+TIP: Hibernate has many configurable things, but many exist only to
+maintain compatibility with legacy code, and most configuration properties
+directly related to JDBC or JTA aren't relevant in the context of Hibernate
+Reactive.
 
 === Automatic schema export
 
@@ -361,9 +369,10 @@ custom reactive identifier generator.
 
 === Custom types
 
-Hibernate custom types based on the `UserType` interface are similarly
-targeted toward JDBC. Hibernate Reactive features an adaptor that exposes a
-partial implementation of JDBC to the `UserType` implementation.
+Hibernate custom types based on the `UserType` interface are targeted toward
+use with JDBC, and depend on interfaces defined by JDBC. So Hibernate Reactive
+features an adaptor that exposes a partial implementation of JDBC to the
+`UserType` implementation.
 
 Therefore, _some_ existing `UserType` implementations will work in Hibernate
 Reactive, depending upon precisely which features of JDBC they depend on.
@@ -763,8 +772,10 @@ couple of simple principles in mind.
 
 First and most important: the reason you're using Hibernate Reactive is
 because it makes things easier. If, for a certain problem, it's making
-things _harder_, stop using it. Solve your problem with a different tool
-instead. Just because you're using Hibernate in your program doesn't mean
+things _harder_, stop using it. Solve this problem with a different tool
+instead.
+
+IMPORTANT: Just because you're using Hibernate in your program doesn't mean
 you have to use it _everywhere_.
 
 Second: there are two main potential sources of performance bottlenecks in
@@ -781,9 +792,10 @@ the connection pool.
 
 === Tuning the Vert.x pool
 
-We already saw how to see the size of the Vert.x database connection pool.
-When it comes time for performance tuning, you can further customize the
-pool and prepared statement cache via the following properties:
+In <<_basic_configuration>> we already saw how to set the size of the
+Vert.x database connection pool. When it comes time for performance tuning,
+you can further customize the pool and prepared statement cache via the
+following configuration properties:
 
 |===
 | Configuration property name                          | Purpose
@@ -809,11 +821,19 @@ work at all is to turn on automatic DML statement batching. Batching
 only helps in cases where a program executes many inserts, updates, or
 deletes against the same table in a single transaction.
 
+All you need to do is set a single property:
+
 |===
 | Configuration property name                                         | Purpose
 
 | `hibernate.jdbc.batch_size`                                         | Maximum batch size for SQL statement batching
 |===
+
+(Again, this property has `jdbc` in its name, but Hibernate Reactive
+repurposes it for use with the reactive connection.)
+
+TIP: Even better than DML statement batching is the use of HQL `update`
+or `delete` queries, or even native SQL that calls a stored procedure!
 
 === Association fetching
 
@@ -828,19 +848,51 @@ fundamental rule of thumb in ORM is:
 of a session/transaction, and fetch it immediately in one or two queries,
 - and only then start navigating associations between persistent entities.
 
-TIP: Don't forget that most associations should be mapped for lazy
-fetching by default. If you need eager fetching in some particular
-transaction, use `left join fetch` in HQL, a fetch profile, a JPA
-`EntityGraph`, or `fetch()` in a criteria query.
+Without question, the most common cause of poorly-performing data access
+code in Java programs is the problem of _N+1 selects_. Here, a list of N
+rows is retrieved from the database in an initial query, and then
+associated instances of a related entity are fetched using N subsequent
+queries.
+
+IMPORTANT: Hibernate code which does this is bad code and makes
+Hibernate look bad to people who don't realize that it's their own
+fault for not following the advice in this section!
+
+Hibernate provides several strategies for efficiently fetching
+associations and avoiding N+1 selects:
+
+- outer join fetching,
+- batch fetching, and
+- subselect fetching.
+
+Of these, you should almost always use outer join fetching. Batch
+fetching and subselect fetching are only useful in rare cases where
+outer join fetching would result in a cartesian product and a huge
+result set. Unfortunately, outer join fetching simply isn't possible
+with lazy fetching.
+
+TIP: Avoid the use of lazy fetching, which is often the source of
+N+1 selects.
 
 It follows from this tip that you shouldn't need to use `Stage.fetch()`
 or `Mutiny.fetch()` very often!
 
-TIP: Of course, Hibernate provides many other features that help you
-minimize round trips to the database: DML SQL statement batching, the
-second-level cache, batch fetching, subselect fetching, bulk update and
-delete queries, and direct execution of native SQL are all things that
-can help reduce the number of queries sent to the database.
+Now, we're not saying that associations should be mapped for eager
+fetching by default! That would be a terrible idea, resulting in
+simple session operations that fetch the entire database! Therefore:
+
+TIP: Most associations should be mapped for lazy fetching by default.
+
+It sounds as if this tip is in contradiction to the previous one, but
+it's not. It's saying that you must explicitly specify eager fetching
+for associations precisely when and where they are needed.
+
+If you need eager fetching in some particular transaction, use:
+
+- `left join fetch` in HQL,
+- a fetch profile,
+- a JPA `EntityGraph`, or
+- `fetch()` in a criteria query.
 
 You can find much more information about association fetching in the
 {association-fetching}[documentation for Hibernate ORM].
@@ -952,16 +1004,22 @@ acquisition timeout errors.
 There's two basic approaches to data concurrency in Hibernate:
 
 - optimistic locking using `@Version` columns, and
-- database-level pessimistic locking using SQL the `for update` syntax.
+- database-level pessimistic locking using the SQL `for update` syntax (or equivalent).
 
 In the Hibernate community it's _much_ more common to use optimistic locking, and
-Hibernate makes that incredibly easy. However, there's also a place for pessimistic
-locks.
+Hibernate makes that incredibly easy.
+
+TIP: Where possible, in a multiuser system, avoid holding a pessimistic lock across
+a user interaction. Indeed, the usual practice is to avoid having transactions that
+span user interactions. For multiuser systems, optimistic locking is king.
+
+That said, there _is_ also a place for pessimistic locks, which can sometimes reduce
+the probability of transaction rollbacks.
 
 Therefore, the `find()`, `lock()`, and `refresh()` methods of the reactive session
-accept a `LockMode`. You can also specify a `LockMode` for a query. The lock mode
-can be used to request a pessimistic lock, or to customize the behavior of
-optimistic locking:
+accept an optional `LockMode`. You can also specify a `LockMode` for a query. The
+lock mode can be used to request a pessimistic lock, or to customize the behavior
+of optimistic locking:
 
 |===
 | `LockMode` type | Meaning
@@ -984,7 +1042,6 @@ optimistic locking:
 | `PESSIMISTIC_FORCE_INCREMENT` | A pessimistic lock enforced using an immediate
                                   `update` to increment the version
 |===
-
 
 == Custom connection management and multitenancy
 
