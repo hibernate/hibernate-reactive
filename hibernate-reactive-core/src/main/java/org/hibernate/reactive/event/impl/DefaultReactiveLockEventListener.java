@@ -61,7 +61,8 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 			log.explicitSkipLockedLockCombo();
 		}
 
-		SessionImplementor source = event.getSession();
+		EventSource source = event.getSession();
+
 		boolean detached = event.getEntityName() != null
 				? !source.contains( event.getEntityName(), event.getObject() )
 				: !source.contains( event.getObject() );
@@ -70,17 +71,26 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 			throw new IllegalArgumentException("unmanaged instance passed to refresh()");
 		}
 
-		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
-		Object entity = persistenceContext.unproxyAndReassociate( event.getObject() );
+
+//		Object entity = persistenceContext.unproxyAndReassociate( event.getObject() );
 		//TODO: if object was an uninitialized proxy, this is inefficient,
 		//      resulting in two SQL selects
+
+		return ( (ReactiveSession) source ).reactiveFetch( event.getObject(), true )
+				.thenCompose( entity -> reactiveOnLock( event, entity ) );
+	}
+
+	private CompletionStage<Void> reactiveOnLock(LockEvent event, Object entity) {
+
+		SessionImplementor source = event.getSession();
+		PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 
 		EntityEntry entry = persistenceContext.getEntry(entity);
 		CompletionStage<EntityEntry> stage;
 		if (entry==null) {
-			final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
-			final Serializable id = persister.getIdentifier( entity, source );
-			stage = ForeignKeys.isNotTransient( event.getEntityName(), entity, Boolean.FALSE, source )
+			final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity);
+			final Serializable id = persister.getIdentifier(entity, source);
+			stage = ForeignKeys.isNotTransient( event.getEntityName(), entity, Boolean.FALSE, source)
 					.thenApply(
 							trans -> {
 								if (!trans) {
@@ -100,7 +110,7 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 			stage = CompletionStages.completedFuture(entry);
 		}
 
-		return stage.thenCompose( e -> upgradeLock( entity, e, event.getLockOptions(), event.getSession() ) );
+		return stage.thenCompose( e -> upgradeLock(entity, e, event.getLockOptions(), event.getSession() ) );
 	}
 
 	private void cascadeOnLock(LockEvent event, EntityPersister persister, Object entity) {

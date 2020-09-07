@@ -7,6 +7,7 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.Hibernate;
+import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
 import org.junit.Test;
@@ -108,12 +109,90 @@ public class ReferenceTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testRemoveDetachedProxy(TestContext context) {
+		final Book goodOmens = new Book("Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+
+		test(
+				context,
+				completedFuture( openSession() )
+						.thenCompose( s -> s.persist(goodOmens).thenCompose( v -> s.flush() ) )
+						.thenApply( v -> openSession() )
+						.thenCompose( sess -> {
+							Book reference = sess.getReference(goodOmens);
+							context.assertFalse( Hibernate.isInitialized(reference) );
+							sess.close();
+							return completedFuture( openSession() )
+									.thenCompose( s -> s.remove( s.getReference(reference) )
+											.thenCompose( v -> s.flush() ) );
+						} )
+						.thenApply( v -> openSession() )
+						.thenCompose( sess -> sess.find( Book.class, goodOmens.getId() ) )
+						.thenAccept( book -> context.assertNull(book) )
+		);
+	}
+
+	@Test
+	public void testLockDetachedProxy(TestContext context) {
+		final Book goodOmens = new Book("Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+
+		test(
+				context,
+				completedFuture( openSession() )
+						.thenCompose( s -> s.persist(goodOmens).thenCompose( v -> s.flush() ) )
+						.thenApply( v -> openSession() )
+						.thenCompose( sess -> {
+							Book reference = sess.getReference(goodOmens);
+							context.assertFalse( Hibernate.isInitialized(reference) );
+							sess.close();
+							return completedFuture( openSession() )
+									.thenCompose( s -> s.lock( s.getReference(reference), LockMode.PESSIMISTIC_FORCE_INCREMENT )
+											.thenCompose( v -> s.flush() ) );
+						} )
+						.thenApply( v -> openSession() )
+						.thenCompose( sess -> sess.find( Book.class, goodOmens.getId() ) )
+						.thenAccept( book -> {
+							context.assertNotNull(book);
+							context.assertEquals( 2, book.version );
+						} )
+		);
+	}
+
+	@Test
+	public void testRefreshDetachedProxy(TestContext context) {
+		final Book goodOmens = new Book("Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+
+		test(
+				context,
+				completedFuture( openSession() )
+						.thenCompose( s -> s.persist(goodOmens).thenCompose( v -> s.flush() ) )
+						.thenApply( v -> openSession() )
+						.thenCompose( sess -> {
+							Book reference = sess.getReference(goodOmens);
+							context.assertFalse( Hibernate.isInitialized(reference) );
+							sess.close();
+							return completedFuture( openSession() )
+									.thenCompose( s -> s.refresh( s.getReference(reference) )
+											.thenAccept( v -> context.assertTrue( Hibernate.isInitialized( s.getReference(reference) ) ) )
+											.thenCompose( v -> s.flush() ) );
+						} )
+						.thenApply( v -> openSession() )
+						.thenCompose( sess -> sess.find( Book.class, goodOmens.getId() ) )
+						.thenAccept( book -> {
+							context.assertNotNull(book);
+							context.assertEquals( 1, book.version );
+						} )
+		);
+	}
+
 	@Entity(name =  "Tome")
 	@Table(name = "Book")
 	public static class Book {
 
 		@Id @GeneratedValue
 		private Integer id;
+		@Version
+		private Integer version = 1;
 		private String title;
 
 		@OneToMany(fetch = FetchType.LAZY, mappedBy="book")

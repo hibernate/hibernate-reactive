@@ -105,18 +105,26 @@ public class DefaultReactiveDeleteEventListener
 	 */
 	public CompletionStage<Void> reactiveOnDelete(DeleteEvent event, IdentitySet transientEntities) throws HibernateException {
 
-		final EventSource source = event.getSession();
+		EventSource source = event.getSession();
 
 		boolean detached = event.getEntityName() != null
 				? !source.contains( event.getEntityName(), event.getObject() )
 				: !source.contains( event.getObject() );
 		if ( detached ) {
-			// Hibernate Reactive doesn't support detached instances in refresh()
-			throw new IllegalArgumentException("unmanaged instance passed to refresh()");
+			// Hibernate Reactive doesn't support detached instances in remove()
+			throw new IllegalArgumentException("unmanaged instance passed to remove()");
 		}
 
-		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
-		Object entity = persistenceContext.unproxyAndReassociate( event.getObject() );
+		//Object entity = persistenceContext.unproxyAndReassociate( event.getObject() );
+
+		return ( (ReactiveSession) source ).reactiveFetch( event.getObject(), true )
+				.thenCompose( entity ->  reactiveOnDelete( event, transientEntities, entity ) );
+	}
+
+	private CompletionStage<Void> reactiveOnDelete(DeleteEvent event, IdentitySet transientEntities, Object entity) {
+
+		EventSource source = event.getSession();
+		PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 
 		EntityEntry entityEntry = persistenceContext.getEntry( entity );
 
@@ -129,11 +137,17 @@ public class DefaultReactiveDeleteEventListener
 					.thenCompose( trans -> {
 						if ( trans ) {
 							// EARLY EXIT!!!
-							return deleteTransientEntity( source, entity, event.isCascadeDeleteEnabled(), persister, transientEntities );
+							return deleteTransientEntity(
+									source,
+									entity,
+									event.isCascadeDeleteEnabled(),
+									persister,
+									transientEntities
+							);
 						}
-						performDetachedEntityDeletionCheck( event );
+						performDetachedEntityDeletionCheck(event);
 
-						final Serializable id = persister.getIdentifier( entity, source );
+						final Serializable id = persister.getIdentifier( entity, source);
 
 						if ( id == null ) {
 							throw new TransientObjectException(
@@ -145,7 +159,7 @@ public class DefaultReactiveDeleteEventListener
 
 						persistenceContext.checkUniqueness( key, entity );
 
-						new OnUpdateVisitor( source, id, entity ).process( entity, persister );
+						new OnUpdateVisitor(source, id, entity ).process( entity, persister );
 
 						final Object version = persister.getVersion( entity );
 
@@ -160,7 +174,7 @@ public class DefaultReactiveDeleteEventListener
 								persister,
 								false
 						);
-						persister.afterReassociate( entity, source );
+						persister.afterReassociate( entity, source);
 
 						callbackRegistry.preRemove( entity );
 
@@ -175,7 +189,7 @@ public class DefaultReactiveDeleteEventListener
 						)
 						.thenAccept( v -> {
 							if ( source.getFactory().getSessionFactoryOptions().isIdentifierRollbackEnabled() ) {
-								persister.resetIdentifier( entity, id, version, source );
+								persister.resetIdentifier( entity, id, version, source);
 							}
 						} );
 					} );
@@ -204,7 +218,7 @@ public class DefaultReactiveDeleteEventListener
 			)
 			.thenAccept( v -> {
 				if ( source.getFactory().getSessionFactoryOptions().isIdentifierRollbackEnabled() ) {
-					persister.resetIdentifier( entity, id, version, source );
+					persister.resetIdentifier( entity, id, version, source);
 				}
 			} );
 		}

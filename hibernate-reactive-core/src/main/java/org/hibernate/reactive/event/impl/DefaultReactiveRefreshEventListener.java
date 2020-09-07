@@ -26,6 +26,7 @@ import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;
 import org.hibernate.reactive.event.ReactiveRefreshEventListener;
 import org.hibernate.reactive.persister.entity.impl.ReactiveAbstractEntityPersister;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.CompositeType;
@@ -64,7 +65,8 @@ public class DefaultReactiveRefreshEventListener
 	 */
 	public CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, IdentitySet refreshedAlready) {
 
-		final EventSource source = event.getSession();
+		EventSource source = event.getSession();
+
 		boolean detached = event.getEntityName() != null
 				? !source.contains( event.getEntityName(), event.getObject() )
 				: !source.contains( event.getObject() );
@@ -73,38 +75,42 @@ public class DefaultReactiveRefreshEventListener
 			throw new IllegalArgumentException("unmanaged instance passed to refresh()");
 		}
 
-		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
-		if ( persistenceContext.reassociateIfUninitializedProxy( event.getObject() ) ) {
-			if ( detached ) {
-				source.setReadOnly( event.getObject(), source.isDefaultReadOnly() );
-			}
-			return CompletionStages.voidFuture();
-		}
+//		if ( persistenceContext.reassociateIfUninitializedProxy( event.getObject() ) ) {
+//			if (detached) {
+//				source.setReadOnly( event.getObject(), source.isDefaultReadOnly() );
+//			}
+//			return CompletionStages.voidFuture();
+//		}
+//
+//		final Object entity = persistenceContext.unproxyAndReassociate( event.getObject() );
 
-		final Object object = persistenceContext.unproxyAndReassociate( event.getObject() );
+		return ( (ReactiveSession) source ).reactiveFetch( event.getObject(), true )
+				.thenCompose( entity -> reactiveOnRefresh( event, refreshedAlready, entity ) );
+	}
 
-		if ( refreshedAlready.contains( object ) ) {
+	private CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, IdentitySet refreshedAlready, Object entity) {
+		EventSource source = event.getSession();
+		PersistenceContext persistenceContext = source.getPersistenceContextInternal();
+
+		if ( refreshedAlready.contains( entity ) ) {
 			LOG.trace( "Already refreshed" );
 			return CompletionStages.voidFuture();
 		}
 
-		final EntityEntry e = persistenceContext.getEntry( object );
+		final EntityEntry e = persistenceContext.getEntry( entity );
 		final EntityPersister persister;
 		final Serializable id;
 
 		if ( e == null ) {
 			persister = source.getEntityPersister(
 					event.getEntityName(),
-					object
+					entity
 			); //refresh() does not pass an entityName
-			id = persister.getIdentifier( object, event.getSession() );
+			id = persister.getIdentifier( entity, event.getSession() );
 			if ( LOG.isTraceEnabled() ) {
 				LOG.tracev(
-						"Refreshing transient {0}", MessageHelper.infoString(
-						persister,
-						id,
-						source.getFactory()
-				)
+						"Refreshing transient {0}",
+						MessageHelper.infoString( persister, id, source.getFactory() )
 				);
 			}
 			final EntityKey key = source.generateEntityKey( id, persister );
@@ -137,16 +143,16 @@ public class DefaultReactiveRefreshEventListener
 		}
 
 		// cascade the refresh prior to refreshing this entity
-		refreshedAlready.add( object );
+		refreshedAlready.add( entity );
 
-		return cascadeRefresh( source, persister, object, refreshedAlready )
+		return cascadeRefresh(source, persister, entity, refreshedAlready)
 				.thenCompose(v -> {
 
 					if ( e != null ) {
 						final EntityKey key = source.generateEntityKey( id, persister );
 						persistenceContext.removeEntity( key );
 						if ( persister.hasCollections() ) {
-							new EvictVisitor( source, object ).process( object, persister );
+							new EvictVisitor(source, entity ).process( entity, persister );
 						}
 					}
 
@@ -156,7 +162,7 @@ public class DefaultReactiveRefreshEventListener
 							// we need to grab the version value from the entity, otherwise
 							// we have issues with generated-version entities that may have
 							// multiple actions queued during the same flush
-							previousVersion = persister.getVersion( object );
+							previousVersion = persister.getVersion( entity );
 						}
 						final EntityDataAccess cache = persister.getCacheAccessStrategy();
 						final Object ck = cache.generateCacheKey(
@@ -165,12 +171,12 @@ public class DefaultReactiveRefreshEventListener
 								source.getFactory(),
 								source.getTenantIdentifier()
 						);
-						final SoftLock lock = cache.lockItem( source, ck, previousVersion );
-						cache.remove( source, ck );
+						final SoftLock lock = cache.lockItem(source, ck, previousVersion );
+						cache.remove(source, ck );
 						source.getActionQueue().registerProcess( (success, session) -> cache.unlockItem( session, ck, lock ) );
 					}
 
-					evictCachedCollections( persister, id, source );
+					evictCachedCollections( persister, id, source);
 
 					String previousFetchProfile = source.getLoadQueryInfluencers().getInternalFetchProfile();
 					source.getLoadQueryInfluencers().setInternalFetchProfile( "refresh" );
@@ -217,7 +223,7 @@ public class DefaultReactiveRefreshEventListener
 						postRefreshLockMode = null;
 					}
 
-					return ( (ReactiveAbstractEntityPersister) persister ).reactiveLoad( id, object, lockOptionsToUse, source )
+					return ( (ReactiveAbstractEntityPersister) persister ).reactiveLoad( id, entity, lockOptionsToUse, source)
 							.thenAccept(result -> {
 								if ( result!=null ) {
 
