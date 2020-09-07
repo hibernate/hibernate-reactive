@@ -100,6 +100,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 /**
  * An {@link ReactiveSession} implemented by extension of
  * the {@link SessionImpl} in Hibernate core. Extension was
@@ -148,33 +150,43 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				+ " - use Session.fetch() (entity '" + entityName + "' with id '" + id + "' was not loaded)");
 	}
 
-	@Override
+	@Override @SuppressWarnings("unchecked")
 	public <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy) {
 		checkOpen();
 		if ( association instanceof HibernateProxy ) {
 			LazyInitializer initializer = ((HibernateProxy) association).getHibernateLazyInitializer();
-			//TODO: is this correct?
-			// SessionImpl doesn't use IdentifierLoadAccessImpl for initializing proxies
-			String entityName = initializer.getEntityName();
-			Serializable identifier = initializer.getIdentifier();
-			return new ReactiveIdentifierLoadAccessImpl<T>( entityName )
-					.fetch( identifier )
-					.thenApply( SessionUtil.checkEntityFound( this, entityName, identifier ) )
-					.thenApply( entity -> {
-						initializer.setSession( this );
-						initializer.setImplementation( entity );
-						return unproxy ? entity : association;
-					} );
+			if ( !initializer.isUninitialized() ) {
+				return completedFuture( unproxy ? (T) initializer.getImplementation() : association );
+			}
+			else {
+				//TODO: is this correct?
+				// SessionImpl doesn't use IdentifierLoadAccessImpl for initializing proxies
+				String entityName = initializer.getEntityName();
+				Serializable identifier = initializer.getIdentifier();
+				return new ReactiveIdentifierLoadAccessImpl<T>( entityName )
+						.fetch( identifier )
+						.thenApply( SessionUtil.checkEntityFound( this, entityName, identifier ) )
+						.thenApply( entity -> {
+							initializer.setSession( this );
+							initializer.setImplementation( entity );
+							return unproxy ? entity : association;
+						} );
+			}
 		}
 		else if ( association instanceof PersistentCollection ) {
 			PersistentCollection persistentCollection = (PersistentCollection) association;
-			return reactiveInitializeCollection( persistentCollection, false )
-					// don't reassociate the collection instance, because
-					// its owner isn't associated with this session
-					.thenApply( pc -> association );
+			if ( persistentCollection.wasInitialized() ) {
+				return completedFuture( association );
+			}
+			else {
+				return reactiveInitializeCollection( persistentCollection, false )
+						// don't reassociate the collection instance, because
+						// its owner isn't associated with this session
+						.thenApply( pc -> association );
+			}
 		}
 		else {
-			return CompletionStages.completedFuture( association );
+			return completedFuture( association );
 		}
 	}
 
