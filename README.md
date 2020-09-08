@@ -50,17 +50,19 @@ you need to know to get started, including:
 - [setting up a project][build] that uses Hibernate Reactive and the Vert.x 
   reactive SQL client for your database,
 - [configuring][config] Hibernate Reactive to access your database,
-- writing Java code to [define the entities][model] of your data model, and 
-- writing reactive data access code [using a reactive session][session].
+- writing Java code to [define the entities][model] of your data model, 
+- writing reactive data access code [using a reactive session][session], and
+- [tuning the performance][performance] of your program.
 
 We recommend you start there!
 
 [introduction]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc
 
 [build]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc#including-hibernate-reactive-in-your-project-build
-[config]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc#configuration
+[config]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc#basic-configuration
 [model]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc#mapping-entity-classes
 [session]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc#using-the-reactive-session
+[performance]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc#tuning-and-performance
 
 ## Example program
 
