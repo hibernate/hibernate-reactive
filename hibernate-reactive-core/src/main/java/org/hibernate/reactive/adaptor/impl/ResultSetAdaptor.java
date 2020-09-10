@@ -365,7 +365,8 @@ public class ResultSetAdaptor implements ResultSet {
 			@Override
 			public int getColumnType(int column) {
 				//TODO: we need SQLCLient to provide some column type info
-				return Types.VARCHAR;
+				//      see #336
+				return Types.JAVA_OBJECT;
 			}
 
 			@Override

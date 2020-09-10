@@ -7,6 +7,7 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.junit.Test;
 
 import javax.persistence.ColumnResult;
@@ -27,6 +28,8 @@ import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Root;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -495,6 +498,22 @@ public class QueryTest extends BaseReactiveTest {
 								context.assertTrue( tuple[1] instanceof String );
 							} );
 						} )
+		);
+	}
+
+	@Test
+	public void testScalarQuery(TestContext context) {
+		String sql = DatabaseConfiguration.dbType() == DatabaseConfiguration.DBType.DB2
+				? "select current_timestamp from sysibm.dual"
+				: "select current_timestamp";
+
+		test(context,
+				completedFuture(openSession())
+						.thenCompose(s -> s.createNativeQuery(sql).getSingleResult())
+						.thenAccept(r -> {
+							context.assertNotNull(r);
+							context.assertTrue(r instanceof OffsetDateTime || r instanceof LocalDateTime);
+						})
 		);
 	}
 

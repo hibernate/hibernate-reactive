@@ -13,6 +13,10 @@ import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionFactoryImpl;
 
+import java.sql.Types;
+
+import static java.util.Collections.singleton;
+
 /**
  * A Hibernate {@link org.hibernate.SessionFactory} that can be
  * unwrapped to produce a {@link Stage.SessionFactory} or a
@@ -21,6 +25,11 @@ import org.hibernate.reactive.stage.impl.StageSessionFactoryImpl;
 public class ReactiveSessionFactoryImpl extends SessionFactoryImpl {
 	public ReactiveSessionFactoryImpl(MetadataImplementor metadata, SessionFactoryOptions options) {
 		super( metadata, options, ReactiveHQLQueryPlan::new ); //TODO: pass ReactiveNativeHQLQueryPlan::new
+
+		//TODO: this is a temporary workaround for #336
+		getMetamodel().getTypeConfiguration()
+				.getJdbcToHibernateTypeContributionMap()
+				.put( Types.JAVA_OBJECT, singleton( ObjectType.class.getName() ) );
 	}
 
 	@Override
