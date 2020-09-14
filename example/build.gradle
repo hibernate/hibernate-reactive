@@ -15,7 +15,8 @@ dependencies {
     runtimeOnly "io.vertx:vertx-mysql-client:${vertxVersion}"
 
     // logging (optional)
-    runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
+    runtimeOnly "org.apache.logging.log4j:log4j-core:2.13.3"
+//    runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
 }
 
 // All of the remaining configuration is only necessary to enable

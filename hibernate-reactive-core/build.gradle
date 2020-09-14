@@ -14,33 +14,42 @@ dependencies {
         exclude group: 'javax.activation', module: 'javax.activation-api'
     }
 
+    api 'io.smallrye.reactive:mutiny:0.7.0'
+
     //Logging
     implementation 'org.jboss.logging:jboss-logging:3.3.2.Final'
     implementation 'com.ibm.async:asyncutil:0.1.0'
-    compileOnly 'org.jboss.logging:jboss-logging-annotations:2.1.0.Final'
-    annotationProcessor 'org.jboss.logging:jboss-logging-processor:2.1.0.Final'
+//    compileOnly 'org.jboss.logging:jboss-logging-annotations:2.1.0.Final'
+//    annotationProcessor 'org.jboss.logging:jboss-logging-processor:2.1.0.Final'
 
     //Specific implementation details of Hibernate Reactive:
     implementation "io.vertx:vertx-sql-client:${vertxVersion}"
 
-    //Mutiny is also exposed as API
-    api 'io.smallrye.reactive:mutiny:0.7.0'
-
     // Testing
-    testImplementation "org.hibernate:hibernate-testing:${hibernateOrmVersion}"
     testImplementation 'org.assertj:assertj-core:3.13.2'
     testImplementation "io.vertx:vertx-unit:${vertxVersion}"
+
+    // Drivers
     testImplementation "io.vertx:vertx-pg-client:${vertxVersion}"
     testImplementation "io.vertx:vertx-mysql-client:${vertxVersion}"
     testImplementation "io.vertx:vertx-db2-client:${vertxVersion}"
-    testImplementation "org.hibernate:hibernate-jcache:${hibernateOrmVersion}"
-    testImplementation "org.ehcache:ehcache:3.8.1"
+
+    // EHCache
+    testRuntimeOnly "org.ehcache:ehcache:3.8.1"
+    testRuntimeOnly ("org.hibernate:hibernate-jcache:${hibernateOrmVersion}") {
+        //We don't need any of these:
+        exclude group: 'org.javassist', module: 'javassist'
+        exclude group: 'javax.activation', module: 'javax.activation-api'
+    }
+
+    // log4j
+    testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.13.3'
+//    testRuntimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
 
     // Testcontainers
     testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
     testImplementation "org.testcontainers:mysql:${testcontainersVersion}"
     testImplementation "org.testcontainers:db2:${testcontainersVersion}"
-    testImplementation 'org.slf4j:slf4j-log4j12:1.7.30'
 }
 
 // Print a summary of the results of the tests (number of failures, successes and skipped)
