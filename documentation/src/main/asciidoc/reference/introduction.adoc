@@ -70,7 +70,7 @@ Optionally, you might also add any of the following additional features:
 |===
 | Optional feature | Dependencies
 
-| An {slf4j}[SLF4J] logging implementation | `org.slf4j:slf4j-log4j12` or `org.slf4j:slf4j-jdk14`
+| An {slf4j}[SLF4J] logging implementation | `org.apache.logging.log4j:log4j-core` or `org.slf4j:slf4j-jdk14`
 | The Hibernate metamodel generator, if you're using the JPA criteria query API | `org.hibernate:hibernate-jpamodelgen`
 | Hibernate Validator | `org.hibernate.validator:hibernate-validator` and `org.glassfish:jakarta.el`
 | Compile-time checking for your HQL queries | `org.hibernate:query-validator`
@@ -166,7 +166,7 @@ This feature is extremely useful for testing.
 
 === Logging the generated SQL
 
-:log4j: https://github.com/hibernate/hibernate-reactive/blob/master/example/src/main/resources/log4j.properties
+:log4j: https://github.com/hibernate/hibernate-reactive/blob/master/example/src/main/resources/log4j2.properties
 
 To see the generated SQL as it's sent to the database, either:
 
@@ -174,16 +174,16 @@ To see the generated SQL as it's sent to the database, either:
 - enable debug-level logging for the category `org.hibernate.SQL`
   using your preferred SLF4J logging implementation.
 
-For example, if you're using Log4J via `slf4j-log4j12` (as above in
-<<_optional_dependencies>>), add this line to your `log4j.properties`
-file:
+For example, if you're using Log4J 2 (as above in <<_optional_dependencies>>),
+add these lines to your `log4j2.properties` file:
 
 [source,properties]
 ----
-log4j.logger.org.hibernate.SQL=DEBUG
+logger.hibernate.name = org.hibernate.SQL
+logger.hibernate.level = debug
 ----
 
-An example {log4j}[`log4j.properties`] file is included in the example
+An example {log4j}[`log4j2.properties`] file is included in the example
 program.
 
 === Minimizing repetitive mapping information
