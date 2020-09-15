@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
+import java.util.regex.Pattern;
 
 /**
  * A reactive connection based on Vert.x's {@link SqlConnection}.
@@ -193,14 +194,23 @@ public class SqlClientConnection implements ReactiveConnection {
 		);
 	}
 
+	private static final Pattern keywords =
+			Pattern.compile("\\b(create|drop|alter|add|table|sequence|primary|foreign|unique|key|constraint|cascade|references|not|null|if|exists|select|as|delete|insert|update|set|from|in|into|values|left|right|inner|outer|join|on|where|having|order|group|by|desc|asc)\\b");
+	private static final Pattern strings =
+			Pattern.compile("'[^']*'");
+
 	private void feedback(String sql) {
 		Objects.requireNonNull(sql, "SQL query cannot be null");
-		if ( formatSQL
-				&& ( showSQL || log.isDebugEnabled() ) ) {
-			//Note that DDL already gets formatter by the client
-			if ( !sql.contains( System.lineSeparator() ) ) {
-				sql = FormatStyle.BASIC.getFormatter().format(sql);
+		if ( showSQL || log.isDebugEnabled() ) {
+			if ( formatSQL ) {
+				//Note that DDL already gets formatter by the client
+				if ( !sql.contains( System.lineSeparator() ) ) {
+					sql = FormatStyle.BASIC.getFormatter().format(sql);
+				}
 			}
+
+			sql = keywords.matcher(sql).replaceAll("\u001b[30;1m$0\u001b[0m");
+			sql = strings.matcher(sql).replaceAll("\u001b[34m$0\u001b[0m");
 		}
 
 		log.debug( sql );
@@ -209,7 +219,6 @@ public class SqlClientConnection implements ReactiveConnection {
 			System.out.println(sql);
 		}
 	}
-
 
 	private SqlClient client() {
 		return transaction != null ? transaction : connection;
