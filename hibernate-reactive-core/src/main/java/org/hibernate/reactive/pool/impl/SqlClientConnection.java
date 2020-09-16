@@ -208,22 +208,20 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	private void feedback(String sql) {
 		Objects.requireNonNull(sql, "SQL query cannot be null");
-		if ( showSQL || log.isDebugEnabled() ) {
-			if ( formatSQL ) {
-				//Note that DDL already gets formatter by the client
-				if ( !sql.contains( System.lineSeparator() ) ) {
-					sql = FormatStyle.BASIC.getFormatter().format(sql);
-				}
+		if ( formatSQL
+				&& ( showSQL || log.isDebugEnabled() ) ) {
+			//Note that DDL already gets formatted by the client
+			if ( !sql.contains( System.lineSeparator() ) ) {
+				sql = FormatStyle.BASIC.getFormatter().format(sql);
 			}
-
-			sql = keywords.matcher(sql).replaceAll("\u001b[30;1m$0\u001b[0m");
-			sql = strings.matcher(sql).replaceAll("\u001b[34m$0\u001b[0m");
 		}
 
 		log.debug( sql );
 
 		if (showSQL) {
-			System.out.println(sql);
+			sql = keywords.matcher(sql).replaceAll("\u001b[30;1m$0\u001b[0m");
+			sql = strings.matcher(sql).replaceAll("\u001b[34m$0\u001b[0m");
+			System.out.println("\u001b[35m[Hibernate]\u001b[0m" + sql);
 		}
 	}
 
