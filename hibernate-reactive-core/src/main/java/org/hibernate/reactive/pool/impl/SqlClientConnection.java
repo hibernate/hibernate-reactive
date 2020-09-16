@@ -15,6 +15,7 @@ import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.SqlResult;
 import io.vertx.sqlclient.Transaction;
 import io.vertx.sqlclient.Tuple;
+import org.hibernate.engine.jdbc.env.spi.AnsiSqlKeywords;
 import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
@@ -195,9 +196,15 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	private static final Pattern keywords =
-			Pattern.compile("\\b(create|drop|alter|add|table|sequence|primary|foreign|unique|key|constraint|cascade|references|not|null|if|exists|select|as|delete|insert|update|set|from|in|into|values|left|right|inner|outer|join|on|where|having|order|group|by|desc|asc)\\b");
-	private static final Pattern strings =
-			Pattern.compile("'[^']*'");
+			Pattern.compile(
+					"\\b("
+							+ String.join( "|", AnsiSqlKeywords.INSTANCE.sql2003() )
+							+ "|"
+							+ String.join( "|", "key", "sequence", "cascade", "increment" )
+							+ ")\\b",
+					Pattern.CASE_INSENSITIVE
+			);
+	private static final Pattern strings = Pattern.compile("'[^']*'");
 
 	private void feedback(String sql) {
 		Objects.requireNonNull(sql, "SQL query cannot be null");
