@@ -219,8 +219,8 @@ public class SqlClientConnection implements ReactiveConnection {
 		log.debug( sql );
 
 		if (showSQL) {
-			sql = keywords.matcher(sql).replaceAll("\u001b[30;1m$0\u001b[0m");
-			sql = strings.matcher(sql).replaceAll("\u001b[34m$0\u001b[0m");
+			sql = keywords.matcher(sql).replaceAll("\u001b[34m$0\u001b[0m");
+			sql = strings.matcher(sql).replaceAll("\u001b[36m$0\u001b[0m");
 			System.out.println("\u001b[35m[Hibernate]\u001b[0m" + sql);
 		}
 	}
