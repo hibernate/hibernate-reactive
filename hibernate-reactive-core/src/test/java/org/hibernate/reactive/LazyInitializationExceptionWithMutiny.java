@@ -60,7 +60,7 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 	@Test
 	public void testLazyInitializationException(TestContext context) throws Exception {
 		test( context, Uni.createFrom().item( openMutinySession() )
-				.onItem().invokeUni( session ->
+				.onItem().call( session ->
 				  	session.createQuery( "from Artist", Artist.class )
 						.getSingleResult()
 							.onItem().invoke( artist -> artist.getPaintings().size() )
@@ -77,7 +77,7 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 	@Test
 	public void testLazyInitializationExceptionNotThrown(TestContext context) throws Exception {
 		test( context, Uni.createFrom().item( openMutinySession() )
-				.onItem().invokeUni( session -> session.createQuery( "from Artist", Artist.class )
+				.onItem().call( session -> session.createQuery( "from Artist", Artist.class )
 						.getSingleResult()
 						// We are checking `.getPaintings()` but not doing anything with it and therefore it should work.
 						.onItem().invoke( artist -> artist.getPaintings() )
