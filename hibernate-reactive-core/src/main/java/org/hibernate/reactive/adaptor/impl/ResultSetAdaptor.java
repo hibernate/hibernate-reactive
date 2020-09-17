@@ -9,6 +9,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowIterator;
 import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.desc.ColumnDescriptor;
 import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.jdbc.BlobProxy;
 
@@ -34,6 +35,7 @@ import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.Calendar;
 import java.util.Map;
 
@@ -236,6 +238,17 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public Timestamp getTimestamp(String columnLabel) {
 		LocalDateTime localDateTime = row.getLocalDateTime(columnLabel);
+		if (localDateTime==null) {
+			try {
+				OffsetDateTime offsetDateTime = row.getOffsetDateTime(columnLabel);
+				if (offsetDateTime!=null) {
+					localDateTime = LocalDateTime.from(offsetDateTime);
+				}
+			}
+			catch (Exception e) {
+				//MySQL client throws a nasty NPE here
+			}
+		}
 		return (wasNull=localDateTime==null) ? null : Timestamp.valueOf(localDateTime);
 	}
 
@@ -293,6 +306,22 @@ public class ResultSetAdaptor implements ResultSet {
 			}
 
 			@Override
+			public int getColumnType(int column) {
+				ColumnDescriptor descriptor = rows.columnDescriptors().get(column-1);
+				return descriptor.isArray() ? Types.ARRAY : descriptor.jdbcType().getVendorTypeNumber();
+			}
+
+			@Override
+			public String getColumnLabel(int column) {
+				return rows.columnsNames().get(column-1);
+			}
+
+			@Override
+			public String getColumnName(int column) {
+				return rows.columnsNames().get(column-1);
+			}
+
+			@Override
 			public boolean isAutoIncrement(int column) {
 				return false;
 			}
@@ -328,16 +357,6 @@ public class ResultSetAdaptor implements ResultSet {
 			}
 
 			@Override
-			public String getColumnLabel(int column) {
-				return rows.columnsNames().get(column-1);
-			}
-
-			@Override
-			public String getColumnName(int column) {
-				return rows.columnsNames().get(column-1);
-			}
-
-			@Override
 			public String getSchemaName(int column) {
 				return null;
 			}
@@ -360,13 +379,6 @@ public class ResultSetAdaptor implements ResultSet {
 			@Override
 			public String getCatalogName(int column) {
 				return null;
-			}
-
-			@Override
-			public int getColumnType(int column) {
-				//TODO: we need SQLCLient to provide some column type info
-				//      see #336
-				return Types.JAVA_OBJECT;
 			}
 
 			@Override
