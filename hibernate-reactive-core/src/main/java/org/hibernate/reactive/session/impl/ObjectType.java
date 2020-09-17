@@ -13,9 +13,9 @@ import org.hibernate.type.descriptor.sql.SqlTypeDescriptorRegistry.ObjectSqlType
 import java.sql.Types;
 
 /**
- * Temporary workaround for #336.
+ * This was a temporary workaround for #336, and could be removed.
  */
-public class ObjectType extends AbstractSingleColumnStandardBasicType<Object> {
+class ObjectType extends AbstractSingleColumnStandardBasicType<Object> {
     public ObjectType() {
         super(new ObjectSqlTypeDescriptor(Types.JAVA_OBJECT),
                 new JavaTypeDescriptor<Object>() {
