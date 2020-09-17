@@ -133,7 +133,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
         }
 
         //enable the prepared statement cache by default (except for DB2) and MySQL
-        connectOptions.setCachePreparedStatements( !scheme.equals( "db2" ) && !scheme.equals( "mysql" ) );
+        connectOptions.setCachePreparedStatements(true);
 
         if (cacheMaxSize!=null) {
             if (cacheMaxSize <= 0) {
