@@ -381,16 +381,16 @@ public class MutinySessionImpl implements Mutiny.Session {
 		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
 			//noinspection Convert2MethodRef
 			return begin()
-					.then( () -> work.apply( this ) )
+					.chain( () -> work.apply( this ) )
 					// only flush() if the work completed with no exception
-					.invokeUni( result -> flush() )
+					.call( result -> flush() )
 					// in the case of an exception or cancellation
 					// we need to rollback the transaction
-					.onFailure().invokeUni( e -> rollback() )
-					.on().cancellation( () -> rollback() )
+					.onFailure().call( () -> rollback() )
+					.onCancellation().call( () -> rollback() )
 					// finally, when there was no exception,
 					// commit or rollback the transaction
-					.onItem().invokeUni( result -> rollback ? rollback() : commit() );
+					.onItem().call( () -> rollback ? rollback() : commit() );
 		}
 
 		Uni<Void> flush() {
