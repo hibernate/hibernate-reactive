@@ -404,7 +404,7 @@ public interface Mutiny {
 		 *
 		 * @see #persist(Object)
 		 */
-		Uni<Void> persist(Object... entities);
+		Uni<Void> persistAll(Object... entities);
 
 		/**
 		 * Asynchronously remove a persistent instance from the datastore. The
@@ -432,7 +432,7 @@ public interface Mutiny {
 		 *
 		 * @see #remove(Object)
 		 */
-		Uni<Void> remove(Object... entities);
+		Uni<Void> removeAll(Object... entities);
 
 		/**
 		 * Copy the state of the given object onto the persistent instance with
@@ -458,7 +458,7 @@ public interface Mutiny {
 		 *
 		 * @see #merge(Object)
 		 */
-		<T> Uni<Void> merge(T... entities);
+		<T> Uni<Void> mergeAll(T... entities);
 
 		/**
 		 * Re-read the state of the given instance from the underlying database.
@@ -507,7 +507,7 @@ public interface Mutiny {
 		 *
 		 * @see #refresh(Object)
 		 */
-		Uni<Void> refresh(Object... entities);
+		Uni<Void> refreshAll(Object... entities);
 
 		/**
 		 * Obtain the specified lock level upon the given object. For example,

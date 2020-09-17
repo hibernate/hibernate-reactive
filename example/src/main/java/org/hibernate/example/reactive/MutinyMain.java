@@ -40,7 +40,7 @@ public class MutinyMain {
 		// obtain a reactive session
 		factory.withTransaction(
 				// persist the Authors with their Books in a transaction
-				(session, tx) -> session.persist(author1, author2)
+				(session, tx) -> session.persistAll(author1, author2)
 		)
 				// wait for it to finish
 				.await().indefinitely();

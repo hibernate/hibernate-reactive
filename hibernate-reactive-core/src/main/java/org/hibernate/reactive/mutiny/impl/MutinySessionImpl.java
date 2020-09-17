@@ -117,7 +117,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public Uni<Void> persist(Object... entity) {
+	public Uni<Void> persistAll(Object... entity) {
 		return Uni.createFrom().completionStage( applyToAll( delegate::reactivePersist, entity ) );
 	}
 
@@ -127,7 +127,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public Uni<Void> remove(Object... entity) {
+	public Uni<Void> removeAll(Object... entity) {
 		return Uni.createFrom().completionStage( applyToAll( delegate::reactiveRemove, entity ) );
 	}
 
@@ -137,7 +137,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override @SafeVarargs
-	public final <T> Uni<Void> merge(T... entity) {
+	public final <T> Uni<Void> mergeAll(T... entity) {
 		return Uni.createFrom().completionStage( applyToAll( delegate::reactiveMerge, entity ) );
 	}
 
@@ -157,7 +157,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public Uni<Void> refresh(Object... entity) {
+	public Uni<Void> refreshAll(Object... entity) {
 		return Uni.createFrom().completionStage( applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entity ) );
 	}
 
