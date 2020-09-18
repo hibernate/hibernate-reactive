@@ -15,7 +15,6 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.TypedValue;
 import org.hibernate.persister.collection.QueryableCollection;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
@@ -25,6 +24,8 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
 
 /**
  * Implements subselect fetching for a one to many association
@@ -96,12 +97,12 @@ public class ReactiveSubselectOneToManyLoader extends ReactiveOneToManyLoader {
 		QueryParameters parameters = new QueryParameters(parameterTypes, parameterValues, namedParameters, ids);
 		return doReactiveQueryAndInitializeNonLazyCollections( (SessionImplementor) session, parameters, true )
 				.handle( (list, err) -> {
-					CompletionStages.logSqlException( err,
+					logSqlException( err,
 							() -> "could not load collection by subselect: " +
 									collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
 							getSQLString()
 					);
-					return CompletionStages.returnNullorRethrow(err);
+					return returnNullorRethrow( err );
 				} );
 	}
 

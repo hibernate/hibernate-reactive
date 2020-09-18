@@ -23,7 +23,6 @@ import org.hibernate.loader.entity.CacheEntityLoaderHelper;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.entity.OuterJoinLoadable;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
@@ -32,6 +31,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A {@link ReactiveBatchingEntityLoaderBuilder} that is enabled when
@@ -149,7 +151,7 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 			if ( foundAnyManagedEntities ) {
 				if ( nonManagedIds.isEmpty() ) {
 					// all of the given ids were already associated with the Session
-					return CompletionStages.completedFuture(result);
+					return completedFuture(result);
 				}
 				else {
 					// over-write the ids to be loaded with the collection of
@@ -178,7 +180,7 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 					);
 		}
 
-		CompletionStage<Void> stage = CompletionStages.voidFuture();
+		CompletionStage<Void> stage = voidFuture();
 		//TODO: Trampoline this!
 		int idPosition = 0;
 		while ( numberOfIdsLeft > 0 ) {
@@ -271,7 +273,7 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 		final List<Serializable> idsInBatch = new ArrayList<>();
 		final List<Integer> elementPositionsLoadedByBatch = new ArrayList<>();
 
-		CompletionStage<?> stage = CompletionStages.voidFuture();
+		CompletionStage<?> stage = voidFuture();
 		//TODO: Trampoline this!
 		for ( int i = 0; i < ids.length; i++ ) {
 			final Serializable id = ids[i];

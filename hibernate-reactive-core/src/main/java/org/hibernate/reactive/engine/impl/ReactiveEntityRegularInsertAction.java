@@ -17,10 +17,11 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactific {@link EntityInsertAction}.
@@ -90,7 +91,7 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 						} );
 			}
 			else {
-				insertStage = CompletionStages.voidFuture();
+				insertStage = voidFuture();
 			}
 
 			return insertStage.thenApply( res -> {

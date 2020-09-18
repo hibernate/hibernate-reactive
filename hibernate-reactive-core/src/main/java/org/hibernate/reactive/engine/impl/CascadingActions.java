@@ -18,7 +18,6 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
@@ -26,6 +25,8 @@ import org.jboss.logging.Logger;
 
 import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * The possible {@link CascadingAction cascading actions} for
@@ -130,7 +131,7 @@ public class CascadingActions {
 							} );
 				}
 			}
-			return CompletionStages.voidFuture();
+			return voidFuture();
 		}
 	};
 
@@ -221,7 +222,7 @@ public class CascadingActions {
 		 */
 		@Override
 		public CompletionStage<Void> noCascade(EventSource session, Object parent, EntityPersister persister, Type propertyType, int propertyIndex) {
-			return CompletionStages.voidFuture();
+			return voidFuture();
 		}
 
 		@Override

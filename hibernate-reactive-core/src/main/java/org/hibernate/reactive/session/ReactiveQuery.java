@@ -15,7 +15,6 @@ import org.hibernate.TypeMismatchException;
 import org.hibernate.hql.internal.QueryExecutionRequestException;
 import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
 import org.hibernate.query.internal.AbstractProducedQuery;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
@@ -24,6 +23,8 @@ import javax.persistence.NoResultException;
 import javax.persistence.Parameter;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
 /**
  * An internal contract between the reactive session implementation
@@ -95,7 +96,7 @@ public interface ReactiveQuery<R> {
 			throw query.getProducer().getExceptionConverter()
 					.convert( (HibernateException) e, query.getLockOptions() );
 		}
-		return CompletionStages.returnOrRethrow( e, result );
+		return returnOrRethrow( e, result );
 	}
 
 	static <R> R extractUniqueResult(List<R> list, AbstractProducedQuery<R> query) {

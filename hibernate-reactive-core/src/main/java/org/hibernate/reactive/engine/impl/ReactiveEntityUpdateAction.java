@@ -14,13 +14,14 @@ import org.hibernate.engine.spi.*;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.internal.StatsHelper;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.TypeHelper;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactific {@link EntityUpdateAction}.
@@ -91,11 +92,21 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 			ck = null;
 		}
 
-		CompletionStage<?> updateAR = veto
-				? CompletionStages.voidFuture()
-				: ((ReactiveEntityPersister) persister).updateReactive( id, getState(), getDirtyFields(), hasDirtyCollection(), getPreviousState(), previousVersion, instance, getRowId(), session );
+		CompletionStage<?> update = veto
+				? voidFuture()
+				: ((ReactiveEntityPersister) persister).updateReactive(
+						id,
+						getState(),
+						getDirtyFields(),
+						hasDirtyCollection(),
+						getPreviousState(),
+						previousVersion,
+						instance,
+						getRowId(),
+						session
+				);
 
-		return updateAR.thenApply( res -> {
+		return update.thenApply( res -> {
 			final EntityEntry entry = session.getPersistenceContextInternal().getEntry( instance );
 			if ( entry == null ) {
 				throw new AssertionFailure( "possible non-threadsafe access to session" );

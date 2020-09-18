@@ -17,11 +17,12 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactific {@link EntityDeleteAction}.
@@ -71,12 +72,11 @@ public class ReactiveEntityDeleteAction extends EntityDeleteAction implements Re
 			ck = null;
 		}
 
-		CompletionStage<?> deleteStep = CompletionStages.voidFuture();
-		if ( !isCascadeDeleteEnabled() && !veto ) {
-			deleteStep = ((ReactiveEntityPersister) persister).deleteReactive( id, version, instance, session );
-		}
+		CompletionStage<?> deleteStep = !isCascadeDeleteEnabled() && !veto
+				? ((ReactiveEntityPersister) persister).deleteReactive( id, version, instance, session )
+				: voidFuture();
 
-		return deleteStep.thenAccept( deleteAR -> {
+		return deleteStep.thenAccept( v -> {
 			//postDelete:
 			// After actually deleting a row, record the fact that the instance no longer
 			// exists on the database (needed for identity-column key generation), and

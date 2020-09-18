@@ -34,7 +34,6 @@ import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;
 import org.hibernate.reactive.engine.impl.ReactiveEntityDeleteAction;
 import org.hibernate.reactive.event.ReactiveDeleteEventListener;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
@@ -43,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.engine.impl.Cascade.fetchLazyAssociationsBeforeCascade;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultDeleteEventListener}.
@@ -197,9 +197,10 @@ public class DefaultReactiveDeleteEventListener
 		else {
 			LOG.trace( "Deleting a persistent instance" );
 
-			if ( entityEntry.getStatus() == Status.DELETED || entityEntry.getStatus() == Status.GONE ) {
+			Status status = entityEntry.getStatus();
+			if ( status == Status.DELETED || status == Status.GONE ) {
 				LOG.trace( "Object was already deleted" );
-				return CompletionStages.voidFuture();
+				return voidFuture();
 			}
 			final EntityPersister persister = entityEntry.getPersister();
 			Serializable id = entityEntry.getId();
@@ -273,7 +274,7 @@ public class DefaultReactiveDeleteEventListener
 		LOG.handlingTransientEntity();
 		if ( transientEntities.contains( entity ) ) {
 			LOG.trace( "Already handled transient entity; skipping" );
-			return CompletionStages.voidFuture();
+			return voidFuture();
 		}
 		transientEntities.add( entity );
 		return cascadeBeforeDelete( session, persister, entity, null, transientEntities )

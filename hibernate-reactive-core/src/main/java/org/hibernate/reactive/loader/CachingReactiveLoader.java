@@ -18,7 +18,6 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.loader.Loader;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.event.impl.UnexpectedAccessToTheDatabase;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.transform.CacheableResultTransformer;
 import org.hibernate.transform.ResultTransformer;
@@ -31,6 +30,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
 /**
  * Defines common reactive operations inherited by query loaders, in
@@ -58,7 +61,7 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters, true, forcedResultTransformer )
 				.handle( (list, err) -> {
-					CompletionStages.logSqlException( err, () -> "could not execute query", sql );
+					logSqlException( err, () -> "could not execute query", sql );
 
 					if ( err ==null && stats ) {
 						final long endTime = System.nanoTime();
@@ -66,7 +69,7 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 						statistics.queryExecuted( queryIdentifier, list.size(), milliseconds );
 					}
 
-					return CompletionStages.returnOrRethrow(err, list );
+					return returnOrRethrow(err, list );
 				} );
 	}
 
@@ -113,7 +116,7 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 					} );
 		}
 		else {
-			list = CompletionStages.completedFuture( cachedList );
+			list = completedFuture( cachedList );
 		}
 
 		return list.thenApply(

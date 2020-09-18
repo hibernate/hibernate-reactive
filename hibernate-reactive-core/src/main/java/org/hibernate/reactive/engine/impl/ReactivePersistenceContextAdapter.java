@@ -23,6 +23,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Add reactive methods to a {@link PersistenceContext}.
@@ -47,7 +48,7 @@ public class ReactivePersistenceContextAdapter extends StatefulPersistenceContex
 	}
 
 	private class NonLazyCollectionInitializer implements Consumer<PersistentCollection> {
-		CompletionStage<Void> stage = CompletionStages.voidFuture();
+		CompletionStage<Void> stage = voidFuture();
 
 		@Override
 		public void accept(PersistentCollection nonLazyCollection) {

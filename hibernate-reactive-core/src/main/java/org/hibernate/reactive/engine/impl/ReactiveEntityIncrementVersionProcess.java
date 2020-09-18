@@ -11,9 +11,10 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.reactive.engine.ReactiveBeforeTransactionCompletionProcess;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A BeforeTransactionCompletionProcess impl to verify and increment an entity version as party
@@ -44,7 +45,7 @@ public class ReactiveEntityIncrementVersionProcess implements ReactiveBeforeTran
 		final EntityEntry entry = session.getPersistenceContext().getEntry( object );
 		// Don't increment version for an entity that is not in the PersistenceContext;
 		if ( entry == null ) {
-			return CompletionStages.voidFuture();
+			return voidFuture();
 		}
 
 		return ( (ReactiveEntityPersister) entry.getPersister() )

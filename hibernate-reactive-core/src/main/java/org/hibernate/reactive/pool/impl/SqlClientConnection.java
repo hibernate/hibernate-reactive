@@ -21,7 +21,6 @@ import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -29,6 +28,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactive connection based on Vert.x's {@link SqlConnection}.
@@ -238,7 +239,7 @@ public class SqlClientConnection implements ReactiveConnection {
 	@Override
 	public CompletionStage<Void> beginTransaction() {
 		transaction = connection.begin();
-		return CompletionStages.voidFuture();
+		return voidFuture();
 //		return execute("begin");
 	}
 
@@ -322,6 +323,6 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> executeBatch() {
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 }

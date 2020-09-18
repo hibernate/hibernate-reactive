@@ -27,7 +27,6 @@ import org.hibernate.reactive.engine.impl.CascadingActions;
 import org.hibernate.reactive.event.ReactiveRefreshEventListener;
 import org.hibernate.reactive.persister.entity.impl.ReactiveAbstractEntityPersister;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.Type;
@@ -35,6 +34,8 @@ import org.hibernate.type.Type;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultRefreshEventListener}.
@@ -94,7 +95,7 @@ public class DefaultReactiveRefreshEventListener
 
 		if ( refreshedAlready.contains( entity ) ) {
 			LOG.trace( "Already refreshed" );
-			return CompletionStages.voidFuture();
+			return voidFuture();
 		}
 
 		final EntityEntry e = persistenceContext.getEntry( entity );

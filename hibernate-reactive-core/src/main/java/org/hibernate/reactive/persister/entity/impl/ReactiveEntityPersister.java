@@ -12,12 +12,13 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.metamodel.Attribute;
 import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 
 /**
  * A reactive {@link EntityPersister}. Supports non-blocking
@@ -119,6 +120,6 @@ public interface ReactiveEntityPersister extends EntityPersister {
 
 	default <E,T> CompletionStage<T> reactiveInitializeLazyProperty(Attribute<E,T> field, E entity,
 																	SharedSessionContractImplementor session) {
-		return CompletionStages.nullFuture();
+		return nullFuture();
 	}
 }

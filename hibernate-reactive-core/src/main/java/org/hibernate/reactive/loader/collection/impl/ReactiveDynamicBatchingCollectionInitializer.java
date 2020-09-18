@@ -15,7 +15,6 @@ import org.hibernate.loader.JoinWalker;
 import org.hibernate.loader.collection.BasicCollectionJoinWalker;
 import org.hibernate.loader.collection.OneToManyJoinWalker;
 import org.hibernate.persister.collection.QueryableCollection;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
@@ -24,6 +23,8 @@ import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.internal.util.StringHelper.buildBatchFetchRestrictionFragment;
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
 
 /**
  * A {@link ReactiveCollectionLoader} whose generated SQL contains a placeholder
@@ -116,13 +117,13 @@ class ReactiveDynamicBatchingCollectionInitializer extends ReactiveCollectionLoa
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters )
 				.handle( (list, err) -> {
-					CompletionStages.logSqlException( err,
+					logSqlException( err,
 							() -> "could not initialize a collection batch: " +
 									collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
 							getSQLString()
 					);
 					LOG.debug("Done batch load");
-					return CompletionStages.returnNullorRethrow( err );
+					return returnNullorRethrow( err );
 				} );
 
 	}

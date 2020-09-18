@@ -5,12 +5,13 @@
  */
 package org.hibernate.reactive.pool;
 
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A {@link ReactiveConnection} that automatically performs batching
@@ -44,7 +45,7 @@ public class BatchingConnection implements ReactiveConnection {
     @Override
     public CompletionStage<Void> executeBatch() {
         if ( !hasBatch() ) {
-            return CompletionStages.voidFuture();
+            return voidFuture();
         }
         else {
             String sql = batchedSql;
@@ -74,12 +75,12 @@ public class BatchingConnection implements ReactiveConnection {
         if ( allowBatching && batchSize>0 ) {
             if ( !hasBatch() ) {
                 newBatch( sql, paramValues, expectation );
-                return CompletionStages.voidFuture();
+                return voidFuture();
             }
             else {
                 if ( batchedSql.equals(sql) && batchParamValues.size()<batchSize ) {
                     batchParamValues.add(paramValues);
-                    return CompletionStages.voidFuture();
+                    return voidFuture();
                 }
                 else {
                     CompletionStage<Void> lastBatch = executeBatch();

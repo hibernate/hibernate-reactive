@@ -16,10 +16,11 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.OuterJoinLoadable;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
  * A batching entity loader for {@link org.hibernate.loader.BatchFetchStyle#DYNAMIC}
@@ -86,7 +87,7 @@ public class ReactiveDynamicBatchingEntityDelegator extends ReactiveBatchingEnti
 				// in the batch to avoid including it in future batches that get executed.
 				BatchFetchQueueHelper.removeBatchLoadableEntityKey( id, persister(), session );
 			}
-			return CompletionStages.completedFuture(result);
+			return completedFuture(result);
 		}
 
 		final Serializable[] idsToLoad = new Serializable[numberOfIds];
