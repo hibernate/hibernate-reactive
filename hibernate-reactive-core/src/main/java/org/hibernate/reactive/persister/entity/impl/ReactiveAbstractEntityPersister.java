@@ -976,7 +976,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			return (CompletionStage<T>) result;
 		}
 		else if (result instanceof PersistentCollection) {
-			//TODO: why doesn't Hibernate core take care of all this!?
+			// Hibernate core doesn't set the field when it's a
+			// collection. That's inconsistent with what happens
+			// for other lazy fields, so let's set the field here
 			String[] propertyNames = getPropertyNames();
 			for (int index=0; index<propertyNames.length; index++) {
 				if ( propertyNames[index].equals(fieldName) ) {
@@ -985,6 +987,11 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				}
 			}
 
+			// Hibernate core just instantiates a collection
+			// wrapper but doesn't fetch it, since lazy fetching
+			// is transparent there. That's too painful in our
+			// case, since it would make the user have to call
+			// fetch() twice, so fetch it here.
 			PersistentCollection collection = (PersistentCollection) result;
 			return collection.wasInitialized()
 					? completedFuture( (T) collection )
