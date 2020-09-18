@@ -355,7 +355,6 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 				ReactiveLoadPlanBasedResultSetProcessor resultSetProcessor,
 				ResultSetProcessingContextImpl context,
 				List<AfterLoadAction> afterLoadActionList) {
-			final List<HydratedEntityRegistration> hydratedEntityRegistrations = context.getHydratedEntityRegistrationList();
 
 			// for arrays, we should end the collection load before resolving the entities, since the
 			// actual array instances are not instantiated during loading
@@ -365,8 +364,9 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 			final PreLoadEvent preLoadEvent;
 			final PostLoadEvent postLoadEvent;
 			if ( context.getSession().isEventSource() ) {
-				preLoadEvent = new PreLoadEvent( (EventSource) context.getSession() );
-				postLoadEvent = new PostLoadEvent( (EventSource) context.getSession() );
+				EventSource session = (EventSource) context.getSession();
+				preLoadEvent = new PreLoadEvent(session);
+				postLoadEvent = new PostLoadEvent(session);
 			}
 			else {
 				preLoadEvent = null;
@@ -374,13 +374,11 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 			}
 
 			// now finish loading the entities (2-phase load)
-			return reactivePerformTwoPhaseLoad(
-					resultSetProcessor,
-					preLoadEvent,
-					context,
-					hydratedEntityRegistrations
-			)
+			return reactivePerformTwoPhaseLoad( resultSetProcessor, preLoadEvent, context )
 					.thenAccept( v -> {
+						List<HydratedEntityRegistration> hydratedEntityRegistrations =
+								context.getHydratedEntityRegistrationList();
+
 						// now we can finalize loading collections
 						finishLoadingCollections( context );
 
@@ -398,14 +396,10 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		public CompletionStage<Void> reactivePerformTwoPhaseLoad(
 				ReactiveLoadPlanBasedResultSetProcessor resultSetProcessor,
 				PreLoadEvent preLoadEvent,
-				ResultSetProcessingContextImpl context,
-				List<HydratedEntityRegistration> hydratedEntityRegistrations) {
-			final int numberOfHydratedObjects = hydratedEntityRegistrations == null
-					? 0
-					: hydratedEntityRegistrations.size();
-			//log.tracev( "Total objects hydrated: {0}", numberOfHydratedObjects );
+				ResultSetProcessingContextImpl context) {
 
-			if ( numberOfHydratedObjects == 0 ) {
+			List<HydratedEntityRegistration> hydratedEntityRegistrations = context.getHydratedEntityRegistrationList();
+			if ( hydratedEntityRegistrations == null || hydratedEntityRegistrations.isEmpty() ) {
 				return voidFuture();
 			}
 
