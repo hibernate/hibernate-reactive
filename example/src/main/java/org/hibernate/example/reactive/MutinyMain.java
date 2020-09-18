@@ -4,7 +4,12 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Root;
 
+import java.time.LocalDate;
+
 import static java.lang.System.out;
+import static java.time.Month.JANUARY;
+import static java.time.Month.JUNE;
+import static java.time.Month.MAY;
 import static javax.persistence.Persistence.createEntityManagerFactory;
 import static org.hibernate.reactive.mutiny.Mutiny.SessionFactory;
 import static org.hibernate.reactive.mutiny.Mutiny.fetch;
@@ -30,9 +35,9 @@ public class MutinyMain {
 		// define some test data
 		Author author1 = new Author("Iain M. Banks");
 		Author author2 = new Author("Neal Stephenson");
-		Book book1 = new Book("1-85723-235-6", "Feersum Endjinn", author1);
-		Book book2 = new Book("0-380-97346-4", "Cryptonomicon", author2);
-		Book book3 = new Book("0-553-08853-X", "Snow Crash", author2);
+		Book book1 = new Book("1-85723-235-6", "Feersum Endjinn", author1, LocalDate.of(1994, JANUARY, 1));
+		Book book2 = new Book("0-380-97346-4", "Cryptonomicon", author2, LocalDate.of(1999, MAY, 1));
+		Book book3 = new Book("0-553-08853-X", "Snow Crash", author2, LocalDate.of(1992, JUNE, 1));
 		author1.books.add(book1);
 		author2.books.add(book2);
 		author2.books.add(book3);
@@ -106,6 +111,17 @@ public class MutinyMain {
 							books -> books.forEach( book -> out.println(book.title) )
 					);
 				}
+		)
+				.await().indefinitely();
+
+		factory.withSession(
+				// retrieve a Book
+				session -> session.find(Book.class, book1.id)
+						// fetch a lazy field of the Book
+						.chain( book -> session.fetch(book, Book_.published)
+								// print the lazy field
+								.invoke( published -> out.printf("'%s' was published in %d\n", book.title, published.getYear()) )
+						)
 		)
 				.await().indefinitely();
 
