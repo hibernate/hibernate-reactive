@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+
 
 /**
  * Implements the {@link Mutiny.Session} API. This delegating class is
@@ -434,7 +436,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 			Function<Object, CompletionStage<?>> op,
 			Object[] entity) {
 		if ( entity.length==0 ) {
-			return CompletionStages.nullFuture();
+			return nullFuture();
 		}
 		else if ( entity.length==1 ) {
 			return op.apply( entity[0] ).thenApply( v -> null );

@@ -16,7 +16,6 @@ import org.hibernate.internal.util.StringHelper;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
@@ -24,6 +23,8 @@ import org.hibernate.type.Type;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.*;
 
 /**
  * Algorithms related to foreign key constraint transparency
@@ -70,9 +71,14 @@ public final class ForeignKeys {
 		 *
 		 * @param values The entity attribute values
 		 */
-		public CompletionStage<Void> nullifyTransientReferences(final Object[] values) {
-			CompletionStage<Void> result = nullifyTransientReferences(null, values, persister.getPropertyTypes(), persister.getPropertyNames());
-			return result==null ? CompletionStages.voidFuture() : result;
+		public CompletionStage<Void> nullifyTransientReferences(Object[] values) {
+			CompletionStage<Void> result = nullifyTransientReferences(
+					null,
+					values,
+					persister.getPropertyTypes(),
+					persister.getPropertyNames()
+			);
+			return result==null ? voidFuture() : result;
 		}
 
 		/**
@@ -106,12 +112,12 @@ public final class ForeignKeys {
 		//				fetcher = ( (LazyPropertyInitializer) persister ).initializeLazyProperty( propertyName, self, session );
 					}
 					else {
-						fetcher = CompletionStages.completedFuture( value );
+						fetcher = completedFuture( value );
 					}
 					result = fetcher.thenCompose( fetchedValue -> {
 						if ( fetchedValue == null ) {
 							// The uninitialized value was initialized to null
-							return CompletionStages.nullFuture();
+							return nullFuture();
 						}
 						else {
 							// If the value is not nullifiable, make sure that the
@@ -189,14 +195,14 @@ public final class ForeignKeys {
 				throws HibernateException {
 			if ( object == LazyPropertyInitializer.UNFETCHED_PROPERTY ) {
 				// this is the best we can do...
-				return CompletionStages.falseFuture();
+				return falseFuture();
 			}
 
 			if ( object instanceof HibernateProxy ) {
 				// if its an uninitialized proxy it can't be transient
 				final LazyInitializer li = ( (HibernateProxy) object ).getHibernateLazyInitializer();
 				if ( li.getImplementation( session ) == null ) {
-					return CompletionStages.falseFuture();
+					return falseFuture();
 					// ie. we never have to null out a reference to
 					// an uninitialized proxy
 				}
@@ -210,7 +216,7 @@ public final class ForeignKeys {
 			// unless we are using native id generation, in which
 			// case we definitely need to nullify
 			if ( object == self ) {
-				return CompletionStages.completedFuture( isEarlyInsert
+				return completedFuture( isEarlyInsert
 						|| isDelete && session.getJdbcServices().getDialect().hasSelfReferentialForeignKeyBug() );
 			}
 
@@ -224,7 +230,7 @@ public final class ForeignKeys {
 				return isTransient( entityName, object, null, session );
 			}
 			else {
-				return CompletionStages.completedFuture( entityEntry.isNullifiable( isEarlyInsert, session ) );
+				return completedFuture( entityEntry.isNullifiable( isEarlyInsert, session ) );
 			}
 		}
 	}
@@ -245,11 +251,11 @@ public final class ForeignKeys {
 	@SuppressWarnings("SimplifiableIfStatement")
 	public static CompletionStage<Boolean> isNotTransient(String entityName, Object entity, Boolean assumed, SessionImplementor session) {
 		if ( entity instanceof HibernateProxy ) {
-			return CompletionStages.trueFuture();
+			return trueFuture();
 		}
 
 		if ( session.getPersistenceContextInternal().isEntryFor( entity ) ) {
-			return CompletionStages.trueFuture();
+			return trueFuture();
 		}
 
 		// todo : shouldnt assumed be revered here?
@@ -276,26 +282,26 @@ public final class ForeignKeys {
 		if ( entity == LazyPropertyInitializer.UNFETCHED_PROPERTY ) {
 			// an unfetched association can only point to
 			// an entity that already exists in the db
-			return CompletionStages.falseFuture();
+			return falseFuture();
 		}
 
 		// let the interceptor inspect the instance to decide
 		Boolean isUnsaved = session.getInterceptor().isTransient( entity );
 		if ( isUnsaved != null ) {
-			return CompletionStages.completedFuture( isUnsaved );
+			return completedFuture( isUnsaved );
 		}
 
 		// let the persister inspect the instance to decide
 		final EntityPersister persister = session.getEntityPersister( entityName, entity );
 		isUnsaved = persister.isTransient( entity, session );
 		if ( isUnsaved != null ) {
-			return CompletionStages.completedFuture( isUnsaved );
+			return completedFuture( isUnsaved );
 		}
 
 		// we use the assumed value, if there is one, to avoid hitting
 		// the database
 		if ( assumed != null ) {
-			return CompletionStages.completedFuture( assumed );
+			return completedFuture( assumed );
 		}
 
 		// hit the database, after checking the session cache for a snapshot
@@ -327,7 +333,7 @@ public final class ForeignKeys {
 			final Object object,
 			final SessionImplementor session) throws TransientObjectException {
 		if ( object == null ) {
-			return CompletionStages.nullFuture();
+			return nullFuture();
 		}
 		else {
 			Serializable id = session.getContextEntityIdentifier( object );
@@ -348,7 +354,7 @@ public final class ForeignKeys {
 						} );
 			}
 			else {
-				return CompletionStages.completedFuture( id );
+				return completedFuture( id );
 			}
 		}
 	}

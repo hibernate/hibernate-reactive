@@ -40,6 +40,8 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.jboss.logging.Logger;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+
 /**
  * Collects commons methods needed during the management of flush events.
  *
@@ -56,7 +58,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 		//		during-flush callbacks more leniency in regards to initializing proxies and
 		//		lazy collections during their processing.
 		// For more information, see HHH-2763
-		return CompletionStages.voidFuture()
+		return voidFuture()
 				.thenCompose(v -> {
 					session.getJdbcCoordinator().flushBeginning();
 					session.getPersistenceContext().setFlushing( true );

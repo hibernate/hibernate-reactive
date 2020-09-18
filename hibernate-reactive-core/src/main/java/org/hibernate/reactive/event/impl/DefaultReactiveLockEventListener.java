@@ -33,11 +33,13 @@ import org.hibernate.reactive.engine.impl.ReactiveEntityVerifyVersionProcess;
 import org.hibernate.reactive.event.ReactiveLockEventListener;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.jboss.logging.Logger;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class DefaultReactiveLockEventListener extends AbstractReassociateEventListener
 		implements LockEventListener, ReactiveLockEventListener {
@@ -90,24 +92,24 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 		if (entry==null) {
 			final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity);
 			final Serializable id = persister.getIdentifier(entity, source);
-			stage = ForeignKeys.isNotTransient( event.getEntityName(), entity, Boolean.FALSE, source)
-					.thenApply(
-							trans -> {
-								if (!trans) {
-									throw new TransientObjectException(
-											"cannot lock an unsaved transient instance: " +
-													persister.getEntityName()
-									);
-								}
+			stage = ForeignKeys.isNotTransient( event.getEntityName(), entity, Boolean.FALSE, source).thenApply(
+					trans -> {
+						if (!trans) {
+							throw new TransientObjectException(
+									"cannot lock an unsaved transient instance: " +
+											persister.getEntityName()
+							);
+						}
 
-								EntityEntry e = reassociate(event, entity, id, persister);
-								cascadeOnLock(event, persister, entity);
-								return e;
-							} );
+						EntityEntry e = reassociate(event, entity, id, persister);
+						cascadeOnLock(event, persister, entity);
+						return e;
+					}
+			);
 
 		}
 		else {
-			stage = CompletionStages.completedFuture(entry);
+			stage = completedFuture( entry );
 		}
 
 		return stage.thenCompose( e -> upgradeLock(entity, e, event.getLockOptions(), event.getSession() ) );
@@ -170,24 +172,24 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 					( (ReactiveSession) source ).getReactiveActionQueue()
 							.registerProcess( new ReactiveEntityVerifyVersionProcess(object) );
 					entry.setLockMode( requestedLockMode );
-					return CompletionStages.voidFuture();
+					return voidFuture();
 				case OPTIMISTIC_FORCE_INCREMENT:
 					( (ReactiveSession) source ).getReactiveActionQueue()
 							.registerProcess( new ReactiveEntityIncrementVersionProcess(object) );
 					entry.setLockMode( requestedLockMode );
-					return CompletionStages.voidFuture();
+					return voidFuture();
 				default:
 					return doUpgradeLock( object, entry, lockOptions, source );
 			}
 		}
 		else {
-			return CompletionStages.voidFuture();
+			return voidFuture();
 		}
 	}
 
 	private CompletionStage<Void> doUpgradeLock(Object object, EntityEntry entry,
-											  LockOptions lockOptions,
-											  EventSource source) {
+												LockOptions lockOptions,
+												EventSource source) {
 
 		final EntityPersister persister = entry.getPersister();
 

@@ -15,7 +15,6 @@ import org.hibernate.reactive.loader.ReactiveLoaderBasedLoader;
 import org.hibernate.reactive.loader.ReactiveLoaderBasedResultSetProcessor;
 import org.hibernate.reactive.loader.ReactiveResultSetProcessor;
 import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
@@ -27,6 +26,8 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
 
 /**
  * A reactific {@link org.hibernate.loader.collection.CollectionLoader}.
@@ -91,13 +92,13 @@ public class ReactiveCollectionLoader extends CollectionLoader
 		QueryParameters parameters = new QueryParameters( new Type[]{type}, ids, ids );
 		return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, true )
 				.handle( (list, err) -> {
-					CompletionStages.logSqlException( err,
+					logSqlException( err,
 							() -> "could not initialize a collection: " +
 									collectionInfoString( collectionPersister(), id, getFactory() ),
 							getSQLString()
 					);
 					LOG.debug("Done loading collection");
-					return CompletionStages.returnNullorRethrow( err );
+					return returnNullorRethrow( err );
 				} );
 	}
 
@@ -120,13 +121,13 @@ public class ReactiveCollectionLoader extends CollectionLoader
 		QueryParameters parameters = new QueryParameters( idTypes, ids, ids );
 		return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, true )
 				.handle( (list, err) -> {
-					CompletionStages.logSqlException( err,
+					logSqlException( err,
 							() -> "could not initialize a collection batch: " +
 									collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
 							getSQLString()
 					);
 					LOG.debug("Done batch load");
-					return CompletionStages.returnNullorRethrow( err );
+					return returnNullorRethrow( err );
 				} );
 	}
 

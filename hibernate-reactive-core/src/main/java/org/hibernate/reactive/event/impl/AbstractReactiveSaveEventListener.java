@@ -31,7 +31,6 @@ import org.hibernate.reactive.engine.impl.CascadingAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityIdentityInsertAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityRegularInsertAction;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
@@ -41,6 +40,7 @@ import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.generateId;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 
 /**
  * Functionality common to persist and merge event listeners.
@@ -173,7 +173,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 					source.forceFlush( persistenceContext.getEntry( old ) );
 				}
 				else {
-					return CompletionStages.failedFuture( new NonUniqueObjectException( id, persister.getEntityName() ) );
+					return failedFuture( new NonUniqueObjectException( id, persister.getEntityName() ) );
 				}
 			}
 			persister.setIdentifier( entity, id, source );

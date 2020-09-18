@@ -15,13 +15,14 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.loader.entity.EntityJoinWalker;
 import org.hibernate.persister.entity.OuterJoinLoadable;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
 /**
  * A {@link ReactiveEntityLoader} whose generated SQL contains a placeholder
@@ -111,7 +112,7 @@ class ReactiveDynamicBatchingEntityLoader extends ReactiveEntityLoader {
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters )
 				.handle( (results, err) -> {
-					CompletionStages.logSqlException( err,
+					logSqlException( err,
 							() -> "could not load an entity batch: " + infoString(
 									getEntityPersisters()[0],
 									ids,
@@ -119,7 +120,7 @@ class ReactiveDynamicBatchingEntityLoader extends ReactiveEntityLoader {
 							),
 							sql
 					);
-					return CompletionStages.returnOrRethrow( err, results );
+					return returnOrRethrow( err, results );
 				} );
 	}
 

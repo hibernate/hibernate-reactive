@@ -28,10 +28,12 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.engine.impl.CascadingAction;
 import org.hibernate.reactive.engine.impl.CascadingActions;
 import org.hibernate.reactive.event.ReactivePersistEventListener;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultPersistEventListener}.
@@ -69,10 +71,10 @@ public class DefaultReactivePersistEventListener
 			LazyInitializer li = ( (HibernateProxy) object ).getHibernateLazyInitializer();
 			if ( li.isUninitialized() ) {
 				if ( li.getSession() == source ) {
-					return CompletionStages.voidFuture(); //NOTE EARLY EXIT!
+					return voidFuture(); //NOTE EARLY EXIT!
 				}
 				else {
-					return CompletionStages.failedFuture( new PersistentObjectException( "uninitialized proxy passed to persist()" ) );
+					return failedFuture( new PersistentObjectException( "uninitialized proxy passed to persist()" ) );
 				}
 			}
 			entity = li.getImplementation();
@@ -114,7 +116,7 @@ public class DefaultReactivePersistEventListener
 
 		switch ( entityState ) {
 			case DETACHED: {
-				return CompletionStages.failedFuture( new PersistentObjectException(
+				return failedFuture( new PersistentObjectException(
 						"detached entity passed to persist: " +
 								EventUtil.getLoggableName( event.getEntityName(), entity )
 				) );
@@ -132,7 +134,7 @@ public class DefaultReactivePersistEventListener
 				return entityIsDeleted( event, createCache );
 			}
 			default: {
-				return CompletionStages.failedFuture( new ObjectDeletedException(
+				return failedFuture( new ObjectDeletedException(
 						"deleted entity passed to persist",
 						null,
 						EventUtil.getLoggableName( event.getEntityName(), entity )
@@ -153,7 +155,7 @@ public class DefaultReactivePersistEventListener
 		if ( createCache.add( entity ) ) {
 			return justCascade( createCache, source, entity, persister );
 		}
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	private CompletionStage<Void> justCascade(IdentitySet createCache, EventSource source, Object entity, EntityPersister persister) {
@@ -178,7 +180,7 @@ public class DefaultReactivePersistEventListener
 			return reactiveSaveWithGeneratedId( entity, event.getEntityName(), createCache, source, false )
 					.thenApply( v -> null );
 		}
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	private CompletionStage<Void> entityIsDeleted(PersistEvent event, IdentitySet createCache) {
@@ -201,7 +203,7 @@ public class DefaultReactivePersistEventListener
 		if ( createCache.add( entity ) ) {
 			return justCascade( createCache, source, entity, persister );
 		}
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	@Override

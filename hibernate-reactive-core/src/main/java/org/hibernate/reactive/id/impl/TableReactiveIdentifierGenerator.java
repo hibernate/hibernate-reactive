@@ -20,7 +20,6 @@ import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
@@ -37,6 +36,7 @@ import static org.hibernate.id.enhanced.TableGenerator.TABLE;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getBoolean;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getInt;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
  * Support for JPA's {@link javax.persistence.TableGenerator}.
@@ -86,7 +86,7 @@ public class TableReactiveIdentifierGenerator
 			// We don't need to update or initialize the hi
 			// value in the table, so just increment the lo
 			// value and return the next id in the block
-			return CompletionStages.completedFuture(local);
+			return completedFuture(local);
 		}
 
 		// We need to read the current hi value from the table
@@ -128,7 +128,7 @@ public class TableReactiveIdentifierGenerator
 										switch (rowCount) {
 											case 1:
 												//we successfully obtained the next hi value
-												return CompletionStages.completedFuture( next(id) );
+												return completedFuture( next(id) );
 											case 0:
 												//someone else grabbed the next hi value
 												//so retry everything from scratch

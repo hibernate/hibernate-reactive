@@ -62,6 +62,9 @@ import java.util.stream.IntStream;
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * An abstract implementation of {@link ReactiveEntityPersister} whose
@@ -204,13 +207,13 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			SharedSessionContractImplementor session) {
 
 		if ( delegate().isInverseTable( j ) ) {
-			return CompletionStages.voidFuture();
+			return voidFuture();
 		}
 
 		//note: it is conceptually possible that a UserType could map null to
 		//	  a non-null value, so the following is arguable:
 		if ( delegate().isNullableTable( j ) && delegate().isAllNull( fields, j ) ) {
-			return CompletionStages.voidFuture();
+			return voidFuture();
 		}
 
 		if ( log.isTraceEnabled() ) {
@@ -293,7 +296,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Object[] loadedState) {
 
 		if ( delegate().isInverseTable( j ) ) {
-			return CompletionStages.voidFuture();
+			return voidFuture();
 		}
 		final boolean useVersion = j == 0 && delegate().isVersioned();
 //		final boolean callable = delegate.isDeleteCallable( j );
@@ -312,7 +315,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				log.tracev( "Delete handled by foreign key constraint: {0}", delegate().getTableName( j ) );
 			}
 			//EARLY EXIT!
-			return CompletionStages.voidFuture();
+			return voidFuture();
 		}
 
 		//Render the SQL query
@@ -685,7 +688,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		// Nothing to do;
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	default String generateSelectLockString(LockOptions lockOptions) {
@@ -737,7 +740,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		switch (lockMode) {
 			// 0) noop
 			case NONE:
-				return CompletionStages.voidFuture();
+				return voidFuture();
 			// 1) select ... for share
 			case PESSIMISTIC_READ:
 			// 2) select ... for update
@@ -798,12 +801,12 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				throw new StaleObjectStateException( getEntityName(), id );
 			}
 		} ).handle( (r ,e) -> {
-			CompletionStages.logSqlException( e,
+			logSqlException( e,
 					() -> "could not lock: "
 							+ infoString( this, id, getFactory() ),
 					sql
 			);
-			return CompletionStages.returnOrRethrow( e, r );
+			return returnOrRethrow( e, r );
 		} );
 	}
 

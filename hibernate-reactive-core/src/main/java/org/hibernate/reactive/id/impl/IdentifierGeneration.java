@@ -22,7 +22,6 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.IntegerType;
 import org.hibernate.type.LongType;
@@ -36,6 +35,7 @@ import static org.hibernate.id.enhanced.SequenceStyleGenerator.CATALOG;
 import static org.hibernate.id.enhanced.SequenceStyleGenerator.SCHEMA;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getBoolean;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class IdentifierGeneration {
 
@@ -132,7 +132,7 @@ public class IdentifierGeneration {
 		IdentifierGenerator generator = persister.getIdentifierGenerator();
 		return generator instanceof ReactiveIdentifierGenerator
 				? ( (ReactiveIdentifierGenerator<Serializable>) generator ).generate( connectionSupplier, entity )
-				: CompletionStages.completedFuture( generator.generate( session, entity ) );
+				: completedFuture( generator.generate( session, entity ) );
 	}
 
 	public static Serializable assignIdIfNecessary(Object generatedId, Object entity,

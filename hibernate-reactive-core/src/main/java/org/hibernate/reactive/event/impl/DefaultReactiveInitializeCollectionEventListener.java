@@ -25,8 +25,9 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class DefaultReactiveInitializeCollectionEventListener implements InitializeCollectionEventListener {
 
@@ -62,7 +63,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 				if ( LOG.isTraceEnabled() ) {
 					LOG.trace( "Collection initialized from cache" );
 				}
-				return CompletionStages.voidFuture();
+				return voidFuture();
 			}
 			else {
 				if ( LOG.isTraceEnabled() ) {
@@ -82,7 +83,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 			}
 		}
 		// Collection was already initialized.
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	/**

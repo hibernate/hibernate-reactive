@@ -11,9 +11,10 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.engine.ReactiveBeforeTransactionCompletionProcess;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A BeforeTransactionCompletionProcess impl to verify an entity version as part of
@@ -39,7 +40,7 @@ public class ReactiveEntityVerifyVersionProcess implements ReactiveBeforeTransac
 		final EntityEntry entry = session.getPersistenceContext().getEntry( object );
 		// Don't check version for an entity that is not in the PersistenceContext;
 		if ( entry == null ) {
-			return CompletionStages.voidFuture();
+			return voidFuture();
 		}
 
 		return ( (ReactiveEntityPersister) entry.getPersister() )

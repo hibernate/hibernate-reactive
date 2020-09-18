@@ -19,10 +19,12 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.event.ReactiveAutoFlushEventListener;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 import org.jboss.logging.Logger;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlushingEventListener
 		implements ReactiveAutoFlushEventListener, AutoFlushEventListener {
@@ -35,7 +37,7 @@ public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlush
 		final SessionEventListenerManager eventListenerManager = source.getEventListenerManager();
 
 		eventListenerManager.partialFlushStart();
-		CompletionStage<Void> autoFlushStage = CompletionStages.voidFuture();
+		CompletionStage<Void> autoFlushStage = voidFuture();
 		if ( flushMightBeNeeded( source ) ) {
 			// Need to get the number of collection removals before flushing to executions
 			// (because flushing to executions can add collection removal actions to the action queue).
@@ -63,13 +65,16 @@ public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlush
 							LOG.trace( "Don't need to execute flush" );
 							event.setFlushRequired( false );
 							actionQueue.clearFromFlushNeededCheck( oldSize );
-							return CompletionStages.voidFuture();
+							return voidFuture();
 						}
 					} );
 		}
 		autoFlushStage.whenComplete( (v, x) -> {
-			source.getEventListenerManager().flushEnd( event.getNumberOfEntitiesProcessed(), event.getNumberOfCollectionsProcessed() );
-			CompletionStages.returnNullorRethrow( x );
+			source.getEventListenerManager().flushEnd(
+					event.getNumberOfEntitiesProcessed(),
+					event.getNumberOfCollectionsProcessed()
+			);
+			returnNullorRethrow( x );
 		} );
 
 		return autoFlushStage;

@@ -30,6 +30,9 @@ import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+
 /**
  * A reactive counterpart to {@link ActionQueue}, where DML
  * operations are queued before execution during a flush.
@@ -294,7 +297,7 @@ public class ReactiveActionQueue {
 	}
 
 	private CompletionStage<Void> addInsertAction(ReactiveEntityInsertAction insert) {
-		CompletionStage<Void> ret = CompletionStages.voidFuture();
+		CompletionStage<Void> ret = voidFuture();
 		if ( insert.isEarlyInsert() ) {
 			// For early inserts, must execute inserts before finding non-nullable transient entities.
 			// TODO: find out why this is necessary
@@ -336,7 +339,7 @@ public class ReactiveActionQueue {
 		else {
 			LOG.trace( "Adding resolved non-early insert action." );
 			addAction( ReactiveEntityInsertAction.class, insert );
-			ret = CompletionStages.voidFuture();
+			ret = voidFuture();
 		}
 
 		return ret.thenCompose( v -> {
@@ -536,7 +539,7 @@ public class ReactiveActionQueue {
 		if ( insertions != null && !insertions.isEmpty() ) {
 			return executeActions( insertions );
 		}
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	/**
@@ -546,11 +549,11 @@ public class ReactiveActionQueue {
 	 */
 	public CompletionStage<Void> executeActions() {
 		if ( hasUnresolvedEntityInsertActions() ) {
-			return CompletionStages.failedFuture( new IllegalStateException(
+			return failedFuture( new IllegalStateException(
 					"About to execute actions, but there are unresolved entity insert actions." ) );
 		}
 
-		CompletionStage<Void> ret = CompletionStages.voidFuture();
+		CompletionStage<Void> ret = voidFuture();
 		for ( ListProvider<? extends ReactiveExecutable> listProvider : EXECUTABLE_LISTS_MAP.values() ) {
 			ExecutableList<? extends ReactiveExecutable> l = listProvider.get( this );
 			if ( l != null && !l.isEmpty() ) {
@@ -593,7 +596,7 @@ public class ReactiveActionQueue {
 				return afterTransactionProcesses.afterTransactionCompletion( success );
 			}
 		}
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	/**
@@ -606,7 +609,7 @@ public class ReactiveActionQueue {
 				return beforeTransactionProcesses.beforeTransactionCompletion();
 			}
 		}
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	/**
@@ -654,29 +657,29 @@ public class ReactiveActionQueue {
 		// todo : consider ways to improve the double iteration of Executables here:
 		//		1) we explicitly iterate list here to perform Executable#execute()
 		//		2) ExecutableList#getQuerySpaces also iterates the Executables to collect query spaces.
-		CompletionStage<Void> ret = CompletionStages.voidFuture();
-		for ( E e : list ) {
-			ret = ret.thenCompose( v -> e.reactiveExecute().whenComplete( (v2, x) -> {
-				if ( e.getBeforeTransactionCompletionProcess() != null ) {
-					beforeTransactionProcesses().register( e.getBeforeTransactionCompletionProcess() );
-				}
-				if ( e.getAfterTransactionCompletionProcess() != null ) {
-					afterTransactionProcesses().register( e.getAfterTransactionCompletionProcess() );
-				}
-			} ) );
-		}
-		return ret.whenComplete( (v, x) -> {
+		return CompletionStages.loop(
+				list,
+				e -> e.reactiveExecute()
+						.whenComplete( (v2, x1) -> {
+							if ( e.getBeforeTransactionCompletionProcess() != null ) {
+								beforeTransactionProcesses().register( e.getBeforeTransactionCompletionProcess() );
+							}
+							if ( e.getAfterTransactionCompletionProcess() != null ) {
+								afterTransactionProcesses().register( e.getAfterTransactionCompletionProcess() );
+							}
+						} )
+		)
+		.whenComplete( (v, x) -> {
 			if ( session.getFactory().getSessionFactoryOptions().isQueryCacheEnabled() ) {
 				// Strictly speaking, only a subset of the list may have been processed if a RuntimeException occurs.
 				// We still invalidate all spaces. I don't see this as a big deal - after all, RuntimeExceptions are
 				// unexpected.
-				Set<Serializable> propertySpaces = list.getQuerySpaces();
-				invalidateSpaces( convertTimestampSpaces( propertySpaces ) );
+				invalidateSpaces( convertTimestampSpaces( list.getQuerySpaces() ) );
 			}
-		} ).thenRun( () -> {
-			list.clear();
-//			session.getJdbcCoordinator().executeBatch();
-		} ).thenCompose( v -> session.getReactiveConnection().executeBatch() );
+		} )
+		.thenRun(list::clear)
+		// session.getJdbcCoordinator().executeBatch();
+		.thenCompose( v -> session.getReactiveConnection().executeBatch() );
 	}
 
 	/**

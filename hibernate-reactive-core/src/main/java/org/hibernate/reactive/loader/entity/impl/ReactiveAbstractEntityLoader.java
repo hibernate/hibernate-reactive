@@ -17,7 +17,6 @@ import org.hibernate.reactive.loader.ReactiveLoaderBasedLoader;
 import org.hibernate.reactive.loader.ReactiveLoaderBasedResultSetProcessor;
 import org.hibernate.reactive.loader.ReactiveResultSetProcessor;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
@@ -28,6 +27,8 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
 /**
  * A reactific {@link org.hibernate.loader.entity.AbstractEntityLoader}.
@@ -118,7 +119,7 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 			.handle( (list, err) -> {
 				LOG.debug( "Done entity load" );
 				Loadable[] persisters = getEntityPersisters();
-				CompletionStages.logSqlException( err,
+				logSqlException( err,
 						() -> "could not load an entity: " +
 								infoString(
 										persisters[persisters.length - 1],
@@ -128,7 +129,7 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 								),
 						getSQLString()
 				);
-				return CompletionStages.returnOrRethrow( err, list );
+				return returnOrRethrow( err, list );
 			} );
 	}
 

@@ -15,7 +15,6 @@ import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
@@ -24,6 +23,8 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
 /**
  * The base contract for loaders capable of performing batch-fetch loading of entities using multiple primary key
@@ -117,7 +118,7 @@ public abstract class ReactiveBatchingEntityLoader implements ReactiveUniqueEnti
 
 		QueryParameters parameters = buildQueryParameters(id, ids, optionalObject, lockOptions, readOnly);
 		return loaderToUse.doReactiveQueryAndInitializeNonLazyCollections( (SessionImplementor) session, parameters, false )
-				.handle((list, err) -> {
+				.handle( (list, err) -> {
 //						log.debug( "Done entity batch load" );
 					// The EntityKey for any entity that is not found will remain in the batch.
 					// Explicitly remove the EntityKeys for entities that were not found to
@@ -130,13 +131,13 @@ public abstract class ReactiveBatchingEntityLoader implements ReactiveUniqueEnti
 							persister(),
 							session
 					);
-					CompletionStages.logSqlException( err,
+					logSqlException( err,
 							() -> "could not load an entity batch: "
 									+ infoString( persister(), ids, session.getFactory() ),
 							loaderToUse.getSQLString()
 					);
-					return CompletionStages.returnOrRethrow( err, result );
-				});
+					return returnOrRethrow( err, result );
+				} );
 	}
 
 }

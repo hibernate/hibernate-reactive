@@ -21,7 +21,6 @@ import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadat
 import org.hibernate.query.internal.QueryImpl;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 
 import javax.persistence.EntityGraph;
@@ -35,6 +34,7 @@ import java.util.concurrent.CompletionStage;
 import static java.util.Collections.emptyMap;
 import static org.hibernate.reactive.session.ReactiveQuery.convertQueryException;
 import static org.hibernate.reactive.session.ReactiveQuery.extractUniqueResult;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
  * Implementation of {@link ReactiveQuery} by extension of
@@ -113,7 +113,7 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 
 	private CompletionStage<List<R>> doReactiveList() {
 		if ( getMaxResults() == 0 ) {
-			return CompletionStages.completedFuture( Collections.emptyList() );
+			return completedFuture( Collections.emptyList() );
 		}
 		else {
 			// disable this check for now because I don't have a

@@ -32,7 +32,6 @@ import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.event.ReactiveLoadEventListener;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.tuple.IdentifierProperty;
 import org.hibernate.tuple.entity.EntityMetamodel;
@@ -45,6 +44,10 @@ import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.session.impl.SessionUtil.throwEntityNotFound;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactive {@link org.hibernate.event.internal.DefaultLoadEventListener}.
@@ -143,7 +146,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 							if (x instanceof HibernateException) {
 								LOG.unableToLoadCommand( (HibernateException) x );
 							}
-							return CompletionStages.returnNullorRethrow( x );
+							return returnNullorRethrow( x );
 						} )
 		);
 
@@ -174,7 +177,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 				!(event.getEntityId() instanceof DelayedPostInsertIdentifier) ) {
 			return checkIdClass( persister, event, loadType, idClass );
 		}
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	protected EntityPersister getPersister(final LoadEvent event) {
@@ -229,8 +232,12 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 					final Type dependentParentIdType = dependentParentType.getIdentifierOrUniqueKeyType( factory );
 					if ( dependentParentIdType.getReturnedClass().isInstance( event.getEntityId() ) ) {
 						// yep that's what we have...
-						return loadByDerivedIdentitySimplePkValue( event, loadType, persister,
-								dependentIdType, factory.getMetamodel().entityPersister( dependentParentType.getAssociatedEntityName() )
+						return loadByDerivedIdentitySimplePkValue(
+								event,
+								loadType,
+								persister,
+								dependentIdType,
+								factory.getMetamodel().entityPersister( dependentParentType.getAssociatedEntityName() )
 						);
 					}
 				}
@@ -301,7 +308,10 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 *
 	 * @return The result of the proxy/load operation.
 	 */
-	private CompletionStage<Object> proxyOrLoad(final LoadEvent event, final EntityPersister persister, final EntityKey keyToLoad, final LoadEventListener.LoadType options) {
+	private CompletionStage<Object> proxyOrLoad(LoadEvent event,
+												EntityPersister persister,
+												EntityKey keyToLoad,
+												LoadEventListener.LoadType options) {
 		final EventSource session = event.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();
 		final boolean traceEnabled = LOG.isTraceEnabled();
@@ -335,10 +345,10 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 					final EntityEntry entry = persistenceContext.getEntry( managed );
 					final Status status = entry.getStatus();
 					if ( status == Status.DELETED || status == Status.GONE ) {
-						return CompletionStages.nullFuture();
+						return nullFuture();
 					}
 				}
-				return CompletionStages.completedFuture( managed );
+				return completedFuture( managed );
 			}
 
 			// if the entity defines a HibernateProxy factory, see if there is an
@@ -355,15 +365,13 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 						LOG.debug( "Ignoring NO_PROXY to honor laziness" );
 					}
 
-					return CompletionStages.completedFuture(
-							persistenceContext.narrowProxy( proxy, persister, keyToLoad, null ) );
+					return completedFuture( persistenceContext.narrowProxy( proxy, persister, keyToLoad, null ) );
 				}
 
 				// specialized handling for entities with subclasses with a HibernateProxy factory
 				if ( entityMetamodel.hasSubclasses() ) {
 					// entities with subclasses that define a ProxyFactory can create a HibernateProxy
-					return CompletionStages.completedFuture(
-							createProxy( event, persister, keyToLoad, persistenceContext ) );
+					return completedFuture( createProxy( event, persister, keyToLoad, persistenceContext ) );
 				}
 			}
 
@@ -375,8 +383,8 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 
 				// This is the crux of HHH-11147
 				// create the (uninitialized) entity instance - has only id set
-				return CompletionStages.completedFuture(
-						persister.getBytecodeEnhancementMetadata().createEnhancedProxy( keyToLoad, true, session ) );
+				return completedFuture( persister.getBytecodeEnhancementMetadata()
+						.createEnhancedProxy( keyToLoad, true, session ) );
 			}
 
 			// If we get here, then the entity class has subclasses and there is no HibernateProxy factory.
@@ -391,8 +399,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 				}
 
 				if ( options.isAllowProxyCreation() ) {
-					return CompletionStages.completedFuture(
-							createProxyIfNecessary( event, persister, keyToLoad, options, persistenceContext ) );
+					return completedFuture( createProxyIfNecessary( event, persister, keyToLoad, options, persistenceContext ) );
 				}
 			}
 		}
@@ -416,12 +423,12 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 * @return The created/existing proxy
 	 */
 	private CompletionStage<Object> returnNarrowedProxy(
-			final LoadEvent event,
-			final EntityPersister persister,
-			final EntityKey keyToLoad,
-			final LoadEventListener.LoadType options,
-			final PersistenceContext persistenceContext,
-			final Object proxy) {
+			LoadEvent event,
+			EntityPersister persister,
+			EntityKey keyToLoad,
+			LoadEventListener.LoadType options,
+			PersistenceContext persistenceContext,
+			Object proxy) {
 		if ( LOG.isTraceEnabled() ) {
 			LOG.trace( "Entity proxy found in session cache" );
 		}
@@ -429,7 +436,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		LazyInitializer li = ( (HibernateProxy) proxy ).getHibernateLazyInitializer();
 
 		if ( li.isUnwrap() ) {
-			return CompletionStages.completedFuture( li.getImplementation() );
+			return completedFuture( li.getImplementation() );
 		}
 
 		CompletionStage<Object> implStage;
@@ -446,7 +453,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 					} );
 		}
 		else {
-			implStage = CompletionStages.nullFuture();
+			implStage = nullFuture();
 		}
 
 		return implStage.thenApply( impl -> persistenceContext.narrowProxy( proxy, persister, keyToLoad, impl ) );
@@ -466,11 +473,11 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 * @return The created/existing proxy
 	 */
 	private Object createProxyIfNecessary(
-			final LoadEvent event,
-			final EntityPersister persister,
-			final EntityKey keyToLoad,
-			final LoadEventListener.LoadType options,
-			final PersistenceContext persistenceContext) {
+			LoadEvent event,
+			EntityPersister persister,
+			EntityKey keyToLoad,
+			LoadEventListener.LoadType options,
+			PersistenceContext persistenceContext) {
 		Object existing = persistenceContext.getEntity( keyToLoad );
 		final boolean traceEnabled = LOG.isTraceEnabled();
 		if ( existing != null ) {
@@ -518,11 +525,11 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 * @return The loaded entity
 	 */
 	private CompletionStage<Object> lockAndLoad(
-			final LoadEvent event,
-			final EntityPersister persister,
-			final EntityKey keyToLoad,
-			final LoadEventListener.LoadType options,
-			final SessionImplementor source) {
+			LoadEvent event,
+			EntityPersister persister,
+			EntityKey keyToLoad,
+			LoadEventListener.LoadType options,
+			SessionImplementor source) {
 
 		final boolean canWriteToCache = persister.canWriteToCache();
 		final SoftLock lock;
@@ -575,10 +582,10 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 * @return The loaded entity, or null.
 	 */
 	private CompletionStage<Object> doLoad(
-			final LoadEvent event,
-			final EntityPersister persister,
-			final EntityKey keyToLoad,
-			final LoadEventListener.LoadType options) {
+			LoadEvent event,
+			EntityPersister persister,
+			EntityKey keyToLoad,
+			LoadEventListener.LoadType options) {
 
 		final EventSource session = event.getSession();
 		final boolean traceEnabled = LOG.isTraceEnabled();
@@ -598,7 +605,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		Object entity = persistenceContextEntry.getEntity();
 		if ( entity != null ) {
 			Object managed = persistenceContextEntry.isManaged() ? entity : null;
-			return CompletionStages.completedFuture( managed );
+			return completedFuture( managed );
 		}
 
 		entity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache( event, persister, keyToLoad );
@@ -610,7 +617,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 				);
 			}
 			cacheNaturalId( event, persister, session, entity );
-			return CompletionStages.completedFuture( entity );
+			return completedFuture( entity );
 		}
 		else {
 			if ( traceEnabled ) {
@@ -653,9 +660,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 *
 	 * @return The object loaded from the datasource, or null if not found.
 	 */
-	protected CompletionStage<Object> loadFromDatasource(
-			final LoadEvent event,
-			final EntityPersister persister) {
+	protected CompletionStage<Object> loadFromDatasource(LoadEvent event, EntityPersister persister) {
 
 		CompletionStage<Object> entity =
 				( (ReactiveEntityPersister) persister).reactiveLoad(

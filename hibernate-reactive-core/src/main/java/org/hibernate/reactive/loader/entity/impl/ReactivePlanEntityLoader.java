@@ -39,6 +39,9 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * An entity loader that respects the JPA {@link javax.persistence.EntityGraph}
@@ -213,12 +216,12 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, (SharedSessionContractImplementor) session, parameters )
 				.thenApply( results -> extractEntityResult( results, id ) )
 				.handle( (list, err) -> {
-					CompletionStages.logSqlException( err,
+					logSqlException( err,
 							() -> "could not load an entity: "
 									+ infoString( persister, id, persister.getIdentifierType(), getFactory() ),
 							sql
 					);
-					return CompletionStages.returnOrRethrow( err, list) ;
+					return returnOrRethrow( err, list) ;
 				} );
 	}
 
@@ -317,12 +320,9 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 
 			final List<Object> loadResults = extractRows( resultSet, queryParameters, context );
 
-			return CompletionStages.voidFuture()
-					.thenCompose( v ->  rowReader.reactiveFinishUp( this, context, afterLoadActionList) )
-					.thenApply( vv -> {
-						context.wrapUp();
-						return loadResults;
-					});
+			return rowReader.reactiveFinishUp( this, context, afterLoadActionList )
+					.thenAccept( v -> context.wrapUp() )
+					.thenApply( v -> loadResults );
 		}
 	}
 
@@ -374,14 +374,13 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 			}
 
 			// now finish loading the entities (2-phase load)
-			return CompletionStages.voidFuture()
-					.thenCompose( v -> reactivePerformTwoPhaseLoad(
-							resultSetProcessor,
-							preLoadEvent,
-							context,
-							hydratedEntityRegistrations ) )
-					.thenApply( vv -> {
-
+			return reactivePerformTwoPhaseLoad(
+					resultSetProcessor,
+					preLoadEvent,
+					context,
+					hydratedEntityRegistrations
+			)
+					.thenAccept( v -> {
 						// now we can finalize loading collections
 						finishLoadingCollections( context );
 
@@ -390,8 +389,7 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 
 						// finally, perform post-load operations
 						postLoad( postLoadEvent, context, hydratedEntityRegistrations, afterLoadActionList );
-						return null;
-					});
+					} );
 		}
 
 		/**
@@ -408,10 +406,11 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 			//log.tracev( "Total objects hydrated: {0}", numberOfHydratedObjects );
 
 			if ( numberOfHydratedObjects == 0 ) {
-				return CompletionStages.voidFuture();
+				return voidFuture();
 			}
 
 			final SharedSessionContractImplementor session = context.getSession();
+			@SuppressWarnings("deprecation")
 			final Iterable<PreLoadEventListener> listeners = session
 					.getFactory()
 					.getServiceRegistry()

@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+
 /**
  * A {@link ReactiveResultSetProcessor} intended to be used by {@link ReactiveLoaderBasedLoader} implementations.
  *
@@ -79,19 +81,19 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 				hydratedObjects,
 				subselectResultKeys );
 
-		return CompletionStages.voidFuture()
-				.thenCompose(v -> reactiveInitializeEntitiesAndCollections(
+		return reactiveInitializeEntitiesAndCollections(
 						hydratedObjects,
 						rs,
 						session,
 						queryParameters.isReadOnly(session),
-						afterLoadActionList))
-				.thenAccept(v -> {
+						afterLoadActionList
+		)
+				.thenAccept( v -> {
 					if (createSubselects) {
-						loader.createSubselects(subselectResultKeys, queryParameters, session);
+						loader.createSubselects( subselectResultKeys, queryParameters, session );
 					}
-				})
-				.thenApply(v -> results);
+				} )
+				.thenApply( v -> results );
 	}
 
 	/**
@@ -144,7 +146,7 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 				if ( hydratedObject == null ) {
 					// This is a hack to signal that we're starting to process a new row
 					session.setFetchGraphLoadContext( fetchGraphLoadContextToRestore );
-					return CompletionStages.voidFuture(); //TODO: ugly!
+					return voidFuture(); //TODO: ugly!
 				}
 				else {
 					return initializeEntity( hydratedObject, readOnly, session, pre, listeners );
@@ -152,7 +154,7 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 			} );
 		}
 		else {
-			stage = CompletionStages.voidFuture();
+			stage = voidFuture();
 		}
 
 		return stage.thenAccept( v -> {

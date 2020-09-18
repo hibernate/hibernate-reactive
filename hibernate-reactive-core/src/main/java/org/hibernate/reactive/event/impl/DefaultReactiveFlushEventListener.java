@@ -10,11 +10,12 @@ import org.hibernate.engine.spi.*;
 import org.hibernate.event.spi.*;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.reactive.event.ReactiveFlushEventListener;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.jboss.logging.Logger;
 
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultFlushEventListener}.
@@ -54,7 +55,7 @@ public class DefaultReactiveFlushEventListener extends AbstractReactiveFlushingE
 						}
 					} );
 		}
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	@Override

@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.IntStream;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultMergeEventListener}.
  */
@@ -100,7 +102,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 					LOG.trace( "Ignoring uninitialized proxy" );
 					event.setResult( source.load( li.getEntityName(), li.getIdentifier() ) );
 					//EARLY EXIT!
-					return CompletionStages.voidFuture();
+					return voidFuture();
 				}
 				else {
 					entity = li.getImplementation();
@@ -115,7 +117,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 					//no need to go async, AFAICT ?
 					event.setResult(source.load(proxyInterceptor.getEntityName(), (Serializable) proxyInterceptor.getIdentifier()));
 					//EARLY EXIT!
-					return CompletionStages.voidFuture();
+					return voidFuture();
 				}
 				else {
 					entity = original;
@@ -181,7 +183,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 
 		}
 
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	protected CompletionStage<Void> entityIsPersistent(MergeEvent event, MergeContext copyCache) {
@@ -448,7 +450,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		CompletionStage<Void> stage;
 		if (entity == target) {
 			// If entity == target, then nothing needs to be fetched.
-			stage = CompletionStages.voidFuture();
+			stage = voidFuture();
 		}
 		else {
 			ReactiveSession session = source.unwrap(ReactiveSession.class);
@@ -560,7 +562,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	@Override
 	protected CompletionStage<Void> cascadeAfterSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything)
 			throws HibernateException {
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	/**
@@ -569,7 +571,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	@Override
 	protected CompletionStage<Void> cascadeBeforeSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything)
 			throws HibernateException {
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 }
