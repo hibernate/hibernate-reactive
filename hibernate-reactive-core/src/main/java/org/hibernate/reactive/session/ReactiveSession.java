@@ -108,6 +108,8 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 			Class<T> entityClass,
 			Object... primaryKey);
 
+	CompletionStage<Object> reactiveImmediateLoad(String entityName, Serializable id);
+
 	CompletionStage<Void> reactiveInitializeCollection(PersistentCollection collection, boolean writing);
 
 	void setHibernateFlushMode(FlushMode flushMode);
