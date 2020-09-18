@@ -426,7 +426,7 @@ confusing for new users, the reactive `Session` and its related interfaces all
 come in two flavors:
 
 - `Stage.Session` and friends provide a reactive API based around Java's
-`CompletionStage`, and
+  `CompletionStage`, and
 - `Mutiny.Session` and friends provide an API based on {Mutiny}[Mutiny].
 
 You'll need to decide which API you want to use!
@@ -801,6 +801,8 @@ following configuration properties:
 | Configuration property name                          | Purpose
 
 | `hibernate.vertx.pool.max_wait_queue_size`           | The maximum connection requests allowed in the wait queue
+| `hibernate.vertx.pool.connect_timeout`               | The maximum time to wait when opening a new connection, in milliseconds
+| `hibernate.vertx.pool.idle_timeout`                  | The maximum time a connection may sit idle, in seconds
 | `hibernate.vertx.prepared_statement_cache.max_size`  | The maximum size of the prepared statement cache
 | `hibernate.vertx.prepared_statement_cache.sql_limit` | The maximum length of prepared statement SQL string that will be cached
 |===
