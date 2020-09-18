@@ -34,7 +34,21 @@ public interface Settings extends AvailableSettings {
 	 *
 	 * @see io.vertx.sqlclient.PoolOptions#setMaxWaitQueueSize(int)
 	 */
-	String MAX_WAIT_QUEUE_SIZE = "hibernate.vertx.pool.max_wait_queue_size";
+	String POOL_MAX_WAIT_QUEUE_SIZE = "hibernate.vertx.pool.max_wait_queue_size";
+
+	/**
+	 * Property for configuring the Vert.x connection pool.
+	 *
+	 * @see io.vertx.sqlclient.SqlConnectOptions#setConnectTimeout(int)
+	 */
+	String POOL_CONNECT_TIMEOUT = "hibernate.vertx.pool.connect_timeout";
+
+	/**
+	 * Property for configuring the Vert.x connection pool.
+	 *
+	 * @see io.vertx.sqlclient.SqlConnectOptions#setIdleTimeout(int)
+	 */
+	String POOL_IDLE_TIMEOUT = "hibernate.vertx.pool.idle_timeout";
 
 	/**
 	 * Specifies a {@link org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration} class.

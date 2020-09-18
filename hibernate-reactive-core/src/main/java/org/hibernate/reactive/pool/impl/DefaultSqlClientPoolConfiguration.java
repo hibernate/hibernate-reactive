@@ -33,6 +33,8 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
     private int poolSize;
     private Integer maxWaitQueueSize;
+    private Integer connectTimeout;
+    private Integer idleTimeout;
     private Integer cacheMaxSize;
     private Integer sqlLimit;
     private String user;
@@ -43,9 +45,11 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
         user = getString( Settings.USER, configuration );
         pass = getString( Settings.PASS, configuration );
         poolSize = getInt( Settings.POOL_SIZE, configuration, DEFAULT_POOL_SIZE );
-        maxWaitQueueSize = getInteger( Settings.MAX_WAIT_QUEUE_SIZE, configuration );
+        maxWaitQueueSize = getInteger( Settings.POOL_MAX_WAIT_QUEUE_SIZE, configuration );
         cacheMaxSize = getInteger( Settings.PREPARED_STATEMENT_CACHE_MAX_SIZE, configuration );
         sqlLimit = getInteger( Settings.PREPARED_STATEMENT_CACHE_SQL_LIMIT, configuration );
+        connectTimeout = getInteger( Settings.POOL_CONNECT_TIMEOUT, configuration );
+        idleTimeout = getInteger( Settings.POOL_IDLE_TIMEOUT, configuration );
     }
 
     @Override
@@ -150,6 +154,13 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
         if (sqlLimit!=null) {
             messageLogger(SqlClientPool.class).infof( "HRX000016: Prepared statement cache SQL limit: %d", sqlLimit );
             connectOptions.setPreparedStatementCacheSqlLimit(sqlLimit);
+        }
+
+        if (connectTimeout!=null) {
+            connectOptions.setConnectTimeout(connectTimeout);
+        }
+        if (idleTimeout!=null) {
+            connectOptions.setConnectTimeout(idleTimeout);
         }
 
         return connectOptions;
