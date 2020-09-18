@@ -51,11 +51,12 @@ public class ReactivePersistenceContextAdapter extends StatefulPersistenceContex
 
 		@Override
 		public void accept(PersistentCollection nonLazyCollection) {
-			stage = stage.thenCompose(
-					v -> ( (ReactiveSession) getSession() )
-							.reactiveFetch( nonLazyCollection, true )
-							.thenAccept(vv -> {})
-			);
+			if ( !nonLazyCollection.wasInitialized() ) {
+				stage = stage.thenCompose(
+						v -> ( (ReactiveSession) getSession() )
+								.reactiveInitializeCollection( nonLazyCollection, false )
+				);
+			}
 		}
 	}
 

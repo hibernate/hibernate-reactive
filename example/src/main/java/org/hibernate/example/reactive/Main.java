@@ -70,7 +70,7 @@ public class Main {
 				// retrieve an Author
 				session -> session.find(Author.class, author2.id)
 						// lazily fetch their books
-						.thenCompose( author -> fetch(author.books)
+						.thenCompose( author -> session.fetch(author, Author_.books)
 								// print some info
 								.thenAccept( books -> {
 									out.println(author.name + " wrote " + books.size() + " books");
