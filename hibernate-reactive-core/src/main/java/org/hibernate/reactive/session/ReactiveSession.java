@@ -12,6 +12,7 @@ import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.UnknownProfileException;
+import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.internal.MergeContext;
@@ -106,6 +107,8 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 	<T> CompletionStage<List<T>> reactiveFind(
 			Class<T> entityClass,
 			Object... primaryKey);
+
+	CompletionStage<Void> reactiveInitializeCollection(PersistentCollection collection, boolean writing);
 
 	void setHibernateFlushMode(FlushMode flushMode);
 	FlushMode getHibernateFlushMode();

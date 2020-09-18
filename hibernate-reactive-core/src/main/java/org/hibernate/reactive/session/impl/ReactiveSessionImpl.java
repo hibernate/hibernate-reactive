@@ -298,6 +298,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		throw new LazyInitializationException( message );
 	}
 
+	@Override
 	public CompletionStage<Void> reactiveInitializeCollection(PersistentCollection collection, boolean writing) {
 		checkOpenOrWaitingForAutoClose();
 		pulseTransactionCoordinator();

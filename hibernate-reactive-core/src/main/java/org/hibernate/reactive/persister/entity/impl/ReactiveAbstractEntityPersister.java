@@ -13,6 +13,7 @@ import org.hibernate.LockOptions;
 import org.hibernate.Session;
 import org.hibernate.StaleObjectStateException;
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeDescriptor;
+import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.engine.OptimisticLockStyle;
@@ -36,6 +37,7 @@ import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.Delete;
 import org.hibernate.sql.SimpleSelect;
@@ -59,6 +61,7 @@ import java.util.stream.IntStream;
 
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
  * An abstract implementation of {@link ReactiveEntityPersister} whose
@@ -967,12 +970,29 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	@SuppressWarnings("unchecked")
 	default <E,T> CompletionStage<T> reactiveInitializeLazyProperty(Attribute<E,T> field, E entity,
 																	SharedSessionContractImplementor session) {
-		Object result = initializeLazyProperty( field.getName(), entity, session );
+		String fieldName = field.getName();
+		Object result = initializeLazyProperty( fieldName, entity, session );
 		if (result instanceof CompletionStage) {
 			return (CompletionStage<T>) result;
 		}
+		else if (result instanceof PersistentCollection) {
+			//TODO: why doesn't Hibernate core take care of all this!?
+			String[] propertyNames = getPropertyNames();
+			for (int index=0; index<propertyNames.length; index++) {
+				if ( propertyNames[index].equals(fieldName) ) {
+					setPropertyValue( entity, index, result );
+					break;
+				}
+			}
+
+			PersistentCollection collection = (PersistentCollection) result;
+			return collection.wasInitialized()
+					? completedFuture( (T) collection )
+					: ((ReactiveSession) session).reactiveInitializeCollection( collection, false )
+							.thenApply( v -> (T) result );
+		}
 		else {
-			return CompletionStages.nullFuture();
+			return completedFuture( (T) result );
 		}
 	}
 
@@ -1017,7 +1037,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		// are shared PK one-to-one associations which are
 		// handled differently in the Type#nullSafeGet code...
 		if ( lazySelect == null ) {
-			return CompletionStages.completedFuture( initLazyProperty(
+			return completedFuture( initLazyProperty(
 					fieldName, entity,
 					session, entry,
 					interceptor,
