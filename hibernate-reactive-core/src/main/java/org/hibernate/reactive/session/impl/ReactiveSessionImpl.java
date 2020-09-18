@@ -100,6 +100,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
@@ -150,6 +151,25 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				+ " - use Session.fetch() (entity '" + entityName + "' with id '" + id + "' was not loaded)");
 	}
 
+	/**
+	 * Load the data for the object with the specified id into a newly created object.
+	 * This is only called when lazily initializing a proxy. Do NOT return a proxy.
+	 */
+	@Override
+	public CompletionStage<Object> reactiveImmediateLoad(String entityName, Serializable id)
+			throws HibernateException {
+//		if ( log.isDebugEnabled() ) {
+//			EntityPersister persister = getFactory().getMetamodel().entityPersister( entityName );
+//			log.debugf( "Initializing proxy: %s", MessageHelper.infoString( persister, id, getFactory() ) );
+//		}
+		LoadEvent event = new LoadEvent(
+				id, entityName, true, this,
+				getReadOnlyFromLoadQueryInfluencers()
+		);
+		return fireLoadNoChecks( event, LoadEventListener.IMMEDIATE_LOAD )
+				.thenApply( v -> event.getResult() );
+	}
+
 	@Override @SuppressWarnings("unchecked")
 	public <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy) {
 		checkOpen();
@@ -159,17 +179,14 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				return completedFuture( unproxy ? (T) initializer.getImplementation() : association );
 			}
 			else {
-				//TODO: is this correct?
-				// SessionImpl doesn't use IdentifierLoadAccessImpl for initializing proxies
 				String entityName = initializer.getEntityName();
 				Serializable identifier = initializer.getIdentifier();
-				return new ReactiveIdentifierLoadAccessImpl<T>( entityName )
-						.fetch( identifier )
-						.thenApply( SessionUtil.checkEntityFound( this, entityName, identifier ) )
+				return reactiveImmediateLoad( entityName, identifier )
 						.thenApply( entity -> {
+							checkEntityFound( this, entityName, identifier, entity );
 							initializer.setSession( this );
 							initializer.setImplementation( entity );
-							return unproxy ? entity : association;
+							return unproxy ? (T) entity : association;
 						} );
 			}
 		}
@@ -1014,6 +1031,10 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		//no-op because we don't support transactions
 	}
 
+	private Boolean getReadOnlyFromLoadQueryInfluencers() {
+		return getLoadQueryInfluencers().getReadOnly();
+	}
+
 	private class ReactiveIdentifierLoadAccessImpl<T> {
 
 		private final EntityPersister entityPersister;
@@ -1117,14 +1138,10 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			return perform( () -> doLoad( id, LoadEventListener.GET) );
 		}
 
-		public final CompletionStage<T> fetch(Serializable id) {
-			return perform( () -> doLoad( id, LoadEventListener.IMMEDIATE_LOAD) );
-		}
-
-		private Boolean getReadOnlyFromLoadQueryInfluencers() {
-			return getLoadQueryInfluencers().getReadOnly();
-		}
-
+//		public final CompletionStage<T> fetch(Serializable id) {
+//			return perform( () -> doLoad( id, LoadEventListener.IMMEDIATE_LOAD) );
+//		}
+//
 		@SuppressWarnings("unchecked")
 		protected final CompletionStage<T> doLoad(Serializable id, LoadEventListener.LoadType loadType) {
 			if ( lockOptions != null ) {

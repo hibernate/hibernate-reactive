@@ -244,8 +244,8 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		EventSource session = event.getSession();
 		final EntityKey parentEntityKey = session.generateEntityKey( event.getEntityId(), parentPersister );
 		return doLoad( event, parentPersister, parentEntityKey, options )
-				.thenApply( checkEntityFound( session, parentEntityKey.getEntityName(), parentEntityKey ) )
 				.thenApply( parent -> {
+					checkEntityFound( session, parentEntityKey.getEntityName(), parentEntityKey, parent );
 					final Serializable dependent = (Serializable) dependentIdType.instantiate( parent, session );
 					dependentIdType.setPropertyValues( dependent, new Object[] {parent}, dependentPersister.getEntityMode() );
 					event.setEntityId( dependent );
