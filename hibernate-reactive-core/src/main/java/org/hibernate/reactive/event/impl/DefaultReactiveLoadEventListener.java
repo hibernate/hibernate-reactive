@@ -72,6 +72,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 *
 	 * @see org.hibernate.event.internal.DefaultLoadEventListener#onLoad(LoadEvent, LoadType)
 	 * @throws UnsupportedOperationException if the entity loaded is not a proxy
+	 * @throws UnexpectedAccessToTheDatabase if it needs to load the entity from the db
 	 */
 	@Override
 	public void onLoad(
@@ -89,7 +90,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		CompletionStage<Void> checkId = checkId( event, loadType, persister );
 		if ( !checkId.toCompletableFuture().isDone() ) {
 			// This only happens if the object is loaded from the db
-			throw new AssertionFailure( "Unexpected access to the database" );
+			throw new UnexpectedAccessToTheDatabase();
 		}
 
 		try {
@@ -99,7 +100,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			CompletionStage<Object> loaded = doOnLoad( persister, event, loadType );
 			if ( !loaded.toCompletableFuture().isDone() ) {
 				// This only happens if the object is loaded from the db
-				throw new AssertionFailure( "Unexpected access to the database" );
+				throw new UnexpectedAccessToTheDatabase();
 			}
 			else {
 				// Proxy

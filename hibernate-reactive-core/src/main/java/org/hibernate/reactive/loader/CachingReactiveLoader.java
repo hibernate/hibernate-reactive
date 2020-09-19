@@ -17,6 +17,7 @@ import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.loader.Loader;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.event.impl.UnexpectedAccessToTheDatabase;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.transform.CacheableResultTransformer;
@@ -90,7 +91,16 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 
 		QueryKey key = queryKey( sql, session, queryParameters );
 
-		List<Object> cachedList = getReactiveResultFromQueryCache( session, queryParameters, querySpaces, resultTypes, queryCache, key );
+		final List<Object> cachedList;
+		try {
+			cachedList = getReactiveResultFromQueryCache( session, queryParameters, querySpaces, resultTypes, queryCache, key );
+		}
+		catch (UnexpectedAccessToTheDatabase e) {
+			// Some of the entities in the query results aren't cached and therefore it trys to load them from the db.
+			// Currently this scenario causes an AssertionFailure exception because we cannot deal with the
+			// CompletionStage in that phase.
+			return reactiveListIgnoreQueryCache( sql, queryIdentifier, session, queryParameters );
+		}
 
 		CompletionStage<List<Object>> list;
 		if ( cachedList == null ) {
