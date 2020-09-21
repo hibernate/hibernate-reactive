@@ -14,7 +14,7 @@ dependencies {
         exclude group: 'javax.activation', module: 'javax.activation-api'
     }
 
-    api 'io.smallrye.reactive:mutiny:0.8.0'
+    api 'io.smallrye.reactive:mutiny:0.8.1'
 
     //Logging
     implementation 'org.jboss.logging:jboss-logging:3.3.2.Final'
