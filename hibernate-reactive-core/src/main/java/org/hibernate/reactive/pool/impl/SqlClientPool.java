@@ -53,6 +53,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	private Pool pool;
 	private boolean showSQL;
 	private boolean formatSQL;
+	private boolean highlightSQL;
 	private URI uri;
 	private ServiceRegistryImplementor serviceRegistry;
 	private boolean usePostgresStyleParameters;
@@ -69,6 +70,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		uri = jdbcUrl( configuration );
 		showSQL = ConfigurationHelper.getBoolean( Settings.SHOW_SQL, configuration, false );
 		formatSQL = ConfigurationHelper.getBoolean( Settings.FORMAT_SQL, configuration, false );
+		highlightSQL = ConfigurationHelper.getBoolean( Settings.HIGHLIGHT_SQL, configuration, false );
 		usePostgresStyleParameters =
 				serviceRegistry.getService(JdbcEnvironment.class).getDialect() instanceof PostgreSQL9Dialect;
 	}
@@ -214,7 +216,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	}
 
 	private SqlClientConnection newConnection(SqlConnection connection) {
-		return new SqlClientConnection( connection, pool, showSQL, formatSQL, usePostgresStyleParameters );
+		return new SqlClientConnection( connection, pool, showSQL, formatSQL, highlightSQL, usePostgresStyleParameters );
 	}
 
 	@Override

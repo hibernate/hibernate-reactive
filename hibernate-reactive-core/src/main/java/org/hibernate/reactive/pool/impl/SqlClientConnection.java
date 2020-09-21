@@ -41,20 +41,21 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	private final boolean showSQL;
 	private final boolean formatSQL;
+	private final boolean highlightSQL;
 	private final boolean usePostgresStyleParameters;
 
 	private final Pool pool;
 	private final SqlConnection connection;
 	private Transaction transaction;
 
-	SqlClientConnection(SqlConnection connection,
-						Pool pool,
-						boolean showSQL, boolean formatSQL,
+	SqlClientConnection(SqlConnection connection, Pool pool,
+						boolean showSQL, boolean formatSQL, boolean highlightSQL,
 						boolean usePostgresStyleParameters) {
 		this.pool = pool;
 		this.showSQL = showSQL;
 		this.connection = connection;
 		this.formatSQL = formatSQL;
+		this.highlightSQL = highlightSQL;
 		this.usePostgresStyleParameters = usePostgresStyleParameters;
 	}
 
@@ -208,20 +209,25 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	private void feedback(String sql) {
 		Objects.requireNonNull(sql, "SQL query cannot be null");
-		if ( formatSQL
-				&& ( showSQL || log.isDebugEnabled() ) ) {
-			//Note that DDL already gets formatted by the client
-			if ( !sql.contains( System.lineSeparator() ) ) {
-				sql = FormatStyle.BASIC.getFormatter().format(sql);
+		if ( showSQL || log.isDebugEnabled() ) {
+			if ( formatSQL ) {
+				//Note that DDL already gets formatted by the client
+				if ( !sql.contains( System.lineSeparator() ) ) {
+					sql = FormatStyle.BASIC.getFormatter().format(sql);
+				}
+			}
+			if ( highlightSQL ) {
+				//TODO: use FormatStyle.HIGHLIGHT when it gets added to Hibernate ORM core
+				sql = keywords.matcher(sql).replaceAll("\u001b[34m$0\u001b[0m");
+				sql = strings.matcher(sql).replaceAll("\u001b[36m$0\u001b[0m");
 			}
 		}
 
 		log.debug( sql );
 
 		if (showSQL) {
-			sql = keywords.matcher(sql).replaceAll("\u001b[34m$0\u001b[0m");
-			sql = strings.matcher(sql).replaceAll("\u001b[36m$0\u001b[0m");
-			System.out.println("\u001b[35m[Hibernate]\u001b[0m" + sql);
+			String prefix = highlightSQL ? "\u001b[35m[Hibernate]\u001b[0m" : "Hibernate: ";
+			System.out.println(prefix + sql);
 		}
 	}
 
