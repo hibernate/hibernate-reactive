@@ -87,6 +87,22 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testLoadFromCachedQueryResultFromCache(TestContext context) {
+		test( context, getMutinySessionFactory()
+				.withSession( s -> CachedQueryResultsTest.findall(s)
+						.call( () -> CachedQueryResultsTest.findall(s) ) )
+				.invoke( list -> {
+					context.assertNotNull( list );
+					context.assertEquals( 3, list.size() );
+					int i = 0;
+					for ( Fruit entity : list ) {
+						context.assertEquals( entity, FRUITS[i++] );
+					}
+				} )
+		);
+	}
+
 	private static Uni<List<Fruit>> findall2(Mutiny.Session session) {
 		return session.createQuery( "FROM Fruit f ORDER BY f.name ASC", Fruit.class )
 				.setCacheable(true)
@@ -99,6 +115,22 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 				// We need to close the session between the two findAll or the results will come from the
 				// first-level cache
 				.call( () -> getMutinySessionFactory().withSession( CachedQueryResultsTest::findall2 ) )
+				.invoke( list -> {
+					context.assertNotNull( list );
+					context.assertEquals( 3, list.size() );
+					int i = 0;
+					for ( Fruit entity : list ) {
+						context.assertEquals( entity, FRUITS[i++] );
+					}
+				} )
+		);
+	}
+
+	@Test
+	public void testLoadFromCachedQueryResultFromCache2(TestContext context) {
+		test( context, getMutinySessionFactory()
+				.withSession( s -> CachedQueryResultsTest.findall2(s)
+						.call( () -> CachedQueryResultsTest.findall2(s) ) )
 				.invoke( list -> {
 					context.assertNotNull( list );
 					context.assertEquals( 3, list.size() );
