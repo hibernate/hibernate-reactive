@@ -292,4 +292,16 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		applyGraph( (RootGraph<?>) entityGraph, GraphSemantic.FETCH );
 		applyEntityGraphQueryHint( new EntityGraphQueryHint( GraphSemantic.FETCH.getJpaHintName(), entityGraph ) );
 	}
+
+	@Override
+	public ReactiveQueryImpl<R> setCacheable(boolean cacheable) {
+		super.setCacheable(cacheable);
+		return this;
+	}
+
+	@Override
+	public ReactiveQueryImpl<R> setCacheRegion(String cacheRegion) {
+		super.setCacheRegion(cacheRegion);
+		return this;
+	}
 }

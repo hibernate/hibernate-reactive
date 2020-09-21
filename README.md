@@ -189,11 +189,9 @@ all associations.
 
 #### Caching
 
-The query cache is not yet supported.
-
-Note that you should not use Hibernate Reactive with a second-level cache 
-implementation which performs blocking IO, for example passivation to the
-filesystem or distributed replication.
+You should not use Hibernate Reactive with a second-level cache 
+implementation which performs blocking IO, for example passivation to 
+the filesystem or distributed replication.
 
 #### Driver-specific limitations
 

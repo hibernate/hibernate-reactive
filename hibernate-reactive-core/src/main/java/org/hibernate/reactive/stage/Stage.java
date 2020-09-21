@@ -11,6 +11,7 @@ import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.LockMode;
+import org.hibernate.Query;
 import org.hibernate.collection.internal.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -169,6 +170,37 @@ public interface Stage {
 		 * @param comment The human-readable comment
 		 */
 		Query<R> setComment(String comment);
+
+		/**
+		 * Enable or disable caching of this query result set in the
+		 * second-level query cache.
+		 *
+		 * @param cacheable {@code true} if this query is cacheable
+		 */
+		Query<R> setCacheable(boolean cacheable);
+
+		/**
+		 * @return {@code true} if this query is cacheable
+		 *
+		 * @see #setCacheable(boolean)
+		 */
+		boolean isCacheable();
+
+		/**
+		 * Set the name of the cache region in which to store this
+		 * query result set if {@link #setCacheable(boolean)
+		 * caching is enabled}.
+		 *
+		 * @param cacheRegion the name of the cache region
+		 */
+		Query<R> setCacheRegion(String cacheRegion);
+
+		/**
+		 * @return the name of the cache region
+		 *
+		 * @see #setCacheRegion(String)
+		 */
+		String getCacheRegion();
 
 		/**
 		 * Set the current {@link CacheMode} in effect while this query

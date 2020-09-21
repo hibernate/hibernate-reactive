@@ -112,4 +112,12 @@ public interface ReactiveQuery<R> {
 	}
 
 	void setPlan(EntityGraph<R> entityGraph);
+
+    ReactiveQuery<R> setCacheable(boolean cacheable);
+
+	boolean isCacheable();
+
+	ReactiveQuery<R> setCacheRegion(String cacheRegion);
+
+	String getCacheRegion();
 }

@@ -91,6 +91,28 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 //	}
 
 	@Override
+	public Mutiny.Query<R> setCacheable(boolean cacheable) {
+		delegate.setCacheable(cacheable);
+		return this;
+	}
+
+	@Override
+	public boolean isCacheable() {
+		return delegate.isCacheable();
+	}
+
+	@Override
+	public Mutiny.Query<R> setCacheRegion(String cacheRegion) {
+		delegate.setCacheRegion(cacheRegion);
+		return this;
+	}
+
+	@Override
+	public String getCacheRegion() {
+		return delegate.getCacheRegion();
+	}
+
+	@Override
 	public Mutiny.Query<R> setLockMode(LockMode lockMode) {
 		delegate.setLockMode( lockMode );
 		return this;
