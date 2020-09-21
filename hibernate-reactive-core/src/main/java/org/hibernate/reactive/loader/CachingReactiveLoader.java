@@ -96,6 +96,8 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 			cachedList = getReactiveResultFromQueryCache( session, queryParameters, querySpaces, resultTypes, queryCache, key );
 		}
 		catch (UnexpectedAccessToTheDatabase e) {
+			log.debugf( "Some of the entities are not in the cache. The cache will be ignored for query: %s ", sql );
+
 			// Some of the entities in the query results aren't cached and therefore it trys to load them from the db.
 			// Currently this scenario causes an AssertionFailure exception because we cannot deal with the
 			// CompletionStage in that phase.
