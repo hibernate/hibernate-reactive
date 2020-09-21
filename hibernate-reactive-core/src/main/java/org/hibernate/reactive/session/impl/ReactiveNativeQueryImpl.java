@@ -199,4 +199,16 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	public void setPlan(EntityGraph<R> entityGraph) {
 		throw new UnsupportedOperationException("native SQL query cannot have a fetch plan");
 	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> setCacheable(boolean cacheable) {
+		super.setCacheable(cacheable);
+		return this;
+	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> setCacheRegion(String cacheRegion) {
+		super.setCacheRegion(cacheRegion);
+		return this;
+	}
 }

@@ -91,6 +91,28 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 //	}
 
 	@Override
+	public Stage.Query<R> setCacheable(boolean cacheable) {
+		delegate.setCacheable(cacheable);
+		return this;
+	}
+
+	@Override
+	public boolean isCacheable() {
+		return delegate.isCacheable();
+	}
+
+	@Override
+	public Stage.Query<R> setCacheRegion(String cacheRegion) {
+		delegate.setCacheRegion(cacheRegion);
+		return this;
+	}
+
+	@Override
+	public String getCacheRegion() {
+		return delegate.getCacheRegion();
+	}
+
+	@Override
 	public Stage.Query<R> setLockMode(LockMode lockMode) {
 		delegate.setLockMode( lockMode );
 		return this;
