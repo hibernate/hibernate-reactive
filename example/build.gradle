@@ -63,7 +63,7 @@ dbs.each { db ->
                 description = "Run ${mainClass} on ${db}"
                 classpath = sourceSets.main.runtimeClasspath
                 main = "org.hibernate.example.reactive.${mainClass}"
-                // The persistence unit name defined in resources/META-INF/persitence.xml
+                // The persistence unit name defined in resources/META-INF/persistence.xml
                 args db.toLowerCase() + '-example'
             }
         }
