@@ -268,19 +268,21 @@ For example:
 @Table(name="authors")
 class Author {
     @Id @GeneratedValue
-    Integer id;
+    private Integer id;
 
     @NotNull @Size(max=100)
-    String name;
+    private String name;
 
     @OneToMany(mappedBy = "author", cascade = PERSIST)
-    List<Book> books = new ArrayList<>();
+    private List<Book> books = new ArrayList<>();
 
     Author(String name) {
         this.name = name;
     }
 
     Author() {}
+
+    // getters and setters...
 }
 ----
 
@@ -329,6 +331,22 @@ The most common and useful mapping annotations include:
 
 Information about Bean Validation annotations may be found in the
 {bean-validation}[documentation for Hibernate Validator].
+
+=== Getters and setters
+
+When using Hibernate Reactive _outside_ of the Quarkus environment, you'll
+need to write your entity classes according to the usual JPA conventions,
+which require:
+
+- private fields for persistent attributes, and
+- a nullary constructor.
+
+It's illegal to access persistent fields from outside the entity class.
+Therefore, external access to persistent fields must be intermediated via
+getter and setter methods defined by the entity class.
+
+When you use Hibernate Reactive in Quarkus, these requirements are relaxed,
+and you can use public fields instead of getters and setters if you prefer.
 
 === Identifier generation
 

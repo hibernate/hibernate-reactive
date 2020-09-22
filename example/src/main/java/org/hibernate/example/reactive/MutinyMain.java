@@ -38,9 +38,9 @@ public class MutinyMain {
 		Book book1 = new Book("1-85723-235-6", "Feersum Endjinn", author1, LocalDate.of(1994, JANUARY, 1));
 		Book book2 = new Book("0-380-97346-4", "Cryptonomicon", author2, LocalDate.of(1999, MAY, 1));
 		Book book3 = new Book("0-553-08853-X", "Snow Crash", author2, LocalDate.of(1992, JUNE, 1));
-		author1.books.add(book1);
-		author2.books.add(book2);
-		author2.books.add(book3);
+		author1.getBooks().add(book1);
+		author2.getBooks().add(book2);
+		author2.getBooks().add(book3);
 
 		// obtain a reactive session
 		factory.withTransaction(
@@ -52,28 +52,28 @@ public class MutinyMain {
 
 		factory.withSession(
 				// retrieve a Book
-				session -> session.find(Book.class, book1.id)
+				session -> session.find(Book.class, book1.getId())
 						// print its title
-						.invoke( book -> out.println(book.title + " is a great book!") )
+						.invoke( book -> out.println(book.getTitle() + " is a great book!") )
 		)
 				.await().indefinitely();
 
 		factory.withSession(
 				// retrieve both Authors at once
-				session -> session.find(Author.class, author1.id, author2.id)
-						.invoke( authors -> authors.forEach( author -> out.println(author.name) ) )
+				session -> session.find(Author.class, author1.getId(), author2.getId())
+						.invoke( authors -> authors.forEach( author -> out.println(author.getName()) ) )
 		)
 				.await().indefinitely();
 
 		factory.withSession(
 				// retrieve an Author
-				session -> session.find(Author.class, author2.id)
+				session -> session.find(Author.class, author2.getId())
 						// lazily fetch their books
-						.chain( author -> fetch(author.books)
+						.chain( author -> session.fetch(author, Author_.books)
 								// print some info
 								.invoke( books -> {
-									out.println(author.name + " wrote " + books.size() + " books");
-									books.forEach( book -> out.println(book.title) );
+									out.println(author.getName() + " wrote " + books.size() + " books");
+									books.forEach( book -> out.println(book.getTitle()) );
 								} )
 						)
 		)
@@ -94,7 +94,7 @@ public class MutinyMain {
 				session -> session.createQuery("from Book book join fetch book.author order by book.title desc", Book.class)
 						.getResultList()
 						.invoke( books -> books.forEach(
-								b -> out.printf("%s: %s (%s)\n", b.isbn, b.title, b.author.name)
+								b -> out.printf("%s: %s (%s)\n", b.getIsbn(), b.getTitle(), b.getAuthor().getName())
 						) )
 		)
 				.await().indefinitely();
@@ -108,7 +108,7 @@ public class MutinyMain {
 					query.where( a.get(Author_.name).in("Neal Stephenson", "William Gibson") );
 					query.select(b);
 					return session.createQuery(query).getResultList().invoke(
-							books -> books.forEach( book -> out.println(book.title) )
+							books -> books.forEach( book -> out.println(book.getTitle()) )
 					);
 				}
 		)
@@ -116,18 +116,18 @@ public class MutinyMain {
 
 		factory.withSession(
 				// retrieve a Book
-				session -> session.find(Book.class, book1.id)
+				session -> session.find(Book.class, book1.getId())
 						// fetch a lazy field of the Book
 						.chain( book -> session.fetch(book, Book_.published)
 								// print the lazy field
-								.invoke( published -> out.printf("'%s' was published in %d\n", book.title, published.getYear()) )
+								.invoke( published -> out.printf("'%s' was published in %d\n", book.getTitle(), published.getYear()) )
 						)
 		)
 				.await().indefinitely();
 
 		factory.withTransaction(
 				// retrieve a Book
-				(session, tx) -> session.find(Book.class, book2.id)
+				(session, tx) -> session.find(Book.class, book2.getId())
 						// delete the Book
 						.chain( book -> session.remove(book) )
 		)
