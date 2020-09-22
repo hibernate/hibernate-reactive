@@ -136,7 +136,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
             connectOptions.setPassword( password );
         }
 
-        //enable the prepared statement cache by default (except for DB2) and MySQL
+        //enable the prepared statement cache by default
         connectOptions.setCachePreparedStatements(true);
 
         if (cacheMaxSize!=null) {
