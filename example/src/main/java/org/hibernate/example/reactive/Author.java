@@ -16,17 +16,29 @@ import static javax.persistence.CascadeType.PERSIST;
 @Table(name="authors")
 class Author {
 	@Id @GeneratedValue
-	Integer id;
+	private Integer id;
 
 	@NotNull @Size(max=100)
-	String name;
+	private String name;
 
 	@OneToMany(mappedBy = "author", cascade = PERSIST)
-	List<Book> books = new ArrayList<>();
+	private List<Book> books = new ArrayList<>();
 
 	Author(String name) {
 		this.name = name;
 	}
 
 	Author() {}
+
+	Integer getId() {
+		return id;
+	}
+
+	String getName() {
+		return name;
+	}
+
+	List<Book> getBooks() {
+		return books;
+	}
 }

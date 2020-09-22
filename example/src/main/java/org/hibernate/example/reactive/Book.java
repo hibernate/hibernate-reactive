@@ -18,25 +18,21 @@ import static javax.persistence.FetchType.LAZY;
 @Table(name="books")
 class Book {
 	@Id @GeneratedValue
-	Integer id;
+	private Integer id;
 
 	@Size(min=13, max=13)
-	String isbn;
-
-	public String getIsbn() {
-		return isbn;
-	}
+	private String isbn;
 
 	@NotNull @Size(max=100)
-	String title;
+	private String title;
 
 	@Basic(fetch = LAZY)
 	@NotNull @Past
-	LocalDate published;
+	private LocalDate published;
 
 	@NotNull
 	@ManyToOne(fetch = LAZY)
-	Author author;
+	private Author author;
 
 	Book(String isbn, String title, Author author, LocalDate published) {
 		this.title = title;
@@ -46,4 +42,24 @@ class Book {
 	}
 
 	Book() {}
+
+	Integer getId() {
+		return id;
+	}
+
+	String getIsbn() {
+		return isbn;
+	}
+
+	String getTitle() {
+		return title;
+	}
+
+	Author getAuthor() {
+		return author;
+	}
+
+	LocalDate getPublished() {
+		return published;
+	}
 }
