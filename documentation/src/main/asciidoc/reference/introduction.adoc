@@ -186,6 +186,16 @@ logger.hibernate.level = debug
 An example {log4j}[`log4j2.properties`] file is included in the example
 program.
 
+You can make the logged SQL more readable by enabling one or both of
+the following settings:
+
+|===
+| Configuration property name | Purpose
+
+| `hibernate.format_sql`      | If `true`, log SQL in a multiline, indented format
+| `hibernate.highlight_sql`   | If `true`, log SQL with syntax highlighting via ANSI escape codes
+|===
+
 === Minimizing repetitive mapping information
 
 The following properties are very useful for minimizing the amount of
