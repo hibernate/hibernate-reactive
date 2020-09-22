@@ -53,6 +53,8 @@ subprojects {
         // jcenter()
         // maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
         mavenCentral()
+        // Used only for testing with the latest Hibernate ORM snapshots.
+        maven { url 'https://repository.jboss.org/nexus/content/repositories/snapshots' }
     }
     
     ext.publishScript = rootProject.rootDir.absolutePath + '/publish.gradle'
