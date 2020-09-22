@@ -32,10 +32,31 @@ ext {
         hibernateOrmVersion = '5.4.21.Final'
     }
     // For ORM, we need a parsed version (to get the family, ...)
-    hibernateOrmVersion = Version.parseProjectVersion( project.hibernateOrmVersion )
+
+    // For ORM, we need a parsed version (to get the family for the documentation during release).
+    // We use intervals to build with the latest ORM snapshot and this will fail version check.
+    // Because we don't need to publish or release anything we can disable the check in this case.
+    // Example:
+    // ./gradlew build -PhibernateOrmVersion='[5.4,5.5)' -PskipOrmVersionParsing
+    if ( project.hasProperty( 'skipOrmVersionParsing' ) ) {
+        // Default to true if the property is null
+        skipOrmVersionParsing = project.skipOrmVersionParsing ?: true
+    }
+    else {
+        skipOrmVersionParsing = false
+    }
+
+    if ( !Boolean.valueOf( project.skipOrmVersionParsing ) ) {
+        println "Parsing ORM version"
+        hibernateOrmVersion = Version.parseProjectVersion( project.hibernateOrmVersion )
+    }
+
     vertxVersion = '3.9.3'
     testcontainersVersion = '1.14.3'
     baselineJavaVersion = 1.8
+
+    println "Hibernate ORM Version: " + project.hibernateOrmVersion
+    println "Vert.x Version: " + project.vertxVersion
 }
 
 subprojects {
