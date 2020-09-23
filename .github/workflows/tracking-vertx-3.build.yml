@@ -1,0 +1,122 @@
+name: Latest Vert.x 3
+
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the master branch
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    # Run every hour at minute 25
+    - cron: '25 * * * *'
+
+jobs:
+  # The examples test the Hibernate ORM Gradle plugin. We use it for bytecode enhancements.
+  run_example_mysql:
+    name: Run examples on MySQL
+    runs-on: ubuntu-latest
+    services:
+      # Label used to access the service container
+      mysql:
+        # Docker Hub image
+        image: mysql
+        env:
+          MYSQL_ROOT_PASSWORD: hreact
+          MYSQL_DATABASE: hreact
+          MYSQL_USER: hreact
+          MYSQL_PASSWORD: hreact
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 3306:3306
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        with:
+          java-version: 1.8
+        uses: actions/setup-java@v1
+      - name: Print the effective Vert.x version used
+        run: ./gradlew :hibernate-reactive-core:dependencies -PvertxVersion='[3,4)' | grep io.vertx
+      - name: Run examples on MySQL
+        run: ./gradlew :example:runAllExamplesOnMySQL -PvertxVersion='[3,4)'
+
+  run_example_postgres:
+    name: Run examples on PostgresSQL
+    runs-on: ubuntu-latest
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres
+        env:
+          POSTGRES_DB: hreact
+          POSTGRES_USER: hreact
+          POSTGRES_PASSWORD: hreact
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        with:
+          java-version: 1.8
+        uses: actions/setup-java@v1
+      - name: Print the effective Vert.x version used
+        run: ./gradlew :hibernate-reactive-core:dependencies -PvertxVersion='[3,4)' | grep io.vertx
+      - name: Run examples on PostgreSQL
+        run: ./gradlew :example:runAllExamplesOnPostgreSQL -PvertxVersion='[3,4)'
+
+  test_postgresql:
+    name: Test with PostgreSQL
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Print the effective Vert.x version used
+        run: ./gradlew :hibernate-reactive-core:dependencies -PvertxVersion='[3,4)' | grep io.vertx
+      - name: Build and Test with PostgreSQL
+        run: ./gradlew build -Pdb=pg -Pdocker -PvertxVersion='[3,4)'
+
+  test_mysql:
+    name: Test with MySQL
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Print the effective Vert.x version used
+        run: ./gradlew :hibernate-reactive-core:dependencies -PvertxVersion='[3,4)' | grep io.vertx
+      - name: Build and Test with MySQL
+        run: ./gradlew build -Pdb=mysql -Pdocker -PvertxVersion='[3,4)'
+
+  test_db2:
+    name: Test with DB2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Print the effective Vert.x version used
+        run: ./gradlew :hibernate-reactive-core:dependencies -PvertxVersion='[3,4)' | grep io.vertx
+      - name: Build and Test with DB2
+        run: ./gradlew build -Pdb=db2 -Pdocker -PvertxVersion='[3,4)'
