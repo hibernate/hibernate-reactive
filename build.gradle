@@ -51,7 +51,13 @@ ext {
         hibernateOrmVersion = Version.parseProjectVersion( project.hibernateOrmVersion )
     }
 
-    vertxVersion = '3.9.3'
+    // Mainly, to allow CI to test the latest versions of Vert.X
+    // Example:
+    // ./gradlew build -PvertxVersion=4.0.0-SNAPSHOT
+    if ( !project.hasProperty('vertxVersion') ) {
+        vertxVersion = '3.9.3'
+    }
+
     testcontainersVersion = '1.14.3'
     baselineJavaVersion = 1.8
 
