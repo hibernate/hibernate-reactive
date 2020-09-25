@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.testing;
+package org.hibernate.reactive;
 
 import java.util.List;
 import java.util.Objects;
@@ -18,7 +18,6 @@ import javax.persistence.Table;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
-import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.Settings;
 
