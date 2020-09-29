@@ -13,9 +13,9 @@ Use the following commands to start a [PostgreSQL] test database.
 
 #### Server
 ```
-podman run -it --rm=true --name HibernateTestingPGSQL \
+podman run --rm -it --name HibernateTestingPGSQL \
     -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact \
-    -p 5432:5432 postgres:12
+    -p 5432:5432 postgres:13.0
 ```
 
 #### CLI
