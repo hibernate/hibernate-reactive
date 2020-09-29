@@ -11,7 +11,6 @@ import org.hibernate.engine.internal.TwoPhaseLoad;
 import org.hibernate.engine.spi.*;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.*;
-import org.hibernate.graph.spi.GraphImplementor;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.loader.plan.exec.query.spi.NamedParameterContext;
@@ -139,13 +138,11 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 				LOG.tracev("Total objects hydrated: {0}", hydratedObjectsSize);
 			}
 
-			GraphImplementor<?> fetchGraphLoadContextToRestore = session.getFetchGraphLoadContext();
 			stage = CompletionStages.loop(
 					hydratedObjects,
 					hydratedObject -> {
 				if ( hydratedObject == null ) {
 					// This is a hack to signal that we're starting to process a new row
-					session.setFetchGraphLoadContext( fetchGraphLoadContextToRestore );
 					return voidFuture(); //TODO: ugly!
 				}
 				else {
