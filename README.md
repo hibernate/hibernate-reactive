@@ -25,7 +25,7 @@ Currently [PostgreSQL][], [MySQL][], and [DB2][] are supported.
 Hibernate Reactive has been tested with:
 
 - Java 8
-- PostgreSQL 12
+- PostgreSQL 13
 - MySQL 8
 - DB2 11.5
 - [Hibernate ORM](https://hibernate.org/orm/) 5.4.21.Final

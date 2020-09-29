@@ -11,7 +11,7 @@ class PostgreSQLDatabase implements TestableDatabase {
 
 	public static PostgreSQLDatabase INSTANCE = new PostgreSQLDatabase();
 
-	public final static String IMAGE_NAME = "postgres:12-alpine";
+	public final static String IMAGE_NAME = "postgres:13.0";
 
 	/**
 	 * Holds configuration for the PostgreSQL database contianer. If the build is run with <code>-Pdocker</code> then
