@@ -10,7 +10,6 @@ import org.hibernate.boot.SessionFactoryBuilder;
 import org.hibernate.boot.spi.AbstractDelegatingSessionFactoryBuilderImplementor;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
-import org.hibernate.reactive.bulk.impl.ReactiveBulkIdStrategy;
 import org.hibernate.reactive.session.impl.ReactiveSessionFactoryImpl;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
@@ -31,11 +30,8 @@ public class ReactiveSessionFactoryBuilder
 
 	public ReactiveSessionFactoryBuilder(MetadataImplementor metadata, SessionFactoryBuilderImplementor delegate) {
 		super( delegate );
-
 		this.metadata = metadata;
 		this.delegate = delegate;
-
-		delegate.applyMultiTableBulkIdStrategy( new ReactiveBulkIdStrategy( metadata ) );
 	}
 
 	@Override

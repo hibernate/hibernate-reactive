@@ -1,5 +1,7 @@
 package org.hibernate.example.reactive;
 
+import org.hibernate.reactive.mutiny.Mutiny;
+
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Root;
@@ -69,7 +71,7 @@ public class MutinyMain {
 				// retrieve an Author
 				session -> session.find(Author.class, author2.getId())
 						// lazily fetch their books
-						.chain( author -> session.fetch(author, Author_.books)
+						.chain( author -> Mutiny.fetch(author.getBooks())
 								// print some info
 								.invoke( books -> {
 									out.println(author.getName() + " wrote " + books.size() + " books");

@@ -7,12 +7,14 @@ package org.hibernate.reactive.provider.impl;
 
 import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.internal.SessionFactoryBuilderImpl;
+import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
-import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.reactive.bulk.impl.ReactiveBulkIdStrategy;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilder;
 
@@ -40,11 +42,18 @@ public final class ReactiveEntityManagerFactoryBuilder extends EntityManagerFact
     //SessionFactoryBuilder implementations that might be found on the classpath.
     @Override
     public EntityManagerFactory build() {
-        final MetadataImpl metadata = (MetadataImpl) metadata();
-        final StandardServiceRegistry standardServiceRegistry = getStandardServiceRegistry();
-        final SessionFactoryBuilderImpl defaultBuilder = new SessionFactoryBuilderImpl( metadata, metadata.getBootstrapContext() );
+        final MetadataImplementor metadata = metadata();
+
+        SessionFactoryOptionsBuilder optionsBuilder = new SessionFactoryOptionsBuilder(
+                metadata.getMetadataBuildingOptions().getServiceRegistry(),
+                ( (MetadataImpl) metadata).getBootstrapContext()
+        );
+        optionsBuilder.enableCollectionInDefaultFetchGroup(true);
+        optionsBuilder.applyMultiTableBulkIdStrategy( new ReactiveBulkIdStrategy( metadata ) );
+
+        final SessionFactoryBuilderImpl defaultBuilder = new SessionFactoryBuilderImpl( metadata, optionsBuilder );
         final SessionFactoryBuilderImplementor reactiveSessionFactoryBuilder = new ReactiveSessionFactoryBuilder( metadata, defaultBuilder );
-        populateSfBuilder( reactiveSessionFactoryBuilder, standardServiceRegistry );
+        populateSfBuilder( reactiveSessionFactoryBuilder, getStandardServiceRegistry() );
 
         try {
             return reactiveSessionFactoryBuilder.build();
