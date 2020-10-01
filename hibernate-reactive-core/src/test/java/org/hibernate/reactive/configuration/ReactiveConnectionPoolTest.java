@@ -5,29 +5,34 @@
  */
 package org.hibernate.reactive.configuration;
 
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
-import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
-import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
-import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.pool.impl.SqlClientPool;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.hibernate.reactive.testing.TestingRegistryRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.*;
+import org.hibernate.engine.jdbc.internal.JdbcServicesImpl;
+import org.hibernate.engine.jdbc.spi.JdbcServices;
+import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
+import org.hibernate.reactive.pool.impl.SqlClientPool;
+import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.TestingRegistryRule;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Timeout;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 
 @RunWith(VertxUnitRunner.class)
 public class ReactiveConnectionPoolTest {
@@ -61,6 +66,12 @@ public class ReactiveConnectionPoolTest {
 		DefaultSqlClientPoolConfiguration poolConfig = new DefaultSqlClientPoolConfiguration();
 		poolConfig.configure( config );
 		registryRule.addService( SqlClientPoolConfiguration.class, poolConfig );
+		registryRule.addService( JdbcServices.class, new JdbcServicesImpl() {
+			@Override
+			public SqlStatementLogger getSqlStatementLogger() {
+				return new SqlStatementLogger();
+			}
+		} );
 		SqlClientPool reactivePool = new SqlClientPool();
 		reactivePool.injectServices( registryRule.getServiceRegistry() );
 		reactivePool.configure( config );

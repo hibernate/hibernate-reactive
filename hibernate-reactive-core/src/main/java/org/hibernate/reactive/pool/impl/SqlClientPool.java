@@ -13,6 +13,7 @@ import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.spi.Driver;
 import org.hibernate.dialect.PostgreSQL9Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
+import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
@@ -38,7 +39,6 @@ import java.util.function.Function;
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 import static org.hibernate.internal.CoreLogging.messageLogger;
-import static org.hibernate.internal.util.config.ConfigurationHelper.getBoolean;
 
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
@@ -62,17 +62,14 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 
 	@Override
 	public void injectServices(ServiceRegistryImplementor serviceRegistry) {
+		JdbcServices jdbcServices = serviceRegistry.getService( JdbcServices.class );
+		this.sqlStatementLogger = jdbcServices.getSqlStatementLogger();
 		this.serviceRegistry = serviceRegistry;
 	}
 
 	@Override
 	public void configure(Map configuration) {
 		uri = jdbcUrl( configuration );
-		sqlStatementLogger = new SqlStatementLogger(
-				getBoolean( Settings.SHOW_SQL, configuration, false ),
-				getBoolean( Settings.FORMAT_SQL, configuration, false ),
-				getBoolean( Settings.HIGHLIGHT_SQL, configuration, false )
-		);
 		usePostgresStyleParameters =
 				serviceRegistry.getService(JdbcEnvironment.class).getDialect() instanceof PostgreSQL9Dialect;
 	}
