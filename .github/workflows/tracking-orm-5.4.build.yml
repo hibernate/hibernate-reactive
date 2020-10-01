@@ -1,4 +1,4 @@
-name: Latest ORM 5.4
+name: Latest ORM 5.x
 
 on:
   # Trigger the workflow on push or pull request,
@@ -16,9 +16,13 @@ on:
 
 jobs:
   # The examples test the Hibernate ORM Gradle plugin. We use it for bytecode enhancements.
-  run_example_mysql:
-    name: Run examples on MySQL
+  run_examples:
+    name: Run examples on ${{ matrix.db }} with latest ORM ${{ matrix.orm-version }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        orm-version: ['[5.4,5.5)', '[5.5,5.6)']
+        db: ['MySQL', 'PostgreSQL']
     services:
       # Label used to access the service container
       mysql:
@@ -29,7 +33,7 @@ jobs:
           MYSQL_DATABASE: hreact
           MYSQL_USER: hreact
           MYSQL_PASSWORD: hreact
-        # Set health checks to wait until postgres has started
+        # Set health checks to wait until mysql has started
         options: >-
           --health-cmd="mysqladmin ping"
           --health-interval 10s
@@ -37,22 +41,6 @@ jobs:
           --health-retries 5
         ports:
           - 3306:3306
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK 1.8
-        with:
-          java-version: 1.8
-        uses: actions/setup-java@v1
-      - name: Print the effective ORM version used
-        run: ./gradlew :example:dependencyInsight --dependency org.hibernate:hibernate-core -PhibernateOrmVersion='[5.4,5.5)' -PskipOrmVersionParsing
-      - name: Run examples on MySQL
-        run: ./gradlew :example:runAllExamplesOnMySQL -PhibernateOrmVersion='[5.4,5.5)' -PskipOrmVersionParsing
-
-  run_example_postgres:
-    name: Run examples on PostgresSQL
-    runs-on: ubuntu-latest
-    services:
-      # Label used to access the service container
       postgres:
         # Docker Hub image
         image: postgres
@@ -75,13 +63,17 @@ jobs:
           java-version: 1.8
         uses: actions/setup-java@v1
       - name: Print the effective ORM version used
-        run: ./gradlew :example:dependencyInsight --dependency org.hibernate:hibernate-core -PhibernateOrmVersion='[5.4,5.5)' -PskipOrmVersionParsing
-      - name: Run examples on PostgreSQL
-        run: ./gradlew :example:runAllExamplesOnPostgreSQL -PhibernateOrmVersion='[5.4,5.5)' -PskipOrmVersionParsing
+        run: ./gradlew :example:dependencyInsight --dependency org.hibernate:hibernate-core -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing
+      - name: Run examples on ${{ matrix.db }}
+        run: ./gradlew :example:runAllExamplesOn${{ matrix.db }} -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing
 
-  test_postgresql:
-    name: Test with PostgreSQL
+  test_dbs:
+    name: Test with ${{ matrix.db }} and ORM ${{ matrix.orm-version }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        orm-version: ['[5.4,5.5)', '[5.5,5.6)']
+        db: ['MySQL', 'PostgreSQL', 'DB2']
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 1.8
@@ -89,34 +81,7 @@ jobs:
         with:
           java-version: 1.8
       - name: Print the effective ORM version used
-        run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate:hibernate-core -PhibernateOrmVersion='[5.4,5.5)' -PskipOrmVersionParsing
-      - name: Build and Test with PostgreSQL
-        run: ./gradlew build -Pdb=pg -Pdocker -PhibernateOrmVersion='[5.4,5.5)' -PskipOrmVersionParsing
+        run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate:hibernate-core -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing
+      - name: Build and Test with ${{ matrix.db }}
+        run: ./gradlew build -Pdb=${{ matrix.db }} -Pdocker -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing
 
-  test_mysql:
-    name: Test with MySQL
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK 1.8
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-      - name: Print the effective ORM version used
-        run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate:hibernate-core -PhibernateOrmVersion='[5.4,5.5)' -PskipOrmVersionParsing
-      - name: Build and Test with MySQL
-        run: ./gradlew build -Pdb=mysql -Pdocker -PhibernateOrmVersion='[5.4,5.5)' -PskipOrmVersionParsing
-
-  test_db2:
-    name: Test with DB2
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK 1.8
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-      - name: Print the effective ORM version used
-        run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate:hibernate-core -PhibernateOrmVersion='[5.4,5.5)' -PskipOrmVersionParsing
-      - name: Build and Test with DB2
-        run: ./gradlew build -Pdb=db2 -Pdocker -PhibernateOrmVersion='[5.4,5.5)' -PskipOrmVersionParsing
