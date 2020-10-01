@@ -9,9 +9,12 @@ on:
     branches: master
 
 jobs:
-  run_example_mysql:
-    name: Run examples on MySQL
+  run_examples:
+    name: Run examples on ${{ matrix.db }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        db: [ 'MySQL', 'PostgreSQL' ]
     services:
        # Label used to access the service container
       mysql:
@@ -30,20 +33,6 @@ jobs:
           --health-retries 5
         ports:
           - 3306:3306
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 1.8
-      with:
-        java-version: 1.8
-      uses: actions/setup-java@v1
-    - name: Run examples on MySQL
-      run: ./gradlew :example:runAllExamplesOnMySQL
-
-  run_example_postgres:
-    name: Run examples on PostgresSQL
-    runs-on: ubuntu-latest
-    services:
-       # Label used to access the service container
       postgres:
         # Docker Hub image
         image: postgres:13.0
@@ -65,44 +54,23 @@ jobs:
       with:
         java-version: 1.8
       uses: actions/setup-java@v1
-    - name: Run examples on PostgreSQL
-      run: ./gradlew :example:runAllExamplesOnPostgreSQL
+    - name: Run examples on ${{ matrix.db }}
+      run: ./gradlew :example:runAllExamplesOn${{ matrix.db }}
 
-  test_postgresql:
-    name: Test with PostgreSQL
+  test_dbs:
+    name: Test with ${{ matrix.db }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        db: [ 'MySQL', 'PostgreSQL', 'DB2' ]
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 1.8
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-    - name: Build and Test with PostgreSQL
-      run: ./gradlew build -Pdocker -Pdb=pg
-
-  test_mysql:      
-    name: Test with MySQL
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
-      with:
-        java-version: 1.8
-    - name: Build and Test with MySQL
-      run: ./gradlew build -Pdocker -Pdb=mysql
-
-  test_db2:      
-    name: Test with DB2
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
-      with:
-        java-version: 1.8
-    - name: Build and Test with DB2
-      run: ./gradlew build -Pdocker -Pdb=db2
+    - name: Build and Test with ${{ matrix.db }}
+      run: ./gradlew build -Pdocker -Pdb=${{ matrix.db }}
 
   snapshot:
     name: Create snapshot
