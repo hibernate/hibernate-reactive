@@ -59,9 +59,4 @@ public interface Settings extends AvailableSettings {
 	 * Specifies a {@link org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration} class.
 	 */
 	String SQL_CLIENT_POOL = "hibernate.vertx.pool.class";
-
-	/**
-	 * Temporary, until this setting is added in Hibernate ORM
-	 */
-	String HIGHLIGHT_SQL = "hibernate.highlight_sql";
 }
