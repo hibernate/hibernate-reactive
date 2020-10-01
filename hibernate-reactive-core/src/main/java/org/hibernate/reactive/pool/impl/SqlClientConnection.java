@@ -15,10 +15,8 @@ import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.SqlResult;
 import io.vertx.sqlclient.Transaction;
 import io.vertx.sqlclient.Tuple;
-import org.hibernate.engine.jdbc.env.spi.AnsiSqlKeywords;
 import org.hibernate.engine.jdbc.internal.FormatStyle;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
+import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.reactive.pool.ReactiveConnection;
 
@@ -27,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
-import java.util.regex.Pattern;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -36,13 +33,9 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 public class SqlClientConnection implements ReactiveConnection {
 
-	private static final CoreMessageLogger log = CoreLogging.messageLogger("org.hibernate.SQL");
-
 	private static PropertyKind<Long> mySqlLastInsertedId;
 
-	private final boolean showSQL;
-	private final boolean formatSQL;
-	private final boolean highlightSQL;
+	private final SqlStatementLogger sqlStatementLogger;
 	private final boolean usePostgresStyleParameters;
 
 	private final Pool pool;
@@ -50,13 +43,11 @@ public class SqlClientConnection implements ReactiveConnection {
 	private Transaction transaction;
 
 	SqlClientConnection(SqlConnection connection, Pool pool,
-						boolean showSQL, boolean formatSQL, boolean highlightSQL,
+						SqlStatementLogger sqlStatementLogger,
 						boolean usePostgresStyleParameters) {
 		this.pool = pool;
-		this.showSQL = showSQL;
+		this.sqlStatementLogger = sqlStatementLogger;
 		this.connection = connection;
-		this.formatSQL = formatSQL;
-		this.highlightSQL = highlightSQL;
 		this.usePostgresStyleParameters = usePostgresStyleParameters;
 	}
 
@@ -197,39 +188,14 @@ public class SqlClientConnection implements ReactiveConnection {
 		);
 	}
 
-	private static final Pattern keywords =
-			Pattern.compile(
-					"\\b("
-							+ String.join( "|", AnsiSqlKeywords.INSTANCE.sql2003() )
-							+ "|"
-							+ String.join( "|", "key", "sequence", "cascade", "increment" )
-							+ ")\\b",
-					Pattern.CASE_INSENSITIVE
-			);
-	private static final Pattern strings = Pattern.compile("'[^']*'");
-
 	private void feedback(String sql) {
 		Objects.requireNonNull(sql, "SQL query cannot be null");
-		if ( showSQL || log.isDebugEnabled() ) {
-			if ( formatSQL ) {
-				//Note that DDL already gets formatted by the client
-				if ( !sql.contains( System.lineSeparator() ) ) {
-					sql = FormatStyle.BASIC.getFormatter().format(sql);
-				}
-			}
-			if ( highlightSQL ) {
-				//TODO: use FormatStyle.HIGHLIGHT when it gets added to Hibernate ORM core
-				sql = keywords.matcher(sql).replaceAll("\u001b[34m$0\u001b[0m");
-				sql = strings.matcher(sql).replaceAll("\u001b[36m$0\u001b[0m");
-			}
-		}
-
-		log.debug( sql );
-
-		if (showSQL) {
-			String prefix = highlightSQL ? "\u001b[35m[Hibernate]\u001b[0m" : "Hibernate: ";
-			System.out.println(prefix + sql);
-		}
+		// DDL already gets formatted by the client, so don't reformat it
+		FormatStyle formatStyle =
+				sqlStatementLogger.isFormat() && !sql.contains( System.lineSeparator() )
+						? FormatStyle.BASIC
+						: FormatStyle.NONE;
+		sqlStatementLogger.logStatement( sql, formatStyle.getFormatter() );
 	}
 
 	private SqlClient client() {

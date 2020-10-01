@@ -13,6 +13,7 @@ import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.spi.Driver;
 import org.hibernate.dialect.PostgreSQL9Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
+import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.provider.Settings;
@@ -37,6 +38,7 @@ import java.util.function.Function;
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 import static org.hibernate.internal.CoreLogging.messageLogger;
+import static org.hibernate.internal.util.config.ConfigurationHelper.getBoolean;
 
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
@@ -51,9 +53,7 @@ import static org.hibernate.internal.CoreLogging.messageLogger;
 public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwareService, Configurable, Stoppable, Startable {
 
 	private Pool pool;
-	private boolean showSQL;
-	private boolean formatSQL;
-	private boolean highlightSQL;
+	private SqlStatementLogger sqlStatementLogger;
 	private URI uri;
 	private ServiceRegistryImplementor serviceRegistry;
 	private boolean usePostgresStyleParameters;
@@ -68,9 +68,11 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	@Override
 	public void configure(Map configuration) {
 		uri = jdbcUrl( configuration );
-		showSQL = ConfigurationHelper.getBoolean( Settings.SHOW_SQL, configuration, false );
-		formatSQL = ConfigurationHelper.getBoolean( Settings.FORMAT_SQL, configuration, false );
-		highlightSQL = ConfigurationHelper.getBoolean( Settings.HIGHLIGHT_SQL, configuration, false );
+		sqlStatementLogger = new SqlStatementLogger(
+				getBoolean( Settings.SHOW_SQL, configuration, false ),
+				getBoolean( Settings.FORMAT_SQL, configuration, false ),
+				getBoolean( Settings.HIGHLIGHT_SQL, configuration, false )
+		);
 		usePostgresStyleParameters =
 				serviceRegistry.getService(JdbcEnvironment.class).getDialect() instanceof PostgreSQL9Dialect;
 	}
@@ -216,7 +218,7 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 	}
 
 	private SqlClientConnection newConnection(SqlConnection connection) {
-		return new SqlClientConnection( connection, pool, showSQL, formatSQL, highlightSQL, usePostgresStyleParameters );
+		return new SqlClientConnection( connection, pool, sqlStatementLogger, usePostgresStyleParameters );
 	}
 
 	@Override
