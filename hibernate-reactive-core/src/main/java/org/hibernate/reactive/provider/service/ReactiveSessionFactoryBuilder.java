@@ -19,8 +19,6 @@ import org.hibernate.reactive.stage.Stage;
  * instances that can be {@link #unwrap(Class) unwrapped} to
  * produce a {@link Stage.SessionFactory} or
  * {@link Mutiny.SessionFactory}.
- *
- * @see ReactiveSessionFactoryBuilderFactory
  */
 public class ReactiveSessionFactoryBuilder
 		extends AbstractDelegatingSessionFactoryBuilderImplementor<ReactiveSessionFactoryBuilder> {
