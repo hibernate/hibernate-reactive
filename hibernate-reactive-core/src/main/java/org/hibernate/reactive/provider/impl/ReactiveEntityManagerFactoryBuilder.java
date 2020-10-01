@@ -22,7 +22,7 @@ import javax.persistence.EntityManagerFactory;
 import java.util.Map;
 
 /**
- * Heavily inspired by org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl
+ * Heavily inspired by {@link EntityManagerFactoryBuilderImpl}.
  * This is intentionally not supporting several integration points of Hibernate ORM:
  * we can't test them all, better to build up integration points gradually.
  */
