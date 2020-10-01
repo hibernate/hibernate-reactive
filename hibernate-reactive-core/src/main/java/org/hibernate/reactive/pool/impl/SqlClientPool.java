@@ -5,12 +5,11 @@
  */
 package org.hibernate.reactive.pool.impl;
 
-import io.vertx.core.Vertx;
-import io.vertx.sqlclient.Pool;
-import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.SqlConnectOptions;
-import io.vertx.sqlclient.SqlConnection;
-import io.vertx.sqlclient.spi.Driver;
+import java.net.URI;
+import java.util.Map;
+import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
+
 import org.hibernate.dialect.PostgreSQL9Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -18,8 +17,6 @@ import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.Configurable;
 import org.hibernate.service.spi.ServiceRegistryAwareService;
@@ -27,17 +24,13 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.service.spi.Startable;
 import org.hibernate.service.spi.Stoppable;
 
-import java.net.URI;
-import java.sql.ResultSet;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
+import io.vertx.core.Vertx;
 
-import static io.vertx.core.Future.failedFuture;
-import static io.vertx.core.Future.succeededFuture;
+import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.SqlConnectOptions;
+import io.vertx.sqlclient.spi.Driver;
+
 import static org.hibernate.internal.CoreLogging.messageLogger;
 
 /**
@@ -47,10 +40,15 @@ import static org.hibernate.internal.CoreLogging.messageLogger;
  * <p>
  * This class may be extended by programs which wish to implement
  * custom connection management or multitenancy.
+ * <p>
+ * This pool is started on SessionFactory start, then stopped when
+ * the SessionFactory is stopped: its lifecycle is managed by Hibernate.
+ * For a non-managed pool whose lifecycle is managed externally,
+ * {@see InjectedSqlClientPool}.
  *
  * @see SqlClientPoolConfiguration
  */
-public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwareService, Configurable, Stoppable, Startable {
+public class SqlClientPool extends BaseSqlClientPool implements ServiceRegistryAwareService, Configurable, Stoppable, Startable {
 
 	private Pool pool;
 	private SqlStatementLogger sqlStatementLogger;
@@ -81,8 +79,19 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		}
 	}
 
-	public Pool getPool() {
-		return pool;
+	@Override
+	protected Pool getPool() {
+		return this.pool;
+	}
+
+	@Override
+	protected SqlStatementLogger getSqlStatementLogger() {
+		return this.sqlStatementLogger;
+	}
+
+	@Override
+	protected boolean isUsePostgresStyleParameters() {
+		return this.usePostgresStyleParameters;
 	}
 
 	/**
@@ -174,60 +183,6 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		throw new ConfigurationException( "No suitable drivers found for URI scheme: " + scheme, originalError );
 	}
 
-	/**
-	 * Get a {@link Pool} for the specified tenant.
-	 * <p>
-	 * This is an unimplemented operation which must be overridden by
-	 * subclasses which support multitenancy. For convenience, a
-	 * subclass may create tenant pools by calling {@link #createPool(URI)}
-	 * or {@link #createPool(URI, SqlConnectOptions, PoolOptions, Vertx)}.
-	 *
-	 * @param tenantId the id of the tenant
-	 *
-	 * @throws UnsupportedOperationException if multitenancy is not supported
-	 *
-	 * @see #getConnection(String)
-	 */
-	protected Pool getTenantPool(String tenantId) {
-		throw new UnsupportedOperationException("multitenancy not supported by built-in SqlClientPool");
-	}
-
-	@Override
-	public CompletionStage<ReactiveConnection> getConnection() {
-		return getConnectionFromPool( pool );
-	}
-
-	@Override
-	public CompletionStage<ReactiveConnection> getConnection(String tenantId) {
-		return getConnectionFromPool( getTenantPool( tenantId ) );
-	}
-
-	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool) {
-		return Handlers.toCompletionStage(
-				handler -> pool.getConnection(
-						ar -> handler.handle(
-								ar.succeeded()
-										? succeededFuture( newConnection( ar.result() ) )
-										: failedFuture( ar.cause() )
-						)
-				)
-		);
-	}
-
-	private SqlClientConnection newConnection(SqlConnection connection) {
-		return new SqlClientConnection( connection, pool, sqlStatementLogger, usePostgresStyleParameters );
-	}
-
-	@Override
-	public ReactiveConnection getProxyConnection() {
-		return new ProxyConnection();
-	}
-
-	@Override
-	public ReactiveConnection getProxyConnection(String tenantId) {
-		return new ProxyConnection( tenantId );
-	}
-
 	@Override
 	public void stop() {
 		if ( pool != null ) {
@@ -247,122 +202,4 @@ public class SqlClientPool implements ReactiveConnectionPool, ServiceRegistryAwa
 		return URI.create( url );
 	}
 
-	/**
-	 * A proxy {@link ReactiveConnection} that initializes the
-	 * underlying connection lazily.
-	 */
-	protected class ProxyConnection implements ReactiveConnection {
-		private ReactiveConnection connection;
-		private boolean connected;
-		private final String tenantId;
-
-		public ProxyConnection() {
-			tenantId = null;
-		}
-
-		public ProxyConnection(String tenantId) {
-			this.tenantId = tenantId;
-		}
-
-		private <T> CompletionStage<T> withConnection(Function<ReactiveConnection,CompletionStage<T>> operation) {
-			if (!connected) {
-				connected = true; // we're not allowed to fetch two connections!
-				CompletionStage<ReactiveConnection> connection =
-						tenantId==null ? getConnection() : getConnection( tenantId );
-				return connection.thenApply( newConnection -> this.connection = newConnection )
-						.thenCompose( operation );
-			}
-			else {
-				if (connection == null) {
-					// we're already in the process of fetching a connection,
-					// so this must be an illegal concurrent call
-					throw new IllegalStateException("session is currently connecting to database");
-				}
-				return operation.apply(connection);
-			}
-		}
-
-		@Override
-		public CompletionStage<Void> execute(String sql) {
-			return withConnection( conn -> conn.execute(sql) );
-		}
-
-		@Override
-		public CompletionStage<Void> executeOutsideTransaction(String sql) {
-			return withConnection( conn -> conn.executeOutsideTransaction(sql) );
-		}
-
-		@Override
-		public CompletionStage<Integer> update(String sql) {
-			return withConnection( conn -> conn.update(sql) );
-		}
-
-		@Override
-		public CompletionStage<Integer> update(String sql, Object[] paramValues) {
-			return withConnection( conn -> conn.update(sql, paramValues) );
-		}
-
-		@Override
-		public CompletionStage<Void> update(String sql, Object[] paramValues, boolean allowBatching, Expectation expectation) {
-			return withConnection( conn -> conn.update(sql, paramValues, false, expectation) );
-		}
-
-		@Override
-		public CompletionStage<int[]> update(String sql, List<Object[]> paramValues) {
-			return withConnection( conn -> conn.update(sql, paramValues) );
-		}
-
-		@Override
-		public CompletionStage<Long> updateReturning(String sql, Object[] paramValues) {
-			return withConnection( conn -> conn.updateReturning(sql, paramValues) );
-		}
-
-		@Override
-		public CompletionStage<Result> select(String sql) {
-			return withConnection( conn -> conn.select(sql) );
-		}
-
-		@Override
-		public CompletionStage<Result> select(String sql, Object[] paramValues) {
-			return withConnection( conn -> conn.select(sql, paramValues) );
-		}
-
-		@Override
-		public CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues) {
-			return withConnection( conn -> conn.selectJdbc(sql, paramValues) );
-		}
-
-		@Override
-		public CompletionStage<Long> selectLong(String sql, Object[] paramValues) {
-			return withConnection( conn -> conn.selectLong(sql, paramValues) );
-		}
-
-		@Override
-		public CompletionStage<Void> beginTransaction() {
-			return withConnection(ReactiveConnection::beginTransaction);
-		}
-
-		@Override
-		public CompletionStage<Void> commitTransaction() {
-			return withConnection(ReactiveConnection::commitTransaction);
-		}
-
-		@Override
-		public CompletionStage<Void> rollbackTransaction() {
-			return withConnection(ReactiveConnection::rollbackTransaction);
-		}
-
-		@Override
-		public CompletionStage<Void> executeBatch() {
-			return withConnection(ReactiveConnection::executeBatch);
-		}
-
-		@Override
-		public void close() {
-			if (connection!=null) {
-				connection.close();
-				connection = null;
-			}
-		}
-	}
 }
