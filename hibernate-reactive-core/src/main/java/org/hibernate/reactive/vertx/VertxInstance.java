@@ -7,10 +7,11 @@ package org.hibernate.reactive.vertx;
 
 import io.vertx.core.Vertx;
 
+import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.service.Service;
 
 /**
- * Used by {@link org.hibernate.reactive.pool.impl.SqlClientPool}
+ * Used by {@link DefaultSqlClientPool}
  * to obtain an instance of {@link Vertx}. The default instance is
  * {@link org.hibernate.reactive.vertx.impl.DefaultVertxInstance}.
  * <p>

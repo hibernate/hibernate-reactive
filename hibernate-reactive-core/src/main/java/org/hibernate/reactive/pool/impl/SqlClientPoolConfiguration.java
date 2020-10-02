@@ -13,7 +13,7 @@ import java.net.URI;
 
 /**
  * A strategy for configuring the Vert.x {@link io.vertx.sqlclient.Pool}
- * used by {@link SqlClientPool}.
+ * used by {@link DefaultSqlClientPool}.
  * <p>
  * A custom strategy may be selected using the configuration property
  * {@link org.hibernate.reactive.provider.Settings#SQL_CLIENT_POOL_CONFIG}.

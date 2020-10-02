@@ -16,7 +16,7 @@ import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
-import org.hibernate.reactive.pool.impl.SqlClientPool;
+import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
@@ -72,7 +72,7 @@ public class ReactiveConnectionPoolTest {
 				return new SqlStatementLogger();
 			}
 		} );
-		SqlClientPool reactivePool = new SqlClientPool();
+		DefaultSqlClientPool reactivePool = new DefaultSqlClientPool();
 		reactivePool.injectServices( registryRule.getServiceRegistry() );
 		reactivePool.configure( config );
 		reactivePool.start();

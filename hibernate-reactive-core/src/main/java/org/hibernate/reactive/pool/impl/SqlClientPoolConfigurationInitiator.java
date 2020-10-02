@@ -30,7 +30,7 @@ public class SqlClientPoolConfigurationInitiator implements StandardServiceIniti
             return new DefaultSqlClientPoolConfiguration();
         }
         else {
-            CoreLogging.messageLogger(SqlClientPool.class).infof( "HRX000017: Using SQL client configuration [%s]", configClassName );
+            CoreLogging.messageLogger( DefaultSqlClientPool.class ).infof( "HRX000017: Using SQL client configuration [%s]", configClassName );
             final ClassLoaderService classLoaderService = registry.getService( ClassLoaderService.class );
             try {
                 return (SqlClientPoolConfiguration) classLoaderService.classForName( configClassName ).newInstance();

@@ -6,10 +6,10 @@
 package org.hibernate.reactive;
 
 import io.vertx.sqlclient.Pool;
-import org.hibernate.reactive.pool.impl.SqlClientPool;
+import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 
 
-public class MySqlClientPool extends SqlClientPool {
+public class MySqlClientPool extends DefaultSqlClientPool {
     @Override
     protected Pool getTenantPool(String tenantId) {
         return getPool();
