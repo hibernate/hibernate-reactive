@@ -20,11 +20,11 @@ import static org.hibernate.internal.CoreLogging.messageLogger;
 /**
  * A Hibernate {@link StandardServiceInitiator service initiator} that
  * integrates our {@link ReactiveConnectionPool}. By default, the pool
- * implementation is {@link SqlClientPool}. A custom implementation may
+ * implementation is {@link DefaultSqlClientPool}. A custom implementation may
  * be specified via {@link Settings#SQL_CLIENT_POOL}.
  *
  * @see ReactiveConnectionPool
- * @see SqlClientPool
+ * @see DefaultSqlClientPool
  */
 public class ReactiveConnectionPoolInitiator implements StandardServiceInitiator<ReactiveConnectionPool> {
 
@@ -36,7 +36,7 @@ public class ReactiveConnectionPoolInitiator implements StandardServiceInitiator
 	public ReactiveConnectionPool initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
 		Object configValue = configurationValues.get( Settings.SQL_CLIENT_POOL );
 		if (configValue==null) {
-			return new SqlClientPool();
+			return new DefaultSqlClientPool();
 		}
 
 		if ( configValue instanceof ReactiveConnectionPool ) {

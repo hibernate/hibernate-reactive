@@ -55,10 +55,10 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
     @Override
     public PoolOptions poolOptions() {
         PoolOptions poolOptions = new PoolOptions();
-        messageLogger(SqlClientPool.class).infof( "HRX000012: Connection pool size: %d", poolSize );
+        messageLogger( DefaultSqlClientPool.class).infof( "HRX000012: Connection pool size: %d", poolSize );
         poolOptions.setMaxSize( poolSize );
         if (maxWaitQueueSize!=null) {
-            messageLogger(SqlClientPool.class).infof( "HRX000013: Connection pool max wait queue size: %d", maxWaitQueueSize );
+            messageLogger( DefaultSqlClientPool.class).infof( "HRX000013: Connection pool max wait queue size: %d", maxWaitQueueSize );
             poolOptions.setMaxWaitQueueSize(maxWaitQueueSize);
         }
         return poolOptions;
@@ -141,18 +141,18 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
         if (cacheMaxSize!=null) {
             if (cacheMaxSize <= 0) {
-                messageLogger(SqlClientPool.class).infof( "HRX000014: Prepared statement cache disabled", cacheMaxSize );
+                messageLogger( DefaultSqlClientPool.class).infof( "HRX000014: Prepared statement cache disabled", cacheMaxSize );
                 connectOptions.setCachePreparedStatements(false);
             }
             else {
-                messageLogger(SqlClientPool.class).infof( "HRX000015: Prepared statement cache max size: %d", cacheMaxSize );
+                messageLogger( DefaultSqlClientPool.class).infof( "HRX000015: Prepared statement cache max size: %d", cacheMaxSize );
                 connectOptions.setCachePreparedStatements(true);
                 connectOptions.setPreparedStatementCacheMaxSize(cacheMaxSize);
             }
         }
 
         if (sqlLimit!=null) {
-            messageLogger(SqlClientPool.class).infof( "HRX000016: Prepared statement cache SQL limit: %d", sqlLimit );
+            messageLogger( DefaultSqlClientPool.class).infof( "HRX000016: Prepared statement cache SQL limit: %d", sqlLimit );
             connectOptions.setPreparedStatementCacheSqlLimit(sqlLimit);
         }
 
