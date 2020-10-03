@@ -385,7 +385,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 			return begin()
 					.chain( () -> work.apply( this ) )
 					// only flush() if the work completed with no exception
-					.call( result -> flush() )
+					.call( () -> flush() )
 					// in the case of an exception or cancellation
 					// we need to rollback the transaction
 					.onFailure().call( () -> rollback() )
