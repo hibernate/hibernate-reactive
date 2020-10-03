@@ -59,10 +59,10 @@ public class FindAfterFlushTest extends BaseReactiveTest {
 		Mutiny.Session s = openMutinySession();
 		test( context, s
 				.persist( wc )
-				.then( () -> s.flush() )
-				.then( () -> s.find( Webcomic.class, wc.getId() ) )
+				.call( () -> s.flush() )
+				.chain( () -> s.find( Webcomic.class, wc.getId() ) )
 				.invoke( found -> context.assertEquals( wc, found ) )
-				.invoke( $ -> s.close() )
+				.invoke( () -> s.close() )
 		);
 	}
 

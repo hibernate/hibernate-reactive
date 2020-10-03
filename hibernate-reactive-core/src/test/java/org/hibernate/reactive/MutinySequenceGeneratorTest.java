@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
@@ -33,11 +32,10 @@ public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 		b.string = "Hello World";
 
 		test( context,
-				Uni.createFrom().item( openMutinySession() )
-						.chain( s -> s.persist(b).then(() -> s.flush()) )
-						.map( v -> openMutinySession() )
-						.chain( s2 ->
-								s2.find( SequenceId.class, b.getId() )
+				getMutinySessionFactory()
+						.withSession( s -> s.persist(b).call( s::flush ) )
+						.call( () -> getMutinySessionFactory().withSession(
+								s2 -> s2.find( SequenceId.class, b.getId() )
 										.map( bb -> {
 											context.assertNotNull( bb );
 											context.assertEquals( bb.id, 5 );
@@ -46,20 +44,22 @@ public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 
 											bb.string = "Goodbye";
 											return null;
-										})
-										.then(() -> s2.flush())
-										.then(() -> s2.find( SequenceId.class, b.getId() ))
+										} )
+										.call( s2::flush )
+										.chain( () -> s2.find( SequenceId.class, b.getId() ) )
 										.map( bt -> {
 											context.assertEquals( bt.version, 1 );
 											return null;
-										}))
-						.map( v -> openMutinySession() )
-						.chain( s3 -> s3.find( SequenceId.class, b.getId() ) )
-						.map( bb -> {
-							context.assertEquals(bb.version, 1);
-							context.assertEquals(bb.string, "Goodbye");
-							return null;
-						})
+										} )
+						) )
+						.call( () -> getMutinySessionFactory().withSession(
+								s3 -> s3.find( SequenceId.class, b.getId() )
+										.map( bb -> {
+											context.assertEquals( bb.version, 1 );
+											context.assertEquals( bb.string, "Goodbye" );
+											return null;
+										} )
+						) )
 		);
 	}
 
