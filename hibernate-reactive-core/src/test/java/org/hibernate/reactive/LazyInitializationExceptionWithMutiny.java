@@ -20,6 +20,7 @@ import javax.persistence.Table;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.cfg.Configuration;
 
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,46 +43,47 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 	public void populateDB(TestContext context) {
 		Async async = context.async();
 		Artist artemisia = new Artist( "Artemisia Gentileschi" );
-		getMutinySessionFactory().withTransaction( (session, tx) -> session.persist( artemisia ) )
-				.subscribe().with(
-						success -> async.complete(),
-						failure -> context.fail( failure ) );
+		getMutinySessionFactory()
+				.withTransaction( (session, tx) -> session.persist( artemisia ) )
+				.subscribe().with( success -> async.complete(), failure -> context.fail( failure ) );
 	}
 
 	@After
 	public void cleanDB(TestContext context) {
 		Async async = context.async();
-		getMutinySessionFactory().withTransaction( (session, tx) -> session.createQuery( "delete from Artist" ).executeUpdate() )
-				.subscribe().with(
-				success -> async.complete(),
-				failure -> context.fail( failure ) );
+		getMutinySessionFactory()
+				.withTransaction( (session, tx) -> session.createQuery( "delete from Artist" ).executeUpdate() )
+				.subscribe().with( success -> async.complete(), failure -> context.fail( failure ) );
 	}
 
 	@Test
 	public void testLazyInitializationException(TestContext context) throws Exception {
-		test( context, Uni.createFrom().item( openMutinySession() )
-				.onItem().call( session ->
-				  	session.createQuery( "from Artist", Artist.class )
+		Mutiny.Session session = openMutinySession();
+		test( context,
+				session.createQuery( "from Artist", Artist.class )
 						.getSingleResult()
-							.onItem().invoke( artist -> artist.getPaintings().size() )
-							.onItem().invoke( ignore -> context.fail( "Unexpected success, we expect " + LazyInitializationException.class.getName() ) )
-							.onFailure().recoverWithUni( throwable -> {
-								context.assertEquals( LazyInitializationException.class, throwable.getClass() );
-								context.assertEquals(
-										"Collection cannot be initialized: org.hibernate.reactive.LazyInitializationExceptionWithMutiny$Artist.paintings",
-										throwable.getMessage() );
-								return Uni.createFrom().nullItem();
-							} ) ) );
+						.onItem().invoke( artist -> artist.getPaintings().size() )
+						.onItem().invoke( () -> context.fail( "Unexpected success, we expect " + LazyInitializationException.class.getName() ) )
+						.onFailure().recoverWithUni( throwable -> {
+							context.assertEquals( LazyInitializationException.class, throwable.getClass() );
+							context.assertEquals(
+									"Collection cannot be initialized: org.hibernate.reactive.LazyInitializationExceptionWithMutiny$Artist.paintings",
+									throwable.getMessage()
+							);
+							return Uni.createFrom().nullItem();
+						} )
+		);
 	}
 
 	@Test
 	public void testLazyInitializationExceptionNotThrown(TestContext context) throws Exception {
-		test( context, Uni.createFrom().item( openMutinySession() )
-				.onItem().call( session -> session.createQuery( "from Artist", Artist.class )
+		Mutiny.Session session = openMutinySession();
+		test( context,
+				session.createQuery( "from Artist", Artist.class )
 						.getSingleResult()
 						// We are checking `.getPaintings()` but not doing anything with it and therefore it should work.
 						.onItem().invoke( artist -> artist.getPaintings() )
-				) );
+		);
 	}
 
 	@Entity(name = "Painting")
