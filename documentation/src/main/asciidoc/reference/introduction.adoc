@@ -463,7 +463,9 @@ TIP: If you take the time to look over the types `Stage.Session` and
 `Mutiny.Session`, you'll notice they're almost identical. Choosing between
 them is a matter of deciding which reactive API you want to use for working
 with reactive streams. Your decision won't affect what you can do with
-Hibernate Reactive.
+Hibernate Reactive. On the other hand, we've sent a lot of feedback and
+requests for improvement to the Mutiny team, and we think it's now the case
+that Hibernate Reactive code is simpler and cleaner with Mutiny.
 
 These are the most important operations on reactive streams that you'll need
 all the time when working with Hibernate Reactive:
@@ -471,9 +473,9 @@ all the time when working with Hibernate Reactive:
 |===
 | Purpose                                  | Java `CompletionStage` | Mutiny `Uni`
 
-| Chain non-blocking operations            | `thenCompose()`        | `chain()` or `then()`
-| Transform streamed items                 | `thenApply()`          | `map()`
-| Perform an action using streamed items   | `thenAccept()`         | `invoke()` or `invokeUni()`
+| Chain non-blocking operations            | `thenCompose()`        | `chain()`
+| Transform streamed items                 | `thenApply()`          | `map()` and `replaceWith()`
+| Perform an action using streamed items   | `thenAccept()`         | `invoke()` and `call()`
 | Perform cleanup (similar to `finally`)   | `whenComplete()`       | `eventually()`
 |===
 
