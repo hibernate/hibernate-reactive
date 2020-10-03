@@ -101,16 +101,14 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
-		return newSession().chain(
-				session -> work.apply( session ).eventually( session::close )
-		);
+		return newSession()
+				.chain( session -> work.apply( session ).eventually( session::close ) );
 	}
 
 	@Override
 	public <T> Uni<T> withSession(String tenantId, Function<Mutiny.Session, Uni<T>> work) {
-		return newSession( tenantId ).chain(
-				session -> work.apply( session ).eventually( session::close )
-		);
+		return newSession( tenantId )
+				.chain( session -> work.apply( session ).eventually( session::close ) );
 	}
 
 	@Override
