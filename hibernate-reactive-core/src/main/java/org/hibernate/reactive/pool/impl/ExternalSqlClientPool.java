@@ -12,9 +12,10 @@ import io.vertx.sqlclient.Pool;
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
  * <p>
- * This is an alternative to using {@see org.hibernate.reactive.pool.impl.DefaultSqlClientPool},
- * for the case in which one doesn't want Hibernate ORM to manage
- * the lifecycle of the underlying pool.
+ * This is an alternative to
+ * {@link org.hibernate.reactive.pool.impl.DefaultSqlClientPool},
+ * for use when one doesn't want Hibernate Reactive to manage the
+ * lifecycle of the underlying {@code Pool}.
  * <p>
  * This implementation is meant to be used in Quarkus.
  */
@@ -41,7 +42,7 @@ public final class ExternalSqlClientPool extends SqlClientPool {
 	}
 
 	@Override
-	protected boolean isUsePostgresStyleParameters() {
+	protected boolean usePostgresStyleParameters() {
 		return usePostgresStyleParameters;
 	}
 

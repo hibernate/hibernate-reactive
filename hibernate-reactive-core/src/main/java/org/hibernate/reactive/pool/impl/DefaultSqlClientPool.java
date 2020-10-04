@@ -36,15 +36,19 @@ import static org.hibernate.internal.CoreLogging.messageLogger;
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
  * The {@code Pool} itself is backed by an instance of {@link Vertx}
- * obtained via the {@link VertxInstance} service.
+ * obtained via the {@link VertxInstance} service. Configuration of
+ * the {@code Pool} is handled by the {@link SqlClientPoolConfiguration}
+ * service.
  * <p>
  * This class may be extended by programs which wish to implement
  * custom connection management or multitenancy.
  * <p>
- * This pool is started on SessionFactory start, then stopped when
- * the SessionFactory is stopped: its lifecycle is managed by Hibernate.
- * For a non-managed pool whose lifecycle is managed externally,
- * {@see org.hibernate.reactive.pool.impl.ExternalSqlClientPool}.
+ * The lifecycle of this pool is managed by Hibernate Reactive: it
+ * is created when the reactive {@link org.hibernate.SessionFactory}
+ * is created and destroyed when the {@code SessionFactory} is
+ * destroyed. For cases where the underlying {@code Pool} lifecycle
+ * is managed externally to Hibernate, use
+ * {@link org.hibernate.reactive.pool.impl.ExternalSqlClientPool}.
  *
  * @see SqlClientPoolConfiguration
  */
@@ -61,16 +65,15 @@ public class DefaultSqlClientPool extends SqlClientPool
 
 	@Override
 	public void injectServices(ServiceRegistryImplementor serviceRegistry) {
-		JdbcServices jdbcServices = serviceRegistry.getService( JdbcServices.class );
-		this.sqlStatementLogger = jdbcServices.getSqlStatementLogger();
 		this.serviceRegistry = serviceRegistry;
+		sqlStatementLogger = serviceRegistry.getService(JdbcServices.class).getSqlStatementLogger();
+		usePostgresStyleParameters =
+				serviceRegistry.getService(JdbcEnvironment.class).getDialect() instanceof PostgreSQL9Dialect;
 	}
 
 	@Override
 	public void configure(Map configuration) {
 		uri = jdbcUrl( configuration );
-		usePostgresStyleParameters =
-				serviceRegistry.getService(JdbcEnvironment.class).getDialect() instanceof PostgreSQL9Dialect;
 	}
 
 	@Override
@@ -82,17 +85,17 @@ public class DefaultSqlClientPool extends SqlClientPool
 
 	@Override
 	protected Pool getPool() {
-		return this.pool;
+		return pool;
 	}
 
 	@Override
 	protected SqlStatementLogger getSqlStatementLogger() {
-		return this.sqlStatementLogger;
+		return sqlStatementLogger;
 	}
 
 	@Override
-	protected boolean isUsePostgresStyleParameters() {
-		return this.usePostgresStyleParameters;
+	protected boolean usePostgresStyleParameters() {
+		return usePostgresStyleParameters;
 	}
 
 	/**
