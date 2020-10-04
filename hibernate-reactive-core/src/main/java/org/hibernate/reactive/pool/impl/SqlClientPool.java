@@ -19,19 +19,29 @@ import static io.vertx.core.Future.succeededFuture;
 
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
- * <p>
- * This class may be extended by programs which wish to implement
- * custom connection management or multitenancy.
  *
- * @see SqlClientPoolConfiguration
+ * @see DefaultSqlClientPool the default implementation
+ * @see ExternalSqlClientPool the implementation used in Quarkus
  */
 public abstract class SqlClientPool implements ReactiveConnectionPool {
 
+	/**
+	 * @return the underlying Vert.x {@link Pool}
+	 */
 	protected abstract Pool getPool();
 
+	/**
+	 * @return a Hibernate {@link SqlStatementLogger} for logging SQL
+	 *         statements as they are executed
+	 */
 	protected abstract SqlStatementLogger getSqlStatementLogger();
 
-	protected abstract boolean isUsePostgresStyleParameters();
+	/**
+	 * @return should `?`-style placeholders in the given SQL be
+	 *         converted to `$n$` format for execution by the
+	 *         PostgreSQL driver
+	 */
+	protected abstract boolean usePostgresStyleParameters();
 
 	/**
 	 * Get a {@link Pool} for the specified tenant.
@@ -72,7 +82,7 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	}
 
 	private SqlClientConnection newConnection(SqlConnection connection) {
-		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger(), isUsePostgresStyleParameters() );
+		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger(), usePostgresStyleParameters() );
 	}
 
 	@Override
