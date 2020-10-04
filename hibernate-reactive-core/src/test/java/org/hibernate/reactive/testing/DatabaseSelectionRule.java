@@ -15,8 +15,6 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import org.jetbrains.annotations.NotNull;
-
 import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 
 /**
@@ -81,9 +79,8 @@ public class DatabaseSelectionRule implements TestRule {
         return new DatabaseSelectionRule( skippable, "Run only for " + Arrays.toString( dbTypes ) );
     }
 
-    @NotNull
     @Override
-    public Statement apply(@NotNull Statement base, @NotNull Description description) {
+    public Statement apply(Statement base, Description description) {
         if ( isSkippable( selectedDb ) ) {
             return new SkipDB( selectedDb, description );
         }
