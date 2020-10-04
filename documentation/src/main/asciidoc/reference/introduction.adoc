@@ -479,9 +479,9 @@ all the time when working with Hibernate Reactive:
 | Perform cleanup (similar to `finally`)   | `whenComplete()`       | `eventually()`
 |===
 
-In this introduction, our code examples usually use `CompletionStage`, since
-that's what more people are already familiar with. But please don't take that
-as a recommendation for what _you_ should do.
+In this introduction, our code examples usually use Mutiny. If you're more
+familiar with `CompletionStage`, you can refer to the above table to help
+you understand the code.
 
 When we use the term _reactive stream_ in this document, we mean:
 
@@ -546,7 +546,7 @@ To obtain a reactive `Session` from the `SessionFactory`, use `withSession()`:
 ----
 sessionFactory.withSession(
         session -> session.find(Book.class, id)
-                .thenAccept(
+                .invoke(
                     book -> ... //do something with the book
                 )
 );
@@ -559,10 +559,10 @@ the session when you're done.
 ----
 Session session = sessionFactory.openSession();
 session.find(Book.class, id)
-        .thenAccept(
-            book -> ... //do something with the book
-        )
-        .whenComplete( (v,e) -> session.close() );
+       .invoke(
+           book -> ... //do something with the book
+       )
+       .eventually(session::close);
 ----
 
 === Using the reactive session
@@ -610,8 +610,8 @@ of these methods returns its result in a non-blocking fashion via a Java
 
 [java]
 ----
-session1.find(Book.class, book.id)
-        .thenAccept( book -> System.out.println(book.title + " is a great book!") )
+session.find(Book.class, book.id)
+       .invoke( book -> System.out.println(book.title + " is a great book!") )
 ----
 
 On the other hand, methods with no meaningful return value just return
@@ -619,10 +619,9 @@ On the other hand, methods with no meaningful return value just return
 
 [java]
 ----
-session2.find(Book.class, id)
-        .thenCompose( book -> session2.remove(book) )
-        .thenCompose( v -> session2.flush() )
-        .whenComplete( (v,e) -> session2.close() )
+session.find(Book.class, id)
+       .call( book -> session.remove(book) )
+       .call( () -> session.flush() )
 ----
 
 TIP: The session will be flushed automatically at the end of a unit of work
@@ -633,16 +632,22 @@ database!
 
 An _extremely_ common mistake when using reactive streams is to forget to
 chain the return value of a "void-like" method. For example, in the following
-code, the `flush()` operation is never executed, because `thenAccept()`
-doesn't chain its return value to the tip of the stream.
+code, the `flush()` operation is never executed, because `invoke()` doesn't
+chain its return value to the tip of the stream.
 
 [java]
 ----
 session.find(Book.class, id)
-        .thenCompose( book -> session.remove(book) )
-        .thenAccept( v -> session.flush() )   //OOPS, WRONG!!
-        .whenComplete( (v,e) -> session.close() )
+       .call( book -> session.remove(book) )
+       .invoke( () -> session.flush() )   //OOPS, WRONG!!
 ----
+
+So remember:
+
+- You must use `thenCompose()`, not `thenAccept()`, when calling "void-like"
+  methods that return `CompletionStage`.
+- In Mutiny, you must use `call()`, not `invoke()`, when calling "void-like"
+  methods that return `Uni`.
 
 The same problem occurs in the following code, but this time it's `remove()`
 that never gets called:
@@ -650,10 +655,10 @@ that never gets called:
 [java]
 ----
 session.find(Book.class, id)
-        .thenCompose( book -> {
-            session.remove(book);   //OOPS, WRONG!!
-            return session.flush();
-        } )
+       .call( book -> {
+           session.remove(book);   //OOPS, WRONG!!
+           return session.flush();
+       } )
 ----
 
 If you already have some experience with reactive programming, there's nothing
@@ -683,9 +688,9 @@ queries to be executed asynchronously, always returning their results via a
 
 [java]
 ----
-session3.createQuery("select title from Book order by title desc")
-        .getResultList()
-        .thenAccept(System.out::println)
+session.createQuery("select title from Book order by title desc")
+       .getResultList()
+       .invoke( list -> list.forEach(System.out::println) )
 ----
 
 The `Query` interface defines the following important operations:
@@ -719,8 +724,8 @@ Root<Author> a = query.from(Author.class);
 Join<Author,Book> b = a.join(Author_.books);
 query.where( a.get(Author_.name).in("Neal Stephenson", "William Gibson") );
 query.select(b);
-return session.createQuery(query).getResultList().thenAccept(
-        books -> books.forEach(book -> out.println(book.title))
+return session.createQuery(query).getResultList().invoke(
+        books -> books.forEach( book -> out.println(book.title) )
 );
 ----
 
@@ -736,9 +741,9 @@ method of `Stage` and `Mutiny`:
 
 [java]
 ----
-session4.find(Author.class, author.id)
-        .thenCompose( author -> Stage.fetch(author.books) )
-        .thenAccept( books -> ... )
+session.find(Author.class, author.id)
+       .chain( author -> Stage.fetch(author.books) )
+       .invoke( books -> ... )
 ----
 
 Of course, this isn't necessary if you fetch the association eagerly.
@@ -756,9 +761,9 @@ bytecode enhancer&mdash;is also an explicit operation:
 
 [java]
 ----
-session5.find(Book.class, book.id)
-        .thenCompose( book -> session.fetch(book, Book_.isbn) )
-        .thenAccept( isbn -> ... )
+session.find(Book.class, book.id)
+       .chain( book -> session.fetch(book, Book_.isbn) )
+       .invoke( isbn -> ... )
 ----
 
 Note that the field to fetch is identified by a JPA metamodel `Attribute`.
