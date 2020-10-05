@@ -1181,7 +1181,9 @@ public class ReactiveActionQueue {
 				for ( int i = 0; i < propertyValues.length; i++ ) {
 					Object value = propertyValues[i];
 					Type type = propertyTypes[i];
-					addParentChildEntityNameByPropertyAndValue( action, batchIdentifier, type, value );
+					if (value!=null) {
+						addParentChildEntityNameByPropertyAndValue( action, batchIdentifier, type, value );
+					}
 				}
 
 				if ( identifierType.isComponentType() ) {
