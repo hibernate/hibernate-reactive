@@ -34,6 +34,9 @@ dependencies {
     testImplementation "io.vertx:vertx-mysql-client:${vertxVersion}"
     testImplementation "io.vertx:vertx-db2-client:${vertxVersion}"
 
+    // JDBC driver to test with ORM and PostgreSQL
+    testRuntimeOnly "org.postgresql:postgresql:42.2.16"
+
     // EHCache
     testRuntimeOnly "org.ehcache:ehcache:3.8.1"
     testRuntimeOnly ("org.hibernate:hibernate-jcache:${hibernateOrmVersion}") {
