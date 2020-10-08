@@ -160,13 +160,10 @@ directory.
 
 #### If you have Podman
 
-If you use [Podman][], you can start the test database by following 
-the instructions in [podman.md](podman.md).
+If you have [Podman][podman] installed, you can start the test
+database by following the instructions in [podman.md](podman.md).
 
-[Podman]: https://podman.io
-
-To run the tests, type `./gradlew test` from the `hibernate-reactive` 
-directory.
+[podman]: https://podman.io
 
 ## Limitations
 
