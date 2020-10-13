@@ -32,11 +32,9 @@ Hibernate Reactive has been tested with:
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 3.9.3
 - [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 3.9.3
 - [Vert.x Reactive DB2 Client](https://vertx.io/docs/vertx-db2-client/java/) 3.9.3
+- [Quarkus][Quarkus] 1.8.3
 
 Support for SQL Server is coming soon.
-
-Integration with Quarkus has been developed and tested but has not yet 
-been released.
 
 [PostgreSQL]: https://www.postgresql.org
 [MySQL]: https://www.mysql.com
