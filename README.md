@@ -42,14 +42,15 @@ Support for SQL Server is coming soon.
 
 ## Documentation
 
-The [Introduction to Hibernate Reactive][introduction] covers everything 
-you need to know to get started, including:
+The [Introduction to Hibernate Reactive][introduction] covers 
+everything you need to know to get started, including:
 
-- [setting up a project][build] that uses Hibernate Reactive and the Vert.x 
-  reactive SQL client for your database,
+- [setting up a project][build] that uses Hibernate Reactive and the 
+  Vert.x reactive SQL client for your database,
 - [configuring][config] Hibernate Reactive to access your database,
 - writing Java code to [define the entities][model] of your data model, 
-- writing reactive data access code [using a reactive session][session], and
+- writing reactive data access code [using a reactive session][session], 
+  and
 - [tuning the performance][performance] of your program.
 
 We recommend you start there!
@@ -167,13 +168,13 @@ database by following the instructions in [podman.md](podman.md).
 
 ## Limitations
 
-We're working hard to support the full feature set of Hibernate ORM. At
-present a few limitations remain.
+We're working hard to support the full feature set of Hibernate ORM. 
+At present a few limitations remain.
 
 #### Association mappings
 
-At this time, Hibernate Reactive does not support the following mapping
-features:
+At this time, Hibernate Reactive does not support the following 
+mapping features:
 
 - `@ElementCollection`s,
 - `@ManyToMany` associations, and
