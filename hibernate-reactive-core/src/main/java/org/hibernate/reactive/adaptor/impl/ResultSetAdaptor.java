@@ -58,7 +58,7 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public boolean next() {
 		if ( iterator.hasNext() ) {
-			this.row = iterator.next();
+			row = iterator.next();
 			return true;
 		}
 		return false;
@@ -237,20 +237,19 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel) {
-		final Object rawValue = row.getValue( columnLabel );
-		this.wasNull = rawValue == null;
-		if ( rawValue == null ) {
-			return null;
-		}
-		else if ( rawValue instanceof OffsetDateTime ) {
-			java.time.OffsetDateTime offsetDateTime = (java.time.OffsetDateTime) rawValue;
-			return Timestamp.valueOf( LocalDateTime.from( offsetDateTime ) );
+		Object rawValue = row.getValue(columnLabel);
+		return (wasNull=rawValue==null) ? null : Timestamp.valueOf( toLocalDateTime(rawValue) );
+	}
+
+	private static LocalDateTime toLocalDateTime(Object rawValue) {
+		if ( rawValue instanceof OffsetDateTime ) {
+			return LocalDateTime.from( (OffsetDateTime) rawValue );
 		}
 		else if ( rawValue instanceof LocalDateTime ) {
-			return Timestamp.valueOf( (LocalDateTime) rawValue );
+			return (LocalDateTime) rawValue;
 		}
 		else {
-			throw new org.hibernate.HibernateException( "Unexpected return type: " + rawValue.getClass() );
+			throw new IllegalArgumentException( "Unexpected type: " + rawValue.getClass() );
 		}
 	}
 
