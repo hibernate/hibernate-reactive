@@ -51,7 +51,7 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 	}
 
 	/**
-	 * This method is based on {@link Loader#processResultSet}
+	 * This method is based on {@link org.hibernate.loader.Loader#processResultSet}
 	 */
 	@Override
 	public CompletionStage<List<Object>> reactiveExtractResults(
