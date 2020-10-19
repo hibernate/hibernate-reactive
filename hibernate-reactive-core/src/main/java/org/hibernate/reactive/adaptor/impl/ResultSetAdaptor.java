@@ -237,19 +237,21 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel) {
-		LocalDateTime localDateTime = row.getLocalDateTime(columnLabel);
-		if (localDateTime==null) {
-			try {
-				OffsetDateTime offsetDateTime = row.getOffsetDateTime(columnLabel);
-				if (offsetDateTime!=null) {
-					localDateTime = LocalDateTime.from(offsetDateTime);
-				}
-			}
-			catch (Exception e) {
-				//MySQL client throws a nasty NPE here
-			}
+		final Object rawValue = row.getValue( columnLabel );
+		this.wasNull = rawValue == null;
+		if ( rawValue == null ) {
+			return null;
 		}
-		return (wasNull=localDateTime==null) ? null : Timestamp.valueOf(localDateTime);
+		else if ( rawValue instanceof OffsetDateTime ) {
+			java.time.OffsetDateTime offsetDateTime = (java.time.OffsetDateTime) rawValue;
+			return Timestamp.valueOf( LocalDateTime.from( offsetDateTime ) );
+		}
+		else if ( rawValue instanceof LocalDateTime ) {
+			return Timestamp.valueOf( (LocalDateTime) rawValue );
+		}
+		else {
+			throw new org.hibernate.HibernateException( "Unexpected return type: " + rawValue.getClass() );
+		}
 	}
 
 	@Override
