@@ -21,12 +21,12 @@ import org.hibernate.service.Service;
  * or from code-based Hibernate configuration by calling
  * {@link org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder#addService}.
  *
- * <pre>
+ * <pre>{@code
  * new ReactiveServiceRegistryBuilder()
  *     .applySettings( properties )
  *     .addService( VertxInstance.class, () -> myVertx )
  *     .build();
- * </pre>
+ * }</pre>
  *
  * @see org.hibernate.reactive.vertx.impl.ProvidedVertxInstance
  */
