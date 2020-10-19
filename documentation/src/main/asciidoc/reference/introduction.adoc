@@ -497,7 +497,7 @@ Whatever you decide, the first step to getting a reactive session is to obtain
 a JPA `EntityManagerFactory` just as you usually would in plain ol' regular JPA,
 for example, by calling:
 
-[java]
+[source, JAVA, indent=0]
 ----
 EntityManagerFactory emf = Persistence.createEntityManagerFactory("example");
 ----
@@ -506,7 +506,7 @@ Now, `unwrap()` the reactive `SessionFactory`. If you want to use
 ``CompletionStage``s for chaining reactive operations, ask for a
 `Stage.SessionFactory`:
 
-[java]
+[source, JAVA, indent=0]
 ----
 Stage.SessionFactory sessionFactory = emf.unwrap(Stage.SessionFactory.class);
 ----
@@ -514,7 +514,7 @@ Stage.SessionFactory sessionFactory = emf.unwrap(Stage.SessionFactory.class);
 Or, if you prefer to use the Mutiny-based API, `unwrap()` the type
 `Mutiny.SessionFactory`:
 
-[java]
+[source, JAVA, indent=0]
 ----
 Mutiny.SessionFactory sessionFactory = emf.unwrap(Mutiny.SessionFactory.class);
 ----
@@ -542,7 +542,7 @@ unit of work, but don't share a session between different reactive streams!
 
 To obtain a reactive `Session` from the `SessionFactory`, use `withSession()`:
 
-[java]
+[source, JAVA, indent=0]
 ----
 sessionFactory.withSession(
         session -> session.find(Book.class, id)
@@ -555,7 +555,7 @@ sessionFactory.withSession(
 Alternatively, you may use `openSession()`, but you must remember to `close()`
 the session when you're done.
 
-[java]
+[source, JAVA, indent=0]
 ----
 Session session = sessionFactory.openSession();
 session.find(Book.class, id)
@@ -608,7 +608,7 @@ Now, _here's where Hibernate Reactive is different:_ in the reactive API, each
 of these methods returns its result in a non-blocking fashion via a Java
 `CompletionStage` (or Mutiny `Uni`). For example:
 
-[java]
+[source, JAVA, indent=0]
 ----
 session.find(Book.class, book.id)
        .invoke( book -> System.out.println(book.title + " is a great book!") )
@@ -617,7 +617,7 @@ session.find(Book.class, book.id)
 On the other hand, methods with no meaningful return value just return
 `CompletionStage<Void>` (or `Uni<Void>`).
 
-[java]
+[source, JAVA, indent=0]
 ----
 session.find(Book.class, id)
        .call( book -> session.remove(book) )
@@ -635,7 +635,7 @@ chain the return value of a "void-like" method. For example, in the following
 code, the `flush()` operation is never executed, because `invoke()` doesn't
 chain its return value to the tip of the stream.
 
-[java]
+[source, JAVA, indent=0]
 ----
 session.find(Book.class, id)
        .call( book -> session.remove(book) )
@@ -652,7 +652,7 @@ So remember:
 The same problem occurs in the following code, but this time it's `remove()`
 that never gets called:
 
-[java]
+[source, JAVA, indent=0]
 ----
 session.find(Book.class, id)
        .call( book -> {
@@ -686,7 +686,7 @@ That `createQuery()` method produces a reactive `Query`, allowing HQL / JPQL
 queries to be executed asynchronously, always returning their results via a
 `CompletionStage` (or `Uni`):
 
-[java]
+[source, JAVA, indent=0]
 ----
 session.createQuery("select title from Book order by title desc")
        .getResultList()
@@ -717,7 +717,7 @@ For  JPA criteria queries, you must first obtain the `CriteriaBuilder` using
 `SessionFactory.getCriteriaBuilder()`, and execute your query using
 `Session.createQuery()`.
 
-[java]
+[source, JAVA, indent=0]
 ----
 CriteriaQuery<Book> query = factory.getCriteriaBuilder().createQuery(Book.class);
 Root<Author> a = query.from(Author.class);
@@ -739,7 +739,7 @@ produces a result via a `CompletionStage` (or `Uni`).
 Therefore, lazy fetching is an explicit operation named `fetch()`, a static
 method of `Stage` and `Mutiny`:
 
-[java]
+[source, JAVA, indent=0]
 ----
 session.find(Author.class, author.id)
        .chain( author -> Stage.fetch(author.books) )
@@ -759,7 +759,7 @@ Similarly, field-level lazy fetching&mdash;an advanced feature, which
 is only supported in conjunction with Hibernate's optional compile-time
 bytecode enhancer&mdash;is also an explicit operation:
 
-[java]
+[source, JAVA, indent=0]
 ----
 session.find(Book.class, book.id)
        .chain( book -> session.fetch(book, Book_.isbn) )
@@ -776,7 +776,7 @@ have very specific requirements.
 The `withTransaction()` method performs work within the scope of a database
 transaction.
 
-[java]
+[source, JAVA, indent=0]
 ----
 session.withTransaction( tx -> session.persist(book) )
 ----
@@ -786,7 +786,7 @@ The session is automatically flushed at the end of the transaction.
 For extra convenience, there's a method that opens a session and starts a
 transaction in one call:
 
-[java]
+[source, JAVA, indent=0]
 ----
 sessionFactory.withTransaction( (session, tx) -> session.persist(book) )
 ----
@@ -997,7 +997,7 @@ interacting with the database.
 
 You may obtain a reactive stateless session from the `SessionFactory`:
 
-[java]
+[source, JAVA, indent=0]
 ----
 Stage.StatelessSession ss = getSessionFactory().openStatelessSession();
 ----
