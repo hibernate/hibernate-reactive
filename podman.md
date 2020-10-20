@@ -11,7 +11,7 @@ Containers can either be run as root or in rootless mode.
 **TIP**
 
 If you replace `podman` with `sudo docker`, they will also work with [Docker][docker].
-Example: 
+Example:
 
 ```
 podman run --rm --name HibernateTestingPGSQL postgres:13.0
@@ -43,7 +43,7 @@ podman run --rm --name HibernateTestingPGSQL \
 When the database has started, you can run the tests on PostgreSQL with:
 
 ```
-./gradlew test 
+./gradlew test
 ```
 
 Optionally, you can connect to the database with the [PostgreSQL interactive terminal][psql](`psql`)
@@ -65,7 +65,7 @@ and schema to run the tests:
 
 ```
 podman run --rm --name HibernateTestingMySQL \
-    -e MYSQL_ROOT_PASSWORD=hreact -e MYSQL_DATABASE=hreact -e MYSQL_USER=hreact -e MYSQL_PASSWORD=hreact \ 
+    -e MYSQL_ROOT_PASSWORD=hreact -e MYSQL_DATABASE=hreact -e MYSQL_USER=hreact -e MYSQL_PASSWORD=hreact \
     -p 3306:3306 mysql:8.0.20
 ```
 
@@ -91,8 +91,8 @@ and schema to run the tests:
 [db2]:https://www.ibm.com/analytics/db2
 
 ```
-podman run --rm -e LICENSE=accept --privileged=true --name HibernateTestingDB2 \ 
-    -e DBNAME=hreact -e DB2INSTANCE=hreact -e DB2INST1_PASSWORD=hreact \ 
+podman run --rm -e LICENSE=accept --privileged=true --name HibernateTestingDB2 \
+    -e DBNAME=hreact -e DB2INSTANCE=hreact -e DB2INST1_PASSWORD=hreact \
     -e PERSISTENT_HOME=false -e ARCHIVE_LOGS=false -e AUTOCONFIG=false \
     -p 50000:50000 ibmcom/db2:11.5.0.0a
 ```
