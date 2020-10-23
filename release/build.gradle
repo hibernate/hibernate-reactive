@@ -1,11 +1,20 @@
 import java.nio.charset.StandardCharsets
 
-description = 'Release module'
+plugins {
+    // Used for publishing the documentation
+    // https://github.com/ajoberstar/gradle-git-publish
+    id 'org.ajoberstar.git-publish' version '3.0.0'
+}
 
-// To publish documentation:
+description = 'Release module'
+// (Optional) before uploading the documentation, you can check
+// the generated website under release/build/hibernate.org with:
+// ./gradlew gitPublishCopy
+
+// To publish the documentation:
 //  1. Add the relevant SSH key to your SSH agent.
 //  2. Execute this:
-//    ./gradlew uploadDocumentation -PjbossFilemgmtSshUser="<YOUR USERNAME>"
+//     ./gradlew uploadDocumentation
 
 // To tag a version and trigger a release on CI (which will include publishing to Bintray and publishing documentation):
 //  ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin -PgitBranch=master
@@ -39,29 +48,45 @@ task assembleDocumentation(dependsOn: [rootProject.project( 'documentation' ).ta
 assemble.dependsOn assembleDocumentation
 
 /**
- * Upload the documentation to the JBoss doc server
+ * Configuration to push the documentation on hibernate.org on GitHub
  */
-task uploadDocumentation(type:Exec, dependsOn: assembleDocumentation) {
-    description = "Uploads documentation to the JBoss doc server"
+gitPublish {
+    // where to publish to (repo must exist)
+    repoUri = 'git@github.com:hibernate/hibernate.org.git'
+    // branch will be created if it doesn't exist
+    branch = "production"
+    // where the repository gets cloned
+    repoDir = file("$buildDir/hibernate.org") // defaults to $buildDir/gitPublish
+    // where to fetch from prior to fetching from the remote (i.e. a local repo to save time)
+    // referenceRepoUri = 'file:///home/ddalto/workspace/hibernate.org'
 
-    final String url = "filemgmt.jboss.org:/docs_htdocs/hibernate/reactive/${project.version.family}"
-
-    executable 'rsync'
-    args '-avz', '--delete', '--links', '--protocol=28', "${documentationDir.absolutePath}/", url
-
-    doFirst {
-        if ( project.version.isSnapshot() ) {
-            logger.error( "Cannot perform upload of SNAPSHOT documentation" );
-            throw new RuntimeException( "Cannot perform upload of SNAPSHOT documentation" );
-        }
-        else {
-            logger.lifecycle( "Uploading documentation to '${url}'..." )
-        }
+    // what to publish, this is a standard CopySpec
+    contents {
+        from "${documentationDir}"
+        into "reactive/documentation/${projectVersion.family}/"
     }
 
-    doLast {
-        logger.lifecycle( 'Done uploading documentation' )
+    // what to keep in the existing branch (include=keep)
+    preserve {
+        // =================================================================================
+        // WARNING: Keep the include all or everything will be deleted before the copy task
+        // =================================================================================
+        include '**/*'
+        exclude "reactive/documentation/${projectVersion.family}/"
     }
+
+    // message used when committing changes
+    commitMessage = "Hibernate Reactive documentation for ${projectVersion}"
+}
+
+gitPublishCopy.dependsOn assembleDocumentation
+
+/**
+ * Upload documentation on hibernate.org
+ */
+task uploadDocumentation {
+    dependsOn = [gitPublishPush]
+    description = "Upload documentation on hibernate.org"
 }
 
 task ciRelease {
