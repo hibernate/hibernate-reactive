@@ -49,11 +49,13 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	protected void createLoaders() {
-		super.createLoaders();
+	protected UniqueEntityLoader buildMergeCascadeEntityLoader(LockMode ignored) {
+		return new ReactiveCascadeEntityLoader( this, CascadingActions.MERGE, getFactory() );
+	}
 
-		getLoaders().put( "merge", new ReactiveCascadeEntityLoader( this, CascadingActions.MERGE, getFactory() ) );
-		getLoaders().put( "refresh", new ReactiveCascadeEntityLoader( this, CascadingActions.REFRESH, getFactory() ) );
+	@Override
+	protected UniqueEntityLoader buildRefreshCascadeEntityLoader(LockMode ignored) {
+		return new ReactiveCascadeEntityLoader( this, CascadingActions.REFRESH, getFactory() );
 	}
 
 	@Override
