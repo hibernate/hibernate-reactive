@@ -59,10 +59,32 @@ ext {
     }
 
     testcontainersVersion = '1.14.3'
-    baselineJavaVersion = 1.8
 
     println "Hibernate ORM Version: " + project.hibernateOrmVersion
     println "Vert.x Version: " + project.vertxVersion
+
+    baselineJavaVersion = JavaLanguageVersion.of( 8 )
+    if ( project.hasProperty( 'test.jdk.version' ) ) {
+        // Testing a particular JDK version
+        // Gradle doesn't support all JDK versions unless we use toolchains
+        javaToolchainEnabled = true
+        // When using toolchains, we expect JDK11 to be used for the build -- always.
+        compileJdkVersion = JavaLanguageVersion.of( 11 )
+        testJdkVersion = JavaLanguageVersion.of( project.getProperty('test.jdk.version') )
+    }
+    else {
+        // Not testing a particular JDK version: we will use the same JDK used to run Gradle.
+        // We disable toolchains for convenience, so that anyone can just run the build with their own JDK
+        // without any additional options and without downloading the whole JDK.
+        javaToolchainEnabled = false
+        compileJdkVersion = JavaLanguageVersion.of( JavaVersion.current().getMajorVersion() )
+        testJdkVersion = compileJdkVersion
+    }
+
+    println "Java version for produced binaries: " + project.baselineJavaVersion
+    println "JDK version when running Gradle: " + JavaVersion.current().getMajorVersion()
+    println "JDK version when compiling: " + project.compileJdkVersion
+    println "JDK version when running tests: " + project.testJdkVersion
 }
 
 subprojects {
@@ -70,9 +92,16 @@ subprojects {
     apply plugin: 'com.diffplug.gradle.spotless'
     group = 'org.hibernate.reactive'
     version = projectVersion
-    sourceCompatibility = project.baselineJavaVersion
-    targetCompatibility = project.baselineJavaVersion
-    compileJava.options.encoding = 'UTF-8'
+
+    if ( project.javaToolchainEnabled ) {
+        compileJava.options.release = project.baselineJavaVersion.asInt()
+        compileJava.options.encoding = 'UTF-8'
+    }
+    else {
+        sourceCompatibility = JavaVersion.toVersion( project.baselineJavaVersion )
+        targetCompatibility = JavaVersion.toVersion( project.baselineJavaVersion )
+        compileJava.options.encoding = 'UTF-8'
+    }
 
     repositories {
         // Only enable these for local development, never push it:
@@ -89,6 +118,32 @@ subprojects {
     }
     
     ext.publishScript = rootProject.rootDir.absolutePath + '/publish.gradle'
+
+    if ( project.javaToolchainEnabled ) {
+        java {
+            toolchain {
+                languageVersion = project.compileJdkVersion
+            }
+        }
+        tasks.withType( JavaCompile ).configureEach {
+            doFirst {
+                println "Compiling with '${javaCompiler.get().metadata.installationPath}'"
+            }
+        }
+        tasks.withType( Javadoc ).configureEach {
+            doFirst {
+                println "Generating javadoc with '${javadocTool.get().metadata.installationPath}'"
+            }
+        }
+        test {
+            javaLauncher = javaToolchains.launcherFor {
+                languageVersion = project.testJdkVersion
+            }
+            doFirst {
+                println "Testing with '${javaLauncher.get().metadata.installationPath}'"
+            }
+        }
+    }
 }
 
 private static String readVersionFromProperties(File file) {
