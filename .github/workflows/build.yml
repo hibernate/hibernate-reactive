@@ -71,6 +71,12 @@ jobs:
       uses: actions/setup-java@v1
     - name: Run examples on ${{ matrix.db }}
       run: ./gradlew :example:runAllExamplesOn${{ matrix.db }}
+    - name: Upload reports (if build failed)
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: reports-examples-${{ matrix.db }}
+        path: './**/build/reports/'
 
   test_dbs:
     name: Test with ${{ matrix.db }}
@@ -101,6 +107,12 @@ jobs:
         java-version: 1.8
     - name: Build and Test with ${{ matrix.db }}
       run: ./gradlew build -Pdocker -Pdb=${{ matrix.db }}
+    - name: Upload reports (if build failed)
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: reports-db-${{ matrix.db }}
+        path: './**/build/reports/'
 
   test_jdks:
     name: Test with Java ${{ matrix.java.name }}
@@ -156,6 +168,12 @@ jobs:
       run: |
         ./gradlew build -Pdocker -Ptest.jdk.version=${{ matrix.java.java-version }} \
             -Porg.gradle.java.installations.paths=${{ steps.install-compilejdk.outputs.path }},${{ steps.install-testjdk.outputs.path }}
+    - name: Upload reports (if build failed)
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: reports-java${{ matrix.java.name }}
+        path: './**/build/reports/'
 
   snapshot:
     name: Create snapshot
