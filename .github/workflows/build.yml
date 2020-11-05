@@ -121,21 +121,9 @@ jobs:
       fail-fast: false
       matrix:
         java:
-          - {
-            name: "11",
-            java-version: 11,
-            release_type: "ga"
-          }
-          - {
-            name: "15",
-            java-version: 15,
-            release_type: "ga"
-          }
-          - {
-            name: "16-ea",
-            java-version: 16,
-            release_type: "ea"
-          }
+          - { name: "11", java-version: 11, release_type: "ga" }
+          - { name: "15", java-version: 15, release_type: "ga" }
+          - { name: "16-ea", java-version: 16, release_type: "ea" }
     steps:
     - uses: actions/checkout@v2
     - name: Get year/month for cache key
@@ -159,6 +147,8 @@ jobs:
       with:
         java-version: ${{ matrix.java.java-version }}
         release_type: ${{ matrix.java.release_type }}
+
+      # When using toolchains, we expect JDK11 to be used for the build -- always.
     - name: Set up JDK 11
       uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
       id: install-compilejdk

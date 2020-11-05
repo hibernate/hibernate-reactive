@@ -64,6 +64,15 @@ ext {
     println "Vert.x Version: " + project.vertxVersion
 
     baselineJavaVersion = JavaLanguageVersion.of( 8 )
+
+    // If the property is set, enable the toolchain and use the selected jdk.
+    // Note that when toolchain is enabled, you also need to specify
+    // the location of the selected jdk plus the location of jdk 11
+    // (auto-download and auto-detect are disabled in gradle.properties).
+    //
+    // Example (with SDKMAN):
+    // ./gradlew build -Ptest.jdk.version=15 \
+    // -Porg.gradle.java.installations.paths=$SDKMAN_CANDIDATES_DIR/java/15.0.1-open,$SDKMAN_CANDIDATES_DIR/java/11.0.7-open
     if ( project.hasProperty( 'test.jdk.version' ) ) {
         // Testing a particular JDK version
         // Gradle doesn't support all JDK versions unless we use toolchains
