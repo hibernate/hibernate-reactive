@@ -185,7 +185,7 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-    - name: Create maven package
+    - name: Create artifacts
       run: ./gradlew assemble
     - name: Detect the version of Hibernate Reactive
       id: detect-version
@@ -208,7 +208,7 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-    - name: Create maven package
+    - name: Create artifacts
       run: ./gradlew assemble
     - name: Install SSH key
       uses: shimataro/ssh-key-action@v2
