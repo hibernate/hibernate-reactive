@@ -255,7 +255,10 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 	@Test
 	public void testLocalDateTimeType(TestContext context) throws Exception {
-		LocalDateTime now = LocalDateTime.now();
+		// @Temporal(TemporalType.TIMESTAMP) is stored to the mills by Hibernate
+		LocalDateTime now = LocalDateTime.now()
+				// required for JDK 15+
+				.truncatedTo( ChronoUnit.MILLIS );
 		Basic basic = new Basic();
 		basic.localDateTime = now;
 
