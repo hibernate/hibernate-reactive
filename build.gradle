@@ -132,7 +132,7 @@ subprojects {
     if ( project.javaToolchainEnabled ) {
         // "sourceCompatibility" is not supported with toolchains. We have to work around that limitation.
         compileJava.configure {
-            if ( project.project.javaVersions.main.compiler.asInt() < 11 ) {
+            if ( project.project.javaVersions.main.compiler.asInt() < 9 ) {
                 options.compilerArgs << '-source'
                 options.compilerArgs << project.javaVersions.main.release.toString()
                 options.compilerArgs << '-target'
@@ -142,7 +142,7 @@ subprojects {
             }
         }
         compileTestJava.configure {
-            if ( project.project.javaVersions.test.compiler.asInt() < 11 ) {
+            if ( project.project.javaVersions.test.compiler.asInt() < 9 ) {
                 options.compilerArgs << '-source'
                 options.compilerArgs << project.javaVersions.test.release.toString()
                 options.compilerArgs << '-target'
