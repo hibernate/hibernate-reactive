@@ -59,7 +59,7 @@ task aggregateJavadocs(type: Javadoc, group: 'Documentation') {
 				"https://docs.jboss.org/hibernate/orm/" + ormMinorVersion + "/javadocs/"
 		]
 		
-		if ( project.compileJdkVersion.asInt() >= 11 ) {
+		if ( project.javaVersions.main.compiler.asInt() >= 11 ) {
 			//The need to set `--source 1.8` applies to all JVMs after 11, and also to 11
 			// but after excluding the first two builds; see also specific comments on
 			// https://bugs.openjdk.java.net/browse/JDK-8212233?focusedCommentId=14245762

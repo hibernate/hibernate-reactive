@@ -82,28 +82,42 @@ ext {
         // Testing a particular JDK version
         // Gradle doesn't support all JDK versions unless we use toolchains
         javaToolchainEnabled = true
-        compileJdkVersion = JavaLanguageVersion.of( project.findProperty( 'main.jdk.version' ) ?: baselineJavaVersion.asInt() )
-        testJdkVersion = JavaLanguageVersion.of( project.findProperty( 'test.jdk.version' ) ?: baselineJavaVersion.asInt() )
-        compileTestJdkVersion = testJdkVersion
-        testJavaVersion = JavaLanguageVersion.of(
-                Math.min( GRADLE_MAX_SUPPORTED_BYTECODE_VERSION, testJdkVersion.asInt() ) )
+        javaVersions = [
+                main: [
+                        compiler: JavaLanguageVersion.of( project.findProperty( 'main.jdk.version' )
+                                ?: baselineJavaVersion.asInt() ),
+                        release: baselineJavaVersion
+                ],
+                test: [
+                        compiler: JavaLanguageVersion.of( project.findProperty( 'test.jdk.version' )
+                                ?: baselineJavaVersion.asInt() )
+                ]
+        ]
+        javaVersions.test.release = JavaLanguageVersion.of(
+                Math.min( GRADLE_MAX_SUPPORTED_BYTECODE_VERSION, javaVersions.test.compiler.asInt() ) )
+        javaVersions.test.launcher = javaVersions.test.compiler
     }
     else {
         // Not testing a particular JDK version: we will use the same JDK used to run Gradle.
         // We disable toolchains for convenience, so that anyone can just run the build with their own JDK
         // without any additional options and without downloading the whole JDK.
         javaToolchainEnabled = false
-        compileJdkVersion = JavaLanguageVersion.of( JavaVersion.current().getMajorVersion() )
-        compileTestJdkVersion = compileJdkVersion
-        testJdkVersion = compileTestJdkVersion
-        testJavaVersion = baselineJavaVersion
+        gradleJdkVersion = JavaLanguageVersion.of( JavaVersion.current().getMajorVersion() )
+        javaVersions = [
+                main: [
+                        compiler: gradleJdkVersion,
+                        release: baselineJavaVersion
+                ],
+                test: [
+                        compiler: gradleJdkVersion,
+                        release: baselineJavaVersion,
+                        launcher: gradleJdkVersion
+                ]
+        ]
     }
 
-    println "Java version for produced binaries: " + project.baselineJavaVersion
-    println "Java version for produced test binaries: " + project.testJavaVersion
-    println "JDK version when running Gradle: " + JavaVersion.current().getMajorVersion()
-    println "JDK version when compiling: " + project.compileJdkVersion
-    println "JDK version when running tests: " + project.testJdkVersion
+    println "Java versions for main code: " + project.javaVersions.main
+    println "Java versions for tests: " + project.javaVersions.test
 }
 
 subprojects {
@@ -112,35 +126,35 @@ subprojects {
     group = 'org.hibernate.reactive'
     version = projectVersion
 
+    compileJava.options.encoding = 'UTF-8'
+    compileTestJava.options.encoding = 'UTF-8'
+
     if ( project.javaToolchainEnabled ) {
         // "sourceCompatibility" is not supported with toolchains. We have to work around that limitation.
         compileJava.configure {
-            if (project.compileJdkVersion.asInt() < 11) {
+            if ( project.project.javaVersions.main.compiler.asInt() < 11 ) {
                 options.compilerArgs << '-source'
-                options.compilerArgs << project.baselineJavaVersion.toString()
+                options.compilerArgs << project.javaVersions.main.release.toString()
                 options.compilerArgs << '-target'
-                options.compilerArgs << project.baselineJavaVersion.toString()
+                options.compilerArgs << project.javaVersions.main.release.toString()
             } else {
-                options.release = project.baselineJavaVersion.asInt()
+                options.release = project.javaVersions.main.release.asInt()
             }
-            options.encoding = 'UTF-8'
         }
         compileTestJava.configure {
-            if (project.compileTestJdkVersion.asInt() < 11) {
+            if ( project.project.javaVersions.test.compiler.asInt() < 11 ) {
                 options.compilerArgs << '-source'
-                options.compilerArgs << project.testJavaVersion.toString()
+                options.compilerArgs << project.javaVersions.test.release.toString()
                 options.compilerArgs << '-target'
-                options.compilerArgs << project.testJavaVersion.toString()
+                options.compilerArgs << project.javaVersions.test.release.toString()
             } else {
-                options.release = project.testJavaVersion.asInt()
+                options.release = project.javaVersions.test.release.asInt()
             }
-            options.encoding = 'UTF-8'
         }
     }
     else {
         sourceCompatibility = JavaVersion.toVersion( project.baselineJavaVersion )
         targetCompatibility = JavaVersion.toVersion( project.baselineJavaVersion )
-        compileJava.options.encoding = 'UTF-8'
     }
 
     repositories {
@@ -162,7 +176,7 @@ subprojects {
     if ( project.javaToolchainEnabled ) {
         java {
             toolchain {
-                languageVersion = project.compileJdkVersion
+                languageVersion = project.javaVersions.main.compiler
             }
         }
         tasks.withType( JavaCompile ).configureEach {
@@ -172,7 +186,7 @@ subprojects {
         }
         compileTestJava {
             javaCompiler = javaToolchains.compilerFor {
-                languageVersion = project.compileTestJdkVersion
+                languageVersion = project.javaVersions.test.compiler
             }
         }
         tasks.withType( Javadoc ).configureEach {
@@ -182,7 +196,7 @@ subprojects {
         }
         test {
             javaLauncher = javaToolchains.launcherFor {
-                languageVersion = project.testJdkVersion
+                languageVersion = project.javaVersions.test.launcher
             }
             doFirst {
                 println "Testing with '${javaLauncher.get().metadata.installationPath}'"
