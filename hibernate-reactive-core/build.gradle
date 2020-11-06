@@ -80,6 +80,7 @@ tasks.withType(Test) {
 // Example:
 // gradle test -Pdb=MySQL
 test {
+    environment "TESTCONTAINERS_RYUK_DISABLED", "true"
     def selectedDb = project.hasProperty( 'db' )
             ? project.getProperty( 'db' )
             : 'PostgreSQL'
