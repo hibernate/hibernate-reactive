@@ -3,10 +3,10 @@ name: Hibernate Reactive CI
 on:
   push:
     branches:
-      - master
+      - vert.x-4
     tags: '*'
   pull_request:
-    branches: master
+    branches: vert.x-4
 
 jobs:
   run_examples:
