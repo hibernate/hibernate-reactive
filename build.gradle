@@ -65,6 +65,10 @@ ext {
 
     baselineJavaVersion = JavaLanguageVersion.of( 8 )
 
+    // Gradle does bytecode transformation on tests.
+    // You can't use bytecode higher than what Gradle supports, even with toolchains.
+    GRADLE_MAX_SUPPORTED_BYTECODE_VERSION = 15
+
     // If the property is set, enable the toolchain and use the selected jdk.
     // Note that when toolchain is enabled, you also need to specify
     // the location of the selected jdk plus the location of jdk 11
@@ -80,6 +84,9 @@ ext {
         // When using toolchains, we expect JDK11 to be used for the build -- always.
         compileJdkVersion = JavaLanguageVersion.of( 11 )
         testJdkVersion = JavaLanguageVersion.of( project.getProperty('test.jdk.version') )
+        compileTestJdkVersion = testJdkVersion
+        testJavaVersion = JavaLanguageVersion.of(
+                Math.min( GRADLE_MAX_SUPPORTED_BYTECODE_VERSION, testJdkVersion.asInt() ) )
     }
     else {
         // Not testing a particular JDK version: we will use the same JDK used to run Gradle.
@@ -87,10 +94,13 @@ ext {
         // without any additional options and without downloading the whole JDK.
         javaToolchainEnabled = false
         compileJdkVersion = JavaLanguageVersion.of( JavaVersion.current().getMajorVersion() )
-        testJdkVersion = compileJdkVersion
+        compileTestJdkVersion = compileJdkVersion
+        testJdkVersion = compileTestJdkVersion
+        testJavaVersion = baselineJavaVersion
     }
 
     println "Java version for produced binaries: " + project.baselineJavaVersion
+    println "Java version for produced test binaries: " + project.testJavaVersion
     println "JDK version when running Gradle: " + JavaVersion.current().getMajorVersion()
     println "JDK version when compiling: " + project.compileJdkVersion
     println "JDK version when running tests: " + project.testJdkVersion
@@ -103,9 +113,29 @@ subprojects {
     version = projectVersion
 
     if ( project.javaToolchainEnabled ) {
-        compileJava.options.release = project.baselineJavaVersion.asInt()
-        compileTestJava.options.release = project.baselineJavaVersion.asInt()
-        compileJava.options.encoding = 'UTF-8'
+        // "sourceCompatibility" is not supported with toolchains. We have to work around that limitation.
+        compileJava.configure {
+            if (project.compileJdkVersion.asInt() < 11) {
+                options.compilerArgs << '-source'
+                options.compilerArgs << project.baselineJavaVersion.toString()
+                options.compilerArgs << '-target'
+                options.compilerArgs << project.baselineJavaVersion.toString()
+            } else {
+                options.release = project.baselineJavaVersion.asInt()
+            }
+            options.encoding = 'UTF-8'
+        }
+        compileTestJava.configure {
+            if (project.compileTestJdkVersion.asInt() < 11) {
+                options.compilerArgs << '-source'
+                options.compilerArgs << project.testJavaVersion.toString()
+                options.compilerArgs << '-target'
+                options.compilerArgs << project.testJavaVersion.toString()
+            } else {
+                options.release = project.testJavaVersion.asInt()
+            }
+            options.encoding = 'UTF-8'
+        }
     }
     else {
         sourceCompatibility = JavaVersion.toVersion( project.baselineJavaVersion )
@@ -138,6 +168,11 @@ subprojects {
         tasks.withType( JavaCompile ).configureEach {
             doFirst {
                 println "Compiling with '${javaCompiler.get().metadata.installationPath}'"
+            }
+        }
+        compileTestJava {
+            javaCompiler = javaToolchains.compilerFor {
+                languageVersion = project.compileTestJdkVersion
             }
         }
         tasks.withType( Javadoc ).configureEach {
