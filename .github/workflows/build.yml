@@ -121,6 +121,7 @@ jobs:
       fail-fast: false
       matrix:
         java:
+          - { name: "8", java-version: 8, release_type: "ga" }
           - { name: "11", java-version: 11, release_type: "ga" }
           - { name: "15", java-version: 15, release_type: "ga" }
           - { name: "16-ea", java-version: 16, release_type: "ea" }
