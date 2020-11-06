@@ -69,21 +69,21 @@ ext {
     // You can't use bytecode higher than what Gradle supports, even with toolchains.
     GRADLE_MAX_SUPPORTED_BYTECODE_VERSION = 15
 
-    // If the property is set, enable the toolchain and use the selected jdk.
+    // If either 'main.jdk.version' or 'test.jdk.version' is set, enable the toolchain and use the selected jdk.
+    // If only one property is set, the other defaults to the baseline Java version (8).
     // Note that when toolchain is enabled, you also need to specify
-    // the location of the selected jdk plus the location of jdk 11
+    // the location of the selected jdks
     // (auto-download and auto-detect are disabled in gradle.properties).
     //
     // Example (with SDKMAN):
     // ./gradlew build -Ptest.jdk.version=15 \
-    // -Porg.gradle.java.installations.paths=$SDKMAN_CANDIDATES_DIR/java/15.0.1-open,$SDKMAN_CANDIDATES_DIR/java/11.0.7-open
-    if ( project.hasProperty( 'test.jdk.version' ) ) {
+    // -Porg.gradle.java.installations.paths=$SDKMAN_CANDIDATES_DIR/java/15.0.1-open,$SDKMAN_CANDIDATES_DIR/java/8
+    if ( project.hasProperty( 'main.jdk.version' ) || project.hasProperty( 'test.jdk.version' ) ) {
         // Testing a particular JDK version
         // Gradle doesn't support all JDK versions unless we use toolchains
         javaToolchainEnabled = true
-        // When using toolchains, we expect JDK11 to be used for the build -- always.
-        compileJdkVersion = JavaLanguageVersion.of( 11 )
-        testJdkVersion = JavaLanguageVersion.of( project.getProperty('test.jdk.version') )
+        compileJdkVersion = JavaLanguageVersion.of( project.findProperty( 'main.jdk.version' ) ?: baselineJavaVersion.asInt() )
+        testJdkVersion = JavaLanguageVersion.of( project.findProperty( 'test.jdk.version' ) ?: baselineJavaVersion.asInt() )
         compileTestJdkVersion = testJdkVersion
         testJavaVersion = JavaLanguageVersion.of(
                 Math.min( GRADLE_MAX_SUPPORTED_BYTECODE_VERSION, testJdkVersion.asInt() ) )
