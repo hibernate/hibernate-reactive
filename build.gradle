@@ -58,7 +58,7 @@ ext {
         vertxVersion = '3.9.4'
     }
 
-    testcontainersVersion = '1.14.3'
+    testcontainersVersion = '1.15.0'
 
     println "Hibernate ORM Version: " + project.hibernateOrmVersion
     println "Vert.x Version: " + project.vertxVersion
