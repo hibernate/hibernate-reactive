@@ -13,7 +13,9 @@ import org.hibernate.type.descriptor.sql.SqlTypeDescriptorRegistry.ObjectSqlType
 import java.sql.Types;
 
 /**
- * This was a temporary workaround for #336, and could be removed.
+ * This is not strictly necessary but we prefer it to ORM default implementation
+ * ({@link org.hibernate.type.SerializableType}) because the Vert.x client
+ * has some special implementations of `getObject()` for special database types.
  */
 class ObjectType extends AbstractSingleColumnStandardBasicType<Object> {
     public ObjectType() {
