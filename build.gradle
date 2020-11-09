@@ -47,7 +47,7 @@ ext {
     }
 
     if ( !Boolean.valueOf( project.skipOrmVersionParsing ) ) {
-        println "Parsing ORM version"
+        logger.lifecycle "Parsing ORM version"
         hibernateOrmVersion = Version.parseProjectVersion( project.hibernateOrmVersion )
     }
 
@@ -60,8 +60,8 @@ ext {
 
     testcontainersVersion = '1.14.3'
 
-    println "Hibernate ORM Version: " + project.hibernateOrmVersion
-    println "Vert.x Version: " + project.vertxVersion
+    logger.lifecycle "Hibernate ORM Version: " + project.hibernateOrmVersion
+    logger.lifecycle "Vert.x Version: " + project.vertxVersion
 
     baselineJavaVersion = JavaLanguageVersion.of( 8 )
 
@@ -132,8 +132,8 @@ ext {
         ]
     }
 
-    println "Java versions for main code: " + project.javaVersions.main
-    println "Java versions for tests: " + project.javaVersions.test
+    logger.lifecycle "Java versions for main code: " + project.javaVersions.main
+    logger.lifecycle "Java versions for tests: " + project.javaVersions.test
 }
 
 subprojects {
@@ -197,7 +197,7 @@ subprojects {
         }
         tasks.withType( JavaCompile ).configureEach {
             doFirst {
-                println "Compiling with '${javaCompiler.get().metadata.installationPath}'"
+                logger.lifecycle "Compiling with '${javaCompiler.get().metadata.installationPath}'"
             }
         }
         compileTestJava {
@@ -207,7 +207,7 @@ subprojects {
         }
         tasks.withType( Javadoc ).configureEach {
             doFirst {
-                println "Generating javadoc with '${javadocTool.get().metadata.installationPath}'"
+                logger.lifecycle "Generating javadoc with '${javadocTool.get().metadata.installationPath}'"
             }
         }
         test {
@@ -215,7 +215,7 @@ subprojects {
                 languageVersion = project.javaVersions.test.launcher
             }
             doFirst {
-                println "Testing with '${javaLauncher.get().metadata.installationPath}'"
+                logger.lifecycle "Testing with '${javaLauncher.get().metadata.installationPath}'"
             }
         }
     }
