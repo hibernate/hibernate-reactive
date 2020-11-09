@@ -110,7 +110,7 @@ ext {
                 ],
                 test: [
                         compiler: gradleJdkVersion,
-                        release: baselineJavaVersion,
+                        release: gradleJdkVersion,
                         launcher: gradleJdkVersion
                 ]
         ]
