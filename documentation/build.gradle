@@ -72,6 +72,13 @@ task aggregateJavadocs(type: Javadoc, group: 'Documentation') {
 		options.addStringOption( 'Xdoclint:none', '-quiet' )
 	}
 
+	if ( project.javaToolchainEnabled ) {
+		// Display version of Java tools
+		doFirst {
+			logger.lifecycle "Aggregating javadoc with '${javadocTool.get().metadata.installationPath}'"
+		}
+	}
+
     // process each project, building up:
     //      1) appropriate sources
     //      2) classpath
