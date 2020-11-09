@@ -65,7 +65,7 @@ task aggregateJavadocs(type: Javadoc, group: 'Documentation') {
 			// https://bugs.openjdk.java.net/browse/JDK-8212233?focusedCommentId=14245762
 			// For now, let's be compatible with JDK 11.0.3+. We can improve on it if people
 			// complain they cannot build with JDK 11.0.0, 11.0.1 and 11.0.2.
-			System.out.println("Forcing Javadoc in Java 8 compatible mode");
+			logger.lifecycle "Forcing Javadoc in Java 8 compatible mode"
 			options.source = project.baselineJavaVersion
 		}
 
