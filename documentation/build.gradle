@@ -70,6 +70,11 @@ task aggregateJavadocs(type: Javadoc, group: 'Documentation') {
 		}
 
 		options.addStringOption( 'Xdoclint:none', '-quiet' )
+
+		if ( project.javaToolchainEnabled ) {
+			options.setJFlags( getProperty( 'toolchain.javadoc.jvmargs' ).toString().
+					split( ' ' ).toList().findAll( { !it.isEmpty() } ) )
+		}
 	}
 
 	if ( project.javaToolchainEnabled ) {
