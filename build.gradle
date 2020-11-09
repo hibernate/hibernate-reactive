@@ -67,7 +67,7 @@ ext {
 
     // Gradle does bytecode transformation on tests.
     // You can't use bytecode higher than what Gradle supports, even with toolchains.
-    GRADLE_MAX_SUPPORTED_BYTECODE_VERSION = 15
+    def GRADLE_MAX_SUPPORTED_BYTECODE_VERSION = 15
 
     // If either 'main.jdk.version' or 'test.jdk.version' is set, enable the toolchain and use the selected jdk.
     // If only one property is set, the other defaults to the baseline Java version (8).
@@ -93,16 +93,32 @@ ext {
                                 ?: baselineJavaVersion.asInt() )
                 ]
         ]
-        javaVersions.test.release = JavaLanguageVersion.of(
-                Math.min( GRADLE_MAX_SUPPORTED_BYTECODE_VERSION, javaVersions.test.compiler.asInt() ) )
-        javaVersions.test.launcher = javaVersions.test.compiler
+        def testCompilerVersion = javaVersions.test.compiler
+        if ( testCompilerVersion.asInt() > GRADLE_MAX_SUPPORTED_BYTECODE_VERSION ) {
+            logger.warn( "[WARN] Gradle does not support bytecode version '${testCompilerVersion}'." +
+                     " Forcing test bytecode to version ${GRADLE_MAX_SUPPORTED_BYTECODE_VERSION}." )
+            javaVersions.test.release = JavaLanguageVersion.of( GRADLE_MAX_SUPPORTED_BYTECODE_VERSION )
+        }
+        else {
+            javaVersions.test.release = testCompilerVersion
+        }
+        javaVersions.test.launcher = testCompilerVersion
     }
     else {
         // Not testing a particular JDK version: we will use the same JDK used to run Gradle.
         // We disable toolchains for convenience, so that anyone can just run the build with their own JDK
         // without any additional options and without downloading the whole JDK.
         javaToolchainEnabled = false
-        gradleJdkVersion = JavaLanguageVersion.of( JavaVersion.current().getMajorVersion() )
+        def gradleJdkVersion = JavaLanguageVersion.of( JavaVersion.current().getMajorVersion() )
+        if ( gradleJdkVersion.asInt() > GRADLE_MAX_SUPPORTED_BYTECODE_VERSION ) {
+            logger.warn( "[WARN] Gradle does not support this JDK, because it is too recent; build is likely to fail." +
+                    " To avoid failures, you should use an older Java version when running Gradle, and rely on toolchains." +
+                    " To that end, specify the version of Java you want to run tests with using property 'test.jdk.version'," +
+                    " and specify the path to JDK8 *and* a JDK of the test version using property 'org.gradle.java.installations.paths'." +
+                    " Example:" +
+                    "./gradlew build -Ptest.jdk.version=15 -Porg.gradle.java.installations.paths=\$SDKMAN_CANDIDATES_DIR/java/15.0.1-open,\$SDKMAN_CANDIDATES_DIR/java/8" )
+        }
+
         javaVersions = [
                 main: [
                         compiler: gradleJdkVersion,
