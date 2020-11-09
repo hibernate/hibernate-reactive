@@ -39,7 +39,6 @@ public class ReactiveSessionFactoryImpl extends SessionFactoryImpl {
 		contributions.put( Types.TIMESTAMP, singleton( LocalDateTimeType.class.getName() ) );
 		contributions.put( Types.TIME, singleton( LocalTimeType.class.getName() ) );
 		contributions.put( Types.DATE, singleton( LocalDateType.class.getName() ) );
-		//TODO: this was a temporary workaround for #336 and could be removed
 		contributions.put( Types.JAVA_OBJECT, singleton( ObjectType.class.getName() ) );
 	}
 
