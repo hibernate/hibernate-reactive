@@ -717,9 +717,9 @@ public interface Stage {
 		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
 
 		/**
-		 * Create an instance of {@link Query} for the given  SQL query string,
+		 * Create an instance of {@link Query} for the given SQL query string,
 		 * or SQL update, insert, or delete statement. In the case of an update,
-		 * insert or delete, the returned {@link Query} must be executed using
+		 * insert, or delete, the returned {@link Query} must be executed using
 		 * {@link Query#executeUpdate()} which returns an affected row count.
 		 * In the case of a query:
 		 *
