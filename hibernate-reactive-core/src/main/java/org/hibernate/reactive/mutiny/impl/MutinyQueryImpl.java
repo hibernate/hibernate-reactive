@@ -31,11 +31,16 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 		this.factory = factory;
 	}
 
+	public MutinyQueryImpl(ReactiveQuery<R> delegate, String[] querySpaces, MutinySessionFactoryImpl factory) {
+		this(delegate, factory);
+		delegate.setQuerySpaces( querySpaces );
+	}
+
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
 		return factory.uni(stageSupplier);
 	}
 
-	@Override
+    @Override
 	public Mutiny.Query<R> setParameter(int position, Object value) {
 		delegate.setParameter( position, value );
 		return this;
