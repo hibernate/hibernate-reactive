@@ -12,7 +12,7 @@ import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.graph.spi.RootGraphImplementor;
-import org.hibernate.metamodel.spi.MetamodelImplementor;
+import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.Criteria;
@@ -180,26 +180,27 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createQuery(String jpql, Class<R> resultType) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql, resultType ), factory );
-	}
-
-	@Override
 	public <R> Mutiny.Query<R> createQuery(String jpql) {
 		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql ), factory );
 	}
 
 	@Override
+	public <R> Mutiny.Query<R> createQuery(String jpql, Class<R> resultType) {
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql, resultType ), factory );
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNativeQuery(String sql) {
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ), factory );
+	}
+
+	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String sql, Class<R> resultType) {
-		final String typeName = resultType.getName();
-		final MetamodelImplementor metamodel = delegate.getFactory().getMetamodel();
-		final boolean knownType = metamodel.entityPersisters().containsKey( typeName );
-		if ( knownType ) {
-			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultType ), factory );
-		}
-		else {
-			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ), factory );
-		}
+		boolean knownType = delegate.getFactory().getMetamodel()
+				.entityPersisters().containsKey( resultType.getName() );
+		return knownType
+				? new MutinyQueryImpl<>( delegate.createReactiveNativeQuery(sql, resultType), factory )
+				: new MutinyQueryImpl<>( delegate.createReactiveNativeQuery(sql), factory );
 	}
 
 	@Override
@@ -208,8 +209,30 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String sql) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ), factory );
+	public <R> Mutiny.Query<R> createNativeQuery(String sql, AffectedEntities affectedEntities) {
+		return new MutinyQueryImpl<>(
+				delegate.createReactiveNativeQuery( sql ),
+				affectedEntities.getAffectedSpaces( delegate.getFactory() ),
+				factory
+		);
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNativeQuery(String sql, Class<R> resultType, AffectedEntities affectedEntities) {
+		return new MutinyQueryImpl<>(
+				delegate.createReactiveNativeQuery( sql, resultType ),
+				affectedEntities.getAffectedSpaces( delegate.getFactory() ),
+				factory
+		);
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNativeQuery(String sql, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
+		return new MutinyQueryImpl<>(
+				delegate.createReactiveNativeQuery( sql, resultSetMapping.getName() ),
+				affectedEntities.getAffectedSpaces( delegate.getFactory() ),
+				factory
+		);
 	}
 
 	@Override

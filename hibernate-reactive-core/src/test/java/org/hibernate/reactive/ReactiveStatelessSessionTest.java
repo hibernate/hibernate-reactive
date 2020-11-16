@@ -80,6 +80,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> ss.refresh(pig) )
 						.thenAccept( v -> context.assertEquals(pig.name, "X") )
 						.thenCompose( v -> ss.createNativeQuery("update Piggy set name='Y'").executeUpdate() )
+						.thenAccept( rows -> context.assertEquals(1, rows) )
 						.thenCompose( v -> ss.refresh(pig) )
 						.thenAccept( v -> context.assertEquals(pig.name, "Y") )
 						.thenCompose( v -> ss.delete(pig) )

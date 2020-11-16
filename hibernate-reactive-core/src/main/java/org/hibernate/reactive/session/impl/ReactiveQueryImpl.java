@@ -304,4 +304,9 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		super.setCacheRegion(cacheRegion);
 		return this;
 	}
+
+	@Override
+	public ReactiveQuery<R> setQuerySpaces(String[] querySpaces) {
+		throw new UnsupportedOperationException();
+	}
 }

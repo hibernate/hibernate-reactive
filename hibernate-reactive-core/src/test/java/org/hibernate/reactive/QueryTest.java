@@ -381,8 +381,8 @@ public class QueryTest extends BaseReactiveTest {
 						.thenApply( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery(
 								"select b.title, a.name from books b join authors a on author_id=a.id order by b.isbn",
-								session.getResultSetMapping( Object[].class, "title,author" )
-						).getResultList() )
+								session.getResultSetMapping(Object[].class, "title,author")
+						).getResultList())
 						.thenAccept( books -> {
 							context.assertEquals( 3, books.size() );
 							books.forEach( tuple -> {

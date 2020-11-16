@@ -133,4 +133,6 @@ public interface ReactiveQuery<R> {
 	ReactiveQuery<R> setCacheRegion(String cacheRegion);
 
 	String getCacheRegion();
+
+	ReactiveQuery<R> setQuerySpaces(String[] querySpaces);
 }

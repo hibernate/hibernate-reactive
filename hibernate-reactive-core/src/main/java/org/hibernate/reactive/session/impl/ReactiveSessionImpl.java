@@ -456,9 +456,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		ReactiveCustomLoader loader = new ReactiveCustomLoader( customQuery, getFactory() );
 //		dontFlushFromFind++;  //stops flush being called multiple times if this method is recursively called
 		return reactiveAutoFlushIfRequired( loader.getQuerySpaces() )
-				.thenCompose( v-> loader.reactiveList( this, parameters ) )
+				.thenCompose( v -> loader.reactiveList( this, parameters ) )
 				.whenComplete( (r, e) -> {
-//						dontFlushFromFind--;
+//					dontFlushFromFind--;
 					afterOperation( e == null );
 					delayedAfterCompletion();
 				} );
