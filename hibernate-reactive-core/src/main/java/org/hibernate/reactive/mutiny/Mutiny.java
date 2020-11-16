@@ -17,6 +17,7 @@ import org.hibernate.collection.internal.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.AutoCloseable;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -709,6 +710,47 @@ public interface Mutiny {
 		<R> Query<R> createNamedQuery(String queryName, Class<R> resultType);
 
 		/**
+		 * Create an instance of {@link Query} for the given SQL query string,
+		 * or SQL update, insert, or delete statement. In the case of an update,
+		 * insert, or delete, the returned {@link Query} must be executed using
+		 * {@link Query#executeUpdate()} which returns an affected row count.
+		 * In the case of a query:
+		 *
+		 * <ul>
+		 * <li>If the result set has a single column, the results will be returned
+		 * as scalars.</li>
+		 * <li>Otherwise, if the result set has multiple columns, the results will
+		 * be returned as elements of arrays of type {@code Object[]}.</li>
+		 * </ul>
+		 *
+		 * @param queryString The SQL select, update, insert, or delete statement
+		 */
+		<R> Query<R> createNativeQuery(String queryString);
+
+		/**
+		 * Create an instance of {@link Query} for the given SQL query string,
+		 * or SQL update, insert, or delete statement. In the case of an update,
+		 * insert, or delete, the returned {@link Query} must be executed using
+		 * {@link Query#executeUpdate()} which returns an affected row count.
+		 * In the case of a query:
+		 *
+		 * <ul>
+		 * <li>If the result set has a single column, the results will be returned
+		 * as scalars.</li>
+		 * <li>Otherwise, if the result set has multiple columns, the results will
+		 * be returned as elements of arrays of type {@code Object[]}.</li>
+		 * </ul>
+		 *
+		 * Any {@link AffectedEntities affected entities} are synchronized with
+		 * the database before execution of the statement.
+		 *
+		 * @param queryString The SQL select, update, insert, or delete statement
+		 * @param affectedEntities The entities which are affected by the statement
+		 */
+		<R> Query<R> createNativeQuery(String queryString,
+									   AffectedEntities affectedEntities);
+
+		/**
 		 * Create an instance of {@link Query} for the given SQL query
 		 * string, using the given {@code resultType} to interpret the results.
 		 *
@@ -733,6 +775,35 @@ public interface Mutiny {
 		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType);
 
 		/**
+		 * Create an instance of {@link Query} for the given SQL query
+		 * string, using the given {@code resultType} to interpret the results.
+		 *
+		 * <ul>
+		 * <li>If the given result type is {@link Object}, or a built-in type
+		 * such as {@link String} or {@link Integer}, the result set must
+		 * have a single column, which will be returned as a scalar.
+		 * <li>If the given result type is {@code Object[]}, then the result set
+		 * must have multiple columns, which will be returned in arrays.
+		 * <li>Otherwise, the given result type must be an entity class, in which
+		 * case the result set column aliases must map to the fields of the
+		 * entity, and the query will return instances of the entity.
+		 * </ul>
+		 *
+		 * Any {@link AffectedEntities affected entities} are synchronized with
+		 * the database before execution of the query.
+		 *
+		 * @param queryString The SQL query
+		 * @param resultType the Java type returned in each row of query results
+		 * @param affectedEntities The entities which are affected by the query
+		 *
+		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 *
+		 * @see javax.persistence.EntityManager#createNativeQuery(String, Class)
+		 */
+		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType,
+									   AffectedEntities affectedEntities);
+
+		/**
 		 * Create an instance of {@link Mutiny.Query} for the given SQL query string,
 		 * using the given {@link ResultSetMapping} to interpret the result set.
 		 *
@@ -747,22 +818,23 @@ public interface Mutiny {
 		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
 
 		/**
-		 * Create an instance of {@link Query} for the given SQL query string,
-		 * or SQL update, insert, or delete statement. In the case of an update,
-		 * insert, or delete, the returned {@link Query} must be executed using
-		 * {@link Query#executeUpdate()} which returns an affected row count.
-		 * In the case of a query:
+		 * Create an instance of {@link Mutiny.Query} for the given SQL query string,
+		 * using the given {@link ResultSetMapping} to interpret the result set.
+		 * <p>
+		 * Any {@link AffectedEntities affected entities} are synchronized with the
+		 * database before execution of the query.
 		 *
-		 * <ul>
-		 * <li>If the result set has a single column, the results will be returned
-		 * as scalars.</li>
-		 * <li>Otherwise, if the result set has multiple columns, the results will
-		 * be returned as elements of arrays of type {@code Object[]}.</li>
-		 * </ul>
+		 * @param queryString The SQL query
+		 * @param resultSetMapping the result set mapping
+		 * @param affectedEntities The entities which are affected by the query
 		 *
-		 * @param queryString The SQL select, update, insert, or delete statement
+		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 *
+		 * @see #getResultSetMapping(Class, String)
+		 * @see javax.persistence.EntityManager#createNativeQuery(String, String)
 		 */
-		<R> Query<R> createNativeQuery(String queryString);
+		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping,
+									   AffectedEntities affectedEntities);
 
 		/**
 		 * Create an instance of {@link Mutiny.Query} for the given criteria query.
@@ -1094,9 +1166,9 @@ public interface Mutiny {
 		<R> Query<R> createQuery(String queryString, Class<R> resultType);
 
 		/**
-		 * Create an instance of {@link Query} for the given  SQL query string,
+		 * Create an instance of {@link Query} for the given SQL query string,
 		 * or SQL update, insert, or delete statement. In the case of an update,
-		 * insert or delete, the returned {@link Query} must be executed using
+		 * insert, or delete, the returned {@link Query} must be executed using
 		 * {@link Query#executeUpdate()} which returns an affected row count.
 		 * In the case of a query:
 		 *

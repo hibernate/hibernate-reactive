@@ -211,4 +211,10 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 		super.setCacheRegion(cacheRegion);
 		return this;
 	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> setQuerySpaces(String[] querySpaces) {
+		super.addQuerySpaces(querySpaces);
+		return this;
+	}
 }

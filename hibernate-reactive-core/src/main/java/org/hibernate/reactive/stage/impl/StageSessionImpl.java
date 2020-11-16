@@ -10,8 +10,8 @@ import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.MappingException;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.session.Criteria;
@@ -179,13 +179,59 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public <R> Stage.Query<R> createQuery(String jpql) {
+		return new StageQueryImpl<>( delegate.createReactiveQuery( jpql ), factory );
+	}
+
+	@Override
 	public <R> Stage.Query<R> createQuery(String jpql, Class<R> resultType) {
 		return new StageQueryImpl<>( delegate.createReactiveQuery( jpql, resultType ), factory );
 	}
 
 	@Override
-	public <R> Stage.Query<R> createQuery(String jpql) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( jpql ), factory );
+	public <R> Stage.Query<R> createNativeQuery(String sql) {
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql ), factory );
+	}
+
+	@Override
+	public <R> Stage.Query<R> createNativeQuery(String sql, Class<R> resultType) {
+		boolean knownType = delegate.getFactory().getMetamodel()
+				.entityPersisters().containsKey( resultType.getName() );
+		return knownType
+				? new StageQueryImpl<>( delegate.createReactiveNativeQuery(sql, resultType), factory )
+				: new StageQueryImpl<>( delegate.createReactiveNativeQuery(sql), factory );
+	}
+
+	@Override
+	public <R> Stage.Query<R> createNativeQuery(String sql, ResultSetMapping<R> resultSetMapping) {
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping.getName() ), factory );
+	}
+
+	@Override
+	public <R> Stage.Query<R> createNativeQuery(String sql, Class<R> resultType, AffectedEntities affectedEntities) {
+		return new StageQueryImpl<>(
+				delegate.createReactiveNativeQuery( sql, resultType ),
+				affectedEntities.getAffectedSpaces( delegate.getFactory() ),
+				factory
+		);
+	}
+
+	@Override
+	public <R> Stage.Query<R> createNativeQuery(String sql, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
+		return new StageQueryImpl<>(
+				delegate.createReactiveNativeQuery( sql, resultSetMapping.getName() ),
+				affectedEntities.getAffectedSpaces( delegate.getFactory() ),
+				factory
+		);
+	}
+
+	@Override
+	public <R> Stage.Query<R> createNativeQuery(String sql, AffectedEntities affectedEntities) {
+		return new StageQueryImpl<>(
+				delegate.createReactiveNativeQuery( sql ),
+				affectedEntities.getAffectedSpaces( delegate.getFactory() ),
+				factory
+		);
 	}
 
 	@Override
@@ -196,32 +242,6 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public <R> Stage.Query<R> createNamedQuery(String name, Class<R> resultType) {
 		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ), factory );
-	}
-
-//	@Override
-//	public <R> Stage.Query<R> createNativeQuery(String sql) {
-//		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql ) );
-//	}
-
-	@Override
-	public <R> Stage.Query<R> createNativeQuery(String sql, Class<R> resultType) {
-		try {
-			delegate.getFactory().getMetamodel().entityPersister(resultType);
-			return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultType ), factory );
-		}
-		catch (MappingException me) {
-			return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql ), factory );
-		}
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNativeQuery(String sql, ResultSetMapping<R> resultSetMapping) {
-		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping.getName() ), factory );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNativeQuery(String sql) {
-		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql ), factory );
 	}
 
 	@Override @SuppressWarnings("unchecked")

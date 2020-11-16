@@ -9,6 +9,7 @@ import io.vertx.ext.unit.TestContext;
 import org.hibernate.LockMode;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.stage.Stage;
 import org.junit.Test;
 
@@ -676,6 +677,40 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testSessionWithNativeAffectedEntities(TestContext context) {
+		GuineaPig pig = new GuineaPig(3,"Rorshach");
+		AffectedEntities affectsPigs = new AffectedEntities(GuineaPig.class);
+		Stage.Session s = getSessionFactory().openSession();
+		test(
+				context,
+				s.persist(pig)
+						.thenCompose( v -> s.createNativeQuery("select * from pig where name=:n", GuineaPig.class, affectsPigs)
+								.setParameter("n", pig.name)
+								.getResultList() )
+						.thenAccept( list -> {
+							context.assertFalse( list.isEmpty() );
+							context.assertEquals(1, list.size());
+							assertThatPigsAreEqual(context, pig, list.get(0));
+						} )
+						.thenCompose( v -> s.find(GuineaPig.class, pig.id) )
+						.thenAccept( p -> {
+							assertThatPigsAreEqual(context, pig, p);
+							p.name = "X";
+						} )
+						.thenCompose( v -> s.createNativeQuery("update pig set name='Y' where name='X'", affectsPigs).executeUpdate() )
+						.thenAccept( rows -> context.assertEquals(1, rows) )
+						.thenCompose( v -> s.refresh(pig) )
+						.thenAccept( v -> context.assertEquals(pig.name, "Y") )
+						.thenAccept( v -> pig.name = "Z" )
+						.thenCompose( v -> s.createNativeQuery("delete from pig where name='Z'", affectsPigs).executeUpdate() )
+						.thenAccept( rows -> context.assertEquals(1, rows) )
+						.thenCompose( v -> s.createNativeQuery("select id from pig").getResultList() )
+						.thenAccept( list -> context.assertTrue( list.isEmpty() ) )
+						.thenAccept( v -> s.close() )
+		);
+	}
+
+	@Test
 	public void testMetamodel(TestContext context) {
 		EntityType<GuineaPig> pig = getSessionFactory().getMetamodel().entity(GuineaPig.class);
 		context.assertNotNull(pig);
@@ -690,7 +725,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Entity(name="GuineaPig")
-	@Table(name="Pig")
+	@Table(name="pig")
 	public static class GuineaPig {
 		@Id
 		private Integer id;

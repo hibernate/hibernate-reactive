@@ -30,6 +30,11 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 		this.factory = factory;
 	}
 
+	public StageQueryImpl(ReactiveQuery<R> delegate, String[] querySpaces, StageSessionFactoryImpl factory) {
+		this(delegate, factory);
+		delegate.setQuerySpaces( querySpaces );
+	}
+
 	private <T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stage) {
 		return factory.stage(stage);
 	}
