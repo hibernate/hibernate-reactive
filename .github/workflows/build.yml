@@ -19,7 +19,7 @@ jobs:
        # Label used to access the service container
       mysql:
         # Docker Hub image
-        image: mysql:8
+        image: mysql:8.0.22
         env:
           MYSQL_ROOT_PASSWORD: hreact
           MYSQL_DATABASE: hreact
@@ -35,7 +35,7 @@ jobs:
           - 3306:3306
       postgres:
         # Docker Hub image
-        image: postgres:13.0
+        image: postgres:13.1
         env:
           POSTGRES_DB: hreact
           POSTGRES_USER: hreact
