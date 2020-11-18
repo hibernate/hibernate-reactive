@@ -18,7 +18,7 @@ jobs:
   # The examples test the Hibernate ORM Gradle plugin. We use it for bytecode enhancements.
   run_examples:
     name: Run examples on ${{ matrix.db }} and latest Vert.x in ${{ matrix.vertx-version }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         vertx-version: ['[3,4)']
@@ -69,7 +69,7 @@ jobs:
 
   test_dbs:
     name: Test with ${{ matrix.db }} and latest Vert.x in ${{ matrix.vertx-version }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         vertx-version: ['[3,4)']

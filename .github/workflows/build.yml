@@ -11,7 +11,7 @@ on:
 jobs:
   run_examples:
     name: Run examples on ${{ matrix.db }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         db: [ 'MySQL', 'PostgreSQL' ]
@@ -80,7 +80,7 @@ jobs:
 
   test_dbs:
     name: Test with ${{ matrix.db }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         db: [ 'MySQL', 'PostgreSQL', 'DB2' ]
@@ -116,7 +116,7 @@ jobs:
 
   test_jdks:
     name: Test with Java ${{ matrix.java.name }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -168,7 +168,7 @@ jobs:
   snapshot:
     name: Create snapshot
     if: github.event_name == 'push' && startsWith( github.ref, 'refs/heads/' )
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 1.8
@@ -191,7 +191,7 @@ jobs:
   release:
     name: Release
     if: github.event_name == 'push' && startsWith( github.ref, 'refs/tags/' )
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 1.8
