@@ -9,7 +9,7 @@ class MySQLDatabase implements TestableDatabase {
 
 	static MySQLDatabase INSTANCE = new MySQLDatabase();
 
-	public final static String IMAGE_NAME = "mysql:8";
+	public final static String IMAGE_NAME = "mysql:8.0.22";
 
 	/**
 	 * Holds configuration for the MySQL database contianer. If the build is run with <code>-Pdocker</code> then
