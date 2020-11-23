@@ -97,6 +97,35 @@ public class BatchFetchTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testBatchLoad(TestContext context) {
+
+		Node basik = new Node("Child");
+		basik.parent = new Node("Parent");
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+		basik.elements.add(new Element(basik));
+		basik.parent.elements.add(new Element(basik.parent));
+		basik.parent.elements.add(new Element(basik.parent));
+
+		test( context,
+				completedFuture( openSession() )
+						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
+						.thenApply(v -> openSession())
+						.thenCompose(s -> s.find(Element.class,
+								basik.elements.get(1).id,
+								basik.elements.get(2).id,
+								basik.elements.get(0).id)
+						).thenAccept(elements -> {
+							context.assertFalse( elements.isEmpty() );
+							context.assertEquals( 3, elements.size() );
+							context.assertEquals( basik.elements.get(1).id, elements.get(0).id );
+							context.assertEquals( basik.elements.get(2).id, elements.get(1).id );
+							context.assertEquals( basik.elements.get(0).id, elements.get(2).id );
+						})
+		);
+	}
+
 	@Entity(name = "Element") @Table(name="Element")
 	public static class Element {
 		@Id @GeneratedValue Integer id;
