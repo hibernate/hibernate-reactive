@@ -358,6 +358,8 @@ environment.
 - Sequence, table, and `UUID` id generation is built in, and these id
   generation strategies may be selected using the usual JPA mapping
   annotations: `@GeneratedValue`, `@TableGenerator`, `@SequenceGenerator`.
+- On MySQL, an autoincrement column may be used by specifying
+  `@GeneratedValue(strategy=GenerationType.IDENTITY)`
 - Custom id generators may be defined by implementing `ReactiveIdentifierGenerator`
   and declaring the custom implementation using `@GenericGenerator`.
 - Natural ids&mdash;including composite ids&mdash;may be assigned by the
