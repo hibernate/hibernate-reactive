@@ -1054,8 +1054,6 @@ public class ReactiveActionQueue {
 		 * Singleton access
 		 */
 		public static final InsertActionSorter INSTANCE = new InsertActionSorter();
-		// the mapping of entity names to their latest batch numbers.
-		private List<BatchIdentifier> latestBatches;
 		// the map of batch numbers to EntityInsertAction lists
 		private Map<BatchIdentifier, List<ReactiveEntityInsertAction>> actionBatches;
 
@@ -1067,8 +1065,10 @@ public class ReactiveActionQueue {
 		 */
 		public void sort(List<ReactiveEntityInsertAction> insertions) {
 			// optimize the hash size to eliminate a rehash.
-			this.latestBatches = new ArrayList<>();
 			this.actionBatches = new HashMap<>();
+
+			// the mapping of entity names to their latest batch numbers.
+			final List<BatchIdentifier> latestBatches = new ArrayList<>();
 
 			for ( ReactiveEntityInsertAction action : insertions ) {
 				BatchIdentifier batchIdentifier = new BatchIdentifier(
@@ -1180,8 +1180,8 @@ public class ReactiveActionQueue {
 
 				for ( int i = 0; i < propertyValues.length; i++ ) {
 					Object value = propertyValues[i];
-					Type type = propertyTypes[i];
 					if (value!=null) {
+						Type type = propertyTypes[i];
 						addParentChildEntityNameByPropertyAndValue( action, batchIdentifier, type, value );
 					}
 				}
