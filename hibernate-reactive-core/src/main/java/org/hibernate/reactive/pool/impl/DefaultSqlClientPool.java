@@ -5,11 +5,14 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
+import org.hibernate.AssertionFailure;
 import org.hibernate.dialect.PostgreSQL9Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -54,6 +57,17 @@ import static org.hibernate.internal.CoreLogging.messageLogger;
  */
 public class DefaultSqlClientPool extends SqlClientPool
 		implements ServiceRegistryAwareService, Configurable, Stoppable, Startable {
+
+	private final static Method CLOSE_METHOD = identifyCloseMethod();
+
+	private static Method identifyCloseMethod() {
+		try {
+			return Pool.class.getMethod( "close" );
+		}
+		catch (NoSuchMethodException e) {
+			throw new IllegalStateException( e );
+		}
+	}
 
 	private Pool pool;
 	private SqlStatementLogger sqlStatementLogger;
@@ -190,7 +204,12 @@ public class DefaultSqlClientPool extends SqlClientPool
 	@Override
 	public void stop() {
 		if ( pool != null ) {
-			pool.close();
+			try {
+				CLOSE_METHOD.invoke( pool );
+			}
+			catch (IllegalAccessException | InvocationTargetException e) {
+				throw new AssertionFailure( "Error closing SqlClientPool instance", e );
+			}
 		}
 	}
 
