@@ -5,16 +5,20 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.AssertionFailure;
 import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PropertyKind;
@@ -204,11 +208,48 @@ public class SqlClientConnection implements ReactiveConnection {
 		return connection;
 	}
 
+	private static final Method BEGIN_ON_3 = identifyBeginMethodOnVertxVersion3();
+	private static final boolean RUNNING_ON_VERTX3 = BEGIN_ON_3 != null;
+
+	private static Method identifyBeginMethodOnVertxVersion3() {
+		final Method method;
+		try {
+			method = SqlConnection.class.getMethod( "begin" );
+		}
+		catch (NoSuchMethodException e) {
+			return null; //some new Vert.x version? No need for Vertx 3 compatibility in this case.
+		}
+		final Class<?> returnType = method.getReturnType();
+		// if it returns Transaction then we're on Vert.x v. 3.9
+		if ( Transaction.class.equals( returnType ) ) {
+			return method;
+		}
+		else {
+			// else it is Vert.x 4
+			return null;
+		}
+	}
+
 	@Override
 	public CompletionStage<Void> beginTransaction() {
-		transaction = Handlers
+		if (RUNNING_ON_VERTX3) {
+			transaction = CompletionStages.completedFuture( beginTransactionVertx3() );
+		}
+		else {
+			transaction = Handlers
 				.toCompletionStage( handler -> connection.begin( handler ) );
+		}
+
 		return voidFuture();
+	}
+
+	private Transaction beginTransactionVertx3() {
+		try {
+			return (Transaction) BEGIN_ON_3.invoke( connection );
+		}
+		catch (IllegalAccessException | InvocationTargetException e) {
+			throw new AssertionFailure( "Error beginning transaction on Vert.x 3 compatibility mode. Probably best to upgrade Vert.x to version 4", e );
+		}
 	}
 
 	@Override
