@@ -23,7 +23,8 @@ dependencies {
 //    annotationProcessor 'org.jboss.logging:jboss-logging-processor:2.1.0.Final'
 
     //Specific implementation details of Hibernate Reactive:
-    implementation "io.vertx:vertx-sql-client:${vertxVersion}"
+    compileOnly "io.vertx:vertx-sql-client:${vertxCompileVersion}"
+    runtimeOnly "io.vertx:vertx-sql-client:${vertxVersion}"
 
     // Testing
     testImplementation 'org.assertj:assertj-core:3.13.2'

@@ -51,11 +51,14 @@ ext {
         hibernateOrmVersion = Version.parseProjectVersion( project.hibernateOrmVersion )
     }
 
+    //We want to consistently compile with a specific version of Vert.x, and yet be able to test
+    //with a more flexible range.
+    vertxCompileVersion = '4.0.0.CR2'
     // Mainly, to allow CI to test the latest versions of Vert.X
     // Example:
     // ./gradlew build -PvertxVersion=4.0.0-SNAPSHOT
     if ( !project.hasProperty('vertxVersion') ) {
-        vertxVersion = '3.9.4'
+        vertxVersion = vertxCompileVersion
     }
 
     testcontainersVersion = '1.15.0'
