@@ -5,29 +5,18 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import io.vertx.sqlclient.*;
+import org.hibernate.engine.jdbc.internal.FormatStyle;
+import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
+import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
+import org.hibernate.reactive.pool.ReactiveConnection;
+
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.engine.jdbc.internal.FormatStyle;
-import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
-import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
-import org.hibernate.reactive.pool.ReactiveConnection;
-
-import io.vertx.sqlclient.Pool;
-import io.vertx.sqlclient.PropertyKind;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowIterator;
-import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.SqlClient;
-import io.vertx.sqlclient.SqlConnection;
-import io.vertx.sqlclient.SqlResult;
-import io.vertx.sqlclient.Transaction;
-import io.vertx.sqlclient.Tuple;
-
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -42,7 +31,7 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	private final Pool pool;
 	private final SqlConnection connection;
-	private CompletionStage<Transaction> transaction;
+	private Transaction transaction;
 
 	SqlClientConnection(SqlConnection connection, Pool pool,
 						SqlStatementLogger sqlStatementLogger,
@@ -206,30 +195,20 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> beginTransaction() {
-		transaction = Handlers
-				.toCompletionStage( handler -> connection.begin( handler ) );
-		return voidFuture();
+		return Handlers.<Transaction>toCompletionStage(connection::begin)
+				.thenAccept( tx -> transaction = tx );
 	}
 
 	@Override
 	public CompletionStage<Void> commitTransaction() {
-		return transaction.thenCompose( tx -> {
-			return Handlers.toCompletionStage( handler -> {
-				transaction = nullFuture();
-				tx.commit( handler );
-			} );
-		} );
+		return Handlers.<Void>toCompletionStage(transaction::commit)
+				.whenComplete( (v, x) -> transaction = null );
 	}
 
 	@Override
 	public CompletionStage<Void> rollbackTransaction() {
-		return transaction.thenCompose( tx -> {
-			final Transaction tx2 = tx;
-			return Handlers.toCompletionStage( handler -> {
-				transaction = nullFuture();
-				tx2.rollback( handler );
-			} );
-		} );
+		return Handlers.<Void>toCompletionStage(transaction::rollback)
+				.whenComplete( (v, x) -> transaction = null );
 	}
 
 	@Override
