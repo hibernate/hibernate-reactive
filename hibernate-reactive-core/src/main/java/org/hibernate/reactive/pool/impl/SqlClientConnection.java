@@ -209,7 +209,26 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	private static final Method BEGIN_ON_3 = identifyBeginMethodOnVertxVersion3();
+	private static final Method CLOSE_ON_3 = identifyCloseMethodOnVertxVersion3();
 	private static final boolean RUNNING_ON_VERTX3 = BEGIN_ON_3 != null;
+
+	private static Method identifyCloseMethodOnVertxVersion3() {
+		try {
+			final Method method = SqlClient.class.getMethod( "close" );
+			final Class<?> returnType = method.getReturnType();
+			// if it's void we're on Vert.x v. 3.9
+			if ( returnType.equals( Void.TYPE ) ) {
+				return method;
+			}
+			else {
+				// else it is Vert.x 4
+				return null;
+			}
+		}
+		catch (NoSuchMethodException e) {
+			return null; //some new Vert.x version? No need for Vertx 3 compatibility in this case.
+		}
+	}
 
 	private static Method identifyBeginMethodOnVertxVersion3() {
 		final Method method;
@@ -275,7 +294,17 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public void close() {
-		connection.close();
+		if (RUNNING_ON_VERTX3) {
+			try {
+				CLOSE_ON_3.invoke( connection );
+			}
+			catch (IllegalAccessException | InvocationTargetException e) {
+				throw new AssertionFailure( "Error closing connection on Vert.x 3 compatibility mode. Probably best to upgrade Vert.x to version 4", e );
+			}
+		}
+		else {
+			connection.close();
+		}
 	}
 
 	/**
