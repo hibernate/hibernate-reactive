@@ -5,7 +5,12 @@
  */
 package org.hibernate.reactive.vertx.impl;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import io.vertx.core.Vertx;
+
+import org.hibernate.AssertionFailure;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.Startable;
 import org.hibernate.service.spi.Stoppable;
@@ -21,6 +26,17 @@ import org.hibernate.service.spi.Stoppable;
  */
 public final class DefaultVertxInstance implements VertxInstance, Stoppable, Startable {
 
+    private final static Method CLOSE_METHOD = identifyCloseMethod();
+
+    private static Method identifyCloseMethod() {
+        try {
+            return Vertx.class.getMethod( "close" );
+        }
+        catch (NoSuchMethodException e) {
+            throw new IllegalStateException( e );
+        }
+    }
+
     private Vertx vertx;
 
     @Override
@@ -34,7 +50,12 @@ public final class DefaultVertxInstance implements VertxInstance, Stoppable, Sta
     @Override
     public void stop() {
         if ( vertx != null ) {
-            vertx.close();
+            try {
+                CLOSE_METHOD.invoke( vertx );
+            }
+            catch (IllegalAccessException | InvocationTargetException e) {
+                throw new AssertionFailure( "Error closing Vert.x instance", e );
+            }
         }
     }
 
