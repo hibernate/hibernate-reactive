@@ -31,7 +31,6 @@ import io.vertx.sqlclient.SqlResult;
 import io.vertx.sqlclient.Transaction;
 import io.vertx.sqlclient.Tuple;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -46,7 +45,7 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	private final Pool pool;
 	private final SqlConnection connection;
-	private CompletionStage<Transaction> transaction;
+	private Transaction transaction;
 
 	SqlClientConnection(SqlConnection connection, Pool pool,
 						SqlStatementLogger sqlStatementLogger,
@@ -251,15 +250,10 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> beginTransaction() {
-		if (RUNNING_ON_VERTX3) {
-			transaction = CompletionStages.completedFuture( beginTransactionVertx3() );
-		}
-		else {
-			transaction = Handlers
-				.toCompletionStage( handler -> connection.begin( handler ) );
-		}
-
-		return voidFuture();
+		CompletionStage<Transaction> transactionStage = RUNNING_ON_VERTX3
+				? CompletionStages.completedFuture( beginTransactionVertx3() )
+				: Handlers.<Transaction>toCompletionStage( connection::begin );
+		return transactionStage.thenAccept( tx -> transaction = tx );
 	}
 
 	private Transaction beginTransactionVertx3() {
@@ -273,23 +267,14 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> commitTransaction() {
-		return transaction.thenCompose( tx -> {
-			return Handlers.toCompletionStage( handler -> {
-				transaction = nullFuture();
-				tx.commit( handler );
-			} );
-		} );
+		return Handlers.<Void>toCompletionStage(transaction::commit)
+				.whenComplete( (v, x) -> transaction = null );
 	}
 
 	@Override
 	public CompletionStage<Void> rollbackTransaction() {
-		return transaction.thenCompose( tx -> {
-			final Transaction tx2 = tx;
-			return Handlers.toCompletionStage( handler -> {
-				transaction = nullFuture();
-				tx2.rollback( handler );
-			} );
-		} );
+		return Handlers.<Void>toCompletionStage(transaction::rollback)
+				.whenComplete( (v, x) -> transaction = null );
 	}
 
 	@Override
