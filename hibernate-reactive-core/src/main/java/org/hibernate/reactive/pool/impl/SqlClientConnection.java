@@ -215,14 +215,12 @@ public class SqlClientConnection implements ReactiveConnection {
 		try {
 			final Method method = SqlClient.class.getMethod( "close" );
 			final Class<?> returnType = method.getReturnType();
-			// if it's void we're on Vert.x v. 3.9
-			if ( returnType.equals( Void.TYPE ) ) {
-				return method;
-			}
-			else {
-				// else it is Vert.x 4
-				return null;
-			}
+			// if it returns void
+			return returnType.equals( Void.TYPE )
+					// then we're on Vert.x v. 3.9
+					? method
+					// else it's Vert.x 4
+					: null;
 		}
 		catch (NoSuchMethodException e) {
 			return null; //some new Vert.x version? No need for Vertx 3 compatibility in this case.
@@ -230,21 +228,18 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	private static Method identifyBeginMethodOnVertxVersion3() {
-		final Method method;
 		try {
-			method = SqlConnection.class.getMethod( "begin" );
+			final Method method = SqlConnection.class.getMethod( "begin" );
+			final Class<?> returnType = method.getReturnType();
+			// if it returns Transaction
+			return Transaction.class.equals( returnType )
+					// then we're on Vert.x v. 3.9
+					? method
+					// else it's Vert.x 4
+					: null;
 		}
 		catch (NoSuchMethodException e) {
 			return null; //some new Vert.x version? No need for Vertx 3 compatibility in this case.
-		}
-		final Class<?> returnType = method.getReturnType();
-		// if it returns Transaction then we're on Vert.x v. 3.9
-		if ( Transaction.class.equals( returnType ) ) {
-			return method;
-		}
-		else {
-			// else it is Vert.x 4
-			return null;
 		}
 	}
 
