@@ -10,10 +10,11 @@ on:
 
 jobs:
   run_examples:
-    name: Run examples on ${{ matrix.db }}
+    name: Run examples on ${{ matrix.db }} and Vert.x ${{ matrix.vert.x-version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        vertx-version: ['3.9.4', '4.0.0.CR2']
         db: [ 'MySQL', 'PostgreSQL' ]
     services:
        # Label used to access the service container
@@ -69,8 +70,12 @@ jobs:
       with:
         java-version: 1.8
       uses: actions/setup-java@v1
+    - name: Print the effective Vert.x version used at compile and runtime
+      run: |
+        ./gradlew :example:dependencyInsight --dependency io.vertx -PvertxVersion='${{ matrix.vertx-version }}' --configuration compileClasspath;
+        ./gradlew :example:dependencyInsight --dependency io.vertx -PvertxVersion='${{ matrix.vertx-version }}' --configuration runtimeClasspath
     - name: Run examples on ${{ matrix.db }}
-      run: ./gradlew :example:runAllExamplesOn${{ matrix.db }}
+      run: ./gradlew :example:runAllExamplesOn${{ matrix.db }} -PvertxVersion='${{ matrix.vertx-version }}'
     - name: Upload reports (if build failed)
       uses: actions/upload-artifact@v2
       if: failure()
@@ -79,10 +84,11 @@ jobs:
         path: './**/build/reports/'
 
   test_dbs:
-    name: Test with ${{ matrix.db }}
+    name: Test with ${{ matrix.db }} and Vert.x ${{ matrix.vert.x-version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        vertx-version: ['3.9.4', '4.0.0.CR2']
         db: [ 'MySQL', 'PostgreSQL', 'DB2' ]
     steps:
     - uses: actions/checkout@v2
@@ -105,8 +111,12 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-    - name: Build and Test with ${{ matrix.db }}
-      run: ./gradlew build -Pdocker -Pdb=${{ matrix.db }}
+    - name: Print the effective Vert.x version used at compile and runtime
+      run: |
+        ./gradlew :hibernate-reactive-core:dependencyInsight --dependency io.vertx -PvertxVersion='${{ matrix.vertx-version }}' --configuration compileClasspath;
+        ./gradlew :hibernate-reactive-core:dependencyInsight --dependency io.vertx -PvertxVersion='${{ matrix.vertx-version }}' --configuration runtimeClasspath
+    - name: Build and Test with ${{ matrix.db }} and Vert.x ${{ matrix.vertx-version }}
+      run: ./gradlew build -Pdocker -Pdb=${{ matrix.db }} -PvertxVersion='${{ matrix.vertx-version }}'
     - name: Upload reports (if build failed)
       uses: actions/upload-artifact@v2
       if: failure()
