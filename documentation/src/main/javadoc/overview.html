@@ -1,67 +1,69 @@
 <!--
-  ~ Hibernate, Relational Persistence for Idiomatic Java
-  ~
-  ~ License: GNU Lesser General Public License (LGPL), version 2.1 or later.
-  ~ See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
-  -->
+Hibernate, Relational Persistence for Idiomatic Java
+
+SPDX-License-Identifier: LGPL-2.1-or-later
+Copyright: Red Hat Inc. and Hibernate Authors
+-->
 <body>
 
-<h2>Hibernate O/RM Aggregated JavaDocs</h2>
+<p>
+    Hibernate Reactive is a reactive API for Hibernate ORM, supporting non-blocking
+    database drivers and a reactive style of interaction with the database.
+</p>
 
-Hibernate provides both<ul>
-    <li>
-        a native API comprised centrally around {@link org.hibernate.SessionFactory} and {@link org.hibernate.Session}
-    </li>
-    <li>
-        an implementation of the Java Persistence API (JPA).
-        See the latest <a href="http://jcp.org/en/jsr/detail?id=338">JPA JSR</a> for details.
-    </li>
-</ul>
-<p></p>
+<p>
+    The central APIs are defined as inner interfaces of
+    <ul>
+    <li>{@link org.hibernate.reactive.mutiny.Mutiny},
+        for programs using Mutiny reactive streams, and</li>
+    <li>{@link org.hibernate.reactive.stage.Stage},
+        for programs using Java's {@link java.util.concurrent.CompletionStage}.</li>
+    </ul>
+    An instance of {@link org.hibernate.reactive.mutiny.Mutiny.SessionFactory} or
+    {@link org.hibernate.reactive.stage.Stage.SessionFactory} may be obtained by
+    calling {@link javax.persistence.EntityManagerFactory#unwrap(Class)}.
+</p>
 
-<h3>Native API</h3>
-In addition to SessionFactory and Session, applications using the native API will often utilize the following
-interfaces:<ul>
-    <li>{@link org.hibernate.cfg.Configuration}</li>
-    <li>{@link org.hibernate.Transaction}</li>
-    <li>{@link org.hibernate.Query}</li>
-    <li>{@link org.hibernate.Criteria}</li>
-    <li>{@link org.hibernate.criterion.Projection}</li>
-    <li>{@link org.hibernate.criterion.Projections}</li>
-    <li>{@link org.hibernate.criterion.Criterion}</li>
-    <li>{@link org.hibernate.criterion.Restrictions}</li>
-    <li>{@link org.hibernate.criterion.Order}</li>
-    <li>{@link org.hibernate.criterion.Example}</li>
-</ul>
-These interfaces are fully intended to be exposed to application code.
-<p></p>
+<p>
+    The public API is organized into the following packages:
+</p>
 
-<h3>JPA</h3>
-The JPA interfaces are all defined by the JPA specification.  For details see {@link javax.persistence}.
-Not that since 5.2 Hibernate extends JPA (e.g. SessionFactory extends EntityManagerFactory) rather
-than wrapping it.
-<p></p>
+<p>
+<table>
+<tr>
+    <td>{@link org.hibernate.reactive.mutiny}</td><td>&mdash;</td>
+    <td>APIs specific to usage with Mutiny reactive streams</td>
+</tr>
+<tr>
+    <td>{@link org.hibernate.reactive.stage}</td><td>&mdash;</td>
+    <td>APIs specific to usage with {@link java.util.concurrent.CompletionStage}</td>
+</tr>
+<tr>
+    <td>{@link org.hibernate.reactive.common}</td><td>&mdash;</td>
+    <td>APIs common to both kinds of reactive stream</td>
+</tr>
+<tr>
+    <td>{@link org.hibernate.reactive.id}</td><td>&mdash;</td>
+    <td>SPI for plugin custom identifier generation</td>
+</tr>
+<tr>
+    <td>{@link org.hibernate.reactive.pool}</td><td>&mdash;</td>
+    <td>SPI for plugin custom connection pooling</td>
+</tr>
+<tr>
+    <td>{@link org.hibernate.reactive.vertx}</td><td>&mdash;</td>
+    <td>SPI for plugin custom integration with Vert.x</td>
+</tr>
+</table>
+</p>
 
+<p>
+    SPIs are implemented as Hibernate services.
+</p>
 
-<h3>Note about package categories</h3>
-Hibernate categorizes packages into a number of groups based on intended consumers:<ul>
-    <li>
-        <strong>API</strong> - classes to which application code will generally bind directly.  These
-        are generally classes which do not have "spi" nor "internal" in their package path and are
-        not under the "org.hibernate.testing" package
-    </li>
-    <li>
-        <strong>SPI</strong> - classes to which integrator developers will commonly bind directly in
-        order to develop extensions to Hibernate, or to alter its behavior in some way.  These are
-        generally under packages with "spi" in the package path.
-    </li>
-    <li>
-        <strong>Testing Support</strong> - classes from the hibernate-testing artifact used in building
-        Hibernate test cases.  These are classes under the "org.hibernate.testing" package
-    </li>
-</ul>
-<p></p>
-
-Complete Hibernate documentation may be found online at <a href="http://hibernate.org/orm/documentation">http://hibernate.org/orm/documentation/</a>
+<p>
+    Packages not listed above are considered non-public and are subject to change
+    without notice.
+</p>
 
 </body>
