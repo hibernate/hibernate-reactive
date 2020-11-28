@@ -43,8 +43,9 @@ task aggregateJavadocs(type: Javadoc, group: 'Documentation') {
 	maxMemory = '512m'
 	destinationDir = javadocDir
 	configure( options ) {
-		windowTitle = 'Hibernate Reactive JavaDoc'
-		docTitle = "Hibernate Reactive JavaDoc ($project.version)"
+		overview = project.file( 'src/main/javadoc/overview.html' )
+		windowTitle = 'Hibernate Reactive API documentation'
+		docTitle = "Hibernate Reactive API documentation ($project.version)"
 		bottom = "Copyright &copy; $inceptionYear-$currentYear <a href=\"http://redhat.com\">Red Hat, Inc</a>. All Rights Reserved."
 		use = true
 		options.encoding = 'UTF-8'
@@ -56,7 +57,7 @@ task aggregateJavadocs(type: Javadoc, group: 'Documentation') {
 				'https://docs.oracle.com/javase/8/docs/api/',
 				'http://docs.jboss.org/hibernate/beanvalidation/spec/2.0/api/',
 				'https://javaee.github.io/javaee-spec/javadocs/',
-				"https://docs.jboss.org/hibernate/orm/" + ormMinorVersion + "/javadocs/"
+//				"https://docs.jboss.org/hibernate/orm/" + ormMinorVersion + "/javadocs/"
 		]
 		
 		if ( gradle.ext.javaVersions.main.compiler.asInt() >= 11 ) {
