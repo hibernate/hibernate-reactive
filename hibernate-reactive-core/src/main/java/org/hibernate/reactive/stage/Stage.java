@@ -113,17 +113,33 @@ public interface Stage {
 		int getFirstResult();
 
 		/**
-		 * Asynchronously Execute this query, returning a single row
-		 * that matches the query, or {@code null} if the query returns
-		 * no results, throwing an exception if the query returns more
-		 * than one matching row. If the query has multiple results per
-		 * row, the results are returned in an instance of {@code Object[]}.
+		 * Asynchronously execute this query, returning a single row that
+		 * matches the query, throwing an exception if the query returns
+		 * zero rows or more than one matching row. If the query has multiple
+		 * results per row, the results are returned in an instance of
+		 * {@code Object[]}.
 		 *
-		 * @return the single resulting row or {@code null}
+		 * @return the single resulting row
+		 * @throws javax.persistence.NoResultException if there is no result
+		 * @throws javax.persistence.NonUniqueResultException if there are multiple results
 		 *
 		 * @see javax.persistence.Query#getSingleResult()
 		 */
 		CompletionStage<R> getSingleResult();
+
+		/**
+		 * Asynchronously execute this query, returning a single row that
+		 * matches the query, or {@code null} if the query returns no results,
+		 * throwing an exception if the query returns more than one matching
+		 * row. If the query has multiple results per row, the results are
+		 * returned in an instance of {@code Object[]}.
+		 *
+		 * @return the single resulting row or {@code null}
+		 * @throws javax.persistence.NonUniqueResultException if there are multiple results
+		 *
+		 * @see #getSingleResult()
+		 */
+		CompletionStage<R> getSingleResultOrNull();
 
 		/**
 		 * Asynchronously execute this query, returning the query results

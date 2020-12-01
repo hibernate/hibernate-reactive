@@ -20,6 +20,7 @@ import org.hibernate.type.Type;
 
 import javax.persistence.EntityGraph;
 import javax.persistence.NoResultException;
+import javax.persistence.NonUniqueResultException;
 import javax.persistence.Parameter;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -41,6 +42,17 @@ public interface ReactiveQuery<R> {
 	CompletionStage<R> getReactiveSingleResult();
 
 	CompletionStage<List<R>> getReactiveResultList();
+
+	default CompletionStage<R> getReactiveSingleResultOrNull() {
+		return getReactiveResultList().thenApply( list -> {
+			switch ( list.size() ) {
+				case 0: return null;
+				case 1: return list.get(0);
+				default: throw new NonUniqueResultException(
+						"query did not return a unique result:  there were " + list.size() + "results" );
+			}
+		} );
+	}
 
 	CompletionStage<Integer> executeReactiveUpdate();
 
