@@ -169,6 +169,11 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 	}
 
 	@Override
+	public CompletionStage<R> getSingleResultOrNull() {
+		return delegate.getReactiveSingleResultOrNull();
+	}
+
+	@Override
 	public CompletionStage<List<R>> getResultList() {
 		return delegate.getReactiveResultList();
 	}

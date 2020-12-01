@@ -169,6 +169,11 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 	}
 
 	@Override
+	public Uni<R> getSingleResultOrNull() {
+		return Uni.createFrom().completionStage( delegate.getReactiveSingleResultOrNull() );
+	}
+
+	@Override
 	public Uni<List<R>> getResultList() {
 		return Uni.createFrom().completionStage( delegate.getReactiveResultList() );
 	}

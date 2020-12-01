@@ -17,6 +17,8 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedNativeQuery;
 import javax.persistence.NamedQuery;
+import javax.persistence.NoResultException;
+import javax.persistence.NonUniqueResultException;
 import javax.persistence.OneToMany;
 import javax.persistence.SqlResultSetMapping;
 import javax.persistence.Table;
@@ -514,6 +516,59 @@ public class QueryTest extends BaseReactiveTest {
 							context.assertNotNull(r);
 							context.assertTrue(r instanceof OffsetDateTime || r instanceof LocalDateTime);
 						})
+		);
+	}
+
+	@Test
+	public void testSingleResultQueryNull(TestContext context) {
+		test(context, completedFuture(openSession())
+				.thenCompose(s -> s.createQuery("from Book").getSingleResultOrNull())
+				.thenAccept(context::assertNull)
+		);
+	}
+
+	@Test
+	public void testSingleResultQueryException(TestContext context) {
+		test(context, completedFuture(openSession())
+				.thenCompose(s -> s.createQuery("from Book").getSingleResult())
+				.whenComplete((r, x) -> {
+					context.assertNull(r);
+					context.assertNotNull(x);
+
+				})
+				.handle((r,x) -> {
+					context.assertTrue(x.getCause() instanceof NoResultException);
+					return null;
+				})
+		);
+	}
+
+	@Test
+	public void testSingleResultMultipleException(TestContext context) {
+		Author author1 = new Author("Iain M. Banks");
+		Author author2 = new Author("Neal Stephenson");
+		test(context, completedFuture(openSession())
+				.thenCompose(s -> s.persist(author1, author2).thenCompose(v -> s.flush()))
+				.thenCompose(v -> openSession().createQuery("from Author").getSingleResult())
+				.whenComplete((r, x) -> {
+					context.assertNull(r);
+					context.assertNotNull(x);
+
+				})
+				.handle((r,x) -> {
+					context.assertTrue(x.getCause() instanceof NonUniqueResultException);
+					return null;
+				})
+				.thenCompose(v -> openSession().createQuery("from Author").getSingleResultOrNull())
+				.whenComplete((r, x) -> {
+					context.assertNull(r);
+					context.assertNotNull(x);
+
+				})
+				.handle((r,x) -> {
+					context.assertTrue(x.getCause() instanceof NonUniqueResultException);
+					return null;
+				})
 		);
 	}
 
