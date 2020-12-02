@@ -17,7 +17,6 @@ import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.EntityGraph;
 import javax.persistence.criteria.CriteriaDelete;
@@ -25,10 +24,9 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Attribute;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
 
 
 /**
@@ -160,7 +158,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public Uni<Void> refreshAll(Object... entity) {
-		return Uni.createFrom().completionStage( applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entity ) );
+		return Uni.createFrom().completionStage( applyToAll( e -> delegate.reactiveRefresh(e, LockOptions.NONE), entity ) );
 	}
 
 	@Override
@@ -430,20 +428,6 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public boolean isOpen() {
 		return delegate.isOpen();
-	}
-
-	private CompletionStage<Void> applyToAll(
-			Function<Object, CompletionStage<?>> op,
-			Object[] entity) {
-		if ( entity.length==0 ) {
-			return nullFuture();
-		}
-		else if ( entity.length==1 ) {
-			return op.apply( entity[0] ).thenApply( v -> null );
-		}
-		else {
-			return CompletionStages.loop( entity, op );
-		}
 	}
 
 }
