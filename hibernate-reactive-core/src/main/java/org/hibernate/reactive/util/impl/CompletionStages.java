@@ -143,4 +143,12 @@ public class CompletionStages {
 	public static CompletionStage<Void> loop(int start, int end, Function<Integer,CompletionStage<?>> consumer) {
 		return loop( IntStream.range(start, end), consumer );
 	}
+
+	public static CompletionStage<Void> applyToAll(Function<Object, CompletionStage<?>> op, Object[] entity) {
+		switch ( entity.length ) {
+			case 0: return nullFuture();
+			case 1: return op.apply( entity[0] ).thenApply( v -> null );
+			default: return CompletionStages.loop( entity, op );
+		}
+	}
 }

@@ -17,7 +17,6 @@ import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.EntityGraph;
 import javax.persistence.criteria.CriteriaDelete;
@@ -28,7 +27,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
 /**
@@ -453,20 +452,6 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public boolean isOpen() {
 		return delegate.isOpen();
-	}
-
-	private CompletionStage<Void> applyToAll(
-			Function<Object, CompletionStage<?>> op,
-			Object[] entity) {
-		if ( entity.length==0 ) {
-			return nullFuture();
-		}
-		else if ( entity.length==1 ) {
-			return op.apply( entity[0] ).thenApply( v -> null );
-		}
-		else {
-			return CompletionStages.loop( entity, op );
-		}
 	}
 
 }
