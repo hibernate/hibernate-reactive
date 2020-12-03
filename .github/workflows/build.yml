@@ -210,8 +210,8 @@ jobs:
           Host filemgmt.jboss.org
             User hibernate
             IdentityFile ~/.ssh/jboss_filemgmt
-    - name: Publish documentation to jboss.org
-      run: ./gradlew uploadDocumentation
+    - name: Publish documentation
+      run: ./gradlew uploadDocumentation -PdocUploadBranch=production
     - name: Publish release to Bintray
       env:
         ORG_GRADLE_PROJECT_bintrayUser: ${{ secrets.BINTRAY_USER }}
