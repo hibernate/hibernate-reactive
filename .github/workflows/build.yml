@@ -210,8 +210,9 @@ jobs:
           Host filemgmt.jboss.org
             User hibernate
             IdentityFile ~/.ssh/jboss_filemgmt
-    - name: Publish documentation
-      run: ./gradlew uploadDocumentation -PdocUploadBranch=production
+# Disabled for now, I need to figure out how to give the right permissions
+#    - name: Publish documentation
+#      run: ./gradlew uploadDocumentation -PdocUploadBranch=production
     - name: Publish release to Bintray
       env:
         ORG_GRADLE_PROJECT_bintrayUser: ${{ secrets.BINTRAY_USER }}
