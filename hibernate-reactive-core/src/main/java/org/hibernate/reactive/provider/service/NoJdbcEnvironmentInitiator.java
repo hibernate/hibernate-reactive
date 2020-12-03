@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.provider.service;
 
+import org.hibernate.HibernateException;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.Dialect;
@@ -40,19 +41,17 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 
 	@Override @SuppressWarnings("unchecked")
 	public JdbcEnvironment initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-		if ( !configurationValues.containsKey( Settings.DIALECT ) ) {
-			String url = configurationValues.getOrDefault( Settings.URL, "" ).toString();
-			if ( url.startsWith("jdbc:") ) {
-				url = url.substring(5);
-			}
+		DialectFactory dialectFactory = registry.getService( DialectFactory.class );
 
-			Class<? extends Dialect> dialectClass = guessDialect(url);
+		boolean explicitDialect = configurationValues.containsKey( Settings.DIALECT );
+		String url = configurationValues.getOrDefault( Settings.URL, "" ).toString();
+		if ( !explicitDialect ) {
+			Class<? extends Dialect> dialectClass = guessDialect( url );
 			if ( dialectClass != null ) {
 				configurationValues.put( Settings.DIALECT, dialectClass.getName() );
+				explicitDialect = true;
 			}
 		}
-
-		final DialectFactory dialectFactory = registry.getService( DialectFactory.class );
 
 		// 'hibernate.temp.use_jdbc_metadata_defaults' is a temporary magic value.
 		// The need for it is intended to be alleviated with future development, thus it is
@@ -99,10 +98,24 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 		}
 
 		// if we get here, either we were asked to not use JDBC metadata or accessing the JDBC metadata failed.
-		return new JdbcEnvironmentImpl( registry, dialectFactory.buildDialect(configurationValues, null ) );
+		if ( explicitDialect ) {
+			return new JdbcEnvironmentImpl( registry, dialectFactory.buildDialect( configurationValues, null ) );
+		}
+		else if ( url.isEmpty() ) {
+			throw new HibernateException( "could not determine Dialect from JDBC driver metadata"
+					+ " (specify a connection URI with scheme 'postgresql:', 'mysql:', or 'db2:')" );
+		}
+		else {
+			throw new HibernateException( "could not determine Dialect from connection URI '" + url
+					+ "' (specify a connection URI with scheme 'postgresql:', 'mysql:', or 'db2:')" );
+		}
 	}
 
 	protected Class<? extends Dialect> guessDialect(String url) {
+		if ( url.startsWith("jdbc:") ) {
+			url = url.substring(5);
+		}
+
 		if ( url.startsWith("mysql:") ) {
 			return MySQL8Dialect.class;
 		}
