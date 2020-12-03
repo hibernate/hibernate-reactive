@@ -113,6 +113,10 @@ jobs:
       with:
         name: reports-db-${{ matrix.db }}
         path: './**/build/reports/'
+    - name: Publish documentation
+      run: ./gradlew uploadDocumentation -PdocUploadBranch=staging
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
 
   test_jdks:
     name: Test with Java ${{ matrix.java.name }}
@@ -212,6 +216,8 @@ jobs:
             IdentityFile ~/.ssh/jboss_filemgmt
     - name: Publish documentation
       run: ./gradlew uploadDocumentation -PdocUploadBranch=production
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
     - name: Publish release to Bintray
       env:
         ORG_GRADLE_PROJECT_bintrayUser: ${{ secrets.BINTRAY_USER }}
