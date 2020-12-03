@@ -1142,8 +1142,8 @@ public class ReactiveActionQueue {
 					for ( int j = i + 1; j < latestBatches.size(); j++ ) {
 						BatchIdentifier nextBatchIdentifier = latestBatches.get( j );
 
-						if ( batchIdentifier.hasParent( nextBatchIdentifier ) && !nextBatchIdentifier.hasParent(
-								batchIdentifier ) ) {
+						if ( batchIdentifier.hasParent( nextBatchIdentifier )
+								&& !nextBatchIdentifier.hasParent( batchIdentifier ) ) {
 							latestBatches.remove( batchIdentifier );
 							latestBatches.add( j, batchIdentifier );
 
@@ -1156,7 +1156,12 @@ public class ReactiveActionQueue {
 			while ( !sorted && iterations <= maxIterations );
 
 			if ( iterations > maxIterations ) {
-				LOG.warn( "The batch containing " + latestBatches.size() + " statements could not be sorted after " + maxIterations + " iterations. " + "This might indicate a circular entity relationship." );
+				LOG.warn( "The batch containing "
+						+ latestBatches.size()
+						+ " statements could not be sorted after "
+						+ maxIterations
+						+ " iterations. "
+						+ "This might indicate a circular entity relationship." );
 			}
 
 			// Now, rebuild the insertions list. There is a batch for each entry in the name list.
@@ -1205,8 +1210,8 @@ public class ReactiveActionQueue {
 			if ( type.isEntityType() ) {
 				final EntityType entityType = (EntityType) type;
 				final String entityName = entityType.getName();
-				final String rootEntityName = action.getSession().getFactory().getMetamodel().entityPersister(
-						entityName ).getRootEntityName();
+				final String rootEntityName = action.getSession().getFactory().getMetamodel()
+						.entityPersister( entityName ).getRootEntityName();
 
 				if ( entityType.isOneToOne() &&
 						entityType.getForeignKeyDirection() == ForeignKeyDirection.TO_PARENT ) {
