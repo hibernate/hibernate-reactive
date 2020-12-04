@@ -203,16 +203,15 @@ jobs:
     - name: Install SSH key
       uses: shimataro/ssh-key-action@v2
       with:
-        name: jboss_filemgmt
-        key: ${{ secrets.JBOSS_FILEMGMT_SSH_KEY }}
-        known_hosts: ${{ secrets.JBOSS_FILEMGMT_SSH_KNOWN_HOSTS }}
+        key: ${{ secrets.HIBERNATE_ORG_SSH_KEY }}
+        name: id_rsa_hibernate.org
+        known_hosts: ${{ secrets.HIBERNATE_ORG_SSH_KNOWN_HOSTS }}
         config: |
-          Host filemgmt.jboss.org
+          Host github.com
             User hibernate
-            IdentityFile ~/.ssh/jboss_filemgmt
-# Disabled for now, I need to figure out how to give the right permissions
-#    - name: Publish documentation
-#      run: ./gradlew publishDocumentation -PdocUploadBranch=production
+            IdentityFile ~/.ssh/id_rsa_hibernate.org
+    - name: Publish documentation on Hibernate.org
+      run: ./gradlew publishDocumentation -PdocPublishBranch=production
     - name: Publish release to Bintray
       env:
         ORG_GRADLE_PROJECT_bintrayUser: ${{ secrets.BINTRAY_USER }}

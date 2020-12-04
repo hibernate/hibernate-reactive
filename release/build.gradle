@@ -7,6 +7,14 @@ plugins {
 }
 
 ext {
+    // Select which repository to use for publishing the documentation
+    // Example:
+    // ./gradlew publishDocumentation \
+    //           -PdocPublishRepoUri="git@github.com:DavideD/hibernate.org.git" \
+    //           -PdocPublishBranch="staging"
+    if ( !project.hasProperty('docPublishRepoUri') ) {
+        docPublishRepoUri = 'git@github.com:hibernate/hibernate.org.git'
+    }
     if ( !project.hasProperty('docPublishBranch') ) {
         docPublishBranch = 'staging'
     }
@@ -58,7 +66,7 @@ assemble.dependsOn assembleDocumentation
  */
 gitPublish {
     // where to publish to (repo must exist)
-    repoUri = 'git@github.com:hibernate/hibernate.org.git'
+    repoUri = docPublishRepoUri
     // branch will be created if it doesn't exist
     branch = docPublishBranch
     // where the repository gets cloned
@@ -95,7 +103,7 @@ task publishDocumentation {
     description = "Upload documentation on hibernate.org"
 
     doFirst {
-        logger.lifecycle "Upload documentation on Hibernate.org ${docPublishBranch}"
+        logger.lifecycle "Documentation published on '${docPublishRepoUri}' branch '${docPublishBranch}'"
     }
 }
 
