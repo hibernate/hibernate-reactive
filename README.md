@@ -8,15 +8,18 @@
 
 # Hibernate Reactive
 
-A reactive API for Hibernate ORM, supporting non-blocking database
+A reactive API for [Hibernate ORM][], supporting non-blocking database
 drivers and a reactive style of interaction with the database.
 
 Hibernate Reactive may be used in any plain Java program, but is 
 especially targeted toward usage in reactive environments like 
 [Quarkus][] and [Vert.x][].
 
-Currently [PostgreSQL][], [MySQL][], and [DB2][] are supported.
+Currently [PostgreSQL][], [MySQL][], and [Db2][] are supported.
 
+Learn more at <http://hibernate.org/reactive>.
+
+[Hibernate ORM]: https://hibernate.org/orm/
 [Quarkus]: https://quarkus.io
 [Vert.x]: https://vertx.io
 
@@ -27,11 +30,11 @@ Hibernate Reactive has been tested with:
 - Java 8
 - PostgreSQL 13
 - MySQL 8
-- DB2 11.5
-- [Hibernate ORM](https://hibernate.org/orm/) 5.4.25.Final
+- Db2 11.5
+- [Hibernate ORM][] 5.4.25.Final
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 3.9.4
 - [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 3.9.4
-- [Vert.x Reactive DB2 Client](https://vertx.io/docs/vertx-db2-client/java/) 3.9.4
+- [Vert.x Reactive Db2 Client](https://vertx.io/docs/vertx-db2-client/java/) 3.9.4
 - [Quarkus][Quarkus] 1.8.3
 
 Support for SQL Server is coming soon.
@@ -105,7 +108,7 @@ with, and then get an instance of the test database running on your
 machine.
 
 By default, the tests will be run against PostgreSQL. To test against 
-MySQL or DB2, you must explicitly specify `-Pdb=mysql` or `-Pdb=db2`, 
+MySQL or Db2, you must explicitly specify `-Pdb=mysql` or `-Pdb=db2`, 
 for example:
 
     ./gradlew test -Pdb=db2
@@ -189,8 +192,4 @@ You should not use Hibernate Reactive with a second-level cache
 implementation which performs blocking IO, for example passivation to 
 the filesystem or distributed replication.
 
-#### Driver-specific limitations
-
-You might run into some limitations of the Vert.x DB2 client when using 
-Hibernate Reactive with DB2.
 
