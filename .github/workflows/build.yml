@@ -212,7 +212,7 @@ jobs:
             IdentityFile ~/.ssh/jboss_filemgmt
 # Disabled for now, I need to figure out how to give the right permissions
 #    - name: Publish documentation
-#      run: ./gradlew uploadDocumentation -PdocUploadBranch=production
+#      run: ./gradlew publishDocumentation -PdocUploadBranch=production
     - name: Publish release to Bintray
       env:
         ORG_GRADLE_PROJECT_bintrayUser: ${{ secrets.BINTRAY_USER }}

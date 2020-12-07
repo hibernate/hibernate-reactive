@@ -7,8 +7,8 @@ plugins {
 }
 
 ext {
-    if ( !project.hasProperty('docUploadBranch') ) {
-        docUploadBranch = 'staging'
+    if ( !project.hasProperty('docPublishBranch') ) {
+        docPublishBranch = 'staging'
     }
 }
 
@@ -20,7 +20,7 @@ description = 'Release module'
 // To publish the documentation:
 //  1. Add the relevant SSH key to your SSH agent.
 //  2. Execute this:
-//     ./gradlew uploadDocumentation -PdocUploadBranch=production
+//     ./gradlew publishDocumentation -PdocPublishBranch=production
 
 // To tag a version and trigger a release on CI (which will include publishing to Bintray and publishing documentation):
 //  ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin -PgitBranch=master
@@ -60,7 +60,7 @@ gitPublish {
     // where to publish to (repo must exist)
     repoUri = 'git@github.com:hibernate/hibernate.org.git'
     // branch will be created if it doesn't exist
-    branch = docUploadBranch
+    branch = docPublishBranch
     // where the repository gets cloned
     repoDir = file("$buildDir/hibernate.org") // defaults to $buildDir/gitPublish
     // where to fetch from prior to fetching from the remote (i.e. a local repo to save time)
@@ -90,12 +90,12 @@ gitPublishCopy.dependsOn assembleDocumentation
 /**
  * Upload documentation on hibernate.org
  */
-task uploadDocumentation {
+task publishDocumentation {
     dependsOn = [gitPublishPush]
     description = "Upload documentation on hibernate.org"
 
     doFirst {
-        logger.lifecycle "Upload documentation on Hibernate.org ${docUploadBranch}"
+        logger.lifecycle "Upload documentation on Hibernate.org ${docPublishBranch}"
     }
 }
 
