@@ -34,7 +34,7 @@ final class ProxyConnection implements ReactiveConnection {
 		this.tenantId = tenantId;
 	}
 
-	private <T> CompletionStage<T> withConnection(Function<ReactiveConnection, CompletionStage<T>> operation) {
+	<T> CompletionStage<T> withConnection(Function<ReactiveConnection, CompletionStage<T>> operation) {
 		if ( !connected ) {
 			connected = true; // we're not allowed to fetch two connections!
 			CompletionStage<ReactiveConnection> connection =
