@@ -9,6 +9,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -16,6 +17,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.metamodel.EntityType;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -226,6 +228,87 @@ public class MutinySessionTest extends BaseReactiveTest {
 						)
 						.chain( () -> selectNameFromId(10) )
 						.invoke( context::assertNull )
+		);
+	}
+
+	/**
+	 * Counterpart to {@link #reactiveProxyConnectionRaceInner(TestContext)},
+	 * the {@code Mutiny.Session.find()} operation is "created" <em>before</em>
+	 * {@code Mutiny.Session.withTransaction()} runs.
+	 * <p>
+	 * See {@link org.hibernate.reactive.pool.impl.ProxyConnectionRaceTest} and
+	 * <a href="https://github.com/hibernate/hibernate-reactive/issues/475">#475</a>.
+	 * </p>
+	 * <p>
+	 * See javadoc of {@link Uni}: <em>"{@link Uni It} follows the subscription
+	 * pattern, meaning that the action is only triggered once a
+	 * {@link io.smallrye.mutiny.subscription.UniSubscriber UniSubscriber}
+	 * subscribes to the {@link Uni}."</em> This probably means that
+	 * borrowing/creating a connection in the {@code Mutiny.Session.find},
+	 * {@code Mutiny.Session.withTransaction}, {@code Mutiny.Query.getSingleResult},
+	 * etc functions should only happen when a
+	 * {@link io.smallrye.mutiny.subscription.UniSubscriber UniSubscriber}
+	 * subscribes to the "outermost" {@link Uni} (the
+	 * {@code Mutiny.Session.withTransaction} in this test case).
+	 * </p>
+	 */
+	@Test
+	public void reactiveProxyConnectionRace(TestContext context) {
+		test(
+				context,
+				populateDB()
+						.onItem().transform( v -> openMutinySession() )
+						.onItem().transform( session -> {
+							CountDownLatch synchronizer = new CountDownLatch(1);
+							try {
+								Mutiny.Session finalSession = injectDelayedConnection(session, synchronizer);
+
+								// The race is triggered in the withTransaction(),
+								// when the connection needed by this find() could
+								// not be acquired until withTransaction() gets called.
+
+								Uni<GuineaPig> findWork = finalSession.find(GuineaPig.class, 3);
+
+								// still no connection acquired
+								return finalSession.withTransaction(tx -> findWork);
+							}
+							finally {
+								// connection acquired when the latch counts down
+								synchronizer.countDown();
+							}
+						}
+				)
+		);
+	}
+
+	/**
+	 * Counterpart to {@link #reactiveProxyConnectionRace(TestContext)}, but the
+	 * {@code Mutiny.Session.find()} operation is "created" <em>after</em>
+	 * {@code Mutiny.Session.withTransaction()} ran, so this test case does not
+	 * trigger the race condition.
+	 * <p>
+	 * See {@link org.hibernate.reactive.pool.impl.ProxyConnectionRaceTest} and
+	 * <a href="https://github.com/hibernate/hibernate-reactive/issues/475">#475</a>.
+	 * </p>
+	 */
+	@Test
+	public void reactiveProxyConnectionRaceInner(TestContext context) {
+		test(
+				context,
+				populateDB()
+						.onItem().transform( v -> openMutinySession() )
+						.onItem().transform( session -> {
+							CountDownLatch synchronizer = new CountDownLatch(1);
+							try {
+								Mutiny.Session finalSession = injectDelayedConnection(session, synchronizer);
+								return finalSession.withTransaction(tx ->
+									finalSession.find(GuineaPig.class, 3));
+							}
+							finally {
+								// connection acquired when the latch counts down
+								synchronizer.countDown();
+							}
+						})
 		);
 	}
 
