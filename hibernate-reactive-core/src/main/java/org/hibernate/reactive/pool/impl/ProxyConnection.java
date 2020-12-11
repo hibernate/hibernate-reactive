@@ -104,9 +104,14 @@ final class ProxyConnection implements ReactiveConnection {
 				completionStage = connection.thenApply(newConnection -> {
 					// Again, change to 'connection' guarded via 'stateChange'.
 					synchronized (stateChange) {
-						this.connection = newConnection;
+						if (!closed) {
+							this.connection = newConnection;
+							return newConnection;
+						}
+						newConnection.close();
+						// Return something that gives at least some descriptive exception
+						return ClosedReactiveConnection.INSTANCE;
 					}
-					return newConnection;
 				});
 				connectionCompletionStage = completionStage;
 			}
