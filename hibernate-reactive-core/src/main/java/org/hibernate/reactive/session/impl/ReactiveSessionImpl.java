@@ -101,6 +101,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
+import static org.hibernate.reactive.session.impl.SessionUtil.wrapReactive;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
@@ -984,7 +985,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			//call apply() from within the arg of thenCompose()
 			ret = ret.thenCompose( v -> fun.apply((RL) listener).apply(event) );
 		}
-		return ret;
+		CompletionStage<T> r = ret; // effectively final
+		return wrapReactive( reactiveConnection, c -> r );
 	}
 
 	@SuppressWarnings("unchecked")
@@ -992,10 +994,10 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 												  Function<RL, BiFunction<E, P, CompletionStage<Void>>> fun) {
 		//to preserve atomicity of the Session methods
 		//call apply() from within the arg of thenCompose()
-		return CompletionStages.loop(
-				eventListeners(eventType),
+		return wrapReactive( reactiveConnection, c -> CompletionStages.loop(
+				eventListeners( eventType ),
 				listener -> fun.apply((RL) listener).apply(event, extra)
-		);
+		) );
 	}
 
 	@SuppressWarnings("deprecation")

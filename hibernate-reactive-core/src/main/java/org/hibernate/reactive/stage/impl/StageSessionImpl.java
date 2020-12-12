@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import static org.hibernate.reactive.session.impl.SessionUtil.wrapReactive;
 import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
@@ -405,11 +406,11 @@ public class StageSessionImpl implements Stage.Session {
 		}
 
 		CompletionStage<Void> flush() {
-			return delegate.reactiveAutoflush();
+			return wrapReactive( delegate, r -> delegate.reactiveAutoflush() );
 		}
 
 		CompletionStage<Void> begin() {
-			return delegate.getReactiveConnection().beginTransaction();
+			return wrapReactive( delegate, r -> delegate.getReactiveConnection().beginTransaction() );
 		}
 
 		CompletionStage<Void> end() {

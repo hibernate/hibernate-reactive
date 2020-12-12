@@ -7,7 +7,7 @@ package org.hibernate.reactive.pool.impl;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.pool.impl.ProxyConnectionTestHelper.ReactiveConnectionPoolMock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -40,10 +41,9 @@ public class ProxyConnectionRaceTest {
     private static final int parallelism = Math.max(4, Runtime.getRuntime().availableProcessors());
 
     /**
-     * +1 thread for the {@link CompletableFuture} scheduled in {@link ReactiveConnectionPoolMock#getConnection()},
-     * see parallelism multiplicators in {@link #concurrentWithConnectionN(int)}
+     * See parallelism multiplicators in {@link #concurrentWithConnectionN(int)}
      */
-    private static final int threadPoolSize = parallelism * 3 + 1;
+    private static final int threadPoolSize = parallelism * 3 ;
 
     @Before
     public void setup() {
@@ -86,10 +86,12 @@ public class ProxyConnectionRaceTest {
      */
     @Test
     public void noRace() throws InterruptedException, ExecutionException, TimeoutException {
-        CountDownLatch connectionCompleteLatch = new CountDownLatch(1);
-        ReactiveConnectionPoolMock reactiveConnectionPool = new ReactiveConnectionPoolMock(connectionCompleteLatch);
+        CompletableFuture<Object> delay = new CompletableFuture<>();
+        ReactiveConnectionPoolMock reactiveConnectionPool = new ReactiveConnectionPoolMock(
+                () -> CompletableFuture.completedFuture(new SqlClientConnection(null, null, null, false)),
+                delay);
 
-        ProxyConnection proxyConnection = new ProxyConnection(reactiveConnectionPool);
+        ProxyConnection proxyConnection = ProxyConnection.newInstance(reactiveConnectionPool);
 
         // Simulate the `mutinySession.find` which triggers a 'ProxyConnection.withConnection()'
         // Just let it return some string when it could actually "do" something with the connection from the pool.
@@ -112,7 +114,8 @@ public class ProxyConnectionRaceTest {
         assertFalse(cf2.isDone());
 
         // Simulate that the connection from the pool is now available
-        connectionCompleteLatch.countDown();
+        delay.complete("");
+        proxyConnection.openConnection();
 
         // It shouldn't take long for the CF to finish - it will eventually complete.
         // There will be some time required as stuff in this test is ran asynchronously.
@@ -169,10 +172,12 @@ public class ProxyConnectionRaceTest {
     }
 
     public void concurrentWithConnectionN(int nWithConnectionCalls, int workers) throws Exception {
-        CountDownLatch connectionCompleteLatch = new CountDownLatch(1);
-        ReactiveConnectionPoolMock reactiveConnectionPool = new ReactiveConnectionPoolMock(connectionCompleteLatch);
+        CompletableFuture<Object> delay = new CompletableFuture<>();
+        ReactiveConnectionPoolMock reactiveConnectionPool = new ReactiveConnectionPoolMock(
+                () -> CompletableFuture.completedFuture(new SqlClientConnection(null, null, null, false)),
+                delay);
 
-        ProxyConnection proxyConnection = new ProxyConnection(reactiveConnectionPool);
+        ProxyConnection proxyConnection = ProxyConnection.newInstance(reactiveConnectionPool);
 
         CountDownLatch withConnectionReady = new CountDownLatch(workers);
         CountDownLatch withConnectionLatch = new CountDownLatch(1);
@@ -210,7 +215,8 @@ public class ProxyConnectionRaceTest {
 
                 // check whether the connection shall be returned from the connection-pool
                 if (numWithConnectionDone.incrementAndGet() == nWithConnectionCalls) {
-                    connectionCompleteLatch.countDown();
+                    delay.complete("");
+                    proxyConnection.openConnection();
                 }
 
                 scheduledStages.put(num, cs);
@@ -246,45 +252,174 @@ public class ProxyConnectionRaceTest {
             assertSame(conn, iCompleted.next());
     }
 
-    class ReactiveConnectionPoolMock implements ReactiveConnectionPool {
-        final CountDownLatch connectionCompleteLatch;
-        final AtomicInteger getConnectionCounter = new AtomicInteger();
+    /**
+     * Verify that the real connections acquired via {@link ProxyConnection} and held in
+     * {@link ProxyConnection#connection} are properly closed in overload situations.
+     * "Overload situations" means, that the connection pool cannot provide enough connections
+     * (for whatever reasons) to satisfy all connection requests.
+     * <p>
+     * Example situation: the database connection pool is limited to max 1 connections,
+     * a lot of (long running) application requests pile up and in consequence the system
+     * is not able to execute all these requests within a configured timeout, so most
+     * requests get aborted via some timeout handling mechanism.
+     * <p>
+     * These situations are properly handled as long as the calling code properly issues
+     * a {@link ProxyConnection#close()}, the logic in
+     * {@link ProxyConnection#connectionFromPool(ReactiveConnection)} ensures, that a
+     * database connection for a closed {@link ProxyConnection} is immediately closed and
+     * therefore properly returned to the pool.
+     */
+    @Test
+    public void overloadSituation() {
 
-        ReactiveConnectionPoolMock(CountDownLatch getConnectionMock) {
-            this.connectionCompleteLatch = getConnectionMock;
-        }
+        // Whether the pool has given the ProxyConnection a "database" connection
+        AtomicBoolean connectionAcquired = new AtomicBoolean();
 
-        @Override
-        public CompletionStage<ReactiveConnection> getConnection() {
-            // Verify that ReactiveConnectionPool.getConnection() is only called once
-            assertEquals("Only one invocation of ReactiveConnectionPool.getConnection() is allowed", 0, getConnectionCounter.getAndIncrement());
+        // Whether the pool's connection's close() method has been called
+        AtomicBoolean closeCalled = new AtomicBoolean();
 
-            return CompletableFuture.supplyAsync(() -> {
-                try {
-                    if (!connectionCompleteLatch.await(60, TimeUnit.SECONDS))
-                        throw new RuntimeException("Oops - the connection request ran for 60 seconds but the test didn't make any progress");
+        // Whether the operation passed into ProxyConnection#withConnection got called
+        AtomicBoolean receivedConnection = new AtomicBoolean();
 
-                    // Just need some connection object, but not 'null'
-                    return new SqlClientConnection(null, null, null, false);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }, executor); // schedule this CF onto the test's own executor-service
-        }
+        CompletableFuture<Object> delay = new CompletableFuture<>();
+        ReactiveConnectionPoolMock reactiveConnectionPool = new ReactiveConnectionPoolMock(
+                () -> {
+                    connectionAcquired.set(true);
+                    return CompletableFuture.completedFuture(new SqlClientConnection(null, null, null, false) {
+                        @Override
+                        public void close() {
+                            closeCalled.set(true);
+                        }
+                    });
+                },
+                delay);
 
-        @Override
-        public CompletionStage<ReactiveConnection> getConnection(String tenantId) {
-            throw new UnsupportedOperationException("not tested/exercised, so it's not implemented");
-        }
+        assertFalse(connectionAcquired.get());
+        assertFalse(closeCalled.get());
 
-        @Override
-        public ReactiveConnection getProxyConnection() {
-            throw new UnsupportedOperationException("not tested/exercised, so it's not implemented");
-        }
+        ProxyConnection proxyConnection = ProxyConnection.newInstance(reactiveConnectionPool);
 
-        @Override
-        public ReactiveConnection getProxyConnection(String tenantId) {
-            throw new UnsupportedOperationException("not tested/exercised, so it's not implemented");
-        }
+        CompletableFuture<Object> requestStage = proxyConnection.withConnection(x -> {
+            receivedConnection.set(true);
+            return CompletableFuture.completedFuture(null);
+        }).toCompletableFuture();
+
+        // Sanity assertions - nothing should have happened yet...
+        assertFalse(receivedConnection.get());
+        assertFalse(connectionAcquired.get());
+        assertFalse(closeCalled.get());
+
+        CompletableFuture<ReactiveConnection> openStage = proxyConnection.openConnection().toCompletableFuture();
+
+        // The openConnection() just starts the acquire-connection process, but nothing's returned,
+        // because the pool hasn't returned a connection yet
+        assertFalse(requestStage.isDone());
+        assertFalse(openStage.isDone());
+
+        // Eagerly close the ProxyConnection (i.e. what would happen if the application request
+        // closes the surrounding Hibernate session).
+        proxyConnection.close();
+
+        // no connection should have been received
+        assertFalse(receivedConnection.get());
+        // Both returned stages must have completed exceptionally
+        assertTrue(requestStage.isCompletedExceptionally());
+        assertTrue(openStage.isCompletedExceptionally());
+
+        // Still no connection acquired, also no call to the connection from the pool
+        assertFalse(connectionAcquired.get());
+        // The pool's connection's close() method hasn't been called
+        assertFalse(closeCalled.get());
+
+        // Let the pool return a connection
+        delay.complete("");
+
+        // no connection should have been received
+        assertFalse(receivedConnection.get());
+        // The acquire callback has been triggered (from the pool)
+        assertTrue(connectionAcquired.get());
+        // And that should have called close() on the connection from the pool
+        assertTrue(closeCalled.get());
     }
+
+    /**
+     * Normal ProxyConnection lifecycle (the boring good-case).
+     *
+     * <ol>
+     *     <li>Application opens Session...{@link ProxyConnection}</li>
+     *     <li>Demands get registered via {@link ProxyConnection#withConnection(Function)}</li>
+     *     <li>Subscription gets triggered via {@link ProxyConnection#openConnection()}</li>
+     *     <li>(stuff works)</li>
+     *     <li>Application closes Session...{@link ProxyConnection} -> connection gets returned to the pool</li>
+     * </ol>
+     */
+    @Test
+    public void normal() {
+
+        // Whether the pool has given the ProxyConnection a "database" connection
+        AtomicBoolean connectionAcquired = new AtomicBoolean();
+
+        // Whether the pool's connection's close() method has been called
+        AtomicBoolean closeCalled = new AtomicBoolean();
+
+        // Whether the operation passed into ProxyConnection#withConnection got called
+        AtomicBoolean receivedConnection = new AtomicBoolean();
+
+        CompletableFuture<Object> delay = new CompletableFuture<>();
+        ReactiveConnectionPoolMock reactiveConnectionPool = new ReactiveConnectionPoolMock(
+                () -> {
+                    connectionAcquired.set(true);
+                    return CompletableFuture.completedFuture(new SqlClientConnection(null, null, null, false) {
+                        @Override
+                        public void close() {
+                            closeCalled.set(true);
+                        }
+                    });
+                },
+                delay);
+
+        assertFalse(connectionAcquired.get());
+        assertFalse(closeCalled.get());
+
+        ProxyConnection proxyConnection = ProxyConnection.newInstance(reactiveConnectionPool);
+
+        CompletableFuture<Object> requestStage = proxyConnection.withConnection(x -> {
+            receivedConnection.set(true);
+            return CompletableFuture.completedFuture(null);
+        }).toCompletableFuture();
+
+        // Sanity assertions - nothing should have happened yet...
+        assertFalse(receivedConnection.get());
+        assertFalse(connectionAcquired.get());
+        assertFalse(closeCalled.get());
+
+        CompletableFuture<ReactiveConnection> openStage = proxyConnection.openConnection().toCompletableFuture();
+
+        // The openConnection() just starts the acquire-connection process, but nothing's returned,
+        // because the pool hasn't returned a connection yet
+        assertFalse(requestStage.isDone());
+        assertFalse(openStage.isDone());
+
+        // Let the pool return a connection
+        delay.complete("");
+
+        // a connection should have been received
+        assertTrue(receivedConnection.get());
+        // Both returned stages must have completed exceptionally
+        assertTrue(requestStage.isDone() && !requestStage.isCompletedExceptionally());
+        assertTrue(openStage.isDone() && !openStage.isCompletedExceptionally());
+
+        // Still no connection acquired, also no call to the connection from the pool
+        assertTrue(connectionAcquired.get());
+        // The pool's connection's close() method hasn't been called
+        assertFalse(closeCalled.get());
+
+        // Eagerly close the ProxyConnection (i.e. what would happen if the application request
+        // closes the surrounding Hibernate session).
+        proxyConnection.close();
+
+        // And that should have called close() on the connection from the pool
+        assertTrue(closeCalled.get());
+    }
+
 }

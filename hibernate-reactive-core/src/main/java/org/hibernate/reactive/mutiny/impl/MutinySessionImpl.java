@@ -37,30 +37,32 @@ import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
 public class MutinySessionImpl implements Mutiny.Session {
 
 	private final ReactiveSession delegate;
+	private final MutinyUniConnectionActivator uni;
 
 	public MutinySessionImpl(ReactiveSession session) {
 		this.delegate = session;
+		this.uni = MutinyUniConnectionActivator.create( session.getReactiveConnection() );
 	}
 
 	@Override
 	public Uni<Void> flush() {
 //		checkOpen();
-		return Uni.createFrom().completionStage( delegate.reactiveFlush() );
+		return uni.asUni( delegate.reactiveFlush() );
 	}
 
 	@Override
 	public <T> Uni<T> fetch(T association) {
-		return Uni.createFrom().completionStage( delegate.reactiveFetch(association, false) );
+		return uni.asUni( delegate.reactiveFetch(association, false) );
 	}
 
 	@Override
 	public <E, T> Uni<T> fetch(E entity, Attribute<E, T> field) {
-		return Uni.createFrom().completionStage( delegate.reactiveFetch(entity, field) );
+		return uni.asUni( delegate.reactiveFetch(entity, field) );
 	}
 
 	@Override
 	public <T> Uni<T> unproxy(T association) {
-		return Uni.createFrom().completionStage( delegate.reactiveFetch(association, true) );
+		return uni.asUni( delegate.reactiveFetch(association, true) );
 	}
 
 	@Override
@@ -87,98 +89,98 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey) {
-		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, primaryKey, null, null ) );
+		return uni.asUni( delegate.reactiveFind( entityClass, primaryKey, null, null ) );
 	}
 
 	@Override
 	public <T> Uni<List<T>> find(Class<T> entityClass, Object... ids) {
-		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, ids ) );
+		return uni.asUni( delegate.reactiveFind( entityClass, ids ) );
 	}
 
 	@Override
 	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey, LockMode lockMode) {
-		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, primaryKey, new LockOptions(lockMode), null ) );
+		return uni.asUni( delegate.reactiveFind( entityClass, primaryKey, new LockOptions(lockMode), null ) );
 	}
 
 //	@Override
 	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey, LockOptions lockOptions) {
-		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, primaryKey, lockOptions, null ) );
+		return uni.asUni( delegate.reactiveFind( entityClass, primaryKey, lockOptions, null ) );
 	}
 
 	@Override
 	public <T> Uni<T> find(EntityGraph<T> entityGraph, Object id) {
 		Class<T> entityClass = ((RootGraphImplementor<T>) entityGraph).getGraphedType().getJavaType();
-		return Uni.createFrom().completionStage( delegate.reactiveFind( entityClass, id, null, entityGraph ) );
+		return uni.asUni( delegate.reactiveFind( entityClass, id, null, entityGraph ) );
 	}
 
 	@Override
 	public Uni<Void> persist(Object entity) {
-		return Uni.createFrom().completionStage( delegate.reactivePersist( entity ) );
+		return uni.asUni( delegate.reactivePersist( entity ) );
 	}
 
 	@Override
 	public Uni<Void> persistAll(Object... entity) {
-		return Uni.createFrom().completionStage( applyToAll( delegate::reactivePersist, entity ) );
+		return uni.asUni( applyToAll( delegate::reactivePersist, entity ) );
 	}
 
 	@Override
 	public Uni<Void> remove(Object entity) {
-		return Uni.createFrom().completionStage( delegate.reactiveRemove( entity ) );
+		return uni.asUni( delegate.reactiveRemove( entity ) );
 	}
 
 	@Override
 	public Uni<Void> removeAll(Object... entity) {
-		return Uni.createFrom().completionStage( applyToAll( delegate::reactiveRemove, entity ) );
+		return uni.asUni( applyToAll( delegate::reactiveRemove, entity ) );
 	}
 
 	@Override
 	public <T> Uni<T> merge(T entity) {
-		return Uni.createFrom().completionStage( delegate.reactiveMerge( entity ) );
+		return uni.asUni( delegate.reactiveMerge( entity ) );
 	}
 
 	@Override @SafeVarargs
 	public final <T> Uni<Void> mergeAll(T... entity) {
-		return Uni.createFrom().completionStage( applyToAll( delegate::reactiveMerge, entity ) );
+		return uni.asUni( applyToAll( delegate::reactiveMerge, entity ) );
 	}
 
 	@Override
 	public Uni<Void> refresh(Object entity) {
-		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, LockOptions.NONE ) );
+		return uni.asUni( delegate.reactiveRefresh( entity, LockOptions.NONE ) );
 	}
 
 	@Override
 	public Uni<Void> refresh(Object entity, LockMode lockMode) {
-		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, new LockOptions(lockMode) ) );
+		return uni.asUni( delegate.reactiveRefresh( entity, new LockOptions(lockMode) ) );
 	}
 
 //	@Override
 	public Uni<Void> refresh(Object entity, LockOptions lockOptions) {
-		return Uni.createFrom().completionStage( delegate.reactiveRefresh( entity, lockOptions ) );
+		return uni.asUni( delegate.reactiveRefresh( entity, lockOptions ) );
 	}
 
 	@Override
 	public Uni<Void> refreshAll(Object... entity) {
-		return Uni.createFrom().completionStage( applyToAll( e -> delegate.reactiveRefresh(e, LockOptions.NONE), entity ) );
+		return uni.asUni( applyToAll(e -> delegate.reactiveRefresh(e, LockOptions.NONE), entity ) );
 	}
 
 	@Override
 	public Uni<Void> lock(Object entity, LockMode lockMode) {
-		return Uni.createFrom().completionStage( delegate.reactiveLock( entity, new LockOptions(lockMode) ) );
+		return uni.asUni( delegate.reactiveLock( entity, new LockOptions(lockMode) ) );
 	}
 
 //	@Override
 	public Uni<Void> lock(Object entity, LockOptions lockOptions) {
-		return Uni.createFrom().completionStage( delegate.reactiveLock( entity, lockOptions ) );
+		return uni.asUni( delegate.reactiveLock( entity, lockOptions ) );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createQuery(String jpql, Class<R> resultType) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql, resultType ) );
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql, resultType ), this.uni );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createQuery(String jpql) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql ) );
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql ), this.uni );
 	}
 
 	@Override
@@ -187,46 +189,46 @@ public class MutinySessionImpl implements Mutiny.Session {
 		final MetamodelImplementor metamodel = delegate.getFactory().getMetamodel();
 		final boolean knownType = metamodel.entityPersisters().containsKey( typeName );
 		if ( knownType ) {
-			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultType ) );
+			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultType ), this.uni );
 		}
 		else {
-			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ) );
+			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ), this.uni );
 		}
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String sql, ResultSetMapping<R> resultSetMapping) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping.getName() ) );
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping.getName() ), this.uni );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String sql) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ) );
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ), this.uni );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNamedQuery(String name) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name ) );
+		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name ), this.uni );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNamedQuery(String name, Class<R> resultType) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ) );
+		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ), this.uni );
 	}
 
 	@Override @SuppressWarnings("unchecked")
 	public <R> Mutiny.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery) );
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery), this.uni );
 	}
 
 	@Override @SuppressWarnings("unchecked")
 	public <R> Mutiny.Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaUpdate) );
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaUpdate), this.uni );
 	}
 
 	@Override @SuppressWarnings("unchecked")
 	public <R> Mutiny.Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaDelete) );
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaDelete), this.uni );
 	}
 
 	@Override
@@ -394,19 +396,19 @@ public class MutinySessionImpl implements Mutiny.Session {
 		}
 
 		Uni<Void> flush() {
-			return Uni.createFrom().completionStage( delegate.reactiveAutoflush() );
+			return uni.asUni( delegate.reactiveAutoflush() );
 		}
 
 		Uni<Void> begin() {
-			return Uni.createFrom().completionStage( delegate.getReactiveConnection().beginTransaction() );
+			return uni.asUni( delegate.getReactiveConnection().beginTransaction() );
 		}
 
 		Uni<Void> rollback() {
-			return Uni.createFrom().completionStage( delegate.getReactiveConnection().rollbackTransaction() );
+			return uni.asUni( delegate.getReactiveConnection().rollbackTransaction() );
 		}
 
 		Uni<Void> commit() {
-			return Uni.createFrom().completionStage( delegate.getReactiveConnection().commitTransaction() );
+			return uni.asUni( delegate.getReactiveConnection().commitTransaction() );
 		}
 
 		@Override

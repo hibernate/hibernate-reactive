@@ -18,7 +18,6 @@ import org.hibernate.internal.util.StringHelper;
 import org.hibernate.jdbc.TooManyRowsAffectedException;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
-import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
@@ -36,6 +35,7 @@ import static org.hibernate.id.enhanced.TableGenerator.TABLE;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getBoolean;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getInt;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
+import static org.hibernate.reactive.session.impl.SessionUtil.wrapReactive;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
@@ -93,52 +93,53 @@ public class TableReactiveIdentifierGenerator
 		// and update it by the specified increment, but we
 		// need to do it atomically, and without depending on
 		// transaction rollback.
-		ReactiveConnection connection = session.getReactiveConnection();
-		// 1) select the current hi value
-		return connection.selectLong( selectQuery, selectParameters() )
-				// 2) attempt to update the hi value
-				.thenCompose( result -> {
-					Object[] params;
-					String sql;
-					long id;
-					if ( result == null ) {
-						// if there is no row in the table, insert one
-						// TODO: This not threadsafe, and can result in
-						// multiple rows being inserted simultaneously.
-						// It might be better to just throw an exception
-						// here, and require that the table was populated
-						// when it was created
-						id = initialValue;
-						long insertedValue = storeLastUsedValue ? id - increment : id;
-						params = insertParameters( insertedValue );
-						sql = insertQuery;
-					}
-					else {
-						// otherwise, update the existing row
-						long currentValue = result;
-						long updatedValue = currentValue + increment;
-						id = storeLastUsedValue ? updatedValue : currentValue;
-						params = updateParameters( currentValue, updatedValue );
-						sql = updateQuery;
-					}
-					return connection.update( sql, params )
-							// 3) check the updated row count to detect simultaneous update
-							.thenCompose(
-									rowCount -> {
-										switch (rowCount) {
-											case 1:
-												//we successfully obtained the next hi value
-												return completedFuture( next(id) );
-											case 0:
-												//someone else grabbed the next hi value
-												//so retry everything from scratch
-												return generate( session, entity );
-											default:
-												throw new TooManyRowsAffectedException( "multiple rows in id table", 1, rowCount );
+		return wrapReactive( session, connection -> {
+			// 1) select the current hi value
+			return connection.selectLong( selectQuery, selectParameters() )
+					// 2) attempt to update the hi value
+					.thenCompose( result -> {
+						Object[] params;
+						String sql;
+						long id;
+						if ( result == null ) {
+							// if there is no row in the table, insert one
+							// TODO: This not threadsafe, and can result in
+							// multiple rows being inserted simultaneously.
+							// It might be better to just throw an exception
+							// here, and require that the table was populated
+							// when it was created
+							id = initialValue;
+							long insertedValue = storeLastUsedValue ? id - increment : id;
+							params = insertParameters( insertedValue );
+							sql = insertQuery;
+						}
+						else {
+							// otherwise, update the existing row
+							long currentValue = result;
+							long updatedValue = currentValue + increment;
+							id = storeLastUsedValue ? updatedValue : currentValue;
+							params = updateParameters( currentValue, updatedValue );
+							sql = updateQuery;
+						}
+						return connection.update( sql, params )
+								// 3) check the updated row count to detect simultaneous update
+								.thenCompose(
+										rowCount -> {
+											switch (rowCount) {
+												case 1:
+													//we successfully obtained the next hi value
+													return completedFuture( next(id) );
+												case 0:
+													//someone else grabbed the next hi value
+													//so retry everything from scratch
+													return generate( session, entity );
+												default:
+													throw new TooManyRowsAffectedException( "multiple rows in id table", 1, rowCount );
+											}
 										}
-									}
-							);
-				} );
+								);
+					} );
+		} );
 	}
 
 	@Override

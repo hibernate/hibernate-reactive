@@ -23,8 +23,11 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 
 	private final ReactiveQuery<R> delegate;
 
-	public MutinyQueryImpl(ReactiveQuery<R> delegate) {
+	private final MutinyUniConnectionActivator uni;
+
+	public MutinyQueryImpl(ReactiveQuery<R> delegate, MutinyUniConnectionActivator uni) {
 		this.delegate = delegate;
+		this.uni = uni;
 	}
 
 	@Override
@@ -165,17 +168,17 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 
 	@Override
 	public Uni<R> getSingleResult() {
-		return Uni.createFrom().completionStage( delegate.getReactiveSingleResult() );
+		return uni.asUni( delegate.getReactiveSingleResult() );
 	}
 
 	@Override
 	public Uni<R> getSingleResultOrNull() {
-		return Uni.createFrom().completionStage( delegate.getReactiveSingleResultOrNull() );
+		return uni.asUni( delegate.getReactiveSingleResultOrNull() );
 	}
 
 	@Override
 	public Uni<List<R>> getResultList() {
-		return Uni.createFrom().completionStage( delegate.getReactiveResultList() );
+		return uni.asUni( delegate.getReactiveResultList() );
 	}
 
 }

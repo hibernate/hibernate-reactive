@@ -7,7 +7,9 @@ package org.hibernate.reactive.pool.impl;
 
 import java.sql.ResultSet;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -16,113 +18,160 @@ import org.hibernate.reactive.pool.ReactiveConnectionPool;
 /**
  * A proxy {@link ReactiveConnection} that initializes the
  * underlying connection lazily.
+ * <p>
+ * Users of this class should primarily
+ * {@link #withConnection(Function) <em>register demand</em>}
+ * for a connection via and only trigger the process to
+ * {@link #openConnection()} asynchronously acquire a connection}
+ * when actually needed. The exact usage pattern however
+ * depends on the reactive framework being used, because
+ * {@link org.hibernate.reactive.mutiny.Mutiny} has, loosely
+ * expressed, a strict separation of construction, separation
+ * and execution whereas {@link CompletionStage} based approaches
+ * do not have that separation and connections are rather
+ * acquired eagerly (but still asynchronously).
+ * <p>
+ * The semantics of the {@link CompletionStage}s returned by
+ * {@link #withConnection(Function)} and
+ * {@link #openConnection()} are likely the same: all these
+ * complete when either the connection is actually available
+ * or an unrecoverable error has occurred.
  */
 final class ProxyConnection implements ReactiveConnection {
 
 	private final ReactiveConnectionPool sqlClientPool;
 	private final String tenantId;
 
-	// 'connection' must be volatile, because it can be read from a different thread
-	// than the one that writes this field - and read against this field are _not_
-	// guarded with a 'synchronized(stateChange)'.
-	private volatile ReactiveConnection connection;
+	/**
+	 * All accesses to internal state are guarded with a
+	 * {@code synchronized (sync)} to prevent race conditions. It is
+	 * important to do this, because the callbacks from the connection
+	 * pool back via {@link #connectionFromPool(ReactiveConnection)}
+	 * do happen on different threads and can be concurrent to other
+	 * operations. Proper fences and locking is required, so
+	 * {@code synchronized} is fine.
+	 */
+	// Use own, private "sync" object.
+	private final Object sync = new Object();
 
-	// Helper fields to track the state of this proxy-connection.
-	private CompletionStage<ReactiveConnection> connectionCompletionStage;
-	private boolean closed;
-	private final Object stateChange = new Object();
+	/**
+	 * The future used to actually acquire a connection from the pool.
+	 * Do not expose this one externally, because that will be wrong.
+	 * External code wants to rely on {@link #connectionCompletion}.
+	 * This one is needed to a) know that the async acquire-connection
+	 * operation has been started and b) to potentially cancel it, when
+	 * this ProxyConnection instance is closed while the connection has
+	 * not yet returned from the pool.
+	 */
+	// Accesses to 'connection' and 'state' are guarded by 'sync'.
+	private ReactiveConnection connection;
+	private int state = STATE_NOT_ACQUIRING;
+	private static final int STATE_NOT_ACQUIRING = 0;
+	private static final int STATE_ACQUIRING_CONNECTION = 1;
+	private static final int STATE_ACQUIRED_CONNECTION = 2;
+	private static final int STATE_CLOSED = 3;
 
-	public ProxyConnection(ReactiveConnectionPool sqlClientPool) {
-		this.sqlClientPool = sqlClientPool;
-		tenantId = null;
+
+	/**
+	 * Accumulates all operations that need a {@link ReactiveConnection}. "Filled" via
+	 * {@link #withConnection(Function)}.
+	 */
+	private final CompletableFuture<ReactiveConnection> connectionCompletion = new CompletableFuture<>();
+
+	// This and the indirections via 'newInstance' should eventually get inlined by the JVM
+	// (haven't checked though).
+	private static BiFunction<ReactiveConnectionPool, String, ProxyConnection> newProxyConnection =
+			ProxyConnection::new;
+	// BEGIN OF test-related code
+	// encapsulate the constructor call for test purposes
+	static void setNewProxyConnectionWrapperForTests(BiFunction<ReactiveConnectionPool, String, ProxyConnection> newProxyConnection) {
+		ProxyConnection.newProxyConnection = newProxyConnection;
+	}
+	static void resetNewProxyConnectionWrapperForTests() {
+		ProxyConnection.newProxyConnection = ProxyConnection::new;
+	}
+	static ProxyConnection newInstanceForTests(ReactiveConnectionPool sqlClientPool, String tenantId) {
+		return new ProxyConnection(sqlClientPool, tenantId);
+	}
+	// END OF test-related code
+
+	static ProxyConnection newInstance(ReactiveConnectionPool sqlClientPool) {
+		return newProxyConnection.apply(sqlClientPool, null);
 	}
 
-	public ProxyConnection(ReactiveConnectionPool sqlClientPool, String tenantId) {
+	static ProxyConnection newInstance(ReactiveConnectionPool sqlClientPool, String tenantId) {
+		return newProxyConnection.apply(sqlClientPool, tenantId);
+	}
+
+	/**
+	 * Do not use this constructor outside of this class and from test code.
+	 */
+	private ProxyConnection(ReactiveConnectionPool sqlClientPool, String tenantId) {
 		this.sqlClientPool = sqlClientPool;
 		this.tenantId = tenantId;
 	}
 
+	@Override
+	public CompletionStage<ReactiveConnection> openConnection() {
+		synchronized (sync) {
+			switch (state) {
+				case STATE_ACQUIRING_CONNECTION:
+				case STATE_ACQUIRED_CONNECTION:
+					// If the async operation to acquire the connection from the pool
+					// has been started (--> openConnection != null), then return the
+					// CompletableFuture/CompletionStage that will receive the connection
+					// *after* the ProxyConnection's internal state has been properly
+					// updated.
+					return connectionCompletion;
+				case STATE_CLOSED:
+					// Need to handle this case separately, because connectionCompletion
+					// would happily return the acquired connection, because that CF might
+					// have already been completed (can't change the outcome of a CF once
+					// it has been set).
+					return ClosedReactiveConnection.completionStage();
+			}
+
+			state = STATE_ACQUIRING_CONNECTION;
+
+			CompletionStage<ReactiveConnection> conn = tenantId == null ? sqlClientPool.getConnection() : sqlClientPool.getConnection(tenantId);
+
+			// Seems that we can ignore the returned CompletionStage.
+			// Hopefully that's not an implementation detail of something else...
+			conn.thenApply( this::connectionFromPool );
+
+			return connectionCompletion;
+		}
+	}
+
+	private ReactiveConnection connectionFromPool(ReactiveConnection newConnection) {
+		synchronized (sync) {
+			// We do not need additional synchronization here, because the ordering of the
+			// instructions make it safe to observe from other threads.
+			if ( state != STATE_CLOSED ) {
+				state = STATE_ACQUIRED_CONNECTION;
+				this.connection = newConnection;
+				this.connectionCompletion.complete( newConnection );
+				return newConnection;
+			}
+
+			// This ProxyConnection has been closed before the connection was acquired.
+			// There is not much we can do here, except tell the waiters that the owning
+			// session has already been closed. Note that the exception won't be propagated,
+			// if connectionCompletion's CompletableFuture is done.
+			this.connectionCompletion.completeExceptionally( ClosedReactiveConnection.failure() );
+			newConnection.close();
+			// No need to return anything useful, because the result of the 'openConnection'
+			// CompletableFuture is ignored.
+			return null;
+		}
+	}
+
 	<T> CompletionStage<T> withConnection(Function<ReactiveConnection, CompletionStage<T>> operation) {
-		ReactiveConnection conn = connection;
-		if (conn != null) {
-			// Happy hot path: the connection's present and it can be used. When 'connection'
-			// is not null, we're good to use it.
-			//
-			// A non-null 'connection' object can "leak" here, even if 'closed==true' in a
-			// rare situation described below.
-			// It feels fine to accept this exception, because 'close()' should only be
-			// called when all operations have finished. And there's also a 2nd "line of
-			// defense": the 'ReactiveConnection' itself is also closed and should error out
-			// in that case.
-			// There's also no guarantee that all consumers of 'connection' have finished when
-			// 'close()' is being called.
-			//
-			// 		Thread A						Thread B
-			//			withConnection():
-			//			read 'connection' field
-			//
-			//			(thread suspended)				close() runs and finishes
-			//
-			//			runs operation.apply(conn)
-			//
-			return operation.apply(conn);
+		synchronized (sync) {
+			if (state == STATE_CLOSED)
+				throw ClosedReactiveConnection.failure();
+			return connectionCompletion.thenCompose( operation );
 		}
-
-		// No connection in the 'connection' field present.
-		//
-		// This can mean:
-		// 1. this ProxyConnection has been closed (duh)
-		// 2. no connection has been acquired from 'sqlClientPool'
-		// 3. a connection is currently being acquired from 'sqlClientPool'
-
-		// Tricky part comes next...
-		// Either no connection has been acquired from the 'sqlClientPool' yet or a connection
-		// is currently being acquired. Need to distinguish both cases and prevent that more than
-		// one connection's being acquired from 'sqlClientPool'.
-		//
-		// Generally, the CompletionStage returned from 'sqlClientPool.getConnection()' is used
-		// to "bundle" all outstanding 'operation's against the not-yet-available connection.
-		//
-		// Note: the 'connectionCompletionStage' is never cleared to 'null', because otherwise
-		// a new race condition might be introduced. However, it is set to null, in 'close()',
-		// because that's also guarded via 'stateChange'.
-		//
-		CompletionStage<ReactiveConnection> completionStage;
-		synchronized (stateChange) {
-			if (closed) {
-				// easy case, just bark and bite
-				throw new IllegalStateException("Proxy connection already closed");
-			}
-
-			completionStage = connectionCompletionStage;
-			if (completionStage == null) {
-				// First one getting here for this ProxyConnection instance.
-				// Start acquiring a connection from 'sqlClientPool' and store the
-				// CompletionStage instance for future use.
-				CompletionStage<ReactiveConnection> connection =
-						tenantId == null ? sqlClientPool.getConnection() : sqlClientPool.getConnection(tenantId);
-				completionStage = connection.thenApply(newConnection -> {
-					// Again, change to 'connection' guarded via 'stateChange'.
-					synchronized (stateChange) {
-						if (!closed) {
-							this.connection = newConnection;
-							return newConnection;
-						}
-						newConnection.close();
-						// Return something that gives at least some descriptive exception
-						return ClosedReactiveConnection.INSTANCE;
-					}
-				});
-				connectionCompletionStage = completionStage;
-			}
-		}
-
-		// "Queue up" the 'operation'.
-		// If the connection's already available, the 'operation' will likely be executed
-		// via this call site.
-		// If the connection's not yet available, the 'operation' will be executed once
-		// the 'completionStage' to acquire the connection has finished.
-		return completionStage.thenCompose(operation);
 	}
 
 	@Override
@@ -205,19 +254,29 @@ final class ProxyConnection implements ReactiveConnection {
 	}
 
 	@Override
-	public void close() {
-		ReactiveConnection conn = connection;
-		try {
-			synchronized (stateChange) {
-				closed = true;
-				connectionCompletionStage = null;
-				connection = null;
-			}
+	public synchronized void close() {
+		ReactiveConnection conn;
+		synchronized (sync) {
+			conn = connection;
+
+			state = STATE_CLOSED;
+			connection = null;
+			// Tell all "consuming" completion-stages that this ProxyConnection's been closed.
+			// (Nothing happens for completion-stages that are already completed.)
+			connectionCompletion.completeExceptionally( ClosedReactiveConnection.failure() );
+
+			// Note: do *NOT* cancel 'openConnection'.
+			// Cancelling it will prevent that the "connection acquired" callback gets delivered
+			// via the callback created in openConnection(), results in the acquired never being
+			// closed and hanging around "forever". Aka: a connection-leak in overload-situations.
 		}
-		finally {
-			if (conn != null) {
-				conn.close();
-			}
+
+		// Fine to actually close the connection outside of the synchronized block.
+		if ( conn != null ) {
+			// In case this throws any exception, that's maybe okay.
+			// We probably do not need to care about the execution time of conn.close(), as
+			// releasing a connection back to the pool should be rather quick.
+			conn.close();
 		}
 	}
 }

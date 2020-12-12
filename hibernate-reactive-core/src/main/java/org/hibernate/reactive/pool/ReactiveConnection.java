@@ -62,4 +62,14 @@ public interface ReactiveConnection {
 
 	void close();
 
+	/**
+	 * Used internally to trigger the asynchronous operation to acquire
+	 * a database connection.
+	 * <p>
+     * It is most likely wrong to use this method from application code.
+	 * See the docs of {@link org.hibernate.reactive.mutiny.Mutiny} and
+	 * {@link org.hibernate.reactive.stage.Stage} about the contracts
+	 * when a database connection will be acquired.
+	 */
+	CompletionStage<ReactiveConnection> openConnection();
 }

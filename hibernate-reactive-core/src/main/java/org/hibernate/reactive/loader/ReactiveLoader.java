@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.reactive.session.impl.SessionUtil.wrapReactive;
+
 /**
  * Defines common reactive operations inherited by all kinds of loaders.
  *
@@ -102,8 +104,9 @@ public interface ReactiveLoader {
 		// Adding locks and comments.
 		sql = preprocessSQL( sql, queryParameters, session.getFactory(), afterLoadActions );
 
-		return ((ReactiveConnectionSupplier) session).getReactiveConnection()
-				.selectJdbc( sql, toParameterArray(queryParameters, session) );
+		String sql_ = sql; // effectively final
+		return wrapReactive( (ReactiveConnectionSupplier) session, connection -> connection
+				.selectJdbc( sql_, toParameterArray(queryParameters, session) ));
 	}
 
 	default LimitHandler limitHandler(RowSelection selection, SharedSessionContractImplementor session) {

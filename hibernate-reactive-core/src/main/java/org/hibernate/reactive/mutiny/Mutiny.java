@@ -41,6 +41,9 @@ import java.util.function.Function;
  * The {@link Query}, {@link Session}, and {@link SessionFactory}
  * interfaces declared here are simply non-blocking counterparts to
  * the similarly-named interfaces in Hibernate ORM.
+ * <p>
+ * The async process to acquire a database connection starts on
+ * subscription to at least one of the Mutiny {@link Uni}s.
  */
 public interface Mutiny {
 	/**

@@ -177,4 +177,9 @@ public class BatchingConnection implements ReactiveConnection {
     public void close() {
         delegate.close();
     }
+
+    @Override
+    public CompletionStage<ReactiveConnection> openConnection() {
+        return delegate.openConnection();
+    }
 }

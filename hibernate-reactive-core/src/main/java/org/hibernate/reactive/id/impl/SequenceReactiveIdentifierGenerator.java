@@ -20,6 +20,7 @@ import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.internal.util.config.ConfigurationHelper.getInt;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineSequenceName;
+import static org.hibernate.reactive.session.impl.SessionUtil.wrapReactive;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
@@ -75,9 +76,10 @@ public class SequenceReactiveIdentifierGenerator
 			return completedFuture(local);
 		}
 
-		return session.getReactiveConnection()
-				.selectLong( sql, NO_PARAMS )
-				.thenApply( this::next );
+		return wrapReactive( session, connection -> connection
+				.selectLong(sql, NO_PARAMS)
+				.thenApply(this::next)
+		);
 	}
 
 	protected int determineIncrementForSequenceEmulation(Properties params) {

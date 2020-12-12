@@ -9,7 +9,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.pool.impl.ProxyConnectionTestHelper;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -17,7 +17,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.metamodel.EntityType;
 import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -254,31 +254,34 @@ public class MutinySessionTest extends BaseReactiveTest {
 	 */
 	@Test
 	public void reactiveProxyConnectionRace(TestContext context) {
-		test(
-				context,
-				populateDB()
-						.onItem().transform( v -> openMutinySession() )
-						.onItem().transform( session -> {
-							CountDownLatch synchronizer = new CountDownLatch(1);
-							try {
-								Mutiny.Session finalSession = injectDelayedConnection(session, synchronizer);
+		try {
+			CompletableFuture<Object> connectionAcquireDelay = ProxyConnectionTestHelper.delayedProxyConnection();
+			test(
+					context,
+					populateDB()
+							.replaceWith( this::openMutinySession )
+							.flatMap( session -> {
+								try {
+									// The race is triggered in the withTransaction(),
+									// when the connection needed by this find() could
+									// not be acquired until withTransaction() gets called.
 
-								// The race is triggered in the withTransaction(),
-								// when the connection needed by this find() could
-								// not be acquired until withTransaction() gets called.
+									Uni<GuineaPig> findWork = session.find(GuineaPig.class, 3);
 
-								Uni<GuineaPig> findWork = finalSession.find(GuineaPig.class, 3);
-
-								// still no connection acquired
-								return finalSession.withTransaction(tx -> findWork);
+									// still no connection acquired
+									return session.withTransaction(tx -> findWork);
+								}
+								finally {
+									// connection gets acquired when the connectionAcquireDelay completes
+									connectionAcquireDelay.complete("");
+								}
 							}
-							finally {
-								// connection acquired when the latch counts down
-								synchronizer.countDown();
-							}
-						}
-				)
-		);
+					)
+			);
+		}
+		finally {
+			ProxyConnectionTestHelper.cleanupDelayedProxyConnection();
+		}
 	}
 
 	/**
@@ -293,23 +296,27 @@ public class MutinySessionTest extends BaseReactiveTest {
 	 */
 	@Test
 	public void reactiveProxyConnectionRaceInner(TestContext context) {
-		test(
-				context,
-				populateDB()
-						.onItem().transform( v -> openMutinySession() )
-						.onItem().transform( session -> {
-							CountDownLatch synchronizer = new CountDownLatch(1);
-							try {
-								Mutiny.Session finalSession = injectDelayedConnection(session, synchronizer);
-								return finalSession.withTransaction(tx ->
-									finalSession.find(GuineaPig.class, 3));
-							}
-							finally {
-								// connection acquired when the latch counts down
-								synchronizer.countDown();
-							}
-						})
-		);
+		try {
+			CompletableFuture<Object> connectionAcquireDelay = ProxyConnectionTestHelper.delayedProxyConnection();
+			test(
+					context,
+					populateDB()
+							.replaceWith( this::openMutinySession )
+							.flatMap( session -> {
+								try {
+									return session.withTransaction(tx ->
+											session.find(GuineaPig.class, 3));
+								}
+								finally {
+									// connection gets acquired when the connectionAcquireDelay completes
+									connectionAcquireDelay.complete("");
+								}
+							})
+			);
+		}
+		finally {
+			ProxyConnectionTestHelper.cleanupDelayedProxyConnection();
+		}
 	}
 
 	@Test

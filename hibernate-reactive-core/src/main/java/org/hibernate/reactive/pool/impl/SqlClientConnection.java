@@ -24,6 +24,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -290,5 +291,10 @@ public class SqlClientConnection implements ReactiveConnection {
 	@Override
 	public CompletionStage<Void> executeBatch() {
 		return voidFuture();
+	}
+
+	@Override
+	public CompletionStage<ReactiveConnection> openConnection() {
+		return CompletableFuture.completedFuture( this );
 	}
 }

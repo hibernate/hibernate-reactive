@@ -16,6 +16,8 @@ import org.hibernate.reactive.session.ReactiveQueryExecutor;
 
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.reactive.session.impl.SessionUtil.wrapReactive;
+
 public class ReactiveNativeSQLQueryPlan extends NativeSQLQueryPlan {
 
 	private final String sourceQuery;
@@ -63,6 +65,7 @@ public class ReactiveNativeSQLQueryPlan extends NativeSQLQueryPlan {
 		String sql = session.getDialect()
 				.addSqlHintOrComment( queryParameters.getFilteredSQL(), queryParameters, commentsEnabled );
 
-		return session.getReactiveConnection().update( sql, params );
+		return wrapReactive( session, connection ->
+			connection.update( sql, params ) );
 	}
 }

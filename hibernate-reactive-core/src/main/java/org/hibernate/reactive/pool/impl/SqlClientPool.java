@@ -87,12 +87,12 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 
 	@Override
 	public ReactiveConnection getProxyConnection() {
-		return new ProxyConnection( this );
+		return ProxyConnection.newInstance( this );
 	}
 
 	@Override
 	public ReactiveConnection getProxyConnection(String tenantId) {
-		return new ProxyConnection( this, tenantId );
+		return ProxyConnection.newInstance( this, tenantId );
 	}
 
 }

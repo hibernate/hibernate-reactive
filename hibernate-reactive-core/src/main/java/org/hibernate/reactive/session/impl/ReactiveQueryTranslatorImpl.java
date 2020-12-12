@@ -29,7 +29,6 @@ import org.hibernate.param.ParameterSpecification;
 import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.bulk.StatementsWithParameters;
 import org.hibernate.reactive.loader.hql.impl.ReactiveQueryLoader;
-import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.jboss.logging.Logger;
@@ -39,6 +38,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.session.impl.SessionUtil.wrapReactive;
 
 public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 
@@ -179,23 +180,22 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 													  Object[] arguments,
 													  StatementsWithParameters statementsWithParameters,
 													  ReactiveQueryExecutor session) {
-		ReactiveConnection connection = session.getReactiveConnection();
-		if ( !statementsWithParameters.isSchemaDefinitionStatement( sql ) ) {
-			return connection.update( sql, arguments );
-		}
-		else if ( statementsWithParameters.isTransactionalStatement( sql ) ) {
-			// a DML statement that should be executed within the
-			// transaction (local temporary tables)
-			return connection.execute( sql ).thenApply( v -> 0 );
-		}
-		else {
-			// a DML statement that should be executed outside the
-			// transaction (global temporary tables)
-			return connection.executeOutsideTransaction( sql )
-					// ignore errors creating tables, since a create
-					// table fails whenever the table already exists
-					.handle( (v, x) -> 0 );
-		}
+		return wrapReactive( session, connection -> {
+			if ( !statementsWithParameters.isSchemaDefinitionStatement( sql ) ) {
+				return connection.update( sql, arguments );
+			} else if ( statementsWithParameters.isTransactionalStatement( sql ) ) {
+				// a DML statement that should be executed within the
+				// transaction (local temporary tables)
+				return connection.execute( sql ).thenApply( v -> 0 );
+			} else {
+				// a DML statement that should be executed outside the
+				// transaction (global temporary tables)
+				return connection.executeOutsideTransaction( sql )
+						// ignore errors creating tables, since a create
+						// table fails whenever the table already exists
+						.handle( (v, x) -> 0 );
+			}
+		} );
 	}
 
 	private StatementsWithParameters getUpdateHandler() {

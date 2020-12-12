@@ -6,22 +6,16 @@
 package org.hibernate.reactive;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.sqlclient.*;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.reactive.common.AutoCloseable;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
-import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
@@ -29,7 +23,6 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
-import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.junit.After;
@@ -37,10 +30,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
-import java.lang.reflect.Field;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
@@ -168,69 +158,6 @@ public abstract class BaseReactiveTest {
 
 	protected Stage.SessionFactory getSessionFactory() {
 		return sessionFactory.unwrap( Stage.SessionFactory.class );
-	}
-
-	private static Field accessibleField(Class<?> clazz, String name) throws Exception {
-		Field field = clazz.getDeclaredField(name);
-		field.setAccessible(true);
-		return field;
-	}
-
-	private static Object accessibleFieldGet(Class<?> clazz, String name, Object instance) throws Exception {
-		return accessibleField(clazz, name).get(instance);
-	}
-
-	protected Mutiny.Session injectDelayedConnection(Mutiny.Session session, CountDownLatch synchronizer) {
-		try {
-			Object reactiveSessionImpl = accessibleFieldGet(MutinySessionImpl.class, "delegate", session);
-			Object proxyConnection = accessibleFieldGet(ReactiveSessionImpl.class, "reactiveConnection", reactiveSessionImpl);
-			Object sqlClientPool = accessibleFieldGet(proxyConnection.getClass(), "sqlClientPool", proxyConnection);
-			Pool pool = (Pool) accessibleFieldGet(DefaultSqlClientPool.class, "pool", sqlClientPool);
-			Pool delayingPool = new Pool() {
-				@Override
-				public void getConnection(Handler<AsyncResult<SqlConnection>> handler) {
-					pool.getConnection(ar -> {
-						// maybe there's a nicer way to do this asynchronously
-						new Thread(() -> {
-							try {
-								if (!synchronizer.await(60, TimeUnit.SECONDS))
-									handler.handle(Future.failedFuture("synchronizer await failed"));
-								handler.handle(ar);
-							} catch (InterruptedException e) {
-								handler.handle(Future.failedFuture(e));
-							}
-						}).start();
-					});
-				}
-
-				@Override
-				public Query<RowSet<Row>> query(String sql) {
-					return pool.query(sql);
-				}
-
-				@Override
-				public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
-					return pool.preparedQuery(sql);
-				}
-
-				@Override
-				public void begin(Handler<AsyncResult<Transaction>> handler) {
-					pool.begin(handler);
-				}
-
-				@Override
-				public void close() {
-					pool.close();
-				}
-			};
-			accessibleField(DefaultSqlClientPool.class, "pool")
-					.set(sqlClientPool, delayingPool);
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-
-		return session;
 	}
 
 	protected Stage.Session openSession() {
