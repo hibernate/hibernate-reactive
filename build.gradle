@@ -29,7 +29,7 @@ ext {
 
 ext {
     if ( !project.hasProperty('hibernateOrmVersion') ) {
-        hibernateOrmVersion = '5.4.25.Final'
+        hibernateOrmVersion = '5.4.26.Final'
     }
     // For ORM, we need a parsed version (to get the family, ...)
 
