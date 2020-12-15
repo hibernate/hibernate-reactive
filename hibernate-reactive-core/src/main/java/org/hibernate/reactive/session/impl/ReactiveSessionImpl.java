@@ -100,6 +100,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import io.vertx.core.Context;
+
 import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
@@ -119,6 +121,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	private transient ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
 	private final ReactiveConnection reactiveConnection;
+	private final Thread associatedWorkThread;
 
 	//Lazily initialized
 	private transient ExceptionConverter exceptionConverter;
@@ -126,6 +129,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public ReactiveSessionImpl(SessionFactoryImpl delegate, SessionCreationOptions options,
 							   ReactiveConnection connection) {
 		super( delegate, options );
+		assert Context.isOnEventLoopThread() : "This needs to be run on the Vert.x event loop";
+		this.associatedWorkThread = Thread.currentThread();
 		Integer batchSize = getConfiguredJdbcBatchSize();
 		reactiveConnection = batchSize==null || batchSize<2 ? connection :
 				new BatchingConnection( connection, batchSize );
@@ -138,7 +143,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public Dialect getDialect() {
+		threadCheck();
 		return getJdbcServices().getDialect();
+	}
+
+	private void threadCheck() {
+		assert Thread.currentThread() == associatedWorkThread : "Detected a switch of the current thread - this suggests an invalid integration with Vert.x";
 	}
 
 	@Override
@@ -148,6 +158,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public ReactiveActionQueue getReactiveActionQueue() {
+		threadCheck();
 		return reactiveActionQueue;
 	}
 
@@ -168,6 +179,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 //			EntityPersister persister = getFactory().getMetamodel().entityPersister( entityName );
 //			log.debugf( "Initializing proxy: %s", MessageHelper.infoString( persister, id, getFactory() ) );
 //		}
+		threadCheck();
 		LoadEvent event = new LoadEvent(
 				id, entityName, true, this,
 				getReadOnlyFromLoadQueryInfluencers()
@@ -1381,4 +1393,14 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					.getIdentifier( entity, this );
 		}
 	}
+
+	@Override
+	public void checkOpen() {
+		//The checkOpen check is invoked on all most used public API, making it an
+		//excellent hook to also check for the right thread to be used
+		//(which is an assertion so costs us nothing in terms of performance, after inlining).
+		threadCheck();
+		super.checkOpen();
+	}
+
 }
