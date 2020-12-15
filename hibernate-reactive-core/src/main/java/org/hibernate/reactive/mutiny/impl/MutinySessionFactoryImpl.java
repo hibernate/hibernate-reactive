@@ -6,6 +6,7 @@
 package org.hibernate.reactive.mutiny.impl;
 
 import io.smallrye.mutiny.Uni;
+
 import org.hibernate.Cache;
 import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionCreationOptions;
@@ -22,6 +23,8 @@ import javax.persistence.metamodel.Metamodel;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
 
 /**
  * Implementation of {@link Mutiny.SessionFactory}.
@@ -88,12 +91,14 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	}
 
 	private CompletionStage<ReactiveConnection> connection(String tenantId) {
+		assertUseOnEventLoop();
 		return tenantId == null
 				? pool().getConnection()
 				: pool().getConnection( tenantId );
 	}
 
 	private ReactiveConnection proxyConnection(String tenantId) {
+		assertUseOnEventLoop();
 		return tenantId==null
 				? pool().getProxyConnection()
 				: pool().getProxyConnection( tenantId );

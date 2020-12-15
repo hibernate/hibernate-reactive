@@ -13,6 +13,8 @@ import java.util.function.Function;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
+import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
+
 /**
  * A proxy {@link ReactiveConnection} that initializes the
  * underlying connection lazily.
@@ -35,6 +37,7 @@ final class ProxyConnection implements ReactiveConnection {
 	}
 
 	private <T> CompletionStage<T> withConnection(Function<ReactiveConnection, CompletionStage<T>> operation) {
+		assertUseOnEventLoop();
 		if ( !connected ) {
 			connected = true; // we're not allowed to fetch two connections!
 			CompletionStage<ReactiveConnection> connection =
@@ -138,4 +141,5 @@ final class ProxyConnection implements ReactiveConnection {
 			connection = null;
 		}
 	}
+
 }
