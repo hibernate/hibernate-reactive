@@ -19,7 +19,7 @@ public final class InternalStateAssertions {
 	}
 
 	public static void assertUseOnEventLoop() {
-		assert Context.isOnEventLoopThread() : "This method should exclusively be invoked from a Vert.x EventLoop thread";
+		assert Context.isOnEventLoopThread() : "This method should exclusively be invoked from a Vert.x EventLoop thread; running on '" + Thread.currentThread().getName() + "'";
 	}
 
 }

@@ -29,6 +29,7 @@ import org.junit.runner.RunWith;
 
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 
@@ -48,6 +49,9 @@ public class ReactiveConnectionPoolTest {
 
 	@Rule
 	public TestingRegistryRule registryRule = new TestingRegistryRule();
+
+	@Rule
+	public RunTestOnContext vertxContextRule = new RunTestOnContext();
 
 	protected static void test(TestContext context, CompletionStage<?> cs) {
 		// this will be added to TestContext in the next vert.x release
