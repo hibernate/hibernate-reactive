@@ -24,7 +24,7 @@ import org.hibernate.service.Service;
  * <pre>{@code
  * new ReactiveServiceRegistryBuilder()
  *     .applySettings( properties )
- *     .addService( VertxInstance.class, () -> myVertx )
+ *     .addService( VertxInstance.class, (VertxInstance) () -> myVertx )
  *     .build();
  * }</pre>
  *
