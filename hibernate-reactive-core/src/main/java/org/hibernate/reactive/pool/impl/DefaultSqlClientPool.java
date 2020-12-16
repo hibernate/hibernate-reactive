@@ -55,7 +55,7 @@ import static org.hibernate.internal.CoreLogging.messageLogger;
 public class DefaultSqlClientPool extends SqlClientPool
 		implements ServiceRegistryAwareService, Configurable, Stoppable, Startable {
 
-	private Pool pool;
+	private ThreadLocalPoolManager pools;
 	private SqlStatementLogger sqlStatementLogger;
 	private URI uri;
 	private ServiceRegistryImplementor serviceRegistry;
@@ -78,14 +78,14 @@ public class DefaultSqlClientPool extends SqlClientPool
 
 	@Override
 	public void start() {
-		if ( pool == null ) {
-			pool = createPool( uri );
+		if ( pools == null ) {
+			pools = createPools( uri );
 		}
 	}
 
 	@Override
 	protected Pool getPool() {
-		return pool;
+		return pools.getOrStartPool();
 	}
 
 	@Override
@@ -99,19 +99,19 @@ public class DefaultSqlClientPool extends SqlClientPool
 	}
 
 	/**
-	 * Create a new {@link Pool} for the given JDBC URL or database URI,
+	 * Create a new {@link ThreadLocalPoolManager} for the given JDBC URL or database URI,
 	 * using the {@link VertxInstance} service to obtain an instance of
 	 * {@link Vertx}, and the {@link SqlClientPoolConfiguration} service
-	 * to obtain options for creating the connection pool.
+	 * to obtain options for creating the connection pool instances.
 	 *
 	 * @param uri JDBC URL or database URI
 	 *
-	 * @return the new {@link Pool}
+	 * @return the new {@link ThreadLocalPoolManager}
 	 */
-	protected Pool createPool(URI uri) {
+	protected ThreadLocalPoolManager createPools(URI uri) {
 		SqlClientPoolConfiguration configuration = serviceRegistry.getService(SqlClientPoolConfiguration.class);
 		VertxInstance vertx = serviceRegistry.getService(VertxInstance.class);
-		return createPool( uri, configuration.connectOptions( uri ), configuration.poolOptions(), vertx.getVertx() );
+		return createPools( uri, configuration.connectOptions( uri ), configuration.poolOptions(), vertx.getVertx() );
 	}
 
 	/**
@@ -125,17 +125,20 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 *
 	 * @return the new {@link Pool}
 	 */
-	protected Pool createPool(URI uri, SqlConnectOptions connectOptions, PoolOptions poolOptions, Vertx vertx) {
-		try {
-			// First try to load the Pool using the standard ServiceLoader pattern
-			// This only works if exactly 1 Driver is on the classpath.
-			return Pool.pool( vertx, connectOptions, poolOptions );
-		}
-		catch (ServiceConfigurationError e) {
-			// Backup option if multiple drivers are on the classpath.
-			// We will be able to remove this once Vertx 3.9.2 is available
-			return findDriver( uri, e ).createPool( vertx, connectOptions, poolOptions );
-		}
+	protected ThreadLocalPoolManager createPools(URI uri, SqlConnectOptions connectOptions, PoolOptions poolOptions, Vertx vertx) {
+		return new ThreadLocalPoolManager( () -> {
+			try {
+				// First try to load the Pool using the standard ServiceLoader pattern
+				// This only works if exactly 1 Driver is on the classpath.
+				return Pool.pool( vertx, connectOptions, poolOptions );
+			}
+			catch (ServiceConfigurationError e) {
+				// Backup option if multiple drivers are on the classpath.
+				// We will be able to remove this once Vertx 3.9.2 is available
+				final Driver driver = findDriver( uri, e );
+				return driver.createPool( vertx, connectOptions, poolOptions );
+			}
+		});
 	}
 
 	/**
@@ -189,8 +192,8 @@ public class DefaultSqlClientPool extends SqlClientPool
 
 	@Override
 	public void stop() {
-		if ( pool != null ) {
-			pool.close();
+		if ( pools != null ) {
+			pools.close();
 		}
 	}
 
