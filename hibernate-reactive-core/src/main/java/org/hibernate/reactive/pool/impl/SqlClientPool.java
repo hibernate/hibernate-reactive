@@ -18,7 +18,16 @@ import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 
 /**
- * A pool of reactive connections backed by a Vert.x {@link Pool}.
+ * A pool of reactive connections backed by a supplier of
+ * Vert.x {@link Pool} instances.
+ * N.B. the Vert.x notion of pool is not to be confused with
+ * the traditional JDBC notion of pool: there is a fundamental
+ * difference as the Vert.x pool should not be shared across
+ * threads or with other Vert.x contexts.
+ * For this reason the Reactive SessionFactory won't hold on
+ * to a (single) instance of {@link Pool}, but rather have a
+ * supplier, to produce a new {@link Pool} instance within
+ * each context.
  *
  * @see DefaultSqlClientPool the default implementation
  * @see ExternalSqlClientPool the implementation used in Quarkus
@@ -26,7 +35,7 @@ import static io.vertx.core.Future.succeededFuture;
 public abstract class SqlClientPool implements ReactiveConnectionPool {
 
 	/**
-	 * @return the underlying Vert.x {@link Pool}
+	 * @return the underlying Vert.x {@link Pool} for the current context.
 	 */
 	protected abstract Pool getPool();
 
