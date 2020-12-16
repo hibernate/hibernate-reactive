@@ -274,8 +274,8 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 
 	@Override
 	@Before
-	public void before() {
-		super.before();
+	public void before(TestContext context) {
+		super.before(context);
 
 		bId = null;
 

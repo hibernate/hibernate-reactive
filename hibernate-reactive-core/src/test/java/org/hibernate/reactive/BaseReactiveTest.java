@@ -6,10 +6,15 @@
 package org.hibernate.reactive;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
@@ -24,6 +29,7 @@ import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.junit.After;
 import org.junit.Before;
@@ -39,6 +45,9 @@ public abstract class BaseReactiveTest {
 
 	@Rule
 	public Timeout rule = Timeout.seconds( 5 * 60 );
+
+	@Rule
+	public RunTestOnContext vertxContextRule = new RunTestOnContext();
 
 	private AutoCloseable session;
 	private ReactiveConnection connection;
@@ -98,15 +107,32 @@ public abstract class BaseReactiveTest {
 	}
 
 	@Before
-	public void before() {
+	public void before(TestContext context) {
 		Configuration configuration = constructConfiguration();
 		StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
+				.addService( VertxInstance.class, (VertxInstance) () -> vertxContextRule.vertx() )
 				.applySettings( configuration.getProperties() );
 		addServices( builder );
 		StandardServiceRegistry registry = builder.build();
 		configureServices( registry );
-		sessionFactory = configuration.buildSessionFactory( registry );
-		poolProvider = registry.getService( ReactiveConnectionPool.class );
+
+		// The schema generation is a blocking operation and causes exception
+		// when running in a Vert.x event loop thread.
+		// Vert.x can deal with blocking code using `executeBlocking` or more
+		// more in general with Work threads.
+		Handler<Promise<org.hibernate.SessionFactory>> sfPromise = p -> {
+			SessionFactory factory = configuration.buildSessionFactory( registry );
+			p.complete( factory );
+		};
+
+		final Async async = context.async();
+		Handler<AsyncResult<org.hibernate.SessionFactory>> result = r -> {
+			sessionFactory = r.result();
+			poolProvider = registry.getService( ReactiveConnectionPool.class );
+			async.complete();
+		};
+
+		vertxContextRule.vertx().executeBlocking( sfPromise, result );
 	}
 
 	protected void addServices(StandardServiceRegistryBuilder builder) {}
