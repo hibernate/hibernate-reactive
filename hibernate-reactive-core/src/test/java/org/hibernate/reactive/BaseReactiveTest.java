@@ -14,6 +14,7 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -40,6 +41,19 @@ import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
+/**
+ * Base class for unit tests that need a connection to the selected db and
+ * need to wait for the end of the task for the assertion.
+ * <p>
+ *     Uses the {@link RunTestOnContext} rule to guarantee that all tests
+ *     will run in the Vert.x event loop thread (by default, the tests using Vert.x unit will start
+ *     in the JUnit thread).
+ * </p>
+ * <p>
+ *     Contains several utility methods to make it easier to test Hibernate Reactive
+ *     using Vert.x unit.
+ * </p>
+ */
 @RunWith(VertxUnitRunner.class)
 public abstract class BaseReactiveTest {
 
@@ -186,6 +200,11 @@ public abstract class BaseReactiveTest {
 		return sessionFactory.unwrap( Stage.SessionFactory.class );
 	}
 
+	/**
+	 * Close the existing open session and create a new {@link Stage.Session}
+	 *
+	 * @return a new Stage.Session
+	 */
 	protected Stage.Session openSession() {
 		if ( session != null && session.isOpen() ) {
 			session.close();
@@ -199,6 +218,11 @@ public abstract class BaseReactiveTest {
 		return poolProvider.getConnection().thenApply( c -> connection = c );
 	}
 
+	/**
+	 * Close the existing open session and create a new {@link Mutiny.Session}
+	 *
+	 * @return a new Mutiny.Session
+	 */
 	protected Mutiny.Session openMutinySession() {
 		if ( session != null ) {
 			session.close();
