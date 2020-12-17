@@ -38,30 +38,36 @@ import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 public class StageSessionImpl implements Stage.Session {
 
 	private final ReactiveSession delegate;
+	private final StageSessionFactoryImpl factory;
 
-	public StageSessionImpl(ReactiveSession session) {
+	public StageSessionImpl(ReactiveSession session, StageSessionFactoryImpl factory) {
 		this.delegate = session;
+		this.factory = factory;
+	}
+
+	private <T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stage) {
+		return factory.stage(stage);
 	}
 
 	@Override
 	public CompletionStage<Void> flush() {
 //		checkOpen();
-		return delegate.reactiveFlush();
+		return stage( v -> delegate.reactiveFlush() );
 	}
 
 	@Override
 	public <T> CompletionStage<T> fetch(T association) {
-		return delegate.reactiveFetch(association, false);
+		return stage( v -> delegate.reactiveFetch(association, false) );
 	}
 
 	@Override
 	public <E,T> CompletionStage<T> fetch(E entity, Attribute<E,T> field) {
-		return delegate.reactiveFetch(entity, field);
+		return stage( v -> delegate.reactiveFetch(entity, field) );
 	}
 
 	@Override
 	public <T> CompletionStage<T> unproxy(T association) {
-		return delegate.reactiveFetch(association, true);
+		return stage( v -> delegate.reactiveFetch(association, true) );
 	}
 
 	@Override
@@ -88,88 +94,88 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey) {
-		return delegate.reactiveFind( entityClass, primaryKey, null, null );
+		return stage( v -> delegate.reactiveFind( entityClass, primaryKey, null, null ) );
 	}
 
 	@Override
 	public <T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids) {
-		return delegate.reactiveFind( entityClass, ids );
+		return stage( v -> delegate.reactiveFind( entityClass, ids ) );
 	}
 
 	@Override
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockMode lockMode) {
-		return delegate.reactiveFind( entityClass, primaryKey, new LockOptions(lockMode), null );
+		return stage( v -> delegate.reactiveFind( entityClass, primaryKey, new LockOptions(lockMode), null ) );
 	}
 
 //	@Override
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockOptions lockOptions) {
-		return delegate.reactiveFind( entityClass, primaryKey, lockOptions, null );
+		return stage( v -> delegate.reactiveFind( entityClass, primaryKey, lockOptions, null ) );
 	}
 
 	@Override
 	public <T> CompletionStage<T> find(EntityGraph<T> entityGraph, Object id) {
 		Class<T> entityClass = ((RootGraphImplementor<T>) entityGraph).getGraphedType().getJavaType();
-		return delegate.reactiveFind( entityClass, id, null, entityGraph );
+		return stage( v -> delegate.reactiveFind( entityClass, id, null, entityGraph ) );
 	}
 
 	@Override
 	public CompletionStage<Void> persist(Object entity) {
-		return delegate.reactivePersist( entity );
+		return stage( v -> delegate.reactivePersist( entity ) );
 	}
 
 	@Override
 	public CompletionStage<Void> persist(Object... entity) {
-		return applyToAll( delegate::reactivePersist, entity );
+		return stage( v -> applyToAll( delegate::reactivePersist, entity ) );
 	}
 
 	@Override
 	public CompletionStage<Void> remove(Object entity) {
-		return delegate.reactiveRemove( entity );
+		return stage( v -> delegate.reactiveRemove( entity ) );
 	}
 
 	@Override
 	public CompletionStage<Void> remove(Object... entity) {
-		return applyToAll( delegate::reactiveRemove, entity );
+		return stage( v -> applyToAll( delegate::reactiveRemove, entity ) );
 	}
 
 	@Override
 	public <T> CompletionStage<T> merge(T entity) {
-		return delegate.reactiveMerge( entity );
+		return stage( v -> delegate.reactiveMerge( entity ) );
 	}
 
 	@Override @SafeVarargs
 	public final <T> CompletionStage<Void> merge(T... entity) {
-		return applyToAll( delegate::reactiveMerge, entity );
+		return stage( v -> applyToAll( delegate::reactiveMerge, entity ) );
 	}
 
 	@Override
 	public CompletionStage<Void> refresh(Object entity) {
-		return delegate.reactiveRefresh( entity, LockOptions.NONE );
+		return stage( v -> delegate.reactiveRefresh( entity, LockOptions.NONE ) );
 	}
 
 	@Override
 	public CompletionStage<Void> refresh(Object entity, LockMode lockMode) {
-		return delegate.reactiveRefresh( entity, new LockOptions(lockMode) );
+		return stage( v -> delegate.reactiveRefresh( entity, new LockOptions(lockMode) ) );
 	}
 
 //	@Override
 	public CompletionStage<Void> refresh(Object entity, LockOptions lockOptions) {
-		return delegate.reactiveRefresh( entity, lockOptions );
+		return stage( v -> delegate.reactiveRefresh( entity, lockOptions ) );
 	}
 
 	@Override
 	public CompletionStage<Void> refresh(Object... entity) {
-		return applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entity );
+		return stage( v -> applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entity ) );
 	}
 
 	@Override
 	public CompletionStage<Void> lock(Object entity, LockMode lockMode) {
-		return delegate.reactiveLock( entity, new LockOptions(lockMode) );
+		return stage( v -> delegate.reactiveLock( entity, new LockOptions(lockMode) ) );
 	}
 
 //	@Override
 	public CompletionStage<Void> lock(Object entity, LockOptions lockOptions) {
-		return delegate.reactiveLock( entity, lockOptions );
+		return stage( v -> delegate.reactiveLock( entity, lockOptions ) );
 	}
 
 	@Override
