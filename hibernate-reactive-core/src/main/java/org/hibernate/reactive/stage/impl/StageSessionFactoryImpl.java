@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
 import org.hibernate.Cache;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
@@ -14,12 +16,16 @@ import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.vertx.VertxInstance;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.metamodel.Metamodel;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Implementation of {@link Stage.SessionFactory}.
@@ -29,23 +35,41 @@ import java.util.function.Function;
 public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	private final SessionFactoryImpl delegate;
+	private final VertxInstance vertxInstance;
+	private final Executor vertxExecutor;
 
 	public StageSessionFactoryImpl(SessionFactoryImpl delegate) {
 		this.delegate = delegate;
+		vertxInstance = delegate.getServiceRegistry().getService(VertxInstance.class);
+		vertxExecutor = runnable -> {
+			Context context = vertxInstance.getVertx().getOrCreateContext();
+			if ( Vertx.currentContext() == context ) {
+				runnable.run();
+			}
+			else {
+				context.runOnContext( x -> runnable.run() );
+			}
+		};
+	}
+
+	<T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stageSupplier) {
+		return voidFuture().thenComposeAsync(stageSupplier, vertxExecutor);
 	}
 
 	@Override
 	public Stage.Session openSession() {
 		SessionCreationOptions options = options();
 		return new StageSessionImpl(
-				new ReactiveSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) )
+				new ReactiveSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) ),
+				this
 		);
 	}
 
 	@Override
 	public Stage.Session openSession(String tenantId) {
 		return new StageSessionImpl(
-				new ReactiveSessionImpl( delegate, options(), proxyConnection( tenantId ) )
+				new ReactiveSessionImpl( delegate, options(), proxyConnection( tenantId ) ),
+				this
 		);
 	}
 
@@ -58,22 +82,22 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	CompletionStage<Stage.Session> newSession() {
 		SessionCreationOptions options = options();
-		return connection( options.getTenantIdentifier() )
+		return stage( v -> connection( options.getTenantIdentifier() )
 				.thenApply( connection -> new ReactiveSessionImpl( delegate, options, connection ) )
-				.thenApply( StageSessionImpl::new );
+				.thenApply( s -> new StageSessionImpl(s, this) ) );
 	}
 
 	CompletionStage<Stage.Session> newSession(String tenantId) {
-		return connection( tenantId )
+		return stage( v -> connection( tenantId )
 				.thenApply( connection -> new ReactiveSessionImpl( delegate, options(), connection ) )
-				.thenApply( StageSessionImpl::new );
+				.thenApply( s -> new StageSessionImpl(s, this) ) );
 	}
 
 	CompletionStage<Stage.StatelessSession> newStatelessSession() {
 		SessionCreationOptions options = options();
-		return connection( options.getTenantIdentifier() )
+		return stage( v -> connection( options.getTenantIdentifier() )
 				.thenApply( connection -> new ReactiveStatelessSessionImpl( delegate, options, connection ) )
-				.thenApply( StageStatelessSessionImpl::new );
+				.thenApply( StageStatelessSessionImpl::new ) );
 	}
 
 	private SessionCreationOptions options() {

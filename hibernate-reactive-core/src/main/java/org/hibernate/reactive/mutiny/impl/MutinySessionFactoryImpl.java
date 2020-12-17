@@ -7,6 +7,8 @@ package org.hibernate.reactive.mutiny.impl;
 
 import io.smallrye.mutiny.Uni;
 
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
 import org.hibernate.Cache;
 import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionCreationOptions;
@@ -17,12 +19,15 @@ import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
+import org.hibernate.reactive.vertx.VertxInstance;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.metamodel.Metamodel;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
 
@@ -33,38 +38,56 @@ import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnE
  */
 public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
-	private SessionFactoryImpl delegate;
+	private final SessionFactoryImpl delegate;
+	private final VertxInstance vertxInstance;
+	private final Executor vertxExecutor;
 
 	public MutinySessionFactoryImpl(SessionFactoryImpl delegate) {
 		this.delegate = delegate;
+		vertxInstance = delegate.getServiceRegistry().getService(VertxInstance.class);
+		vertxExecutor = runnable -> {
+			Context context = vertxInstance.getVertx().getOrCreateContext();
+			if ( Vertx.currentContext() == context ) {
+				runnable.run();
+			}
+			else {
+				context.runOnContext( x -> runnable.run() );
+			}
+		};
+	}
+
+	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
+		return Uni.createFrom().completionStage(stageSupplier).runSubscriptionOn(vertxExecutor);
 	}
 
 	@Override
 	public Mutiny.Session openSession() {
 		SessionCreationOptions options = options();
 		return new MutinySessionImpl(
-				new ReactiveSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) )
+				new ReactiveSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) ),
+				this
 		);
 	}
 
 	@Override
 	public Mutiny.Session openSession(String tenantId) {
 		return new MutinySessionImpl(
-				new ReactiveSessionImpl( delegate, options(), proxyConnection( tenantId ) )
+				new ReactiveSessionImpl( delegate, options(), proxyConnection( tenantId ) ),
+				this
 		);
 	}
 
 	Uni<Mutiny.Session> newSession() throws HibernateException {
 		SessionCreationOptions options = options();
-		return Uni.createFrom().completionStage( connection( options.getTenantIdentifier() ) )
+		return uni( () -> connection( options.getTenantIdentifier() ) )
 				.map( reactiveConnection -> new ReactiveSessionImpl( delegate, options, reactiveConnection ) )
-				.map( MutinySessionImpl::new );
+				.map( s -> new MutinySessionImpl(s, this) );
 	}
 
 	Uni<Mutiny.Session> newSession(String tenantId) throws HibernateException {
-		return Uni.createFrom().completionStage( connection( tenantId ) )
+		return uni( () -> connection( tenantId ) )
 				.map( reactiveConnection -> new ReactiveSessionImpl( delegate, options(), reactiveConnection ) )
-				.map( MutinySessionImpl::new );
+				.map( s -> new MutinySessionImpl(s, this) );
 	}
 
 	@Override
@@ -77,7 +100,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	Uni<Mutiny.StatelessSession> newStatelessSession() throws HibernateException {
 		SessionCreationOptions options = options();
-		return Uni.createFrom().completionStage( connection( options.getTenantIdentifier() ) )
+		return uni( () -> connection( options.getTenantIdentifier() ) )
 				.map( reactiveConnection -> new ReactiveStatelessSessionImpl( delegate, options, reactiveConnection ) )
 				.map( MutinyStatelessSessionImpl::new );
 	}
