@@ -73,8 +73,6 @@ import org.hibernate.reactive.event.ReactiveRefreshEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveInitializeCollectionEventListener;
 import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
-import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -83,8 +81,6 @@ import org.hibernate.reactive.session.CriteriaQueryOptions;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import javax.persistence.EntityGraph;
@@ -1315,12 +1311,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <T> T unwrap(Class<T> clazz) {
 		if ( ReactiveSession.class.isAssignableFrom( clazz ) ) {
 			return clazz.cast(this);
-		}
-		if ( Stage.Session.class.isAssignableFrom( clazz ) ) {
-			return clazz.cast( new StageSessionImpl( this ) );
-		}
-		if ( Mutiny.Session.class.isAssignableFrom( clazz ) ) {
-			return clazz.cast( new MutinySessionImpl( this ) );
 		}
 		return super.unwrap( clazz );
 	}
