@@ -14,6 +14,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.reactive.vertx.VertxInstance;
@@ -64,27 +65,13 @@ public class ReactiveGenerationTarget implements GenerationTarget {
 	public void release() {
 		statements = null;
 		if ( commands != null ) {
-			vertxSupplier.getVertx().getOrCreateContext().runOnContext( v1 -> {
-				service.getConnection().thenAccept( reactiveConnection ->  {
-					CompletionStage<Void> result = CompletionStages.voidFuture();
-					for ( String command : commands ) {
-						result = result.thenCompose(  v -> reactiveConnection.execute( command )
-								.handle( (r, e) -> {
-									if ( e != null ) {
-										log.warnf( "HRX000021: DDL command failed [%s]", e.getMessage() );
-									}
-									return null;
-								} )
-						);
-					}
-					result
+			vertxSupplier.getVertx().getOrCreateContext().runOnContext( v1 ->
+					service.getConnection()
+						.thenCompose( this::executeCommands )
 						.whenComplete( (v, e) -> {
 							done.countDown();
-							reactiveConnection.close();
-						} );
-
-				} );
-			} );
+						} )
+			);
 
 			if ( done != null ) {
 				try {
@@ -96,5 +83,21 @@ public class ReactiveGenerationTarget implements GenerationTarget {
 				}
 			}
 		}
+	}
+
+	private CompletionStage<Void> executeCommands(ReactiveConnection reactiveConnection) {
+		CompletionStage<Void> result = CompletionStages.voidFuture();
+		for ( String command : commands ) {
+			result = result.thenCompose(  v -> reactiveConnection.execute( command )
+					.handle( (r, e) -> {
+						if ( e != null ) {
+							log.warnf( "HRX000021: DDL command failed [%s]", e.getMessage() );
+						}
+						return null;
+					} )
+			);
+		}
+		return result
+				.whenComplete( (v, e) -> reactiveConnection.close() );
 	}
 }
