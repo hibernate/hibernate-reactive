@@ -69,6 +69,9 @@ public class ReactiveGenerationTarget implements GenerationTarget {
 					service.getConnection()
 						.thenCompose( this::executeCommands )
 						.whenComplete( (v, e) -> {
+							if ( e != null ) {
+								log.warnf( "HRX000021: DDL command failed [%s]", e.getMessage() );
+							}
 							done.countDown();
 						} )
 			);
