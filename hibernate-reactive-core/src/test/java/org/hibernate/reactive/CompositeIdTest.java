@@ -32,7 +32,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 		return getSessionFactory()
 				.withSession(
 						session -> session.persist( new GuineaPig(5, "Aloi", 100) )
-							.thenApply( v -> { session.flush(); return null; } )
+							.thenCompose( v -> session.flush() )
 				 );
 	}
 
