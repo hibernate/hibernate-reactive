@@ -32,7 +32,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 		return getMutinySessionFactory()
 				.withSession(
 						session -> session.persist( new GuineaPig(5, "Aloi") )
-								.invoke(session::flush)
+								.chain(session::flush)
 				);
 	}
 
