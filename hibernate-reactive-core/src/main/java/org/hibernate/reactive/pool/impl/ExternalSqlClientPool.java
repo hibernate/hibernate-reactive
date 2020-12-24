@@ -6,10 +6,10 @@
 package org.hibernate.reactive.pool.impl;
 
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
+import org.hibernate.reactive.common.InternalStateAssertions;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
 
-import io.vertx.core.Context;
 import io.vertx.sqlclient.Pool;
 
 /**
@@ -56,13 +56,7 @@ public final class ExternalSqlClientPool extends SqlClientPool {
 	@Override
 	protected Pool getPool() {
 		//First, check that the requester is running within the EventLoop:
-		if ( !Context.isOnEventLoopThread() ) {
-			//Not using the InternalStateAssertions here as this check is more critical; need to ensure all production code actually adheres to this constraint.
-			//On top of correctness (accessing the pool from a non-eventloop thread exposes us to race conditions), we also don't want to the ThreadLocal
-			//to store more Pool references than the configured Vert.x threads.
-			throw new IllegalStateException(
-					"A Reactive SQL Client Pool can only be used from within a Vert.x context. You are using Hibernate Reactive within a thread which is not a Vert.x event loop." );
-		}
+		InternalStateAssertions.assertUseOnEventLoop();
 		return pool;
 	}
 
