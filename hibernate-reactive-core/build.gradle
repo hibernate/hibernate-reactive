@@ -75,6 +75,7 @@ tasks.withType(Test) {
         events 'PASSED', 'FAILED', 'SKIPPED'
     }
     systemProperty 'docker', project.hasProperty( 'docker' ) ? 'true' : 'false'
+    systemProperty 'org.hibernate.reactive.common.InternalStateAssertions.ENFORCE', 'true'
 }
 
 // Example:

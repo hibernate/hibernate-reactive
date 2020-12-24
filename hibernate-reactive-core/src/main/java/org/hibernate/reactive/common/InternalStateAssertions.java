@@ -14,12 +14,23 @@ import io.vertx.core.Context;
  */
 public final class InternalStateAssertions {
 
+	private static final boolean ENFORCE = Boolean.getBoolean( "org.hibernate.reactive.common.InternalStateAssertions.ENFORCE" );
+
 	private InternalStateAssertions() {
 		//do not construct
 	}
 
 	public static void assertUseOnEventLoop() {
-		assert Context.isOnEventLoopThread() : "This method should exclusively be invoked from a Vert.x EventLoop thread";
+		if ( ENFORCE && (! Context.isOnEventLoopThread() ) ) {
+			throw new IllegalStateException( "This method should exclusively be invoked from a Vert.x EventLoop thread; currently running on thread '" + Thread.currentThread().getName() + '\'' );
+		}
+	}
+
+	public static void assertCurrentThreadMatches(Thread expectedThread) {
+		if ( ENFORCE && ( Thread.currentThread() != expectedThread ) ) {
+			throw new IllegalStateException( "Detected use of the Reactive Session from a different Thread than the one which was used to open the Reactive Session - this suggests an invalid integration; "
+			+ "original thread: '" + expectedThread.getName() + "' current Thread: '" + Thread.currentThread().getName() + '\'' );
+		}
 	}
 
 }

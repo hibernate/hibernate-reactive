@@ -60,6 +60,7 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.Query;
 import org.hibernate.query.internal.ParameterMetadataImpl;
+import org.hibernate.reactive.common.InternalStateAssertions;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
@@ -144,7 +145,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	private void threadCheck() {
-		assert Thread.currentThread() == associatedWorkThread : "Detected a switch of the current thread - this suggests an invalid integration with Vert.x";
+		InternalStateAssertions.assertCurrentThreadMatches( associatedWorkThread );
 	}
 
 	@Override
