@@ -105,45 +105,45 @@ public class ReactiveActionQueue {
 //					}
 //				}
 //		);
-//		EXECUTABLE_LISTS_MAP.put(
-//				CollectionRemoveAction.class,
-//				new ListProvider<CollectionRemoveAction>() {
-//					ExecutableList<CollectionRemoveAction> get(ReactiveActionQueue instance) {
-//						return instance.collectionRemovals;
-//					}
-//					ExecutableList<CollectionRemoveAction> init(ReactiveActionQueue instance) {
-//						return instance.collectionRemovals = new ExecutableList<>(
-//								instance.isOrderUpdatesEnabled()
-//						);
-//					}
-//				}
-//		);
-//		EXECUTABLE_LISTS_MAP.put(
-//				CollectionUpdateAction.class,
-//				new ListProvider<CollectionUpdateAction>() {
-//					ExecutableList<CollectionUpdateAction> get(ReactiveActionQueue instance) {
-//						return instance.collectionUpdates;
-//					}
-//					ExecutableList<CollectionUpdateAction> init(ReactiveActionQueue instance) {
-//						return instance.collectionUpdates = new ExecutableList<>(
-//								instance.isOrderUpdatesEnabled()
-//						);
-//					}
-//				}
-//		);
-//		EXECUTABLE_LISTS_MAP.put(
-//				CollectionRecreateAction.class,
-//				new ListProvider<CollectionRecreateAction>() {
-//					ExecutableList<CollectionRecreateAction> get(ReactiveActionQueue instance) {
-//						return instance.collectionCreations;
-//					}
-//					ExecutableList<CollectionRecreateAction> init(ReactiveActionQueue instance) {
-//						return instance.collectionCreations = new ExecutableList<>(
-//								instance.isOrderUpdatesEnabled()
-//						);
-//					}
-//				}
-//		);
+		EXECUTABLE_LISTS_MAP.put(
+				ReactiveCollectionRemoveAction.class,
+				new ListProvider<ReactiveCollectionRemoveAction>() {
+					ExecutableList<ReactiveCollectionRemoveAction> get(ReactiveActionQueue instance) {
+						return instance.collectionRemovals;
+					}
+					ExecutableList<ReactiveCollectionRemoveAction> init(ReactiveActionQueue instance) {
+						return instance.collectionRemovals = new ExecutableList<>(
+								instance.isOrderUpdatesEnabled()
+						);
+					}
+				}
+		);
+		EXECUTABLE_LISTS_MAP.put(
+				ReactiveCollectionUpdateAction.class,
+				new ListProvider<ReactiveCollectionUpdateAction>() {
+					ExecutableList<ReactiveCollectionUpdateAction> get(ReactiveActionQueue instance) {
+						return instance.collectionUpdates;
+					}
+					ExecutableList<ReactiveCollectionUpdateAction> init(ReactiveActionQueue instance) {
+						return instance.collectionUpdates = new ExecutableList<>(
+								instance.isOrderUpdatesEnabled()
+						);
+					}
+				}
+		);
+		EXECUTABLE_LISTS_MAP.put(
+				ReactiveCollectionRecreateAction.class,
+				new ListProvider<ReactiveCollectionRecreateAction>() {
+					ExecutableList<ReactiveCollectionRecreateAction> get(ReactiveActionQueue instance) {
+						return instance.collectionCreations;
+					}
+					ExecutableList<ReactiveCollectionRecreateAction> init(ReactiveActionQueue instance) {
+						return instance.collectionCreations = new ExecutableList<>(
+								instance.isOrderUpdatesEnabled()
+						);
+					}
+				}
+		);
 		EXECUTABLE_LISTS_MAP.put(
 				ReactiveEntityDeleteAction.class,
 				new ListProvider<ReactiveEntityDeleteAction>() {
@@ -174,10 +174,10 @@ public class ReactiveActionQueue {
 	// Note that, unlike objects, collection insertions, updates,
 	// deletions are not really remembered between flushes. We
 	// just re-use the same Lists for convenience.
-	private ExecutableList<CollectionRecreateAction> collectionCreations;
-	private ExecutableList<CollectionUpdateAction> collectionUpdates;
+	private ExecutableList<ReactiveCollectionRecreateAction> collectionCreations;
+	private ExecutableList<ReactiveCollectionUpdateAction> collectionUpdates;
 	private ExecutableList<QueuedOperationCollectionAction> collectionQueuedOps;
-	private ExecutableList<CollectionRemoveAction> collectionRemovals;
+	private ExecutableList<ReactiveCollectionRemoveAction> collectionRemovals;
 	// TODO: The removeOrphan concept is a temporary "hack" for HHH-6484.  This should be removed once action/task
 	// ordering is improved.
 	private ExecutableList<OrphanRemovalAction> orphanRemovals;
@@ -416,9 +416,9 @@ public class ReactiveActionQueue {
 	 *
 	 * @param action The action representing the (re)creation of a collection
 	 */
-	public void addAction(CollectionRecreateAction action) {
-//		addAction( CollectionRecreateAction.class, action );
-		throw new UnsupportedOperationException();
+	public void addAction(ReactiveCollectionRecreateAction action) {
+		addAction( ReactiveCollectionRecreateAction.class, action );
+//		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -426,9 +426,9 @@ public class ReactiveActionQueue {
 	 *
 	 * @param action The action representing the removal of a collection
 	 */
-	public void addAction(CollectionRemoveAction action) {
-//		addAction( CollectionRemoveAction.class, action );
-		throw new UnsupportedOperationException();
+	public void addAction(ReactiveCollectionRemoveAction action) {
+		addAction( ReactiveCollectionRemoveAction.class, action );
+//		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -436,9 +436,9 @@ public class ReactiveActionQueue {
 	 *
 	 * @param action The action representing the update of a collection
 	 */
-	public void addAction(CollectionUpdateAction action) {
-//		addAction( CollectionUpdateAction.class, action );
-		throw new UnsupportedOperationException();
+	public void addAction(ReactiveCollectionUpdateAction action) {
+		addAction( ReactiveCollectionUpdateAction.class, action );
+//		throw new UnsupportedOperationException();
 	}
 
 	/**

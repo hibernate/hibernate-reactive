@@ -10,10 +10,11 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.internal.StandardPersisterClassResolver;
 import org.hibernate.persister.spi.PersisterClassResolver;
+import org.hibernate.reactive.persister.collection.impl.ReactiveBasicCollectionPersister;
+import org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveJoinedSubclassEntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveSingleTableEntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveUnionSubclassEntityPersister;
-import org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister;
 
 public class ReactivePersisterClassResolver extends StandardPersisterClassResolver implements PersisterClassResolver {
 
@@ -34,6 +35,14 @@ public class ReactivePersisterClassResolver extends StandardPersisterClassResolv
 
 	@Override
 	public Class<? extends CollectionPersister> getCollectionPersisterClass(Collection metadata) {
+		return metadata.isOneToMany() ? oneToManyPersister() : elementCollectionPersister();
+	}
+
+	private Class<? extends CollectionPersister> oneToManyPersister() {
 		return ReactiveOneToManyPersister.class;
+	}
+
+	private Class<? extends CollectionPersister> elementCollectionPersister() {
+		return ReactiveBasicCollectionPersister.class;
 	}
 }

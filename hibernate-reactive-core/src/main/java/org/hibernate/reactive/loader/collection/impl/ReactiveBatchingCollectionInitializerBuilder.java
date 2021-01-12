@@ -24,7 +24,7 @@ import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
 public abstract class ReactiveBatchingCollectionInitializerBuilder {
 
 	public static ReactiveBatchingCollectionInitializerBuilder getBuilder(SessionFactoryImplementor factory) {
-		switch ( factory.getSettings().getBatchFetchStyle() ) {
+		switch ( factory.getSessionFactoryOptions().getBatchFetchStyle() ) {
 			case PADDED: {
 				return ReactivePaddedBatchingCollectionInitializerBuilder.INSTANCE;
 			}
@@ -106,7 +106,6 @@ public abstract class ReactiveBatchingCollectionInitializerBuilder {
 		if (persister.isOneToMany()) {
 			return new ReactiveOneToManyLoader(persister, factory, influencers);
 		}
-		throw new UnsupportedOperationException();
-//		return new ReactiveBasicCollectionLoader(persister, factory, influencers);
+		return new ReactiveBasicCollectionLoader(persister, factory, influencers);
 	}
 }
