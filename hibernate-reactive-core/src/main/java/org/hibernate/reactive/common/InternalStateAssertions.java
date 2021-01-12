@@ -28,7 +28,7 @@ public final class InternalStateAssertions {
 
 	public static void assertCurrentThreadMatches(Thread expectedThread) {
 		if ( ENFORCE && ( Thread.currentThread() != expectedThread ) ) {
-			throw new IllegalStateException( "Detected use of the Reactive Session from a different Thread than the one which was used to open the Reactive Session - this suggests an invalid integration; "
+			throw new IllegalStateException( "Detected use of the reactive Session from a different Thread than the one which was used to open the reactive Session - this suggests an invalid integration; "
 			+ "original thread: '" + expectedThread.getName() + "' current Thread: '" + Thread.currentThread().getName() + '\'' );
 		}
 	}
