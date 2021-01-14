@@ -7,6 +7,9 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.stage.Stage;
+
+import org.junit.Before;
 import org.junit.Test;
 
 import javax.persistence.*;
@@ -19,43 +22,22 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 
+	private Book goodOmens;
+	private Author neilGaiman;
+	private Author terryPratchett;
+
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( Book.class );
 		configuration.addAnnotatedClass( Author.class );
 		return configuration;
 	}
-//
-//	private CompletionStage<Integer> populateDB(Book... books) {
-//		StringBuilder authorQueryBuilder = new StringBuilder();
-//		StringBuilder bookQueryBuilder = new StringBuilder();
-//		for ( Book book : books ) {
-//			bookQueryBuilder.append( ", ( " );
-//			bookQueryBuilder.append( book.getId() );
-//			bookQueryBuilder.append( ", '" );
-//			bookQueryBuilder.append( book.getTitle() );
-//			bookQueryBuilder.append( "')" );
-//			for ( Author author: book.getAuthors() ) {
-//				authorQueryBuilder.append( ", (" );
-//				authorQueryBuilder.append( author.getId() );
-//				authorQueryBuilder.append( ", '" );
-//				authorQueryBuilder.append( author.getName() );
-//				authorQueryBuilder.append( "', " );
-//				authorQueryBuilder.append( book.getId() );
-//				authorQueryBuilder.append( ") " );
-//			}
-//		}
-//
-//		String authorQuery = "INSERT INTO " + Author.TABLE + " (id, name, book_id) VALUES " + authorQueryBuilder.substring( 1 ) + ";";
-//		String bookQuery = "INSERT INTO " + Book.TABLE + " (id, title) VALUES " + bookQueryBuilder.substring( 1 ) + ";";
-//		return connection().update( bookQuery).thenCompose( ignore -> connection().update( authorQuery ) );
-//	}
 
-	@Test
-	public void findBookWithAuthors(TestContext context) {
-		final Book goodOmens = new Book( 7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
-		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
-		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
+	@Before
+	public void populateDb(TestContext context) {
+		goodOmens = new Book( 7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
+		neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
+		terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
 		goodOmens.getAuthors().add( neilGaiman );
 		goodOmens.getAuthors().add( terryPratchett );
 
@@ -68,13 +50,70 @@ public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 								.thenCompose( v -> s.persist(terryPratchett) )
 								.thenCompose( v -> s.flush() )
 						)
-						.thenApply( v -> openSession() )
-						.thenCompose( s -> s.find( Book.class, goodOmens.getId() ) )
-						.thenAccept( optionalBook -> {
-							context.assertNotNull( optionalBook );
-							context.assertEquals( 2, optionalBook.getAuthors().size() );
-							context.assertTrue( optionalBook.getAuthors().contains( neilGaiman )  );
-							context.assertTrue( optionalBook.getAuthors().contains( terryPratchett )  );
+		);
+	}
+
+	@Test
+	public void findBookWithAuthors(TestContext context) {
+		Stage.Session session = openSession();
+
+		test (
+				context,
+				session.find( Book.class, goodOmens.getId())
+						.thenAccept( foundBook -> {
+							context.assertNotNull( foundBook );
+							context.assertEquals( 2, foundBook.getAuthors().size() );
+							context.assertTrue( foundBook.getAuthors().contains( neilGaiman )  );
+							context.assertTrue( foundBook.getAuthors().contains( terryPratchett )  );
+						} )
+		);
+	}
+
+	// @Test
+	// FIXME: This test does not yet work. Edits for OneToMany Associations with Lists of Embedded entity types
+	// does not work
+	public void clearBookAuthors(TestContext context){
+		Stage.Session session = openSession();
+
+		test(
+				context,
+				session.find( Book.class, goodOmens.getId() )
+						.thenCompose( foundBook -> {
+							foundBook.getAuthors().clear();
+							return session.flush();
+						} )
+						.thenCompose( s -> openSession().find( Book.class, goodOmens.getId() )
+								.thenAccept( changedBook -> {
+									context.assertEquals( 0, changedBook.getAuthors().size() );
+								} )
+						)
+		);
+	}
+
+	// @Test
+	// FIXME: This test does not yet work. Edits for OneToMany Associations with Lists of Embedded entity types
+	// does not work
+	public void setNewAuthorsCollection(TestContext context){
+		Stage.Session session = openSession();
+
+		test (
+				context,
+				session.find( Book.class, goodOmens.getId())
+						.thenCompose( foundBook -> {
+								context.assertNotNull( foundBook );
+								context.assertEquals( 2, foundBook.getAuthors().size() );
+								Author peterPiper = new Author( 2111111, "Peter Piper", goodOmens );
+								goodOmens.getAuthors().clear();
+								goodOmens.getAuthors().add( peterPiper );
+											  return session.flush();
+						  }
+						)
+						.thenCompose( s -> openSession().find( Book.class, goodOmens.getId()) )
+						.thenAccept( changedBook -> {
+							context.assertNotNull( changedBook );
+							context.assertEquals( 1, changedBook.getAuthors().size() );
+							Author firstAuthor = changedBook.getAuthors().get(0);
+							context.assertEquals( "Peter Piper",  firstAuthor.getName());
 						} )
 		);
 	}
