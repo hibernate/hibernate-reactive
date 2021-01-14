@@ -41,11 +41,13 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	private final SessionFactoryImpl delegate;
 	private final VertxInstance vertxInstance;
 	private final Executor vertxExecutor;
+	private final ReactiveConnectionPool connectionPool;
 
 	public MutinySessionFactoryImpl(SessionFactoryImpl delegate) {
 		this.delegate = delegate;
-		vertxInstance = delegate.getServiceRegistry().getService(VertxInstance.class);
-		vertxExecutor = runnable -> {
+		this.vertxInstance = delegate.getServiceRegistry().getService( VertxInstance.class );
+		this.connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
+		this.vertxExecutor = runnable -> {
 			Context context = vertxInstance.getVertx().getOrCreateContext();
 			if ( Vertx.currentContext() == context ) {
 				runnable.run();
@@ -109,22 +111,18 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		return new SessionFactoryImpl.SessionBuilderImpl<>( delegate );
 	}
 
-	private ReactiveConnectionPool pool() {
-		return delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
-	}
-
 	private CompletionStage<ReactiveConnection> connection(String tenantId) {
 		assertUseOnEventLoop();
 		return tenantId == null
-				? pool().getConnection()
-				: pool().getConnection( tenantId );
+				? connectionPool.getConnection()
+				: connectionPool.getConnection( tenantId );
 	}
 
 	private ReactiveConnection proxyConnection(String tenantId) {
 		assertUseOnEventLoop();
 		return tenantId==null
-				? pool().getProxyConnection()
-				: pool().getProxyConnection( tenantId );
+				? connectionPool.getProxyConnection()
+				: connectionPool.getProxyConnection( tenantId );
 	}
 
 	@Override

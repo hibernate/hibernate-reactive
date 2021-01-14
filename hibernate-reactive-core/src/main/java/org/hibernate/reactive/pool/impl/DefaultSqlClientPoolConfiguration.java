@@ -7,6 +7,8 @@ package org.hibernate.reactive.pool.impl;
 
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnectOptions;
+
+import org.hibernate.HibernateError;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.service.spi.Configurable;
 
@@ -102,7 +104,10 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
                     }
                 }
                 else {
-                    params = uri.getQuery().split("&");
+                    final String query = uri.getQuery();
+                    if ( query != null ) {
+                        params = uri.getQuery().split( "&" );
+                    }
                 }
                 for (String param : params) {
                     if ( param.startsWith("user=") ) {
@@ -125,6 +130,10 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
                 case "mysql": port = 3306; break;
                 case "db2": port = 50000; break;
             }
+        }
+
+        if ( username == null ) {
+            throw new HibernateError( "The username parameter on the JDBC-style connection URL is required. For PostgreSQL, for example, use 'jdbc:postgresql://localhost/hreact?user=none'." );
         }
 
         SqlConnectOptions connectOptions = new SqlConnectOptions()
