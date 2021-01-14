@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
+import org.hibernate.HibernateError;
 import org.hibernate.dialect.PostgreSQL9Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -198,8 +199,9 @@ public class DefaultSqlClientPool extends SqlClientPool
 	}
 
 	public static URI parse(String url) {
-		if ( url == null ) {
-			return null;
+		if ( url == null || url.trim().isEmpty() ) {
+			throw new HibernateError( "The configuration property '" + Settings.URL + "' was not provided, or is in invalid format. This is required when using the default DefaultSqlClientPool: " +
+											  "either provide the configuration setting or integrate with a different SqlClientPool implementation" );
 		}
 
 		if ( url.startsWith( "jdbc:" ) ) {
