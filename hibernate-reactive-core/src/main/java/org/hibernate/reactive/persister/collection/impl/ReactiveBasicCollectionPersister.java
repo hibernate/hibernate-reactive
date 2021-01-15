@@ -22,6 +22,7 @@ import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.BasicCollectionPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.pretty.MessageHelper;
+import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -71,26 +72,35 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		// create all the new entries
 		Iterator entries = collection.entries( this );
 
+		CompletionStage<?> loop = CompletionStages.voidFuture();
+		// FIXME: This is just a non working POC
 		if ( entries.hasNext() ) {
 			collection.preInsert( this );
 
-			List<Object> valuePairList = new ArrayList<>();
+			int i = 0;
+			int count = 0;
 
 			while ( entries.hasNext() ) {
-				valuePairList.add( id );
-				valuePairList.add( entries.next() );
+				final Object entry = entries.next();
+				if ( collection.entryExists( entry, i ) ) {
+					int offset = 1;
+					Object[] paramValues = PreparedStatementAdaptor.bind(
+							st -> {
+								int loc = writeKey( st, id, offset, session );
+								if ( hasIdentifier ) {
+									loc = writeIdentifier( st, collection.getIdentifier( entry, i ), loc, session );
+								}
+								getIdentifierType().nullSafeSet( st, id, 1, session );
+
+								// FIXME: Set the other parameters as well
+							}
+					);
+					loop = loop.thenCompose( v -> reactiveConnection
+													 .update( getSQLInsertRowString(), paramValues ));
+				}
 			}
 
-			// In order to insert element collection values create a native query with placeholders followed by
-			// value sets
-			return reactiveConnection
-					.update(
-							getSQLInsertElementCollectionString(
-									valuePairList.size() / 2 ),
-							valuePairList.toArray( new Object[0] )
-					)
-					.thenAccept( ignore -> {
-					} );
+			return loop.thenCompose( CompletionStages::voidFuture );
 		}
 
 		return CompletionStages.voidFuture();
