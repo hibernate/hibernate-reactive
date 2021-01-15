@@ -46,6 +46,10 @@ public class CompletionStages {
 	private static final CompletionStage<Boolean> TRUE = completedFuture( true );
 	private static final CompletionStage<Boolean> FALSE = completedFuture( false );
 
+	public static CompletionStage<Void> voidFuture(Object ignore) {
+		return voidFuture();
+	}
+
 	public static CompletionStage<Void> voidFuture() {
 		return VOID;
 	}
