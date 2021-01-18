@@ -90,7 +90,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 								if ( hasIdentifier ) {
 									loc = writeIdentifier( st, collection.getIdentifier( entry, i ), loc, session );
 								}
-								getIdentifierType().nullSafeSet( st, id, 1, session );
+								loc = writeElement( st, collection.getElement( entry ), loc, session );
 
 								// FIXME: Set the other parameters as well
 							}
