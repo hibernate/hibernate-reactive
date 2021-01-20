@@ -67,7 +67,7 @@ public interface ReactiveResultSetProcessor {
 		);
 
 		final Object[] hydratedState = entityEntry.getLoadedState();
-		return CompletionStages.loop(
+		return CompletionStages.loopWithoutTrampoline(
 				IntStream.range( 0, hydratedState.length )
 						.filter( i-> hydratedState[ i ] instanceof CompletionStage ),
 				i -> ( (CompletionStage<Object>) hydratedState[ i ] )
