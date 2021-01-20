@@ -219,4 +219,17 @@ public class CompletionStages {
 			default: return CompletionStages.loop( entity, op );
 		}
 	}
+
+	public static CompletionStage<Void> loopWithoutTrampoline(IntStream stream, Function<Integer,CompletionStage<?>> consumer) {
+		return loopWithoutTrampoline( stream.iterator(), consumer );
+	}
+
+	public static <T> CompletionStage<Void> loopWithoutTrampoline(Iterator<T> iterator, Function<T, CompletionStage<?>> consumer) {
+		CompletionStage<?> loopStage = voidFuture();
+		while ( iterator.hasNext() ) {
+			final T next = iterator.next();
+			loopStage = loopStage.thenCompose( v -> consumer.apply( next ) );
+		}
+		return loopStage.thenCompose( CompletionStages::voidFuture );
+	}
 }
