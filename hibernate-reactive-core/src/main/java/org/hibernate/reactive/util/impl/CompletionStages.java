@@ -84,44 +84,74 @@ public class CompletionStages {
 	}
 
 	public static <T extends Throwable, Ret> Ret returnNullorRethrow(Throwable x) throws T {
-		if (x != null ) {
+		if ( x != null ) {
 			throw (T) x;
 		}
 		return null;
 	}
 
 	public static <T extends Throwable, Ret> Ret returnOrRethrow(Throwable x, Ret result) throws T {
-		if (x != null ) {
+		if ( x != null ) {
 			throw (T) x;
 		}
 		return result;
 	}
 
 	public static void logSqlException(Throwable t, Supplier<String> message, String sql) {
-		if (t!=null) {
-			log.error( "failed to execute statement [" + sql + "]");
+		if ( t != null ) {
+			log.error( "failed to execute statement [" + sql + "]" );
 			log.error( message.get(), t );
 		}
 	}
 
+	/**
+	 * Equivalent to:
+	 * <pre>
+	 * int total = 0;
+	 * for ( int i = start; i < end; i++ ) {
+	 *   total = total + consumer.apply( i );
+	 * }
+	 * </pre>
+	 */
 	public static <T> CompletionStage<Integer> total(int start, int end, Function<Integer,CompletionStage<Integer>> consumer) {
 		return AsyncIterator.range( start, end )
-				.thenCompose( (i) -> consumer.apply( i.intValue() ) )
-				.fold(0, (total, next) -> total+next );
+				.thenCompose( i -> consumer.apply( i.intValue() ) )
+				.fold( 0, (total, next) -> total + next );
 	}
 
+	/**
+	 * Equivalent to:
+	 * <pre>
+	 * int total = 0;
+	 * for ( int i = start; i < end; i++ ) {
+	 *   total = total + consumer.apply( array[i] );
+	 * }
+	 * </pre>
+	 */
 	public static <T> CompletionStage<Integer> total(T[] array, Function<T,CompletionStage<Integer>> consumer) {
-		return AsyncIterator.range( 0, array.length )
-				.thenCompose( (i) -> consumer.apply( array[i.intValue()] ) )
-				.fold(0, (total, next) -> total+next );
+		return total( 0, array.length, index -> consumer.apply( array[index] ) );
 	}
 
+	/**
+	 * Equivalent to:
+	 * <pre>
+	 * for ( int i = start; i < end; i++ ) {
+	 *   consumer.apply( array[i] );
+	 * }
+	 * </pre>
+	 */
 	public static <T> CompletionStage<Void> loop(T[] array, Function<T,CompletionStage<?>> consumer) {
-//		return AsyncIterator.range( 0, array.length )
-//				.forEach( (i) -> consumer.apply( array[i.intValue()]) );
 		return loop( Arrays.stream(array), consumer );
 	}
 
+	/**
+	 * Equivalent to:
+	 * <pre>
+	 * while( iterator.hasNext() ) {
+	 *   consumer.apply( iterator.next() );
+	 * }
+	 * </pre>
+	 */
 	public static <T> CompletionStage<Void> loop(Iterator<T> iterator, Function<T,CompletionStage<?>> consumer) {
 		if ( iterator.hasNext() ) {
 			return AsyncTrampoline.asyncWhile( () -> consumer.apply( iterator.next() )
@@ -132,18 +162,52 @@ public class CompletionStages {
 		}
 	}
 
+	/**
+	 * Equivalent to:
+	 * <pre>
+	 * for ( Object next : iterable ) {
+	 *   consumer.apply( next );
+	 * }
+	 * </pre>
+	 */
 	public static <T> CompletionStage<Void> loop(Iterable<T> iterable, Function<T,CompletionStage<?>> consumer) {
 		return loop( iterable.iterator(), consumer );
 	}
 
+	/**
+	 * Equivalent to:
+	 * <pre>
+	 * Iterator iterator = stream.iterator();
+	 * while( iterator.hasNext()) {
+	 *   consumer.apply( iterator.next() );
+	 * }
+	 * </pre>
+	 */
 	public static <T> CompletionStage<Void> loop(Stream<T> stream, Function<T,CompletionStage<?>> consumer) {
 		return loop( stream.iterator(), consumer );
 	}
 
+	/**
+	 * Equivalent to:
+	 * <pre>
+	 * Iterator iterator = inStream.iterator();
+	 * while( iterator.hasNext()) {
+	 *   consumer.apply( iterator.next() );
+	 * }
+	 * </pre>
+	 */
 	public static CompletionStage<Void> loop(IntStream stream, Function<Integer,CompletionStage<?>> consumer) {
 		return loop( stream.iterator(), consumer );
 	}
 
+	/**
+	 * Equivalent to:
+	 * <pre>
+	 * for ( int i = start; i < end; i++ ) {
+	 *   consumer.apply( i );
+	 * }
+	 * </pre>
+	 */
 	public static CompletionStage<Void> loop(int start, int end, Function<Integer,CompletionStage<?>> consumer) {
 		return loop( IntStream.range(start, end), consumer );
 	}
@@ -151,7 +215,7 @@ public class CompletionStages {
 	public static CompletionStage<Void> applyToAll(Function<Object, CompletionStage<?>> op, Object[] entity) {
 		switch ( entity.length ) {
 			case 0: return nullFuture();
-			case 1: return op.apply( entity[0] ).thenApply( v -> null );
+			case 1: return op.apply( entity[0] ).thenCompose( CompletionStages::voidFuture );
 			default: return CompletionStages.loop( entity, op );
 		}
 	}
