@@ -177,6 +177,24 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void manyToOneIsNull(TestContext context) {
+		final Author author = new Author( 5, "Charlie Mackesy", null );
+
+		test(
+				context,
+				completedFuture( openSession() )
+						.thenCompose( s -> s.persist( author ).thenCompose(v-> s.flush()))
+						.thenApply( v -> openSession() )
+						.thenCompose( s -> s.find( Author.class, author.getId() ) )
+						.thenAccept( optionalAuthor -> {
+							context.assertNotNull( optionalAuthor );
+							context.assertEquals( author, optionalAuthor );
+							context.assertNull( author.book, "Book must be null");
+						} )
+		);
+	}
+
 	@Entity
 	@Table(name = Book.TABLE)
 	@DiscriminatorValue("N")
