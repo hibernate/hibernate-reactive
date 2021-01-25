@@ -11,6 +11,7 @@ import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.stage.Stage;
 
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 /**
  * Implements the {@link Stage.StatelessSession} API. This delegating
@@ -19,70 +20,76 @@ import java.util.concurrent.CompletionStage;
  */
 public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
-    private ReactiveStatelessSession delegate;
+    private final ReactiveStatelessSession delegate;
+    private final StageSessionFactoryImpl factory;
 
-    public StageStatelessSessionImpl(ReactiveStatelessSession delegate) {
+    public StageStatelessSessionImpl(ReactiveStatelessSession delegate, StageSessionFactoryImpl factory) {
         this.delegate = delegate;
+        this.factory = factory;
+    }
+
+    private <T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stage) {
+        return factory.stage(stage);
     }
 
     @Override
     public <T> CompletionStage<T> get(Class<T> entityClass, Object id) {
-        return delegate.reactiveGet(entityClass, id);
+        return stage( v -> delegate.reactiveGet(entityClass, id) );
     }
 
     @Override
     public <T> CompletionStage<T> get(Class<T> entityClass, Object id, LockMode lockMode) {
-        return delegate.reactiveGet(entityClass, id, lockMode);
+        return stage( v -> delegate.reactiveGet(entityClass, id, lockMode) );
     }
 
     @Override
     public <R> Stage.Query<R> createQuery(String queryString) {
-        return new StageQueryImpl<>( delegate.createReactiveQuery(queryString) );
+        return new StageQueryImpl<>( delegate.createReactiveQuery(queryString), factory );
     }
 
     @Override
     public <R> Stage.Query<R> createQuery(String queryString, Class<R> resultType) {
-        return new StageQueryImpl<>( delegate.createReactiveQuery(queryString, resultType) );
+        return new StageQueryImpl<>( delegate.createReactiveQuery(queryString, resultType), factory );
     }
 
     @Override
     public <R> Stage.Query<R> createNativeQuery(String queryString) {
-        return new StageQueryImpl<>( delegate.createReactiveNativeQuery(queryString) );
+        return new StageQueryImpl<>( delegate.createReactiveNativeQuery(queryString), factory );
     }
 
     @Override
     public <R> Stage.Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-        return new StageQueryImpl<>( delegate.createReactiveNativeQuery(queryString, resultType) );
+        return new StageQueryImpl<>( delegate.createReactiveNativeQuery(queryString, resultType), factory );
     }
 
     @Override
     public <R> Stage.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> sqlResultSetMapping) {
-        return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString, sqlResultSetMapping.getName() ) );
+        return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString, sqlResultSetMapping.getName() ), factory );
     }
 
     @Override
     public CompletionStage<Stage.StatelessSession> insert(Object entity) {
-        return delegate.reactiveInsert(entity).thenApply( v -> this );
+        return stage( w -> delegate.reactiveInsert(entity).thenApply( v -> this ) );
     }
 
     @Override
     public CompletionStage<Stage.StatelessSession> delete(Object entity) {
-        return delegate.reactiveDelete(entity).thenApply( v -> this );
+        return stage( w -> delegate.reactiveDelete(entity).thenApply( v -> this ) );
     }
 
     @Override
     public CompletionStage<Stage.StatelessSession> update(Object entity) {
-        return delegate.reactiveUpdate(entity).thenApply( v -> this );
+        return stage( w -> delegate.reactiveUpdate(entity).thenApply( v -> this ) );
     }
 
     @Override
     public CompletionStage<Stage.StatelessSession> refresh(Object entity) {
-        return delegate.reactiveRefresh(entity).thenApply( v -> this );
+        return stage( w -> delegate.reactiveRefresh(entity).thenApply( v -> this ) );
     }
 
     @Override
     public CompletionStage<Stage.StatelessSession> refresh(Object entity, LockMode lockMode) {
-        return delegate.reactiveRefresh(entity, lockMode).thenApply( v -> this );
+        return stage( w -> delegate.reactiveRefresh(entity, lockMode).thenApply( v -> this ) );
     }
 
     @Override

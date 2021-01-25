@@ -181,12 +181,12 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <R> Mutiny.Query<R> createQuery(String jpql, Class<R> resultType) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql, resultType ) );
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql, resultType ), factory );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createQuery(String jpql) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql ) );
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql ), factory );
 	}
 
 	@Override
@@ -195,46 +195,46 @@ public class MutinySessionImpl implements Mutiny.Session {
 		final MetamodelImplementor metamodel = delegate.getFactory().getMetamodel();
 		final boolean knownType = metamodel.entityPersisters().containsKey( typeName );
 		if ( knownType ) {
-			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultType ) );
+			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultType ), factory );
 		}
 		else {
-			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ) );
+			return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ), factory );
 		}
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String sql, ResultSetMapping<R> resultSetMapping) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping.getName() ) );
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping.getName() ), factory );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String sql) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ) );
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ), factory );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNamedQuery(String name) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name ) );
+		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name ), factory );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNamedQuery(String name, Class<R> resultType) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ) );
+		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ), factory );
 	}
 
 	@Override @SuppressWarnings("unchecked")
 	public <R> Mutiny.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery) );
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery ), factory );
 	}
 
 	@Override @SuppressWarnings("unchecked")
 	public <R> Mutiny.Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaUpdate) );
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaUpdate ), factory );
 	}
 
 	@Override @SuppressWarnings("unchecked")
 	public <R> Mutiny.Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaDelete) );
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaDelete ), factory );
 	}
 
 	@Override

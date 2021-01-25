@@ -15,6 +15,8 @@ import org.hibernate.reactive.session.ReactiveQuery;
 
 import javax.persistence.Parameter;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 /**
  * Implementation of {@link Mutiny.Query}.
@@ -22,9 +24,15 @@ import java.util.List;
 public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 
 	private final ReactiveQuery<R> delegate;
+	private final MutinySessionFactoryImpl factory;
 
-	public MutinyQueryImpl(ReactiveQuery<R> delegate) {
+	public MutinyQueryImpl(ReactiveQuery<R> delegate, MutinySessionFactoryImpl factory) {
 		this.delegate = delegate;
+		this.factory = factory;
+	}
+
+	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
+		return factory.uni(stageSupplier);
 	}
 
 	@Override
@@ -160,22 +168,22 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 
 	@Override
 	public Uni<Integer> executeUpdate() {
-		return Uni.createFrom().completionStage( delegate.executeReactiveUpdate() );
+		return uni( delegate::executeReactiveUpdate );
 	}
 
 	@Override
 	public Uni<R> getSingleResult() {
-		return Uni.createFrom().completionStage( delegate.getReactiveSingleResult() );
+		return uni( delegate::getReactiveSingleResult );
 	}
 
 	@Override
 	public Uni<R> getSingleResultOrNull() {
-		return Uni.createFrom().completionStage( delegate.getReactiveSingleResultOrNull() );
+		return uni( delegate::getReactiveSingleResultOrNull );
 	}
 
 	@Override
 	public Uni<List<R>> getResultList() {
-		return Uni.createFrom().completionStage( delegate.getReactiveResultList() );
+		return uni( delegate::getReactiveResultList );
 	}
 
 }

@@ -11,6 +11,9 @@ import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
+
 /**
  * Implements the {@link Mutiny.StatelessSession} API. This delegating
  * class is needed to avoid name clashes when implementing both
@@ -18,70 +21,76 @@ import org.hibernate.reactive.session.ReactiveStatelessSession;
  */
 public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
-    private ReactiveStatelessSession delegate;
+    private final ReactiveStatelessSession delegate;
+    private final MutinySessionFactoryImpl factory;
 
-    public MutinyStatelessSessionImpl(ReactiveStatelessSession delegate) {
+    public MutinyStatelessSessionImpl(ReactiveStatelessSession delegate, MutinySessionFactoryImpl factory) {
         this.delegate = delegate;
+        this.factory = factory;
+    }
+
+    <T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
+        return factory.uni(stageSupplier);
     }
 
     @Override
     public <T> Uni<T> get(Class<T> entityClass, Object id) {
-        return Uni.createFrom().completionStage( delegate.reactiveGet(entityClass, id) );
+        return uni( () -> delegate.reactiveGet(entityClass, id) );
     }
 
     @Override
     public <T> Uni<T> get(Class<T> entityClass, Object id, LockMode lockMode) {
-        return Uni.createFrom().completionStage( delegate.reactiveGet(entityClass, id, lockMode) );
+        return uni( () -> delegate.reactiveGet(entityClass, id, lockMode) );
     }
 
     @Override
     public <R> Mutiny.Query<R> createQuery(String queryString) {
-        return new MutinyQueryImpl<>( delegate.createReactiveQuery(queryString) );
+        return new MutinyQueryImpl<>( delegate.createReactiveQuery(queryString), factory );
     }
 
     @Override
     public <R> Mutiny.Query<R> createQuery(String queryString, Class<R> resultType) {
-        return new MutinyQueryImpl<>( delegate.createReactiveQuery(queryString, resultType) );
+        return new MutinyQueryImpl<>( delegate.createReactiveQuery(queryString, resultType), factory );
     }
 
     @Override
     public <R> Mutiny.Query<R> createNativeQuery(String queryString) {
-        return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery(queryString) );
+        return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery(queryString), factory );
     }
 
     @Override
     public <R> Mutiny.Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-        return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery(queryString, resultType) );
+        return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery(queryString, resultType), factory );
     }
 
     @Override
     public <R> Mutiny.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
-        return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping.getName() ) );
+        return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping.getName() ), factory );
     }
 
     @Override
     public Uni<Mutiny.StatelessSession> insert(Object entity) {
-        return Uni.createFrom().completionStage( delegate.reactiveInsert(entity).thenApply( v -> this ) );
+        return uni( () -> delegate.reactiveInsert(entity).thenApply( v -> this ) );
     }
 
     @Override
     public Uni<Mutiny.StatelessSession> delete(Object entity) {
-        return Uni.createFrom().completionStage( delegate.reactiveDelete(entity).thenApply( v -> this ) );
+        return uni( () -> delegate.reactiveDelete(entity).thenApply( v -> this ) );
     }
 
     @Override
     public Uni<Mutiny.StatelessSession> update(Object entity) {
-        return Uni.createFrom().completionStage( delegate.reactiveUpdate(entity).thenApply( v -> this ) );
+        return uni( () -> delegate.reactiveUpdate(entity).thenApply( v -> this ) );
     }
 
     @Override
     public Uni<Mutiny.StatelessSession> refresh(Object entity) {
-        return Uni.createFrom().completionStage( delegate.reactiveRefresh(entity).thenApply( v -> this ) );
+        return uni( () -> delegate.reactiveRefresh(entity).thenApply( v -> this ) );
     }
 
     @Override
     public Uni<Mutiny.StatelessSession> refresh(Object entity, LockMode lockMode) {
-        return Uni.createFrom().completionStage( delegate.reactiveRefresh(entity, lockMode).thenApply( v -> this ) );
+        return uni( () -> delegate.reactiveRefresh(entity, lockMode).thenApply( v -> this ) );
     }
 
     @Override
