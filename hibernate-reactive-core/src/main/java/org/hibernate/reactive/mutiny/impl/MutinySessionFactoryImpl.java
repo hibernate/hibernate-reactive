@@ -96,7 +96,8 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	public Mutiny.StatelessSession openStatelessSession() {
 		SessionCreationOptions options = options();
 		return new MutinyStatelessSessionImpl(
-				new ReactiveStatelessSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) )
+				new ReactiveStatelessSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) ),
+				this
 		);
 	}
 
@@ -104,7 +105,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		SessionCreationOptions options = options();
 		return uni( () -> connection( options.getTenantIdentifier() ) )
 				.map( reactiveConnection -> new ReactiveStatelessSessionImpl( delegate, options, reactiveConnection ) )
-				.map( MutinyStatelessSessionImpl::new );
+				.map( s -> new MutinyStatelessSessionImpl(s, this) );
 	}
 
 	private SessionCreationOptions options() {

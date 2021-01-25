@@ -15,6 +15,7 @@ import org.hibernate.reactive.stage.Stage;
 import javax.persistence.Parameter;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 /**
  * Implementation of {@link Stage.Query}.
@@ -22,9 +23,15 @@ import java.util.concurrent.CompletionStage;
 public class StageQueryImpl<R> implements Stage.Query<R> {
 
 	private final ReactiveQuery<R> delegate;
+	private final StageSessionFactoryImpl factory;
 
-	public StageQueryImpl(ReactiveQuery<R> delegate) {
+	public StageQueryImpl(ReactiveQuery<R> delegate, StageSessionFactoryImpl factory) {
 		this.delegate = delegate;
+		this.factory = factory;
+	}
+
+	private <T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stage) {
+		return factory.stage(stage);
 	}
 
 	@Override
@@ -160,22 +167,22 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 
 	@Override
 	public CompletionStage<Integer> executeUpdate() {
-		return delegate.executeReactiveUpdate();
+		return stage( v -> delegate.executeReactiveUpdate() );
 	}
 
 	@Override
 	public CompletionStage<R> getSingleResult() {
-		return delegate.getReactiveSingleResult();
+		return stage( v -> delegate.getReactiveSingleResult() );
 	}
 
 	@Override
 	public CompletionStage<R> getSingleResultOrNull() {
-		return delegate.getReactiveSingleResultOrNull();
+		return stage( v -> delegate.getReactiveSingleResultOrNull() );
 	}
 
 	@Override
 	public CompletionStage<List<R>> getResultList() {
-		return delegate.getReactiveResultList();
+		return stage( v -> delegate.getReactiveResultList() );
 	}
 
 }
