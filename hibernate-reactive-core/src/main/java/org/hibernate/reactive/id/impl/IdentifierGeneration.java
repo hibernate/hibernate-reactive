@@ -25,6 +25,7 @@ import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.IntegerType;
 import org.hibernate.type.LongType;
+import org.hibernate.type.ShortType;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
@@ -147,6 +148,9 @@ public class IdentifierGeneration {
 				}
 				else if ( identifierType == IntegerType.INSTANCE ) {
 					return longId.intValue();
+				}
+				else if ( identifierType == ShortType.INSTANCE ) {
+					return longId.shortValue();
 				}
 				else {
 					throw new HibernateException(
