@@ -1156,11 +1156,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 //
 		@SuppressWarnings("unchecked")
 		protected final CompletionStage<T> doLoad(Serializable id, LoadEventListener.LoadType loadType) {
+			if (id == null) {
+				return CompletionStages.nullFuture();
+			}
 			if ( lockOptions != null ) {
 				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
 				return fireLoad( event, loadType ).thenApply( v -> (T) event.getResult() );
 			}
-
 			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
 			return fireLoad( event, loadType )
 					.whenComplete( (v, t) -> afterOperation( t != null ) )
