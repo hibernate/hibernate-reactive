@@ -76,7 +76,8 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	public Stage.StatelessSession openStatelessSession() {
 		SessionCreationOptions options = options();
 		return new StageStatelessSessionImpl(
-				new ReactiveStatelessSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) )
+				new ReactiveStatelessSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) ),
+				this
 		);
 	}
 
@@ -97,7 +98,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		SessionCreationOptions options = options();
 		return stage( v -> connection( options.getTenantIdentifier() )
 				.thenApply( connection -> new ReactiveStatelessSessionImpl( delegate, options, connection ) )
-				.thenApply( StageStatelessSessionImpl::new ) );
+				.thenApply( s -> new StageStatelessSessionImpl(s, this) ) );
 	}
 
 	private SessionCreationOptions options() {
