@@ -148,6 +148,9 @@ public class IdentifierGeneration {
 				else if ( identifierType == IntegerType.INSTANCE ) {
 					return longId.intValue();
 				}
+				else if ( identifierType == ShortType.INSTANCE ) {
+					return longId.shortValue();
+				}
 				else {
 					throw new HibernateException(
 							"cannot generate identifiers of type "
