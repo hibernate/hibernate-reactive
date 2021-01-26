@@ -169,7 +169,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
             connectOptions.setConnectTimeout(connectTimeout);
         }
         if (idleTimeout!=null) {
-            connectOptions.setConnectTimeout(idleTimeout);
+            connectOptions.setIdleTimeout(idleTimeout);
         }
 
         return connectOptions;
