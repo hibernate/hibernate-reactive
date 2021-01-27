@@ -133,7 +133,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
         }
 
         if ( username == null ) {
-            throw new HibernateError( "The username parameter on the JDBC-style connection URL is required. For PostgreSQL, for example, use 'jdbc:postgresql://localhost/hreact?user=none'." );
+            throw new HibernateError( "database username not specified (set the property 'javax.persistence.jdbc.user', or include it as a parameter in the connection URL)" );
         }
 
         SqlConnectOptions connectOptions = new SqlConnectOptions()
