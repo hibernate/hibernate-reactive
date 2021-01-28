@@ -36,6 +36,7 @@ import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -86,6 +87,10 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister, OuterJoinLoadable, Lockable {
 	Logger log = Logger.getLogger( JoinedSubclassEntityPersister.class );
+
+	default Parameters parameters() {
+		return Parameters.create( getFactory().getJdbcServices().getDialect() );
+	}
 
 	/**
 	 * A self-reference of type {@code AbstractEntityPersister}.
@@ -432,7 +437,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					}
 				}
 			}
-			deleteStrings[j] = delete.toStatementString();
+			deleteStrings[j] = parameters().process( delete.toStatementString() );
 		}
 		return deleteStrings;
 	}
@@ -705,7 +710,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		if ( factory.getSessionFactoryOptions().isCommentsEnabled() ) {
 			select.setComment( lockOptions.getLockMode() + " lock " + getEntityName() );
 		}
-		return select.toStatementString();
+		return parameters().process( select.toStatementString() );
 	}
 
 	default String generateUpdateLockString(LockOptions lockOptions) {
@@ -719,7 +724,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		if ( factory.getSessionFactoryOptions().isCommentsEnabled() ) {
 			update.setComment( lockOptions.getLockMode() + " lock " + getEntityName() );
 		}
-		return update.toStatementString();
+		return parameters().process( update.toStatementString() );
 	}
 
 	@Override

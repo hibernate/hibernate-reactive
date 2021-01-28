@@ -160,17 +160,15 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters) {
 		feedback(sql);
-		String processedSql = usePostgresStyleParameters ? Parameters.process( sql, parameters.size() ) : sql;
 		return Handlers.toCompletionStage(
-				handler -> client().preparedQuery( processedSql ).execute( parameters, handler )
+				handler -> client().preparedQuery( sql ).execute( parameters, handler )
 		);
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQueryBatch(String sql, List<Tuple> parameters) {
 		feedback(sql);
-		String processedSql = usePostgresStyleParameters ? Parameters.process( sql, parameters.size() ) : sql;
 		return Handlers.toCompletionStage(
-				handler -> client().preparedQuery( processedSql ).executeBatch( parameters, handler )
+				handler -> client().preparedQuery( sql ).executeBatch( parameters, handler )
 		);
 	}
 

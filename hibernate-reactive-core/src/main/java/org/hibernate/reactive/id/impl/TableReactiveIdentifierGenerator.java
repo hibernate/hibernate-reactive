@@ -16,6 +16,7 @@ import org.hibernate.id.Configurable;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.jdbc.TooManyRowsAffectedException;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -159,9 +160,10 @@ public class TableReactiveIdentifierGenerator
 		renderedTableName = jdbcEnvironment.getQualifiedObjectNameFormatter()
 				.format( qualifiedTableName, dialect );
 
-		selectQuery = applyLocksToSelect( dialect, "tbl", buildSelectQuery() );
-		updateQuery = buildUpdateQuery();
-		insertQuery = buildInsertQuery();
+		Parameters parameters = Parameters.create( dialect );
+		selectQuery = parameters.process( applyLocksToSelect( dialect, "tbl", buildSelectQuery() ) );
+		updateQuery = parameters.process( buildUpdateQuery() );
+		insertQuery = parameters.process( buildInsertQuery() );
 	}
 
 	private String applyLocksToSelect(Dialect dialect, String alias, String query) {

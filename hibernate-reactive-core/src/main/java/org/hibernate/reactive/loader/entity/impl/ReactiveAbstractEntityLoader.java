@@ -8,6 +8,7 @@ package org.hibernate.reactive.loader.entity.impl;
 import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.*;
+import org.hibernate.loader.JoinWalker;
 import org.hibernate.loader.entity.AbstractEntityLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.collection.CollectionPersister;
@@ -17,6 +18,7 @@ import org.hibernate.reactive.loader.ReactiveLoaderBasedLoader;
 import org.hibernate.reactive.loader.ReactiveLoaderBasedResultSetProcessor;
 import org.hibernate.reactive.loader.ReactiveResultSetProcessor;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
@@ -39,6 +41,7 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 		implements ReactiveUniqueEntityLoader, ReactiveLoaderBasedLoader {
 
 	private final ReactiveLoaderBasedResultSetProcessor resultSetProcessor;
+	private final Parameters parameters;
 
 	protected ReactiveAbstractEntityLoader(
 			OuterJoinLoadable persister,
@@ -47,6 +50,19 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 			LoadQueryInfluencers loadQueryInfluencers) {
 		super( persister, uniqueKeyType, factory, loadQueryInfluencers );
 		resultSetProcessor = new ReactiveLoaderBasedResultSetProcessor( this );
+		parameters = Parameters.create( factory.getJdbcServices().getDialect() );
+	}
+
+	@Override
+	protected void initFromWalker(JoinWalker walker) {
+		String processedSQLString = parameters().process( walker.getSQLString() );
+		walker.setSql( processedSQLString );
+		super.initFromWalker( walker );
+	}
+
+	@Override
+	public Parameters parameters() {
+		return parameters;
 	}
 
 	protected CompletionStage<List<Object>> doReactiveQueryAndInitializeNonLazyCollections(

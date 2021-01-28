@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 	private static final int BATCH_SIZE = 20;
@@ -51,8 +53,10 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 	}
 
 	public List<List<Object[]>> doBatchInserts(TestContext context, int nEntities, int nEntitiesMultiple) {
-
-		final String sql = "insert into DataPoint (description, x, y, id) values (?, ?, ?, ?)";
+		final String insertSql = "insert into DataPoint (description, x, y, id) values ";
+		final String sql = dbType() == DBType.POSTGRESQL
+				? insertSql + "($1, $2, $3, $4)"
+				: insertSql + "(?, ?, ?, ?)";
 
 		List<List<Object[]>> paramsBatches = new ArrayList<>();
 		List<Object[]> paramsBatch = new ArrayList<>( BATCH_SIZE );
