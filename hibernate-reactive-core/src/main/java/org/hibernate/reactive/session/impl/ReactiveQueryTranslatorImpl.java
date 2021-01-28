@@ -30,6 +30,7 @@ import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.bulk.StatementsWithParameters;
 import org.hibernate.reactive.loader.hql.impl.ReactiveQueryLoader;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.jboss.logging.Logger;
@@ -41,6 +42,8 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
+
+	private final Parameters parameters;
 
 	private ReactiveQueryLoader queryLoader;
 
@@ -58,6 +61,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 			SessionFactoryImplementor factory) {
 		super( queryIdentifier, query, enabledFilters, factory );
 		this.factory = factory;
+		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
 	}
 
 	public ReactiveQueryTranslatorImpl(
@@ -67,6 +71,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 			SessionFactoryImplementor factory, EntityGraphQueryHint entityGraphQueryHint) {
 		super( queryIdentifier, query, enabledFilters, factory, entityGraphQueryHint );
 		this.factory = factory;
+		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
 	}
 
 	@Override
@@ -198,6 +203,14 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 		}
 	}
 
+	private String[] process(String[] sqlStatements, int paramLength) {
+		String[] processed = new String[sqlStatements.length];
+		for ( int i = 0; i < processed.length; i++ ) {
+			processed[i] = parameters.process( sqlStatements[i], paramLength );
+		}
+		return processed;
+	}
+
 	private StatementsWithParameters getUpdateHandler() {
 		StatementExecutor executor = getStatementExecutor();
 		if (executor instanceof MultiTableUpdateExecutor) {
@@ -208,9 +221,9 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 		}
 		else {
 			return new StatementsWithParameters() {
-				final String[] statements = executor.getSqlStatements();
 				final ParameterSpecification[] parameterSpecifications =
 						getCollectedParameterSpecifications().toArray( new ParameterSpecification[0] );
+				final String[] statements = process( executor.getSqlStatements(), parameterSpecifications.length );
 
 				@Override
 				public String[] getSqlStatements() {

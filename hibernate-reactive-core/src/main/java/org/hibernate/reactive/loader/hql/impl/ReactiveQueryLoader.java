@@ -21,6 +21,7 @@ import org.hibernate.reactive.loader.ReactiveLoaderBasedLoader;
 import org.hibernate.reactive.loader.CachingReactiveLoader;
 import org.hibernate.reactive.loader.ReactiveLoaderBasedResultSetProcessor;
 import org.hibernate.reactive.loader.ReactiveResultSetProcessor;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
@@ -41,6 +42,7 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 	private final SessionFactoryImplementor factory;
 	private final SelectClause selectClause;
 	private final ReactiveResultSetProcessor resultSetProcessor;
+	private final Parameters parameters;
 
 	public ReactiveQueryLoader(
 			QueryTranslatorImpl queryTranslator,
@@ -49,6 +51,7 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 		super( queryTranslator, factory, selectClause );
 		this.queryTranslator = queryTranslator;
 		this.factory = factory;
+		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
 		this.selectClause = selectClause;
 		this.resultSetProcessor = new ReactiveLoaderBasedResultSetProcessor( this ) {
 			public CompletionStage<List<Object>> reactiveExtractResults(ResultSet rs,
@@ -80,6 +83,11 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 		};
 	}
 
+	@Override
+	public Parameters parameters() {
+		return parameters;
+	}
+
 	public CompletionStage<List<Object>> reactiveList(
 			SharedSessionContractImplementor session,
 			QueryParameters queryParameters) throws HibernateException {
@@ -106,11 +114,12 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 		final boolean cacheable = factory.getSessionFactoryOptions().isQueryCacheEnabled()
 				&& queryParameters.isCacheable();
 
+		String processedSQL = parameters().process( getSQLString() );
 		if ( cacheable ) {
-			return reactiveListUsingQueryCache( getSQLString(), getQueryIdentifier(), session, queryParameters, querySpaces, resultTypes );
+			return reactiveListUsingQueryCache( processedSQL, getQueryIdentifier(), session, queryParameters, querySpaces, resultTypes );
 		}
 		else {
-			return reactiveListIgnoreQueryCache( getSQLString(), getQueryIdentifier(), session, queryParameters );
+			return reactiveListIgnoreQueryCache( processedSQL, getQueryIdentifier(), session, queryParameters );
 		}
 	}
 

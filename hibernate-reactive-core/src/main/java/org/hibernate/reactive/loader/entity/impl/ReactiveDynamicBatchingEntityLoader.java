@@ -110,7 +110,11 @@ class ReactiveDynamicBatchingEntityLoader extends ReactiveEntityLoader {
 				getDialect()
 		);
 
-		return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters )
+		// If there are filters we need to wait before processing the sql
+		final String processedSQL = session.getLoadQueryInfluencers().hasEnabledFilters()
+				? sql
+				: parameters().process( sql );
+		return doReactiveQueryAndInitializeNonLazyCollections( processedSQL, session, queryParameters )
 				.handle( (results, err) -> {
 					logSqlException( err,
 							() -> "could not load an entity batch: " + infoString(

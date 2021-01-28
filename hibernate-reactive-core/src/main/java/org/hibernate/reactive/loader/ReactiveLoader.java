@@ -6,6 +6,7 @@
 package org.hibernate.reactive.loader;
 
 import org.hibernate.JDBCException;
+import org.hibernate.dialect.PostgreSQL9Dialect;
 import org.hibernate.dialect.pagination.LimitHandler;
 import org.hibernate.dialect.pagination.LimitHelper;
 import org.hibernate.dialect.pagination.NoopLimitHandler;
@@ -13,6 +14,7 @@ import org.hibernate.engine.spi.*;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.transform.ResultTransformer;
 
@@ -30,6 +32,10 @@ import java.util.concurrent.CompletionStage;
  * @author Gavin King
  */
 public interface ReactiveLoader {
+
+	default boolean isPostgresSQL(SharedSessionContractImplementor session) {
+		return session.getJdbcServices().getDialect() instanceof PostgreSQL9Dialect;
+	}
 
 	default CompletionStage<List<Object>> doReactiveQueryAndInitializeNonLazyCollections(
 			final String sql,
@@ -86,6 +92,8 @@ public interface ReactiveLoader {
 				.whenComplete( (list, e) -> persistenceContext.setDefaultReadOnly(defaultReadOnlyOrig) );
 	}
 
+	Parameters parameters();
+
 	default CompletionStage<ResultSet> executeReactiveQueryStatement(
 			String sqlStatement,
 			QueryParameters queryParameters,
@@ -102,8 +110,23 @@ public interface ReactiveLoader {
 		// Adding locks and comments.
 		sql = preprocessSQL( sql, queryParameters, session.getFactory(), afterLoadActions );
 
+		Object[] parameterArray = toParameterArray( queryParameters, session );
+
+		boolean hasFilter = session.getLoadQueryInfluencers().hasEnabledFilters();
+		if ( hasFilter ) {
+			// If the query is using filters, we know that they have been applied when we
+			// reach this point. Therefore it is safe to process the query.
+			sql = parameters().process( sql );
+		}
+		else if ( LimitHelper.useLimit( limitHandler, queryParameters.getRowSelection() ) ) {
+			// if the query is not using filters, it should have been preprocessed before
+			// but limit and offset are only applied before execution and therefore we
+			// might have some additional parameters to process.
+			sql = parameters().processLimit( sql, parameterArray, LimitHelper.hasFirstRow( queryParameters.getRowSelection() ) );
+		}
+
 		return ((ReactiveConnectionSupplier) session).getReactiveConnection()
-				.selectJdbc( sql, toParameterArray(queryParameters, session) );
+				.selectJdbc( sql, parameterArray );
 	}
 
 	default LimitHandler limitHandler(RowSelection selection, SharedSessionContractImplementor session) {

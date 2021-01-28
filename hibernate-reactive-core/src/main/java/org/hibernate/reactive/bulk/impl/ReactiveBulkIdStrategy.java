@@ -25,6 +25,7 @@ import org.hibernate.hql.internal.ast.tree.FromElement;
 import org.hibernate.hql.internal.ast.tree.UpdateStatement;
 import org.hibernate.hql.spi.id.AbstractMultiTableBulkIdStrategyImpl;
 import org.hibernate.hql.spi.id.AbstractTableBasedBulkIdHandler;
+import org.hibernate.hql.spi.id.IdTableInfo;
 import org.hibernate.hql.spi.id.MultiTableBulkIdStrategy;
 import org.hibernate.hql.spi.id.global.GlobalTemporaryTableBulkIdStrategy;
 import org.hibernate.hql.spi.id.local.IdTableInfoImpl;
@@ -37,6 +38,7 @@ import org.hibernate.persister.entity.Queryable;
 import org.hibernate.reactive.bulk.StatementsWithParameters;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.Delete;
 import org.hibernate.sql.Update;
@@ -68,6 +70,7 @@ public class ReactiveBulkIdStrategy
 	private final boolean db2;
 	private final Set<String> createdGlobalTemporaryTables = new HashSet<>();
 	private final List<String> dropTableStatements = new ArrayList<>();
+	private final Parameters parameters;
 
 	private StandardServiceRegistry serviceRegistry;
 
@@ -82,6 +85,7 @@ public class ReactiveBulkIdStrategy
 	ReactiveBulkIdStrategy(Dialect dialect) {
 		super( new ReactiveIdTableSupport( dialect ) );
 		db2 = dialect instanceof DB297Dialect;
+		parameters = Parameters.create( dialect );
 	}
 
 	@Override
@@ -195,7 +199,8 @@ public class ReactiveBulkIdStrategy
 							Collections.addAll( parameterList, assignment.getParameters() );
 						}
 					}
-					statements.add( update.toStatementString() );
+					String sql = parameters.process( update.toStatementString(), parameterList.size() );
+					statements.add( sql );
 //					if ( useSessionIdColumn() ) {
 //						parameterList.add( SESSION_ID );
 //					}
@@ -207,6 +212,26 @@ public class ReactiveBulkIdStrategy
 
 			this.statements = ArrayHelper.toStringArray( statements );
 			this.parameterSpecifications = parameterSpecifications.toArray( new ParameterSpecification[0][] );
+		}
+
+		@Override
+		protected String generateIdInsertSelect(
+				String tableAlias, IdTableInfo idTableInfo, ProcessedWhereClause whereClause) {
+			String sql = super.generateIdInsertSelect( tableAlias, idTableInfo, whereClause );
+			return parameters.process( sql );
+		}
+
+		@Override
+		protected String generateIdSubselect(
+				Queryable persister, AbstractCollectionPersister cPersister, IdTableInfo idTableInfo) {
+			String sql = super.generateIdSubselect( persister, cPersister, idTableInfo );
+			return parameters.process( sql );
+		}
+
+		@Override
+		protected String generateIdSubselect(Queryable persister, IdTableInfo idTableInfo) {
+			String sql = super.generateIdSubselect( persister, idTableInfo );
+			return parameters.process( sql );
 		}
 
 		@Override
@@ -330,6 +355,24 @@ public class ReactiveBulkIdStrategy
 
 			this.statements = ArrayHelper.toStringArray( statements );
 			this.parameterSpecifications = parameterSpecifications.toArray( new ParameterSpecification[0][] );
+		}
+
+		@Override
+		protected String generateIdInsertSelect(String tableAlias, IdTableInfo idTableInfo, ProcessedWhereClause whereClause) {
+			String sql = super.generateIdInsertSelect( tableAlias, idTableInfo, whereClause );
+			return parameters.process( sql );
+		}
+
+		@Override
+		protected String generateIdSubselect(Queryable persister, IdTableInfo idTableInfo) {
+			String sql = super.generateIdSubselect( persister, idTableInfo );
+			return parameters.process( sql );
+		}
+
+		@Override
+		protected String generateIdSubselect(Queryable persister, AbstractCollectionPersister cPersister, IdTableInfo idTableInfo) {
+			String sql = super.generateIdSubselect( persister, cPersister, idTableInfo );
+			return parameters.process( sql );
 		}
 
 		@Override

@@ -28,6 +28,7 @@ import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.reactive.loader.ReactiveLoader;
 import org.hibernate.reactive.loader.ReactiveResultSetProcessor;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
@@ -56,6 +57,8 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		implements ReactiveUniqueEntityLoader, ReactiveLoader {
 
 	private final OuterJoinLoadable persister;
+	private final Parameters parameters;
+	private final String processedSQL;
 
 	public static class Builder {
 		private final OuterJoinLoadable persister;
@@ -156,6 +159,8 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		);
 		this.persister = persister;
 		this.reactiveResultSetProcessor = (ReactiveResultSetProcessor) getStaticLoadQuery().getResultSetProcessor();
+		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
+		this.processedSQL = parameters.process( getStaticLoadQuery().getSqlStatement() );
 	}
 
 	private ReactivePlanEntityLoader(
@@ -181,6 +186,13 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		);
 		this.persister = persister;
 		this.reactiveResultSetProcessor = (ReactiveResultSetProcessor) getStaticLoadQuery().getResultSetProcessor();
+		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
+		this.processedSQL = parameters.process( getStaticLoadQuery().getSqlStatement() );
+	}
+
+	@Override
+	public Parameters parameters() {
+		return parameters;
 	}
 
 	@Override
@@ -211,7 +223,13 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 										LockOptions lockOptions, Boolean readOnly) {
 
 		final QueryParameters parameters = buildQueryParameters( id, optionalObject, lockOptions, readOnly );
-		String sql = getStaticLoadQuery().getSqlStatement();
+
+		// Filters get applied just before the query is executed. The parameter processor is not smart enough
+		// to count deal with the additional parameters in a second pass and we have to wait until the query
+		// is complete before processing it. See: ReactiveLoader#executeReactiveQueryStatement
+		String sql = hasFilters( session )
+			? processedSQL
+			: getStaticLoadQuery().getSqlStatement();
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, (SharedSessionContractImplementor) session, parameters )
 				.thenApply( results -> extractEntityResult( results, id ) )
@@ -223,6 +241,10 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 					);
 					return returnOrRethrow( err, list) ;
 				} );
+	}
+
+	private boolean hasFilters(SharedSessionContractImplementor session) {
+		return session.getLoadQueryInfluencers().getEnabledFilters().isEmpty();
 	}
 
 	private QueryParameters buildQueryParameters(Serializable id,

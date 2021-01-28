@@ -5,6 +5,12 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
+import java.io.Serializable;
+import java.sql.PreparedStatement;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -25,11 +31,6 @@ import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
 import org.hibernate.reactive.loader.entity.impl.ReactiveBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.loader.entity.impl.ReactiveCascadeEntityLoader;
 
-import java.io.Serializable;
-import java.sql.PreparedStatement;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
 /**
  * An {@link ReactiveEntityPersister} backed by {@link SingleTableEntityPersister}
  * and {@link ReactiveAbstractEntityPersister}.
@@ -43,6 +44,81 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 			NaturalIdDataAccess naturalIdRegionAccessStrategy,
 			PersisterCreationContext creationContext) throws HibernateException {
 		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext );
+	}
+
+	@Override
+	protected Map<String, String> generateLazySelectStringsByFetchGroup() {
+		Map<String, String> stringStringMap = super.generateLazySelectStringsByFetchGroup();
+		for ( Map.Entry<String, String> entry : stringStringMap.entrySet() ) {
+			entry.setValue( parameters().process( entry.getValue() ) );
+		}
+		return stringStringMap;
+	}
+
+	@Override
+	public String generateSelectVersionString() {
+		String sql = super.generateSelectVersionString();
+		return parameters().process( sql );
+	}
+
+	@Override
+	public String generateUpdateGeneratedValuesSelectString() {
+		String sql = super.generateUpdateGeneratedValuesSelectString();
+		return parameters().process( sql );
+	}
+
+	@Override
+	public String generateInsertGeneratedValuesSelectString() {
+		String sql = super.generateInsertGeneratedValuesSelectString();
+		return parameters().process( sql );
+	}
+
+	@Override
+	public String generateSnapshotSelectString() {
+		String sql = super.generateSnapshotSelectString();
+		return parameters().process( sql );
+	}
+
+	@Override
+	public String generateDeleteString(int j) {
+		String sql = super.generateDeleteString( j );
+		return parameters().process( sql );
+	}
+
+	@Override
+	public String generateUpdateString(boolean[] includeProperty, int j, boolean useRowId) {
+		String sql = super.generateUpdateString( includeProperty, j, useRowId );
+		return parameters().process( sql );
+	}
+
+	@Override
+	public String generateUpdateString(boolean[] includeProperty, int j, Object[] oldFields, boolean useRowId) {
+		String sql = super.generateUpdateString( includeProperty, j, oldFields, useRowId );
+		return parameters().process( sql );
+	}
+
+	@Override
+	public String generateInsertString(boolean[] includeProperty, int j) {
+		String sql = super.generateInsertString( includeProperty, j );
+		return  parameters().process( sql, includeProperty.length );
+	}
+
+	@Override
+	public String generateInsertString(boolean identityInsert, boolean[] includeProperty) {
+		String sql =  super.generateInsertString( identityInsert, includeProperty );
+		return parameters().process( sql, includeProperty.length );
+	}
+
+	@Override
+	public String generateInsertString(boolean identityInsert, boolean[] includeProperty, int j) {
+		String sql =  super.generateInsertString( identityInsert, includeProperty, j );
+		return parameters().process( sql, includeProperty.length );
+	}
+
+	@Override
+	public String generateIdentityInsertString(boolean[] includeProperty) {
+		String sql =  super.generateIdentityInsertString( includeProperty );
+		return parameters().process( sql, includeProperty.length );
 	}
 
 	@Override

@@ -7,6 +7,7 @@ package org.hibernate.reactive.loader.collection.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.*;
+import org.hibernate.loader.JoinWalker;
 import org.hibernate.loader.collection.CollectionLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.collection.CollectionPersister;
@@ -15,6 +16,7 @@ import org.hibernate.reactive.loader.ReactiveLoaderBasedLoader;
 import org.hibernate.reactive.loader.ReactiveLoaderBasedResultSetProcessor;
 import org.hibernate.reactive.loader.ReactiveResultSetProcessor;
 import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
@@ -38,13 +40,34 @@ public class ReactiveCollectionLoader extends CollectionLoader
 		implements ReactiveCollectionInitializer, ReactiveLoaderBasedLoader {
 
 	private final ReactiveResultSetProcessor reactiveResultSetProcessor;
+	private final Parameters parameters;
+	private final boolean filtersAreDisabled;
+
 	public ReactiveCollectionLoader(
 			QueryableCollection collectionPersister,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers) {
 		super(collectionPersister, factory, loadQueryInfluencers);
 		this.reactiveResultSetProcessor = new ReactiveLoaderBasedResultSetProcessor( this );
+		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
+		this.filtersAreDisabled = !loadQueryInfluencers.hasEnabledFilters();
+	}
 
+	@Override
+	protected void initFromWalker(JoinWalker walker) {
+		if ( filtersAreDisabled ) {
+			// Filters might add additional parameters and our processor is not smart enough, right now, to
+			// recognize them if the query has been processed already.
+			// So we only process the SQL in advance if filters are disabled.
+			String processedSQL = parameters().process( walker.getSQLString() );
+			walker.setSql( processedSQL );
+		}
+		super.initFromWalker( walker );
+	}
+
+	@Override
+	public Parameters parameters() {
+		return parameters;
 	}
 
 	protected CompletionStage<List<Object>> doReactiveQueryAndInitializeNonLazyCollections(

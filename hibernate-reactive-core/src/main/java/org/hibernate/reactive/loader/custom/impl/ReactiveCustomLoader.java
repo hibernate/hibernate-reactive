@@ -13,13 +13,16 @@ import org.hibernate.dialect.pagination.LimitHandler;
 import org.hibernate.engine.spi.*;
 import org.hibernate.loader.custom.CustomLoader;
 import org.hibernate.loader.custom.CustomQuery;
+import org.hibernate.loader.custom.Return;
 import org.hibernate.loader.spi.AfterLoadAction;
+import org.hibernate.param.ParameterBinder;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.Loadable;
 import org.hibernate.reactive.loader.ReactiveLoaderBasedLoader;
 import org.hibernate.reactive.loader.CachingReactiveLoader;
 import org.hibernate.reactive.loader.ReactiveLoaderBasedResultSetProcessor;
 import org.hibernate.reactive.loader.ReactiveResultSetProcessor;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
@@ -38,11 +41,48 @@ import java.util.concurrent.CompletionStage;
  */
 public class ReactiveCustomLoader extends CustomLoader implements CachingReactiveLoader, ReactiveLoaderBasedLoader {
 
+	private static class ProcessedCustomQuery implements CustomQuery {
+		private final CustomQuery delegate;
+		private final String processedSQL;
+
+		ProcessedCustomQuery(CustomQuery customQuery, Parameters parameters) {
+			this.delegate = customQuery;
+			this.processedSQL = parameters.process( customQuery.getSQL() );
+		}
+
+		@Override
+		public String getSQL() {
+			return processedSQL;
+		}
+
+		@Override
+		public Set<String> getQuerySpaces() {
+			return delegate.getQuerySpaces();
+		}
+
+		@Override
+		public List<ParameterBinder> getParameterValueBinders() {
+			return delegate.getParameterValueBinders();
+		}
+
+		@Override
+		public List<Return> getCustomQueryReturns() {
+			return delegate.getCustomQueryReturns();
+		}
+	}
+
 	private final ReactiveResultSetProcessor resultSetProcessor;
+	private final Parameters parameters;
 
 	public ReactiveCustomLoader(CustomQuery customQuery, SessionFactoryImplementor factory) {
-		super(customQuery, factory);
+		super( new ProcessedCustomQuery( customQuery, Parameters.create( factory.getJdbcServices().getDialect() ) ), factory);
 		this.resultSetProcessor = new ReactiveLoaderBasedResultSetProcessor( this );
+		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
+	}
+
+	@Override
+	public Parameters parameters() {
+		return parameters;
 	}
 
 	public CompletionStage<List<Object>> reactiveList(

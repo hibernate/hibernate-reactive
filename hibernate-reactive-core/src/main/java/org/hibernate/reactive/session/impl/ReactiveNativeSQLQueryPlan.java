@@ -12,6 +12,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.param.ParameterBinder;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 
 import java.util.concurrent.CompletionStage;
@@ -20,6 +21,8 @@ public class ReactiveNativeSQLQueryPlan extends NativeSQLQueryPlan {
 
 	private final String sourceQuery;
 	private final CustomQuery customQuery;
+
+	private Parameters parser;
 
 	public ReactiveNativeSQLQueryPlan(String sourceQuery, CustomQuery customQuery) {
 		super(sourceQuery, customQuery);
@@ -63,6 +66,11 @@ public class ReactiveNativeSQLQueryPlan extends NativeSQLQueryPlan {
 		String sql = session.getDialect()
 				.addSqlHintOrComment( queryParameters.getFilteredSQL(), queryParameters, commentsEnabled );
 
+		sql = process( session, sql, params );
 		return session.getReactiveConnection().update( sql, params );
+	}
+
+	private String process(ReactiveQueryExecutor session, String sql, Object[] params) {
+		return Parameters.create( session.getDialect() ).process( sql, params.length );
 	}
 }
