@@ -45,7 +45,7 @@ public class Parameters {
 	}
 
 	public String process(String sql) {
-		if ( doesNotNeedProcessing( sql ) ) {
+		if ( isProcessingNotRequired( sql ) ) {
 			return sql;
 		}
 		return new Parser( sql ).result();
@@ -57,7 +57,7 @@ public class Parameters {
 	 * of processing the whole query
 	 */
 	public String processLimit(String sql, Object[] parameterArray, boolean hasOffset) {
-		if ( doesNotNeedProcessing( sql ) ) {
+		if ( isProcessingNotRequired( sql ) ) {
 			return sql;
 		}
 
@@ -80,14 +80,16 @@ public class Parameters {
 	 * {@code $n} parameters in the given SQL string.
 	 */
 	public String process(String sql, int parameterCount) {
-		if ( doesNotNeedProcessing( sql ) ) {
+		if ( isProcessingNotRequired( sql ) ) {
 			return sql;
 		}
 		return new Parser( sql, parameterCount ).result();
 	}
 
-	private static boolean doesNotNeedProcessing(String sql) {
-		return sql == null || sql.indexOf( '?' ) == -1;
+	private static boolean isProcessingNotRequired(String sql) {
+		return sql == null
+				// There aren't any parameters
+				|| sql.indexOf( '?' ) == -1;
 	}
 
 	private static class Parser {

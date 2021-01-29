@@ -110,7 +110,9 @@ class ReactiveDynamicBatchingEntityLoader extends ReactiveEntityLoader {
 				getDialect()
 		);
 
-		// If there are filters we need to wait before processing the sql
+		// Filters might add additional parameters and our processor is not smart enough, right now, to
+		// recognize them if the query has been processed already.
+		// So we only process the SQL in advance if filters are disabled.
 		final String processedSQL = session.getLoadQueryInfluencers().hasEnabledFilters()
 				? sql
 				: parameters().process( sql );

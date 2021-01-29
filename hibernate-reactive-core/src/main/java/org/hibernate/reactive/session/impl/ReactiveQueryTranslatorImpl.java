@@ -5,8 +5,12 @@
  */
 package org.hibernate.reactive.session.impl;
 
-import antlr.RecognitionException;
-import antlr.collections.AST;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.engine.query.spi.EntityGraphQueryHint;
 import org.hibernate.engine.spi.QueryParameters;
@@ -33,13 +37,11 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
+
 import org.jboss.logging.Logger;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import antlr.RecognitionException;
+import antlr.collections.AST;
 
 public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 
