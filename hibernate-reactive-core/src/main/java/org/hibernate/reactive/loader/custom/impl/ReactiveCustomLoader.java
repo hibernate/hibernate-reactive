@@ -5,27 +5,6 @@
  */
 package org.hibernate.reactive.loader.custom.impl;
 
-import org.hibernate.HibernateException;
-import org.hibernate.QueryException;
-import org.hibernate.cache.spi.QueryKey;
-import org.hibernate.cache.spi.QueryResultsCache;
-import org.hibernate.dialect.pagination.LimitHandler;
-import org.hibernate.engine.spi.*;
-import org.hibernate.loader.custom.CustomLoader;
-import org.hibernate.loader.custom.CustomQuery;
-import org.hibernate.loader.custom.Return;
-import org.hibernate.loader.spi.AfterLoadAction;
-import org.hibernate.param.ParameterBinder;
-import org.hibernate.persister.collection.CollectionPersister;
-import org.hibernate.persister.entity.Loadable;
-import org.hibernate.reactive.loader.ReactiveLoaderBasedLoader;
-import org.hibernate.reactive.loader.CachingReactiveLoader;
-import org.hibernate.reactive.loader.ReactiveLoaderBasedResultSetProcessor;
-import org.hibernate.reactive.loader.ReactiveResultSetProcessor;
-import org.hibernate.reactive.pool.impl.Parameters;
-import org.hibernate.transform.ResultTransformer;
-import org.hibernate.type.Type;
-
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -33,6 +12,30 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+
+import org.hibernate.HibernateException;
+import org.hibernate.QueryException;
+import org.hibernate.cache.spi.QueryKey;
+import org.hibernate.cache.spi.QueryResultsCache;
+import org.hibernate.dialect.pagination.LimitHandler;
+import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.QueryParameters;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.loader.custom.CustomLoader;
+import org.hibernate.loader.custom.CustomQuery;
+import org.hibernate.loader.custom.Return;
+import org.hibernate.loader.spi.AfterLoadAction;
+import org.hibernate.param.ParameterBinder;
+import org.hibernate.persister.collection.CollectionPersister;
+import org.hibernate.persister.entity.Loadable;
+import org.hibernate.reactive.loader.CachingReactiveLoader;
+import org.hibernate.reactive.loader.ReactiveLoaderBasedLoader;
+import org.hibernate.reactive.loader.ReactiveLoaderBasedResultSetProcessor;
+import org.hibernate.reactive.loader.ReactiveResultSetProcessor;
+import org.hibernate.reactive.pool.impl.Parameters;
+import org.hibernate.transform.ResultTransformer;
+import org.hibernate.type.Type;
 
 /**
  * A reactive {@link org.hibernate.loader.Loader} for native SQL queries.
