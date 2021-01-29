@@ -85,7 +85,7 @@ public class ReactiveBulkIdStrategy
 	ReactiveBulkIdStrategy(Dialect dialect) {
 		super( new ReactiveIdTableSupport( dialect ) );
 		db2 = dialect instanceof DB297Dialect;
-		parameters = Parameters.create( dialect );
+		parameters = Parameters.instance( dialect );
 	}
 
 	@Override

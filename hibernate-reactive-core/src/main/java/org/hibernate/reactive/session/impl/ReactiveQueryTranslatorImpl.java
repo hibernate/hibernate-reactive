@@ -63,7 +63,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 			SessionFactoryImplementor factory) {
 		super( queryIdentifier, query, enabledFilters, factory );
 		this.factory = factory;
-		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
+		this.parameters = Parameters.instance( factory.getJdbcServices().getDialect() );
 	}
 
 	public ReactiveQueryTranslatorImpl(
@@ -73,7 +73,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 			SessionFactoryImplementor factory, EntityGraphQueryHint entityGraphQueryHint) {
 		super( queryIdentifier, query, enabledFilters, factory, entityGraphQueryHint );
 		this.factory = factory;
-		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
+		this.parameters = Parameters.instance( factory.getJdbcServices().getDialect() );
 	}
 
 	@Override

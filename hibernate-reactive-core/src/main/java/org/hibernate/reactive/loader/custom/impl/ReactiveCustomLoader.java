@@ -78,9 +78,9 @@ public class ReactiveCustomLoader extends CustomLoader implements CachingReactiv
 	private final Parameters parameters;
 
 	public ReactiveCustomLoader(CustomQuery customQuery, SessionFactoryImplementor factory) {
-		super( new ProcessedCustomQuery( customQuery, Parameters.create( factory.getJdbcServices().getDialect() ) ), factory);
+		super( new ProcessedCustomQuery( customQuery, Parameters.instance( factory.getJdbcServices().getDialect() ) ), factory);
 		this.resultSetProcessor = new ReactiveLoaderBasedResultSetProcessor( this );
-		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
+		this.parameters = Parameters.instance( factory.getJdbcServices().getDialect() );
 	}
 
 	@Override
