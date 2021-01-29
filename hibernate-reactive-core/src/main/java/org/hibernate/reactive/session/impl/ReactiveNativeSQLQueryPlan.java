@@ -71,6 +71,6 @@ public class ReactiveNativeSQLQueryPlan extends NativeSQLQueryPlan {
 	}
 
 	private String process(ReactiveQueryExecutor session, String sql, Object[] params) {
-		return Parameters.create( session.getDialect() ).process( sql, params.length );
+		return Parameters.instance( session.getDialect() ).process( sql, params.length );
 	}
 }

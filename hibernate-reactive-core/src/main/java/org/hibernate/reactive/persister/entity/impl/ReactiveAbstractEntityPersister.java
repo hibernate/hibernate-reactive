@@ -89,7 +89,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	Logger log = Logger.getLogger( JoinedSubclassEntityPersister.class );
 
 	default Parameters parameters() {
-		return Parameters.create( getFactory().getJdbcServices().getDialect() );
+		return Parameters.instance( getFactory().getJdbcServices().getDialect() );
 	}
 
 	/**

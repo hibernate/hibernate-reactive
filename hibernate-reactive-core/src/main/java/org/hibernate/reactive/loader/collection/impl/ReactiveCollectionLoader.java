@@ -54,7 +54,7 @@ public class ReactiveCollectionLoader extends CollectionLoader
 			LoadQueryInfluencers loadQueryInfluencers) {
 		super(collectionPersister, factory, loadQueryInfluencers);
 		this.reactiveResultSetProcessor = new ReactiveLoaderBasedResultSetProcessor( this );
-		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
+		this.parameters = Parameters.instance( factory.getJdbcServices().getDialect() );
 		this.filtersAreDisabled = !loadQueryInfluencers.hasEnabledFilters();
 	}
 

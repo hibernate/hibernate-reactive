@@ -55,7 +55,7 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 			LoadQueryInfluencers loadQueryInfluencers) {
 		super( persister, uniqueKeyType, factory, loadQueryInfluencers );
 		resultSetProcessor = new ReactiveLoaderBasedResultSetProcessor( this );
-		parameters = Parameters.create( factory.getJdbcServices().getDialect() );
+		parameters = Parameters.instance( factory.getJdbcServices().getDialect() );
 	}
 
 	@Override

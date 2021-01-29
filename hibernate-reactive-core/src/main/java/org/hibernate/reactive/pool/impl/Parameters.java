@@ -35,7 +35,7 @@ public class Parameters {
 		}
 	};
 
-	public static Parameters create(Dialect dialect) {
+	public static Parameters instance(Dialect dialect) {
 		return dialect instanceof PostgreSQL9Dialect
 				? INSTANCE
 				: NO_PARSING;

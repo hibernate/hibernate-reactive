@@ -160,7 +160,7 @@ public class TableReactiveIdentifierGenerator
 		renderedTableName = jdbcEnvironment.getQualifiedObjectNameFormatter()
 				.format( qualifiedTableName, dialect );
 
-		Parameters parameters = Parameters.create( dialect );
+		Parameters parameters = Parameters.instance( dialect );
 		selectQuery = parameters.process( applyLocksToSelect( dialect, "tbl", buildSelectQuery() ) );
 		updateQuery = parameters.process( buildUpdateQuery() );
 		insertQuery = parameters.process( buildInsertQuery() );

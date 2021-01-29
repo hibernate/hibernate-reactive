@@ -51,7 +51,7 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 		super( queryTranslator, factory, selectClause );
 		this.queryTranslator = queryTranslator;
 		this.factory = factory;
-		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
+		this.parameters = Parameters.instance( factory.getJdbcServices().getDialect() );
 		this.selectClause = selectClause;
 		this.resultSetProcessor = new ReactiveLoaderBasedResultSetProcessor( this ) {
 			public CompletionStage<List<Object>> reactiveExtractResults(ResultSet rs,

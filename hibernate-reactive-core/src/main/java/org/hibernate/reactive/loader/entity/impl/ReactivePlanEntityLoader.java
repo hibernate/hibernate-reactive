@@ -159,7 +159,7 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		);
 		this.persister = persister;
 		this.reactiveResultSetProcessor = (ReactiveResultSetProcessor) getStaticLoadQuery().getResultSetProcessor();
-		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
+		this.parameters = Parameters.instance( factory.getJdbcServices().getDialect() );
 		this.processedSQL = parameters.process( getStaticLoadQuery().getSqlStatement() );
 	}
 
@@ -186,7 +186,7 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		);
 		this.persister = persister;
 		this.reactiveResultSetProcessor = (ReactiveResultSetProcessor) getStaticLoadQuery().getResultSetProcessor();
-		this.parameters = Parameters.create( factory.getJdbcServices().getDialect() );
+		this.parameters = Parameters.instance( factory.getJdbcServices().getDialect() );
 		this.processedSQL = parameters.process( getStaticLoadQuery().getSqlStatement() );
 	}
 
