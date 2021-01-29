@@ -31,14 +31,12 @@ public final class ExternalSafeSqlClientPool extends SqlClientPool implements St
 
 	private final ThreadLocalPoolManager pools;
 	private final SqlStatementLogger sqlStatementLogger;
-	private final boolean usePostgresStyleParameters;
 
 	public ExternalSafeSqlClientPool(Supplier<Pool> poolProducer, SqlStatementLogger sqlStatementLogger, boolean usePostgresStyleParameters) {
 		Objects.requireNonNull( poolProducer );
 		Objects.requireNonNull( sqlStatementLogger );
 		this.pools = new ThreadLocalPoolManager( poolProducer );
 		this.sqlStatementLogger = sqlStatementLogger;
-		this.usePostgresStyleParameters = usePostgresStyleParameters;
 	}
 
 	@Override
@@ -49,11 +47,6 @@ public final class ExternalSafeSqlClientPool extends SqlClientPool implements St
 	@Override
 	protected SqlStatementLogger getSqlStatementLogger() {
 		return sqlStatementLogger;
-	}
-
-	@Override
-	protected boolean usePostgresStyleParameters() {
-		return usePostgresStyleParameters;
 	}
 
 	@Override

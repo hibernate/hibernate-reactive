@@ -27,19 +27,16 @@ public class SqlClientConnection implements ReactiveConnection {
 	private static PropertyKind<Long> mySqlLastInsertedId;
 
 	private final SqlStatementLogger sqlStatementLogger;
-	private final boolean usePostgresStyleParameters;
 
 	private final Pool pool;
 	private final SqlConnection connection;
 	private Transaction transaction;
 
 	SqlClientConnection(SqlConnection connection, Pool pool,
-						SqlStatementLogger sqlStatementLogger,
-						boolean usePostgresStyleParameters) {
+						SqlStatementLogger sqlStatementLogger) {
 		this.pool = pool;
 		this.sqlStatementLogger = sqlStatementLogger;
 		this.connection = connection;
-		this.usePostgresStyleParameters = usePostgresStyleParameters;
 	}
 
 	@Override

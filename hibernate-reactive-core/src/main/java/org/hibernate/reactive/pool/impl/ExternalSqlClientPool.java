@@ -45,12 +45,10 @@ public final class ExternalSqlClientPool extends SqlClientPool {
 
 	private final Pool pool;
 	private final SqlStatementLogger sqlStatementLogger;
-	private final boolean usePostgresStyleParameters;
 
 	public ExternalSqlClientPool(Pool pool, SqlStatementLogger sqlStatementLogger, boolean usePostgresStyleParameters) {
 		this.pool = pool;
 		this.sqlStatementLogger = sqlStatementLogger;
-		this.usePostgresStyleParameters = usePostgresStyleParameters;
 	}
 
 	@Override
@@ -64,10 +62,4 @@ public final class ExternalSqlClientPool extends SqlClientPool {
 	protected SqlStatementLogger getSqlStatementLogger() {
 		return sqlStatementLogger;
 	}
-
-	@Override
-	protected boolean usePostgresStyleParameters() {
-		return usePostgresStyleParameters;
-	}
-
 }
