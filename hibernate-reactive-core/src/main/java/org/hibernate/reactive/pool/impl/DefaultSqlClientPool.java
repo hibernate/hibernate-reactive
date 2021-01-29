@@ -11,8 +11,6 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
 import org.hibernate.HibernateError;
-import org.hibernate.dialect.PostgreSQL9Dialect;
-import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.internal.util.config.ConfigurationException;
@@ -59,7 +57,6 @@ public class DefaultSqlClientPool extends SqlClientPool
 	private SqlStatementLogger sqlStatementLogger;
 	private URI uri;
 	private ServiceRegistryImplementor serviceRegistry;
-	private boolean usePostgresStyleParameters;
 
 	public DefaultSqlClientPool() {}
 
@@ -67,8 +64,6 @@ public class DefaultSqlClientPool extends SqlClientPool
 	public void injectServices(ServiceRegistryImplementor serviceRegistry) {
 		this.serviceRegistry = serviceRegistry;
 		sqlStatementLogger = serviceRegistry.getService(JdbcServices.class).getSqlStatementLogger();
-		usePostgresStyleParameters =
-				serviceRegistry.getService(JdbcEnvironment.class).getDialect() instanceof PostgreSQL9Dialect;
 	}
 
 	@Override
@@ -91,11 +86,6 @@ public class DefaultSqlClientPool extends SqlClientPool
 	@Override
 	protected SqlStatementLogger getSqlStatementLogger() {
 		return sqlStatementLogger;
-	}
-
-	@Override
-	protected boolean usePostgresStyleParameters() {
-		return usePostgresStyleParameters;
 	}
 
 	/**

@@ -46,13 +46,6 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	protected abstract SqlStatementLogger getSqlStatementLogger();
 
 	/**
-	 * @return should `?`-style placeholders in the given SQL be
-	 *         converted to `$n$` format for execution by the
-	 *         PostgreSQL driver
-	 */
-	protected abstract boolean usePostgresStyleParameters();
-
-	/**
 	 * Get a {@link Pool} for the specified tenant.
 	 * <p>
 	 * This is an unimplemented operation which must be overridden by
@@ -91,7 +84,7 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	}
 
 	private SqlClientConnection newConnection(SqlConnection connection) {
-		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger(), usePostgresStyleParameters() );
+		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger() );
 	}
 
 	@Override
