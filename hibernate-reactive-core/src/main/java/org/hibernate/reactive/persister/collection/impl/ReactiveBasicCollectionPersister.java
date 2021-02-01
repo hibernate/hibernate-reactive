@@ -24,6 +24,7 @@ import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
@@ -40,16 +41,36 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 			CoreMessageLogger.class,
 			ReactiveBasicCollectionPersister.class.getName()
 	);
+	private final Parameters parameters;
 
 	public ReactiveBasicCollectionPersister(
 			Collection collectionBinding,
 			CollectionDataAccess cacheAccessStrategy,
 			PersisterCreationContext creationContext) throws MappingException, CacheException {
 		super( collectionBinding, cacheAccessStrategy, creationContext );
+		this.parameters = Parameters.instance( getFactory().getJdbcServices().getDialect() );
 	}
 
 	private ReactiveConnection getReactiveConnection(SharedSessionContractImplementor session) {
 		return ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
+	}
+
+	@Override
+	protected String getSQLInsertRowString() {
+		String sql = super.getSQLInsertRowString();
+		return parameters.process( sql );
+	}
+
+	@Override
+	protected String getSQLDeleteRowString() {
+		String sql = super.getSQLDeleteRowString();
+		return parameters.process( sql );
+	}
+
+	@Override
+	protected String getSQLDeleteString() {
+		String sql = super.getSQLDeleteString();
+		return parameters.process( sql );
 	}
 
 	public CompletionStage<Void> recreateReactive(
@@ -204,6 +225,8 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 
 			// update all the modified entries
 			// NOTE this method call uses a JDBC connection and will fail for Map ElementCollection type
+			// May also have to override getSQLDeleteString() to correctly parameterize to handle the SQL for the PG use case
+			// SEE getSQLInsertRowString() in this class for an example
 			int count = doUpdateRows( id, collection, session );
 
 			LOG.debugf( "Done updating rows: %s updated", count );
