@@ -228,8 +228,8 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 		// to count deal with the additional parameters in a second pass and we have to wait until the query
 		// is complete before processing it. See: ReactiveLoader#executeReactiveQueryStatement
 		String sql = hasFilters( session )
-			? processedSQL
-			: getStaticLoadQuery().getSqlStatement();
+			? getStaticLoadQuery().getSqlStatement()
+			: processedSQL;
 
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, (SharedSessionContractImplementor) session, parameters )
 				.thenApply( results -> extractEntityResult( results, id ) )
@@ -244,7 +244,7 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 	}
 
 	private boolean hasFilters(SharedSessionContractImplementor session) {
-		return session.getLoadQueryInfluencers().getEnabledFilters().isEmpty();
+		return !session.getLoadQueryInfluencers().getEnabledFilters().isEmpty();
 	}
 
 	private QueryParameters buildQueryParameters(Serializable id,
