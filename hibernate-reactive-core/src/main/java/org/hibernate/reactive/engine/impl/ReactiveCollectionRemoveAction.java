@@ -29,7 +29,7 @@ import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersis
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
-public class ReactiveCollectionRemoveAction extends CollectionAction implements ReactiveExecutable { ;
+public class ReactiveCollectionRemoveAction extends CollectionAction implements ReactiveExecutable {
 	private final Object affectedOwner;
 	private final boolean emptySnapshot;
 
@@ -94,31 +94,6 @@ public class ReactiveCollectionRemoveAction extends CollectionAction implements 
 		} );
 
 	}
-
-//	@Override
-//	public int compareTo(Object o) {
-//		return 0;
-//	}
-
-//	@Override
-//	public Serializable[] getPropertySpaces() {
-//		return new Serializable[0];
-//	}
-//
-//	@Override
-//	public AfterTransactionCompletionProcess getAfterTransactionCompletionProcess() {
-//		return null;
-//	}
-//
-//	@Override
-//	public BeforeTransactionCompletionProcess getBeforeTransactionCompletionProcess() {
-//		return null;
-//	}
-//
-//	@Override
-//	public void afterDeserialize(SharedSessionContractImplementor session) {
-//
-//	}
 
 	@Override
 	public void execute() throws HibernateException {

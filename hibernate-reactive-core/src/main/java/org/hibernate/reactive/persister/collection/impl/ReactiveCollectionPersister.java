@@ -10,9 +10,10 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.persister.collection.AbstractCollectionPersister;
 
 /**
- * Similar to {@link org.hibernate.persister.collection.AbstractCollectionPersister} in ORM
+ * Similar to {@link AbstractCollectionPersister} in ORM
  * <p>
  *     The reactive classes already extend something so we cannot have an abstract class like in ORM.
  * </p>
@@ -20,46 +21,27 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 public interface ReactiveCollectionPersister {
 
 	/**
-	 * Reactive version of {@link org.hibernate.persister.collection.AbstractCollectionPersister}.recreate()
-	 * @param collection
-	 * @param id
-	 * @param session
-	 * @return Void completion stage
+	 * Reactive version of {@link AbstractCollectionPersister#recreate(PersistentCollection, Serializable , SharedSessionContractImplementor)}
 	 */
 	CompletionStage<Void> recreateReactive(PersistentCollection collection, Serializable id, SharedSessionContractImplementor session);
 
 	/**
-	 * Reactive version of {@link org.hibernate.persister.collection.AbstractCollectionPersister}.remove()
-	 * @param id
-	 * @param session
-	 * @return Integer completion stage
+	 * Reactive version of {@link AbstractCollectionPersister#remove(Serializable , SharedSessionContractImplementor)}
 	 */
 	CompletionStage<Integer> removeReactive(Serializable id, SharedSessionContractImplementor session);
 
 	/**
-	 * Reactive version of {@link org.hibernate.persister.collection.AbstractCollectionPersister}.deleteRows()
-	 * @param collection
-	 * @param id
-	 * @param session
-	 * @return Void completion stage
+	 * Reactive version of {@link AbstractCollectionPersister#deleteRows(PersistentCollection, Serializable , SharedSessionContractImplementor)}
 	 */
 	CompletionStage<Void> reactiveDeleteRows(PersistentCollection collection, Serializable id, SharedSessionContractImplementor session);
 
 	/**
-	 * Reactive version of {@link org.hibernate.persister.collection.AbstractCollectionPersister}.insertRows()
-	 * @param collection
-	 * @param id
-	 * @param session
-	 * @return Void completion stage
+	 * Reactive version of {@link AbstractCollectionPersister#insertRows(PersistentCollection, Serializable , SharedSessionContractImplementor)}
 	 */
 	CompletionStage<Void> reactiveInsertRows( PersistentCollection collection, Serializable id, SharedSessionContractImplementor session);
 
 	/**
-	 * Reactive version of {@link org.hibernate.persister.collection.AbstractCollectionPersister}.updateRows()
-	 * @param collection
-	 * @param id
-	 * @param session
-	 * @return Void completion stage
+	 * Reactive version of  {@link AbstractCollectionPersister#updateRows(PersistentCollection, Serializable , SharedSessionContractImplementor)}
 	 */
 	CompletionStage<Void> reactiveUpdateRows(PersistentCollection collection, Serializable id, SharedSessionContractImplementor session);
 }

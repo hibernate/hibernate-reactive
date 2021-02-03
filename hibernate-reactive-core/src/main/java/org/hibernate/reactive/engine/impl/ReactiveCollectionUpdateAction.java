@@ -126,31 +126,6 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 		} );
 	}
 
-//	@Override
-//	public int compareTo(Object o) {
-//		return 0;
-//	}
-
-//	@Override
-//	public Serializable[] getPropertySpaces() {
-//		return new Serializable[0];
-//	}
-//
-//	@Override
-//	public AfterTransactionCompletionProcess getAfterTransactionCompletionProcess() {
-//		return null;
-//	}
-//
-//	@Override
-//	public BeforeTransactionCompletionProcess getBeforeTransactionCompletionProcess() {
-//		return null;
-//	}
-//
-//	@Override
-//	public void afterDeserialize(SharedSessionContractImplementor session) {
-//
-//	}
-
 	@Override
 	public void execute() throws HibernateException {
 		// Unsupported in reactive see reactiveExecute()

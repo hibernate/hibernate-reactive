@@ -136,9 +136,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister implements Re
 			return CompletionStages.voidFuture();
 		}
 
-		// FIXME: Not sure what to implement here for OneToMany use-case
-		// Maybe nothing due to the ReactiveCollectionUpdate/Remove/Recreate Action classes perform necessary operations
-		// on the collection (basically delete and replace rather than operating on individual rows
+		// TODO: See AbstractCollectionPersister#insertRows
 		throw new UnsupportedOperationException();
 	}
 

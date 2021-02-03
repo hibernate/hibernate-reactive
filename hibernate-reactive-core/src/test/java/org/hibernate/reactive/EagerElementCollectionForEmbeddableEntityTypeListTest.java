@@ -763,10 +763,6 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 
 		private String country;
 
-		// FIXME: add nested @Embeddable
-		// @ElementCollection(fetch = FetchType.EAGER)
-		// private List<AlternativePhone> alternatives = new ArrayList<>();
-
 		public Phone() {
 		}
 
