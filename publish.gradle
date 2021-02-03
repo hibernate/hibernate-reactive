@@ -128,7 +128,6 @@ bintray {
     publications = ['publishedArtifacts']
 
     pkg {
-        userOrg = 'hibernate'
         repo = 'artifacts'
         name = 'hibernate-reactive'
 
@@ -138,14 +137,6 @@ bintray {
             name = project.version
             released = new Date()
             vcsTag = project.version
-            gpg {
-                sign = true
-            }
-            mavenCentralSync {
-                sync = true
-                user = project.sonatypeOssrhUser
-                password = project.sonatypeOssrhPassword
-            }
         }
     }
 }
