@@ -28,7 +28,7 @@ public interface ReactiveCollectionPersister {
 	/**
 	 * Reactive version of {@link AbstractCollectionPersister#remove(Serializable , SharedSessionContractImplementor)}
 	 */
-	CompletionStage<Integer> removeReactive(Serializable id, SharedSessionContractImplementor session);
+	CompletionStage<Void> removeReactive(Serializable id, SharedSessionContractImplementor session);
 
 	/**
 	 * Reactive version of {@link AbstractCollectionPersister#deleteRows(PersistentCollection, Serializable , SharedSessionContractImplementor)}

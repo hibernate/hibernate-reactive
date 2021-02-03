@@ -82,7 +82,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister implements Re
 	}
 
 	@Override
-	public CompletionStage<Integer> removeReactive(Serializable id, SharedSessionContractImplementor session)
+	public CompletionStage<Void> removeReactive(Serializable id, SharedSessionContractImplementor session)
 			throws HibernateException {
 		ReactiveConnection reactiveConnection = getReactiveConnection( session );
 		if ( !isInverse && isRowDeleteEnabled() ) {
@@ -104,9 +104,11 @@ public class ReactiveOneToManyPersister extends OneToManyPersister implements Re
 			params.add( id );
 			String sql = getSQLDeleteString();
 
-			return reactiveConnection.update( sql, params.toArray( new Object[0] ) );
+			return CompletionStages.voidFuture()
+					.thenCompose( s -> reactiveConnection.update( sql, params.toArray( new Object[0] )))
+					.thenCompose(CompletionStages::voidFuture);
 		}
-		return CompletionStages.completedFuture( -1 );
+		return CompletionStages.voidFuture();
 	}
 
 	@Override

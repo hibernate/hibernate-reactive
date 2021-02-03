@@ -73,6 +73,15 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		return parameters.process( sql );
 	}
 
+	@Override
+	protected String getSQLUpdateRowString() {
+		String sql = super.getSQLUpdateRowString();
+		return parameters.process( sql );
+	}
+
+	/**
+	 * @see org.hibernate.persister.collection.AbstractCollectionPersister#recreate(PersistentCollection, Serializable, SharedSessionContractImplementor)
+	 */
 	public CompletionStage<Void> recreateReactive(
 			PersistentCollection collection,
 			Serializable id,
@@ -96,43 +105,20 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		CompletionStage<Integer> loop = CompletionStages.zeroFuture();
 		ReactiveConnection reactiveConnection = getReactiveConnection( session );
 
-		// create all the new entries
-		Iterator entries = collection.entries( this );
+		collection.preInsert( this );
 
-		if ( entries.hasNext() ) {
-			collection.preInsert( this );
-
-			int i = 0;
-
-			while ( entries.hasNext() ) {
-				final Object entry = entries.next();
-				if ( collection.entryExists( entry, i ) ) {
-					int offset = 1;
-					Object[] paramValues = PreparedStatementAdaptor.bind(
-							st -> {
-								int loc = writeKey( st, id, offset, session );
-								if ( hasIdentifier ) {
-									loc = writeIdentifier( st, collection.getIdentifier( entry, i ), loc, session );
-								}
-								if ( hasIndex /* && !indexIsFormula */) {
-									loc = writeIndex( st, collection.getIndex( entry, i, this ), loc, session );
-								}
-								loc = writeElement( st, collection.getElement( entry ), loc, session );
-
-								collection.afterRowInsert( this, entry, i );
-							}
-					);
-					loop = loop.thenCompose( total -> reactiveConnection
-							.update( getSQLInsertRowString(), paramValues )
-							.thenApply( insertCount -> total + insertCount ) );
-				}
-			}
-		}
-
-		return loop.thenAccept( total -> LOG.debugf( "Done inserting collection: %s rows inserted", total ) );
+		return CompletionStages.total(
+				entryArray(collection),
+				entry -> loop.thenCompose( total -> reactiveConnection
+								.update( getSQLInsertRowString(), paramValues( entry, collection, id,session ))
+								.thenApply( insertCount -> total + insertCount ) ) )
+				.thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
 	}
 
-	public CompletionStage<Integer> removeReactive(Serializable id, SharedSessionContractImplementor session)
+	/**
+	 * @see org.hibernate.persister.collection.AbstractCollectionPersister#remove(Serializable, SharedSessionContractImplementor)
+	 */
+	public CompletionStage<Void> removeReactive(Serializable id, SharedSessionContractImplementor session)
 			throws HibernateException {
 		ReactiveConnection reactiveConnection = getReactiveConnection( session );
 		if ( !isInverse && isRowDeleteEnabled() ) {
@@ -146,17 +132,21 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 			List<Object> params = new ArrayList<>();
 			params.add( id );
 			String sql = getSQLDeleteString();
-			return reactiveConnection.update( sql, params.toArray( new Object[0] ) );
+			return CompletionStages.voidFuture()
+					.thenCompose( s -> reactiveConnection.update( sql, params.toArray( new Object[0] )))
+					.thenCompose(CompletionStages::voidFuture);
 		}
-		return CompletionStages.completedFuture( -1 );
+		return CompletionStages.voidFuture();
 	}
 
+	/**
+	 * @see org.hibernate.persister.collection.AbstractCollectionPersister#deleteRows(PersistentCollection, Serializable, SharedSessionContractImplementor)
+	 */
 	@Override
 	public CompletionStage<Void> reactiveDeleteRows(
 			PersistentCollection collection,
 			Serializable id,
 			SharedSessionContractImplementor session) throws HibernateException {
-
 		if ( isInverse ) {
 			return CompletionStages.voidFuture();
 		}
@@ -170,68 +160,32 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 
 		boolean deleteByIndex = hasIndex && !indexContainsFormula;
 
-		Iterator deletes = collection.getDeletes( this, !deleteByIndex );
-
-		int offset = 1;
-		int i = 0;
-
-		while ( deletes.hasNext() ) {
-			final Object entry = deletes.next();
-			if ( collection.entryExists( entry, i ) ) {
-				Object[] paramValues = PreparedStatementAdaptor.bind(
-						st -> {
-							int loc = offset;
-							if ( hasIdentifier ) {
-								writeIdentifier( st, entry, loc, session );
-							}
-							else {
-								loc = writeKey( st, id, loc, session );
-								if ( deleteByIndex ) {
-									writeIndexToWhere( st, entry, loc, session );
-								}
-								else {
-									writeElementToWhere( st, entry, loc, session );
-								}
-							}
-						}
-				);
-				loop = loop.thenCompose( total -> reactiveConnection
-						.update( getSQLDeleteRowString(), paramValues )
-						.thenApply( deleteCount -> total + deleteCount ) );
-			}
-		}
-
-		return loop.thenAccept( total -> LOG.debugf( "Done deleting rows: %s deleted", total ) );
+		return CompletionStages.total(
+				entryArray( collection, deleteByIndex ),
+				entry -> loop.thenCompose( total -> reactiveConnection
+						.update( getSQLDeleteRowString(), paramValues( entry, id ,session, deleteByIndex ) )
+						.thenApply( deleteCount -> total + deleteCount ) ) )
+				.thenAccept( total -> LOG.debugf( "Done removing rows: %s removed", total ) );
 	}
 
+	/**
+	 * @see org.hibernate.persister.collection.AbstractCollectionPersister#updateRows(PersistentCollection, Serializable, SharedSessionContractImplementor)
+	 */
 	@Override
 	public CompletionStage<Void> reactiveUpdateRows(
 			PersistentCollection collection,
 			Serializable id,
 			SharedSessionContractImplementor session) throws HibernateException {
 
-		// Currently there is no "updateRows()" method in AbstractCollectionPersister
-		// Not sure if this method, reactiveUpdateRows() is needed.
-
-		// TODO:  @Barry
-		// Can each element in the collection be mapped unequivocally to a single row in the database?
-		// Generally bags and sets are the only collections that cannot be.
-		// So Maps, for instance will return isRowUpdatePossible() == TRUE
-		// and require doUpdateRows() to be replaced by a reactive
-
 		if ( !isInverse && collection.isRowUpdatePossible() ) {
-
-			LOG.debugf( "Updating rows of collection: %s#%s", getNavigableRole().getFullPath(), id );
-
+			// TODO:  convert AbstractCollectionPersister.doUpdateRows() to reactive logic
 			// update all the modified entries
 			// NOTE this method call uses a JDBC connection and will fail for Map ElementCollection type
-			// May also have to override getSQLDeleteString() to correctly parameterize to handle the SQL for the PG use case
-			// SEE getSQLInsertRowString() in this class for an example
-			int count = doUpdateRows( id, collection, session );
+			// Generally bags and sets are the only collections that cannot be mapped to a single row in the database
+			// So Maps, for instance will return isRowUpdatePossible() == TRUE
 
-			LOG.debugf( "Done updating rows: %s updated", count );
+			throw new UnsupportedOperationException();
 		}
-
 		return CompletionStages.voidFuture();
 	}
 
@@ -243,7 +197,6 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 			PersistentCollection collection,
 			Serializable id,
 			SharedSessionContractImplementor session) throws HibernateException {
-
 		if ( isInverse ) {
 			return CompletionStages.voidFuture();
 		}
@@ -260,44 +213,96 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		}
 
 		collection.preInsert( this );
-		// FIXME @Barry: Should we keep it? What's Expectation for?
-		// Expectation expectation = Expectations.appropriateExpectation( getInsertCheckStyle() );
 
 		CompletionStage<Integer> loop = CompletionStages.zeroFuture();
 		ReactiveConnection reactiveConnection = getReactiveConnection( session );
+
+		return CompletionStages.total(
+				entryArray(collection),
+				entry -> loop.thenCompose( total -> reactiveConnection
+						.update( getSQLInsertRowString(), paramValues( entry, collection, id ,session ) )
+						.thenApply( insertCount -> total + insertCount ) ) )
+				.thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
+	}
+
+
+	/*
+	 * converts the entities of a PersistentCollection into an Object[] array
+	 */
+	private Object[] entryArray(PersistentCollection collection) {
+		List<Object> theList = new ArrayList<>();
 		Iterator entries = collection.entries( this );
-
-		int i = 0;
 		while ( entries.hasNext() ) {
-			int offset = 1;
 			final Object entry = entries.next();
-			if ( collection.entryExists( entry, i )
-					&& collection.needsInserting( entry, i, elementType ) ) {
-
-				// TODO: Check batching: See AbstractCollectionPersister#insertRows
-				// boolean useBatch = expectation.canBeBatched();
-
-				Object[] paramValues = PreparedStatementAdaptor.bind(
-						st -> {
-							int locOffset = writeKey( st, id, offset, session );
-
-							if ( hasIdentifier ) {
-								locOffset = writeIdentifier( st, collection.getIdentifier( entry, i ), locOffset, session );
-							}
-							if ( hasIndex /* && !indexIsFormula */) {
-								locOffset = writeIndex( st, collection.getIndex( entry, i, this ), locOffset, session );
-							}
-							locOffset = writeElement( st, collection.getElement( entry ), locOffset, session );
-
-							collection.afterRowInsert( this, entry, i );
-						}
-				);
-				loop = loop.thenCompose( total -> reactiveConnection
-						.update( getSQLInsertRowString(), paramValues )
-						.thenApply( insertCount -> total + insertCount ) );
+			if ( collection.entryExists( entry, 0 ) ) {
+				theList.add(entry);
 			}
 		}
-		return loop.thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
+
+		return theList.toArray( new Object[0] );
+	}
+
+	/*
+	 * converts the entities of a PersistentCollection into an Object[] array for the delete row(s) use case.
+	 */
+	private Object[] entryArray(PersistentCollection collection, boolean deleteByIndex) {
+		List<Object> theList = new ArrayList<>();
+		Iterator deletes = collection.getDeletes( this, !deleteByIndex );
+		while ( deletes.hasNext() ) {
+			final Object entry = deletes.next();
+			if ( collection.entryExists( entry, 0 ) ) {
+				theList.add(entry);
+			}
+		}
+
+		return theList.toArray( new Object[0] );
+	}
+
+	/*
+	 * generates and returns parameter values for a reactiveRecreate() and reactiveInsertRows() methods
+	 * compatible with getSQLInsertRowString() and query string
+	 */
+	private Object[] paramValues(Object entry, PersistentCollection collection, Serializable id, SharedSessionContractImplementor session) {
+		return PreparedStatementAdaptor.bind(
+				st -> {
+					int i = 0;
+					int loc = writeKey( st, id, 1, session );
+
+					if ( hasIdentifier ) {
+						loc = writeIdentifier( st, collection.getIdentifier( entry, i ), loc, session );
+					}
+					if ( hasIndex /* && !indexIsFormula */) {
+						loc = writeIndex( st, collection.getIndex( entry, i, this ), loc, session );
+					}
+					writeElement( st, collection.getElement( entry ), loc, session );
+
+					collection.afterRowInsert( this, entry, i );
+				}
+		);
+	}
+
+	/*
+	 * generates and returns parameter values for a reactiveDeleteRows() method
+	 * compatible with getSQLDeleteRowString() query string
+	 */
+	private Object[] paramValues(Object entry, Serializable id, SharedSessionContractImplementor session, boolean deleteByIndex) {
+		return PreparedStatementAdaptor.bind(
+				st -> {
+					int loc = 1;
+					if ( hasIdentifier ) {
+						writeIdentifier( st, entry, loc, session );
+					}
+					else {
+						loc = writeKey( st, id, loc, session );
+						if ( deleteByIndex ) {
+							writeIndexToWhere( st, entry, loc, session );
+						}
+						else {
+							writeElementToWhere( st, entry, loc, session );
+						}
+					}
+				}
+		);
 	}
 
 }
