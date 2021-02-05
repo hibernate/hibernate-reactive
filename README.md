@@ -21,6 +21,7 @@ Learn more at <http://hibernate.org/reactive>.
 
 [Hibernate ORM]: https://hibernate.org/orm/
 [Quarkus]: https://quarkus.io
+[Quarkus quickstarts]: https://github.com/quarkusio/quarkus-quickstarts
 [Vert.x]: https://vertx.io
 
 ## Compatibility
@@ -35,7 +36,7 @@ Hibernate Reactive has been tested with:
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 4.0.2
 - [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 4.0.2
 - [Vert.x Reactive Db2 Client](https://vertx.io/docs/vertx-db2-client/java/) 4.0.2
-- [Quarkus][Quarkus] 1.8.3
+- [Quarkus][Quarkus] via the Hibernate Reactive extension
 
 Support for SQL Server is coming soon.
 
@@ -72,6 +73,13 @@ There is a very simple example program in the [`example`][example]
 directory.
 
 [example]: https://github.com/hibernate/hibernate-reactive/tree/master/example
+
+A list of [quickstarts][Quarkus quickstarts] for Quarkus is available on GitHub:
+  - [Hibernate Reactive with RESTEasy Reactive](https://github.com/quarkusio/quarkus-quickstarts/tree/master/hibernate-reactive-quickstart) quickstart
+  - [Hibernate Reactive with Vert.x Web Routes](https://github.com/quarkusio/quarkus-quickstarts/tree/master/hibernate-reactive-routes-quickstart) quickstart
+
+Or you can [generate a new Quarks project](https://code.quarkus.io/?g=org.acme&a=code-with-quarkus&v=1.0.0-SNAPSHOT&b=MAVEN&s=r1s&cn=code.quarkus.io)
+that uses the Hibernate Reactive extension and start coding right away.
 
 ## Gradle build
 
