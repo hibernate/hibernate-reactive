@@ -123,6 +123,21 @@ public class CompletionStages {
 	 * Equivalent to:
 	 * <pre>
 	 * int total = 0;
+	 * while( iterator.hasNext() ) {
+	 *   total += consumer.apply( iterator.next() );
+	 * }
+	 * </pre>
+	 */
+	public static <T> CompletionStage<Integer> total(Iterator<T> iterator, Function<T,CompletionStage<Integer>> consumer) {
+		return AsyncIterator.fromIterator( iterator )
+				.thenCompose( entry -> consumer.apply( entry ) )
+				.fold( 0, (total, next) -> total + next );
+	}
+
+	/**
+	 * Equivalent to:
+	 * <pre>
+	 * int total = 0;
 	 * for ( int i = start; i < end; i++ ) {
 	 *   total = total + consumer.apply( array[i] );
 	 * }
