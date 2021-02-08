@@ -13,6 +13,9 @@ import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
 import org.hibernate.boot.spi.SessionFactoryBuilderService;
 import org.hibernate.reactive.bulk.impl.ReactiveBulkIdStrategy;
 
+/**
+ * A {@link SessionFactoryBuilderService} that creates instances of {@link ReactiveSessionFactoryBuilder}.
+ */
 final class ReactiveSessionFactoryBuilderService implements SessionFactoryBuilderService {
 
 	@Override

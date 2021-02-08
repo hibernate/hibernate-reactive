@@ -12,6 +12,11 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 import java.util.Map;
 
+/**
+ * A Hibernate {@link StandardServiceInitiator service initiator} for the non-configured form of JTA platform.
+ *
+ * @see NoJtaPlatform
+ */
 public class NoJtaPlatformInitiator implements StandardServiceInitiator<JtaPlatform> {
 	public static final NoJtaPlatformInitiator INSTANCE = new NoJtaPlatformInitiator();
 

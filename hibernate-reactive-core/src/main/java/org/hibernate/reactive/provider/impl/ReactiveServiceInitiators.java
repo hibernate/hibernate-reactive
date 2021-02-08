@@ -43,6 +43,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Provides the list of service initiators that Hibernate Reactive needs to integrate
+ * with Hibernate ORM.
+ */
 public final class ReactiveServiceInitiators {
 
     private ReactiveServiceInitiators() {

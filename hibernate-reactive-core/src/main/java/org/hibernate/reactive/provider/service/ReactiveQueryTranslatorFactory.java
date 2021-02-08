@@ -14,6 +14,11 @@ import org.hibernate.hql.spi.QueryTranslator;
 import org.hibernate.hql.spi.QueryTranslatorFactory;
 import org.hibernate.reactive.session.impl.ReactiveQueryTranslatorImpl;
 
+/**
+ * Facade for the generation of reactive {@link QueryTranslator} and {@link FilterTranslator} instances.
+ *
+ * @see ReactiveQueryTranslatorImpl
+ */
 public class ReactiveQueryTranslatorFactory implements QueryTranslatorFactory {
 
 	@Override
