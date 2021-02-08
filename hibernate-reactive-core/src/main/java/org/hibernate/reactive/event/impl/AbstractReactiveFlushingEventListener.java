@@ -11,13 +11,9 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Interceptor;
-import org.hibernate.action.internal.CollectionRecreateAction;
-import org.hibernate.action.internal.CollectionRemoveAction;
-import org.hibernate.action.internal.CollectionUpdateAction;
 import org.hibernate.action.internal.QueuedOperationCollectionAction;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.Collections;
-import org.hibernate.engine.spi.ActionQueue;
 import org.hibernate.engine.spi.CollectionKey;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -33,9 +29,12 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;
+import org.hibernate.reactive.engine.impl.ReactiveCollectionRecreateAction;
+import org.hibernate.reactive.engine.impl.ReactiveCollectionRemoveAction;
+import org.hibernate.reactive.engine.impl.ReactiveCollectionUpdateAction;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.jboss.logging.Logger;
@@ -224,14 +223,14 @@ public abstract class AbstractReactiveFlushingEventListener {
 
 		LOG.trace( "Scheduling collection removes/(re)creates/updates" );
 
-		final ActionQueue actionQueue = session.getActionQueue();
+		final ReactiveActionQueue actionQueue = session.unwrap( ReactiveSession.class).getReactiveActionQueue();
 		final Interceptor interceptor = session.getInterceptor();
 		persistenceContext.forEachCollectionEntry(
 				(coll, ce) -> {
 					if ( ce.isDorecreate() ) {
 						interceptor.onCollectionRecreate( coll, ce.getCurrentKey() );
 						actionQueue.addAction(
-								new CollectionRecreateAction(
+								new ReactiveCollectionRecreateAction(
 										coll,
 										ce.getCurrentPersister(),
 										ce.getCurrentKey(),
@@ -242,7 +241,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 					if ( ce.isDoremove() ) {
 						interceptor.onCollectionRemove( coll, ce.getLoadedKey() );
 						actionQueue.addAction(
-								new CollectionRemoveAction(
+								new ReactiveCollectionRemoveAction(
 										coll,
 										ce.getLoadedPersister(),
 										ce.getLoadedKey(),
@@ -254,7 +253,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 					if ( ce.isDoupdate() ) {
 						interceptor.onCollectionUpdate( coll, ce.getLoadedKey() );
 						actionQueue.addAction(
-								new CollectionUpdateAction(
+								new ReactiveCollectionUpdateAction(
 										coll,
 										ce.getLoadedPersister(),
 										ce.getLoadedKey(),
