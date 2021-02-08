@@ -16,6 +16,10 @@ import org.hibernate.reactive.persister.entity.impl.ReactiveJoinedSubclassEntity
 import org.hibernate.reactive.persister.entity.impl.ReactiveSingleTableEntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveUnionSubclassEntityPersister;
 
+/**
+ * Define the persisters required by Hibernate Reactive, usually a reactive version of the ones
+ * in Hibernate ORM.
+ */
 public class ReactivePersisterClassResolver extends StandardPersisterClassResolver implements PersisterClassResolver {
 
 	@Override

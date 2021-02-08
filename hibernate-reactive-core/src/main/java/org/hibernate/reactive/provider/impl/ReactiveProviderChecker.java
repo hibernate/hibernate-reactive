@@ -14,9 +14,9 @@ import java.util.Map;
 
 /**
  * Helper for handling checks to see whether ReactivePersistenceProvider is the requested
- * {@link javax.persistence.spi.PersistenceProvider}
- *
- * Copied and adapted from org.hibernate.jpa.boot.spi.ProviderChecker
+ * {@link javax.persistence.spi.PersistenceProvider}.
+ * <p>
+ * Copied and adapted from {@link org.hibernate.jpa.boot.spi.ProviderChecker}.
  */
 public final class ReactiveProviderChecker {
 

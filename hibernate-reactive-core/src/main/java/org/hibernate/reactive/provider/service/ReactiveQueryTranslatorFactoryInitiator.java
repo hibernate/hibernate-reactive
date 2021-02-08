@@ -11,6 +11,10 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 import java.util.Map;
 
+/**
+ * A Hibernate {@link StandardServiceInitiator service initiator} that creates
+ * {@link ReactiveQueryTranslatorFactory} instances.
+ */
 public class ReactiveQueryTranslatorFactoryInitiator implements StandardServiceInitiator<QueryTranslatorFactory> {
 	public static final ReactiveQueryTranslatorFactoryInitiator INSTANCE = new ReactiveQueryTranslatorFactoryInitiator();
 

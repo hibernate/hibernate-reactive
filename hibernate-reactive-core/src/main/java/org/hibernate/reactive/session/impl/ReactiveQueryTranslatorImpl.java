@@ -43,6 +43,13 @@ import org.jboss.logging.Logger;
 import antlr.RecognitionException;
 import antlr.collections.AST;
 
+/**
+ * A {@link org.hibernate.hql.spi.FilterTranslator} that adds reactive versions of the
+ * existing methods in the interface and throw an exception if the non-reactive variant
+ * is invoked.
+ *
+ * throws {@link UnsupportedOperationException} if a non reactive method is invoked
+ */
 public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 
 	private final Parameters parameters;
@@ -92,6 +99,9 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 		throw new UnsupportedOperationException("Use #reactiveList instead");
 	}
 
+	/**
+	 * The reactive version of {@link QueryTranslatorImpl#list(SharedSessionContractImplementor, QueryParameters)}.
+	 */
 	public CompletionStage<List<Object>> reactiveList(SharedSessionContractImplementor session,
 													  QueryParameters queryParameters)
 			throws HibernateException {
@@ -159,6 +169,10 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 				} );
 	}
 
+	/**
+	 * The reactive version of
+	 * {@link QueryTranslatorImpl#executeUpdate(QueryParameters, SharedSessionContractImplementor)}.
+	 */
 	public CompletionStage<Integer> executeReactiveUpdate(QueryParameters queryParameters,
 														  ReactiveQueryExecutor session) {
 		errorIfSelect();
