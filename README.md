@@ -179,7 +179,6 @@ At present a few limitations remain.
 At this time, Hibernate Reactive does not support the following 
 mapping features:
 
-- `@ElementCollection`s,
 - `@ManyToMany` associations, and
 - one-sided `@OneToMany` associations without `mappedBy`.
 
