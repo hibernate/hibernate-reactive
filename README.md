@@ -72,6 +72,8 @@ We recommend you start there!
 There is a very simple example program in the [`example`][example] 
 directory.
 
+## Quarkus quickstarts
+
 [example]: https://github.com/hibernate/hibernate-reactive/tree/master/example
 
 A list of [quickstarts][Quarkus quickstarts] for Quarkus is available on GitHub:
