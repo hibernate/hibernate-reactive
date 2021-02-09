@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.provider.service;
 
-import org.hibernate.service.ServiceRegistry;
 
 /**
  * A singleton {@link ReactiveMarkerService} that marks the registry as running in "Reactive mode" allowing
