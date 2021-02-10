@@ -197,7 +197,7 @@ all associations.
 
 ### Schema export
 
-Autamatic update or validation of an existing database schema requires 
+Automatic update or validation of an existing database schema requires 
 use of JDBC.
 
 #### Caching
