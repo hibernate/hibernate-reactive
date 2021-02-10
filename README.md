@@ -195,6 +195,11 @@ mapping features:
 Instead, use `@OneToMany(mappedBy=...)` together with `@ManyToOne` for 
 all associations.
 
+### Schema export
+
+Automatic update or validation of an existing database schema requires 
+use of JDBC.
+
 #### Caching
 
 You should not use Hibernate Reactive with a second-level cache 
