@@ -114,12 +114,20 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 		final boolean cacheable = factory.getSessionFactoryOptions().isQueryCacheEnabled()
 				&& queryParameters.isCacheable();
 
-		String processedSQL = parameters().process( getSQLString() );
+		// Hibernate Reactive process filters just before running the query.
+		// Our parameters processor is not smart enough to work on the same query twice,
+		// so we wait to process a query if filters are enabled. It's going to be process
+		// just before the execution
+		boolean hasFilters = session.getLoadQueryInfluencers().hasEnabledFilters();
+		String sql = hasFilters
+				? getSQLString()
+				: parameters().process( getSQLString() );
+
 		if ( cacheable ) {
-			return reactiveListUsingQueryCache( processedSQL, getQueryIdentifier(), session, queryParameters, querySpaces, resultTypes );
+			return reactiveListUsingQueryCache( sql, getQueryIdentifier(), session, queryParameters, querySpaces, resultTypes );
 		}
 		else {
-			return reactiveListIgnoreQueryCache( processedSQL, getQueryIdentifier(), session, queryParameters );
+			return reactiveListIgnoreQueryCache( sql, getQueryIdentifier(), session, queryParameters );
 		}
 	}
 
