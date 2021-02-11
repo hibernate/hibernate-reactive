@@ -14,9 +14,12 @@ import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.loader.plan.exec.query.spi.NamedParameterContext;
 import org.hibernate.loader.spi.AfterLoadAction;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
+import org.hibernate.type.EntityType;
+import org.hibernate.type.OneToOneType;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
@@ -60,10 +63,10 @@ public interface ReactiveResultSetProcessor {
 				entity,
 				entityEntry,
 				session,
-				(entityType, value, session1, owner, overridingEager)
+				(entityType, value, source, owner, overridingEager)
 						-> entityType.isEager( overridingEager )
-								? ((ReactiveSession) session1).reactiveGet( entityType.getReturnedClass(), (Serializable) value )
-								: entityType.resolve(value, session1, owner, overridingEager)
+								? resolve( entityType, (Serializable) value, owner, source )
+								: entityType.resolve(value, source, owner, overridingEager)
 		);
 
 		final Object[] hydratedState = entityEntry.getLoadedState();
@@ -83,5 +86,51 @@ public interface ReactiveResultSetProcessor {
 						listeners
 				)
 		);
+	}
+
+	/**
+	 * Replacement for {@link EntityType#resolve(Object, SharedSessionContractImplementor, Object, Boolean)}
+	 */
+	default CompletionStage<Object> resolve(EntityType entityType, Serializable value, Object owner,
+											SharedSessionContractImplementor session) {
+		if ( value != null && !isNull( entityType, owner, session ) ) {
+			if ( entityType.isReferenceToPrimaryKey() ) {
+				return ((ReactiveSession) session).reactiveInternalLoad(
+						entityType.getAssociatedEntityName(),
+						value,
+						true,
+						entityType.isNullable()
+				);
+			}
+			else {
+				//TODO see EntityType.resolve() we need to reactify loadByUniqueKey()
+				throw new UnsupportedOperationException("unique key property name not supported here");
+			}
+		}
+		else {
+			return null;
+		}
+	}
+
+	default boolean isNull(EntityType entityType, Object owner,
+						   SharedSessionContractImplementor session) {
+		if ( entityType instanceof OneToOneType ) {
+			OneToOneType type = (OneToOneType) entityType;
+			String propertyName = type.getPropertyName();
+			if ( propertyName != null ) {
+				EntityPersister ownerPersister =
+						session.getFactory().getMetamodel()
+								.entityPersister( entityType.getAssociatedEntityName() );
+				Serializable id = session.getContextEntityIdentifier(owner);
+				EntityKey entityKey = session.generateEntityKey(id, ownerPersister);
+				return session.getPersistenceContextInternal().isPropertyNull( entityKey, propertyName);
+			}
+			else {
+				return false;
+			}
+		}
+		else {
+			return false;
+		}
 	}
 }

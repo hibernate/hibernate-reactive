@@ -47,18 +47,18 @@ public class ReactiveActionQueue {
 	static {
 		EXECUTABLE_LISTS_MAP = new LinkedHashMap<>( 8 );
 
-//		EXECUTABLE_LISTS_MAP.put(
-//				OrphanRemovalAction.class,
-//				new ListProvider<OrphanRemovalAction>() {
-//					ExecutableList<OrphanRemovalAction> get(ReactiveActionQueue instance) {
-//						return instance.orphanRemovals;
-//					}
-//					ExecutableList<OrphanRemovalAction> init(ReactiveActionQueue instance) {
-//						// OrphanRemovalAction executables never require sorting.
-//						return instance.orphanRemovals = new ExecutableList<>( false );
-//					}
-//				}
-//		);
+		EXECUTABLE_LISTS_MAP.put(
+				ReactiveOrphanRemovalAction.class,
+				new ListProvider<ReactiveOrphanRemovalAction>() {
+					ExecutableList<ReactiveOrphanRemovalAction> get(ReactiveActionQueue instance) {
+						return instance.orphanRemovals;
+					}
+					ExecutableList<ReactiveOrphanRemovalAction> init(ReactiveActionQueue instance) {
+						// OrphanRemovalAction executables never require sorting.
+						return instance.orphanRemovals = new ExecutableList<>( false );
+					}
+				}
+		);
 		EXECUTABLE_LISTS_MAP.put(
 				ReactiveEntityInsertAction.class,
 				new ListProvider<ReactiveEntityInsertAction>() {
@@ -180,7 +180,7 @@ public class ReactiveActionQueue {
 	private ExecutableList<ReactiveCollectionRemoveAction> collectionRemovals;
 	// TODO: The removeOrphan concept is a temporary "hack" for HHH-6484.  This should be removed once action/task
 	// ordering is improved.
-	private ExecutableList<OrphanRemovalAction> orphanRemovals;
+	private ExecutableList<ReactiveOrphanRemovalAction> orphanRemovals;
 	private transient boolean isTransactionCoordinatorShared;
 	private AfterTransactionCompletionProcessQueue afterTransactionProcesses;
 	private BeforeTransactionCompletionProcessQueue beforeTransactionProcesses;
@@ -397,9 +397,9 @@ public class ReactiveActionQueue {
 	 *
 	 * @param action The action representing the orphan removal
 	 */
-	public void addAction(OrphanRemovalAction action) {
-//		addAction( OrphanRemovalAction.class, action );
-		throw new UnsupportedOperationException();
+	public void addAction(ReactiveOrphanRemovalAction action) {
+		addAction( ReactiveOrphanRemovalAction.class, action );
+//		throw new UnsupportedOperationException();
 	}
 
 	/**
