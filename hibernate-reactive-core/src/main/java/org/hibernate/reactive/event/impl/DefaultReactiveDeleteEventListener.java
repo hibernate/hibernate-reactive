@@ -8,7 +8,6 @@ package org.hibernate.reactive.event.impl;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.TransientObjectException;
-import org.hibernate.action.internal.OrphanRemovalAction;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.reactive.engine.impl.ForeignKeys;
 import org.hibernate.engine.internal.Nullability;
@@ -29,6 +28,7 @@ import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
+import org.hibernate.reactive.engine.impl.ReactiveOrphanRemovalAction;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;
@@ -360,7 +360,7 @@ public class DefaultReactiveDeleteEventListener
 						// TODO: The removeOrphan concept is a temporary "hack" for HHH-6484.  This should be removed once action/task
 						// ordering is improved.
 						actionQueue.addAction(
-								new OrphanRemovalAction(
+								new ReactiveOrphanRemovalAction(
 										entityEntry.getId(),
 										deletedState,
 										version,

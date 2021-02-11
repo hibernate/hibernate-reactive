@@ -16,12 +16,14 @@ import org.hibernate.MappingException;
 import org.hibernate.ObjectDeletedException;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
+import org.hibernate.UnresolvableObjectException;
 import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
+import org.hibernate.engine.spi.EffectiveEntityGraph;
 import org.hibernate.engine.spi.ExceptionConverter;
 import org.hibernate.engine.spi.NamedQueryDefinition;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
@@ -183,6 +185,50 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		);
 		return fireLoadNoChecks( event, LoadEventListener.IMMEDIATE_LOAD )
 				.thenApply( v -> event.getResult() );
+	}
+
+	@Override
+	public CompletionStage<Object> reactiveInternalLoad(String entityName, Serializable id,
+													   boolean eager, boolean nullable) {
+		final EffectiveEntityGraph effectiveEntityGraph = getLoadQueryInfluencers().getEffectiveEntityGraph();
+		final GraphSemantic semantic = effectiveEntityGraph.getSemantic();
+		final RootGraphImplementor<?> graph = effectiveEntityGraph.getGraph();
+		boolean clearedEffectiveGraph;
+		if ( semantic == null || graph.appliesTo(entityName) ) {
+			clearedEffectiveGraph = false;
+		}
+		else {
+//				log.debug( "Clearing effective entity graph for subsequent-select" );
+			clearedEffectiveGraph = true;
+			effectiveEntityGraph.clear();
+		}
+
+		final LoadEventListener.LoadType type;
+		if ( nullable ) {
+			type = LoadEventListener.INTERNAL_LOAD_NULLABLE;
+		}
+		else {
+			type = eager
+					? LoadEventListener.INTERNAL_LOAD_EAGER
+					: LoadEventListener.INTERNAL_LOAD_LAZY;
+		}
+
+		threadCheck();
+		LoadEvent event =
+				new LoadEvent( id, entityName, true, this, getReadOnlyFromLoadQueryInfluencers() );
+		return fireLoadNoChecks( event, type )
+				.thenApply( v -> {
+					Object result = event.getResult();
+					if ( !nullable ) {
+						UnresolvableObjectException.throwIfNull( result, id, entityName );
+					}
+					return result;
+				} )
+				.whenComplete( (v, x) -> {
+					if ( clearedEffectiveGraph ) {
+						effectiveEntityGraph.applyGraph( graph, semantic );
+					}
+				} );
 	}
 
 	@Override @SuppressWarnings("unchecked")

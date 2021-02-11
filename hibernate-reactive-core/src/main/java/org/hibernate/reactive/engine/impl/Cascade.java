@@ -11,16 +11,27 @@ import org.hibernate.HibernateException;
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.CascadePoint;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.CascadeStyle;
+import org.hibernate.engine.spi.CollectionEntry;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.Status;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
+import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.type.*;
+import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.type.AssociationType;
+import org.hibernate.type.CollectionType;
+import org.hibernate.type.CompositeType;
+import org.hibernate.type.EntityType;
+import org.hibernate.type.ForeignKeyDirection;
+import org.hibernate.type.Type;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -548,11 +559,13 @@ public final class Cascade<C> {
 			orphans = pc.getQueuedOrphans( entityName );
 		}
 
-		for ( Object orphan : orphans ) {
+		ReactiveSession session = (ReactiveSession) eventSource;
+		stage = stage.thenCompose( v -> CompletionStages.loop( orphans, orphan -> {
 			if ( orphan != null ) {
 				LOG.tracev( "Deleting orphaned entity instance: {0}", entityName );
-				eventSource.delete( entityName, orphan, false, new HashSet<>() );
+				return session.reactiveRemove( orphan, false, new IdentitySet() );
 			}
-		}
+			return voidFuture();
+		} ) );
 	}
 }
