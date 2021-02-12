@@ -46,7 +46,7 @@ dependencies {
     }
 
     // log4j
-    testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.13.3'
+    testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.14.0'
 //    testRuntimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
 
     // Testcontainers
