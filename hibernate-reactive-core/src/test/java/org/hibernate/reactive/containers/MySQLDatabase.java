@@ -12,8 +12,8 @@ class MySQLDatabase implements TestableDatabase {
 	public final static String IMAGE_NAME = "mysql:8.0.23";
 
 	/**
-	 * Holds configuration for the MySQL database contianer. If the build is run with <code>-Pdocker</code> then
-	 * Testcontianers+Docker will be used.
+	 * Holds configuration for the MySQL database container. If the build is run with <code>-Pdocker</code> then
+	 * Testcontainers+Docker will be used.
 	 * <p>
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).

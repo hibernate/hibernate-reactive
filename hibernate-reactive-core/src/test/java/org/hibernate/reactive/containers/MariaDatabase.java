@@ -13,8 +13,8 @@ class MariaDatabase implements TestableDatabase {
 	public final static String IMAGE_NAME = "mariadb:10.5.8";
 
 	/**
-	 * Holds configuration for the MariaDB database contianer. If the build is run with <code>-Pdocker</code> then
-	 * Testcontianers+Docker will be used.
+	 * Holds configuration for the MariaDB database container. If the build is run with <code>-Pdocker</code> then
+	 * Testcontainers+Docker will be used.
 	 * <p>
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).

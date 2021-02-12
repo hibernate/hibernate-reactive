@@ -14,8 +14,8 @@ class DB2Database implements TestableDatabase {
 	public final static String IMAGE_NAME = "ibmcom/db2:11.5.4.0";
 
 	/**
-	 * Holds configuration for the DB2 database contianer. If the build is run with <code>-Pdocker</code> then
-	 * Testcontianers+Docker will be used.
+	 * Holds configuration for the DB2 database container. If the build is run with <code>-Pdocker</code> then
+	 * Testcontainers+Docker will be used.
 	 * <p>
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
