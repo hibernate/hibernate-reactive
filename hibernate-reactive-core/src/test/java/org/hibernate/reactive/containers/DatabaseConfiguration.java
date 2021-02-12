@@ -20,6 +20,7 @@ public class DatabaseConfiguration {
 	public enum DBType {
 		DB2( DB2Database.INSTANCE ),
 		MYSQL( MySQLDatabase.INSTANCE ),
+		MARIA( MariaDatabase.INSTANCE, "mariadb" ),
 		POSTGRESQL( PostgreSQLDatabase.INSTANCE, "POSTGRES", "PG" );
 
 		private final TestableDatabase configuration;

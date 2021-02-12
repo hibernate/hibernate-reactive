@@ -45,7 +45,7 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 	}
 
 	@Entity
-	@Table(name = "Book")
+	@Table(name = "Book2")
 	public static class Book {
 		@Id
 		private Integer id;
@@ -104,7 +104,7 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 	}
 
 	@Entity
-	@Table(name = "Author")
+	@Table(name = "Author2")
 	public static class Author {
 
 		@Id

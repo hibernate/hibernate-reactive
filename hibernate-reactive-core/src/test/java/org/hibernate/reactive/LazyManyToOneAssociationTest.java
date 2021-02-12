@@ -199,7 +199,7 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 	@Table(name = Book.TABLE)
 	@DiscriminatorValue("N")
 	public static class Book {
-		public static final String TABLE = "Book";
+		public static final String TABLE = "Book3";
 
 		@Id
 		private Integer id;
@@ -259,7 +259,7 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 	@Table(name = Author.TABLE)
 	public static class Author {
 
-		public static final String TABLE = "Author";
+		public static final String TABLE = "Author3";
 
 		@Id
 		private Integer id;

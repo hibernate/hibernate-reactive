@@ -52,6 +52,7 @@ dependencies {
     // Testcontainers
     testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
     testImplementation "org.testcontainers:mysql:${testcontainersVersion}"
+    testImplementation "org.testcontainers:mariadb:${testcontainersVersion}"
     testImplementation "org.testcontainers:db2:${testcontainersVersion}"
 }
 
