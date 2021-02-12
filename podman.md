@@ -56,6 +56,33 @@ When asked for the password, type: `hreact`
 
 [psql]:https://www.postgresql.org/docs/9.6/app-psql.html
 
+## MariaDB
+
+Use the following command to start a [MariaDB][mariadb] database with the required credentials
+and schema to run the tests:
+
+[mariadb]:https://mariadb.org/
+
+```
+podman run --rm --name HibernateTestingMariaDB \
+    -e MYSQL_ROOT_PASSWORD=hreact -e MYSQL_DATABASE=hreact -e MYSQL_USER=hreact -e MYSQL_PASSWORD=hreact \
+    -p 3306:3306 mariadb:10.5.8
+```
+
+When the database has started, you can run the tests on MariaDB with:
+
+```
+./gradlew test -Pdb=mariadb
+```
+
+Optionally, you can connect to the database with the [MySQL Command-Line Client][mysql-cli](`mysql`) using:
+
+[mysql-cli]:https://www.mysql.com/
+
+```
+podman exec -it HibernateTestingMariaDB mysql -U hreact -phreact
+```
+
 ## MySQL
 
 Use the following command to start a [MySQL][mysql] database with the required credentials
