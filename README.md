@@ -1,3 +1,4 @@
+
 ![Hibernate logo][]
 
 [![CI Status](https://github.com/hibernate/hibernate-reactive/workflows/Hibernate%20Reactive%20CI/badge.svg)](https://github.com/hibernate/hibernate-reactive/actions?query=workflow%3A%22Hibernate+Reactive+CI%22)
@@ -15,7 +16,8 @@ Hibernate Reactive may be used in any plain Java program, but is
 especially targeted toward usage in reactive environments like 
 [Quarkus][] and [Vert.x][].
 
-Currently [PostgreSQL][], [MySQL][], and [Db2][] are supported.
+Currently [PostgreSQL][], [MySQL][], [MariaDB][], and [Db2][] are 
+supported.
 
 Learn more at <http://hibernate.org/reactive>.
 
@@ -31,6 +33,7 @@ Hibernate Reactive has been tested with:
 - Java 8
 - PostgreSQL 13
 - MySQL 8
+- MariaDB 10
 - Db2 11.5
 - [Hibernate ORM][] 5.4.28.Final
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 4.0.2
@@ -42,6 +45,7 @@ Support for SQL Server is coming soon.
 
 [PostgreSQL]: https://www.postgresql.org
 [MySQL]: https://www.mysql.com
+[MariaDB]: https://mariadb.com
 [DB2]: https://www.ibm.com/analytics/db2
 
 ## Documentation
@@ -116,8 +120,8 @@ with, and then get an instance of the test database running on your
 machine.
 
 By default, the tests will be run against PostgreSQL. To test against 
-MySQL or Db2, you must explicitly specify `-Pdb=mysql` or `-Pdb=db2`, 
-for example:
+MySQL, MariaDB, or Db2, you must explicitly specify `-Pdb=mysql`,
+`-Pdb=maria`, or `-Pdb=db2`, for example:
 
     ./gradlew test -Pdb=db2
     
@@ -133,6 +137,10 @@ don't need to create the test databases manually. Just type:
 Or:
 
     ./gradlew test -Pdocker -Pdb=mysql
+
+Or:
+
+    ./gradlew test -Pdocker -Pdb=maria
 
 Or:
 
