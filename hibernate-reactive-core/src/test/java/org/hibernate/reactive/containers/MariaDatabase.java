@@ -5,29 +5,28 @@
  */
 package org.hibernate.reactive.containers;
 
-import org.testcontainers.containers.PostgreSQLContainer;
 
-class PostgreSQLDatabase implements TestableDatabase {
+class MariaDatabase implements TestableDatabase {
 
-	public static PostgreSQLDatabase INSTANCE = new PostgreSQLDatabase();
+	static MariaDatabase INSTANCE = new MariaDatabase();
 
-	public final static String IMAGE_NAME = "postgres:13.1";
+	public final static String IMAGE_NAME = "mariadb:10.5.8";
 
 	/**
-	 * Holds configuration for the PostgreSQL database container. If the build is run with <code>-Pdocker</code> then
-	 * Testcontainers+Docker will be used.
+	 * Holds configuration for the MariaDB database contianer. If the build is run with <code>-Pdocker</code> then
+	 * Testcontianers+Docker will be used.
 	 * <p>
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>( IMAGE_NAME )
+	public static final VertxMariaContainer maria = new VertxMariaContainer( IMAGE_NAME )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
 			.withReuse( true );
 
 	private String getRegularJdbcUrl() {
-		return "jdbc:postgresql://localhost:5432/" + postgresql.getDatabaseName() + "?loggerLevel=OFF";
+		return "jdbc:mariadb://localhost:3306/" + maria.getDatabaseName();
 	}
 
 	@Override
@@ -36,8 +35,8 @@ class PostgreSQLDatabase implements TestableDatabase {
 		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
-			postgresql.start();
-			address = postgresql.getJdbcUrl();
+			maria.start();
+			address = maria.getJdbcUrl();
 		}
 		else {
 			address = getRegularJdbcUrl();
@@ -51,8 +50,8 @@ class PostgreSQLDatabase implements TestableDatabase {
 		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
-			postgresql.start();
-			address = postgresql.getJdbcUrl();
+			maria.start();
+			address = maria.getJdbcUrl();
 		}
 		else {
 			address = getRegularJdbcUrl();
@@ -60,14 +59,17 @@ class PostgreSQLDatabase implements TestableDatabase {
 		return buildUriWithCredentials( address );
 	}
 
-	private static String buildJdbcUrlWithCredentials(String jdbcUrl) {
-		return jdbcUrl + "&user=" + postgresql.getUsername() + "&password=" + postgresql.getPassword();
+
+
+	static String buildJdbcUrlWithCredentials(String jdbcUrl) {
+		return jdbcUrl + "?user=" + maria.getUsername() + "&password=" + maria.getPassword() + "&serverTimezone=UTC";
 	}
 
 	private static String buildUriWithCredentials(String jdbcUrl) {
-		return "postgresql://" + postgresql.getUsername() + ":" + postgresql.getPassword() + "@" + jdbcUrl.substring(18);
+		return "mariadb://" + maria.getUsername() + ":" + maria.getPassword() + "@" + jdbcUrl.substring(13);
 	}
 
-	private PostgreSQLDatabase() {
+	private MariaDatabase() {
 	}
+
 }

@@ -241,7 +241,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 	@Entity(name =  "Tome")
 	@Table(name = Book.TABLE)
 	public static class Book {
-		public static final String TABLE = "Book";
+		public static final String TABLE = "Book4";
 
 		@Id
 		private Integer id;
@@ -304,7 +304,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 	@Table(name = Author.TABLE)
 	public static class Author {
 
-		public static final String TABLE = "Author";
+		public static final String TABLE = "Author4";
 
 		@Id
 		private Integer id;

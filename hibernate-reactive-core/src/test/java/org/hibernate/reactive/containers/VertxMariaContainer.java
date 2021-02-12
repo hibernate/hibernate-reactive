@@ -5,29 +5,28 @@
  */
 package org.hibernate.reactive.containers;
 
+import io.vertx.core.AsyncResult;
+import io.vertx.mysqlclient.MySQLPool;
+import io.vertx.sqlclient.SqlConnection;
+import org.testcontainers.containers.ContainerLaunchException;
+import org.testcontainers.containers.MariaDBContainer;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.testcontainers.containers.ContainerLaunchException;
-import org.testcontainers.containers.MySQLContainer;
-
-import io.vertx.core.AsyncResult;
-import io.vertx.mysqlclient.MySQLPool;
-import io.vertx.sqlclient.SqlConnection;
-
 /**
- * Normally the {@link MySQLContainer} checks for readiness by attempting to establish a JDBC connection
+ * Normally the {@link MariaDBContainer} checks for readiness by attempting to establish a JDBC connection
  * and seeing if it can run a test query. We need to override this default behavior so that we can
  * keep all JDBC drivers off of our test classpath.
  * This is not an issue for other containers (PostgreSQL and DB2) because they use container log scraping
  * by default.
  */
-class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
+class VertxMariaContainer extends MariaDBContainer<VertxMariaContainer> {
 
-	public VertxMySqlContainer(String dockerImageName) {
+	public VertxMariaContainer(String dockerImageName) {
 		super( dockerImageName );
 	}
 
@@ -73,7 +72,7 @@ class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
     }
 
     public String getVertxUrl() {
-    	return MySQLDatabase.buildJdbcUrlWithCredentials( getJdbcUrl().replace( "jdbc:", "" ) );
+    	return MariaDatabase.buildJdbcUrlWithCredentials( getJdbcUrl().replace( "jdbc:", "" ) );
     }
 
     public SqlConnection createVertxConnection() {

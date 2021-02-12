@@ -28,12 +28,12 @@ public class DatabaseSelectionRuleTests {
 
 	public static class SkipMultipleDBsTest {
 		@Rule
-		public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( DBType.POSTGRESQL, DBType.MYSQL );
+		public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( DBType.POSTGRESQL, DBType.MYSQL, DBType.MARIA );
 
 		@Test
 		public void shouldSkipPostgresAndMySQL() {
 			Assertions.assertThat( DatabaseConfiguration.dbType() )
-					.isNotIn( DBType.POSTGRESQL, DBType.MYSQL );
+					.isNotIn( DBType.POSTGRESQL, DBType.MYSQL, DBType.MARIA );
 		}
 	}
 
@@ -49,11 +49,11 @@ public class DatabaseSelectionRuleTests {
 
 	public static class RunOnlyOnDMultipleDBsTest {
 		@Rule
-		public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( DBType.POSTGRESQL, DBType.MYSQL );
+		public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( DBType.POSTGRESQL, DBType.MYSQL, DBType.MARIA );
 
 		@Test
 		public void shouldOnlyRunForPostgresOrMySql() {
-			Assertions.assertThat( DatabaseConfiguration.dbType() ).isIn( DBType.POSTGRESQL, DBType.MYSQL );
+			Assertions.assertThat( DatabaseConfiguration.dbType() ).isIn( DBType.POSTGRESQL, DBType.MYSQL, DBType.MARIA );
 		}
 	}
 }

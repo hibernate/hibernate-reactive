@@ -101,7 +101,7 @@ public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 	@DiscriminatorValue("N")
 	//@Inheritance(strategy = InheritanceType.JOINED)
 	public static class Book {
-		public static final String TABLE = "Book";
+		public static final String TABLE = "Bookz";
 
 		@Id
 		private Integer id;
@@ -152,7 +152,7 @@ public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 	@Table(name = Author.TABLE)
 	public static class Author {
 
-		public static final String TABLE = "Author";
+		public static final String TABLE = "Authorz";
 
 		@Id
 		private Integer id;
