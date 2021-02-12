@@ -140,7 +140,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 */
 	protected URI jdbcUrl(Map<?,?> configurationValues) {
 		String url = ConfigurationHelper.getString( Settings.URL, configurationValues );
-		messageLogger( DefaultSqlClientPool.class).infof( "HRX000011: SQL Client URL [%s]", url );
+		messageLogger( DefaultSqlClientPool.class ).infof( "HRX000011: SQL Client URL [%s]", url );
 		return parse( url );
 	}
 
@@ -157,9 +157,9 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 */
 	private Driver findDriver(URI uri, ServiceConfigurationError originalError) {
 		String scheme = uri.getScheme(); // "postgresql", "mysql", "db2", etc
-		for (Driver d : ServiceLoader.load( Driver.class )) {
+		for ( Driver d : ServiceLoader.load( Driver.class ) ) {
 			String driverName = d.getClass().getCanonicalName();
-			messageLogger( DefaultSqlClientPool.class).infof( "HRX000013: Detected driver [%s]", driverName );
+			messageLogger( DefaultSqlClientPool.class ).infof( "HRX000013: Detected driver [%s]", driverName );
 			switch (driverName) {
 				case "io.vertx.db2client.spi.DB2Driver":
 					if ( "db2".equalsIgnoreCase( scheme ) ) {
@@ -167,6 +167,9 @@ public class DefaultSqlClientPool extends SqlClientPool
 					}
 				case "io.vertx.mysqlclient.spi.MySQLDriver":
 					if ( "mysql".equalsIgnoreCase( scheme ) ) {
+						return d;
+					}
+					if ( "mariadb".equalsIgnoreCase( scheme ) ) {
 						return d;
 					}
 				case "io.vertx.pgclient.spi.PgDriver":

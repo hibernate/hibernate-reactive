@@ -186,7 +186,7 @@ public class ReferenceTest extends BaseReactiveTest {
 	}
 
 	@Entity(name =  "Tome")
-	@Table(name = "Book")
+	@Table(name = "TBook")
 	public static class Book {
 
 		@Id @GeneratedValue
@@ -248,7 +248,7 @@ public class ReferenceTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "Writer")
-	@Table(name = "Author")
+	@Table(name = "TAuthor")
 	public static class Author {
 
 		@Id @GeneratedValue

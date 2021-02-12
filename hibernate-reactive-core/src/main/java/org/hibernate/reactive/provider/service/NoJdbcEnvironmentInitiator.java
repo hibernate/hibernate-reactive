@@ -9,6 +9,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
 import org.hibernate.dialect.PostgreSQL10Dialect;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
@@ -118,6 +119,9 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 
 		if ( url.startsWith("mysql:") ) {
 			return MySQL8Dialect.class;
+		}
+		else if ( url.startsWith("mariadb:") ) {
+			return MariaDB103Dialect.class;
 		}
 		else if ( url.startsWith("postgresql:") || url.startsWith("postgres:") ) {
 			return PostgreSQL10Dialect.class;
