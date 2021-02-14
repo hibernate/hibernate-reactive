@@ -88,6 +88,42 @@ public class ReactiveEntityLoader extends ReactiveAbstractEntityLoader {
 		}
 	}
 
+	/**
+	 * A (non-primary) unique key loader
+	 */
+	public ReactiveEntityLoader(
+			OuterJoinLoadable persister,
+			String[] uniqueKey,
+			Type uniqueKeyType,
+			int batchSize,
+			LockMode lockMode,
+			SessionFactoryImplementor factory,
+			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
+		this(
+				persister,
+				uniqueKeyType,
+				factory,
+				loadQueryInfluencers,
+				new EntityJoinWalker(
+						persister,
+						uniqueKey,
+						batchSize,
+						lockMode,
+						factory,
+						loadQueryInfluencers
+				)
+		);
+
+//		batchLoader = batchSize > 1;
+
+		if ( LOG.isDebugEnabled() ) {
+			LOG.debugf( "Static select for entity %s [%s]: %s",
+					entityName,
+					lockMode,
+					getSQLString() );
+		}
+	}
+
 	private ReactiveEntityLoader(
 			OuterJoinLoadable persister,
 			Type uniqueKeyType,

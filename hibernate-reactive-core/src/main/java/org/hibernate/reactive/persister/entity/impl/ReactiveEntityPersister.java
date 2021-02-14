@@ -103,8 +103,16 @@ public interface ReactiveEntityPersister extends EntityPersister {
 										 SharedSessionContractImplementor session,
 										 Boolean readOnly);
 
+	CompletionStage<Object> reactiveLoadByUniqueKey(
+			String propertyName,
+			Object uniqueKey,
+			SharedSessionContractImplementor session);
+
 	ReactiveUniqueEntityLoader getAppropriateLoader(LockOptions lockOptions,
 													SharedSessionContractImplementor session);
+
+	ReactiveUniqueEntityLoader getAppropriateUniqueKeyLoader(String propertyName,
+															 SharedSessionContractImplementor session);
 
 	CompletionStage<Object> reactiveGetCurrentVersion(Serializable id,
 													  SharedSessionContractImplementor session);

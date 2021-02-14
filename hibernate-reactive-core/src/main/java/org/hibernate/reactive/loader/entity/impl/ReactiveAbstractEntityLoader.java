@@ -199,6 +199,11 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 	}
 
 	@Override
+	public CompletionStage<Object> load(Object id, SharedSessionContractImplementor session, LockOptions lockOptions) {
+		return load( session, id, null, null, lockOptions, null );
+	}
+
+	@Override
 	public String preprocessSQL(String sql,
 								QueryParameters queryParameters,
 								SessionFactoryImplementor factory,

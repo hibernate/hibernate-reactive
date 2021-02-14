@@ -218,6 +218,11 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 	}
 
 	@Override
+	public CompletionStage<Object> load(Object id, SharedSessionContractImplementor session, LockOptions lockOptions) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public CompletionStage<Object> load(Serializable id, Object optionalObject,
 										SharedSessionContractImplementor session,
 										LockOptions lockOptions, Boolean readOnly) {

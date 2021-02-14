@@ -32,6 +32,7 @@ import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
@@ -40,6 +41,7 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
+import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
 import org.hibernate.persister.entity.Lockable;
@@ -47,6 +49,7 @@ import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLoaderBuilder;
+import org.hibernate.reactive.loader.entity.impl.ReactiveEntityLoader;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
@@ -59,6 +62,7 @@ import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.tuple.NonIdentifierAttribute;
 import org.hibernate.tuple.ValueGeneration;
 import org.hibernate.type.ComponentType;
+import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
 import org.hibernate.type.VersionType;
 
@@ -985,6 +989,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return reactiveLoad( id, optionalObject, lockOptions, session, null );
 	}
 
+	@Override
 	default CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions,
 												 SharedSessionContractImplementor session, Boolean readOnly) {
 		if ( log.isTraceEnabled() ) {
@@ -993,6 +998,14 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		return getAppropriateLoader( lockOptions, session )
 				.load( id, optionalObject, session, lockOptions, readOnly );
+	}
+
+	@Override
+	default CompletionStage<Object> reactiveLoadByUniqueKey(
+			String propertyName,
+			Object uniqueKey,
+			SharedSessionContractImplementor session) {
+		return getAppropriateUniqueKeyLoader( propertyName, session ).load( uniqueKey, session, LockOptions.NONE );
 	}
 
 	@Override
@@ -1264,6 +1277,22 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		return null;
+	}
+
+	default UniqueEntityLoader createReactiveUniqueKeyLoader(Type uniqueKeyType, String[] columns, LoadQueryInfluencers loadQueryInfluencers) {
+		if ( uniqueKeyType.isEntityType() ) {
+			String className = ( (EntityType) uniqueKeyType ).getAssociatedEntityName();
+			uniqueKeyType = getFactory().getMetamodel().entityPersister( className ).getIdentifierType();
+		}
+		return new ReactiveEntityLoader(
+				this,
+				columns,
+				uniqueKeyType,
+				1,
+				LockMode.NONE,
+				getFactory(),
+				loadQueryInfluencers
+		);
 	}
 
 	boolean initializeLazyProperty(String fieldName,

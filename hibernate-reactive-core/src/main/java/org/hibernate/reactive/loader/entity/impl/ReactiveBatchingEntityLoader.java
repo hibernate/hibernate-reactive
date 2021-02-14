@@ -68,6 +68,11 @@ public abstract class ReactiveBatchingEntityLoader implements ReactiveUniqueEnti
 		return load( id, optionalObject, session, LockOptions.NONE, readOnly );
 	}
 
+	@Override
+	public CompletionStage<Object> load(Object id, SharedSessionContractImplementor session, LockOptions lockOptions) {
+		throw new UnsupportedOperationException();
+	}
+
 	protected QueryParameters buildQueryParameters(
 			Serializable id,
 			Serializable[] ids,

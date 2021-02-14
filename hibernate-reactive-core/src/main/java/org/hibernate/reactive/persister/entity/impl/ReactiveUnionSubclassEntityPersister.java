@@ -23,6 +23,7 @@ import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
 import org.hibernate.reactive.loader.entity.impl.ReactiveBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.loader.entity.impl.ReactiveCascadeEntityLoader;
+import org.hibernate.type.Type;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
@@ -143,6 +144,11 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
+	protected UniqueEntityLoader createUniqueKeyLoader(Type uniqueKeyType, String[] columns, LoadQueryInfluencers loadQueryInfluencers) {
+		return createReactiveUniqueKeyLoader(uniqueKeyType, columns, loadQueryInfluencers);
+	}
+
+	@Override
 	public Serializable insert(
 			Object[] fields, boolean[] notNull, String sql, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
@@ -248,6 +254,10 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	@Override
 	public String getSqlUpdateGeneratedValuesSelectString() {
 		return sqlUpdateGeneratedValuesSelectString;
+	}
+
+	public ReactiveUniqueEntityLoader getAppropriateUniqueKeyLoader(String propertyName, SharedSessionContractImplementor session) {
+		return (ReactiveUniqueEntityLoader) super.getAppropriateUniqueKeyLoader(propertyName, session);
 	}
 
 	@Override
