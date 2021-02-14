@@ -31,4 +31,7 @@ public interface ReactiveUniqueEntityLoader extends UniqueEntityLoader {
 
 	@Override
 	CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, LockOptions lockOptions, Boolean readOnly);
+
+	@Override
+	CompletionStage<Object> load(Object id, SharedSessionContractImplementor session, LockOptions lockOptions);
 }
