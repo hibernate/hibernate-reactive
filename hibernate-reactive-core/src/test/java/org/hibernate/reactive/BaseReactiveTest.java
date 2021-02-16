@@ -141,9 +141,14 @@ public abstract class BaseReactiveTest {
 
 		final Async async = context.async();
 		Handler<AsyncResult<org.hibernate.SessionFactory>> result = r -> {
-			sessionFactory = r.result();
-			poolProvider = registry.getService( ReactiveConnectionPool.class );
-			async.complete();
+			if ( r.failed() ) {
+				context.fail( r.cause() );
+			}
+			else {
+				sessionFactory = r.result();
+				poolProvider = registry.getService( ReactiveConnectionPool.class );
+				async.complete();
+			}
 		};
 
 		vertxContextRule.vertx().executeBlocking( sfPromise, result );
