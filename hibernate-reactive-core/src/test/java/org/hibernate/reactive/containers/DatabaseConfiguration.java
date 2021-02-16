@@ -18,18 +18,20 @@ public class DatabaseConfiguration {
 	public static final boolean USE_DOCKER = Boolean.getBoolean("docker");
 
 	public enum DBType {
-		DB2( DB2Database.INSTANCE ),
-		MYSQL( MySQLDatabase.INSTANCE ),
-		MARIA( MariaDatabase.INSTANCE, "mariadb" ),
-		POSTGRESQL( PostgreSQLDatabase.INSTANCE, "POSTGRES", "PG" );
+		DB2( DB2Database.INSTANCE, 50000 ),
+		MYSQL( MySQLDatabase.INSTANCE, 3306 ),
+		MARIA( MariaDatabase.INSTANCE, 3306, "mariadb" ),
+		POSTGRESQL( PostgreSQLDatabase.INSTANCE, 5432, "POSTGRES", "PG" );
 
 		private final TestableDatabase configuration;
+		private final int defaultPort;
 
 		// A list of alternative names that can be used to select the db
 		private final String[] aliases;
 
-		DBType(TestableDatabase configuration, String... aliases) {
+		DBType(TestableDatabase configuration, int defaultPort, String... aliases) {
 			this.configuration = configuration;
+			this.defaultPort = defaultPort;
 			this.aliases = aliases;
 		}
 
@@ -57,6 +59,10 @@ public class DatabaseConfiguration {
 			}
 			throw new IllegalArgumentException( "Unknown DB type '" + dbName + "' specified. Allowed values are: " + Arrays
 					.toString( DBType.values() ) );
+		}
+
+		public int getDefaultPort() {
+			return defaultPort;
 		}
 	}
 
