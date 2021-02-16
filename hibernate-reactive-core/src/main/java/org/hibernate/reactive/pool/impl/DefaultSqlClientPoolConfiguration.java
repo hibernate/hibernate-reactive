@@ -123,14 +123,9 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
             }
         }
 
-        int port = uri.getPort();
-        if (port==-1) {
-            switch (scheme) {
-                case "postgresql": case "postgres": port = 5432; break;
-                case "mysql": port = 3306; break;
-                case "db2": port = 50000; break;
-            }
-        }
+        int port = uri.getPort() == -1
+                ? defaultPort( scheme )
+                : uri.getPort();
 
         if ( username == null ) {
             throw new HibernateError( "database username not specified (set the property 'javax.persistence.jdbc.user', or include it as a parameter in the connection URL)" );
@@ -173,6 +168,21 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
         }
 
         return connectOptions;
+    }
+
+    private int defaultPort(String scheme) {
+        switch ( scheme ) {
+            case "postgresql":
+            case "postgres":
+                return 5432;
+            case "mariadb":
+            case "mysql":
+                return 3306;
+            case "db2":
+                return 50000;
+            default:
+                throw new IllegalArgumentException( "Unknown default port for scheme: " + scheme );
+        }
     }
 
 }
