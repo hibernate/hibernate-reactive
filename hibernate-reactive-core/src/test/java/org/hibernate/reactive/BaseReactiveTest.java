@@ -6,28 +6,24 @@
 package org.hibernate.reactive;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.reactive.common.AutoCloseable;
-import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
+import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.vertx.VertxInstance;
@@ -130,28 +126,23 @@ public abstract class BaseReactiveTest {
 		StandardServiceRegistry registry = builder.build();
 		configureServices( registry );
 
-		// The schema generation is a blocking operation and causes exception
-		// when running in a Vert.x event loop thread.
-		// Vert.x can deal with blocking code using `executeBlocking` or more
-		// more in general with Work threads.
-		Handler<Promise<org.hibernate.SessionFactory>> sfPromise = p -> {
-			SessionFactory factory = configuration.buildSessionFactory( registry );
-			p.complete( factory );
-		};
-
-		final Async async = context.async();
-		Handler<AsyncResult<org.hibernate.SessionFactory>> result = r -> {
-			if ( r.failed() ) {
-				context.fail( r.cause() );
-			}
-			else {
-				sessionFactory = r.result();
-				poolProvider = registry.getService( ReactiveConnectionPool.class );
-				async.complete();
-			}
-		};
-
-		vertxContextRule.vertx().executeBlocking( sfPromise, result );
+		// schema generation is a blocking operation and so it causes an
+		// exception when run on the Vert.x event loop. So call it using
+		// Vertx.executeBlocking()
+		Async async = context.async();
+		vertxContextRule.vertx().<SessionFactory>executeBlocking(
+				p -> p.complete( configuration.buildSessionFactory( registry ) ),
+				r -> {
+					if ( r.failed() ) {
+						context.fail( r.cause() );
+					}
+					else {
+						sessionFactory = r.result();
+						poolProvider = registry.getService( ReactiveConnectionPool.class );
+						async.complete();
+					}
+				}
+		);
 	}
 
 	protected void addServices(StandardServiceRegistryBuilder builder) {}
