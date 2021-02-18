@@ -5,16 +5,16 @@
  */
 package org.hibernate.reactive;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
 import javax.persistence.ElementCollection;
+import javax.persistence.Embeddable;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
-import javax.persistence.Table;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -25,24 +25,29 @@ import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
-import org.assertj.core.api.Assertions;
 
 /**
- * Tests @{@link ElementCollection} on a {@link List} of basic types.
+ * Tests @{@link ElementCollection} on a {@link java.util.Set} of basic types.
  * <p>
  * Example:
  * {@code
  *     class Person {
  *         @ElementCollection
- *         List<String> phones;
+ *         List<Phone> phones;
+ *     }
+ *
+ *
+ *     @Embeddable
+ *     public static class Phone {
+ *     ...
  *     }
  * }
- * </p>
+ * </p>,
  *
+ * @see EagerElementCollectionForBasicTypeListTest
  * @see EagerElementCollectionForBasicTypeSetTest
- * @see EagerElementCollectionForEmbeddableTypeListTest
  */
-public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest {
+public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiveTest {
 
 	private Person thePerson;
 
@@ -54,18 +59,26 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 
 	@Before
 	public void populateDb(TestContext context) {
-		List<String> phones = Arrays.asList( "999-999-9999", "111-111-1111", "123-456-7890" );
-		thePerson = new Person( 7242000, "Claude", phones );
+		List<Phone> phones = new ArrayList<>();
+		phones.add( new Phone( "999-999-9999" ) );
+		phones.add( new Phone( "111-111-1111" ) );
+		thePerson = new Person( 777777, "Claude", phones );
 
-		Mutiny.Session session = openMutinySession();
-		test( context, session.persist( thePerson ).call( session::flush ) );
+		Stage.Session session = openSession();
+
+		test( context, session.persist( thePerson )
+				.thenCompose( v -> session.flush() )
+		);
 	}
 
 	@Test
 	public void persistWithMutinyAPI(TestContext context) {
 		Mutiny.Session session = openMutinySession();
 
-		Person johnny = new Person( 999, "Johnny English", Arrays.asList( "888", "555" ) );
+		List<Phone> phones = new ArrayList<>();
+		phones.add( new Phone( "888" ) );
+		phones.add( new Phone( "555" ) );
+		Person johnny = new Person( 999, "Johnny English", phones );
 
 		test (
 				context,
@@ -77,24 +90,42 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 	}
 
 	@Test
-	public void findEntityWithElementCollectionWithStageAPI(TestContext context) {
+	public void findEntityWithElementCollectionStageAPI(TestContext context) {
 		Stage.Session session = openSession();
 
-		test (
-				context,
-				session.find( Person.class, thePerson.getId() )
-						.thenAccept( found -> assertPhones( context, found, "999-999-9999", "111-111-1111", "123-456-7890" ) )
+		test ( context, session
+				.find( Person.class, thePerson.getId() )
+				.thenAccept( foundPerson -> assertPhones( context, foundPerson,"999-999-9999", "111-111-1111" ) )
 		);
 	}
 
 	@Test
-	public void findEntityWithElementCollectionWithMutinyAPI(TestContext context) {
+	public void findEntityWithElementCollectionMutinyAPI(TestContext context) {
 		Mutiny.Session session = openMutinySession();
 
-		test (
+		test ( context, session
+				.find( Person.class, thePerson.getId() )
+				.invoke( foundPerson -> assertPhones( context, foundPerson,"999-999-9999", "111-111-1111" ) )
+		);
+	}
+
+	@Test
+	public void addOneElementWithStageAPI(TestContext context) {
+		Stage.Session session = openSession();
+
+		test(
 				context,
 				session.find( Person.class, thePerson.getId() )
-						.invoke( found -> assertPhones( context, found, "999-999-9999", "111-111-1111", "123-456-7890" ) )
+						// Remove one element from the collection
+						.thenAccept( foundPerson -> foundPerson.getPhones().add(new Phone("000" )) )
+						.thenCompose( v -> session.flush() )
+						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
+						.thenAccept( updatedPerson ->
+											 assertPhones(
+													 context,
+													 updatedPerson,
+													 "999-999-9999", "111-111-1111", "000"
+											 ) )
 		);
 	}
 
@@ -102,14 +133,19 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 	public void persistCollectionWithDuplicatesWithStageAPI(TestContext context) {
 		Stage.Session session = openSession();
 
-		Person thomas = new Person( 7, "Thomas Reaper", Arrays.asList( "111", "111", "111", "111" ) );
+		List<Phone> phones = new ArrayList<>();
+		phones.add( new Phone( "111" ) );
+		phones.add( new Phone( "111" ) );
+		phones.add( new Phone( "111" ) );
+		phones.add( new Phone( "111" ) );
+		Person thomas = new Person( 7, "Thomas Reaper", phones );
 
 		test(
 				context,
 				session.persist( thomas )
 						.thenCompose( v -> session.flush() )
 						.thenCompose( v -> openSession().find( Person.class, thomas.getId() ) )
-						.thenAccept( found -> assertPhones( context, found, "111", "111", "111", "111" ) )
+						.thenAccept( found -> assertPhones( context, found, "111", "111", "111", "111") )
 		);
 	}
 
@@ -117,7 +153,12 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 	public void persistCollectionWithDuplicatesWithMutinyAPI(TestContext context) {
 		Mutiny.Session session = openMutinySession();
 
-		Person thomas = new Person( 567, "Thomas Reaper", Arrays.asList( "111", "111", "111", "111" ) );
+		List<Phone> phones = new ArrayList<>();
+		phones.add( new Phone( "111" ) );
+		phones.add( new Phone( "111" ) );
+		phones.add( new Phone( "111" ) );
+		phones.add( new Phone( "111" ) );
+		Person thomas = new Person( 567, "Thomas Reaper", phones );
 
 		test(
 				context,
@@ -132,7 +173,13 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 	public void updateCollectionWithDuplicatesWithStageAPI(TestContext context) {
 		Stage.Session session = openSession();
 
-		Person thomas = new Person( 47, "Thomas Reaper", Arrays.asList( "000", "000", "000", "000" ) );
+		List<Phone> phones = new ArrayList<>();
+		phones.add( new Phone( "000" ) );
+		phones.add( new Phone( "000" ) );
+		phones.add( new Phone( "000" ) );
+		phones.add( new Phone( "000" ) );
+
+		Person thomas = new Person( 47, "Thomas Reaper", phones );
 
 		test(
 				context,
@@ -142,13 +189,13 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 							Stage.Session newSession = openSession();
 							return newSession.find( Person.class, thomas.getId() )
 									// Change one of the element in the collection
-								.thenAccept( found -> {
-									found.getPhones().set( 1, "47" );
-									found.getPhones().set( 3, "47" );
-								} )
-								.thenCompose( ignore -> newSession.flush() )
-								.thenCompose( ignore -> openSession().find( Person.class, thomas.getId() ) )
-								.thenAccept( found -> assertPhones( context, found, "000", "47", "000", "47" ) );
+									.thenAccept( found -> {
+										found.getPhones().set( 1, new Phone( "47" ) );
+										found.getPhones().set( 3,  new Phone( "47" ) );
+									} )
+									.thenCompose( ignore -> newSession.flush() )
+									.thenCompose( ignore -> openSession().find( Person.class, thomas.getId() ) )
+									.thenAccept( found -> assertPhones( context, found, "000", "47", "000", "47" ) );
 						} )
 		);
 	}
@@ -157,7 +204,13 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 	public void updateCollectionWithDuplicatesWithMutinyAPI(TestContext context) {
 		Mutiny.Session session = openMutinySession();
 
-		Person thomas = new Person( 47, "Thomas Reaper", Arrays.asList( "000", "000", "000", "000" ) );
+		List<Phone> phones = new ArrayList<>();
+		phones.add( new Phone( "000" ) );
+		phones.add( new Phone( "000" ) );
+		phones.add( new Phone( "000" ) );
+		phones.add( new Phone( "000" ) );
+
+		Person thomas = new Person( 47, "Thomas Reaper", phones );
 
 		test(
 				context,
@@ -168,8 +221,8 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 							return newSession.find( Person.class, thomas.getId() )
 									// Change a couple of the elements in the collection
 									.invoke( found -> {
-										found.getPhones().set( 1, "47" );
-										found.getPhones().set( 3, "47" );
+										found.getPhones().set( 1, new Phone( "47" ) );
+										found.getPhones().set( 3,  new Phone( "47" ) );
 									} )
 									.call( newSession::flush )
 									.chain( () -> openMutinySession().find( Person.class, thomas.getId() ) )
@@ -182,7 +235,13 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 	public void deleteElementsFromCollectionWithDuplicatesWithStageAPI(TestContext context) {
 		Stage.Session session = openSession();
 
-		Person thomas = new Person( 47, "Thomas Reaper", Arrays.asList( "000", "000", "000", "000" ) );
+		List<Phone> phones = new ArrayList<>();
+		phones.add( new Phone( "000" ) );
+		phones.add( new Phone( "000" ) );
+		phones.add( new Phone( "000" ) );
+		phones.add( new Phone( "000" ) );
+
+		Person thomas = new Person( 47, "Thomas Reaper", phones );
 
 		test(
 				context,
@@ -208,7 +267,13 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 	public void deleteElementsFromCollectionWithDuplicatesWithMutinyAPI(TestContext context) {
 		Mutiny.Session session = openMutinySession();
 
-		Person thomas = new Person( 47, "Thomas Reaper", Arrays.asList( "000", "000", "000", "000" ) );
+		List<Phone> phones = new ArrayList<>();
+		phones.add( new Phone( "000" ) );
+		phones.add( new Phone( "000" ) );
+		phones.add( new Phone( "000" ) );
+		phones.add( new Phone( "000" ) );
+
+		Person thomas = new Person( 47, "Thomas Reaper", phones );
 
 		test(
 				context,
@@ -231,41 +296,22 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 	}
 
 	@Test
-	public void addOneElementWithStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
-						// Remove one element from the collection
-						.thenAccept( foundPerson -> foundPerson.getPhones().add( "000" ) )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( updatedPerson ->
-											 assertPhones(
-													 context,
-													 updatedPerson,
-													 "999-999-9999", "111-111-1111", "123-456-7890", "000"
-											 ) )
-		);
-	}
-
-	@Test
 	public void addOneElementWithMutinyAPI(TestContext context) {
 		Mutiny.Session session = openMutinySession();
 
 		test(
 				context,
 				session.find( Person.class, thePerson.getId() )
-						// Remove one element from the collection
-						.invoke( foundPerson -> foundPerson.getPhones().add( "000" ) )
+						// add one element to the collection
+						.invoke( foundPerson -> foundPerson.getPhones().add( new Phone("000" ) ) )
 						.call( session::flush )
+						// Check new person collection
 						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
 						.invoke( updatedPerson ->
 										 assertPhones(
 												 context,
 												 updatedPerson,
-												 "999-999-9999", "111-111-1111", "123-456-7890", "000"
+												 "999-999-9999", "111-111-1111", "000"
 										 ) )
 		);
 	}
@@ -278,10 +324,12 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 				context,
 				session.find( Person.class, thePerson.getId() )
 						// Remove one element from the collection
-						.thenAccept( foundPerson -> foundPerson.getPhones().remove( "111-111-1111" ) )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( updatedPerson -> assertPhones( context, updatedPerson, "999-999-9999", "123-456-7890" ) )
+						.thenAccept( foundPerson -> foundPerson.getPhones().remove( new Phone( "999-999-9999" ) ))
+						.thenCompose( v -> session.flush())
+						.thenCompose( v -> openSession()
+								.find( Person.class, thePerson.getId() )
+								.thenAccept( foundPerson -> assertPhones( context, foundPerson, "111-111-1111" ) )
+						)
 		);
 	}
 
@@ -293,45 +341,40 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 				context,
 				session.find( Person.class, thePerson.getId() )
 						// Remove one element from the collection
-						.invoke( foundPerson -> foundPerson.getPhones().remove( "111-111-1111" ) )
+						.invoke( foundPerson -> foundPerson.getPhones().remove( new Phone( "999-999-9999" ) ))
 						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( updatedPerson -> assertPhones( context, updatedPerson, "999-999-9999", "123-456-7890" ) )
+						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() )
+								.invoke( foundPerson -> assertPhones( context, foundPerson, "111-111-1111" ) ) )
 		);
 	}
 
 	@Test
-	public void clearCollectionOfElementsWithStageAPI(TestContext context){
+	public void clearCollectionElementsStageAPI(TestContext context) {
 		Stage.Session session = openSession();
 
 		test(
 				context,
 				session.find( Person.class, thePerson.getId() )
-						.thenAccept( foundPerson -> {
-							context.assertFalse( foundPerson.getPhones().isEmpty() );
-							foundPerson.getPhones().clear();
-						} )
+						// clear collection
+						.thenAccept( foundPerson -> foundPerson.getPhones().clear() )
 						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() )
-						.thenAccept( changedPerson -> context.assertTrue( changedPerson.getPhones().isEmpty() ) )
-				)
+						.thenCompose( s -> openSession().find( Person.class, thePerson.getId() )
+								.thenAccept( changedPerson -> assertPhones( context, changedPerson))) //context.assertTrue( changedPerson.getPhones().isEmpty() ) ) )
 		);
 	}
 
 	@Test
-	public void clearCollectionOfElementsWithMutinyAPI(TestContext context) {
+	public void clearCollectionElementsMutinyAPI(TestContext context) {
 		Mutiny.Session session = openMutinySession();
 
 		test(
 				context,
 				session.find( Person.class, thePerson.getId() )
-						.invoke( foundPerson -> {
-							context.assertFalse( foundPerson.getPhones().isEmpty() );
-							foundPerson.getPhones().clear();
-						} )
+						// clear collection
+						.invoke( foundPerson -> foundPerson.getPhones().clear() )
 						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( changedPerson -> context.assertTrue( changedPerson.getPhones().isEmpty() ) )
+						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() )
+								.invoke( changedPerson -> context.assertTrue( changedPerson.getPhones().isEmpty() ) ) )
 		);
 	}
 
@@ -343,13 +386,13 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 				context,
 				session.find( Person.class, thePerson.getId())
 						.thenAccept( foundPerson -> {
-										 context.assertNotNull( foundPerson );
-										 foundPerson.getPhones().remove( "111-111-1111" );
-										 foundPerson.getPhones().add( "000" );
-									 } )
+							context.assertNotNull( foundPerson );
+							foundPerson.getPhones().remove( new Phone("111-111-1111") );
+							foundPerson.getPhones().add( new Phone("000") );
+						} )
 						.thenCompose( v -> session.flush() )
 						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "999-999-9999", "123-456-7890", "000" ) )
+						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "999-999-9999", "000" ) )
 		);
 	}
 
@@ -362,53 +405,83 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 				session.find( Person.class, thePerson.getId())
 						.invoke( foundPerson -> {
 							context.assertNotNull( foundPerson );
-							foundPerson.getPhones().remove( "111-111-1111" );
-							foundPerson.getPhones().add( "000" );
+							foundPerson.getPhones().remove(  new Phone("111-111-1111") );
+							foundPerson.getPhones().add( new Phone("000") );
 						} )
 						.call( session::flush )
 						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( person -> assertPhones( context, person, "999-999-9999", "123-456-7890", "000" ) )
+						.invoke( person -> assertPhones( context, person, "999-999-9999", "000" ) )
 		);
 	}
 
 	@Test
-	public void setNewElementCollectionWithStageAPI(TestContext context){
+	public void replaceSecondCollectionElementStageAPI(TestContext context){
 		Stage.Session session = openSession();
 
 		test (
 				context,
 				session.find( Person.class, thePerson.getId())
 						.thenAccept( foundPerson -> {
-							context.assertNotNull( foundPerson );
-							context.assertFalse( foundPerson.getPhones().isEmpty() );
-							foundPerson.setPhones( Arrays.asList( "555" ) );
+							// remove existing phone and add new phone
+							foundPerson.getPhones().remove( new Phone( "999-999-9999" ) );
+							foundPerson.getPhones().add( new Phone( "000-000-0000" ) );
 						} )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId()) )
-						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "555" ) )
+						.thenCompose(v -> session.flush())
+						.thenCompose( s -> openSession().find( Person.class, thePerson.getId() ) )
+						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "111-111-1111", "000-000-0000" ) )
 		);
 	}
 
 	@Test
-	public void setNewElementCollectionWithMutinyAPI(TestContext context) {
+	public void replaceSecondCollectionElementMutinyAPI(TestContext context){
 		Mutiny.Session session = openMutinySession();
 
-		test(
+		test (
 				context,
-				session.find( Person.class, thePerson.getId() )
+				session.find( Person.class, thePerson.getId())
 						.invoke( foundPerson -> {
-							context.assertNotNull( foundPerson );
-							context.assertFalse( foundPerson.getPhones().isEmpty() );
-							foundPerson.setPhones( Arrays.asList( "555" ) );
+							// remove existing phone and add new phone
+							foundPerson.getPhones().remove( new Phone( "999-999-9999" ) );
+							foundPerson.getPhones().add( new Phone( "000-000-0000" ) );
 						} )
 						.call( session::flush )
 						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( changedPerson -> assertPhones( context, changedPerson, "555" ) )
+						.invoke( changedPerson -> assertPhones( context, changedPerson, "111-111-1111", "000-000-0000" ) )
 		);
 	}
 
 	@Test
-	public void removePersonWithStageAPI(TestContext context) {
+	public void setNewElementCollectionStageAPI(TestContext context) {
+		Stage.Session session = openSession();
+
+		test (
+				context,
+				session.find( Person.class, thePerson.getId())
+						// replace phones with list of 1 phone
+						.thenAccept( foundPerson -> foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) ))
+						.thenCompose(v -> session.flush())
+						.thenCompose( s -> openSession().find( Person.class, thePerson.getId() ) )
+						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000-000-0000" ) )
+		);
+	}
+
+	@Test
+	public void setNewElementCollectionMutinyAPI(TestContext context) {
+		Mutiny.Session session = openMutinySession();
+
+		test (
+				context,
+				session.find( Person.class, thePerson.getId())
+						// replace phones with list of 1 phone
+						.invoke( foundPerson -> foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) ))
+						.call( session::flush )
+						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
+						.invoke( changedPerson -> assertPhones( context, changedPerson, "000-000-0000" ) )
+		);
+	}
+
+	@Test
+	public void removePersonStageAPI(TestContext context){
 		Stage.Session session = openSession();
 
 		test(
@@ -417,8 +490,8 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 						// remove thePerson entity and flush
 						.thenCompose( foundPerson -> session.remove( foundPerson ) )
 						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( nullPerson -> context.assertNull( nullPerson ) )
+						.thenCompose( v -> openSession().find( Person.class, thePerson.getId()) )
+						.thenAccept( context::assertNull )
 						// Check with native query that the table is empty
 						.thenCompose( v -> selectFromPhonesWithStage( thePerson ) )
 						.thenAccept( resultList -> context.assertTrue( resultList.isEmpty() ) )
@@ -426,16 +499,17 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 	}
 
 	@Test
-	public void removePersonWithMutinyAPI(TestContext context) {
+	public void removePersonMutinyAPI(TestContext context){
 		Mutiny.Session session = openMutinySession();
 
 		test(
 				context,
 				session.find( Person.class, thePerson.getId() )
+						// remove thePerson entity and flush
 						.call( session::remove )
 						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( nullPerson -> context.assertNull( nullPerson ) )
+						.chain( () -> openMutinySession().find( Person.class, thePerson.getId()) )
+						.invoke( context::assertNull )
 						// Check with native query that the table is empty
 						.chain( () -> selectFromPhonesWithMutiny( thePerson ) )
 						.invoke( resultList -> context.assertTrue( resultList.isEmpty() ) )
@@ -444,25 +518,36 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 
 	@Test
 	public void persistAnotherPersonWithStageAPI(TestContext context) {
-		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( "222-222-2222", "333-333-3333" ) );
+		Person secondPerson = new Person( 9910000, "Kitty",
+										  Arrays.asList(
+												  new Phone( "222-222-2222" ),
+												  new Phone( "333-333-3333" ),
+												  new Phone( "444-444-4444" )
+										  )
+		);
 
 		Stage.Session session = openSession();
 
 		test( context,
 			  session.persist( secondPerson )
 					  .thenCompose( v -> session.flush() )
-					  // Check new person collection
 					  .thenCompose( v -> openSession().find( Person.class, secondPerson.getId() ) )
-					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "222-222-2222", "333-333-3333" ) )
+					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "222-222-2222", "333-333-3333", "444-444-4444" ) )
 					  // Check initial person collection hasn't changed
 					  .thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "999-999-9999", "111-111-1111", "123-456-7890" ) )
+					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "999-999-9999", "111-111-1111" ) )
 		);
 	}
 
 	@Test
 	public void persistAnotherPersonWithMutinyAPI(TestContext context) {
-		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( "222-222-2222", "333-333-3333" ) );
+		Person secondPerson = new Person( 9910000, "Kitty",
+										  Arrays.asList(
+												  new Phone( "222-222-2222" ),
+												  new Phone( "333-333-3333" ),
+												  new Phone( "444-444-4444" )
+										  )
+		);
 
 		Mutiny.Session session = openMutinySession();
 
@@ -471,10 +556,10 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 					  .call( session::flush )
 					  // Check new person collection
 					  .chain( () -> openMutinySession().find( Person.class, secondPerson.getId() ) )
-					  .invoke( foundPerson -> assertPhones( context, foundPerson, "222-222-2222", "333-333-3333" ) )
+					  .invoke( foundPerson -> assertPhones( context, foundPerson, "222-222-2222", "333-333-3333", "444-444-4444" ) )
 					  // Check initial person collection hasn't changed
 					  .chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-					  .invoke( foundPerson -> assertPhones( context, foundPerson, "999-999-9999", "111-111-1111", "123-456-7890" ) )
+					  .invoke( foundPerson -> assertPhones( context, foundPerson, "999-999-9999", "111-111-1111" ) )
 		);
 	}
 
@@ -512,7 +597,7 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 
 	@Test
 	public void persistCollectionWithNullsWithStageAPI(TestContext context) {
-		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( null, "567", null ) );
+		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( null, new Phone( "567" ), null ) );
 
 		Stage.Session session = openSession();
 
@@ -528,7 +613,7 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 
 	@Test
 	public void persistCollectionWithNullsWithMutinyAPI(TestContext context) {
-		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( null, "567", null ) );
+		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( null, new Phone( "567" ), null ) );
 
 		Mutiny.Session session = openMutinySession();
 
@@ -549,8 +634,8 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 		test( context,
 			  session.find( Person.class, thePerson.getId() )
 					  .thenAccept( found -> {
-						context.assertFalse( found.getPhones().isEmpty() );
-						found.setPhones( null );
+						  context.assertFalse( found.getPhones().isEmpty() );
+						  found.setPhones( null );
 					  } )
 					  .thenCompose( v -> session.flush() )
 					  .thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
@@ -596,37 +681,29 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 				.getResultList();
 	}
 
-	/**
-	 * Utility method to check the content of the collection of elements.
-	 * It sorts the expected and actual phones before comparing.
-	 */
-	private static void assertPhones(TestContext context, Person person, String... expectedPhones) {
+	private static void assertPhones(TestContext context, Person person, String... phones) {
 		context.assertNotNull( person );
-		String[] sortedExpected = Arrays.stream( expectedPhones ).sorted()
-				.sorted( String.CASE_INSENSITIVE_ORDER )
-				.collect( Collectors.toList() )
-				.toArray( new String[expectedPhones.length] );
-		List<String> sortedActual = person.getPhones().stream()
-				.sorted( String.CASE_INSENSITIVE_ORDER )
-				.collect( Collectors.toList() );
-		Assertions.assertThat( sortedActual )
-				.containsExactly( sortedExpected );
+		context.assertEquals( phones.length, person.getPhones().size() );
+		for (int i=0; i<phones.length; i++) {
+			context.assertEquals( phones[i], person.getPhones().get(i).getNumber() );
+		}
 	}
 
 	@Entity(name = "Person")
-	@Table(name = "Person")
-	static class Person {
+	public static class Person {
+
 		@Id
 		private Integer id;
+
 		private String name;
 
 		@ElementCollection(fetch = FetchType.EAGER)
-		private List<String> phones;
+		private List<Phone> phones = new ArrayList<>();
 
 		public Person() {
 		}
 
-		public Person(Integer id, String name, List<String> phones) {
+		public Person(Integer id, String name, List<Phone> phones) {
 			this.id = id;
 			this.name = name;
 			this.phones = phones;
@@ -648,12 +725,57 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 			this.name = name;
 		}
 
-		public void setPhones(List<String> phones) {
-			this.phones = phones;
+		public Phone getPhone(String number) {
+			for( Phone phone : getPhones() ) {
+				if( phone.getNumber().equals( number ) ) {
+					return phone;
+				}
+			}
+			return null;
 		}
 
-		public List<String> getPhones() {
+		public void setPhones(List<Phone> phones) {
+			this.phones  = phones;
+		}
+
+		public List<Phone> getPhones() {
 			return phones;
+		}
+	}
+
+	@Embeddable
+	public static class Phone {
+
+		private String number;
+
+		private String country;
+
+		public Phone() {
+		}
+
+		public Phone(String number) {
+			this( "UK", number );
+		}
+
+		public Phone(String country, String number) {
+			this.country = country;
+			this.number = number;
+		}
+
+		public String getCountry() {
+			return country;
+		}
+
+		public void setCountry(String country) {
+			this.country = country;
+		}
+
+		public String getNumber() {
+			return number;
+		}
+
+		public void setNumber(String number) {
+			this.number = number;
 		}
 
 		@Override
@@ -664,22 +786,13 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 			if ( o == null || getClass() != o.getClass() ) {
 				return false;
 			}
-			Person person = (Person) o;
-			return Objects.equals( name, person.name );
+			Phone phone = (Phone) o;
+			return Objects.equals( number, phone.number );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash( name );
-		}
-
-		@Override
-		public String toString() {
-			final StringBuilder sb = new StringBuilder();
-			sb.append( id );
-			sb.append( ", " ).append( name );
-			sb.append( ", ").append( phones );
-			return sb.toString();
+			return Objects.hash( number );
 		}
 	}
 }
