@@ -6,8 +6,8 @@
 package org.hibernate.reactive.persister.collection.impl;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
@@ -27,6 +27,9 @@ import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.jboss.logging.Logger;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.total;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  *
@@ -85,12 +88,8 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 			Serializable id,
 			SharedSessionContractImplementor session)
 			throws HibernateException {
-		if ( isInverse ) {
-			return CompletionStages.voidFuture();
-		}
-
-		if ( !isRowInsertEnabled() ) {
-			return CompletionStages.voidFuture();
+		if ( isInverse || !isRowInsertEnabled() ) {
+			return voidFuture();
 		}
 
 		if ( LOG.isDebugEnabled() ) {
@@ -101,21 +100,16 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		}
 
 		ReactiveConnection reactiveConnection = getReactiveConnection( session );
-
 		collection.preInsert( this );
-
-		final AtomicInteger index = new AtomicInteger( 1 );
-		return CompletionStages.total(
-				collection.entries( this ),
-				entry -> {
-					CompletionStage<Integer> st = reactiveConnection.update(
-							getSQLInsertRowString(),
-							insertRowsParamValues( entry, index, collection, id, session ) );
-					collection.afterRowInsert( this, entry, index.getAndIncrement() );
-					return st;
-				}
-		)
-				.thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
+		Iterator<?> entries = collection.entries(this );
+		return total(
+				entries,
+				(entry, index) -> reactiveConnection.update(
+						getSQLInsertRowString(),
+						insertRowsParamValues( entry, index+1, collection, id, session )
+				)
+				//TODO: compose() a reactive version of collection.afterRowInsert()
+		).thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
 	}
 
 	/**
@@ -123,7 +117,6 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	 */
 	public CompletionStage<Void> removeReactive(Serializable id, SharedSessionContractImplementor session)
 			throws HibernateException {
-		ReactiveConnection reactiveConnection = getReactiveConnection( session );
 		if ( !isInverse && isRowDeleteEnabled() ) {
 			if ( LOG.isDebugEnabled() ) {
 				LOG.debugf(
@@ -132,11 +125,11 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 				);
 			}
 
-			Object[] params = { id };
-			return reactiveConnection.update( getSQLDeleteString(), params )
+			return getReactiveConnection( session )
+					.update( getSQLDeleteString(), new Object[]{ id } )
 					.thenCompose( CompletionStages::voidFuture );
 		}
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	/**
@@ -147,27 +140,23 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 			PersistentCollection collection,
 			Serializable id,
 			SharedSessionContractImplementor session) throws HibernateException {
-		if ( isInverse ) {
-			return CompletionStages.voidFuture();
+		if ( isInverse || !isRowDeleteEnabled() ) {
+			return voidFuture();
 		}
 
-		if ( !isRowDeleteEnabled() ) {
-			return CompletionStages.voidFuture();
-		}
-
-		CompletionStage<Integer> loop = CompletionStages.zeroFuture();
 		ReactiveConnection reactiveConnection = getReactiveConnection( session );
+		Iterator<?> deletes = collection.getDeletes(this, !deleteByIndex() );
+		return total(
+				deletes,
+				(entry, index) -> reactiveConnection.update(
+						getSQLDeleteRowString(),
+						deleteRowsParamValues( entry, index+1, id, session )
+				)
+		).thenAccept( total -> LOG.debugf( "Done removing rows: %s removed", total ) );
+	}
 
-		boolean deleteByIndex = !isOneToMany() && hasIndex && !indexContainsFormula;
-
-		final AtomicInteger offset = new AtomicInteger( 1 );
-		return CompletionStages
-				.total( collection.getDeletes( this, !deleteByIndex ), entry ->
-						reactiveConnection.update(
-								getSQLDeleteRowString(),
-								deleteRowsParamValues( entry, offset, id, session, deleteByIndex )
-						) )
-				.thenAccept( total -> LOG.debugf( "Done removing rows: %s removed", total ) );
+	private boolean deleteByIndex() {
+		return !isOneToMany() && hasIndex && !indexContainsFormula;
 	}
 
 	/**
@@ -188,7 +177,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 
 			throw new UnsupportedOperationException();
 		}
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	/**
@@ -200,11 +189,11 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 			Serializable id,
 			SharedSessionContractImplementor session) throws HibernateException {
 		if ( isInverse ) {
-			return CompletionStages.voidFuture();
+			return voidFuture();
 		}
 
 		if ( !isRowDeleteEnabled() ) {
-			return CompletionStages.voidFuture();
+			return voidFuture();
 		}
 
 		if ( LOG.isDebugEnabled() ) {
@@ -217,47 +206,46 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		collection.preInsert( this );
 
 		ReactiveConnection reactiveConnection = getReactiveConnection( session );
-
-		final AtomicInteger index = new AtomicInteger( 0 );
-		return CompletionStages.total(
-				collection.entries( this ),
-				entry -> {
-					CompletionStage<Integer> st = reactiveConnection.update(
-							getSQLInsertRowString(),
-							insertRowsParamValues( entry, index, collection, id, session ) );
-					collection.afterRowInsert( this, entry, index.getAndIncrement() );
-					return st;
-				}
+		Iterator<?> entries = collection.entries(this );
+		return total(
+				entries,
+				(entry, index) -> reactiveConnection.update(
+						getSQLInsertRowString(),
+						insertRowsParamValues( entry, index, collection, id, session )
+				)
+				//TODO: compose() a reactive version of collection.afterRowInsert()
 		).thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
 	}
 
-	private Object[] insertRowsParamValues(Object entry, AtomicInteger index, PersistentCollection collection, Serializable id, SharedSessionContractImplementor session) {
+	private Object[] insertRowsParamValues(Object entry, int index,
+										   PersistentCollection collection, Serializable id,
+										   SharedSessionContractImplementor session) {
 		int offset = 1;
  		return PreparedStatementAdaptor.bind(
 				st -> {
 					int loc = writeKey( st, id, offset , session );
-
 					if ( hasIdentifier ) {
-						loc = writeIdentifier( st, collection.getIdentifier( entry, index.get() ), loc, session );
+						loc = writeIdentifier( st, collection.getIdentifier( entry, index ), loc, session );
 					}
 					if ( hasIndex /* && !indexIsFormula */) {
-						loc = writeIndex( st, collection.getIndex( entry, index.get() , this ), loc, session );
+						loc = writeIndex( st, collection.getIndex( entry, index, this ), loc, session );
 					}
 					writeElement( st, collection.getElement( entry ), loc, session );
 				}
 		);
 	}
 
-	private Object[] deleteRowsParamValues(Object entry, AtomicInteger offset, Serializable id, SharedSessionContractImplementor session, boolean deleteByIndex) {
+	private Object[] deleteRowsParamValues(Object entry, int offset, Serializable id,
+										   SharedSessionContractImplementor session) {
 		return PreparedStatementAdaptor.bind(
 				st -> {
-					int loc = offset.get();
+					int loc = offset;
 					if ( hasIdentifier ) {
 						writeIdentifier( st, entry, loc, session );
 					}
 					else {
 						loc = writeKey( st, id, loc, session );
-						if ( deleteByIndex ) {
+						if ( deleteByIndex() ) {
 							writeIndexToWhere( st, entry, loc, session );
 						}
 						else {
