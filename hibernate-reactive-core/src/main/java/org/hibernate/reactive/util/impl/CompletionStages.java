@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -116,7 +118,7 @@ public class CompletionStages {
 	public static <T> CompletionStage<Integer> total(int start, int end, Function<Integer,CompletionStage<Integer>> consumer) {
 		return AsyncIterator.range( start, end )
 				.thenCompose( i -> consumer.apply( i.intValue() ) )
-				.fold( 0, (total, next) -> total + next );
+				.fold( 0, Integer::sum );
 	}
 
 	/**
@@ -130,8 +132,15 @@ public class CompletionStages {
 	 */
 	public static <T> CompletionStage<Integer> total(Iterator<T> iterator, Function<T,CompletionStage<Integer>> consumer) {
 		return AsyncIterator.fromIterator( iterator )
-				.thenCompose( entry -> consumer.apply( entry ) )
-				.fold( 0, (total, next) -> total + next );
+				.thenCompose( consumer )
+				.fold( 0, Integer::sum );
+	}
+
+	public static <T> CompletionStage<Integer> total(Iterator<T> iterator, BiFunction<T,Integer,CompletionStage<Integer>> consumer) {
+		AtomicInteger index = new AtomicInteger( 0 );
+		return AsyncIterator.fromIterator( iterator )
+				.thenCompose( thing -> consumer.apply( thing, index.getAndIncrement() ) )
+				.fold( 0, Integer::sum );
 	}
 
 	/**
