@@ -43,7 +43,7 @@ import org.assertj.core.api.Assertions;
  * </p>,
  *
  * @see EagerElementCollectionForBasicTypeListTest
- * @see EagerElementCollectionForEmbeddableEntityTypeListTest
+ * @see EagerElementCollectionForEmbeddableTypeListTest
  */
 public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest {
 

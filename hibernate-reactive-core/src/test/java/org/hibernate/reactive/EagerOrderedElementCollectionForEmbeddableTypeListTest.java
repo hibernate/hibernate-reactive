@@ -5,26 +5,25 @@
  */
 package org.hibernate.reactive;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletionStage;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.unit.TestContext;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.stage.Stage;
+import org.junit.Before;
+import org.junit.Test;
+
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
-
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.stage.Stage;
-
-import org.junit.Before;
-import org.junit.Test;
-
-import io.smallrye.mutiny.Uni;
-import io.vertx.ext.unit.TestContext;
+import javax.persistence.OrderBy;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Tests @{@link ElementCollection} on a {@link java.util.Set} of basic types.
@@ -47,7 +46,7 @@ import io.vertx.ext.unit.TestContext;
  * @see EagerElementCollectionForBasicTypeListTest
  * @see EagerElementCollectionForBasicTypeSetTest
  */
-public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseReactiveTest {
+public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends BaseReactiveTest {
 
 	private Person thePerson;
 
@@ -85,7 +84,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 				session.persist( johnny )
 						.call( session::flush )
 						.chain( () -> openMutinySession().find( Person.class, johnny.getId() ) )
-						.invoke( found -> assertPhones( context, found, "888", "555" ) )
+						.invoke( found -> assertPhones( context, found, "555", "888" ) )
 		);
 	}
 
@@ -95,7 +94,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 
 		test ( context, session
 				.find( Person.class, thePerson.getId() )
-				.thenAccept( foundPerson -> assertPhones( context, foundPerson,"999-999-9999", "111-111-1111" ) )
+				.thenAccept( foundPerson -> assertPhones( context, foundPerson,"111-111-1111", "999-999-9999" ) )
 		);
 	}
 
@@ -105,7 +104,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 
 		test ( context, session
 				.find( Person.class, thePerson.getId() )
-				.invoke( foundPerson -> assertPhones( context, foundPerson,"999-999-9999", "111-111-1111" ) )
+				.invoke( foundPerson -> assertPhones( context, foundPerson,"111-111-1111", "999-999-9999" ) )
 		);
 	}
 
@@ -124,7 +123,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 											 assertPhones(
 													 context,
 													 updatedPerson,
-													 "999-999-9999", "111-111-1111", "000"
+													 "000", "111-111-1111", "999-999-9999"
 											 ) )
 		);
 	}
@@ -195,7 +194,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 									} )
 									.thenCompose( ignore -> newSession.flush() )
 									.thenCompose( ignore -> openSession().find( Person.class, thomas.getId() ) )
-									.thenAccept( found -> assertPhones( context, found, "000", "47", "000", "47" ) );
+									.thenAccept( found -> assertPhones( context, found, "000", "000", "47", "47" ) );
 						} )
 		);
 	}
@@ -226,7 +225,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 									} )
 									.call( newSession::flush )
 									.chain( () -> openMutinySession().find( Person.class, thomas.getId() ) )
-									.invoke( found -> assertPhones( context, found, "000", "47", "000", "47" ) );
+									.invoke( found -> assertPhones( context, found, "000", "000", "47", "47" ) );
 						} )
 		);
 	}
@@ -311,7 +310,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 										 assertPhones(
 												 context,
 												 updatedPerson,
-												 "999-999-9999", "111-111-1111", "000"
+												 "000", "111-111-1111", "999-999-9999"
 										 ) )
 		);
 	}
@@ -324,7 +323,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 				context,
 				session.find( Person.class, thePerson.getId() )
 						// Remove one element from the collection
-						.thenAccept( foundPerson -> { foundPerson.getPhones().remove( new Phone( "999-999-9999" ) ); } )
+						.thenAccept( foundPerson -> foundPerson.getPhones().remove( new Phone( "999-999-9999" ) ))
 						.thenCompose( v -> session.flush())
 						.thenCompose( v -> openSession()
 								.find( Person.class, thePerson.getId() )
@@ -341,7 +340,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 				context,
 				session.find( Person.class, thePerson.getId() )
 						// Remove one element from the collection
-						.invoke( foundPerson -> { foundPerson.getPhones().remove( new Phone( "999-999-9999" ) ); } )
+						.invoke( foundPerson -> foundPerson.getPhones().remove( new Phone( "999-999-9999" ) ))
 						.call( session::flush )
 						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() )
 								.invoke( foundPerson -> assertPhones( context, foundPerson, "111-111-1111" ) ) )
@@ -392,7 +391,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 						} )
 						.thenCompose( v -> session.flush() )
 						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "999-999-9999", "000" ) )
+						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000", "999-999-9999" ) )
 		);
 	}
 
@@ -410,7 +409,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 						} )
 						.call( session::flush )
 						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( person -> assertPhones( context, person, "999-999-9999", "000" ) )
+						.invoke( person -> assertPhones( context, person, "000", "999-999-9999" ) )
 		);
 	}
 
@@ -458,9 +457,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 				context,
 				session.find( Person.class, thePerson.getId())
 						// replace phones with list of 1 phone
-						.thenAccept( foundPerson -> {
-							foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) );
-						} )
+						.thenAccept( foundPerson -> foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) ))
 						.thenCompose(v -> session.flush())
 						.thenCompose( s -> openSession().find( Person.class, thePerson.getId() ) )
 						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000-000-0000" ) )
@@ -475,9 +472,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 				context,
 				session.find( Person.class, thePerson.getId())
 						// replace phones with list of 1 phone
-						.invoke( foundPerson -> {
-							foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) );
-						} )
+						.invoke( foundPerson -> foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) ))
 						.call( session::flush )
 						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
 						.invoke( changedPerson -> assertPhones( context, changedPerson, "000-000-0000" ) )
@@ -495,7 +490,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 						.thenCompose( foundPerson -> session.remove( foundPerson ) )
 						.thenCompose( v -> session.flush() )
 						.thenCompose( v -> openSession().find( Person.class, thePerson.getId()) )
-						.thenAccept( nullPerson ->  context.assertNull( nullPerson ) )
+						.thenAccept( context::assertNull )
 						// Check with native query that the table is empty
 						.thenCompose( v -> selectFromPhonesWithStage( thePerson ) )
 						.thenAccept( resultList -> context.assertTrue( resultList.isEmpty() ) )
@@ -513,7 +508,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 						.call( session::remove )
 						.call( session::flush )
 						.chain( () -> openMutinySession().find( Person.class, thePerson.getId()) )
-						.invoke( nullPerson ->  context.assertNull( nullPerson ) )
+						.invoke( context::assertNull )
 						// Check with native query that the table is empty
 						.chain( () -> selectFromPhonesWithMutiny( thePerson ) )
 						.invoke( resultList -> context.assertTrue( resultList.isEmpty() ) )
@@ -539,7 +534,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "222-222-2222", "333-333-3333", "444-444-4444" ) )
 					  // Check initial person collection hasn't changed
 					  .thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "999-999-9999", "111-111-1111" ) )
+					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "111-111-1111", "999-999-9999" ) )
 		);
 	}
 
@@ -563,7 +558,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 					  .invoke( foundPerson -> assertPhones( context, foundPerson, "222-222-2222", "333-333-3333", "444-444-4444" ) )
 					  // Check initial person collection hasn't changed
 					  .chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-					  .invoke( foundPerson -> assertPhones( context, foundPerson, "999-999-9999", "111-111-1111" ) )
+					  .invoke( foundPerson -> assertPhones( context, foundPerson, "111-111-1111", "999-999-9999" ) )
 		);
 	}
 
@@ -688,18 +683,9 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 	private static void assertPhones(TestContext context, Person person, String... phones) {
 		context.assertNotNull( person );
 		context.assertEquals( phones.length, person.getPhones().size() );
-		for ( String number : phones) {
-			context.assertTrue( phonesContainNumber( person, number) );
+		for (int i=0; i<phones.length; i++) {
+			context.assertEquals( phones[i], person.getPhones().get(i).getNumber() );
 		}
-	}
-
-	private static boolean phonesContainNumber(Person person, String phoneNum) {
-		for ( Phone phone : person.getPhones() ) {
-			if ( phone.getNumber().equals( phoneNum ) ) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	@Entity(name = "Person")
@@ -711,6 +697,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeListTest extends BaseR
 		private String name;
 
 		@ElementCollection(fetch = FetchType.EAGER)
+		@OrderBy("country, number")
 		private List<Phone> phones = new ArrayList<>();
 
 		public Person() {
