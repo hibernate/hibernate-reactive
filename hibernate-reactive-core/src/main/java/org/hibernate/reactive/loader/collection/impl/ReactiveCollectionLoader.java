@@ -109,10 +109,10 @@ public class ReactiveCollectionLoader extends CollectionLoader
 			final SessionImplementor session,
 			final Serializable id,
 			final Type type) throws HibernateException {
-		if (LOG.isDebugEnabled()) {
+		if ( LOG.isDebugEnabled() ) {
 			LOG.debugf(
 					"Loading collection: %s",
-					collectionInfoString(collectionPersister(), id, getFactory())
+					collectionInfoString( collectionPersister(), id, getFactory() )
 			);
 		}
 
