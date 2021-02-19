@@ -30,6 +30,7 @@ import org.jboss.logging.Logger;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.total;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.zeroFuture;
 
 /**
  *
@@ -104,12 +105,24 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		Iterator<?> entries = collection.entries(this );
 		return total(
 				entries,
-				(entry, index) -> reactiveConnection.update(
-						getSQLInsertRowString(),
-						insertRowsParamValues( entry, index+1, collection, id, session )
-				)
-				//TODO: compose() a reactive version of collection.afterRowInsert()
+				(entry, index) -> {
+					if ( collection.entryExists( entry, index ) ) {
+						return reactiveConnection.update(
+								getSQLInsertRowString(),
+								insertRowsParamValues( entry, index, collection, id, session )
+						).thenApply( currentTotal -> afterRowInsert( currentTotal, collection, entry, index ) );
+					}
+					else {
+						return zeroFuture();
+					}
+				}
 		).thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
+
+	}
+
+	Integer afterRowInsert(Integer currentTot, PersistentCollection collection, Object entry, int i) {
+		collection.afterRowInsert( this, entry, i );
+		return currentTot;
 	}
 
 	/**
@@ -144,11 +157,10 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 			return voidFuture();
 		}
 
-		ReactiveConnection reactiveConnection = getReactiveConnection( session );
 		Iterator<?> deletes = collection.getDeletes(this, !deleteByIndex() );
 		return total(
 				deletes,
-				(entry, index) -> reactiveConnection.update(
+				(entry, index) -> getReactiveConnection( session ).update(
 						getSQLDeleteRowString(),
 						deleteRowsParamValues( entry, index+1, id, session )
 				)
@@ -169,13 +181,13 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 			SharedSessionContractImplementor session) throws HibernateException {
 
 		if ( !isInverse && collection.isRowUpdatePossible() ) {
-			// TODO:  convert AbstractCollectionPersister.doUpdateRows() to reactive logic
-			// update all the modified entries
 			// NOTE this method call uses a JDBC connection and will fail for Map ElementCollection type
 			// Generally bags and sets are the only collections that cannot be mapped to a single row in the database
 			// So Maps, for instance will return isRowUpdatePossible() == TRUE
-
-			throw new UnsupportedOperationException();
+			// A map of type Map<String, String> ends up calling this method, however
+			// for delete/insert of rows is performed via the reactiveDeleteRows() and
+			// reactiveInsertRows()... so returning a voidFuture()
+			return voidFuture();
 		}
 		return voidFuture();
 	}
@@ -209,11 +221,17 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		Iterator<?> entries = collection.entries(this );
 		return total(
 				entries,
-				(entry, index) -> reactiveConnection.update(
-						getSQLInsertRowString(),
-						insertRowsParamValues( entry, index, collection, id, session )
-				)
-				//TODO: compose() a reactive version of collection.afterRowInsert()
+				(entry, index) -> {
+					if ( collection.needsInserting( entry, index, elementType ) ) {
+						return reactiveConnection.update(
+								getSQLInsertRowString(),
+								insertRowsParamValues( entry, index, collection, id, session )
+						).thenApply( currentTotal -> afterRowInsert( currentTotal, collection, entry, index ) );
+					}
+					else {
+						return zeroFuture();
+					}
+				}
 		).thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
 	}
 
@@ -221,7 +239,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 										   PersistentCollection collection, Serializable id,
 										   SharedSessionContractImplementor session) {
 		int offset = 1;
- 		return PreparedStatementAdaptor.bind(
+		return PreparedStatementAdaptor.bind(
 				st -> {
 					int loc = writeKey( st, id, offset , session );
 					if ( hasIdentifier ) {
