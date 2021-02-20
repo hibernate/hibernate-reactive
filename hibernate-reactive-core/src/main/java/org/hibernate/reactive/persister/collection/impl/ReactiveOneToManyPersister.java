@@ -36,6 +36,9 @@ import org.jboss.logging.Logger;
 
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
 
+/**
+ * A reactive {@link OneToManyPersister}
+ */
 public class ReactiveOneToManyPersister extends OneToManyPersister implements ReactiveCollectionPersister {
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger( CoreMessageLogger.class, ReactiveOneToManyPersister.class.getName() );
 

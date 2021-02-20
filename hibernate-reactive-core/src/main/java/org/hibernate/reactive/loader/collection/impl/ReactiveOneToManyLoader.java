@@ -14,7 +14,9 @@ import org.hibernate.loader.collection.OneToManyLoader;
 import org.hibernate.persister.collection.QueryableCollection;
 import org.jboss.logging.Logger;
 
-
+/**
+ * A reactive {@link OneToManyLoader}
+ */
 public class ReactiveOneToManyLoader extends ReactiveCollectionLoader {
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger(CoreMessageLogger.class, OneToManyLoader.class.getName());
 

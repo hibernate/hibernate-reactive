@@ -14,12 +14,16 @@ import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.BasicCollectionPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
+import org.hibernate.reactive.loader.collection.impl.ReactiveBatchingCollectionInitializerBuilder;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
@@ -33,11 +37,10 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.zeroFuture;
 
 /**
- *
- *     -- >> see  AbstractCollectionPersister for ORM implementations
- * 				// TODO: Check out batching logic: See AbstractCollectionPersister for usage
- * 				// boolean useBatch = expectation.canBeBatched();
+ * A reactive {@link BasicCollectionPersister}
  */
+// TODO: Check out batching logic: See AbstractCollectionPersister for usage
+// boolean useBatch = expectation.canBeBatched();
 public class ReactiveBasicCollectionPersister extends BasicCollectionPersister implements ReactiveCollectionPersister {
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger(
 			CoreMessageLogger.class,
@@ -79,6 +82,28 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	protected String getSQLUpdateRowString() {
 		String sql = super.getSQLUpdateRowString();
 		return parameters.process( sql );
+	}
+
+	public CompletionStage<Void> reactiveInitialize(Serializable key, SharedSessionContractImplementor session)
+			throws HibernateException {
+		return getAppropriateInitializer( key, session ).reactiveInitialize( key, session );
+	}
+
+	@Override
+	protected ReactiveCollectionInitializer createCollectionInitializer(LoadQueryInfluencers loadQueryInfluencers)
+			throws MappingException {
+		return ReactiveBatchingCollectionInitializerBuilder.getBuilder( getFactory() )
+				.createBatchingCollectionInitializer( this, batchSize, getFactory(), loadQueryInfluencers );
+	}
+
+	@Override
+	protected ReactiveCollectionInitializer createSubselectInitializer(SubselectFetch subselect, SharedSessionContractImplementor session) {
+		//TODO: need a ReactiveSubselectCollectionLoader
+		throw new UnsupportedOperationException();
+	}
+
+	protected ReactiveCollectionInitializer getAppropriateInitializer(Serializable key, SharedSessionContractImplementor session) {
+		return (ReactiveCollectionInitializer) super.getAppropriateInitializer(key, session);
 	}
 
 	/**

@@ -23,7 +23,7 @@ import org.hibernate.event.spi.InitializeCollectionEventListener;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.persister.collection.CollectionPersister;
-import org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister;
+import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
@@ -68,7 +68,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 				if ( LOG.isTraceEnabled() ) {
 					LOG.trace( "Collection not cached" );
 				}
-				return ( (ReactiveOneToManyPersister) loadedPersister ).reactiveInitialize( ce.getLoadedKey(), source )
+				return ( (ReactiveCollectionPersister) loadedPersister ).reactiveInitialize( ce.getLoadedKey(), source )
 						.thenAccept( list -> {
 							if ( LOG.isTraceEnabled() ) {
 								LOG.trace( "Collection initialized" );
