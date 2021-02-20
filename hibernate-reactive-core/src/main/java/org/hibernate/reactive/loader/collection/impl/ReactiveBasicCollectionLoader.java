@@ -5,19 +5,21 @@
  */
 package org.hibernate.reactive.loader.collection.impl;
 
-
 import org.hibernate.MappingException;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.loader.collection.BasicCollectionJoinWalker;
 import org.hibernate.persister.collection.QueryableCollection;
 
+/**
+ * A reactive {@link org.hibernate.loader.collection.BasicCollectionLoader}
+ */
 public class ReactiveBasicCollectionLoader extends ReactiveCollectionLoader {
 	public ReactiveBasicCollectionLoader(
 			QueryableCollection collectionPersister,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers loadQueryInfluencers) {
-		super( collectionPersister, factory, loadQueryInfluencers );
+		this( collectionPersister, 1, factory, loadQueryInfluencers );
 	}
 
 	public ReactiveBasicCollectionLoader(
