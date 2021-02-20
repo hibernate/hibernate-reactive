@@ -190,16 +190,17 @@ database by following the instructions in [podman.md](podman.md).
 We're working hard to support the full feature set of Hibernate ORM. 
 At present a few limitations remain.
 
-#### Association mappings
+#### Mapping annotations
 
-At this time, Hibernate Reactive does not support the following 
-mapping features:
+The following mapping annotations are not yet supported:
 
-- `@ManyToMany` associations, and
-- one-sided `@OneToMany` associations without `mappedBy`.
+- JPA's `@OrderColumn` for collection mappings
+- Hibernate's `@Generated` properties
+- Hibernate's `@CollectionId`
 
-Instead, use `@OneToMany(mappedBy=...)` together with `@ManyToOne` for 
-all associations.
+In addition, Hibernate Reactive does not support one-sided `@OneToMany` 
+associations without `mappedBy`. Instead, use `@OneToMany(mappedBy=...)` 
+together with `@ManyToOne` for all associations.
 
 ### Schema export
 
