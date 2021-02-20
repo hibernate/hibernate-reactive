@@ -26,7 +26,6 @@ import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.ReactiveOrphanRemovalAction;
 import org.hibernate.reactive.session.ReactiveSession;

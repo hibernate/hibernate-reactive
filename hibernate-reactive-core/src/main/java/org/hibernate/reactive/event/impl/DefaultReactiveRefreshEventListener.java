@@ -21,7 +21,6 @@ import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.metamodel.spi.MetamodelImplementor;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;
 import org.hibernate.reactive.event.ReactiveRefreshEventListener;
