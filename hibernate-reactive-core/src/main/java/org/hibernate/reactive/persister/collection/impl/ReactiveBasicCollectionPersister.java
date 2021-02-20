@@ -19,7 +19,6 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.BasicCollectionPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
-import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
@@ -103,7 +102,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 
 		ReactiveConnection reactiveConnection = getReactiveConnection( session );
 		collection.preInsert( this );
-		Iterator<?> entries = collection.entries(this );
+		Iterator<?> entries = collection.entries( this );
 		return total(
 				entries,
 				(entry, index) -> {
@@ -111,19 +110,14 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 						return reactiveConnection.update(
 								getSQLInsertRowString(),
 								insertRowsParamValues( entry, index, collection, id, session )
-						).thenApply( currentTotal -> afterRowInsert( currentTotal, collection, entry, index ) );
+						);
+						//TODO: compose() reactive version of collection.afterRowInsert()
 					}
 					else {
 						return zeroFuture();
 					}
 				}
 		).thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
-
-	}
-
-	Integer afterRowInsert(Integer currentTot, PersistentCollection collection, Object entry, int i) {
-		collection.afterRowInsert( this, entry, i );
-		return currentTot;
 	}
 
 	/**
@@ -158,7 +152,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 			return voidFuture();
 		}
 
-		Iterator<?> deletes = collection.getDeletes(this, !deleteByIndex() );
+		Iterator<?> deletes = collection.getDeletes( this, !deleteByIndex() );
 		return total(
 				deletes,
 				(entry, index) -> getReactiveConnection( session ).update(
@@ -227,7 +221,8 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 						return reactiveConnection.update(
 								getSQLInsertRowString(),
 								insertRowsParamValues( entry, index, collection, id, session )
-						).thenApply( currentTotal -> afterRowInsert( currentTotal, collection, entry, index ) );
+						);
+						//TODO: compose() a reactive version of collection.afterRowInsert()
 					}
 					else {
 						return zeroFuture();
