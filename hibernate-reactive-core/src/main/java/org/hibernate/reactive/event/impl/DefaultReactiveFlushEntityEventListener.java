@@ -24,7 +24,6 @@ import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.impl.ReactiveEntityUpdateAction;
 import org.hibernate.stat.spi.StatisticsImplementor;

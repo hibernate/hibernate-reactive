@@ -7,7 +7,6 @@ package org.hibernate.reactive.engine.impl;
 
 import org.hibernate.dialect.lock.OptimisticEntityLockException;
 import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.engine.ReactiveBeforeTransactionCompletionProcess;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.ReactiveSession;
