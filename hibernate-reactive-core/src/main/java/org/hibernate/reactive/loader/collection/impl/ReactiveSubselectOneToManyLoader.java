@@ -73,7 +73,8 @@ public class ReactiveSubselectOneToManyLoader extends ReactiveOneToManyLoader {
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInitialize(Serializable id, SharedSessionContractImplementor session) throws HibernateException {
+	public CompletionStage<Void> reactiveInitialize(Serializable id, SharedSessionContractImplementor session)
+			throws HibernateException {
 		return reactiveLoadCollectionSubselect(
 				session,
 				keys,
