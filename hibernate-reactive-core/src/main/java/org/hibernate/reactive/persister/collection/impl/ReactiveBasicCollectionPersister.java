@@ -101,7 +101,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		}
 
 		ReactiveConnection reactiveConnection = getReactiveConnection( session );
-		collection.preInsert( this );
+		//TODO: compose() reactive version of collection.preInsert()
 		Iterator<?> entries = collection.entries( this );
 		return total(
 				entries,
@@ -210,9 +210,8 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 			);
 		}
 
-		collection.preInsert( this );
-
 		ReactiveConnection reactiveConnection = getReactiveConnection( session );
+		//TODO: compose() reactive version of collection.preInsert()
 		Iterator<?> entries = collection.entries(this );
 		return total(
 				entries,
