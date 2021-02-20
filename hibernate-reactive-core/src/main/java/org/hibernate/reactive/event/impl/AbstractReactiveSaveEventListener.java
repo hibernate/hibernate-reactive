@@ -38,6 +38,7 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.generateId;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
@@ -160,7 +161,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			boolean requiresImmediateIdAccess) {
 
 		if ( LOG.isTraceEnabled() ) {
-			LOG.tracev( "Saving {0}", MessageHelper.infoString( persister, id, source.getFactory() ) );
+			LOG.tracev( "Saving {0}", infoString( persister, id, source.getFactory() ) );
 		}
 
 		final EntityKey key;

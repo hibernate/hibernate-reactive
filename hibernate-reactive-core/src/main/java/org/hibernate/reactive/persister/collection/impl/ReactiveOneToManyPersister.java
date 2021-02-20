@@ -35,6 +35,8 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.jboss.logging.Logger;
 
+import static org.hibernate.pretty.MessageHelper.collectionInfoString;
+
 public class ReactiveOneToManyPersister extends OneToManyPersister implements ReactiveCollectionPersister {
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger( CoreMessageLogger.class, ReactiveOneToManyPersister.class.getName() );
 
@@ -89,7 +91,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister implements Re
 			if ( LOG.isDebugEnabled() ) {
 				LOG.debugf(
 						"Deleting collection: %s",
-						MessageHelper.collectionInfoString( this, id, getFactory() )
+						collectionInfoString( this, id, getFactory() )
 				);
 			}
 

@@ -14,6 +14,7 @@ import org.hibernate.reactive.session.ReactiveSession;
 
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -49,9 +50,11 @@ public class ReactiveEntityVerifyVersionProcess implements ReactiveBeforeTransac
 					if ( !entry.getVersion().equals( latestVersion ) ) {
 						throw new OptimisticEntityLockException(
 								object,
-								"Newer version [" + latestVersion +
-										"] of entity [" + MessageHelper.infoString( entry.getEntityName(), entry.getId() ) +
-										"] found in database"
+								"Newer version ["
+										+ latestVersion
+										+ "] of entity ["
+										+ infoString( entry.getEntityName(), entry.getId() )
+										+ "] found in database"
 						);
 					}
 				} );

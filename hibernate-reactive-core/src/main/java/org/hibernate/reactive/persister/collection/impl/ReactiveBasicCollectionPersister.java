@@ -28,6 +28,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.jboss.logging.Logger;
 
+import static org.hibernate.pretty.MessageHelper.collectionInfoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.total;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.zeroFuture;
@@ -96,7 +97,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		if ( LOG.isDebugEnabled() ) {
 			LOG.debugf(
 					"Inserting collection: %s",
-					MessageHelper.collectionInfoString( this, collection, id, session )
+					collectionInfoString( this, collection, id, session )
 			);
 		}
 
@@ -134,7 +135,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 			if ( LOG.isDebugEnabled() ) {
 				LOG.debugf(
 						"Deleting collection: %s",
-						MessageHelper.collectionInfoString( this, id, getFactory() )
+						collectionInfoString( this, id, getFactory() )
 				);
 			}
 
@@ -211,7 +212,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		if ( LOG.isDebugEnabled() ) {
 			LOG.debugf(
 					"Inserting rows of collection: %s",
-					MessageHelper.collectionInfoString( this, collection, id, session )
+					collectionInfoString( this, collection, id, session )
 			);
 		}
 

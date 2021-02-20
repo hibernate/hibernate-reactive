@@ -35,6 +35,7 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -111,25 +112,21 @@ public class DefaultReactiveRefreshEventListener
 			if ( LOG.isTraceEnabled() ) {
 				LOG.tracev(
 						"Refreshing transient {0}",
-						MessageHelper.infoString( persister, id, source.getFactory() )
+						infoString( persister, id, source.getFactory() )
 				);
 			}
-			final EntityKey key = source.generateEntityKey( id, persister );
-			if ( persistenceContext.getEntry( key ) != null ) {
+			if ( persistenceContext.getEntry( source.generateEntityKey( id, persister ) ) != null ) {
 				throw new PersistentObjectException(
-						"attempted to refresh transient instance when persistent instance was already associated with the Session: " +
-								MessageHelper.infoString( persister, id, source.getFactory() )
+						"attempted to refresh transient instance when persistent instance was already associated with the session: "
+								+ infoString( persister, id, source.getFactory() )
 				);
 			}
 		}
 		else {
 			if ( LOG.isTraceEnabled() ) {
 				LOG.tracev(
-						"Refreshing ", MessageHelper.infoString(
-						e.getPersister(),
-						e.getId(),
-						source.getFactory()
-				)
+						"Refreshing ",
+						infoString( e.getPersister(), e.getId(), source.getFactory() )
 				);
 			}
 			if ( !e.isExistsInDatabase() ) {

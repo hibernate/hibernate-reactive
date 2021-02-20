@@ -118,8 +118,8 @@ class ReactiveDynamicBatchingCollectionInitializer extends ReactiveCollectionLoa
 		return doReactiveQueryAndInitializeNonLazyCollections( sql, session, queryParameters )
 				.handle( (list, err) -> {
 					logSqlException( err,
-							() -> "could not initialize a collection batch: " +
-									collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
+							() -> "could not initialize a collection batch: "
+									+ collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
 							getSQLString()
 					);
 					LOG.debug("Done batch load");

@@ -41,6 +41,7 @@ import java.io.Serializable;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.engine.impl.Cascade.fetchLazyAssociationsBeforeCascade;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -305,7 +306,7 @@ public class DefaultReactiveDeleteEventListener
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracev(
 					"Deleting {0}",
-					MessageHelper.infoString( persister, entityEntry.getId(), session.getFactory() )
+					infoString( persister, entityEntry.getId(), session.getFactory() )
 			);
 		}
 

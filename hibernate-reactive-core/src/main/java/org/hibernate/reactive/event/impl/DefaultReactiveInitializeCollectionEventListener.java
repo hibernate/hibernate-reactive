@@ -27,6 +27,7 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
+import static org.hibernate.pretty.MessageHelper.collectionInfoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class DefaultReactiveInitializeCollectionEventListener implements InitializeCollectionEventListener {
@@ -50,15 +51,14 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 			throw new HibernateException( "collection was evicted" );
 		}
 		if ( !collection.wasInitialized() ) {
-			final CollectionPersister ceLoadedPersister = ce.getLoadedPersister();
+			final CollectionPersister loadedPersister = ce.getLoadedPersister();
 			if ( LOG.isTraceEnabled() ) {
 				LOG.tracev( "Initializing collection {0}",
-						MessageHelper.collectionInfoString( ceLoadedPersister, collection, ce.getLoadedKey(), source ) );
+						collectionInfoString( loadedPersister, collection, ce.getLoadedKey(), source ) );
 				LOG.trace( "Checking second-level cache" );
 			}
 
-			final boolean foundInCache = initializeCollectionFromCache( ce.getLoadedKey(), ceLoadedPersister, collection, source );
-
+			final boolean foundInCache = initializeCollectionFromCache( ce.getLoadedKey(), loadedPersister, collection, source );
 			if ( foundInCache ) {
 				if ( LOG.isTraceEnabled() ) {
 					LOG.trace( "Collection initialized from cache" );
@@ -69,7 +69,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 				if ( LOG.isTraceEnabled() ) {
 					LOG.trace( "Collection not cached" );
 				}
-				return ( (ReactiveOneToManyPersister) ceLoadedPersister ).reactiveInitialize( ce.getLoadedKey(), source )
+				return ( (ReactiveOneToManyPersister) loadedPersister ).reactiveInitialize( ce.getLoadedKey(), source )
 						.thenAccept( list -> {
 							if ( LOG.isTraceEnabled() ) {
 								LOG.trace( "Collection initialized" );
@@ -77,7 +77,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 
 							final StatisticsImplementor statistics = source.getFactory().getStatistics();
 							if ( statistics.isStatisticsEnabled() ) {
-								statistics.fetchCollection( ceLoadedPersister.getRole() );
+								statistics.fetchCollection( loadedPersister.getRole() );
 							}
 						} );
 			}

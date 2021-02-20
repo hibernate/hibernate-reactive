@@ -42,6 +42,7 @@ import org.hibernate.type.Type;
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.session.impl.SessionUtil.throwEntityNotFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
@@ -278,8 +279,9 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		if ( event.getInstanceToLoad() != null ) {
 			if ( session.getPersistenceContextInternal().getEntry( event.getInstanceToLoad() ) != null ) {
 				throw new PersistentObjectException(
-						"attempted to load into an instance that was already associated with the session: " +
-								MessageHelper.infoString( persister, event.getEntityId(), session.getFactory() ) );
+						"attempted to load into an instance that was already associated with the session: "
+								+ infoString( persister, event.getEntityId(), session.getFactory() )
+				);
 			}
 			persister.setIdentifier( event.getInstanceToLoad(), event.getEntityId(), session );
 		}
@@ -319,7 +321,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		if ( traceEnabled ) {
 			LOG.tracev(
 					"Loading entity: {0}",
-					MessageHelper.infoString( persister, event.getEntityId(), factory )
+					infoString( persister, event.getEntityId(), factory )
 			);
 		}
 
@@ -592,7 +594,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		if ( traceEnabled ) {
 			LOG.tracev(
 					"Attempting to resolve: {0}",
-					MessageHelper.infoString( persister, event.getEntityId(), session.getFactory() )
+					infoString( persister, event.getEntityId(), session.getFactory() )
 			);
 		}
 
@@ -613,7 +615,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			if ( traceEnabled ) {
 				LOG.tracev(
 						"Resolved object in second-level cache: {0}",
-						MessageHelper.infoString( persister, event.getEntityId(), session.getFactory() )
+						infoString( persister, event.getEntityId(), session.getFactory() )
 				);
 			}
 			cacheNaturalId( event, persister, session, entity );
@@ -623,7 +625,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			if ( traceEnabled ) {
 				LOG.tracev(
 						"Object not resolved in any cache: {0}",
-						MessageHelper.infoString( persister, event.getEntityId(), session.getFactory() )
+						infoString( persister, event.getEntityId(), session.getFactory() )
 				);
 			}
 			return loadFromDatasource( event, persister )

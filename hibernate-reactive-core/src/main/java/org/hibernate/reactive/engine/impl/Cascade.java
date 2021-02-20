@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -342,16 +343,18 @@ public final class Cascade<C> {
 						}
 
 						if ( valueEntry != null ) {
-							final String entityName = valueEntry.getPersister().getEntityName();
+							EntityPersister persister = valueEntry.getPersister();
+							String entityName = persister.getEntityName();
 							if ( LOG.isTraceEnabled() ) {
-								final Serializable id = valueEntry.getPersister().getIdentifier( loadedValue, eventSource );
-								final String description = MessageHelper.infoString( entityName, id );
-								LOG.tracev( "Deleting orphaned entity instance: {0}", description );
+								LOG.tracev(
+										"Deleting orphaned entity instance: {0}",
+										infoString( entityName, persister.getIdentifier( loadedValue, eventSource ) )
+								);
 							}
 
-							if ( type.isAssociationType() && ( (AssociationType) type ).getForeignKeyDirection().equals(
-									ForeignKeyDirection.TO_PARENT
-							) ) {
+							if ( type.isAssociationType()
+									&& ( (AssociationType) type ).getForeignKeyDirection()
+											.equals(ForeignKeyDirection.TO_PARENT) ) {
 								// If FK direction is to-parent, we must remove the orphan *before* the queued update(s)
 								// occur.  Otherwise, replacing the association on a managed entity, without manually
 								// nulling and flushing, causes FK constraint violations.
