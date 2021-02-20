@@ -208,11 +208,3 @@ together with `@ManyToOne` for all associations.
 
 Automatic update or validation of an existing database schema requires 
 use of JDBC.
-
-#### Caching
-
-You should not use Hibernate Reactive with a second-level cache 
-implementation which performs blocking IO, for example passivation to 
-the filesystem or distributed replication.
-
-
