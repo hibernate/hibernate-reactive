@@ -30,6 +30,8 @@ import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersis
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
+import static org.hibernate.pretty.MessageHelper.collectionInfoString;
+
 
 /**
  * Like {@link org.hibernate.action.internal.CollectionUpdateAction} but reactive
@@ -82,8 +84,8 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 		else if ( collection.needsRecreate( corePersister ) ) {
 			if ( affectedByFilters ) {
 				throw new HibernateException(
-						"cannot recreate collection while filter is enabled: " +
-								MessageHelper.collectionInfoString( corePersister, collection, key, session )
+						"cannot recreate collection while filter is enabled: "
+								+ collectionInfoString( corePersister, collection, key, session )
 				);
 			}
 			if ( !emptySnapshot ) {

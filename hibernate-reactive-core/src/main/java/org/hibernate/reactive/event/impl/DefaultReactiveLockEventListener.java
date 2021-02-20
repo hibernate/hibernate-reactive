@@ -38,6 +38,7 @@ import org.jboss.logging.Logger;
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -162,7 +163,7 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 			if ( log.isTraceEnabled() ) {
 				log.tracev(
 						"Locking {0} in mode: {1}",
-						MessageHelper.infoString( entry.getPersister(), entry.getId(), source.getFactory() ),
+						infoString( entry.getPersister(), entry.getId(), source.getFactory() ),
 						requestedLockMode
 				);
 			}

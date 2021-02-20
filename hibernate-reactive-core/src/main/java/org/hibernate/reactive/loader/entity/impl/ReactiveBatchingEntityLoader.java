@@ -113,7 +113,7 @@ public abstract class ReactiveBatchingEntityLoader implements ReactiveUniqueEnti
 			LockOptions lockOptions,
 			Boolean readOnly) {
 //			if ( log.isDebugEnabled() ) {
-//				log.debugf( "Batch loading entity: %s", MessageHelper.infoString( persister, ids, session.getFactory() ) );
+//				log.debugf( "Batch loading entity: %s", infoString( persister, ids, session.getFactory() ) );
 //			}
 
 		QueryParameters parameters = buildQueryParameters(id, ids, optionalObject, lockOptions, readOnly);
