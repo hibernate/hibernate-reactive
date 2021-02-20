@@ -103,9 +103,8 @@ public abstract class ReactiveBatchingCollectionInitializerBuilder {
 			QueryableCollection persister,
 			SessionFactoryImplementor factory,
 			LoadQueryInfluencers influencers) {
-		if (persister.isOneToMany()) {
-			return new ReactiveOneToManyLoader(persister, factory, influencers);
-		}
-		return new ReactiveBasicCollectionLoader(persister, factory, influencers);
+		return persister.isOneToMany() ?
+				new ReactiveOneToManyLoader( persister, factory, influencers ) :
+				new ReactiveBasicCollectionLoader( persister, factory, influencers );
 	}
 }
