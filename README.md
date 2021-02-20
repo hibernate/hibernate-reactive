@@ -192,7 +192,7 @@ database by following the instructions in [podman.md](podman.md).
 We're working hard to support the full feature set of Hibernate ORM. 
 At present a few limitations remain.
 
-#### Mapping annotations
+### Mapping annotations
 
 The following mapping annotations are not yet supported:
 
