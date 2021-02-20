@@ -5,10 +5,6 @@
  */
 package org.hibernate.reactive.persister.collection.impl;
 
-import java.io.Serializable;
-import java.util.Iterator;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
@@ -24,12 +20,16 @@ import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
 import org.hibernate.reactive.loader.collection.impl.ReactiveBatchingCollectionInitializerBuilder;
+import org.hibernate.reactive.loader.collection.impl.ReactiveSubselectCollectionLoader;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.impl.CompletionStages;
-
 import org.jboss.logging.Logger;
+
+import java.io.Serializable;
+import java.util.Iterator;
+import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.total;
@@ -98,8 +98,15 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 
 	@Override
 	protected ReactiveCollectionInitializer createSubselectInitializer(SubselectFetch subselect, SharedSessionContractImplementor session) {
-		//TODO: need a ReactiveSubselectCollectionLoader
-		throw new UnsupportedOperationException();
+		return new ReactiveSubselectCollectionLoader(
+				this,
+				subselect.toSubselectString( getCollectionType().getLHSPropertyName() ),
+				subselect.getResult(),
+				subselect.getQueryParameters(),
+				subselect.getNamedParameterLocMap(),
+				session.getFactory(),
+				session.getLoadQueryInfluencers()
+		);
 	}
 
 	protected ReactiveCollectionInitializer getAppropriateInitializer(Serializable key, SharedSessionContractImplementor session) {
