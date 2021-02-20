@@ -5,45 +5,40 @@
  */
 package org.hibernate.reactive.persister.collection.impl;
 
-import java.io.Serializable;
-import java.sql.PreparedStatement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
-import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
-import org.hibernate.internal.CoreMessageLogger;
-import org.hibernate.jdbc.Expectation;
-import org.hibernate.jdbc.Expectations;
 import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.OneToManyPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
-import org.hibernate.reactive.loader.collection.impl.ReactiveBatchingCollectionInitializerBuilder;
 import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
+import org.hibernate.reactive.loader.collection.impl.ReactiveBatchingCollectionInitializerBuilder;
 import org.hibernate.reactive.loader.collection.impl.ReactiveSubselectOneToManyLoader;
-import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.pool.impl.Parameters;
 
-import org.jboss.logging.Logger;
-
-import static org.hibernate.pretty.MessageHelper.collectionInfoString;
+import java.io.Serializable;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.concurrent.CompletionStage;
 
 /**
  * A reactive {@link OneToManyPersister}
  */
-public class ReactiveOneToManyPersister extends OneToManyPersister implements ReactiveCollectionPersister {
-	private static final CoreMessageLogger LOG = Logger.getMessageLogger( CoreMessageLogger.class, ReactiveOneToManyPersister.class.getName() );
+//TODO: reactive version of writeIndex() for indexed @OneToMany associations with an @OrderColumn
+public class ReactiveOneToManyPersister extends OneToManyPersister implements ReactiveAbstractCollectionPersister {
 
-	public ReactiveOneToManyPersister(Collection collectionBinding, CollectionDataAccess cacheAccessStrategy, PersisterCreationContext creationContext) throws MappingException, CacheException {
+	private final Parameters parameters;
+
+	public ReactiveOneToManyPersister(Collection collectionBinding,
+									  CollectionDataAccess cacheAccessStrategy,
+									  PersisterCreationContext creationContext)
+			throws MappingException, CacheException {
 		super( collectionBinding, cacheAccessStrategy, creationContext );
+		this.parameters = Parameters.instance( getFactory().getJdbcServices().getDialect() );
 	}
 
 	public CompletionStage<Void> reactiveInitialize(Serializable key, SharedSessionContractImplementor session)
@@ -76,83 +71,76 @@ public class ReactiveOneToManyPersister extends OneToManyPersister implements Re
 	}
 
 	@Override
-	public CompletionStage<Void> recreateReactive(
-			PersistentCollection collection, Serializable id, SharedSessionContractImplementor session) {
-		return CompletionStages.voidFuture();
-	}
-
-	private ReactiveConnection getReactiveConnection(SharedSessionContractImplementor session) {
-		return ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
+	public boolean isRowDeleteEnabled() {
+		return super.isRowDeleteEnabled();
 	}
 
 	@Override
-	public CompletionStage<Void> removeReactive(Serializable id, SharedSessionContractImplementor session)
-			throws HibernateException {
-		ReactiveConnection reactiveConnection = getReactiveConnection( session );
-		if ( !isInverse && isRowDeleteEnabled() ) {
-			if ( LOG.isDebugEnabled() ) {
-				LOG.debugf(
-						"Deleting collection: %s",
-						collectionInfoString( this, id, getFactory() )
-				);
-			}
-
-			// Remove all the old entries
-
-			int offset = 1;
-			final PreparedStatement st;
-			Expectation expectation = Expectations.appropriateExpectation( getDeleteAllCheckStyle() );
-			boolean callable = isDeleteAllCallable();
-
-			List<Object> params = new ArrayList<>();
-			params.add( id );
-			String sql = getSQLDeleteString();
-
-			return CompletionStages.voidFuture()
-					.thenCompose( s -> reactiveConnection.update( sql, params.toArray( new Object[0] )))
-					.thenCompose(CompletionStages::voidFuture);
-		}
-		return CompletionStages.voidFuture();
+	public boolean isRowInsertEnabled() {
+		return super.isRowInsertEnabled();
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveDeleteRows(
-			PersistentCollection collection, Serializable id, SharedSessionContractImplementor session) {
-		if ( isInverse ) {
-			return CompletionStages.voidFuture();
-		}
-
-		if ( !isRowDeleteEnabled() ) {
-			return CompletionStages.voidFuture();
-		}
-
-		//TODO: See AbstractCollectionPersister#deleteRows
-		throw new UnsupportedOperationException();
+	public boolean hasIdentifier() {
+		return super.hasIdentifier;
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInsertRows(
-			PersistentCollection collection, Serializable id, SharedSessionContractImplementor session) {
-
-		if ( isInverse ) {
-			return CompletionStages.voidFuture();
-		}
-
-		if ( !isRowDeleteEnabled() ) {
-			return CompletionStages.voidFuture();
-		}
-
-		// TODO: See AbstractCollectionPersister#insertRows
-		throw new UnsupportedOperationException();
+	public boolean indexContainsFormula() {
+		return super.indexContainsFormula;
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveUpdateRows(
-			PersistentCollection collection, Serializable id, SharedSessionContractImplementor session) {
-		if ( !isInverse && collection.isRowUpdatePossible() ) {
-			// TODO: See AbstractCollectionPersister#updateRows
-			throw new UnsupportedOperationException();
-		}
-		return CompletionStages.voidFuture();
+	public int writeElement(PreparedStatement st, Object element, int loc, SharedSessionContractImplementor session)
+			throws SQLException {
+		return super.writeElement(st, element, loc, session);
+	}
+
+	@Override
+	public int writeIndex(PreparedStatement st, Object index, int loc, SharedSessionContractImplementor session)
+			throws SQLException {
+		return super.writeIndex(st, index, loc, session);
+	}
+
+	@Override
+	public int writeKey(PreparedStatement st, Serializable id, int offset, SharedSessionContractImplementor session)
+			throws SQLException {
+		return super.writeKey(st, id, offset, session);
+	}
+
+	@Override
+	public int writeElementToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
+			throws SQLException {
+		return super.writeElementToWhere(st, entry, loc, session);
+	}
+
+	@Override
+	public int writeIndexToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
+			throws SQLException {
+		return super.writeIndexToWhere(st, entry, loc, session);
+	}
+
+	@Override
+	public String getSQLInsertRowString() {
+		String sql = super.getSQLInsertRowString();
+		return parameters.process( sql );
+	}
+
+	@Override
+	public String getSQLDeleteRowString() {
+		String sql = super.getSQLDeleteRowString();
+		return parameters.process( sql );
+	}
+
+	@Override
+	public String getSQLDeleteString() {
+		String sql = super.getSQLDeleteString();
+		return parameters.process( sql );
+	}
+
+	@Override
+	public String getSQLUpdateRowString() {
+		String sql = super.getSQLUpdateRowString();
+		return parameters.process( sql );
 	}
 }
