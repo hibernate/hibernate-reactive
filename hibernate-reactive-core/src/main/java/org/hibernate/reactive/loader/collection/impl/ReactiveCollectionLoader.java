@@ -121,8 +121,8 @@ public class ReactiveCollectionLoader extends CollectionLoader
 		return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, true )
 				.handle( (list, err) -> {
 					logSqlException( err,
-							() -> "could not initialize a collection: " +
-									collectionInfoString( collectionPersister(), id, getFactory() ),
+							() -> "could not initialize a collection: "
+									+ collectionInfoString( collectionPersister(), id, getFactory() ),
 							getSQLString()
 					);
 					LOG.debug("Done loading collection");
@@ -150,8 +150,8 @@ public class ReactiveCollectionLoader extends CollectionLoader
 		return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, true )
 				.handle( (list, err) -> {
 					logSqlException( err,
-							() -> "could not initialize a collection batch: " +
-									collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
+							() -> "could not initialize a collection batch: "
+									+ collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
 							getSQLString()
 					);
 					LOG.debug("Done batch load");

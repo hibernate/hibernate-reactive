@@ -32,6 +32,7 @@ import org.hibernate.reactive.event.ReactivePersistEventListener;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -192,11 +193,7 @@ public class DefaultReactivePersistEventListener
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracef(
 					"un-scheduling entity deletion [%s]",
-					MessageHelper.infoString(
-							persister,
-							persister.getIdentifier( entity, source ),
-							source.getFactory()
-					)
+					infoString( persister, persister.getIdentifier( entity, source ), source.getFactory() )
 			);
 		}
 

@@ -141,8 +141,8 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 				LOG.debug( "Done entity load" );
 				Loadable[] persisters = getEntityPersisters();
 				logSqlException( err,
-						() -> "could not load an entity: " +
-								infoString(
+						() -> "could not load an entity: "
+								+ infoString(
 										persisters[persisters.length - 1],
 										id,
 										identifierType,

@@ -96,8 +96,8 @@ public class ReactiveSubselectOneToManyLoader extends ReactiveOneToManyLoader {
 		return doReactiveQueryAndInitializeNonLazyCollections( (SessionImplementor) session, parameters, true )
 				.handle( (list, err) -> {
 					logSqlException( err,
-							() -> "could not load collection by subselect: " +
-									collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
+							() -> "could not load collection by subselect: "
+									+ collectionInfoString( getCollectionPersisters()[0], ids, getFactory() ),
 							getSQLString()
 					);
 					return returnNullorRethrow( err );

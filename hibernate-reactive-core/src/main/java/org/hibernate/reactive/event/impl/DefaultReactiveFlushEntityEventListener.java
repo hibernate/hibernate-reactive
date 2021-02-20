@@ -33,6 +33,8 @@ import org.hibernate.type.Type;
 import java.io.Serializable;
 import java.util.Arrays;
 
+import static org.hibernate.pretty.MessageHelper.infoString;
+
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultFlushEntityEventListener}.
  * This implementation is almost, but not quite, a line-for-line copy of
@@ -256,26 +258,26 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 				if ( !persister.isMutable() ) {
 					LOG.tracev(
 							"Updating immutable, deleted entity: {0}",
-							MessageHelper.infoString( persister, entry.getId(), session.getFactory() )
+							infoString( persister, entry.getId(), session.getFactory() )
 					);
 				}
 				else if ( !entry.isModifiableEntity() ) {
 					LOG.tracev(
 							"Updating non-modifiable, deleted entity: {0}",
-							MessageHelper.infoString( persister, entry.getId(), session.getFactory() )
+							infoString( persister, entry.getId(), session.getFactory() )
 					);
 				}
 				else {
 					LOG.tracev(
 							"Updating deleted entity: ",
-							MessageHelper.infoString( persister, entry.getId(), session.getFactory() )
+							infoString( persister, entry.getId(), session.getFactory() )
 					);
 				}
 			}
 			else {
 				LOG.tracev(
 						"Updating entity: {0}",
-						MessageHelper.infoString( persister, entry.getId(), session.getFactory() )
+						infoString( persister, entry.getId(), session.getFactory() )
 				);
 			}
 		}
@@ -679,7 +681,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 			}
 			LOG.tracev(
 					"Found dirty properties [{0}] : {1}",
-					MessageHelper.infoString( persister.getEntityName(), id ),
+					infoString( persister.getEntityName(), id ),
 					Arrays.toString( dirtyPropertyNames )
 			);
 		}
