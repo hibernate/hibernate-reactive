@@ -9,8 +9,6 @@ import io.vertx.ext.unit.TestContext;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.junit.Rule;
 import org.junit.Test;
 
 import javax.persistence.Basic;
@@ -19,12 +17,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-
 public class DynamicUpdateTest extends BaseReactiveTest {
-
-    @Rule
-    public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
 
     @Override
     protected Configuration constructConfiguration() {
