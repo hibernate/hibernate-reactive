@@ -302,43 +302,45 @@ The most common and useful mapping annotations include these standard JPA
 annotations:
 
 |===
-| Annotation        | Purpose
+| Annotation          | Purpose
 
-| `@Entity`         | Declares an entity class (a class with its own
-                      database table an persistent identity)
-| `@Embeddable`     | Declares an embeddable class (a class without its
-                      own persistent identity or database table)
-| `@Inheritance`    | Defines how inheritance hierarchies should be
-                      mapped to database tables
-| `@Id`             | Specifies that a field of an entity holds the
-                      persistent identity of the entity, and maps to
-                      the primary key of its table
-| `@EmbeddedId`     | Specifies that a field of an entity holds the
-                      value of a composite primary key
-| `@GeneratedValue` | Specifies that an identifier is a system-generated
-                      surrogate key
-| `@Version`        | Specifies that a field of an entity holds a version
-                      number used for optimistic locking
-| `@ManyToOne`      | Declares a many-to-one association to a second
-                      entity
-| `@OneToOne`       | Declares a one-to-one association to a second
-                      entity
-| `@OneToMany`      | Declares a one-to-many association to a second
-                      entity
-| `@Table`          | Specifies a mapping to a database table
-| `@Column`         | Specifies a mapping to a database column
-| `@JoinColumn`     | Specifies a mapping to a database foreign key
+| `@Entity`           | Declares an entity class (a class with its own
+                        database table an persistent identity)
+| `@Embeddable`       | Declares an embeddable class (a class without its
+                        own persistent identity or database table)
+| `@MappedSuperclass` | A superclass that declares persistent fields
+| `@Inheritance`      | Defines how inheritance hierarchies should be
+                        mapped to database tables
+| `@Id`               | Specifies that a field of an entity holds the
+                        persistent identity of the entity, and maps to
+                        the primary key of its table
+| `@EmbeddedId`       | Specifies that a field of an entity holds the
+                        value of a composite primary key
+| `@GeneratedValue`   | Specifies that an identifier is a system-generated
+                        surrogate key
+| `@Version`          | Specifies that a field of an entity holds a version
+                        number used for optimistic locking
+| `@ManyToOne`        | Declares a many-to-one association to a second
+                        entity
+| `@OneToOne`         | Declares a one-to-one association to a second
+                        entity
+| `@OneToMany`        | Declares a one-to-many association to a second
+                        entity
+| `@Table`            | Specifies a mapping to a database table
+| `@SecondaryTable`   | Specifies a mapping to a second database table
+| `@Column`           | Specifies a mapping to a database column
+| `@JoinColumn`       | Specifies a mapping to a database foreign key
 |===
 
 These Hibernate annotations are also very useful to know about:
 
 |===
-| Annotation           | Purpose
+| Annotation                               | Purpose
 
 | `@Cache`                                 | Enables second-level caching for an entity
 | `@Formula`                               | Maps field to SQL expression instead of a column
-| `@CreationTimestamp`, `@UpdateTimestamp` | Automatically assigns a timestamp to the field
-| `@FilterDef`, `@Filter`                  | Defines a Hibernate filter
+| `@CreationTimestamp`, `@UpdateTimestamp` | Automatically assign a timestamp to a field
+| `@FilterDef` and `@Filter`               | Define a Hibernate filter
 | `@FetchProfile`                          | Defines a Hibernate fetch profile
 | `@GenericGenerator`                      | Selects a custom id generator
 | `@DynamicInsert` and `@DynamicUpdate`    | Generates SQL dynamically with only needed columns
