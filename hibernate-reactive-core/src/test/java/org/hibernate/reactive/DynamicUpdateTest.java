@@ -8,6 +8,7 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.OptimisticLocking;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
@@ -16,6 +17,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
+
+import static org.hibernate.annotations.OptimisticLockType.DIRTY;
 
 public class DynamicUpdateTest extends BaseReactiveTest {
 
@@ -56,6 +59,7 @@ public class DynamicUpdateTest extends BaseReactiveTest {
     @Entity
     @Table(name="BigRecord")
     @DynamicInsert @DynamicUpdate
+    @OptimisticLocking(type = DIRTY)
     static class Record {
         @GeneratedValue @Id long id;
         @Basic(optional = false) String text;
