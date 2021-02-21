@@ -8,6 +8,7 @@ package org.hibernate.reactive.persister.collection.impl;
 import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
+import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
@@ -148,5 +149,14 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	public String getSQLUpdateRowString() {
 		String sql = super.getSQLUpdateRowString();
 		return parameters.process( sql );
+	}
+
+	/**
+	 * @see OneToManyPersister#doUpdateRows(Serializable, PersistentCollection, SharedSessionContractImplementor)
+	 */
+	@Override
+	public CompletionStage<Integer> doReactiveUpdateRows(Serializable id, PersistentCollection collection,
+														 SharedSessionContractImplementor session) {
+		throw new UnsupportedOperationException();
 	}
 }

@@ -8,21 +8,31 @@ package org.hibernate.reactive.persister.collection.impl;
 import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
+import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
+import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.BasicCollectionPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
+import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
 import org.hibernate.reactive.loader.collection.impl.ReactiveBatchingCollectionInitializerBuilder;
 import org.hibernate.reactive.loader.collection.impl.ReactiveSubselectCollectionLoader;
 import org.hibernate.reactive.pool.impl.Parameters;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.total;
+import static org.hibernate.reactive.util.impl.CompletionStages.zeroFuture;
 
 /**
  * A reactive {@link BasicCollectionPersister}
@@ -147,5 +157,92 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister
 	public String getSQLUpdateRowString() {
 		String sql = super.getSQLUpdateRowString();
 		return parameters.process( sql );
+	}
+
+	/**
+	 * @see BasicCollectionPersister#doUpdateRows(Serializable, PersistentCollection, SharedSessionContractImplementor)
+	 */
+	@Override
+	public CompletionStage<Integer> doReactiveUpdateRows(Serializable id, PersistentCollection collection,
+														 SharedSessionContractImplementor session) {
+		if ( ArrayHelper.isAllFalse( elementColumnIsSettable ) ) {
+			return zeroFuture();
+		}
+
+		List<Object> entries = entryList( collection );
+		if ( !needsUpdate( collection, entries ) ) {
+			return zeroFuture();
+		}
+
+		return total(
+				orderedIndices( collection, entries ),
+				index -> {
+					Object entry = entries.get( index );
+					if ( collection.needsUpdating( entry, index, elementType ) ) {
+						return getReactiveConnection( session ).update(
+								getSQLUpdateRowString(),
+								updateRowsParamValues( entry, index, collection, id, session )
+						);
+					}
+					else {
+						return CompletionStages.zeroFuture();
+					}
+				}
+		);
+	}
+
+	private boolean needsUpdate(PersistentCollection collection, List<Object> entries) {
+		for ( int i = 0, size = entries.size(); i < size; i++ ) {
+			Object element = entries.get(i);
+			if ( collection.needsUpdating( element, i, elementType ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private Integer[] orderedIndices(PersistentCollection collection, List<Object> elements) {
+		Integer[] indices = new Integer[ elements.size() ];
+		if ( collection.isElementRemoved() ) {
+			// the update should be done starting from the end to the list
+			for ( int i = elements.size() - 1, j = 0; i >= 0; i-- ) {
+				indices[j++] = i;
+			}
+		}
+		else {
+			for ( int i = 0, j = 0; i < elements.size(); i++ ) {
+				indices[j++] = i;
+			}
+		}
+		return indices;
+	}
+
+	private List<Object> entryList(PersistentCollection collection) {
+		Iterator<?> entries = collection.entries( this );
+		List<Object> elements = new ArrayList<>();
+		while ( entries.hasNext() ) {
+			elements.add( entries.next() );
+		}
+		return elements;
+	}
+
+	private Object[] updateRowsParamValues(Object entry, int i, PersistentCollection collection, Serializable id,
+										   SharedSessionContractImplementor session) {
+		int offset = 1;
+		return PreparedStatementAdaptor.bind( st -> {
+			int loc = writeElement( st, collection.getElement( entry ), offset, session );
+			if ( hasIdentifier ) {
+				writeIdentifier( st, collection.getIdentifier( entry, i ), loc, session );
+			}
+			else {
+				loc = writeKey(st, id, loc, session);
+				if ( hasIndex && !indexContainsFormula ) {
+					writeIndexToWhere( st, collection.getIndex( entry, i, this ), loc, session );
+				}
+				else {
+					writeElementToWhere( st, collection.getSnapshotElement( entry, i ), loc, session );
+				}
+			}
+		} );
 	}
 }

@@ -129,16 +129,26 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
             SharedSessionContractImplementor session) {
 
         if ( !isInverse() && collection.isRowUpdatePossible() ) {
-            // NOTE this method call uses a JDBC connection and will fail for Map ElementCollection type
-            // Generally bags and sets are the only collections that cannot be mapped to a single row in the database
-            // So Maps, for instance will return isRowUpdatePossible() == TRUE
-            // A map of type Map<String, String> ends up calling this method, however
-            // for delete/insert of rows is performed via the reactiveDeleteRows() and
-            // reactiveInsertRows()... so returning a voidFuture()
-            return voidFuture();
+
+            if ( LOG.isDebugEnabled() ) {
+                LOG.debugf(
+                        "Updating rows of collection: %s#%s",
+                        collectionInfoString( this, collection, id, session )
+                );
+            }
+
+            // update all the modified entries
+            return doReactiveUpdateRows( id, collection, session )
+                    .thenAccept( (count) -> LOG.debugf( "Done updating rows: %s updated", count ) );
         }
         return voidFuture();
     }
+
+    /**
+     * @see org.hibernate.persister.collection.AbstractCollectionPersister#doUpdateRows(Serializable, PersistentCollection, SharedSessionContractImplementor)
+     */
+    CompletionStage<Integer> doReactiveUpdateRows(Serializable id, PersistentCollection collection,
+                                          SharedSessionContractImplementor session);
 
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#insertRows(PersistentCollection, Serializable, SharedSessionContractImplementor)
