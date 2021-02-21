@@ -7,22 +7,27 @@ package org.hibernate.reactive.persister.collection.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.exception.spi.SQLExceptionConverter;
 import org.hibernate.internal.CoreMessageLogger;
+import org.hibernate.jdbc.Expectation;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.jboss.logging.Logger;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
-import static org.hibernate.reactive.util.impl.CompletionStages.total;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.zeroFuture;
 
@@ -58,16 +63,19 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
             );
         }
 
-        ReactiveConnection reactiveConnection = getReactiveConnection( session );
+        ReactiveConnection connection = getReactiveConnection( session );
         //TODO: compose() reactive version of collection.preInsert()
         Iterator<?> entries = collection.entries( this );
-        return total(
+        Expectation expectation = appropriateExpectation( getInsertCheckStyle() );
+        return loop(
                 entries,
                 (entry, index) -> {
                     if ( collection.entryExists( entry, index ) ) {
-                        return reactiveConnection.update(
+                        return connection.update(
                                 getSQLInsertRowString(),
-                                insertRowsParamValues( entry, index, collection, id, session )
+                                insertRowsParamValues( entry, index, collection, id, session ),
+                                expectation.canBeBatched(),
+                                new ExpectationAdaptor( expectation, getSQLInsertRowString(), getSqlExceptionConverter() )
                         );
                         //TODO: compose() reactive version of collection.afterRowInsert()
                     }
@@ -75,26 +83,31 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
                         return zeroFuture();
                     }
                 }
-        ).thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
+        );
     }
 
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#remove(Serializable, SharedSessionContractImplementor)
      */
     default CompletionStage<Void> removeReactive(Serializable id, SharedSessionContractImplementor session) {
-        if ( !isInverse() && isRowDeleteEnabled() ) {
-            if ( LOG.isDebugEnabled() ) {
-                LOG.debugf(
-                        "Deleting collection: %s",
-                        collectionInfoString( this, id, getFactory() )
-                );
-            }
-
-            return getReactiveConnection( session )
-                    .update( getSQLDeleteString(), new Object[]{ id } )
-                    .thenCompose( CompletionStages::voidFuture );
+        if ( isInverse() || !isRowDeleteEnabled() ) {
+            return voidFuture();
         }
-        return voidFuture();
+
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debugf(
+                    "Deleting collection: %s",
+                    collectionInfoString( this, id, getFactory() )
+            );
+        }
+
+        Expectation expectation = appropriateExpectation( getDeleteCheckStyle() );
+        return getReactiveConnection( session ).update(
+                getSQLDeleteString(),
+                new Object[]{ id },
+                expectation.canBeBatched(),
+                new ExpectationAdaptor( expectation, getSQLDeleteString(), getSqlExceptionConverter() )
+        );
     }
 
     /**
@@ -110,13 +123,67 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
         }
 
         Iterator<?> deletes = collection.getDeletes( this, !deleteByIndex() );
-        return total(
+        if ( !deletes.hasNext() ) {
+             return voidFuture();
+        }
+
+        ReactiveConnection connection = getReactiveConnection(session);
+        Expectation expectation = appropriateExpectation( getDeleteCheckStyle() );
+        return loop(
                 deletes,
-                (entry, index) -> getReactiveConnection( session ).update(
+                (entry, index) -> connection.update(
                         getSQLDeleteRowString(),
-                        deleteRowsParamValues( entry, index+1, id, session )
+                        deleteRowsParamValues( entry, index+1, id, session ),
+                        expectation.canBeBatched(),
+                        new ExpectationAdaptor( expectation, getSQLDeleteRowString(), getSqlExceptionConverter() )
                 )
-        ).thenAccept( total -> LOG.debugf( "Done removing rows: %s removed", total ) );
+        );
+    }
+
+    /**
+     * @see org.hibernate.persister.collection.AbstractCollectionPersister#insertRows(PersistentCollection, Serializable, SharedSessionContractImplementor)
+     */
+    @Override
+    default CompletionStage<Void> reactiveInsertRows(
+            PersistentCollection collection,
+            Serializable id,
+            SharedSessionContractImplementor session) {
+        if ( isInverse() || !isRowDeleteEnabled() ) {
+            return voidFuture();
+        }
+
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debugf(
+                    "Inserting rows of collection: %s",
+                    collectionInfoString( this, collection, id, session )
+            );
+        }
+
+        ReactiveConnection connection = getReactiveConnection( session );
+        //TODO: compose() reactive version of collection.preInsert()
+        List<Object> entries = entryList( collection );
+        if ( !needsInsert( collection, entries ) ) {
+            return voidFuture();
+        }
+
+        Expectation expectation = appropriateExpectation( getInsertCheckStyle() );
+        return loop(
+                entries.iterator(),
+                (entry, index) -> {
+                    if ( collection.needsInserting( entry, index, getElementType() ) ) {
+                        return connection.update(
+                                getSQLInsertRowString(),
+                                insertRowsParamValues( entry, index, collection, id, session ),
+                                expectation.canBeBatched(),
+                                new ExpectationAdaptor( expectation, getSQLInsertRowString(), getSqlExceptionConverter() )
+                        );
+                        //TODO: compose() a reactive version of collection.afterRowInsert()
+                    }
+                    else {
+                        return zeroFuture();
+                    }
+                }
+        ).thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
     }
 
     /**
@@ -138,8 +205,7 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
             }
 
             // update all the modified entries
-            return doReactiveUpdateRows( id, collection, session )
-                    .thenAccept( (count) -> LOG.debugf( "Done updating rows: %s updated", count ) );
+            return doReactiveUpdateRows( id, collection, session );
         }
         return voidFuture();
     }
@@ -147,47 +213,8 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#doUpdateRows(Serializable, PersistentCollection, SharedSessionContractImplementor)
      */
-    CompletionStage<Integer> doReactiveUpdateRows(Serializable id, PersistentCollection collection,
-                                          SharedSessionContractImplementor session);
-
-    /**
-     * @see org.hibernate.persister.collection.AbstractCollectionPersister#insertRows(PersistentCollection, Serializable, SharedSessionContractImplementor)
-     */
-    @Override
-    default CompletionStage<Void> reactiveInsertRows(
-            PersistentCollection collection,
-            Serializable id,
-            SharedSessionContractImplementor session) {
-        if ( isInverse() || !isRowDeleteEnabled() ) {
-            return voidFuture();
-        }
-
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debugf(
-                    "Inserting rows of collection: %s",
-                    collectionInfoString( this, collection, id, session )
-            );
-        }
-
-        ReactiveConnection reactiveConnection = getReactiveConnection( session );
-        //TODO: compose() reactive version of collection.preInsert()
-        Iterator<?> entries = collection.entries(this );
-        return total(
-                entries,
-                (entry, index) -> {
-                    if ( collection.needsInserting( entry, index, getElementType() ) ) {
-                        return reactiveConnection.update(
-                                getSQLInsertRowString(),
-                                insertRowsParamValues( entry, index, collection, id, session )
-                        );
-                        //TODO: compose() a reactive version of collection.afterRowInsert()
-                    }
-                    else {
-                        return zeroFuture();
-                    }
-                }
-        ).thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
-    }
+    CompletionStage<Void> doReactiveUpdateRows(Serializable id, PersistentCollection collection,
+                                                  SharedSessionContractImplementor session);
 
     default Object[] insertRowsParamValues(Object entry, int index,
                                            PersistentCollection collection, Serializable id,
@@ -199,7 +226,7 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
                     if ( hasIdentifier() ) {
                         loc = writeIdentifier( st, collection.getIdentifier( entry, index ), loc, session );
                     }
-                    if ( hasIndex() /* && !indexIsFormula */) {
+                    if ( hasIndex() && !indexContainsFormula() ) {
                         loc = writeIndex( st, collection.getIndex( entry, index, this ), loc, session );
                     }
                     writeElement( st, collection.getElement( entry ), loc, session );
@@ -238,6 +265,9 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     boolean hasIdentifier();
     boolean indexContainsFormula();
 
+    ExecuteUpdateResultCheckStyle getInsertCheckStyle();
+    ExecuteUpdateResultCheckStyle getDeleteCheckStyle();
+
     int writeElement(PreparedStatement st, Object element, int loc, SharedSessionContractImplementor session)
             throws SQLException;
     int writeIndex(PreparedStatement st, Object index, int loc, SharedSessionContractImplementor session)
@@ -255,4 +285,58 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     String getSQLDeleteRowString();
     String getSQLDeleteString();
     String getSQLUpdateRowString();
+
+    default List<Object> entryList(PersistentCollection collection) {
+        Iterator<?> entries = collection.entries( this );
+        List<Object> elements = new ArrayList<>();
+        while ( entries.hasNext() ) {
+            elements.add( entries.next() );
+        }
+        return elements;
+    }
+
+    default boolean needsUpdate(PersistentCollection collection, List<Object> entries) {
+        for ( int i = 0, size = entries.size(); i < size; i++ ) {
+            Object element = entries.get(i);
+            if ( collection.needsUpdating( element, i, getElementType() ) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    default boolean needsInsert(PersistentCollection collection, List<Object> entries) {
+        for ( int i = 0, size = entries.size(); i < size; i++ ) {
+            Object element = entries.get(i);
+            if ( collection.needsInserting( element, i, getElementType() ) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    class ExpectationAdaptor implements ReactiveConnection.Expectation {
+        private Expectation expectation;
+        private String sql;
+        private SQLExceptionConverter converter;
+
+        ExpectationAdaptor(Expectation expectation, String sql, SQLExceptionConverter converter) {
+            this.expectation = expectation;
+            this.sql = sql;
+            this.converter = converter;
+        }
+        @Override
+        public void verifyOutcome(int rowCount, int batchPosition, String sql) {
+            try {
+                expectation.verifyOutcome( rowCount, new PreparedStatementAdaptor(), batchPosition, sql );
+            }
+            catch ( SQLException sqle ) {
+                throw converter.convert( sqle, "could not update collection row", sql );
+            }
+        }
+    }
+
+    default SQLExceptionConverter getSqlExceptionConverter() {
+        return getFactory().getJdbcServices().getSqlExceptionHelper().getSqlExceptionConverter();
+    }
 }
