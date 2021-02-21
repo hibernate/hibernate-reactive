@@ -429,7 +429,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					boolean[] propertyNullness = types[i].toColumnNullness( loadedState[i], delegate().getFactory() );
 					for ( int k = 0; k < propertyNullness.length; k++ ) {
 						if ( propertyNullness[k] ) {
-							delete.addWhereFragment( propertyColumnNames[k] + " = $" + ( k + 1 ) );
+							delete.addWhereFragment( propertyColumnNames[k] + " = ?" );
 						}
 						else {
 							delete.addWhereFragment( propertyColumnNames[k] + " is null" );
