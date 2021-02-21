@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.persister.collection.impl;
 
-import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
@@ -28,9 +27,8 @@ import java.util.concurrent.CompletionStage;
 /**
  * A reactive {@link BasicCollectionPersister}
  */
-// TODO: Check out batching logic: See AbstractCollectionPersister for usage
-// boolean useBatch = expectation.canBeBatched();
-public class ReactiveBasicCollectionPersister extends BasicCollectionPersister implements ReactiveAbstractCollectionPersister {
+public class ReactiveBasicCollectionPersister extends BasicCollectionPersister
+		implements ReactiveAbstractCollectionPersister {
 	private final Parameters parameters;
 
 	public ReactiveBasicCollectionPersister(Collection collectionBinding,
@@ -41,20 +39,20 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		this.parameters = Parameters.instance( getFactory().getJdbcServices().getDialect() );
 	}
 
-	public CompletionStage<Void> reactiveInitialize(Serializable key, SharedSessionContractImplementor session)
-			throws HibernateException {
+	public CompletionStage<Void> reactiveInitialize(Serializable key,
+													SharedSessionContractImplementor session) {
 		return getAppropriateInitializer( key, session ).reactiveInitialize( key, session );
 	}
 
 	@Override
-	protected ReactiveCollectionInitializer createCollectionInitializer(LoadQueryInfluencers loadQueryInfluencers)
-			throws MappingException {
+	protected ReactiveCollectionInitializer createCollectionInitializer(LoadQueryInfluencers loadQueryInfluencers) {
 		return ReactiveBatchingCollectionInitializerBuilder.getBuilder( getFactory() )
 				.createBatchingCollectionInitializer( this, batchSize, getFactory(), loadQueryInfluencers );
 	}
 
 	@Override
-	protected ReactiveCollectionInitializer createSubselectInitializer(SubselectFetch subselect, SharedSessionContractImplementor session) {
+	protected ReactiveCollectionInitializer createSubselectInitializer(SubselectFetch subselect,
+																	   SharedSessionContractImplementor session) {
 		return new ReactiveSubselectCollectionLoader(
 				this,
 				subselect.toSubselectString( getCollectionType().getLHSPropertyName() ),
@@ -66,7 +64,8 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		);
 	}
 
-	protected ReactiveCollectionInitializer getAppropriateInitializer(Serializable key, SharedSessionContractImplementor session) {
+	protected ReactiveCollectionInitializer getAppropriateInitializer(Serializable key,
+																	  SharedSessionContractImplementor session) {
 		return (ReactiveCollectionInitializer) super.getAppropriateInitializer(key, session);
 	}
 
@@ -92,31 +91,36 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	}
 
 	@Override
-	public int writeElement(PreparedStatement st, Object element, int loc, SharedSessionContractImplementor session)
+	public int writeElement(PreparedStatement st, Object element, int loc,
+							SharedSessionContractImplementor session)
 			throws SQLException {
 		return super.writeElement(st, element, loc, session);
 	}
 
 	@Override
-	public int writeIndex(PreparedStatement st, Object index, int loc, SharedSessionContractImplementor session)
+	public int writeIndex(PreparedStatement st, Object index, int loc,
+						  SharedSessionContractImplementor session)
 			throws SQLException {
 		return super.writeIndex(st, index, loc, session);
 	}
 
 	@Override
-	public int writeKey(PreparedStatement st, Serializable id, int offset, SharedSessionContractImplementor session)
+	public int writeKey(PreparedStatement st, Serializable id, int offset,
+						SharedSessionContractImplementor session)
 			throws SQLException {
 		return super.writeKey(st, id, offset, session);
 	}
 
 	@Override
-	public int writeElementToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
+	public int writeElementToWhere(PreparedStatement st, Object entry, int loc,
+								   SharedSessionContractImplementor session)
 			throws SQLException {
 		return super.writeElementToWhere(st, entry, loc, session);
 	}
 
 	@Override
-	public int writeIndexToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
+	public int writeIndexToWhere(PreparedStatement st, Object entry, int loc,
+								 SharedSessionContractImplementor session)
 			throws SQLException {
 		return super.writeIndexToWhere(st, entry, loc, session);
 	}
