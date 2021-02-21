@@ -145,7 +145,7 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
     }
 
     @Entity(name="Author")
-    @Table(name="EAuthor")
+    @Table(name="ECAuthor")
     static class Author {
         Author(String title) {
             this.title = title;
@@ -157,7 +157,7 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
         String title;
 
         @ElementCollection
-        @JoinTable(name="EBook")
+        @JoinTable(name="ECBook")
         @OrderColumn(name="list_index")
         List<Book> books = new ArrayList<>();
     }
