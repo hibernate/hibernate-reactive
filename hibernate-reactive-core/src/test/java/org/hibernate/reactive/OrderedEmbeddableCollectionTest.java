@@ -13,12 +13,12 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import javax.persistence.Basic;
+import javax.persistence.CollectionTable;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.JoinTable;
 import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 import java.util.ArrayList;
@@ -170,7 +170,7 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
         String name;
 
         @ElementCollection
-        @JoinTable(name="ECBook")
+        @CollectionTable(name="ECBook")
         @OrderColumn(name="list_index")
         List<Book> books = new ArrayList<>();
     }
