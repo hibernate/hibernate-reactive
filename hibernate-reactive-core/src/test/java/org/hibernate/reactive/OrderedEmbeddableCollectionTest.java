@@ -8,6 +8,8 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import javax.persistence.Basic;
@@ -22,7 +24,12 @@ import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+
 public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
+
+    @Rule // This exposes a strange bug in the DB2 client
+    public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( DB2 );
 
     @Override
     protected Configuration constructConfiguration() {
