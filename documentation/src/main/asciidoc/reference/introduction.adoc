@@ -298,7 +298,8 @@ A full list of object/relational mapping annotations may be found in the
 annotations are already supported in Hibernate Reactive, though there are
 still a handful of limitations at this time.
 
-The most common and useful mapping annotations include:
+The most common and useful mapping annotations include these standard JPA
+annotations:
 
 |===
 | Annotation        | Purpose
@@ -327,6 +328,25 @@ The most common and useful mapping annotations include:
 | `@Table`          | Specifies a mapping to a database table
 | `@Column`         | Specifies a mapping to a database column
 | `@JoinColumn`     | Specifies a mapping to a database foreign key
+|===
+
+These Hibernate annotations are also very useful to know about:
+
+|===
+| Annotation           | Purpose
+
+| `@Cache`                                 | Enables second-level caching for an entity
+| `@Formula`                               | Maps field to SQL expression instead of a column
+| `@CreationTimestamp`, `@UpdateTimestamp` | Automatically assigns a timestamp to the field
+| `@FilterDef`, `@Filter`                  | Defines a Hibernate filter
+| `@FetchProfile`                          | Defines a Hibernate fetch profile
+| `@GenericGenerator`                      | Selects a custom id generator
+| `@DynamicInsert` and `@DynamicUpdate`    | Generates SQL dynamically with only needed columns
+                                             (instead of using SQL generated at startup)
+| `@Fetch`                                 | Specifies the fetching mode for an association
+| `@BatchSize`                             | Specifies the batch size for batch fetching an
+                                             association
+| `@SqlInsert`, `@SqlUpdate`, `@SqlDelete` | Specifies custom DML for entity operations
 |===
 
 Information about Bean Validation annotations may be found in the
