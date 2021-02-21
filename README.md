@@ -192,15 +192,10 @@ At present a few limitations remain.
 
 ### Mapping annotations
 
-The following mapping annotations are not yet supported:
+The following Hibernate mapping annotations are not yet supported:
 
-- JPA's `@OrderColumn` for collection mappings
-- Hibernate's `@Generated` properties
-- Hibernate's `@CollectionId`
-
-In addition, Hibernate Reactive does not support one-sided `@OneToMany` 
-associations without `mappedBy`. Instead, use `@OneToMany(mappedBy=...)` 
-together with `@ManyToOne` for all associations.
+- `@org.hibernate.annotations.Generated`
+- `@org.hibernate.annotations.CollectionId`
 
 ### Schema export
 
