@@ -380,7 +380,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		final String[] deleteStrings;
 		if ( isImpliedOptimisticLocking && loadedState != null ) {
 			// we need to utilize dynamic delete statements
-			deleteStrings = generateSQLDeleteStrings( loadedState );
+			deleteStrings = generateDynamicSQLDeleteStrings( loadedState );
 		}
 		else {
 			// otherwise, utilize the static delete statements
@@ -408,7 +408,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				|| optimisticLockStyle == OptimisticLockStyle.ALL;
 	}
 
-	default String[] generateSQLDeleteStrings(Object[] loadedState) {
+	default String[] generateDynamicSQLDeleteStrings(Object[] loadedState) {
 		int span = delegate().getTableSpan();
 		String[] deleteStrings = new String[span];
 		for ( int j = span - 1; j >= 0; j-- ) {
