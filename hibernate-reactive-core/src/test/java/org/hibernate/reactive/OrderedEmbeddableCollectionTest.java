@@ -66,7 +66,10 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
                         .chain( () -> getMutinySessionFactory()
                                 .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
                                         .chain( a -> session.fetch(a.books) )
-                                        .invoke( books -> context.assertEquals( 1, books.size() ) )
+                                        .invoke( books -> {
+                                            context.assertEquals( 1, books.size() );
+                                            context.assertEquals( book2.title, books.get(0).title );
+                                        } )
                                 )
                         )
                         .chain( () -> getMutinySessionFactory()
@@ -91,7 +94,10 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
                         .chain( () -> getMutinySessionFactory()
                                 .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
                                         .chain( a -> session.fetch(a.books) )
-                                        .invoke( books -> context.assertEquals( 1, books.size() ) )
+                                        .invoke( books -> {
+                                            context.assertEquals( 1, books.size() );
+                                            context.assertEquals( book2.title, books.get(0).title );
+                                        } )
                                 )
                         )
                         .chain( () -> getMutinySessionFactory()
@@ -136,25 +142,25 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 
     @Embeddable
     static class Book {
-        Book(String name) {
-            this.name = name;
+        Book(String title) {
+            this.title = title;
         }
         Book() {}
         @Basic(optional = false)
-        String name;
+        String title;
     }
 
     @Entity(name="Author")
     @Table(name="ECAuthor")
     static class Author {
-        Author(String title) {
-            this.title = title;
+        Author(String name) {
+            this.name = name;
         }
         public Author() {}
         @GeneratedValue @Id long id;
 
         @Basic(optional = false)
-        String title;
+        String name;
 
         @ElementCollection
         @JoinTable(name="ECBook")

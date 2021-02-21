@@ -15,9 +15,10 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ManyToManyTest extends BaseReactiveTest {
 
@@ -34,21 +35,12 @@ public class ManyToManyTest extends BaseReactiveTest {
         Book book1 = new Book("Feersum Endjinn");
         Book book2 = new Book("Use of Weapons");
         Author author = new Author("Iain M Banks");
-        book1.authors.add(author);
-        book2.authors.add(author);
         author.books.add(book1);
         author.books.add(book2);
 
         test(context,
                 getMutinySessionFactory()
                         .withTransaction( (session, transaction) -> session.persistAll(book1, book2, author) )
-                        .chain( () -> getMutinySessionFactory()
-                                .withTransaction( (session, transaction) -> session.find(Book.class, book1.id)
-                                        .invoke( b -> context.assertFalse( Hibernate.isInitialized(b.authors) ) )
-                                        .chain( b -> session.fetch(b.authors) )
-                                        .invoke( authors -> context.assertEquals( 1, authors.size() ) )
-                                )
-                        )
                         .chain( () -> getMutinySessionFactory()
                                 .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
                                         .invoke( a -> context.assertFalse( Hibernate.isInitialized(a.books) ) )
@@ -63,38 +55,115 @@ public class ManyToManyTest extends BaseReactiveTest {
                                         .invoke( a -> context.assertEquals( 2, a.books.size() ) )
                                 )
                         )
+                        .chain( () -> getMutinySessionFactory()
+                                .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                        .chain( a -> session.fetch(a.books) )
+                                        .invoke( books -> books.remove(0) )
+                                )
+                        )
+                        .chain( () -> getMutinySessionFactory()
+                                .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                        .chain( a -> session.fetch(a.books) )
+                                        .invoke( books -> {
+                                            context.assertEquals( 1, books.size() );
+                                            context.assertEquals( book2.title, books.get(0).title );
+                                        } )
+                                )
+                        )
+                        .chain( () -> getMutinySessionFactory()
+                                .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                        .chain( a -> session.fetch(a.books) )
+                                        .chain( books -> session.find(Book.class, book1.id).invoke(books::add) )
+                                )
+                        )
+                        .chain( () -> getMutinySessionFactory()
+                                .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                        .invoke( a -> context.assertFalse( Hibernate.isInitialized(a.books) ) )
+                                        .chain( a -> session.fetch(a.books) )
+                                        .invoke( books -> context.assertEquals( 2, books.size() ) )
+                                )
+                        )
+                        .chain( () -> getMutinySessionFactory()
+                                .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                        .chain( a -> session.fetch(a.books) )
+                                        .invoke( books -> books.remove(1) )
+                                )
+                        )
+                        .chain( () -> getMutinySessionFactory()
+                                .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                        .chain( a -> session.fetch(a.books) )
+                                        .invoke( books -> {
+                                            context.assertEquals( 1, books.size() );
+                                            context.assertEquals( book1.title, books.get(0).title );
+                                        } )
+                                )
+                        )
+                        .chain( () -> getMutinySessionFactory()
+                                .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                        .chain( a -> session.fetch(a.books) )
+                                        .chain( books -> session.find(Book.class, book2.id).invoke(books::add) )
+                                )
+                        )
+                        .chain( () -> getMutinySessionFactory()
+                                .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                        .invoke( a -> context.assertFalse( Hibernate.isInitialized(a.books) ) )
+                                        .chain( a -> session.fetch(a.books) )
+                                        .invoke( books -> context.assertEquals( 2, books.size() ) )
+                                )
+                        )
+                        .chain( () -> getMutinySessionFactory()
+                                .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                        .chain( a -> session.fetch(a.books) )
+                                        .invoke( books -> books.add( books.remove(0) ) )
+                                )
+                        )
+                        .chain( () -> getMutinySessionFactory()
+                                .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                        .invoke( a -> context.assertFalse( Hibernate.isInitialized(a.books) ) )
+                                        .chain( a -> session.fetch(a.books) )
+                                        .invoke( books -> context.assertEquals( 2, books.size() ) )
+                                )
+                        )
+                        .chain( () -> getMutinySessionFactory()
+                                .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                        .invoke( a -> a.books = null )
+                                )
+                        )
+                        .chain( () -> getMutinySessionFactory()
+                                .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                        .chain( a -> session.fetch(a.books) )
+                                        .invoke( books -> context.assertTrue( books.isEmpty() ) )
+                                )
+                        )
         );
     }
 
     @Entity(name="Book")
     @Table(name="MTMBook")
     static class Book {
-        Book(String name) {
-            this.name = name;
+        Book(String title) {
+            this.title = title;
         }
         Book() {}
         @GeneratedValue @Id long id;
 
         @Basic(optional = false)
-        String name;
-
-        @ManyToMany
-        Set<Author> authors = new HashSet<>();
+        String title;
     }
 
     @Entity(name="Author")
     @Table(name="MTMAuthor")
     static class Author {
-        Author(String title) {
-            this.title = title;
+        Author(String name) {
+            this.name = name;
         }
         public Author() {}
         @GeneratedValue @Id long id;
 
         @Basic(optional = false)
-        String title;
+        String name;
 
-        @ManyToMany(mappedBy = "authors")
-        Set<Book> books = new HashSet<>();
+        @ManyToMany @OrderBy("id")
+        List<Book> books = new ArrayList<>();
     }
 }
