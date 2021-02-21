@@ -199,6 +199,10 @@ The following Hibernate mapping annotations are not yet supported:
 - `@org.hibernate.annotations.Generated`
 - `@org.hibernate.annotations.CollectionId`
 
+### Natural key lookup
+
+There's no equivalent of `Session.byNaturalId()` in the reactive API.
+
 ### Schema export
 
 Automatic update or validation of an existing database schema requires 
