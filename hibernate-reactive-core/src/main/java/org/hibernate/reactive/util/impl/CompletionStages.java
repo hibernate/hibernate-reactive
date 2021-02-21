@@ -26,22 +26,6 @@ public class CompletionStages {
 	private static final CoreMessageLogger log =
 			CoreLogging.messageLogger("org.hibernate.reactive.errors");
 
-	public static <T, R> CompletionStage<R> zipArray(
-			Function<? super Object[], ? extends R> zipper,
-			CompletionStage<? extends T>... sources) {
-		Object[] results = new Object[sources.length];
-		CompletionStage<?> state = voidFuture();
-		for ( int i = 0; i < sources.length; i++ ) {
-			CompletionStage<? extends T> completionStage = sources[i];
-			int finalI = i;
-			CompletionStage<Void> stage = completionStage.thenAccept( result -> {
-				results[finalI] = result;
-			} );
-			state = state.thenCompose( v -> stage );
-		}
-		return state.thenApply( v -> zipper.apply( results ) );
-	}
-
 	// singleton instances:
 	private static final CompletionStage<Void> VOID = completedFuture( null );
 	private static final CompletionStage<Integer> ZERO = completedFuture( 0 );
@@ -136,13 +120,6 @@ public class CompletionStages {
 				.fold( 0, Integer::sum );
 	}
 
-	public static <T> CompletionStage<Integer> total(Iterator<T> iterator, BiFunction<T,Integer,CompletionStage<Integer>> consumer) {
-		AtomicInteger index = new AtomicInteger( 0 );
-		return AsyncIterator.fromIterator( iterator )
-				.thenCompose( thing -> consumer.apply( thing, index.getAndIncrement() ) )
-				.fold( 0, Integer::sum );
-	}
-
 	/**
 	 * Equivalent to:
 	 * <pre>
@@ -176,6 +153,17 @@ public class CompletionStages {
 	 * }
 	 * </pre>
 	 */
+	public static <T> CompletionStage<Void> loop(Iterator<T> iterator, BiFunction<T,Integer,CompletionStage<?>> consumer) {
+		if ( iterator.hasNext() ) {
+			AtomicInteger index = new AtomicInteger( 0 );
+			return AsyncTrampoline.asyncWhile( () -> consumer.apply( iterator.next(), index.getAndIncrement() )
+					.thenApply( r -> iterator.hasNext() ));
+		}
+		else {
+			return voidFuture();
+		}
+	}
+
 	public static <T> CompletionStage<Void> loop(Iterator<T> iterator, Function<T,CompletionStage<?>> consumer) {
 		if ( iterator.hasNext() ) {
 			return AsyncTrampoline.asyncWhile( () -> consumer.apply( iterator.next() )

@@ -8,19 +8,28 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import javax.persistence.Basic;
+import javax.persistence.ElementCollection;
+import javax.persistence.Embeddable;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.ManyToMany;
-import javax.persistence.OrderBy;
+import javax.persistence.JoinTable;
+import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ManyToManyTest extends BaseReactiveTest {
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+
+public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
+
+    @Rule // This exposes a strange bug in the DB2 client
+    public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( DB2 );
 
     @Override
     protected Configuration constructConfiguration() {
@@ -40,7 +49,7 @@ public class ManyToManyTest extends BaseReactiveTest {
 
         test(context,
                 getMutinySessionFactory()
-                        .withTransaction( (session, transaction) -> session.persistAll(book1, book2, author) )
+                        .withTransaction( (session, transaction) -> session.persistAll(author) )
                         .chain( () -> getMutinySessionFactory()
                                 .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
                                         .invoke( a -> context.assertFalse( Hibernate.isInitialized(a.books) ) )
@@ -73,7 +82,7 @@ public class ManyToManyTest extends BaseReactiveTest {
                         .chain( () -> getMutinySessionFactory()
                                 .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
                                         .chain( a -> session.fetch(a.books) )
-                                        .chain( books -> session.find(Book.class, book1.id).invoke(books::add) )
+                                        .invoke( books -> books.add(book1) )
                                 )
                         )
                         .chain( () -> getMutinySessionFactory()
@@ -94,14 +103,14 @@ public class ManyToManyTest extends BaseReactiveTest {
                                         .chain( a -> session.fetch(a.books) )
                                         .invoke( books -> {
                                             context.assertEquals( 1, books.size() );
-                                            context.assertEquals( book1.title, books.get(0).title );
+                                            context.assertEquals( book2.title, books.get(0).title );
                                         } )
                                 )
                         )
                         .chain( () -> getMutinySessionFactory()
                                 .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
                                         .chain( a -> session.fetch(a.books) )
-                                        .chain( books -> session.find(Book.class, book2.id).invoke(books::add) )
+                                        .invoke( books -> books.add(book1) )
                                 )
                         )
                         .chain( () -> getMutinySessionFactory()
@@ -138,21 +147,18 @@ public class ManyToManyTest extends BaseReactiveTest {
         );
     }
 
-    @Entity(name="Book")
-    @Table(name="MTMBook")
+    @Embeddable
     static class Book {
         Book(String title) {
             this.title = title;
         }
         Book() {}
-        @GeneratedValue @Id long id;
-
         @Basic(optional = false)
         String title;
     }
 
     @Entity(name="Author")
-    @Table(name="MTMAuthor")
+    @Table(name="ECAuthor")
     static class Author {
         Author(String name) {
             this.name = name;
@@ -163,7 +169,9 @@ public class ManyToManyTest extends BaseReactiveTest {
         @Basic(optional = false)
         String name;
 
-        @ManyToMany @OrderBy("id")
+        @ElementCollection
+        @JoinTable(name="ECBook")
+        @OrderColumn(name="list_index")
         List<Book> books = new ArrayList<>();
     }
 }

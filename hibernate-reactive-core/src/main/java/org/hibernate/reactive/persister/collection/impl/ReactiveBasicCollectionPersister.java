@@ -8,12 +8,17 @@ package org.hibernate.reactive.persister.collection.impl;
 import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
+import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
+import org.hibernate.internal.util.collections.ArrayHelper;
+import org.hibernate.jdbc.Expectation;
 import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.BasicCollectionPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
+import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
 import org.hibernate.reactive.loader.collection.impl.ReactiveBatchingCollectionInitializerBuilder;
 import org.hibernate.reactive.loader.collection.impl.ReactiveSubselectCollectionLoader;
@@ -22,7 +27,12 @@ import org.hibernate.reactive.pool.impl.Parameters;
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.jdbc.Expectations.appropriateExpectation;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactive {@link BasicCollectionPersister}
@@ -147,5 +157,87 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister
 	public String getSQLUpdateRowString() {
 		String sql = super.getSQLUpdateRowString();
 		return parameters.process( sql );
+	}
+
+	@Override
+	public ExecuteUpdateResultCheckStyle getInsertCheckStyle() {
+		return super.getInsertCheckStyle();
+	}
+
+	@Override
+	public ExecuteUpdateResultCheckStyle getDeleteCheckStyle() {
+		return super.getDeleteCheckStyle();
+	}
+
+	/**
+	 * @see BasicCollectionPersister#doUpdateRows(Serializable, PersistentCollection, SharedSessionContractImplementor)
+	 */
+	@Override
+	public CompletionStage<Void> doReactiveUpdateRows(Serializable id, PersistentCollection collection,
+														 SharedSessionContractImplementor session) {
+		if ( ArrayHelper.isAllFalse( elementColumnIsSettable ) ) {
+			return voidFuture();
+		}
+
+		List<Object> entries = entryList( collection );
+		if ( !needsUpdate( collection, entries ) ) {
+			return voidFuture();
+		}
+
+		Expectation expectation = appropriateExpectation( getUpdateCheckStyle() );
+		boolean useBatch = expectation.canBeBatched() && session.getConfiguredJdbcBatchSize() > 1;
+		return loop(
+				orderedIndices( collection, entries ),
+				index -> {
+					Object entry = entries.get( index );
+					if ( collection.needsUpdating( entry, index, elementType ) ) {
+						return getReactiveConnection( session ).update(
+								getSQLUpdateRowString(),
+								updateRowsParamValues( entry, index, collection, id, session ),
+								useBatch,
+								new ExpectationAdaptor( expectation, getSQLUpdateRowString(), getSQLExceptionConverter() )
+						);
+					}
+					else {
+						return voidFuture();
+					}
+				}
+		);
+	}
+
+	private Integer[] orderedIndices(PersistentCollection collection, List<Object> elements) {
+		Integer[] indices = new Integer[ elements.size() ];
+		if ( collection.isElementRemoved() ) {
+			// the update should be done starting from the end of the list
+			for ( int i = elements.size() - 1, j = 0; i >= 0; i-- ) {
+				indices[j++] = i;
+			}
+		}
+		else {
+			for ( int i = 0, j = 0; i < elements.size(); i++ ) {
+				indices[j++] = i;
+			}
+		}
+		return indices;
+	}
+
+	private Object[] updateRowsParamValues(Object entry, int i, PersistentCollection collection, Serializable id,
+										   SharedSessionContractImplementor session) {
+		int offset = 1;
+		return PreparedStatementAdaptor.bind( st -> {
+			int loc = writeElement( st, collection.getElement( entry ), offset, session );
+			if ( hasIdentifier ) {
+				writeIdentifier( st, collection.getIdentifier( entry, i ), loc, session );
+			}
+			else {
+				loc = writeKey(st, id, loc, session);
+				if ( hasIndex && !indexContainsFormula ) {
+					writeIndexToWhere( st, collection.getIndex( entry, i, this ), loc, session );
+				}
+				else {
+					writeElementToWhere( st, collection.getSnapshotElement( entry, i ), loc, session );
+				}
+			}
+		} );
 	}
 }
