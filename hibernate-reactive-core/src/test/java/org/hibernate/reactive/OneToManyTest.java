@@ -15,6 +15,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +64,10 @@ public class OneToManyTest extends BaseReactiveTest {
                         .chain( () -> getMutinySessionFactory()
                                 .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
                                         .chain( a -> session.fetch(a.books) )
-                                        .invoke( books -> context.assertEquals( 1, books.size() ) )
+                                        .invoke( books -> {
+                                            context.assertEquals( 1, books.size() );
+                                            context.assertEquals( book2.title, books.get(0).title );
+                                        } )
                                 )
                         )
                         .chain( () -> getMutinySessionFactory()
@@ -88,7 +92,10 @@ public class OneToManyTest extends BaseReactiveTest {
                         .chain( () -> getMutinySessionFactory()
                                 .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
                                         .chain( a -> session.fetch(a.books) )
-                                        .invoke( books -> context.assertEquals( 1, books.size() ) )
+                                        .invoke( books -> {
+                                            context.assertEquals( 1, books.size() );
+                                            context.assertEquals( book1.title, books.get(0).title );
+                                        } )
                                 )
                         )
                         .chain( () -> getMutinySessionFactory()
@@ -134,29 +141,29 @@ public class OneToManyTest extends BaseReactiveTest {
     @Entity(name="Book")
     @Table(name="OTMBook")
     static class Book {
-        Book(String name) {
-            this.name = name;
+        Book(String title) {
+            this.title = title;
         }
         Book() {}
         @GeneratedValue @Id long id;
 
         @Basic(optional = false)
-        String name;
+        String title;
     }
 
     @Entity(name="Author")
     @Table(name="OTMAuthor")
     static class Author {
-        Author(String title) {
-            this.title = title;
+        Author(String name) {
+            this.name = name;
         }
         public Author() {}
         @GeneratedValue @Id long id;
 
         @Basic(optional = false)
-        String title;
+        String name;
 
-        @OneToMany
+        @OneToMany @OrderBy("id")
         List<Book> books = new ArrayList<>();
     }
 }

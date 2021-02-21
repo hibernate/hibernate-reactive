@@ -15,12 +15,12 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
-import javax.persistence.OrderBy;
+import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ManyToManyTest extends BaseReactiveTest {
+public class OrderedManyToManyTest extends BaseReactiveTest {
 
     @Override
     protected Configuration constructConfiguration() {
@@ -94,14 +94,14 @@ public class ManyToManyTest extends BaseReactiveTest {
                                         .chain( a -> session.fetch(a.books) )
                                         .invoke( books -> {
                                             context.assertEquals( 1, books.size() );
-                                            context.assertEquals( book1.title, books.get(0).title );
+                                            context.assertEquals( book2.title, books.get(0).title );
                                         } )
                                 )
                         )
                         .chain( () -> getMutinySessionFactory()
                                 .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
                                         .chain( a -> session.fetch(a.books) )
-                                        .chain( books -> session.find(Book.class, book2.id).invoke(books::add) )
+                                        .chain( books -> session.find(Book.class, book1.id).invoke(books::add) )
                                 )
                         )
                         .chain( () -> getMutinySessionFactory()
@@ -139,7 +139,7 @@ public class ManyToManyTest extends BaseReactiveTest {
     }
 
     @Entity(name="Book")
-    @Table(name="MTMBook")
+    @Table(name="IMTMBook")
     static class Book {
         Book(String title) {
             this.title = title;
@@ -152,7 +152,7 @@ public class ManyToManyTest extends BaseReactiveTest {
     }
 
     @Entity(name="Author")
-    @Table(name="MTMAuthor")
+    @Table(name="IMTMAuthor")
     static class Author {
         Author(String name) {
             this.name = name;
@@ -163,7 +163,8 @@ public class ManyToManyTest extends BaseReactiveTest {
         @Basic(optional = false)
         String name;
 
-        @ManyToMany @OrderBy("id")
+        @ManyToMany
+        @OrderColumn(name="list_index")
         List<Book> books = new ArrayList<>();
     }
 }
