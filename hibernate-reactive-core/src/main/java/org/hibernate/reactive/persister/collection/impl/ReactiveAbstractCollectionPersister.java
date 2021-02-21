@@ -81,8 +81,7 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#remove(Serializable, SharedSessionContractImplementor)
      */
-    default CompletionStage<Void> removeReactive(Serializable id, SharedSessionContractImplementor session)
-            throws HibernateException {
+    default CompletionStage<Void> removeReactive(Serializable id, SharedSessionContractImplementor session) {
         if ( !isInverse() && isRowDeleteEnabled() ) {
             if ( LOG.isDebugEnabled() ) {
                 LOG.debugf(
@@ -105,7 +104,7 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     default CompletionStage<Void> reactiveDeleteRows(
             PersistentCollection collection,
             Serializable id,
-            SharedSessionContractImplementor session) throws HibernateException {
+            SharedSessionContractImplementor session) {
         if ( isInverse() || !isRowDeleteEnabled() ) {
             return voidFuture();
         }
@@ -127,7 +126,7 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     default CompletionStage<Void> reactiveUpdateRows(
             PersistentCollection collection,
             Serializable id,
-            SharedSessionContractImplementor session) throws HibernateException {
+            SharedSessionContractImplementor session) {
 
         if ( !isInverse() && collection.isRowUpdatePossible() ) {
             // NOTE this method call uses a JDBC connection and will fail for Map ElementCollection type
@@ -148,7 +147,7 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     default CompletionStage<Void> reactiveInsertRows(
             PersistentCollection collection,
             Serializable id,
-            SharedSessionContractImplementor session) throws HibernateException {
+            SharedSessionContractImplementor session) {
         if ( isInverse() || !isRowDeleteEnabled() ) {
             return voidFuture();
         }
@@ -222,18 +221,25 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     default boolean deleteByIndex() {
         return !isOneToMany() && hasIndex() && !indexContainsFormula();
     }
+
     boolean isRowDeleteEnabled();
     boolean isRowInsertEnabled();
 
     boolean hasIdentifier();
     boolean indexContainsFormula();
 
-    int writeElement(PreparedStatement st, Object element, int loc, SharedSessionContractImplementor session) throws SQLException;
-    int writeIndex(PreparedStatement st, Object index, int loc, SharedSessionContractImplementor session) throws SQLException;
-    int writeIdentifier(PreparedStatement st, Object identifier, int loc, SharedSessionContractImplementor session) throws SQLException;
-    int writeKey(PreparedStatement st, Serializable id, int offset, SharedSessionContractImplementor session) throws SQLException;
-    int writeElementToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session) throws SQLException;
-    int writeIndexToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session) throws SQLException;
+    int writeElement(PreparedStatement st, Object element, int loc, SharedSessionContractImplementor session)
+            throws SQLException;
+    int writeIndex(PreparedStatement st, Object index, int loc, SharedSessionContractImplementor session)
+            throws SQLException;
+    int writeIdentifier(PreparedStatement st, Object identifier, int loc, SharedSessionContractImplementor session)
+            throws SQLException;
+    int writeKey(PreparedStatement st, Serializable id, int offset, SharedSessionContractImplementor session)
+            throws SQLException;
+    int writeElementToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
+            throws SQLException;
+    int writeIndexToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
+            throws SQLException;
 
     String getSQLInsertRowString();
     String getSQLDeleteRowString();
