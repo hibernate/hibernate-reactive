@@ -183,8 +183,8 @@ public class CompositeIdTest extends BaseReactiveTest {
 	}
 
 	static final class Pig implements Serializable {
-		@Id private Integer id;
-		@Id private String name;
+		private Integer id;
+		private String name;
 
 		public Pig(Integer id, String name) {
 			this.id = id;
