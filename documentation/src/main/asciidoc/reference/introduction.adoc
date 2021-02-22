@@ -298,6 +298,8 @@ A full list of object/relational mapping annotations may be found in the
 annotations are already supported in Hibernate Reactive, though there are
 still a handful of limitations at this time.
 
+==== Common JPA annotations
+
 The most common and useful mapping annotations include these standard JPA
 annotations:
 
@@ -306,22 +308,27 @@ annotations:
 
 | `@Entity`           | Declares an entity class (a class with its own
                         database table an persistent identity)
-| `@Embeddable`       | Declares an embeddable class (a class without its
+| `@MappedSuperclass` | A superclass that declares common persistent
+                        fields of its `@Entity` subclasses
+| `@Embeddable` or
+  `@Embedded`         | Declare an embeddable class (a class without its
                         own persistent identity or database table)
-| `@MappedSuperclass` | A superclass that declares persistent fields
 | `@Inheritance`      | Defines how inheritance hierarchies should be
                         mapped to database tables
 | `@Id`               | Specifies that a field of an entity holds the
                         persistent identity of the entity, and maps to
                         the primary key of its table
-| `@IdClass`          | Specifies a class representing a composite primary
-                        key
-| `@EmbeddedId`       | Specifies that a field of an entity holds the
-                        value of a composite primary key
+| `@IdClass`          | Specifies a class representing the composite
+                        primary key of the entity (for entities with
+                        multiple `@Id` fields)
+| `@EmbeddedId`       | Specifies that a field of an entity holds its
+                        composite primary key represented as an
+                        `@Embeddable` class
 | `@GeneratedValue`   | Specifies that an identifier is a system-generated
                         surrogate key
 | `@Version`          | Specifies that a field of an entity holds a version
                         number used for optimistic locking
+| `@Enumerated`       | Maps a field holding an `enum`
 | `@ManyToOne`        | Declares a many-to-one association to a second
                         entity
 | `@OneToOne`         | Declares a one-to-one association to a second
@@ -334,7 +341,9 @@ annotations:
 | `@JoinColumn`       | Specifies a mapping to a database foreign key
 |===
 
-These Hibernate annotations are also very useful to know about:
+==== Useful Hibernate annotations
+
+These Hibernate annotations are also quite useful to know about:
 
 |===
 | Annotation                               | Purpose
@@ -355,12 +364,19 @@ These Hibernate annotations are also very useful to know about:
 | `@SqlInsert`, `@SqlUpdate`, `@SqlDelete` | Specify custom DML for entity operations
 |===
 
+==== Bean Validation annotations
+
 Information about Bean Validation annotations may be found in the
 {bean-validation}[documentation for Hibernate Validator].
 
+TIP: for defining a required field, we prefer to use the `@NotNull`
+annotation from Bean Validation instead of JPA's more verbose
+`@Basic(optional=false)`. Similarly, we prefer to define the length of a
+text field using `@Size(100)` rather than `@Column(length=100)`.
+
 === Getters and setters
 
-When using Hibernate Reactive _outside_ of the Quarkus environment, you'll
+When using Hibernate Reactive _outside_ the Quarkus environment, you'll
 need to write your entity classes according to the usual JPA conventions,
 which require:
 
