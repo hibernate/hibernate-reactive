@@ -133,7 +133,7 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
                 deletes,
                 (entry, index) -> connection.update(
                         getSQLDeleteRowString(),
-                        deleteRowsParamValues( entry, index+1, id, session ),
+                        deleteRowsParamValues( entry, 1, id, session ),
                         expectation.canBeBatched(),
                         new ExpectationAdaptor( expectation, getSQLDeleteRowString(), getSqlExceptionConverter() )
                 )
