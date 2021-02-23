@@ -42,7 +42,11 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.sql.Delete;
 import org.hibernate.sql.SimpleSelect;
 import org.hibernate.sql.Update;
+import org.hibernate.tuple.GenerationTiming;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
+import org.hibernate.tuple.NonIdentifierAttribute;
+import org.hibernate.tuple.ValueGeneration;
+import org.hibernate.type.ComponentType;
 import org.hibernate.type.Type;
 import org.hibernate.type.VersionType;
 import org.jboss.logging.Logger;
@@ -63,6 +67,7 @@ import static org.hibernate.internal.util.collections.ArrayHelper.join;
 import static org.hibernate.internal.util.collections.ArrayHelper.trim;
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor.bind;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -105,6 +110,121 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	default ReactiveConnection getReactiveConnection(SharedSessionContractImplementor session) {
 		return ((ReactiveConnectionSupplier) session).getReactiveConnection();
+	}
+
+	String getSqlInsertGeneratedValuesSelectString();
+
+	String getSqlUpdateGeneratedValuesSelectString();
+
+	/**
+	 * Process properties generated with an insert
+	 *
+	 * @see AbstractEntityPersister#processUpdateGeneratedProperties(Serializable, Object, Object[], SharedSessionContractImplementor)
+	 */
+	@Override
+	default CompletionStage<Void> reactiveProcessInsertGenerated(
+			Serializable id, Object entity, Object[] state, SharedSessionContractImplementor session) {
+		if ( !hasInsertGeneratedProperties() ) {
+			throw new AssertionFailure( "no insert-generated properties" );
+		}
+		return processGeneratedProperties(
+				id,
+				entity,
+				state,
+				session,
+				getSqlInsertGeneratedValuesSelectString(),
+				GenerationTiming.INSERT
+		);
+	}
+
+	/**
+	 * Process properties generated with an update
+	 *
+	 * @see AbstractEntityPersister#processUpdateGeneratedProperties(Serializable, Object, Object[], SharedSessionContractImplementor)
+	 */
+	@Override
+	default CompletionStage<Void> reactiveProcessUpdateGenerated(
+			Serializable id, Object entity, Object[] state, SharedSessionContractImplementor session) {
+		if ( !hasUpdateGeneratedProperties() ) {
+			throw new AssertionFailure( "no update-generated properties" );
+		}
+		return processGeneratedProperties(
+				id,
+				entity,
+				state,
+				session,
+				getSqlUpdateGeneratedValuesSelectString(),
+				GenerationTiming.ALWAYS
+		);
+	}
+
+	default CompletionStage<Void> processGeneratedProperties(
+			Serializable id,
+			Object entity,
+			Object[] state,
+			SharedSessionContractImplementor session,
+			String selectionSQL,
+			GenerationTiming matchTiming) {
+		ReactiveConnection connection = getReactiveConnection( session );
+		// force immediate execution of the insert batch (if one)
+		return connection.executeBatch()
+				.thenCompose( v -> connection
+						.selectJdbc( selectionSQL, bind( ps -> getIdentifierType().nullSafeSet( ps, id, 1, session ) ) ) )
+				.thenAccept( rs -> {
+					try {
+						if ( !rs.next() ) {
+							throw new HibernateException( "Unable to locate row for retrieval of generated properties: " +
+											infoString( this, id, getFactory() )
+							);
+						}
+						int propertyIndex = -1;
+						for ( NonIdentifierAttribute attribute : getEntityMetamodel().getProperties() ) {
+							propertyIndex++;
+							if ( isGenerationOfValuesRequired( attribute, matchTiming ) ) {
+								final Object hydratedState = attribute.getType()
+										.hydrate( rs, getPropertyAliases( "", propertyIndex ), session, entity );
+								state[propertyIndex] = attribute.getType().resolve( hydratedState, session, entity );
+								setPropertyValue( entity, propertyIndex, state[propertyIndex] );
+							}
+						}
+					}
+					catch (SQLException sqle) {
+						//can never happen
+						throw new JDBCException( "unable to select generated column values: " + selectionSQL, sqle );
+					}
+				} );
+	}
+
+	// FIXME: it can be removed when ORM 5.4.29 is released: see AbstractEntityPersister#isValueGenerationRequired
+	static boolean isGenerationOfValuesRequired(NonIdentifierAttribute attribute, GenerationTiming matchTiming) {
+		if ( attribute.getType() instanceof ComponentType ) {
+			final ComponentType type = (ComponentType) attribute.getType();
+			final ValueGeneration[] propertyValueGenerationStrategies = type.getPropertyValueGenerationStrategies();
+			for ( ValueGeneration propertyValueGenerationStrategy : propertyValueGenerationStrategies ) {
+				if ( isReadRequired( propertyValueGenerationStrategy, matchTiming ) ) {
+					return true;
+				}
+			}
+			return false;
+		}
+		else {
+			return isReadRequired( attribute.getValueGenerationStrategy(), matchTiming );
+		}
+	}
+
+	/**
+	 * Whether the given value generation strategy requires to read the value from the database or not.
+	 */
+	static boolean isReadRequired(ValueGeneration valueGeneration, GenerationTiming matchTiming) {
+		return valueGeneration != null &&
+				valueGeneration.getValueGenerator() == null &&
+				timingsMatch( valueGeneration.getGenerationTiming(), matchTiming );
+	}
+
+	static boolean timingsMatch(GenerationTiming timing, GenerationTiming matchTiming) {
+		return
+				( matchTiming == GenerationTiming.INSERT && timing.includesInsert() ) ||
+						( matchTiming == GenerationTiming.ALWAYS && timing.includesUpdate() );
 	}
 
 	@Override

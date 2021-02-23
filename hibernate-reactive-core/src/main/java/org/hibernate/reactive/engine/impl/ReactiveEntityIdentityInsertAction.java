@@ -12,8 +12,10 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import static org.hibernate.reactive.util.impl.CompletionStages.*;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
+import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -57,13 +59,13 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 		// else inserted the same pk first, the insert would fail
 
 		if ( !isVeto() ) {
-			return stage.thenCompose( v -> ( (ReactiveEntityPersister) persister ).insertReactive( getState(), instance, session ) )
+			ReactiveEntityPersister reactivePersister = (ReactiveEntityPersister) persister;
+			return stage
+					.thenCompose( v -> reactivePersister.insertReactive( getState(), instance, session ) )
+					.thenApply( this::applyGeneratedId )
+					.thenCompose( generatedId -> processInsertGenerated( reactivePersister, generatedId, instance, session)
+							.thenApply( v -> generatedId ) )
 					.thenAccept( generatedId -> {
-						setGeneratedId(generatedId);
-						if (persister.hasInsertGeneratedProperties()) {
-							throw new UnsupportedOperationException("generated attributes not supported in Hibernate Reactive");
-//							persister.processInsertGeneratedProperties(generatedId, instance, getState(), session);
-						}
 						//need to do that here rather than in the save event listener to let
 						//the post insert events to have a id-filled entity when IDENTITY is used (EJB3)
 						persister.setIdentifier(instance, generatedId, session);
@@ -88,6 +90,23 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 				markExecuted();
 				return stage;
 			}
+	}
+
+	private CompletionStage<Void> processInsertGenerated(
+			ReactiveEntityPersister reactivePersister,
+			Serializable generatedId,
+			Object instance,
+			SharedSessionContractImplementor session) {
+		if ( reactivePersister.hasInsertGeneratedProperties() ) {
+			return reactivePersister
+					.reactiveProcessInsertGenerated( generatedId, instance, getState(), session );
+		}
+		return voidFuture();
+	}
+
+	private Serializable applyGeneratedId(Serializable id) {
+		setGeneratedId( id );
+		return id;
 	}
 
 	@Override
