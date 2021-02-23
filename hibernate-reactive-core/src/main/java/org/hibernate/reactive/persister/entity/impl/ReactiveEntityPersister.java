@@ -110,6 +110,16 @@ public interface ReactiveEntityPersister extends EntityPersister {
 													  SharedSessionContractImplementor session);
 
 	/**
+	 * @see EntityPersister#processInsertGeneratedProperties(Serializable, Object, Object[], SharedSessionContractImplementor)
+	 */
+	CompletionStage<Void> reactiveProcessInsertGenerated(Serializable id, Object entity, Object[] state, SharedSessionContractImplementor session);
+
+	/**
+	 * @see EntityPersister#processUpdateGeneratedProperties(Serializable, Object, Object[], SharedSessionContractImplementor)
+	 */
+	CompletionStage<Void> reactiveProcessUpdateGenerated(Serializable id, Object entity, Object[] state, SharedSessionContractImplementor session);
+
+	/**
 	 * Get the current database state of the object, in a "hydrated" form, without
 	 * resolving identifiers
 	 *
