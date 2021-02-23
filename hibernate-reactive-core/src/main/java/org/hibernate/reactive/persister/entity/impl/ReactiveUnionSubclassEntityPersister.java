@@ -35,6 +35,9 @@ import java.util.concurrent.CompletionStage;
 public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPersister
 		implements ReactiveAbstractEntityPersister {
 
+	private String sqlUpdateGeneratedValuesSelectString;
+	private String sqlInsertGeneratedValuesSelectString;
+
 	public ReactiveUnionSubclassEntityPersister(
 			PersistentClass persistentClass,
 			EntityDataAccess cacheAccessStrategy,
@@ -51,16 +54,17 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 
 	@Override
 	public String generateUpdateGeneratedValuesSelectString() {
-		String sql = super.generateUpdateGeneratedValuesSelectString();
-		return parameters().process( sql );
+		sqlUpdateGeneratedValuesSelectString = parameters()
+				.process( super.generateUpdateGeneratedValuesSelectString() );
+		return sqlUpdateGeneratedValuesSelectString;
 	}
 
 	@Override
 	public String generateInsertGeneratedValuesSelectString() {
-		String sql = super.generateInsertGeneratedValuesSelectString();
-		return parameters().process( sql );
+		sqlInsertGeneratedValuesSelectString = parameters()
+				.process( super.generateInsertGeneratedValuesSelectString() );
+		return sqlInsertGeneratedValuesSelectString;
 	}
-
 	@Override
 	public String generateSnapshotSelectString() {
 		String sql = super.generateSnapshotSelectString();
@@ -234,6 +238,16 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	@Override
 	public ReactiveUniqueEntityLoader getAppropriateLoader(LockOptions lockOptions, SharedSessionContractImplementor session) {
 		return (ReactiveUniqueEntityLoader) super.getAppropriateLoader(lockOptions, session);
+	}
+
+	@Override
+	public String getSqlInsertGeneratedValuesSelectString() {
+		return sqlInsertGeneratedValuesSelectString;
+	}
+
+	@Override
+	public String getSqlUpdateGeneratedValuesSelectString() {
+		return sqlUpdateGeneratedValuesSelectString;
 	}
 
 	@Override

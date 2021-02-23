@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
  * A reactific {@link EntityUpdateAction}.
@@ -107,72 +108,90 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 				);
 
 		return update.thenApply( res -> {
-			final EntityEntry entry = session.getPersistenceContextInternal().getEntry( instance );
-			if ( entry == null ) {
-				throw new AssertionFailure( "possible non-threadsafe access to session" );
-			}
-
-			if ( entry.getStatus()== Status.MANAGED || persister.isVersionPropertyGenerated() ) {
-				// get the updated snapshot of the entity state by cloning current state;
-				// it is safe to copy in place, since by this time no-one else (should have)
-				// has a reference  to the array
-				TypeHelper.deepCopy(
-						getState(),
-						persister.getPropertyTypes(),
-						persister.getPropertyCheckability(),
-						getState(),
-						session
-				);
-				if ( persister.hasUpdateGeneratedProperties() ) {
-					// this entity defines property generation, so process those generated
-					// values...
-					throw new UnsupportedOperationException("generated attributes not supported in Hibernate Reactive");
-//					persister.processUpdateGeneratedProperties( id, instance, getState(), session );
-//					if ( persister.isVersionPropertyGenerated() ) {
-//						setNextVersion( Versioning.getVersion( getState(), persister ) );
-//					}
+				final EntityEntry entry = session.getPersistenceContextInternal().getEntry( instance );
+				if ( entry == null ) {
+					throw new AssertionFailure( "possible non-threadsafe access to session" );
 				}
-				// have the entity entry doAfterTransactionCompletion post-update processing, passing it the
-				// update state and the new version (if one).
-				entry.postUpdate( instance, getState(), getNextVersion() );
-			}
-
-			final StatisticsImplementor statistics = factory.getStatistics();
-			if ( persister.canWriteToCache() ) {
-				if ( persister.isCacheInvalidationRequired() || entry.getStatus()!= Status.MANAGED ) {
-					persister.getCacheAccessStrategy().remove( session, ck);
+				return entry;
+			} )
+			.thenCompose( entry -> {
+				if ( entry.getStatus() == Status.MANAGED || persister.isVersionPropertyGenerated() ) {
+					// get the updated snapshot of the entity state by cloning current state;
+					// it is safe to copy in place, since by this time no-one else (should have)
+					// has a reference  to the array
+					TypeHelper.deepCopy(
+							getState(),
+							persister.getPropertyTypes(),
+							persister.getPropertyCheckability(),
+							getState(),
+							session
+					);
+					return processGeneratedProperties( id, persister, session, instance )
+							// have the entity entry doAfterTransactionCompletion post-update processing, passing it the
+							// update state and the new version (if one).
+							.thenAccept( v -> entry.postUpdate( instance, getState(), getNextVersion() ) )
+							.thenApply( v -> entry );
 				}
-				else if ( session.getCacheMode().isPutEnabled() ) {
-					//TODO: inefficient if that cache is just going to ignore the updated state!
-					final CacheEntry ce = persister.buildCacheEntry( instance, getState(), getNextVersion(), getSession() );
-					setCacheEntry( persister.getCacheEntryStructure().structure( ce ) );
-
-					final boolean put = cacheUpdate( persister, getPreviousVersion(), ck );
-					if ( put && statistics.isStatisticsEnabled() ) {
-						statistics.entityCachePut(
-								StatsHelper.INSTANCE.getRootEntityRole( persister ),
-								getPersister().getCacheAccessStrategy().getRegion().getName()
+				return completedFuture( entry );
+			} )
+			.thenAccept( entry -> {
+				final StatisticsImplementor statistics = factory.getStatistics();
+				if ( persister.canWriteToCache() ) {
+					if ( persister.isCacheInvalidationRequired() || entry.getStatus() != Status.MANAGED ) {
+						persister.getCacheAccessStrategy().remove( session, ck );
+					}
+					else if ( session.getCacheMode().isPutEnabled() ) {
+						//TODO: inefficient if that cache is just going to ignore the updated state!
+						final CacheEntry ce = persister.buildCacheEntry(
+								instance,
+								getState(),
+								getNextVersion(),
+								getSession()
 						);
+						setCacheEntry( persister.getCacheEntryStructure().structure( ce ) );
+
+						final boolean put = cacheUpdate( persister, getPreviousVersion(), ck );
+						if ( put && statistics.isStatisticsEnabled() ) {
+							statistics.entityCachePut(
+									StatsHelper.INSTANCE.getRootEntityRole( persister ),
+									getPersister().getCacheAccessStrategy().getRegion().getName()
+							);
+						}
 					}
 				}
+
+				session.getPersistenceContextInternal().getNaturalIdHelper().manageSharedNaturalIdCrossReference(
+						persister,
+						id,
+						getState(),
+						getPreviousNaturalIdValues(),
+						CachedNaturalIdValueSource.UPDATE
+				);
+
+				postUpdate();
+
+				if ( statistics.isStatisticsEnabled() && !veto ) {
+					statistics.updateEntity( getPersister().getEntityName() );
+				}
+			} );
+		}
+
+	private CompletionStage<Void> processGeneratedProperties(
+			Serializable id,
+			EntityPersister persister,
+			SharedSessionContractImplementor session,
+			Object instance) {
+		if ( persister.hasUpdateGeneratedProperties() ) {
+			// this entity defines property generation, so process those generated
+			// values...
+			if ( persister.isVersionPropertyGenerated() ) {
+				throw new UnsupportedOperationException( "generated version attribute not supported in Hibernate Reactive" );
+//				setNextVersion( Versioning.getVersion( getState(), persister ) );
 			}
+			return ((ReactiveEntityPersister) persister).reactiveProcessUpdateGenerated( id, instance, getState(), session );
 
-			session.getPersistenceContextInternal().getNaturalIdHelper().manageSharedNaturalIdCrossReference(
-					persister,
-					id,
-					getState(),
-					getPreviousNaturalIdValues(),
-					CachedNaturalIdValueSource.UPDATE
-			);
-
-			postUpdate();
-
-			if ( statistics.isStatisticsEnabled() && !veto ) {
-				statistics.updateEntity( getPersister().getEntityName() );
-			}
-
-			return null;
-		} );
+		}
+		return voidFuture();
 	}
 
 	@Override

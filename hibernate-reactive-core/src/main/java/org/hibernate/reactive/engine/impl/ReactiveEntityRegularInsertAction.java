@@ -74,21 +74,11 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 							if ( entry == null ) {
 								throw new AssertionFailure( "possible non-threadsafe access to session" );
 							}
-
 							entry.postInsert( getState() );
-
-							if ( persister.hasInsertGeneratedProperties() ) {
-								throw new UnsupportedOperationException("generated attributes not supported in Hibernate Reactive");
-//								persister.processInsertGeneratedProperties( id, instance, getState(), session );
-//								if ( persister.isVersionPropertyGenerated() ) {
-//									setVersion( Versioning.getVersion( getState(), persister ) );
-//								}
-//								entry.postUpdate( instance, getState(), getVersion() );
-							}
-
-							persistenceContext.registerInsertedKey( persister, getId() );
-							return null;
-						} );
+							return entry;
+						} )
+						.thenCompose( entry -> processInsertGeneratedProperties( (ReactiveEntityPersister) persister, session, instance, id, entry )
+									  .thenAccept( vv -> session.getPersistenceContext().registerInsertedKey( persister, getId() ) ) );
 			}
 			else {
 				insertStage = voidFuture();
@@ -130,6 +120,24 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 				return null;
 			} );
 		} );
+	}
+
+	private CompletionStage<Void> processInsertGeneratedProperties(
+			ReactiveEntityPersister persister,
+			SharedSessionContractImplementor session,
+			Object instance,
+			Serializable id,
+			EntityEntry entry) {
+		if ( persister.hasInsertGeneratedProperties() ) {
+			if ( persister.isVersionPropertyGenerated() ) {
+				throw new UnsupportedOperationException( "generated version attribute not supported in Hibernate Reactive" );
+//				setVersion( Versioning.getVersion( getState(), persister ) );
+			}
+			return persister.reactiveProcessInsertGenerated( id, instance, getState(), session )
+					.thenAccept( v -> entry.postUpdate( instance, getState(), getVersion() ) );
+
+		}
+		return voidFuture();
 	}
 
 	@Override
