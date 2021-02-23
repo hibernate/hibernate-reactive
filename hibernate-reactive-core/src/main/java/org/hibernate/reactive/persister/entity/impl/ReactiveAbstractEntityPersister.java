@@ -39,7 +39,6 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.Delete;
 import org.hibernate.sql.SimpleSelect;
 import org.hibernate.sql.Update;
@@ -60,10 +59,13 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.IntStream;
 
+import static org.hibernate.internal.util.collections.ArrayHelper.join;
+import static org.hibernate.internal.util.collections.ArrayHelper.trim;
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -122,7 +124,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					session
 			)
 			.thenCompose(
-					id -> CompletionStages.loop(
+					id -> loop(
 							1, span,
 							table -> insertReactive(
 									id,
@@ -144,7 +146,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					session
 			)
 			.thenCompose(
-					id -> CompletionStages.loop(
+					id -> loop(
 							1, span,
 							table -> insertReactive(
 									id,
@@ -175,7 +177,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		if ( delegate().getEntityMetamodel().isDynamicInsert() ) {
 			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
 			boolean[] notNull = delegate().getPropertiesToInsert( fields );
-			return CompletionStages.loop(
+			return loop(
 					0, span,
 					table -> insertReactive(
 							id,
@@ -189,7 +191,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 		else {
 			// For the case of dynamic-insert="false", use the static SQL
-			return CompletionStages.loop(
+			return loop(
 					0, span,
 					table -> insertReactive(
 							id,
@@ -309,7 +311,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		final boolean useBatch = j == 0 && isBatchable() && expectation.canBeBatched();
 
 		if ( log.isTraceEnabled() ) {
-			log.tracev( "Deleting entity: {0}", infoString(delegate(), id, delegate().getFactory() ) );
+			log.tracev( "Deleting entity: {0}", infoString( delegate(), id, delegate().getFactory() ) );
 			if ( useVersion ) {
 				log.tracev( "Version: {0}", version );
 			}
@@ -388,7 +390,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		Object[] state = loadedState;
-		return CompletionStages.loop(
+		return loop(
 				IntStream.iterate(span-1, (i) -> i-1 ).limit( span ),
 				table -> deleteReactive(
 						id,
@@ -549,16 +551,14 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				for ( int i = 0; i < valueGenerationStrategiesSize; i++ ) {
 					if ( valueGenerationStrategies[i] != null
 							&& valueGenerationStrategies[i].getGenerationTiming().includesUpdate() ) {
-						fields[i] = valueGenerationStrategies[i].getValueGenerator().generateValue(
-								(Session) session,
-								object
-						);
+						fields[i] = valueGenerationStrategies[i].getValueGenerator()
+								.generateValue( (Session) session, object );
 						delegate().setPropertyValue( object, i, fields[i] );
 						fieldsPreUpdateNeeded[count++] = i;
 					}
 				}
 				if ( dirtyFields != null ) {
-					dirtyFields = ArrayHelper.join( dirtyFields, ArrayHelper.trim( fieldsPreUpdateNeeded, count ) );
+					dirtyFields = join( dirtyFields, trim( fieldsPreUpdateNeeded, count ) );
 				}
 			}
 		}
@@ -584,9 +584,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			// don't need to check laziness (dirty checking algorithm handles that)
 			updateStrings = new String[span];
 			for ( int j = 0; j < span; j++ ) {
-				updateStrings[j] = tableUpdateNeeded[j] ?
-						delegate().generateUpdateString( propsToUpdate, j, oldFields, j == 0 && rowId != null ) :
-						null;
+				updateStrings[j] = tableUpdateNeeded[j]
+						? delegate().generateUpdateString( propsToUpdate, j, oldFields, j == 0 && rowId != null )
+						: null;
 			}
 		}
 		else if ( !delegate().isModifiableEntity( entry ) ) {
@@ -598,15 +598,15 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			// to be updated; an empty array for the dirty fields needs to be passed to
 			// getPropertiesToUpdate() instead of null.
 			propsToUpdate = delegate().getPropertiesToUpdate(
-					( dirtyFields == null ? ArrayHelper.EMPTY_INT_ARRAY : dirtyFields ),
+					dirtyFields == null ? ArrayHelper.EMPTY_INT_ARRAY : dirtyFields,
 					hasDirtyCollection
 			);
 			// don't need to check laziness (dirty checking algorithm handles that)
 			updateStrings = new String[span];
 			for ( int j = 0; j < span; j++ ) {
-				updateStrings[j] = tableUpdateNeeded[j] ?
-						delegate().generateUpdateString( propsToUpdate, j, oldFields, j == 0 && rowId != null ) :
-						null;
+				updateStrings[j] = tableUpdateNeeded[j]
+						? delegate().generateUpdateString( propsToUpdate, j, oldFields, j == 0 && rowId != null )
+						: null;
 			}
 		}
 		else {
@@ -617,7 +617,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		// Now update only the tables with dirty properties (and the table with the version number)
-		return CompletionStages.loop(
+		return loop(
 				IntStream.range(0, span).filter( i-> tableUpdateNeeded[i] ),
 				table -> updateOrInsertReactive(
 						id,
@@ -899,7 +899,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		return getReactiveConnection( session )
 				.selectJdbc( delegate().getSQLSnapshotSelectString(), params )
-				.thenApply( (resultSet) -> processSnapshot(session, resultSet) );
+				.thenApply( resultSet -> processSnapshot(session, resultSet) );
 	}
 
 	@Override
