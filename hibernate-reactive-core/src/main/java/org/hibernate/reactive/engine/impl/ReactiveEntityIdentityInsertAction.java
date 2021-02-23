@@ -5,6 +5,9 @@
  */
 package org.hibernate.reactive.engine.impl;
 
+import java.io.Serializable;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityIdentityInsertAction;
 import org.hibernate.engine.spi.EntityKey;
@@ -12,11 +15,9 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
-import static org.hibernate.reactive.util.impl.CompletionStages.*;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
-import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactific {@link EntityIdentityInsertAction} (used when

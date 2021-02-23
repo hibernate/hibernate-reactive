@@ -5,6 +5,18 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
+import java.io.Serializable;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.IntStream;
+import javax.persistence.metamodel.Attribute;
+
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
@@ -49,19 +61,8 @@ import org.hibernate.tuple.ValueGeneration;
 import org.hibernate.type.ComponentType;
 import org.hibernate.type.Type;
 import org.hibernate.type.VersionType;
-import org.jboss.logging.Logger;
 
-import javax.persistence.metamodel.Attribute;
-import java.io.Serializable;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
-import java.util.stream.IntStream;
+import org.jboss.logging.Logger;
 
 import static org.hibernate.internal.util.collections.ArrayHelper.join;
 import static org.hibernate.internal.util.collections.ArrayHelper.trim;
