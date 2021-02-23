@@ -5,13 +5,9 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.Hibernate;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.junit.Rule;
-import org.junit.Test;
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import javax.persistence.Basic;
 import javax.persistence.CollectionTable;
 import javax.persistence.ElementCollection;
@@ -21,8 +17,16 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OrderColumn;
 import javax.persistence.Table;
-import java.util.ArrayList;
-import java.util.List;
+
+import org.hibernate.Hibernate;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+
+import org.junit.Rule;
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
+import org.assertj.core.api.Assertions;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 
@@ -147,6 +151,59 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
         );
     }
 
+    @Test
+    public void testMultipleRemovesFromCollection(TestContext context) {
+        Book book1 = new Book("Feersum Endjinn");
+        Book book2 = new Book("Use of Weapons");
+        Book book3 = new Book( "Third Book");
+        Book book4 = new Book( "Fourth Book");
+        Book book5 = new Book( "Fifth Book");
+        Author author = new Author("Iain M Banks");
+        author.books.add(book1);
+        author.books.add(book2);
+        author.books.add(book3);
+        author.books.add(book4);
+        author.books.add(book5);
+
+        test(context,
+             getMutinySessionFactory()
+                     .withTransaction( (session, transaction) -> session.persistAll(author) )
+                     .chain( () -> getMutinySessionFactory()
+                             .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                     .invoke( a -> context.assertFalse( Hibernate.isInitialized(a.books) ) )
+                                     .chain( a -> session.fetch(a.books) )
+                                     .invoke( books -> context.assertEquals( 5, books.size() ) )
+                             )
+                     )
+                     .chain( () -> getMutinySessionFactory()
+                             .withTransaction( (session, transaction) -> session.createQuery("select distinct a from Author a left join fetch a.books", Author.class )
+                                     .getSingleResult()
+                                     .invoke( a -> context.assertTrue( Hibernate.isInitialized(a.books) ) )
+                                     .invoke( a -> context.assertEquals( 5, a.books.size() ) )
+                             )
+                     )
+                     .chain( () -> getMutinySessionFactory()
+                             .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                     .chain( a -> session.fetch(a.books) )
+                                     .invoke( books -> {
+                                         books.remove( 1 ); // Remove book2
+                                         books.remove( 1 ); // Now, remove book3
+                                     } )
+                             )
+                     )
+                     .chain( () -> getMutinySessionFactory()
+                             .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
+                                     .chain( a -> session.fetch(a.books) )
+                                     .invoke( books -> {
+                                         context.assertEquals( 3, books.size() );
+                                         context.assertEquals( book4.title, books.get(1).title );
+                                         Assertions.assertThat( books ).containsExactly( book1, book4, book5 );
+                                     } )
+                             )
+                     )
+        );
+    }
+
     @Embeddable
     static class Book {
         Book(String title) {
@@ -155,6 +212,21 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
         Book() {}
         @Basic(optional = false)
         String title;
+        @Override
+        public boolean equals(Object o) {
+            if ( this == o ) {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() ) {
+                return false;
+            }
+            Book book = (Book) o;
+            return Objects.equals( title, book.title );
+        }
+        @Override
+        public int hashCode() {
+            return Objects.hash( title );
+        }
     }
 
     @Entity(name="Author")
