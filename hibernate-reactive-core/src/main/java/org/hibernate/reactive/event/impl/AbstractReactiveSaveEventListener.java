@@ -220,8 +220,8 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 
 		Serializable id = key == null ? null : key.getIdentifier();
 
-		boolean inTreactive = source.isTransactionInProgress();
-		boolean shouldDelayIdentityInserts = !inTreactive && !requiresImmediateIdAccess;
+		boolean inTransaction = source.isTransactionInProgress();
+		boolean shouldDelayIdentityInserts = !inTransaction && !requiresImmediateIdAccess;
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 
 		// Put a placeholder in entries, so we don't recurse back and try to save() the
