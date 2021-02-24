@@ -23,7 +23,6 @@ import org.hibernate.annotations.GeneratorType;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -51,7 +50,6 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 	}
 
 	@Test
-	@Ignore // There is an issue about using the generation type identity with InheritanceType.JOINED
 	public void testWithIdentity(TestContext context) {
 		final GeneratedWithIdentity davide = new GeneratedWithIdentity( "Davide", "D'Alto" );
 
@@ -131,7 +129,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name = "GeneratedRegularParent")
 	@Inheritance(strategy = InheritanceType.JOINED)
 	static class GeneratedRegularParent {
 		@Id
@@ -158,7 +156,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
+	@Entity(name = "GeneratedRegular")
 	static class GeneratedRegular extends GeneratedRegularParent {
 		@Temporal(value = TemporalType.TIMESTAMP)
 		@Generated(GenerationTime.INSERT)
@@ -179,7 +177,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
+	@Entity(name = "GeneratedWithIdentityParent")
 	@Inheritance(strategy = InheritanceType.JOINED)
 	static class GeneratedWithIdentityParent {
 		@Id
@@ -206,7 +204,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
+	@Entity(name = "GeneratedWithIdentity")
 	static class GeneratedWithIdentity extends GeneratedWithIdentityParent {
 		@Temporal(value = TemporalType.TIMESTAMP)
 		@Generated(GenerationTime.INSERT)
