@@ -119,17 +119,15 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		EntityPersister persister = source.getEntityPersister( entityName, entity );
 		boolean autoincrement = persister.isIdentifierAssignedByInsert();
 		return generateId( entity, persister, (ReactiveSession) source, source.getSession() )
-				.thenCompose(id ->
-						reactivePerformSave(
-								entity,
-								autoincrement ? null : assignIdIfNecessary( id, entity, persister, source.getSession() ),
-								persister,
-								autoincrement,
-								context,
-								source,
-								!autoincrement || requiresImmediateIdAccess
-						)
-				);
+				.thenCompose( id -> reactivePerformSave(
+						entity,
+						autoincrement ? null : assignIdIfNecessary( id, entity, persister, source.getSession() ),
+						persister,
+						autoincrement,
+						context,
+						source,
+						!autoincrement || requiresImmediateIdAccess
+				) );
 	}
 
 	/**
@@ -241,7 +239,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		);
 
 		return cascadeBeforeSave( source, persister, entity, context )
-				.thenCompose(v -> {
+				.thenCompose( v -> {
 					// We have to do this after cascadeBeforeSave completes,
 					// since it could result in generation of parent ids,
 					// which we will need as foreign keys in the insert
