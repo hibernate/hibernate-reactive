@@ -18,7 +18,6 @@ import org.hibernate.internal.util.StringHelper;
 import org.hibernate.jdbc.TooManyRowsAffectedException;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
@@ -48,7 +47,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  * guarantee that generated identifiers are sequential.
  */
 public class TableReactiveIdentifierGenerator
-		implements ReactiveIdentifierGenerator<Long>, Configurable {
+		extends BlockingIdentifierGenerator implements Configurable {
 
 	private boolean storeLastUsedValue;
 
@@ -65,31 +64,13 @@ public class TableReactiveIdentifierGenerator
 	private String insertQuery;
 	private String updateQuery;
 
-	private int loValue;
-	private long hiValue;
-
-	private synchronized long next() {
-		return loValue>0 && loValue<increment
-				? hiValue + loValue++
-				: -1; //flag value indicating that we need to hit db
-	}
-
-	private synchronized long next(long hi) {
-		hiValue = hi;
-		loValue = 1;
-		return hi;
+	@Override
+	protected int getBlockSize() {
+		return increment;
 	}
 
 	@Override
-	public CompletionStage<Long> generate(ReactiveConnectionSupplier session, Object entity) {
-		long local = next();
-		if ( local >= 0 ) {
-			// We don't need to update or initialize the hi
-			// value in the table, so just increment the lo
-			// value and return the next id in the block
-			return completedFuture(local);
-		}
-
+	protected CompletionStage<Long> nextHiValue(ReactiveConnectionSupplier session) {
 		// We need to read the current hi value from the table
 		// and update it by the specified increment, but we
 		// need to do it atomically, and without depending on
@@ -129,11 +110,11 @@ public class TableReactiveIdentifierGenerator
 										switch (rowCount) {
 											case 1:
 												//we successfully obtained the next hi value
-												return completedFuture( next(id) );
+												return completedFuture(id);
 											case 0:
 												//someone else grabbed the next hi value
 												//so retry everything from scratch
-												return generate( session, entity );
+												return nextHiValue(session);
 											default:
 												throw new TooManyRowsAffectedException( "multiple rows in id table", 1, rowCount );
 										}
