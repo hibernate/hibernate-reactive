@@ -9,7 +9,6 @@ import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -64,6 +63,7 @@ import org.hibernate.type.VersionType;
 
 import org.jboss.logging.Logger;
 
+import static org.hibernate.internal.util.collections.ArrayHelper.EMPTY_OBJECT_ARRAY;
 import static org.hibernate.internal.util.collections.ArrayHelper.join;
 import static org.hibernate.internal.util.collections.ArrayHelper.trim;
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
@@ -391,25 +391,18 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		SessionFactoryImplementor factory = session.getFactory();
 		Dialect dialect = factory.getJdbcServices().getDialect();
-		String identifierColumnName = delegate().getIdentifierColumnNames()[0];
 		ReactiveConnection connection = getReactiveConnection( session );
 		if ( factory.getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
 			//TODO: wooooo this is awful ... I believe the problem is fixed in Hibernate 6
 			if ( dialect instanceof PostgreSQL81Dialect) {
-				sql = sql + " returning " + identifierColumnName;
+				sql = sql + " returning " + delegate().getIdentifierColumnNames()[0];
 			}
 			return connection.updateReturning( sql, params ).thenApply( id -> id );
 		}
 		else {
 			//use an extra round trip to fetch the id
-			String selectIdSql = dialect.getIdentityColumnSupport()
-					.getIdentitySelectString(
-							delegate().getTableName(),
-							identifierColumnName,
-							Types.INTEGER
-					);
 			return connection.update( sql, params )
-					.thenCompose( v -> connection.selectLong( selectIdSql, new Object[0] ) )
+					.thenCompose( v -> connection.selectLong( delegate().getIdentitySelectString(), EMPTY_OBJECT_ARRAY ) )
 					.thenApply( id -> id );
 		}
 
