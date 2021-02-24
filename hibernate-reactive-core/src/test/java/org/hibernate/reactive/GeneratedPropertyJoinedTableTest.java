@@ -142,7 +142,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 
 		public String lastname;
 
-		@Generated(value = GenerationTime.ALWAYS)
+		@Generated(GenerationTime.ALWAYS)
 		@Column(columnDefinition = "varchar(600) GENERATED ALWAYS AS (firstname || ' ' || lastname) STORED")
 		public String fullName;
 
@@ -161,14 +161,14 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 	@Entity
 	static class GeneratedRegular extends GeneratedRegularParent {
 		@Temporal(value = TemporalType.TIMESTAMP)
-		@Generated(value = GenerationTime.INSERT)
+		@Generated(GenerationTime.INSERT)
 		@ColumnDefault(value = "CURRENT_TIMESTAMP")
 		public Date createdAt;
 
 		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.ALWAYS)
 		public String updatedBy;
 
-		@Generated(value = GenerationTime.NEVER)
+		@Generated(GenerationTime.NEVER)
 		public String never;
 
 		public GeneratedRegular() {
@@ -190,7 +190,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 
 		public String lastname;
 
-		@Generated(value = GenerationTime.ALWAYS)
+		@Generated(GenerationTime.ALWAYS)
 		@Column(columnDefinition = "varchar(600) GENERATED ALWAYS AS (firstname || ' ' || lastname) STORED")
 		public String fullName;
 
@@ -209,14 +209,14 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 	@Entity
 	static class GeneratedWithIdentity extends GeneratedWithIdentityParent {
 		@Temporal(value = TemporalType.TIMESTAMP)
-		@Generated(value = GenerationTime.INSERT)
+		@Generated(GenerationTime.INSERT)
 		@ColumnDefault(value = "CURRENT_TIMESTAMP")
 		public Date createdAt;
 
 		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.ALWAYS)
 		public String updatedBy;
 
-		@Generated(value = GenerationTime.NEVER)
+		@Generated(GenerationTime.NEVER)
 		public String never;
 
 		public GeneratedWithIdentity() {
