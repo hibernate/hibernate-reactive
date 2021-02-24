@@ -93,9 +93,10 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 			ck = null;
 		}
 
+		ReactiveEntityPersister reactivePersister = (ReactiveEntityPersister) persister;
 		CompletionStage<?> update = veto
 				? voidFuture()
-				: ((ReactiveEntityPersister) persister).updateReactive(
+				: reactivePersister.updateReactive(
 						id,
 						getState(),
 						getDirtyFields(),
@@ -126,7 +127,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 							getState(),
 							session
 					);
-					return processGeneratedProperties( id, persister, session, instance )
+					return processGeneratedProperties( id, reactivePersister, session, instance )
 							// have the entity entry doAfterTransactionCompletion post-update processing, passing it the
 							// update state and the new version (if one).
 							.thenAccept( v -> entry.postUpdate( instance, getState(), getNextVersion() ) )
@@ -178,7 +179,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 
 	private CompletionStage<Void> processGeneratedProperties(
 			Serializable id,
-			EntityPersister persister,
+			ReactiveEntityPersister persister,
 			SharedSessionContractImplementor session,
 			Object instance) {
 		if ( persister.hasUpdateGeneratedProperties() ) {
@@ -188,7 +189,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 				throw new UnsupportedOperationException( "generated version attribute not supported in Hibernate Reactive" );
 //				setNextVersion( Versioning.getVersion( getState(), persister ) );
 			}
-			return ((ReactiveEntityPersister) persister).reactiveProcessUpdateGenerated( id, instance, getState(), session );
+			return persister.reactiveProcessUpdateGenerated( id, instance, getState(), session );
 
 		}
 		return voidFuture();
