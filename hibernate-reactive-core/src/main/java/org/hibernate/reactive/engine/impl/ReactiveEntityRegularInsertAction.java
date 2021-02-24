@@ -66,19 +66,18 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 			// else inserted the same pk first, the insert would fail
 			CompletionStage<Void> insertStage;
 			if ( !veto ) {
-				insertStage = ((ReactiveEntityPersister) persister)
-						.insertReactive( id, getState(), instance, session )
+				ReactiveEntityPersister reactivePersister = (ReactiveEntityPersister) persister;
+				insertStage = reactivePersister.insertReactive( id, getState(), instance, session )
 						.thenApply( res -> {
-							PersistenceContext persistenceContext = session.getPersistenceContext();
-							final EntityEntry entry = persistenceContext.getEntry( instance );
+							EntityEntry entry = session.getPersistenceContext().getEntry( instance );
 							if ( entry == null ) {
 								throw new AssertionFailure( "possible non-threadsafe access to session" );
 							}
 							entry.postInsert( getState() );
 							return entry;
 						} )
-						.thenCompose( entry -> processInsertGeneratedProperties( (ReactiveEntityPersister) persister, session, instance, id, entry )
-									  .thenAccept( vv -> session.getPersistenceContext().registerInsertedKey( persister, getId() ) ) );
+						.thenCompose( entry -> processInsertGeneratedProperties( reactivePersister, session, instance, id, entry )
+								.thenAccept( vv -> session.getPersistenceContext().registerInsertedKey( persister, getId() ) ) );
 			}
 			else {
 				insertStage = voidFuture();
