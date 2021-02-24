@@ -188,20 +188,11 @@ database by following the instructions in [podman.md](podman.md).
 ## Limitations
 
 We're working hard to support the full feature set of Hibernate ORM. 
-At present a few limitations remain.
+At present several minor limitations remain.
 
-### Mapping annotations
-
-The following Hibernate mapping annotations are not yet supported:
-
-- `@org.hibernate.annotations.Generated`
-- `@org.hibernate.annotations.CollectionId`
-
-### Natural key lookup
-
-There's no equivalent of `Session.byNaturalId()` in the reactive API.
-
-### Schema export
-
-Automatic update or validation of an existing database schema requires 
-use of JDBC.
+- Automatic update or validation of an existing database schema require 
+  use of JDBC.
+- The annotation `@org.hibernate.annotations.CollectionId` is not yet 
+  supported.
+- There's no equivalent of `Session.byNaturalId()` for lookups based
+  on fields annotated `@NaturalId`.
