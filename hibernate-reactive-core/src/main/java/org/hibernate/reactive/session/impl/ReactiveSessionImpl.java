@@ -451,19 +451,17 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	private CompletionStage<List<Object>> listReactiveCustomQuery(CustomQuery customQuery, QueryParameters parameters) {
 		checkOpenOrWaitingForAutoClose();
-//		checkTransactionSynchStatus();
+		checkTransactionSynchStatus();
 
 		ReactiveCustomLoader loader = new ReactiveCustomLoader( customQuery, getFactory() );
-
-//		autoFlushIfRequired( loader.getQuerySpaces() );
-
-//		dontFlushFromFind++;
-//		boolean success = false;
-			return loader.reactiveList( this, parameters )
-					.whenComplete( (r, e) -> delayedAfterCompletion() );
-//			success = true;
-//			dontFlushFromFind--;
-//			afterOperation( success );
+//		dontFlushFromFind++;  //stops flush being called multiple times if this method is recursively called
+		return reactiveAutoFlushIfRequired( loader.getQuerySpaces() )
+				.thenCompose( v-> loader.reactiveList( this, parameters ) )
+				.whenComplete( (r, e) -> {
+//						dontFlushFromFind--;
+					afterOperation( e == null );
+					delayedAfterCompletion();
+				} );
 	}
 
 	@Override
@@ -484,29 +482,42 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 			// todo : apply stored setting at the JPA Query level too
 
-			final NamedQueryDefinition namedQueryDefinition = getFactory().getNamedQueryRepository().getNamedQueryDefinition( name );
+			NamedQueryDefinition namedQueryDefinition =
+					getFactory().getNamedQueryRepository()
+							.getNamedQueryDefinition( name );
 			if ( namedQueryDefinition != null ) {
 				return createReactiveQuery( namedQueryDefinition, resultType );
 			}
 
-			final NamedSQLQueryDefinition nativeQueryDefinition = getFactory().getNamedQueryRepository().getNamedSQLQueryDefinition( name );
+			NamedSQLQueryDefinition nativeQueryDefinition =
+					getFactory().getNamedQueryRepository()
+							.getNamedSQLQueryDefinition( name );
 			if ( nativeQueryDefinition != null ) {
 				return createReactiveNativeQuery( nativeQueryDefinition, resultType );
 			}
 
-			throw getExceptionConverter().convert( new IllegalArgumentException( "No query defined for that name [" + name + "]" ) );
+			throw getExceptionConverter().convert(
+					new IllegalArgumentException( "no query defined for name '" + name + "'" )
+			);
 		}
 		catch (RuntimeException e) {
 			throw !( e instanceof IllegalArgumentException ) ? new IllegalArgumentException( e ) : e;
 		}
 	}
 
-	private <T> ReactiveQuery<T> createReactiveQuery(NamedQueryDefinition namedQueryDefinition, Class<T> resultType) {
+	private <T> ReactiveQuery<T> createReactiveQuery(NamedQueryDefinition namedQueryDefinition,
+													 Class<T> resultType) {
 		final ReactiveQuery<T> query = createReactiveQuery( namedQueryDefinition );
 		if ( resultType != null ) {
 			resultClassChecking( resultType, createQuery( namedQueryDefinition ) );
 		}
 		return query;
+	}
+
+	private static String comment(NamedQueryDefinition queryDefinition) {
+		return queryDefinition.getComment() != null
+				? queryDefinition.getComment()
+				: queryDefinition.getName();
 	}
 
 	private <T> ReactiveQuery<T> createReactiveQuery(NamedQueryDefinition queryDefinition) {
@@ -515,7 +526,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		ReactiveQueryImpl<T> query = new ReactiveQueryImpl<>( this, paramMetadata, queryString );
 		applyQuerySettingsAndHints( query );
 		query.setHibernateFlushMode( queryDefinition.getFlushMode() );
-		query.setComment( queryDefinition.getComment() != null ? queryDefinition.getComment() : queryDefinition.getName() );
+		query.setComment( comment( queryDefinition ) );
 		if ( queryDefinition.getLockOptions() != null ) {
 			query.setLockOptions( queryDefinition.getLockOptions() );
 		}
@@ -525,22 +536,26 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		return query;
 	}
 
-	private <T> ReactiveNativeQuery<T> createReactiveNativeQuery(NamedSQLQueryDefinition queryDefinition, Class<T> resultType) {
-		if ( resultType != null && !Tuple.class.equals( resultType ) && !Object[].class.equals( resultType ) ) {
+	private <T> ReactiveNativeQuery<T> createReactiveNativeQuery(NamedSQLQueryDefinition queryDefinition,
+																 Class<T> resultType) {
+		if ( resultType != null
+				&& !Tuple.class.equals( resultType )
+				&& !Object[].class.equals( resultType ) ) {
 			resultClassChecking( resultType, queryDefinition );
 		}
 
-		final ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>(
+		ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>(
 				queryDefinition,
 				this,
-				getFactory().getQueryPlanCache().getSQLParameterMetadata( queryDefinition.getQueryString(), false )
+				getFactory().getQueryPlanCache()
+						.getSQLParameterMetadata( queryDefinition.getQueryString(), false )
 		);
 		if ( Tuple.class.equals( resultType ) ) {
 			query.setResultTransformer( new NativeQueryTupleTransformer() );
 		}
 		applyQuerySettingsAndHints( query );
 		query.setHibernateFlushMode( queryDefinition.getFlushMode() );
-		query.setComment( queryDefinition.getComment() != null ? queryDefinition.getComment() : queryDefinition.getName() );
+		query.setComment( comment(queryDefinition) );
 		if ( queryDefinition.getLockOptions() != null ) {
 			query.setLockOptions( queryDefinition.getLockOptions() );
 		}
