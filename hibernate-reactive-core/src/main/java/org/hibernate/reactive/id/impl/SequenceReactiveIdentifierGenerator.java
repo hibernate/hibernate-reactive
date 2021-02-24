@@ -10,7 +10,6 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.id.Configurable;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
-import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
@@ -20,7 +19,6 @@ import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.internal.util.config.ConfigurationHelper.getInt;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineSequenceName;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
  * Support for JPA's {@link javax.persistence.SequenceGenerator}.
@@ -29,7 +27,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  * guarantee that generated identifiers are sequential.
  */
 public class SequenceReactiveIdentifierGenerator
-		implements ReactiveIdentifierGenerator<Long>, Configurable {
+		extends BlockingIdentifierGenerator implements Configurable {
 
 	public static final Object[] NO_PARAMS = new Object[0];
 
@@ -37,19 +35,14 @@ public class SequenceReactiveIdentifierGenerator
 
 	private int increment;
 
-	private int loValue;
-	private long hiValue;
-
-	private synchronized long next() {
-		return loValue>0 && loValue<increment
-				? hiValue + loValue++
-				: -1; //flag value indicating that we need to hit db
+	@Override
+	protected int getBlockSize() {
+		return increment;
 	}
 
-	private synchronized long next(long hi) {
-		hiValue = hi;
-		loValue = 1;
-		return hi;
+	@Override
+	protected CompletionStage<Long> nextHiValue(ReactiveConnectionSupplier session) {
+		return session.getReactiveConnection().selectLong( sql, NO_PARAMS ).thenApply( this::next );
 	}
 
 	@Override
@@ -66,18 +59,6 @@ public class SequenceReactiveIdentifierGenerator
 		increment = determineIncrementForSequenceEmulation( params );
 
 		sql = dialect.getSequenceNextValString( renderedSequenceName );
-	}
-
-	@Override
-	public CompletionStage<Long> generate(ReactiveConnectionSupplier session, Object entity) {
-		long local = next();
-		if ( local >= 0 ) {
-			return completedFuture(local);
-		}
-
-		return session.getReactiveConnection()
-				.selectLong( sql, NO_PARAMS )
-				.thenApply( this::next );
 	}
 
 	protected int determineIncrementForSequenceEmulation(Properties params) {
