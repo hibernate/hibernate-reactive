@@ -147,7 +147,7 @@ public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 
 		@Temporal(value = TemporalType.TIMESTAMP)
 		@Generated(GenerationTime.INSERT)
-		@ColumnDefault(value = "CURRENT_TIMESTAMP")
+		@ColumnDefault("CURRENT_TIMESTAMP")
 		public Date createdAt;
 
 		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.INSERT)
@@ -185,7 +185,7 @@ public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 
 		@Temporal(value = TemporalType.TIMESTAMP)
 		@Generated(GenerationTime.INSERT)
-		@ColumnDefault(value = "CURRENT_TIMESTAMP")
+		@ColumnDefault("CURRENT_TIMESTAMP")
 		public Date createdAt;
 
 		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.INSERT)

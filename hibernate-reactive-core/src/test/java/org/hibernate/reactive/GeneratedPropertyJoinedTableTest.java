@@ -162,7 +162,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 	static class GeneratedRegular extends GeneratedRegularParent {
 		@Temporal(value = TemporalType.TIMESTAMP)
 		@Generated(GenerationTime.INSERT)
-		@ColumnDefault(value = "CURRENT_TIMESTAMP")
+		@ColumnDefault("CURRENT_TIMESTAMP")
 		public Date createdAt;
 
 		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.ALWAYS)
@@ -210,7 +210,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 	static class GeneratedWithIdentity extends GeneratedWithIdentityParent {
 		@Temporal(value = TemporalType.TIMESTAMP)
 		@Generated(GenerationTime.INSERT)
-		@ColumnDefault(value = "CURRENT_TIMESTAMP")
+		@ColumnDefault("CURRENT_TIMESTAMP")
 		public Date createdAt;
 
 		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.ALWAYS)
