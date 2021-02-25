@@ -11,6 +11,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
@@ -26,9 +27,28 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
  */
 public class IdentityGeneratorTypeTest extends BaseReactiveTest {
 
+	/**
+	 * When {@link AvailableSettings#USE_GET_GENERATED_KEYS} is enabled, different
+	 * queries will be used for each datastore to get the id
+	 */
+	public static class EnableUseGetGeneratedKeys extends IdentityGeneratorTypeTest {
+
+		@Rule // Db2 does not return the id after an insert
+		public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( DB2 );
+
+		@Override
+		protected Configuration constructConfiguration() {
+			Configuration configuration = super.constructConfiguration();
+			configuration.setProperty( AvailableSettings.USE_GET_GENERATED_KEYS, "true" );
+			return configuration;
+		}
+	}
+
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
+		// It's the default but I want to highlight what we are testing
+		configuration.setProperty( AvailableSettings.USE_GET_GENERATED_KEYS, "false" );
 		configuration.addAnnotatedClass( IntegerTypeEntity.class );
 		configuration.addAnnotatedClass( LongTypeEntity.class );
 		configuration.addAnnotatedClass( ShortTypeEntity.class );
