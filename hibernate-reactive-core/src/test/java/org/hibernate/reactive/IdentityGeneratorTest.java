@@ -14,6 +14,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
@@ -22,6 +23,20 @@ import io.vertx.ext.unit.TestContext;
 
 public class IdentityGeneratorTest extends BaseReactiveTest {
 
+	/**
+	 * When {@link AvailableSettings#USE_GET_GENERATED_KEYS} is enabled, different
+	 * queries will be used for each datastore to get the id
+	 */
+	public static class EnableUseGetGeneratedKeys extends IdentityGeneratorTest {
+
+		@Override
+		protected Configuration constructConfiguration() {
+			Configuration configuration = super.constructConfiguration();
+			configuration.setProperty( AvailableSettings.USE_GET_GENERATED_KEYS, "true" );
+			return configuration;
+		}
+	}
+
 	// The number of entities we want to create
 	private static final int ENTITY_NUMBER = 100;
 
@@ -29,6 +44,7 @@ public class IdentityGeneratorTest extends BaseReactiveTest {
 	protected org.hibernate.cfg.Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( EntityWithIdentity.class );
+		configuration.setProperty( AvailableSettings.USE_GET_GENERATED_KEYS, "false" );
 		return configuration;
 	}
 
