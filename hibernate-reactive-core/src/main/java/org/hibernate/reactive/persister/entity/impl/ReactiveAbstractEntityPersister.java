@@ -397,15 +397,37 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			if ( dialect instanceof PostgreSQL81Dialect) {
 				sql = sql + " returning " + delegate().getIdentifierColumnNames()[0];
 			}
-			return connection.updateReturning( sql, params ).thenApply( id -> id );
+			return connection.updateReturning( sql, params )
+					.thenApply( this::castToIdentityType );
 		}
 		else {
 			//use an extra round trip to fetch the id
 			return connection.update( sql, params )
 					.thenCompose( v -> connection.selectLong( delegate().getIdentitySelectString(), EMPTY_OBJECT_ARRAY ) )
-					.thenApply( id -> id );
+					.thenApply( this::castToIdentityType );
 		}
+	}
 
+	/**
+	 * A simplified version of
+	 * {@link org.hibernate.id.IdentifierGeneratorHelper#getGeneratedIdentity(ResultSet, String, Type, Dialect)}.
+	 */
+	default Serializable castToIdentityType(Long generatedId) {
+		log.debugf( "Natively generated identity: %s", generatedId );
+		if ( generatedId == null ) {
+			throw new HibernateException( "The database returned no natively generated identity value" );
+		}
+		Class clazz = delegate().getIdentifierType().getReturnedClass();
+		if ( clazz == Long.class ) {
+			return generatedId;
+		}
+		if ( clazz == Integer.class ) {
+			return generatedId.intValue();
+		}
+		if ( clazz == Short.class ) {
+			return generatedId.shortValue();
+		}
+		throw new HibernateException( "Unsupported identity type: " + clazz );
 	}
 
 	default CompletionStage<?> deleteReactive(
