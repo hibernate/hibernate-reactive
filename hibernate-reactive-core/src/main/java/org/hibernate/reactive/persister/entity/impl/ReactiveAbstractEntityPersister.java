@@ -25,6 +25,7 @@ import org.hibernate.Session;
 import org.hibernate.StaleObjectStateException;
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeDescriptor;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.engine.OptimisticLockStyle;
@@ -390,14 +391,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		} );
 
 		SessionFactoryImplementor factory = session.getFactory();
-		Dialect dialect = factory.getJdbcServices().getDialect();
 		ReactiveConnection connection = getReactiveConnection( session );
 		if ( factory.getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
-			//TODO: wooooo this is awful ... I believe the problem is fixed in Hibernate 6
-			if ( dialect instanceof PostgreSQL81Dialect) {
-				sql = sql + " returning " + delegate().getIdentifierColumnNames()[0];
-			}
-			return connection.updateReturning( sql, params )
+			return connection.updateReturning( checkSql( sql ), params )
 					.thenApply( this::castToIdentityType );
 		}
 		else {
@@ -406,6 +402,22 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					.thenCompose( v -> connection.selectLong( delegate().getIdentitySelectString(), EMPTY_OBJECT_ARRAY ) )
 					.thenApply( this::castToIdentityType );
 		}
+	}
+
+	/**
+	 * Queries used to insert a new element and retrieve the id in one go require
+	 * some changes
+	 */
+	default String checkSql(String sql) {
+		Dialect dialect = getFactory().getJdbcServices().getDialect();
+		//TODO: wooooo this is awful ... I believe the problem is fixed in Hibernate 6
+		if ( dialect instanceof PostgreSQL81Dialect ) {
+			return sql + " returning " + delegate().getIdentifierColumnNames()[0];
+		}
+		if ( dialect instanceof DB2Dialect ) {
+			return "select " + delegate().getIdentifierColumnNames()[0] + " from NEW TABLE (" + sql + ")";
+		}
+		return sql;
 	}
 
 	/**
