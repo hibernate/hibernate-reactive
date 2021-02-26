@@ -46,7 +46,7 @@ public interface Settings extends AvailableSettings {
 	/**
 	 * Property for configuring the Vert.x connection pool.
 	 *
-	 * @see io.vertx.sqlclient.SqlConnectOptions#setIdleTimeout(int)
+	 * @see io.vertx.sqlclient.PoolOptions#setIdleTimeout(int)
 	 */
 	String POOL_IDLE_TIMEOUT = "hibernate.vertx.pool.idle_timeout";
 
