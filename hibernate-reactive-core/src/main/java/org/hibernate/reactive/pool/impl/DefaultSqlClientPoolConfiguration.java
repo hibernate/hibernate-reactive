@@ -63,6 +63,10 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
             messageLogger( DefaultSqlClientPool.class).infof( "HRX000013: Connection pool max wait queue size: %d", maxWaitQueueSize );
             poolOptions.setMaxWaitQueueSize(maxWaitQueueSize);
         }
+        if (idleTimeout!=null) {
+            messageLogger( DefaultSqlClientPool.class).infof( "HRX000013: Connection pool idle timeout: %d", idleTimeout );
+            poolOptions.setIdleTimeout(idleTimeout);
+        }
         return poolOptions;
     }
 
@@ -163,10 +167,6 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
         if (connectTimeout!=null) {
             connectOptions.setConnectTimeout(connectTimeout);
         }
-        if (idleTimeout!=null) {
-            connectOptions.setIdleTimeout(idleTimeout);
-        }
-
         return connectOptions;
     }
 
