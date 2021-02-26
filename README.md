@@ -128,6 +128,15 @@ MySQL, MariaDB, or Db2, you must explicitly specify `-Pdb=mysql`,
 
     ./gradlew test -Pdb=db2
     
+It's also possible to run all tests or only selected tests on
+all available databases:
+
+    ./gradlew testAll -PincludeTests=DefaultPortTest
+
+the property `includeTests` represents the name of the test to run
+and can contain the wildcard '*'. The property is optional but
+running all tests on all databases might take a lot of time.
+
 There are three ways to start the test database.
     
 #### If you have Docker installed
