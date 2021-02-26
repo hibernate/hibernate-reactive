@@ -77,6 +77,13 @@ tasks.withType(Test) {
     }
     systemProperty 'docker', project.hasProperty( 'docker' ) ? 'true' : 'false'
     systemProperty 'org.hibernate.reactive.common.InternalStateAssertions.ENFORCE', 'true'
+
+    if ( project.hasProperty( 'includeTests' ) ) {
+        // Example: ./gradlew testAll -PincludeTests=DefaultPortTest
+        filter {
+            includeTestsMatching project.getProperty( 'includeTests' ) ?: '*'
+        }
+    }
 }
 
 // Example:
