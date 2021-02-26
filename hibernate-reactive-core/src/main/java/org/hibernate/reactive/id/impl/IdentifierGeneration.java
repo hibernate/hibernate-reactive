@@ -140,30 +140,7 @@ public class IdentifierGeneration {
 													EntityPersister persister,
 													SharedSessionContractImplementor session) {
 		if ( generatedId != null ) {
-			if ( generatedId instanceof Long ) {
-				Long longId = (Long) generatedId;
-				Type identifierType = persister.getIdentifierType();
-				if ( identifierType == LongType.INSTANCE ) {
-					return longId;
-				}
-				else if ( identifierType == IntegerType.INSTANCE ) {
-					return longId.intValue();
-				}
-				else if ( identifierType == ShortType.INSTANCE ) {
-					return longId.shortValue();
-				}
-				else {
-					throw new HibernateException(
-							"cannot generate identifiers of type "
-									+ identifierType.getReturnedClass().getSimpleName()
-									+ " for: "
-									+ persister.getEntityName()
-					);
-				}
-			}
-			else {
-				return (Serializable) generatedId;
-			}
+			return castToIdentifierType( generatedId, persister );
 		}
 		else {
 			Serializable assignedId = persister.getIdentifier( entity, session );
@@ -174,6 +151,33 @@ public class IdentifierGeneration {
 				);
 			}
 			return assignedId;
+		}
+	}
+
+	public static Serializable castToIdentifierType(Object generatedId, EntityPersister persister) {
+		if ( generatedId instanceof Long ) {
+			Long longId = (Long) generatedId;
+			Type identifierType = persister.getIdentifierType();
+			if ( identifierType == LongType.INSTANCE ) {
+				return longId;
+			}
+			else if ( identifierType == IntegerType.INSTANCE ) {
+				return longId.intValue();
+			}
+			else if ( identifierType == ShortType.INSTANCE ) {
+				return longId.shortValue();
+			}
+			else {
+				throw new HibernateException(
+						"cannot generate identifiers of type "
+								+ identifierType.getReturnedClass().getSimpleName()
+								+ " for: "
+								+ persister.getEntityName()
+				);
+			}
+		}
+		else {
+			return (Serializable) generatedId;
 		}
 	}
 }

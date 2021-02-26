@@ -70,6 +70,7 @@ import static org.hibernate.internal.util.collections.ArrayHelper.trim;
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor.bind;
+import static org.hibernate.reactive.id.impl.IdentifierGeneration.castToIdentifierType;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -390,18 +391,24 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			delegate().dehydrate( null, fields, notNull, insertable, 0, insert, session, false );
 		} );
 
-		SessionFactoryImplementor factory = session.getFactory();
 		ReactiveConnection connection = getReactiveConnection( session );
-		if ( factory.getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
-			return connection.updateReturning( checkSql( sql ), params )
-					.thenApply( this::castToIdentityType );
+		CompletionStage<? extends Serializable> generatedIdStage;
+		if ( getFactory().getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
+			generatedIdStage = connection.updateReturning( checkSql( sql ), params );
 		}
 		else {
 			//use an extra round trip to fetch the id
-			return connection.update( sql, params )
-					.thenCompose( v -> connection.selectLong( delegate().getIdentitySelectString(), EMPTY_OBJECT_ARRAY ) )
-					.thenApply( this::castToIdentityType );
+			generatedIdStage =  connection.update( sql, params )
+					.thenCompose( v -> connection.selectLong( delegate().getIdentitySelectString(), EMPTY_OBJECT_ARRAY ) );
 		}
+		return generatedIdStage
+				.thenApply( generatedId -> {
+					log.debugf( "Natively generated identity: %s", generatedId );
+					if ( generatedIdStage == null ) {
+						throw new HibernateException( "The database returned no natively generated identity value" );
+					}
+					return castToIdentifierType( generatedId, this );
+				});
 	}
 
 	/**
@@ -418,28 +425,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			return "select " + delegate().getIdentifierColumnNames()[0] + " from NEW TABLE (" + sql + ")";
 		}
 		return sql;
-	}
-
-	/**
-	 * A simplified version of
-	 * {@link org.hibernate.id.IdentifierGeneratorHelper#getGeneratedIdentity(ResultSet, String, Type, Dialect)}.
-	 */
-	default Serializable castToIdentityType(Long generatedId) {
-		log.debugf( "Natively generated identity: %s", generatedId );
-		if ( generatedId == null ) {
-			throw new HibernateException( "The database returned no natively generated identity value" );
-		}
-		Class clazz = delegate().getIdentifierType().getReturnedClass();
-		if ( clazz == Long.class ) {
-			return generatedId;
-		}
-		if ( clazz == Integer.class ) {
-			return generatedId.intValue();
-		}
-		if ( clazz == Short.class ) {
-			return generatedId.shortValue();
-		}
-		throw new HibernateException( "Unsupported identity type: " + clazz );
 	}
 
 	default CompletionStage<?> deleteReactive(
