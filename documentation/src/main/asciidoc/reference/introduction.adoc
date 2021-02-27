@@ -1054,6 +1054,26 @@ A stateless session:
 - doesn't implement transactional write-behind or automatic dirty checking,
   so all operations are executed immediately when they're explicitly called.
 
+For a stateless session, you're always working with detached objects. Thus,
+the programming model is a bit different:
+
+|===
+| Method name and parameters | Effect
+
+| `get(Class, Object)` | Obtain a detached object, given its type and its id,
+                         by executing a `select`
+| `refresh(Object)`    | Refresh the state of a detached object by executing
+                         a `select`
+| `insert(Object)`     | Immediately `insert` the state of the given
+                         transient object into the database
+| `update(Object)`     | Immediately `update` the state of the given detached
+                         object in the database
+| `delete(Object)`     | Immediately `delete` the state of the given detached
+                         object from the database
+|===
+
+NOTE: There's no `flush()` operation, and so `update()` is always explicit.
+
 In certain circumstances, this makes stateless sessions easier to work with,
 but with the caveat that a stateless session is much more vulnerable to data
 aliasing effects, since it's easy to get two non-identical Java objects which
