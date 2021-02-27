@@ -108,8 +108,6 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 			Class<T> entityClass,
 			Object... primaryKey);
 
-	CompletionStage<Object> reactiveInternalLoad(String entityName, Serializable id, boolean eager, boolean nullable);
-
 	CompletionStage<Object> reactiveImmediateLoad(String entityName, Serializable id);
 
 	CompletionStage<Void> reactiveInitializeCollection(PersistentCollection collection, boolean writing);

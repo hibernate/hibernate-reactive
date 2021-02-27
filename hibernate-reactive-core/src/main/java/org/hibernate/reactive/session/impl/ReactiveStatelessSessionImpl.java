@@ -10,11 +10,13 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.action.internal.BulkOperationCleanupAction;
+import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
+import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -24,6 +26,7 @@ import org.hibernate.internal.StatelessSessionImpl;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.loader.custom.sql.SQLCustomQuery;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.Query;
 import org.hibernate.query.internal.ParameterMetadataImpl;
@@ -36,6 +39,7 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
+import org.hibernate.tuple.entity.EntityMetamodel;
 
 import javax.persistence.Tuple;
 import java.io.Serializable;
@@ -43,6 +47,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
  * An {@link ReactiveStatelessSession} implemented by extension of
@@ -54,6 +59,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         implements ReactiveStatelessSession {
 
     private final ReactiveConnection proxyConnection;
+    private final boolean allowBytecodeProxy;
 
     private final PersistenceContext persistenceContext = new ReactivePersistenceContextAdapter(this);
 
@@ -62,6 +68,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
                                         ReactiveConnection proxyConnection) {
         super(factory, options);
         this.proxyConnection = proxyConnection;
+        allowBytecodeProxy = getFactory().getSessionFactoryOptions().isEnhancementAsProxyEnabled();
     }
 
     private LockOptions getNullSafeLockOptions(LockMode lockMode) {
@@ -399,6 +406,92 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     @Override
     public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
         return ResultSetMappings.resultSetMapping( resultType, mappingName, getFactory() );
+    }
+
+    private Object createProxy(EntityKey entityKey) {
+        final Object proxy = entityKey.getPersister().createProxy( entityKey.getIdentifier(), this );
+        getPersistenceContext().addProxy( entityKey, proxy );
+        return proxy;
+    }
+
+    @Override
+    public CompletionStage<Object> reactiveInternalLoad(String entityName, Serializable id, boolean eager, boolean nullable) {
+        checkOpen();
+
+        EntityPersister persister = getFactory().getMetamodel().entityPersister( entityName );
+        EntityKey entityKey = generateEntityKey( id, persister );
+
+        // first, try to load it from the temp PC associated to this SS
+        PersistenceContext persistenceContext = getPersistenceContext();
+        Object loaded = persistenceContext.getEntity( entityKey );
+        if ( loaded != null ) {
+            // we found it in the temp PC.  Should indicate we are in the midst of processing a result set
+            // containing eager fetches via join fetch
+            return completedFuture(loaded);
+        }
+
+        if ( !eager ) {
+            // caller did not request forceful eager loading, see if we can create
+            // some form of proxy
+
+            // first, check to see if we can use "bytecode proxies"
+
+            EntityMetamodel entityMetamodel = persister.getEntityMetamodel();
+            BytecodeEnhancementMetadata bytecodeEnhancementMetadata = entityMetamodel.getBytecodeEnhancementMetadata();
+            if ( allowBytecodeProxy && bytecodeEnhancementMetadata.isEnhancedForLazyLoading() ) {
+
+                // if the entity defines a HibernateProxy factory, see if there is an
+                // existing proxy associated with the PC - and if so, use it
+                if ( persister.getEntityMetamodel().getTuplizer().getProxyFactory() != null ) {
+                    final Object proxy = persistenceContext.getProxy( entityKey );
+
+                    if ( proxy != null ) {
+//                        if ( LOG.isTraceEnabled() ) {
+//                            LOG.trace( "Entity proxy found in session cache" );
+//                        }
+//                        if ( LOG.isDebugEnabled() && ( (HibernateProxy) proxy ).getHibernateLazyInitializer().isUnwrap() ) {
+//                            LOG.debug( "Ignoring NO_PROXY to honor laziness" );
+//                        }
+
+                        return completedFuture( persistenceContext.narrowProxy( proxy, persister, entityKey, null ) );
+                    }
+
+                    // specialized handling for entities with subclasses with a HibernateProxy factory
+                    if ( entityMetamodel.hasSubclasses() ) {
+                        // entities with subclasses that define a ProxyFactory can create
+                        // a HibernateProxy.
+//                        LOG.debugf( "Creating a HibernateProxy for to-one association with subclasses to honor laziness" );
+                        return completedFuture( createProxy( entityKey ) );
+                    }
+                    return completedFuture( bytecodeEnhancementMetadata.createEnhancedProxy( entityKey, false, this ) );
+                }
+                else if ( !entityMetamodel.hasSubclasses() ) {
+                    return completedFuture( bytecodeEnhancementMetadata.createEnhancedProxy( entityKey, false, this ) );
+                }
+                // If we get here, then the entity class has subclasses and there is no HibernateProxy factory.
+                // The entity will get loaded below.
+            }
+            else {
+                if ( persister.hasProxy() ) {
+                    final Object existingProxy = persistenceContext.getProxy( entityKey );
+                    if ( existingProxy != null ) {
+                        return completedFuture( persistenceContext.narrowProxy( existingProxy, persister, entityKey, null ) );
+                    }
+                    else {
+                        return completedFuture( createProxy( entityKey ) );
+                    }
+                }
+            }
+        }
+
+        // otherwise immediately materialize it
+
+        // IMPLEMENTATION NOTE: increment/decrement the load count before/after getting the value
+        //                      to ensure that #get does not clear the PersistenceContext.
+        @SuppressWarnings("unchecked")
+        Class<Object> mappedClass = persister.getMappedClass();
+        persistenceContext.beforeLoad();
+        return reactiveGet( mappedClass, id ).whenComplete( (r, e) -> persistenceContext.afterLoad()  );
     }
 
     @Override
