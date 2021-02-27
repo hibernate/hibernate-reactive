@@ -1221,7 +1221,7 @@ public interface Mutiny {
 		 *
 		 * @see org.hibernate.StatelessSession#insert(Object)
 		 */
-		Uni<StatelessSession> insert(Object entity);
+		Uni<Void> insert(Object entity);
 
 		/**
 		 * Delete a row.
@@ -1230,7 +1230,7 @@ public interface Mutiny {
 		 *
 		 * @see org.hibernate.StatelessSession#delete(Object)
 		 */
-		Uni<StatelessSession> delete(Object entity);
+		Uni<Void> delete(Object entity);
 
 		/**
 		 * Update a row.
@@ -1239,7 +1239,7 @@ public interface Mutiny {
 		 *
 		 * @see org.hibernate.StatelessSession#update(Object)
 		 */
-		Uni<StatelessSession> update(Object entity);
+		Uni<Void> update(Object entity);
 
 		/**
 		 * Refresh the entity instance state from the database.
@@ -1248,7 +1248,7 @@ public interface Mutiny {
 		 *
 		 * @see org.hibernate.StatelessSession#refresh(Object)
 		 */
-		Uni<StatelessSession> refresh(Object entity);
+		Uni<Void> refresh(Object entity);
 
 		/**
 		 * Refresh the entity instance state from the database.
@@ -1258,7 +1258,7 @@ public interface Mutiny {
 		 *
 		 * @see org.hibernate.StatelessSession#refresh(Object, LockMode)
 		 */
-		Uni<StatelessSession> refresh(Object entity, LockMode lockMode);
+		Uni<Void> refresh(Object entity, LockMode lockMode);
 
 		/**
 		 * Asynchronously fetch an association that's configured for lazy loading.

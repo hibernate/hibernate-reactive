@@ -1207,7 +1207,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#insert(Object)
 		 */
-		CompletionStage<StatelessSession> insert(Object entity);
+		CompletionStage<Void> insert(Object entity);
 
 		/**
 		 * Delete a row.
@@ -1216,7 +1216,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#delete(Object)
 		 */
-		CompletionStage<StatelessSession> delete(Object entity);
+		CompletionStage<Void> delete(Object entity);
 
 		/**
 		 * Update a row.
@@ -1225,7 +1225,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#update(Object)
 		 */
-		CompletionStage<StatelessSession> update(Object entity);
+		CompletionStage<Void> update(Object entity);
 
 		/**
 		 * Refresh the entity instance state from the database.
@@ -1234,7 +1234,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#refresh(Object)
 		 */
-		CompletionStage<StatelessSession> refresh(Object entity);
+		CompletionStage<Void> refresh(Object entity);
 
 		/**
 		 * Refresh the entity instance state from the database.
@@ -1244,7 +1244,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#refresh(Object, LockMode)
 		 */
-		CompletionStage<StatelessSession> refresh(Object entity, LockMode lockMode);
+		CompletionStage<Void> refresh(Object entity, LockMode lockMode);
 
 		/**
 		 * Asynchronously fetch an association that's configured for lazy loading.

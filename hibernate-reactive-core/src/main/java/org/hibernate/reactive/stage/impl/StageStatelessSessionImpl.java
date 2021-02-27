@@ -76,28 +76,28 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
     }
 
     @Override
-    public CompletionStage<Stage.StatelessSession> insert(Object entity) {
-        return stage( w -> delegate.reactiveInsert(entity).thenApply( v -> this ) );
+    public CompletionStage<Void> insert(Object entity) {
+        return stage( w -> delegate.reactiveInsert(entity) );
     }
 
     @Override
-    public CompletionStage<Stage.StatelessSession> delete(Object entity) {
-        return stage( w -> delegate.reactiveDelete(entity).thenApply( v -> this ) );
+    public CompletionStage<Void> delete(Object entity) {
+        return stage( w -> delegate.reactiveDelete(entity) );
     }
 
     @Override
-    public CompletionStage<Stage.StatelessSession> update(Object entity) {
-        return stage( w -> delegate.reactiveUpdate(entity).thenApply( v -> this ) );
+    public CompletionStage<Void> update(Object entity) {
+        return stage( w -> delegate.reactiveUpdate(entity) );
     }
 
     @Override
-    public CompletionStage<Stage.StatelessSession> refresh(Object entity) {
-        return stage( w -> delegate.reactiveRefresh(entity).thenApply( v -> this ) );
+    public CompletionStage<Void> refresh(Object entity) {
+        return stage( w -> delegate.reactiveRefresh(entity) );
     }
 
     @Override
-    public CompletionStage<Stage.StatelessSession> refresh(Object entity, LockMode lockMode) {
-        return stage( w -> delegate.reactiveRefresh(entity, lockMode).thenApply( v -> this ) );
+    public CompletionStage<Void> refresh(Object entity, LockMode lockMode) {
+        return stage( w -> delegate.reactiveRefresh(entity, lockMode) );
     }
 
     @Override
