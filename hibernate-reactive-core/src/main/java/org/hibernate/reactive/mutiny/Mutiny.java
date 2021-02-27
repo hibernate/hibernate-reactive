@@ -417,9 +417,9 @@ public interface Mutiny {
 		<T> T getReference(Class<T> entityClass, Object id);
 
 		/**
-		 * Return the persistent instance of with the same identity as the
-		 * given instance, which might be detached, assuming that the instance
-		 * is still persistent in the database. This method never results in
+		 * Return the persistent instance with the same identity as the given
+		 * instance, which might be detached, assuming that the instance is
+		 * still persistent in the database. This method never results in
 		 * access to the underlying data store, and thus might return a proxy
 		 * that must be initialized explicitly using {@link #fetch(Object)}.
 		 *
