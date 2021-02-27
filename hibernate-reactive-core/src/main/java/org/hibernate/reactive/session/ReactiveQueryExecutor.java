@@ -14,6 +14,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -41,4 +42,6 @@ public interface ReactiveQueryExecutor extends ReactiveConnectionSupplier {
     <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
 
     void addBulkCleanupAction(BulkOperationCleanupAction action);
+
+    CompletionStage<Object> reactiveInternalLoad(String entityName, Serializable id, boolean eager, boolean nullable);
 }
