@@ -15,7 +15,7 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.loader.plan.exec.query.spi.NamedParameterContext;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.EntityType;
@@ -95,7 +95,7 @@ public interface ReactiveResultSetProcessor {
 											SharedSessionContractImplementor session) {
 		if ( value != null && !isNull( entityType, owner, session ) ) {
 			if ( entityType.isReferenceToPrimaryKey() ) {
-				return ((ReactiveSession) session).reactiveInternalLoad(
+				return ((ReactiveQueryExecutor) session).reactiveInternalLoad(
 						entityType.getAssociatedEntityName(),
 						value,
 						true,
