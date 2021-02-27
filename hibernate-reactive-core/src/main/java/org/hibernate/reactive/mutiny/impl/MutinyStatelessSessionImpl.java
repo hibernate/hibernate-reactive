@@ -77,28 +77,28 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
     }
 
     @Override
-    public Uni<Mutiny.StatelessSession> insert(Object entity) {
-        return uni( () -> delegate.reactiveInsert(entity).thenApply( v -> this ) );
+    public Uni<Void> insert(Object entity) {
+        return uni( () -> delegate.reactiveInsert(entity) );
     }
 
     @Override
-    public Uni<Mutiny.StatelessSession> delete(Object entity) {
-        return uni( () -> delegate.reactiveDelete(entity).thenApply( v -> this ) );
+    public Uni<Void> delete(Object entity) {
+        return uni( () -> delegate.reactiveDelete(entity) );
     }
 
     @Override
-    public Uni<Mutiny.StatelessSession> update(Object entity) {
-        return uni( () -> delegate.reactiveUpdate(entity).thenApply( v -> this ) );
+    public Uni<Void> update(Object entity) {
+        return uni( () -> delegate.reactiveUpdate(entity) );
     }
 
     @Override
-    public Uni<Mutiny.StatelessSession> refresh(Object entity) {
-        return uni( () -> delegate.reactiveRefresh(entity).thenApply( v -> this ) );
+    public Uni<Void> refresh(Object entity) {
+        return uni( () -> delegate.reactiveRefresh(entity) );
     }
 
     @Override
-    public Uni<Mutiny.StatelessSession> refresh(Object entity, LockMode lockMode) {
-        return uni( () -> delegate.reactiveRefresh(entity, lockMode).thenApply( v -> this ) );
+    public Uni<Void> refresh(Object entity, LockMode lockMode) {
+        return uni( () -> delegate.reactiveRefresh(entity, lockMode) );
     }
 
     @Override
