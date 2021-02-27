@@ -1170,7 +1170,6 @@ public interface Mutiny {
 		 * or SQL update, insert, or delete statement. In the case of an update,
 		 * insert, or delete, the returned {@link Query} must be executed using
 		 * {@link Query#executeUpdate()} which returns an affected row count.
-		 * In the case of a query:
 		 *
 		 * @param queryString The SQL select, update, insert, or delete statement
 		 *
