@@ -79,6 +79,33 @@ public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void getBookWithAuthors(TestContext context) {
+		final Book goodOmens = new Book( 7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
+		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
+		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
+		goodOmens.getAuthors().add( neilGaiman );
+		goodOmens.getAuthors().add( terryPratchett );
+
+		test(
+				context,
+				completedFuture( getSessionFactory().openStatelessSession() )
+						.thenCompose( s -> voidFuture()
+								.thenCompose( v -> s.insert(goodOmens) )
+								.thenCompose( v -> s.insert(neilGaiman) )
+								.thenCompose( v -> s.insert(terryPratchett) )
+						)
+						.thenApply( v -> getSessionFactory().openStatelessSession() )
+						.thenCompose( s -> s.get( Book.class, goodOmens.getId() ) )
+						.thenAccept( optionalBook -> {
+							context.assertNotNull( optionalBook );
+							context.assertEquals( 2, optionalBook.getAuthors().size() );
+							context.assertTrue( optionalBook.getAuthors().contains( neilGaiman )  );
+							context.assertTrue( optionalBook.getAuthors().contains( terryPratchett )  );
+						} )
+		);
+	}
+
 	@Entity
 	@Table(name = Book.TABLE)
 	public static class Book {
