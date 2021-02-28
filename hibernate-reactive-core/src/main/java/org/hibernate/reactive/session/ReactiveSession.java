@@ -87,13 +87,6 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 
 	<R> ReactiveQuery<R> createReactiveNamedQuery(String name, Class<R> resultClass);
 
-	<R> ReactiveQuery<R> createReactiveQuery(Criteria<R> criteria);
-
-	<T> ReactiveQuery<T> createReactiveCriteriaQuery(
-			String jpaqlString,
-			Class<T> resultClass,
-			CriteriaQueryOptions queryOptions);
-
 	<T> CompletionStage<T> reactiveGet(
 			Class<T> entityClass,
 			Serializable id);

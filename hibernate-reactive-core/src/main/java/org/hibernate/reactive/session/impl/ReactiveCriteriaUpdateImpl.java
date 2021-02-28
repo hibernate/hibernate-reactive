@@ -10,7 +10,7 @@ import org.hibernate.query.criteria.internal.CriteriaUpdateImpl;
 import org.hibernate.query.criteria.internal.compile.ImplicitParameterBinding;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveQuery;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 
 import javax.persistence.TypedQuery;
 
@@ -26,7 +26,7 @@ public class ReactiveCriteriaUpdateImpl<T> extends CriteriaUpdateImpl<T> impleme
 		super(criteriaBuilder);
 	}
 
-	public ReactiveQuery<T> build(CriteriaQueryRenderingContext context, ReactiveSession session) {
+	public ReactiveQuery<T> build(CriteriaQueryRenderingContext context, ReactiveQueryExecutor session) {
 		ReactiveQuery<T> query = session.createReactiveCriteriaQuery(
 				renderQuery( context ), null, () -> context
 		);

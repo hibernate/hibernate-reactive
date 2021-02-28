@@ -46,6 +46,13 @@ public interface ReactiveQueryExecutor extends ReactiveConnectionSupplier {
 
     CompletionStage<Object> reactiveInternalLoad(String entityName, Serializable id, boolean eager, boolean nullable);
 
+    <R> ReactiveQuery<R> createReactiveQuery(Criteria<R> criteria);
+
+    <T> ReactiveQuery<T> createReactiveCriteriaQuery(
+            String jpaqlString,
+            Class<T> resultClass,
+            CriteriaQueryOptions queryOptions);
+
     <T> EntityGraph<T> createEntityGraph(Class<T> entity);
     <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name);
     <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name);

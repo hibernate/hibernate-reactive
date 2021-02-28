@@ -19,5 +19,5 @@ import org.hibernate.reactive.session.impl.ReactiveCriteriaUpdateImpl;
  */
 public interface Criteria<R> {
 	void validate();
-	ReactiveQuery<R> build(CriteriaQueryRenderingContext context, ReactiveSession session);
+	ReactiveQuery<R> build(CriteriaQueryRenderingContext context, ReactiveQueryExecutor session);
 }

@@ -11,6 +11,9 @@ import org.hibernate.reactive.stage.Stage;
 import org.junit.Test;
 
 import javax.persistence.*;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import java.util.Objects;
 
 
@@ -87,6 +90,28 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> ss.createNativeQuery("select id from Piggy").getResultList() )
 						.thenAccept( list -> context.assertTrue( list.isEmpty() ) )
 						.thenAccept( v -> ss.close() )
+		);
+	}
+
+	@Test
+	public void testStatelessSessionCriteria(TestContext context) {
+		GuineaPig pig = new GuineaPig("Aloi");
+		CriteriaBuilder cb = getSessionFactory().getCriteriaBuilder();
+		CriteriaQuery<GuineaPig> crit = cb.createQuery(GuineaPig.class);
+		Root<GuineaPig> gp = crit.from(GuineaPig.class);
+		crit.where( cb.equal( gp.get("name"), cb.parameter(String.class, "n") ) );
+		Stage.StatelessSession ss = getSessionFactory().openStatelessSession();
+		test(
+				context,
+				ss.insert(pig)
+						.thenCompose( v -> ss.createQuery(crit)
+								.setParameter("n", pig.name)
+								.getResultList() )
+						.thenAccept( list -> {
+							context.assertFalse( list.isEmpty() );
+							context.assertEquals(1, list.size());
+							assertThatPigsAreEqual(context, pig, list.get(0));
+						} )
 		);
 	}
 
