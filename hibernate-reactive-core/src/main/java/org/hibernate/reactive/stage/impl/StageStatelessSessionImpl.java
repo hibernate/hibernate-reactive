@@ -16,7 +16,6 @@ import javax.persistence.EntityGraph;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
 /**
@@ -90,7 +89,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
     @Override
     public CompletionStage<Void> insert(Object... entities) {
-        return stage( w -> loop(entities, delegate::reactiveInsert) );
+        return stage( w -> delegate.reactiveInsertAll(entities) );
     }
 
     @Override
@@ -100,7 +99,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
     @Override
     public CompletionStage<Void> delete(Object... entities) {
-        return stage( w -> loop(entities, delegate::reactiveDelete) );
+        return stage( w -> delegate.reactiveDeleteAll(entities) );
     }
 
     @Override
@@ -110,7 +109,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
     @Override
     public CompletionStage<Void> update(Object... entities) {
-        return stage( w -> loop(entities, delegate::reactiveUpdate) );
+        return stage( w -> delegate.reactiveUpdateAll(entities) );
     }
 
     @Override
@@ -120,7 +119,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
     @Override
     public CompletionStage<Void> refresh(Object... entities) {
-        return stage( w -> loop(entities, delegate::reactiveRefresh) );
+        return stage( w -> delegate.reactiveRefreshAll(entities) );
     }
 
     @Override
