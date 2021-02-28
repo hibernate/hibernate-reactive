@@ -1211,6 +1211,15 @@ public interface Stage {
 		CompletionStage<Void> insert(Object entity);
 
 		/**
+		 * Insert multiple rows.
+		 *
+		 * @param entities new transient instances
+		 *
+		 * @see org.hibernate.StatelessSession#insert(Object)
+		 */
+		CompletionStage<Void> insert(Object... entities);
+
+		/**
 		 * Delete a row.
 		 *
 		 * @param entity a detached entity instance
@@ -1218,6 +1227,15 @@ public interface Stage {
 		 * @see org.hibernate.StatelessSession#delete(Object)
 		 */
 		CompletionStage<Void> delete(Object entity);
+
+		/**
+		 * Delete multiple rows.
+		 *
+		 * @param entities detached entity instances
+		 *
+		 * @see org.hibernate.StatelessSession#delete(Object)
+		 */
+		CompletionStage<Void> delete(Object... entities);
 
 		/**
 		 * Update a row.
@@ -1229,6 +1247,15 @@ public interface Stage {
 		CompletionStage<Void> update(Object entity);
 
 		/**
+		 * Update multiple rows.
+		 *
+		 * @param entities a detached entity instance
+		 *
+		 * @see org.hibernate.StatelessSession#update(Object)
+		 */
+		CompletionStage<Void> update(Object... entities);
+
+		/**
 		 * Refresh the entity instance state from the database.
 		 *
 		 * @param entity The entity to be refreshed.
@@ -1236,6 +1263,15 @@ public interface Stage {
 		 * @see org.hibernate.StatelessSession#refresh(Object)
 		 */
 		CompletionStage<Void> refresh(Object entity);
+
+		/**
+		 * Refresh the entity instance state from the database.
+		 *
+		 * @param entities The entities to be refreshed.
+		 *
+		 * @see org.hibernate.StatelessSession#refresh(Object)
+		 */
+		CompletionStage<Void> refresh(Object... entities);
 
 		/**
 		 * Refresh the entity instance state from the database.
