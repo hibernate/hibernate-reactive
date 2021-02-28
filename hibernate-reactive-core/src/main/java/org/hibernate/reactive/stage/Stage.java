@@ -1446,6 +1446,16 @@ public interface Stage {
 		<T> CompletionStage<T> withTransaction(String tenantId, BiFunction<Session, Transaction, CompletionStage<T>> work);
 
 		/**
+		 * Perform work using a {@link StatelessSession stateless session}.
+		 * <p>
+		 * The session will be closed automatically.
+		 *
+		 * @param work a function which accepts the session and returns
+		 *             the result of the work as a {@link CompletionStage}.
+		 */
+		<T> CompletionStage<T> withStatelessSession(Function<StatelessSession, CompletionStage<T>> work);
+
+		/**
 		 * @return an instance of {@link CriteriaBuilder} for creating
 		 * criteria queries.
 		 */
