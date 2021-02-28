@@ -20,6 +20,8 @@ import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.StatelessSessionImpl;
@@ -41,6 +43,7 @@ import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.tuple.entity.EntityMetamodel;
 
+import javax.persistence.EntityGraph;
 import javax.persistence.Tuple;
 import java.io.Serializable;
 import java.util.List;
@@ -107,23 +110,31 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
     @Override
     public <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id) {
-        return reactiveGet( entityClass, id, LockMode.NONE );
+        return reactiveGet( entityClass, id, LockMode.NONE, null );
     }
 
     @Override
-    public <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode) {
+    public <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode,
+                                              EntityGraph<T> fetchGraph) {
         checkOpen();
+
+        if ( fetchGraph!=null ) {
+            getLoadQueryInfluencers()
+                    .getEffectiveEntityGraph()
+                    .applyGraph( (RootGraphImplementor<T>) fetchGraph, GraphSemantic.FETCH );
+        }
 
         ReactiveEntityPersister persister = (ReactiveEntityPersister)
                 getFactory().getMetamodel().entityPersister(entityClass);
         LockOptions lockOptions = getNullSafeLockOptions(lockMode);
         return persister.reactiveLoad( (Serializable) id, null, lockOptions, this )
-                .thenApply( entity -> {
+                .whenComplete( (v, e) -> {
                     if ( getPersistenceContext().isLoadFinished() ) {
                         getPersistenceContext().clear();
                     }
-                    return (T) entity;
-                } );
+                    getLoadQueryInfluencers().getEffectiveEntityGraph().clear();
+                } )
+                .thenApply( entity -> (T) entity );
     }
 
     @Override
