@@ -112,6 +112,21 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
     }
 
     @Override
+    public <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name) {
+        return delegate.getEntityGraph(entity, name);
+    }
+
+    @Override
+    public <T> EntityGraph<T> createEntityGraph(Class<T> entity) {
+        return delegate.createEntityGraph(entity);
+    }
+
+    @Override
+    public <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name) {
+        return delegate.createEntityGraph(entity, name);
+    }
+
+    @Override
     public void close() {
         delegate.close();
     }
