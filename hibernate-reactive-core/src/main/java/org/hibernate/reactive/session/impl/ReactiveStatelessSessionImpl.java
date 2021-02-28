@@ -41,6 +41,7 @@ import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveQuery;
@@ -57,6 +58,7 @@ import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNece
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.generateId;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 /**
  * An {@link ReactiveStatelessSession} implemented by extension of
@@ -67,16 +69,22 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         implements ReactiveStatelessSession {
 
-    private final ReactiveConnection proxyConnection;
+    private final ReactiveConnection batchingConnection;
+    private final ReactiveConnection nonbatchingConnection;
+    private ReactiveConnection reactiveConnection;
     private final boolean allowBytecodeProxy;
 
     private final PersistenceContext persistenceContext = new ReactivePersistenceContextAdapter(this);
 
     public ReactiveStatelessSessionImpl(SessionFactoryImpl factory,
                                         SessionCreationOptions options,
-                                        ReactiveConnection proxyConnection) {
+                                        ReactiveConnection connection) {
         super(factory, options);
-        this.proxyConnection = proxyConnection;
+        reactiveConnection = connection;
+        nonbatchingConnection = connection;
+        Integer batchSize = getConfiguredJdbcBatchSize();
+        batchingConnection = batchSize==null || batchSize<2 ? connection :
+                new BatchingConnection( connection, batchSize );
         allowBytecodeProxy = getFactory().getSessionFactoryOptions().isEnhancementAsProxyEnabled();
     }
 
@@ -106,7 +114,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
     @Override
     public ReactiveConnection getReactiveConnection() {
-        return proxyConnection;
+        return reactiveConnection;
     }
 
     @Override
@@ -243,6 +251,38 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
                     UnresolvableObjectException.throwIfNull( result, id, persister.getEntityName() );
                 } )
                 .whenComplete( (v,e) -> getLoadQueryInfluencers().setInternalFetchProfile( previousFetchProfile ) );
+    }
+
+    @Override
+    public CompletionStage<Void> reactiveInsertAll(Object... entities) {
+        beginBatch();
+        return loop(entities, this::reactiveInsert)
+                .thenCompose( v -> executeBatch() )
+                .whenComplete( (rm,e) -> endBatch() );
+    }
+
+    @Override
+    public CompletionStage<Void> reactiveUpdateAll(Object... entities) {
+        beginBatch();
+        return loop(entities, this::reactiveUpdate)
+                .thenCompose( v -> executeBatch() )
+                .whenComplete( (rm,e) -> endBatch() );
+    }
+
+    @Override
+    public CompletionStage<Void> reactiveDeleteAll(Object... entities) {
+        beginBatch();
+        return loop(entities, this::reactiveDelete)
+                .thenCompose( v -> executeBatch() )
+                .whenComplete( (rm,e) -> endBatch() );
+    }
+
+    @Override
+    public CompletionStage<Void> reactiveRefreshAll(Object... entities) {
+        beginBatch();
+        return loop(entities, this::reactiveRefresh)
+                .thenCompose( v -> executeBatch() )
+                .whenComplete( (rm,e) -> endBatch() );
     }
 
     @Override
@@ -607,9 +647,21 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         return named;
     }
 
+    public void beginBatch() {
+        reactiveConnection = batchingConnection;
+    }
+
+    public void endBatch() {
+        reactiveConnection = nonbatchingConnection;
+    }
+
+    public CompletionStage<Void> executeBatch() {
+        return batchingConnection.executeBatch();
+    }
+
     @Override
     public void close() {
-        proxyConnection.close();
+        reactiveConnection.close();
         super.close();
     }
 }

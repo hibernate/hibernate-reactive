@@ -17,8 +17,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-
 /**
  * Implements the {@link Mutiny.StatelessSession} API. This delegating
  * class is needed to avoid name clashes when implementing both
@@ -90,7 +88,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
     @Override
     public Uni<Void> insertAll(Object... entities) {
-        return uni( () -> loop(entities, delegate::reactiveInsert) );
+        return uni( () -> delegate.reactiveInsertAll(entities) );
     }
 
     @Override
@@ -100,7 +98,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
     @Override
     public Uni<Void> deleteAll(Object... entities) {
-        return uni( () -> loop(entities, delegate::reactiveDelete) );
+        return uni( () -> delegate.reactiveDeleteAll(entities) );
     }
 
     @Override
@@ -110,7 +108,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
     @Override
     public Uni<Void> updateAll(Object... entities) {
-        return uni( () -> loop(entities, delegate::reactiveUpdate) );
+        return uni( () -> delegate.reactiveUpdateAll(entities) );
     }
 
     @Override
@@ -120,7 +118,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
     @Override
     public Uni<Void> refreshAll(Object... entities) {
-        return uni( () -> loop(entities, delegate::reactiveRefresh) );
+        return uni( () -> delegate.reactiveRefreshAll(entities) );
     }
 
     @Override
