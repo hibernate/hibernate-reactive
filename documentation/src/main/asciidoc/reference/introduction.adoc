@@ -638,6 +638,9 @@ operations defined by JPA:
                          `update`, and `delete` statements
 | `detach(Object)`     | Disassociate a persistent object from a session without
                          affecting the database
+| `getReference(Class, id)` or
+  `getReference(Object)` | Obtain a reference to persistent object without
+                           actually loading its state from the database
 |===
 
 If you're not familiar with these operations, don't despair! Their semantics
@@ -1062,6 +1065,7 @@ the programming model is a bit different:
 
 | `get(Class, Object)` | Obtain a detached object, given its type and its id,
                          by executing a `select`
+| `fetch(Object)`      | Fetch an association of a detached object
 | `refresh(Object)`    | Refresh the state of a detached object by executing
                          a `select`
 | `insert(Object)`     | Immediately `insert` the state of the given
@@ -1079,6 +1083,9 @@ but with the caveat that a stateless session is much more vulnerable to data
 aliasing effects, since it's easy to get two non-identical Java objects which
 both represent the same row of a database table.
 
+IMPORTANT: If you use `fetch()` in a stateless session, you can very easily
+obtain to objects representing the same database row!
+
 In particular, the absence of a persistence context means that you can safely
 perform bulk-processing tasks without allocating huge quantities of memory.
 Use of a `StatelessSession` alleviates the need to call:
@@ -1093,7 +1100,8 @@ When using a stateless session, you should be aware of the following additional
 limitations:
 
 - persistence operations never cascade to associated instances,
-- collections are completely ignored, and
+- changes to `@ManyToMany` associations and `@ElementCollection`s cannot be made
+  persistent, and
 - operations performed via a stateless session bypass callbacks.
 
 === Optimistic and pessimistic locking
