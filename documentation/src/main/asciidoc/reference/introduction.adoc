@@ -1100,7 +1100,7 @@ When using a stateless session, you should be aware of the following additional
 limitations:
 
 - persistence operations never cascade to associated instances,
-- changes to `@ManyToMany` associations and `@ElementCollection`s cannot be made
+- changes to `@ManyToMany` associations and ``@ElementCollection``s cannot be made
   persistent, and
 - operations performed via a stateless session bypass callbacks.
 
