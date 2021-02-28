@@ -68,7 +68,11 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
     @Override
     public <R> Mutiny.Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-        return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery(queryString, resultType), factory );
+        boolean knownType = delegate.getFactory().getMetamodel()
+                .entityPersisters().containsKey( resultType.getName() );
+        return knownType
+                ? new MutinyQueryImpl<>( delegate.createReactiveNativeQuery(queryString, resultType), factory )
+                : new MutinyQueryImpl<>( delegate.createReactiveNativeQuery(queryString), factory );
     }
 
     @Override
