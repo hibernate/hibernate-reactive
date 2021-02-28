@@ -638,8 +638,8 @@ operations defined by JPA:
                          `update`, and `delete` statements
 | `detach(Object)`     | Disassociate a persistent object from a session without
                          affecting the database
-| `getReference(Class, id)` or
-  `getReference(Object)` | Obtain a reference to persistent object without
+| `getReference(Class,id)` or
+  `getReference(Object)` | Obtain a reference to a persistent object without
                            actually loading its state from the database
 |===
 
@@ -1084,7 +1084,7 @@ aliasing effects, since it's easy to get two non-identical Java objects which
 both represent the same row of a database table.
 
 IMPORTANT: If you use `fetch()` in a stateless session, you can very easily
-obtain to objects representing the same database row!
+obtain two objects representing the same database row!
 
 In particular, the absence of a persistence context means that you can safely
 perform bulk-processing tasks without allocating huge quantities of memory.
