@@ -1090,7 +1090,8 @@ public interface Mutiny {
 	 * A stateless session does not implement a first-level cache nor interact
 	 * with any second-level cache, nor does it implement transactional
 	 * write-behind or automatic dirty checking, nor do operations cascade to
-	 * associated instances. Collections are ignored by a stateless session.
+	 * associated instances. Changes to many to many associations and element
+	 * collections may not be made persistent in a stateless session.
 	 * Operations performed via a stateless session bypass Hibernate's event
 	 * model and interceptors.
 	 * <p>
