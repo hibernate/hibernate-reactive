@@ -14,6 +14,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
 
+import javax.persistence.EntityGraph;
 import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -44,4 +45,8 @@ public interface ReactiveQueryExecutor extends ReactiveConnectionSupplier {
     void addBulkCleanupAction(BulkOperationCleanupAction action);
 
     CompletionStage<Object> reactiveInternalLoad(String entityName, Serializable id, boolean eager, boolean nullable);
+
+    <T> EntityGraph<T> createEntityGraph(Class<T> entity);
+    <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name);
+    <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name);
 }

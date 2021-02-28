@@ -1286,6 +1286,21 @@ public interface Mutiny {
 		<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
 
 		/**
+		 * Obtain a named {@link EntityGraph}
+		 */
+		<T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName);
+
+		/**
+		 * Create a new mutable {@link EntityGraph}
+		 */
+		<T> EntityGraph<T> createEntityGraph(Class<T> rootType);
+
+		/**
+		 * Create a new mutable copy of a named {@link EntityGraph}
+		 */
+		<T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName);
+
+		/**
 		 * @return false if {@link #close()} has been called
 		 */
 		@Override

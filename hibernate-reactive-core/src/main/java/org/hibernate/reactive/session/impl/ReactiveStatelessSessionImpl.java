@@ -22,6 +22,7 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.internal.RootGraphImpl;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
@@ -563,6 +564,47 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         else {
             return completedFuture( association );
         }
+    }
+
+    @Override @SuppressWarnings("unchecked")
+    public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity, String name) {
+        RootGraphImplementor<?> entityGraph = createEntityGraph(name);
+        if ( !entityGraph.getGraphedType().getJavaType().equals(entity) ) {
+            throw new HibernateException("wrong entity type");
+        }
+        return (RootGraphImplementor<T>) entityGraph;
+    }
+
+    @Override @SuppressWarnings("unchecked")
+    public <T> RootGraphImplementor<T> getEntityGraph(Class<T> entity, String name) {
+        RootGraphImplementor<?> entityGraph = getEntityGraph(name);
+        if ( !entityGraph.getGraphedType().getJavaType().equals(entity) ) {
+            throw new HibernateException("wrong entity type");
+        }
+        return (RootGraphImplementor<T>) entityGraph;
+    }
+
+    @Override
+    public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity) {
+        return new RootGraphImpl<T>( null, getFactory().getMetamodel().entity( entity ), getFactory() );
+    }
+
+    private RootGraphImplementor<?> createEntityGraph(String graphName) {
+        checkOpen();
+        final RootGraphImplementor<?> named = getFactory().findEntityGraphByName( graphName );
+        if ( named != null ) {
+            return named.makeRootGraph( graphName, true );
+        }
+        return named;
+    }
+
+    private RootGraphImplementor<?> getEntityGraph(String graphName) {
+        checkOpen();
+        final RootGraphImplementor<?> named = getFactory().findEntityGraphByName( graphName );
+        if ( named == null ) {
+            throw new IllegalArgumentException( "Could not locate EntityGraph with given name : " + graphName );
+        }
+        return named;
     }
 
     @Override

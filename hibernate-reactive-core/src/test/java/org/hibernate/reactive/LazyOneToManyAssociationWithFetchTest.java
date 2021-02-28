@@ -259,6 +259,38 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 
 	}
 
+	@Test
+	public void getBookWithEntityGrpahAuthors(TestContext context) {
+		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
+		final Author terryPratchett = new Author(2132511, "Terry Pratchett", goodOmens);
+		goodOmens.getAuthors().add(neilGaiman);
+		goodOmens.getAuthors().add(terryPratchett);
+
+		test(
+				context,
+				completedFuture( getSessionFactory().openStatelessSession() )
+						.thenCompose(s -> s.insert(goodOmens)
+								.thenCompose(v -> s.insert(neilGaiman))
+								.thenCompose(v -> s.insert(terryPratchett))
+						)
+						.thenApply( v -> getSessionFactory().openStatelessSession() )
+						.thenCompose( s -> {
+							EntityGraph<Book> graph = s.createEntityGraph(Book.class);
+							graph.addAttributeNodes("authors");
+							return s.get( graph, goodOmens.getId() )
+									.thenAccept( book -> {
+										List<Author> optionalAssociation = book.authors;
+										context.assertTrue(Hibernate.isInitialized(optionalAssociation));
+										context.assertNotNull(optionalAssociation);
+										context.assertTrue(optionalAssociation.contains(neilGaiman));
+										context.assertTrue(optionalAssociation.contains(terryPratchett));
+									} );
+						} )
+		);
+
+	}
+
 	@FetchProfile(name = "withAuthors",
 			fetchOverrides = @FetchProfile.FetchOverride(
 					entity = Book.class, association = "authors",
