@@ -7,10 +7,12 @@ package org.hibernate.reactive.mutiny.impl;
 
 import io.smallrye.mutiny.Uni;
 import org.hibernate.LockMode;
+import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 
+import javax.persistence.EntityGraph;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
@@ -40,7 +42,13 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
     @Override
     public <T> Uni<T> get(Class<T> entityClass, Object id, LockMode lockMode) {
-        return uni( () -> delegate.reactiveGet(entityClass, id, lockMode) );
+        return uni( () -> delegate.reactiveGet(entityClass, id, lockMode, null) );
+    }
+
+    @Override
+    public <T> Uni<T> get(EntityGraph<T> entityGraph, Object id) {
+        Class<T> entityClass = ((RootGraphImplementor<T>) entityGraph).getGraphedType().getJavaType();
+        return uni( () -> delegate.reactiveGet(entityClass, id, null, entityGraph) );
     }
 
     @Override

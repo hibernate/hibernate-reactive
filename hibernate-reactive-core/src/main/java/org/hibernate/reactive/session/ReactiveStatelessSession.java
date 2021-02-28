@@ -8,6 +8,7 @@ package org.hibernate.reactive.session;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 
+import javax.persistence.EntityGraph;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -25,7 +26,7 @@ public interface ReactiveStatelessSession extends ReactiveQueryExecutor {
 
     <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id);
 
-    <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode);
+    <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph);
 
     CompletionStage<Void> reactiveInsert(Object entity);
 

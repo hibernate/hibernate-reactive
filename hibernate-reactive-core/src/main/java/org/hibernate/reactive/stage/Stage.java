@@ -1125,6 +1125,17 @@ public interface Stage {
 		<T> CompletionStage<T> get(Class<T> entityClass, Object id, LockMode lockMode);
 
 		/**
+		 * Retrieve a row, using the given {@link EntityGraph} as a fetch plan.
+		 *
+		 * @param entityGraph an {@link EntityGraph} specifying the entity
+		 *                    and associations to be fetched
+		 * @param id The id of the entity to retrieve
+		 *
+		 * @return a detached entity instance, via a {@code CompletionStage}
+		 */
+		<T> CompletionStage<T> get(EntityGraph<T> entityGraph, Object id);
+
+		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query
 		 * string or HQL/JPQL update or delete statement. In the case of an
 		 * update or delete, the returned {@link Query} must be executed using

@@ -6,10 +6,12 @@
 package org.hibernate.reactive.stage.impl;
 
 import org.hibernate.LockMode;
+import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.stage.Stage;
 
+import javax.persistence.EntityGraph;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -39,7 +41,13 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
     @Override
     public <T> CompletionStage<T> get(Class<T> entityClass, Object id, LockMode lockMode) {
-        return stage( v -> delegate.reactiveGet(entityClass, id, lockMode) );
+        return stage( v -> delegate.reactiveGet(entityClass, id, lockMode, null) );
+    }
+
+    @Override
+    public <T> CompletionStage<T> get(EntityGraph<T> entityGraph, Object id) {
+        Class<T> entityClass = ((RootGraphImplementor<T>) entityGraph).getGraphedType().getJavaType();
+        return stage( v -> delegate.reactiveGet(entityClass, id, null, entityGraph) );
     }
 
     @Override
