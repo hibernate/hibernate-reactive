@@ -1287,6 +1287,17 @@ public interface Stage {
 		<T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName);
 
 		/**
+		 * Performs the given work within the scope of a database transaction,
+		 * automatically flushing the session. The transaction will be rolled
+		 * back if the work completes with an uncaught exception, or if
+		 * {@link Transaction#markForRollback()} is called.
+		 *
+		 * @param work a function which accepts {@link Transaction} and returns
+		 *             the result of the work as a {@link CompletionStage}.
+		 */
+		<T> CompletionStage<T> withTransaction(Function<Transaction, CompletionStage<T>> work);
+
+		/**
 		 * @return false if {@link #close()} has been called
 		 */
 		@Override

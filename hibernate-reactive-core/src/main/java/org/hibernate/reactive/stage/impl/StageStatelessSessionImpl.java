@@ -8,12 +8,15 @@ package org.hibernate.reactive.stage.impl;
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.stage.Stage;
 
 import javax.persistence.EntityGraph;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
 /**
  * Implements the {@link Stage.StatelessSession} API. This delegating
@@ -130,6 +133,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
     }
 
     @Override
+    public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
+        return new Transaction<T>().execute( work );
+    }
+
+    @Override
     public void close() {
         delegate.close();
     }
@@ -137,5 +145,61 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
     @Override
     public boolean isOpen() {
         return delegate.isOpen();
+    }
+
+    private class Transaction<T> implements Stage.Transaction {
+        boolean rollback;
+        Throwable error;
+
+        CompletionStage<T> execute(Function<Stage.Transaction, CompletionStage<T>> work) {
+            return begin()
+                    .thenCompose( v -> work.apply( this ) )
+                    // have to capture the error here and pass it along,
+                    // since we can't just return a CompletionStage that
+                    // rolls back the transaction from the handle() function
+                    .handle( this::processError )
+                    // finally, commit or rollback the transaction, and
+                    // then rethrow the caught error if necessary
+                    .thenCompose(
+                            result -> end()
+                                    // make sure that if rollback() throws,
+                                    // the original error doesn't get swallowed
+                                    .handle( this::processError )
+                                    // finally rethrow the original error, if any
+                                    .thenApply( v -> returnOrRethrow( error, result ) )
+                    );
+        }
+
+        CompletionStage<Void> begin() {
+            return delegate.getReactiveConnection().beginTransaction();
+        }
+
+        CompletionStage<Void> end() {
+            ReactiveConnection c = delegate.getReactiveConnection();
+            return rollback ? c.rollbackTransaction() : c.commitTransaction();
+        }
+
+        <R> R processError(R result, Throwable e) {
+            if ( e!=null ) {
+                rollback = true;
+                if (error == null) {
+                    error = e;
+                }
+                else {
+                    error.addSuppressed(e);
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public void markForRollback() {
+            rollback = true;
+        }
+
+        @Override
+        public boolean isMarkedForRollback() {
+            return rollback;
+        }
     }
 }

@@ -14,6 +14,7 @@ import org.hibernate.reactive.session.ReactiveStatelessSession;
 
 import javax.persistence.EntityGraph;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -128,6 +129,50 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
     @Override
     public <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name) {
         return delegate.createEntityGraph(entity, name);
+    }
+
+    @Override
+    public <T> Uni<T> withTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
+        return new Transaction<T>().execute( work );
+    }
+
+    private class Transaction<T> implements Mutiny.Transaction {
+        boolean rollback;
+
+        Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
+            //noinspection Convert2MethodRef
+            return begin()
+                    .chain( () -> work.apply( this ) )
+                    // in the case of an exception or cancellation
+                    // we need to rollback the transaction
+                    .onFailure().call( () -> rollback() )
+                    .onCancellation().call( () -> rollback() )
+                    // finally, when there was no exception,
+                    // commit or rollback the transaction
+                    .onItem().call( () -> rollback ? rollback() : commit() );
+        }
+
+        Uni<Void> begin() {
+            return Uni.createFrom().completionStage( delegate.getReactiveConnection().beginTransaction() );
+        }
+
+        Uni<Void> rollback() {
+            return Uni.createFrom().completionStage( delegate.getReactiveConnection().rollbackTransaction() );
+        }
+
+        Uni<Void> commit() {
+            return Uni.createFrom().completionStage( delegate.getReactiveConnection().commitTransaction() );
+        }
+
+        @Override
+        public void markForRollback() {
+            rollback = true;
+        }
+
+        @Override
+        public boolean isMarkedForRollback() {
+            return rollback;
+        }
     }
 
     @Override
