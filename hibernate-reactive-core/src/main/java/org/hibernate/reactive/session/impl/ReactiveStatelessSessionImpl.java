@@ -38,7 +38,6 @@ import org.hibernate.query.Query;
 import org.hibernate.query.internal.ParameterMetadataImpl;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
-import org.hibernate.reactive.id.impl.IdentifierGeneration;
 import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
@@ -55,6 +54,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
+import static org.hibernate.reactive.id.impl.IdentifierGeneration.generateId;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
@@ -152,7 +152,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     public CompletionStage<Void> reactiveInsert(Object entity) {
         checkOpen();
         ReactiveEntityPersister persister = getEntityPersister( null, entity );
-        return IdentifierGeneration.generateId( entity, persister, this, this )
+        return generateId( entity, persister, this, this )
                 .thenCompose( id -> {
                     Object[] state = persister.getPropertyValues(entity);
                     if ( persister.isVersioned() ) {
@@ -187,7 +187,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         Serializable id = persister.getIdentifier( entity, this );
         Object version = persister.getVersion( entity );
         return persister.deleteReactive( id, version, entity, this )
-                .thenApply( v-> null );
+                .thenApply( v -> null );
     }
 
     @Override
@@ -207,7 +207,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
             oldVersion = null;
         }
         return persister.updateReactive( id, state, null, false, null, oldVersion, entity, null, this )
-                .thenApply( v-> null );
+                .thenApply( v -> null );
     }
 
     @Override

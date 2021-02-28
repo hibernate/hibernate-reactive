@@ -408,7 +408,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 						throw new HibernateException( "The database returned no natively generated identity value" );
 					}
 					return castToIdentifierType( generatedId, this );
-				});
+				} );
 	}
 
 	/**
@@ -496,7 +496,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Serializable id, Object version, Object object,
 			SharedSessionContractImplementor session) {
 		final int span = delegate().getTableSpan();
-		boolean isImpliedOptimisticLocking = !delegate().getEntityMetamodel().isVersioned() && isAllOrDirtyOptimisticLocking();
+		boolean isImpliedOptimisticLocking =
+				!delegate().getEntityMetamodel().isVersioned()
+						&& isAllOrDirtyOptimisticLocking();
 		Object[] loadedState = null;
 		if ( isImpliedOptimisticLocking ) {
 			// need to treat this as if it where optimistic-lock="all" (dirty does *not* make sense);
