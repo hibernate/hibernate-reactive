@@ -260,7 +260,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				return reactiveInitializeCollection( persistentCollection, false )
 						// don't reassociate the collection instance, because
 						// its owner isn't associated with this session
-						.thenApply( pc -> association );
+						.thenApply( v -> association );
 			}
 		}
 		else {

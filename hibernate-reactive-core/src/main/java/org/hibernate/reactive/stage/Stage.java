@@ -1236,6 +1236,24 @@ public interface Stage {
 		CompletionStage<StatelessSession> refresh(Object entity, LockMode lockMode);
 
 		/**
+		 * Asynchronously fetch an association that's configured for lazy loading.
+		 *
+		 * <pre>
+		 * {@code session.fetch(author.getBook()).thenAccept(book -> print(book.getTitle()))}
+		 * </pre>
+		 *
+		 * Warning: this operation in a stateless session is quite sensitive to
+		 * data aliasing effects and should be used with great care.
+		 *
+		 * @param association a lazy-loaded association
+		 *
+		 * @return the fetched association, via a {@code CompletionStage}
+		 *
+		 * @see org.hibernate.Hibernate#initialize(Object)
+		 */
+		<T> CompletionStage<T> fetch(T association);
+
+		/**
 		 * Obtain a native SQL result set mapping defined via the annotation
 		 * {@link javax.persistence.SqlResultSetMapping}.
 		 */

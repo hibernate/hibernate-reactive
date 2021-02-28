@@ -93,6 +93,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
     }
 
     @Override
+    public <T> CompletionStage<T> fetch(T association) {
+        return stage( w -> delegate.reactiveFetch(association, false) );
+    }
+
+    @Override
     public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
         return delegate.getResultSetMapping( resultType, mappingName );
     }

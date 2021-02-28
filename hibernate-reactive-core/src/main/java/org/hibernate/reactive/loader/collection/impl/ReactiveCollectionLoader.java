@@ -76,7 +76,7 @@ public class ReactiveCollectionLoader extends CollectionLoader
 	}
 
 	protected CompletionStage<List<Object>> doReactiveQueryAndInitializeNonLazyCollections(
-			final SessionImplementor session,
+			final SharedSessionContractImplementor session,
 			final QueryParameters queryParameters,
 			final boolean returnProxies) {
 		return doReactiveQueryAndInitializeNonLazyCollections(
@@ -99,14 +99,14 @@ public class ReactiveCollectionLoader extends CollectionLoader
 
 	@Override
 	public CompletionStage<Void> reactiveInitialize(Serializable id, SharedSessionContractImplementor session) throws HibernateException {
-		return reactiveLoadCollection( (SessionImplementor) session, id, getKeyType() );
+		return reactiveLoadCollection( session, id, getKeyType() );
 	}
 
 	/**
 	 * Called by subclasses that initialize collections
 	 */
 	public CompletionStage<Void> reactiveLoadCollection(
-			final SessionImplementor session,
+			final SharedSessionContractImplementor session,
 			final Serializable id,
 			final Type type) throws HibernateException {
 		if ( LOG.isDebugEnabled() ) {
