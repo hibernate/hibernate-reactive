@@ -133,6 +133,13 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	}
 
 	@Override
+	public <T> CompletionStage<T> withStatelessSession(Function<Stage.StatelessSession, CompletionStage<T>> work) {
+		return newStatelessSession().thenCompose(
+				session -> work.apply(session).whenComplete( (r, e) -> session.close() )
+		);
+	}
+
+	@Override
 	public <T> CompletionStage<T> withTransaction(BiFunction<Stage.Session, Stage.Transaction, CompletionStage<T>> work) {
 		return withSession( (s) -> s.withTransaction( (t) -> work.apply(s, t) ) );
 	}
