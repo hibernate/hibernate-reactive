@@ -1225,6 +1225,15 @@ public interface Mutiny {
 		Uni<Void> insert(Object entity);
 
 		/**
+		 * Insert multiple rows.
+		 *
+		 * @param entities new transient instances
+		 *
+		 * @see org.hibernate.StatelessSession#insert(Object)
+		 */
+		Uni<Void> insertAll(Object... entities);
+
+		/**
 		 * Delete a row.
 		 *
 		 * @param entity a detached entity instance
@@ -1232,6 +1241,15 @@ public interface Mutiny {
 		 * @see org.hibernate.StatelessSession#delete(Object)
 		 */
 		Uni<Void> delete(Object entity);
+
+		/**
+		 * Delete multiple rows.
+		 *
+		 * @param entities detached entity instances
+		 *
+		 * @see org.hibernate.StatelessSession#delete(Object)
+		 */
+		Uni<Void> deleteAll(Object... entities);
 
 		/**
 		 * Update a row.
@@ -1243,6 +1261,15 @@ public interface Mutiny {
 		Uni<Void> update(Object entity);
 
 		/**
+		 * Update multiple rows.
+		 *
+		 * @param entities detached entity instances
+		 *
+		 * @see org.hibernate.StatelessSession#update(Object)
+		 */
+		Uni<Void> updateAll(Object... entities);
+
+		/**
 		 * Refresh the entity instance state from the database.
 		 *
 		 * @param entity The entity to be refreshed.
@@ -1250,6 +1277,15 @@ public interface Mutiny {
 		 * @see org.hibernate.StatelessSession#refresh(Object)
 		 */
 		Uni<Void> refresh(Object entity);
+
+		/**
+		 * Refresh the entity instance state from the database.
+		 *
+		 * @param entities The entities to be refreshed.
+		 *
+		 * @see org.hibernate.StatelessSession#refresh(Object)
+		 */
+		Uni<Void> refreshAll(Object... entities);
 
 		/**
 		 * Refresh the entity instance state from the database.
