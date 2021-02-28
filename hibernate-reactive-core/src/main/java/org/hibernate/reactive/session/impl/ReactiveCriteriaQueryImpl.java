@@ -15,7 +15,7 @@ import org.hibernate.query.criteria.internal.compile.RenderingContext;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.CriteriaQueryOptions;
 import org.hibernate.reactive.session.ReactiveQuery;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.type.Type;
 
 import javax.persistence.TypedQuery;
@@ -40,7 +40,7 @@ public class ReactiveCriteriaQueryImpl<T> extends CriteriaQueryImpl<T> implement
 		return jpaql.toString();
 	}
 
-	public ReactiveQuery<T> build(CriteriaQueryRenderingContext context, ReactiveSession session) {
+	public ReactiveQuery<T> build(CriteriaQueryRenderingContext context, ReactiveQueryExecutor session) {
 		final SelectionImplementor<?> selection = (SelectionImplementor<?>) getSelection();
 		ReactiveQuery<T> query = session.createReactiveCriteriaQuery(
 				renderQuery( context ),

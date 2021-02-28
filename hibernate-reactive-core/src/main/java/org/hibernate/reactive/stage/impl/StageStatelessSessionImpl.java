@@ -9,10 +9,14 @@ import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.stage.Stage;
 
 import javax.persistence.EntityGraph;
+import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -80,6 +84,21 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
     @Override
     public <R> Stage.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> sqlResultSetMapping) {
         return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString, sqlResultSetMapping.getName() ), factory );
+    }
+
+    @Override
+    public <R> Stage.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+        return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery ), factory );
+    }
+
+    @Override
+    public <R> Stage.Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
+        return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaUpdate ), factory );
+    }
+
+    @Override
+    public <R> Stage.Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
+        return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaDelete ), factory );
     }
 
     @Override

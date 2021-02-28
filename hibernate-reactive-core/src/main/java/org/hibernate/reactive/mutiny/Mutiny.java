@@ -1216,6 +1216,39 @@ public interface Mutiny {
 		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
 
 		/**
+		 * Create an instance of {@link Mutiny.Query} for the given criteria query.
+		 *
+		 * @param criteriaQuery The {@link CriteriaQuery}
+		 *
+		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 *
+		 * @see javax.persistence.EntityManager#createQuery(String)
+		 */
+		<R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery);
+
+		/**
+		 * Create an instance of {@link Mutiny.Query} for the given criteria update.
+		 *
+		 * @param criteriaUpdate The {@link CriteriaUpdate}
+		 *
+		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 *
+		 * @see javax.persistence.EntityManager#createQuery(String)
+		 */
+		<R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
+
+		/**
+		 * Create an instance of {@link Mutiny.Query} for the given criteria delete.
+		 *
+		 * @param criteriaDelete The {@link CriteriaDelete}
+		 *
+		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 *
+		 * @see javax.persistence.EntityManager#createQuery(String)
+		 */
+		<R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete);
+
+		/**
 		 * Insert a row.
 		 *
 		 * @param entity a new transient instance

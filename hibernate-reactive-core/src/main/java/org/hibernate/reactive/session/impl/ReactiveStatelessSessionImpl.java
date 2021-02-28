@@ -27,6 +27,7 @@ import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.StatelessSessionImpl;
+import org.hibernate.jpa.spi.CriteriaQueryTupleTransformer;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.loader.custom.sql.SQLCustomQuery;
@@ -43,6 +44,8 @@ import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersis
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.session.Criteria;
+import org.hibernate.reactive.session.CriteriaQueryOptions;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
@@ -645,6 +648,52 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
             throw new IllegalArgumentException( "Could not locate EntityGraph with given name : " + graphName );
         }
         return named;
+    }
+
+    @Override
+    public <R> ReactiveQuery<R> createReactiveQuery(Criteria<R> criteria) {
+        try {
+            criteria.validate();
+        }
+        catch (IllegalStateException ise) {
+            throw new IllegalArgumentException( "Error occurred validating the Criteria", ise );
+        }
+
+        return criteria.build( newRenderingContext(), this );
+    }
+
+    private CriteriaQueryRenderingContext newRenderingContext() {
+        return new CriteriaQueryRenderingContext( getFactory() );
+    }
+
+    @Override
+    public <T> ReactiveQuery<T> createReactiveCriteriaQuery(String jpaqlString,
+                                                            Class<T> resultClass,
+                                                            CriteriaQueryOptions queryOptions) {
+        try {
+            ReactiveQuery<T> query = createReactiveQuery( jpaqlString );
+            query.setParameterMetadata( queryOptions.getParameterMetadata() );
+
+            boolean hasValueHandlers = queryOptions.getValueHandlers() != null;
+            boolean hasTupleElements = Tuple.class.equals( resultClass );
+
+            if ( !hasValueHandlers ) {
+                queryOptions.validate( query.getReturnTypes() );
+            }
+
+            // determine if we need a result transformer
+            if ( hasValueHandlers || hasTupleElements ) {
+                query.setResultTransformer( new CriteriaQueryTupleTransformer(
+                        queryOptions.getValueHandlers(),
+                        hasTupleElements ? queryOptions.getSelection().getCompoundSelectionItems() : null
+                ) );
+            }
+
+            return query;
+        }
+        catch ( RuntimeException e ) {
+            throw getExceptionConverter().convert( e );
+        }
     }
 
     public void beginBatch() {

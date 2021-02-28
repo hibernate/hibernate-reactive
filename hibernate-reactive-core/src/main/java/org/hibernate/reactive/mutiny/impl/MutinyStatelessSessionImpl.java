@@ -10,9 +10,13 @@ import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 
 import javax.persistence.EntityGraph;
+import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -79,6 +83,21 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
     @Override
     public <R> Mutiny.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
         return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping.getName() ), factory );
+    }
+
+    @Override
+    public <R> Mutiny.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+        return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery ), factory );
+    }
+
+    @Override
+    public <R> Mutiny.Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
+        return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaUpdate ), factory );
+    }
+
+    @Override
+    public <R> Mutiny.Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
+        return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaDelete ), factory );
     }
 
     @Override
