@@ -38,6 +38,14 @@ public interface ReactiveStatelessSession extends ReactiveQueryExecutor {
 
     CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode);
 
+    CompletionStage<Void> reactiveInsertAll(Object... entities);
+
+    CompletionStage<Void> reactiveUpdateAll(Object... entities);
+
+    CompletionStage<Void> reactiveDeleteAll(Object... entities);
+
+    CompletionStage<Void> reactiveRefreshAll(Object... entities);
+
     <R> ReactiveQuery<R> createReactiveQuery(String queryString);
 
     <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType);
