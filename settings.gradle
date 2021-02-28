@@ -83,6 +83,7 @@ logger.lifecycle "Java versions for tests: " + gradle.ext.javaVersions.test
 
 include 'hibernate-reactive-core'
 include 'example'
+include 'example2'
 include 'documentation'
 include 'release'
 

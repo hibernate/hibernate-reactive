@@ -1,0 +1,68 @@
+description = 'Hibernate Reactive native SQL Example'
+
+dependencies {
+    implementation project(':hibernate-reactive-core')
+
+    // Hibernate Validator (optional)
+    implementation 'org.hibernate.validator:hibernate-validator:6.1.5.Final'
+    runtimeOnly 'org.glassfish:jakarta.el:3.0.3'
+
+    // JPA metamodel generation for criteria queries (optional)
+    annotationProcessor "org.hibernate:hibernate-jpamodelgen:${hibernateOrmVersion}"
+
+    // database driver for PostgreSQL
+    runtimeOnly "io.vertx:vertx-pg-client:${vertxVersion}"
+
+    // logging (optional)
+    runtimeOnly "org.apache.logging.log4j:log4j-core:2.13.3"
+//    runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
+}
+
+buildscript {
+    repositories {
+//        mavenLocal()
+        mavenCentral()
+
+        // Example: ./gradlew build -PenableJBossSnapshotsRep
+        if ( project.hasProperty('enableJBossSnapshotsRep') ) {
+            // Used only for testing with the latest Hibernate ORM snapshots.
+            maven { url 'https://repository.jboss.org/nexus/content/repositories/snapshots' }
+        }
+    }
+    dependencies {
+        classpath "org.hibernate:hibernate-gradle-plugin:${hibernateOrmVersion}"
+    }
+}
+
+
+// The following rules define a task to run
+// the different API available.
+//
+// They require the selected db ready
+// to accept connections.
+//
+// Examples:
+// gradle runExampleMySQLMain runExamplePostgreSQLMutinyMain
+def mainClasses = ['Main', 'MutinyMain']
+def dbs = ['PostgreSQL']
+
+dbs.each { db ->
+    tasks.addRule( "Pattern runExampleOn${db}<mainClass>" ) { String taskName ->
+        if ( taskName.startsWith( "runExampleOn${db}" ) ) {
+            task( type: JavaExec, taskName ) {
+                def  mainClass = taskName.substring( "runExampleOn${db}".length() )
+                group = "Execution"
+                description = "Run ${mainClass} on ${db}"
+                classpath = sourceSets.main.runtimeClasspath
+                main = "org.hibernate.example2.reactive.${mainClass}"
+                // The persistence unit name defined in resources/META-INF/persistence.xml
+                args db.toLowerCase() + '-example'
+            }
+        }
+    }
+}
+
+task runAllExamplesOnPostgreSQL(
+        dependsOn: mainClasses.collect( [] as HashSet ) { mainClass -> "runExampleOnPostgreSQL${mainClass}" } ) {
+    description = "Run ${mainClasses} on PostgreSQL"
+}
