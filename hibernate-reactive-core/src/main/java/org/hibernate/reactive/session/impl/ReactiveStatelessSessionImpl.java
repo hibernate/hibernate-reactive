@@ -12,6 +12,7 @@ import org.hibernate.UnresolvableObjectException;
 import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.cache.spi.access.EntityDataAccess;
+import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
@@ -29,6 +30,8 @@ import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.loader.custom.sql.SQLCustomQuery;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.Query;
 import org.hibernate.query.internal.ParameterMetadataImpl;
@@ -36,6 +39,7 @@ import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.id.impl.IdentifierGeneration;
 import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
+import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
@@ -50,6 +54,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
+import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
@@ -502,6 +507,62 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         persistenceContext.beforeLoad();
         return this.<Object>reactiveGet( persister.getMappedClass(), id )
                 .whenComplete( (r, e) -> persistenceContext.afterLoad()  );
+    }
+
+    @Override @SuppressWarnings("unchecked")
+    public <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy) {
+        checkOpen();
+        PersistenceContext persistenceContext = getPersistenceContext();
+        if ( association instanceof HibernateProxy) {
+            LazyInitializer initializer = ((HibernateProxy) association).getHibernateLazyInitializer();
+            if ( !initializer.isUninitialized() ) {
+                return completedFuture( unproxy ? (T) initializer.getImplementation() : association );
+            }
+            else {
+                String entityName = initializer.getEntityName();
+                Serializable id = initializer.getIdentifier();
+                ReactiveEntityPersister persister = (ReactiveEntityPersister)
+                        getFactory().getMetamodel().entityPersister(entityName);
+                initializer.setSession(this);
+                persistenceContext.beforeLoad();
+                return persister.reactiveLoad( id, initializer.getImplementation(), LockOptions.NONE, this )
+                        .whenComplete( (v,e) -> {
+                            persistenceContext.afterLoad();
+                            if ( persistenceContext.isLoadFinished() ) {
+                                persistenceContext.clear();
+                            }
+                        } )
+                        .thenApply( entity -> {
+                            checkEntityFound( this, entityName, id, entity );
+                            initializer.setImplementation( entity );
+                            initializer.unsetSession();
+                            return unproxy ? (T) entity : association;
+                        } );
+            }
+        }
+        else if ( association instanceof PersistentCollection) {
+            PersistentCollection persistentCollection = (PersistentCollection) association;
+            if ( persistentCollection.wasInitialized() ) {
+                return completedFuture( association );
+            }
+            else {
+                ReactiveCollectionPersister persister = (ReactiveCollectionPersister)
+                        getFactory().getMetamodel().collectionPersister( persistentCollection.getRole() );
+                Serializable key = persistentCollection.getKey();
+                persistenceContext.addUninitializedCollection( persister, persistentCollection, key );
+                persistentCollection.setCurrentSession(this);
+                return persister.reactiveInitialize( key, this )
+                        .whenComplete( (v,e) -> {
+                            if ( persistenceContext.isLoadFinished() ) {
+                                persistenceContext.clear();
+                            }
+                        } )
+                        .thenApply( v -> association );
+            }
+        }
+        else {
+            return completedFuture( association );
+        }
     }
 
     @Override

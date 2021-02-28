@@ -82,7 +82,7 @@ public interface ReactiveLoader {
 									forcedResultTransformer,
 									afterLoadActions
 							);
-				})
+				} )
 				.whenComplete( (list, e) -> persistenceContext.afterLoad() )
 				.thenCompose( list ->
 						// only initialize non-lazy collections after everything else has been refreshed

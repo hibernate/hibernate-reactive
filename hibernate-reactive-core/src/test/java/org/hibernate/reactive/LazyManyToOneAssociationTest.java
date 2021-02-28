@@ -178,6 +178,35 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void getFetchWithTwoAuthors(TestContext context) {
+		final Book goodOmens = new Book( 72433, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
+		final Author neilGaiman = new Author( 21421, "Neil Gaiman", goodOmens );
+		final Author terryPratchett = new Author( 2111, "Terry Pratchett", goodOmens );
+
+		test(
+				context,
+				completedFuture( getSessionFactory().openStatelessSession() )
+						.thenCompose( s -> s.insert( goodOmens )
+								.thenCompose( v -> s.insert( terryPratchett ) )
+								.thenCompose( v -> s.insert( neilGaiman ) ) )
+						.thenCompose( v -> completedFuture( getSessionFactory().openStatelessSession() )
+								.thenCompose( s -> s.get( Author.class, neilGaiman.getId() )
+										.thenCompose( optionalAuthor -> {
+											context.assertNotNull( optionalAuthor );
+											context.assertEquals( neilGaiman, optionalAuthor );
+											context.assertFalse( isInitialized( optionalAuthor.getBook() ) );
+											return s.fetch( optionalAuthor.getBook() ).thenAccept(
+													fetchedBook -> {
+														context.assertNotNull( fetchedBook );
+														context.assertEquals( goodOmens, fetchedBook );
+														context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
+													} );
+										} )
+								) )
+		);
+	}
+
+	@Test
 	public void manyToOneIsNull(TestContext context) {
 		final Author author = new Author( 5, "Charlie Mackesy", null );
 
