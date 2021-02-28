@@ -157,8 +157,8 @@ public class BatchingConnection implements ReactiveConnection {
     }
 
     public CompletionStage<Long> selectLong(String sql, Object[] paramValues) {
-        return hasBatch() ?
-                executeBatch().thenCompose( v -> delegate.selectLong(sql, paramValues) ) :
+        return /*hasBatch() ?
+                executeBatch().thenCompose( v -> delegate.selectLong(sql, paramValues) ) :*/
                 delegate.selectLong(sql, paramValues);
     }
 
