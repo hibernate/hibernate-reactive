@@ -12,7 +12,9 @@ import org.junit.Test;
 
 import javax.persistence.*;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Root;
 import java.util.Objects;
 
@@ -96,15 +98,25 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	@Test
 	public void testStatelessSessionCriteria(TestContext context) {
 		GuineaPig pig = new GuineaPig("Aloi");
+
 		CriteriaBuilder cb = getSessionFactory().getCriteriaBuilder();
-		CriteriaQuery<GuineaPig> crit = cb.createQuery(GuineaPig.class);
-		Root<GuineaPig> gp = crit.from(GuineaPig.class);
-		crit.where( cb.equal( gp.get("name"), cb.parameter(String.class, "n") ) );
+
+		CriteriaQuery<GuineaPig> query = cb.createQuery(GuineaPig.class);
+		Root<GuineaPig> gp = query.from(GuineaPig.class);
+		query.where( cb.equal( gp.get("name"), cb.parameter(String.class, "n") ) );
+
+		CriteriaUpdate<GuineaPig> update = cb.createCriteriaUpdate(GuineaPig.class);
+		update.from(GuineaPig.class);
+		update.set("name", "Bob");
+
+		CriteriaDelete<GuineaPig> delete = cb.createCriteriaDelete(GuineaPig.class);
+		delete.from(GuineaPig.class);
+
 		Stage.StatelessSession ss = getSessionFactory().openStatelessSession();
 		test(
 				context,
 				ss.insert(pig)
-						.thenCompose( v -> ss.createQuery(crit)
+						.thenCompose( v -> ss.createQuery(query)
 								.setParameter("n", pig.name)
 								.getResultList() )
 						.thenAccept( list -> {
@@ -112,6 +124,10 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 							context.assertEquals(1, list.size());
 							assertThatPigsAreEqual(context, pig, list.get(0));
 						} )
+						.thenCompose( v -> ss.createQuery(update).executeUpdate() )
+						.thenAccept( rows -> context.assertEquals(1, rows) )
+						.thenCompose( v -> ss.createQuery(delete).executeUpdate() )
+						.thenAccept( rows -> context.assertEquals(1, rows) )
 		);
 	}
 
