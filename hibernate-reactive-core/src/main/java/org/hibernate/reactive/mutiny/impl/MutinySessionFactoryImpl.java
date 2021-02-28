@@ -139,6 +139,12 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	}
 
 	@Override
+	public <T> Uni<T> withStatelessSession(Function<Mutiny.StatelessSession, Uni<T>> work) {
+		return newStatelessSession()
+				.chain( session -> work.apply( session ).eventually( session::close ) );
+	}
+
+	@Override
 	public <T> Uni<T> withTransaction(BiFunction<Mutiny.Session, Mutiny.Transaction, Uni<T>> work) {
 		return withSession( (s) -> s.withTransaction( (t) -> work.apply(s, t) ) );
 	}

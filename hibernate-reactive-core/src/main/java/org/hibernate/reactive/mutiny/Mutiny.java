@@ -1444,6 +1444,16 @@ public interface Mutiny {
 		<T> Uni<T> withTransaction(BiFunction<Session, Transaction, Uni<T>> work);
 
 		/**
+		 * Perform work using a {@link StatelessSession stateless session}.
+		 * <p>
+		 * The session will be closed automatically.
+		 *
+		 * @param work a function which accepts the session and returns
+		 *             the result of the work as a {@link Uni}.
+		 */
+		<T> Uni<T> withStatelessSession(Function<StatelessSession, Uni<T>> work);
+
+		/**
 		 * Perform work using a {@link Session reactive session} for a
 		 * specified tenant within an associated {@link Transaction transaction}.
 		 * <p>
