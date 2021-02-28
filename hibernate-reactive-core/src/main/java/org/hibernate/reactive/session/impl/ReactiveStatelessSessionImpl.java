@@ -106,12 +106,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     }
 
     @Override
-    public <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id) {
+    public <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id) {
         return reactiveGet( entityClass, id, LockMode.NONE );
     }
 
     @Override
-    public <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id, LockMode lockMode) {
+    public <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode) {
         checkOpen();
 
         ReactiveEntityPersister persister = (ReactiveEntityPersister)
@@ -442,7 +442,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
                 // if the entity defines a HibernateProxy factory, see if there is an
                 // existing proxy associated with the PC - and if so, use it
-                if ( persister.getEntityMetamodel().getTuplizer().getProxyFactory() != null ) {
+                if ( entityMetamodel.getTuplizer().getProxyFactory() != null ) {
                     final Object proxy = persistenceContext.getProxy( entityKey );
 
                     if ( proxy != null ) {
@@ -488,10 +488,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
         // IMPLEMENTATION NOTE: increment/decrement the load count before/after getting the value
         //                      to ensure that #get does not clear the PersistenceContext.
-        @SuppressWarnings("unchecked")
-        Class<Object> mappedClass = persister.getMappedClass();
         persistenceContext.beforeLoad();
-        return reactiveGet( mappedClass, id ).whenComplete( (r, e) -> persistenceContext.afterLoad()  );
+        return this.<Object>reactiveGet( persister.getMappedClass(), id )
+                .whenComplete( (r, e) -> persistenceContext.afterLoad()  );
     }
 
     @Override

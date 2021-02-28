@@ -23,9 +23,9 @@ import java.util.concurrent.CompletionStage;
 @Incubating
 public interface ReactiveStatelessSession extends ReactiveQueryExecutor {
 
-    <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id);
+    <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id);
 
-    <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id, LockMode lockMode);
+    <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode);
 
     CompletionStage<Void> reactiveInsert(Object entity);
 
