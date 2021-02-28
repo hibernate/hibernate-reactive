@@ -415,13 +415,15 @@ public class MutinySessionImpl implements Mutiny.Session {
 					.chain( () -> work.apply( this ) )
 					// only flush() if the work completed with no exception
 					.call( () -> flush() )
+					.call( () -> beforeCompletion() )
 					// in the case of an exception or cancellation
 					// we need to rollback the transaction
 					.onFailure().call( () -> rollback() )
 					.onCancellation().call( () -> rollback() )
 					// finally, when there was no exception,
 					// commit or rollback the transaction
-					.onItem().call( () -> rollback ? rollback() : commit() );
+					.onItem().call( () -> rollback ? rollback() : commit() )
+					.call( () -> afterCompletion() );
 		}
 
 		Uni<Void> flush() {
@@ -438,6 +440,14 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 		Uni<Void> commit() {
 			return Uni.createFrom().completionStage( delegate.getReactiveConnection().commitTransaction() );
+		}
+
+		private Uni<Void> beforeCompletion() {
+			return Uni.createFrom().completionStage( delegate.getReactiveActionQueue().beforeTransactionCompletion() );
+		}
+
+		private Uni<Void> afterCompletion() {
+			return Uni.createFrom().completionStage( delegate.getReactiveActionQueue().afterTransactionCompletion(!rollback) );
 		}
 
 		@Override
