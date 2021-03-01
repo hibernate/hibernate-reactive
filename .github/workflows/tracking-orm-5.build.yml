@@ -17,12 +17,17 @@ on:
 jobs:
   # The examples test the Hibernate ORM Gradle plugin. We use it for bytecode enhancements.
   run_examples:
-    name: Run examples on ${{ matrix.db }} with latest ORM ${{ matrix.orm-version }}
+    name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }} with latest ORM ${{ matrix.orm-version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        example: [ 'example', 'example2' ]
         orm-version: ['[5.4,5.5)', '[5.5,5.6)']
         db: ['MySQL', 'PostgreSQL']
+        exclude:
+          # 'example2' doesn't run on MySQL because it has native queries
+          - example: 'example2'
+            db: 'MySQL'
     services:
       # Label used to access the service container
       mysql:
@@ -63,9 +68,9 @@ jobs:
           java-version: 1.8
         uses: actions/setup-java@v1
       - name: Print the effective ORM version used
-        run: ./gradlew :example:dependencyInsight --dependency org.hibernate:hibernate-core -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing -PenableJBossSnapshotsRep
+        run: ./gradlew :${{ matrix.example }}:dependencyInsight --dependency org.hibernate:hibernate-core -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing -PenableJBossSnapshotsRep
       - name: Run examples on ${{ matrix.db }}
-        run: ./gradlew :example:runAllExamplesOn${{ matrix.db }} -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing -PenableJBossSnapshotsRep
+        run: ./gradlew :${{ matrix.example }}:runAllExamplesOn${{ matrix.db }} -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing -PenableJBossSnapshotsRep
 
   test_dbs:
     name: Test with ${{ matrix.db }} and ORM ${{ matrix.orm-version }}
