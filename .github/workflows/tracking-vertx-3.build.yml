@@ -17,12 +17,18 @@ on:
 jobs:
   # The examples test the Hibernate ORM Gradle plugin. We use it for bytecode enhancements.
   run_examples:
-    name: Run examples on ${{ matrix.db }} and latest Vert.x in ${{ matrix.vertx-version }}
+    name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }} and latest Vert.x in ${{ matrix.vertx-version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        vertx-version: ['[3,4)']
-        db: ['MySQL', 'PostgreSQL']
+        example: [ 'example', 'example2' ]
+        orm-version: [ '[5.4,5.5)', '[5.5,5.6)' ]
+        db: [ 'MySQL', 'PostgreSQL' ]
+        vertx-version: [ '[3,4)' ]
+        exclude:
+          # 'example2' doesn't run on MySQL because it has native queries
+          - example: 'example2'
+            db: 'MySQL'
     services:
       # Label used to access the service container
       mysql:
