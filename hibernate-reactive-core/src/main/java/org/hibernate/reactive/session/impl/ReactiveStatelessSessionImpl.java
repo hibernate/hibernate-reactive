@@ -72,23 +72,37 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         implements ReactiveStatelessSession {
 
-    private final ReactiveConnection batchingConnection;
-    private final ReactiveConnection nonbatchingConnection;
     private ReactiveConnection reactiveConnection;
     private final boolean allowBytecodeProxy;
 
-    private final PersistenceContext persistenceContext = new ReactivePersistenceContextAdapter(this);
+    private final ReactiveStatelessSession batchingHelperSession;
+
+    private final PersistenceContext persistenceContext;
 
     public ReactiveStatelessSessionImpl(SessionFactoryImpl factory,
                                         SessionCreationOptions options,
                                         ReactiveConnection connection) {
         super(factory, options);
         reactiveConnection = connection;
-        nonbatchingConnection = connection;
+        allowBytecodeProxy = getFactory().getSessionFactoryOptions().isEnhancementAsProxyEnabled();
+        persistenceContext = new ReactivePersistenceContextAdapter(this);
+        batchingHelperSession = new ReactiveStatelessSessionImpl(factory, options, connection, persistenceContext);
+    }
+
+    /**
+     * Create a helper instance with an underling {@link BatchingConnection}
+     */
+    private ReactiveStatelessSessionImpl(SessionFactoryImpl factory,
+                                         SessionCreationOptions options,
+                                         ReactiveConnection connection,
+                                         PersistenceContext persistenceContext) {
+        super(factory, options);
         Integer batchSize = getConfiguredJdbcBatchSize();
-        batchingConnection = batchSize==null || batchSize<2 ? connection :
+        reactiveConnection = batchSize==null || batchSize<2 ? connection :
                 new BatchingConnection( connection, batchSize );
         allowBytecodeProxy = getFactory().getSessionFactoryOptions().isEnhancementAsProxyEnabled();
+        this.persistenceContext = persistenceContext;
+        batchingHelperSession = this;
     }
 
     private LockOptions getNullSafeLockOptions(LockMode lockMode) {
@@ -258,34 +272,26 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
     @Override
     public CompletionStage<Void> reactiveInsertAll(Object... entities) {
-        beginBatch();
-        return loop(entities, this::reactiveInsert)
-                .thenCompose( v -> executeBatch() )
-                .whenComplete( (rm,e) -> endBatch() );
+        return loop(entities, batchingHelperSession::reactiveInsert)
+                .thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
     }
 
     @Override
     public CompletionStage<Void> reactiveUpdateAll(Object... entities) {
-        beginBatch();
-        return loop(entities, this::reactiveUpdate)
-                .thenCompose( v -> executeBatch() )
-                .whenComplete( (rm,e) -> endBatch() );
+        return loop(entities, batchingHelperSession::reactiveUpdate)
+                .thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
     }
 
     @Override
     public CompletionStage<Void> reactiveDeleteAll(Object... entities) {
-        beginBatch();
-        return loop(entities, this::reactiveDelete)
-                .thenCompose( v -> executeBatch() )
-                .whenComplete( (rm,e) -> endBatch() );
+        return loop(entities, batchingHelperSession::reactiveDelete)
+                .thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
     }
 
     @Override
     public CompletionStage<Void> reactiveRefreshAll(Object... entities) {
-        beginBatch();
-        return loop(entities, this::reactiveRefresh)
-                .thenCompose( v -> executeBatch() )
-                .whenComplete( (rm,e) -> endBatch() );
+        return loop(entities, batchingHelperSession::reactiveRefresh)
+                .thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
     }
 
     @Override
@@ -497,8 +503,8 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
             // first, check to see if we can use "bytecode proxies"
 
             EntityMetamodel entityMetamodel = persister.getEntityMetamodel();
-            BytecodeEnhancementMetadata bytecodeEnhancementMetadata = entityMetamodel.getBytecodeEnhancementMetadata();
-            if ( allowBytecodeProxy && bytecodeEnhancementMetadata.isEnhancedForLazyLoading() ) {
+            BytecodeEnhancementMetadata enhancementMetadata = entityMetamodel.getBytecodeEnhancementMetadata();
+            if ( allowBytecodeProxy && enhancementMetadata.isEnhancedForLazyLoading() ) {
 
                 // if the entity defines a HibernateProxy factory, see if there is an
                 // existing proxy associated with the PC - and if so, use it
@@ -523,10 +529,10 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 //                        LOG.debugf( "Creating a HibernateProxy for to-one association with subclasses to honor laziness" );
                         return completedFuture( createProxy( entityKey ) );
                     }
-                    return completedFuture( bytecodeEnhancementMetadata.createEnhancedProxy( entityKey, false, this ) );
+                    return completedFuture( enhancementMetadata.createEnhancedProxy( entityKey, false, this ) );
                 }
                 else if ( !entityMetamodel.hasSubclasses() ) {
-                    return completedFuture( bytecodeEnhancementMetadata.createEnhancedProxy( entityKey, false, this ) );
+                    return completedFuture( enhancementMetadata.createEnhancedProxy( entityKey, false, this ) );
                 }
                 // If we get here, then the entity class has subclasses and there is no HibernateProxy factory.
                 // The entity will get loaded below.
@@ -694,18 +700,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         catch ( RuntimeException e ) {
             throw getExceptionConverter().convert( e );
         }
-    }
-
-    public void beginBatch() {
-        reactiveConnection = batchingConnection;
-    }
-
-    public void endBatch() {
-        reactiveConnection = nonbatchingConnection;
-    }
-
-    public CompletionStage<Void> executeBatch() {
-        return batchingConnection.executeBatch();
     }
 
     @Override
