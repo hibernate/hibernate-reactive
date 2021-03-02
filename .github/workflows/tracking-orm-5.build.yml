@@ -69,7 +69,7 @@ jobs:
         uses: actions/setup-java@v1
       - name: Print the effective ORM version used
         run: ./gradlew :${{ matrix.example }}:dependencyInsight --dependency org.hibernate:hibernate-core -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing -PenableJBossSnapshotsRep
-      - name: Run examples on ${{ matrix.db }}
+      - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
         run: ./gradlew :${{ matrix.example }}:runAllExamplesOn${{ matrix.db }} -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing -PenableJBossSnapshotsRep
 
   test_dbs:
