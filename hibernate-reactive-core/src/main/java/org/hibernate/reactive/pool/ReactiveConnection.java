@@ -43,12 +43,12 @@ public interface ReactiveConnection {
 	CompletionStage<Void> update(String sql, Object[] paramValues,
 								 boolean allowBatching, Expectation expectation);
 	CompletionStage<int[]> update(String sql, List<Object[]> paramValues);
-	CompletionStage<Long> updateReturning(String sql, Object[] paramValues);
 
 	CompletionStage<Result> select(String sql);
 	CompletionStage<Result> select(String sql, Object[] paramValues);
 	CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues);
 
+	CompletionStage<Long> insertAndSelectIdentifier(String sql, Object[] paramValues);
 	CompletionStage<Long> selectIdentifier(String sql, Object[] paramValues);
 
 	interface Result extends Iterator<Object[]> {
