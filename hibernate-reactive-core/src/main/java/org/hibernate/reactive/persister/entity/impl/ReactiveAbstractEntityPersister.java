@@ -399,7 +399,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		else {
 			//use an extra round trip to fetch the id
 			generatedIdStage =  connection.update( sql, params )
-					.thenCompose( v -> connection.selectLong( delegate().getIdentitySelectString(), EMPTY_OBJECT_ARRAY ) );
+					.thenCompose( v -> connection.selectIdentifier( delegate().getIdentitySelectString(), EMPTY_OBJECT_ARRAY ) );
 		}
 		return generatedIdStage
 				.thenApply( generatedId -> {
