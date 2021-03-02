@@ -409,7 +409,8 @@ public class MutinySessionTest extends BaseReactiveTest {
 				getMutinySessionFactory()
 						.withTransaction( (session, transaction) -> session.persistAll(foo, bar, baz) )
 						.call( () -> getMutinySessionFactory().withSession(
-								session -> session.createQuery("from GuineaPig", GuineaPig.class).getResults()
+								session -> session.createQuery("from GuineaPig", GuineaPig.class)
+										.getResultList().onItem().disjoint()
 										.invoke( pig -> {
 											context.assertNotNull(pig);
 											i.getAndIncrement();
