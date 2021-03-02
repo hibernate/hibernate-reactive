@@ -48,7 +48,8 @@ public interface ReactiveConnection {
 	CompletionStage<Result> select(String sql);
 	CompletionStage<Result> select(String sql, Object[] paramValues);
 	CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues);
-	CompletionStage<Long> selectLong(String sql, Object[] paramValues);
+
+	CompletionStage<Long> selectIdentifier(String sql, Object[] paramValues);
 
 	interface Result extends Iterator<Object[]> {
 		int size();

@@ -75,7 +75,7 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	@Override
-	public CompletionStage<Long> selectLong(String sql, Object[] paramValues) {
+	public CompletionStage<Long> selectIdentifier(String sql, Object[] paramValues) {
 		return preparedQuery( sql, Tuple.wrap( paramValues ) )
 				.thenApply( rowSet -> {
 					for (Row row: rowSet) {

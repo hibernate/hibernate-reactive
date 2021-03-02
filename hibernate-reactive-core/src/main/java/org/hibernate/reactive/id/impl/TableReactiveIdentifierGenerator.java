@@ -77,7 +77,7 @@ public class TableReactiveIdentifierGenerator
 		// transaction rollback.
 		ReactiveConnection connection = session.getReactiveConnection();
 		// 1) select the current hi value
-		return connection.selectLong( selectQuery, selectParameters() )
+		return connection.selectIdentifier( selectQuery, selectParameters() )
 				// 2) attempt to update the hi value
 				.thenCompose( result -> {
 					Object[] params;
