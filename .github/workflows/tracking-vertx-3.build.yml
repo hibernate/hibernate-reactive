@@ -70,8 +70,8 @@ jobs:
         uses: actions/setup-java@v1
       - name: Print the effective Vert.x version used
         run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency io.vertx -PvertxVersion='${{ matrix.vertx-version }}'
-      - name: Run examples on ${{ matrix.db }}
-        run: ./gradlew :example:runAllExamplesOn${{ matrix.db }} -PvertxVersion='${{ matrix.vertx-version }}'
+      - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
+        run: ./gradlew :${{ matrix.example }}:runAllExamplesOn${{ matrix.db }} -PvertxVersion='${{ matrix.vertx-version }}'
 
   test_dbs:
     name: Test with ${{ matrix.db }} and latest Vert.x in ${{ matrix.vertx-version }}
