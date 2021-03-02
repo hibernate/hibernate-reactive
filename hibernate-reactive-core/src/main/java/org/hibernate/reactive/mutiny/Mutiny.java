@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.mutiny;
 
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import org.hibernate.Cache;
 import org.hibernate.CacheMode;
@@ -153,21 +152,6 @@ public interface Mutiny {
 		 * @see javax.persistence.Query#getResultList()
 		 */
 		Uni<List<R>> getResultList();
-
-		/**
-		 * Asynchronously execute this query, returning the query results
-		 * as a {@link Multi}. If the query has multiple results per row,
-		 * the results are returned in an instance of {@code Object[]}.
-		 * <p>
-		 * For now, this operation does no more than simply repackage the
-		 * result of {@link #getResultList()} as a {@link Multi} for
-		 * convenience.
-		 *
-		 * @return the resulting rows via a {@link Multi}
-		 */
-		default Multi<R> getResults() {
-			return getResultList().onItem().transformToMulti( list -> Multi.createFrom().iterable( list ) );
-		}
 
 		/**
 		 * Asynchronously execute this delete, update, or insert query,
