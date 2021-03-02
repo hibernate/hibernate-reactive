@@ -394,7 +394,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		ReactiveConnection connection = getReactiveConnection( session );
 		CompletionStage<? extends Serializable> generatedIdStage;
 		if ( getFactory().getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
-			generatedIdStage = connection.updateReturning( checkSql( sql ), params );
+			generatedIdStage = connection.insertAndSelectIdentifier( checkSql( sql ), params );
 		}
 		else {
 			//use an extra round trip to fetch the id

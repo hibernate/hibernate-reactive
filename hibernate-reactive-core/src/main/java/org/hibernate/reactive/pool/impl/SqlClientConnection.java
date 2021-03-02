@@ -70,8 +70,8 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	@Override
-	public CompletionStage<Long> updateReturning(String sql, Object[] paramValues) {
-		return updateReturning( sql, Tuple.wrap( paramValues ) );
+	public CompletionStage<Long> insertAndSelectIdentifier(String sql, Object[] paramValues) {
+		return insertAndSelectIdentifier( sql, Tuple.wrap( paramValues ) );
 	}
 
 	@Override
@@ -145,13 +145,13 @@ public class SqlClientConnection implements ReactiveConnection {
 		});
 	}
 
-	public CompletionStage<Long> updateReturning(String sql, Tuple parameters) {
+	public CompletionStage<Long> insertAndSelectIdentifier(String sql, Tuple parameters) {
 		return preparedQuery( sql, parameters )
 				.thenApply( rows -> {
 					RowIterator<Row> iterator = rows.iterator();
 					return iterator.hasNext() ?
 							iterator.next().getLong(0) :
-							rows.property(getMySqlLastInsertedId());
+							rows.property( getMySqlLastInsertedId() );
 				} );
 	}
 

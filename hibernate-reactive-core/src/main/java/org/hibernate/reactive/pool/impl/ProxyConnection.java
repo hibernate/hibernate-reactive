@@ -90,8 +90,8 @@ final class ProxyConnection implements ReactiveConnection {
 	}
 
 	@Override
-	public CompletionStage<Long> updateReturning(String sql, Object[] paramValues) {
-		return withConnection( conn -> conn.updateReturning( sql, paramValues ) );
+	public CompletionStage<Long> insertAndSelectIdentifier(String sql, Object[] paramValues) {
+		return withConnection( conn -> conn.insertAndSelectIdentifier( sql, paramValues ) );
 	}
 
 	@Override

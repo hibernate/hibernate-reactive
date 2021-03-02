@@ -132,10 +132,10 @@ public class BatchingConnection implements ReactiveConnection {
                 delegate.update(sql, paramValues);
     }
 
-    public CompletionStage<Long> updateReturning(String sql, Object[] paramValues) {
+    public CompletionStage<Long> insertAndSelectIdentifier(String sql, Object[] paramValues) {
         return hasBatch() ?
-                executeBatch().thenCompose( v -> delegate.updateReturning(sql, paramValues) ) :
-                delegate.updateReturning(sql, paramValues);
+                executeBatch().thenCompose( v -> delegate.insertAndSelectIdentifier(sql, paramValues) ) :
+                delegate.insertAndSelectIdentifier(sql, paramValues);
     }
 
     public CompletionStage<ReactiveConnection.Result> select(String sql) {
