@@ -42,7 +42,7 @@ public class SequenceReactiveIdentifierGenerator
 
 	@Override
 	protected CompletionStage<Long> nextHiValue(ReactiveConnectionSupplier session) {
-		return session.getReactiveConnection().selectLong( sql, NO_PARAMS ).thenApply( this::next );
+		return session.getReactiveConnection().selectIdentifier( sql, NO_PARAMS ).thenApply( this::next );
 	}
 
 	@Override

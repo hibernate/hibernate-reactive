@@ -110,8 +110,8 @@ final class ProxyConnection implements ReactiveConnection {
 	}
 
 	@Override
-	public CompletionStage<Long> selectLong(String sql, Object[] paramValues) {
-		return withConnection( conn -> conn.selectLong( sql, paramValues ) );
+	public CompletionStage<Long> selectIdentifier(String sql, Object[] paramValues) {
+		return withConnection( conn -> conn.selectIdentifier( sql, paramValues ) );
 	}
 
 	@Override

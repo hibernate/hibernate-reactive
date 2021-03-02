@@ -156,10 +156,12 @@ public class BatchingConnection implements ReactiveConnection {
                 delegate.selectJdbc(sql, paramValues);
     }
 
-    public CompletionStage<Long> selectLong(String sql, Object[] paramValues) {
-        return /*hasBatch() ?
-                executeBatch().thenCompose( v -> delegate.selectLong(sql, paramValues) ) :*/
-                delegate.selectLong(sql, paramValues);
+    public CompletionStage<Long> selectIdentifier(String sql, Object[] paramValues) {
+        // Do not want to execute the batch here
+        // because we want to be able to select
+        // multiple ids before sending off a batch
+        // of insert statements
+        return delegate.selectIdentifier(sql, paramValues);
     }
 
     public CompletionStage<Void> beginTransaction() {
