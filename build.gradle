@@ -25,11 +25,11 @@ ext {
 // allows overriding the build using a parameter, which can be
 // useful to monitor compatibility for upcoming versions on CI:
 //
-// ./gradlew clean build -PhibernateOrmVersion=5.4.9-SNAPSHOT
+// ./gradlew clean build -PhibernateOrmVersion=5.4.30-SNAPSHOT
 
 ext {
     if ( !project.hasProperty('hibernateOrmVersion') ) {
-        hibernateOrmVersion = '5.4.28.Final'
+        hibernateOrmVersion = '5.4.29.Final'
     }
     // For ORM, we need a parsed version (to get the family, ...)
 
