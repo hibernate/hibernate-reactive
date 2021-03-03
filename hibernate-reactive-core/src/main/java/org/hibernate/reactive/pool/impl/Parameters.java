@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import org.hibernate.dialect.CockroachDB192Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.PostgreSQL9Dialect;
 
@@ -36,7 +37,7 @@ public class Parameters {
 	};
 
 	public static Parameters instance(Dialect dialect) {
-		return dialect instanceof PostgreSQL9Dialect
+		return dialect instanceof PostgreSQL9Dialect || dialect instanceof CockroachDB192Dialect
 				? INSTANCE
 				: NO_PARSING;
 	}
