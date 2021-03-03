@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
@@ -37,7 +38,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 public class ORMReactivePersistenceTest extends BaseReactiveTest {
 
 	@Rule
-	public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
+	public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL, COCKROACHDB );
 
 	private SessionFactory ormFactory;
 

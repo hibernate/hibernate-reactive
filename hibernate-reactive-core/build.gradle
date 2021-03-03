@@ -54,6 +54,7 @@ dependencies {
     testImplementation "org.testcontainers:mysql:${testcontainersVersion}"
     testImplementation "org.testcontainers:mariadb:${testcontainersVersion}"
     testImplementation "org.testcontainers:db2:${testcontainersVersion}"
+    testImplementation "org.testcontainers:cockroachdb:${testcontainersVersion}"
 }
 
 // Print a summary of the results of the tests (number of failures, successes and skipped)

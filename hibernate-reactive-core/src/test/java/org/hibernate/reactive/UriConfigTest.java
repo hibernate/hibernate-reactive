@@ -8,10 +8,7 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
-import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.MariaDB103Dialect;
-import org.hibernate.dialect.MySQL8Dialect;
-import org.hibernate.dialect.PostgreSQL10Dialect;
+import org.hibernate.dialect.*;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
@@ -32,6 +29,7 @@ public class UriConfigTest extends BaseReactiveTest {
         Class<? extends Dialect> dialect;
         switch ( DatabaseConfiguration.dbType() ) {
             case POSTGRESQL: dialect = PostgreSQL10Dialect.class; break;
+            case COCKROACHDB: dialect = CockroachDB201Dialect.class; break;
             case MYSQL: dialect = MySQL8Dialect.class; break;
             case MARIA: dialect = MariaDB103Dialect.class; break;
             case DB2:
@@ -49,6 +47,7 @@ public class UriConfigTest extends BaseReactiveTest {
         String sql;
         switch ( DatabaseConfiguration.dbType() ) {
             case POSTGRESQL:
+            case COCKROACHDB:
                 sql = "select cast(current_timestamp as varchar)"; break;
             case MYSQL:
             case MARIA:

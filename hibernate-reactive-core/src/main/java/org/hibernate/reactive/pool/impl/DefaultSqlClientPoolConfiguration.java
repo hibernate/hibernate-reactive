@@ -180,6 +180,8 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
                 return 3306;
             case "db2":
                 return 50000;
+            case "cockroachdb":
+                return 26257;
             default:
                 throw new IllegalArgumentException( "Unknown default port for scheme: " + scheme );
         }

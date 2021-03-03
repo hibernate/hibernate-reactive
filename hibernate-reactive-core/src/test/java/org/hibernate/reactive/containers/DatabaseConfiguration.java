@@ -21,7 +21,8 @@ public class DatabaseConfiguration {
 		DB2( DB2Database.INSTANCE, 50000 ),
 		MYSQL( MySQLDatabase.INSTANCE, 3306 ),
 		MARIA( MariaDatabase.INSTANCE, 3306, "mariadb" ),
-		POSTGRESQL( PostgreSQLDatabase.INSTANCE, 5432, "POSTGRES", "PG" );
+		POSTGRESQL( PostgreSQLDatabase.INSTANCE, 5432, "POSTGRES", "PG" ),
+		COCKROACHDB( CockroachDBDatabase.INSTANCE, 26257, "COCKROACH" );
 
 		private final TestableDatabase configuration;
 		private final int defaultPort;
@@ -63,6 +64,10 @@ public class DatabaseConfiguration {
 
 		public int getDefaultPort() {
 			return defaultPort;
+		}
+
+		public boolean speaksPostgresWireProtocol() {
+			return this == DBType.POSTGRESQL || this == DBType.COCKROACHDB;
 		}
 	}
 
