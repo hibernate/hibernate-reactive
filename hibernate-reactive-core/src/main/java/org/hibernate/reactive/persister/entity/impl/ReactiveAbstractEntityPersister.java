@@ -9,6 +9,7 @@ import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +40,7 @@ import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.event.spi.EventSource;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.entity.UniqueEntityLoader;
@@ -72,6 +74,7 @@ import static org.hibernate.internal.util.collections.ArrayHelper.EMPTY_OBJECT_A
 import static org.hibernate.internal.util.collections.ArrayHelper.join;
 import static org.hibernate.internal.util.collections.ArrayHelper.trim;
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
+import static org.hibernate.persister.entity.AbstractEntityPersister.determineValueNullness;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor.bind;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.castToIdentifierType;
@@ -1280,9 +1283,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	default UniqueEntityLoader createReactiveUniqueKeyLoader(Type uniqueKeyType, String[] columns, LoadQueryInfluencers loadQueryInfluencers) {
-		if ( uniqueKeyType.isEntityType() ) {
-			String className = ( (EntityType) uniqueKeyType ).getAssociatedEntityName();
-			uniqueKeyType = getFactory().getMetamodel().entityPersister( className ).getIdentifierType();
+		if (uniqueKeyType.isEntityType()) {
+			String className = ((EntityType) uniqueKeyType).getAssociatedEntityName();
+			uniqueKeyType = getFactory().getMetamodel().entityPersister(className).getIdentifierType();
 		}
 		return new ReactiveEntityLoader(
 				this,
@@ -1294,6 +1297,54 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				loadQueryInfluencers
 		);
 	}
+
+	@Override
+	default CompletionStage<Serializable> reactiveLoadEntityIdByNaturalId(Object[] naturalIdValues,
+																		  LockOptions lockOptions, EventSource session) {
+		if ( log.isTraceEnabled() ) {
+			log.tracef(
+					"Resolving natural-id [%s] to id : %s ",
+					Arrays.asList( naturalIdValues ),
+					infoString( this )
+			);
+		}
+
+		Object[] parameters = PreparedStatementAdaptor.bind( statement -> {
+			int positions = 1;
+			int loop = 0;
+			for ( int idPosition : getNaturalIdentifierProperties() ) {
+				final Object naturalIdValue = naturalIdValues[loop++];
+				if ( naturalIdValue != null ) {
+					final Type type = getPropertyTypes()[idPosition];
+					type.nullSafeSet( statement, naturalIdValue, positions, session );
+					positions += type.getColumnSpan( session.getFactory() );
+				}
+			}
+		} );
+
+		String sql = determinePkByNaturalIdQuery( determineValueNullness( naturalIdValues ) );
+		return getReactiveConnection( session )
+				.selectJdbc( parameters().process(sql), parameters )
+				.thenApply( resultSet -> {
+					try {
+						// if there is no resulting row, return null
+						if ( !resultSet.next() ) {
+							return null;
+						}
+
+						Object hydratedId = getIdentifierType().hydrate( resultSet, getIdentifierAliases(), session, null );
+						return (Serializable) getIdentifierType().resolve( hydratedId, session, null );
+					}
+					catch (SQLException sqle) {
+						//can never happen
+						throw new JDBCException( "could not resolve natural-id: " + sql, sqle );
+					}
+				} );
+	}
+
+	String[] getIdentifierAliases();
+
+	String determinePkByNaturalIdQuery(boolean[] valueNullness);
 
 	boolean initializeLazyProperty(String fieldName,
 								   Object entity,

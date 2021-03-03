@@ -57,6 +57,7 @@ public class ReactiveIntegrator implements Integrator {
 			eventListenerRegistry.getEventListenerGroup( EventType.LOAD ).appendListener( new DefaultReactiveLoadEventListener() );
 			eventListenerRegistry.getEventListenerGroup( EventType.INIT_COLLECTION ).appendListener( new DefaultReactiveInitializeCollectionEventListener() );
 			eventListenerRegistry.getEventListenerGroup( EventType.POST_LOAD ).appendListener( new DefaultReactivePostLoadEventListener() );
+			eventListenerRegistry.getEventListenerGroup( EventType.RESOLVE_NATURAL_ID ).appendListener( new DefaultReactiveResolveNaturalIdEventListener() );
 		}
 	}
 
