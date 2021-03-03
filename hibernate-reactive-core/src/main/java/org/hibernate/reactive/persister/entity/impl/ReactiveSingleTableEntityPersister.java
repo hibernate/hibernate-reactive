@@ -316,4 +316,9 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	public String[][] getLazyPropertyColumnAliases() {
 		return super.getLazyPropertyColumnAliases();
 	}
+
+	@Override
+	public String determinePkByNaturalIdQuery(boolean[] valueNullness) {
+		return super.determinePkByNaturalIdQuery(valueNullness);
+	}
 }

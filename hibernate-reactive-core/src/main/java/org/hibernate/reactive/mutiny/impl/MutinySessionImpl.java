@@ -13,6 +13,7 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.AffectedEntities;
+import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.Criteria;
@@ -100,6 +101,11 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> Uni<List<T>> find(Class<T> entityClass, Object... ids) {
+		return uni( () -> delegate.reactiveFind( entityClass, ids ) );
+	}
+
+	@Override
+	public <T> Uni<T> find(Class<T> entityClass, Identifier<T>... ids) {
 		return uni( () -> delegate.reactiveFind( entityClass, ids ) );
 	}
 

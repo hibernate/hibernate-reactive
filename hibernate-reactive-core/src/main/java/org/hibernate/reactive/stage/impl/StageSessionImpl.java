@@ -12,6 +12,7 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.AffectedEntities;
+import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.session.Criteria;
@@ -100,6 +101,11 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public <T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids) {
 		return stage( v -> delegate.reactiveFind( entityClass, ids ) );
+	}
+
+	@Override
+	public <T> CompletionStage<T> find(Class<T> entityClass, Identifier<T>... naturalIds) {
+		return stage( v -> delegate.reactiveFind( entityClass, naturalIds ) );
 	}
 
 	@Override

@@ -299,4 +299,9 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	public String[][] getLazyPropertyColumnAliases() {
 		return super.getLazyPropertyColumnAliases();
 	}
+
+	@Override
+	public String determinePkByNaturalIdQuery(boolean[] valueNullness) {
+		return super.determinePkByNaturalIdQuery(valueNullness);
+	}
 }

@@ -17,6 +17,7 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
+import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 
 import javax.persistence.EntityGraph;
@@ -87,19 +88,14 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 
 	<R> ReactiveQuery<R> createReactiveNamedQuery(String name, Class<R> resultClass);
 
-	<T> CompletionStage<T> reactiveGet(
-			Class<T> entityClass,
-			Serializable id);
+	<T> CompletionStage<T> reactiveGet(Class<T> entityClass, Serializable id);
 
-	<T> CompletionStage<T> reactiveFind(
-			Class<T> entityClass,
-			Object primaryKey,
-			LockOptions lockOptions,
-			EntityGraph<T> fetchGraph);
+	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Object id,
+										LockOptions lockOptions, EntityGraph<T> fetchGraph);
 
-	<T> CompletionStage<List<T>> reactiveFind(
-			Class<T> entityClass,
-			Object... primaryKey);
+	<T> CompletionStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids);
+
+	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Identifier<T>... naturalIds);
 
 	CompletionStage<Object> reactiveImmediateLoad(String entityName, Serializable id);
 

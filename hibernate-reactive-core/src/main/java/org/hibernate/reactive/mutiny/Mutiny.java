@@ -10,6 +10,7 @@ import org.hibernate.Cache;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
+import org.hibernate.Incubating;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.LockMode;
 import org.hibernate.collection.internal.AbstractPersistentCollection;
@@ -18,6 +19,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.AutoCloseable;
+import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.session.ReactiveSession;
 
@@ -378,6 +380,19 @@ public interface Mutiny {
 		 * @return a list of persistent instances and nulls via a {@code Uni}
 		 */
 		<T> Uni<List<T>> find(Class<T> entityClass, Object... ids);
+
+		/**
+		 * Asynchronously return the persistent instance of the given entity
+		 * class with the given natural identifiers, or null if there is no
+		 * such persistent instance.
+		 *
+		 * @param entityClass The entity type
+		 * @param naturalIds the natural identifiers
+		 *
+		 * @return a persistent instance or null via a {@code Uni}
+		 */
+		@Incubating
+		<T> Uni<T> find(Class<T> entityClass, Identifier<T>... naturalIds);
 
 		/**
 		 * Return the persistent instance of the given entity class with the
