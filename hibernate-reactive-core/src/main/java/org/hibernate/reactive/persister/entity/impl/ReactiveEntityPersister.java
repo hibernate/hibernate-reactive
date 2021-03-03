@@ -9,6 +9,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.event.spi.EventSource;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
@@ -140,4 +141,7 @@ public interface ReactiveEntityPersister extends EntityPersister {
 																	SharedSessionContractImplementor session) {
 		return nullFuture();
 	}
+
+    CompletionStage<Serializable> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues,
+																  LockOptions lockOptions, EventSource session);
 }

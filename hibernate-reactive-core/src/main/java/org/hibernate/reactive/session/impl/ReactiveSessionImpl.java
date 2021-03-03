@@ -24,12 +24,16 @@ import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.EffectiveEntityGraph;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.ExceptionConverter;
 import org.hibernate.engine.spi.NamedQueryDefinition;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
+import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.AutoFlushEvent;
@@ -44,6 +48,7 @@ import org.hibernate.event.spi.LockEvent;
 import org.hibernate.event.spi.MergeEvent;
 import org.hibernate.event.spi.PersistEvent;
 import org.hibernate.event.spi.RefreshEvent;
+import org.hibernate.event.spi.ResolveNaturalIdEvent;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
@@ -63,6 +68,7 @@ import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.Query;
 import org.hibernate.query.internal.ParameterMetadataImpl;
 import org.hibernate.reactive.common.InternalStateAssertions;
+import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
@@ -73,6 +79,7 @@ import org.hibernate.reactive.event.ReactiveLockEventListener;
 import org.hibernate.reactive.event.ReactiveMergeEventListener;
 import org.hibernate.reactive.event.ReactivePersistEventListener;
 import org.hibernate.reactive.event.ReactiveRefreshEventListener;
+import org.hibernate.reactive.event.ReactiveResolveNaturalIdEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveInitializeCollectionEventListener;
 import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
@@ -91,7 +98,9 @@ import javax.persistence.EntityNotFoundException;
 import javax.persistence.Tuple;
 import javax.persistence.metamodel.Attribute;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -101,14 +110,10 @@ import java.util.function.Supplier;
 
 import io.vertx.core.Context;
 
+import static org.hibernate.engine.spi.PersistenceContext.NaturalIdHelper.INVALID_NATURAL_ID_REFERENCE;
 import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
-import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
-import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.*;
 
 /**
  * An {@link ReactiveSession} implemented by extension of
@@ -1044,6 +1049,17 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		//TODO: copy/paste the exception handling from immediately above?
 	}
 
+	@Override
+	public <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Identifier<T>... naturalIds) {
+		Map<String, Object> ids = new HashMap<>();
+		for (Identifier<T> naturalId: naturalIds) {
+			ids.put( naturalId.getAttributeName(), naturalId.getId() );
+		}
+		EntityPersister persister = getFactory().getMetamodel().locateEntityPersister(entityClass);
+		return new NaturalIdLoadAccessImpl<T>(persister).resolveNaturalId(ids)
+				.thenCompose( id -> reactiveFind( entityClass, id, null, null ) );
+	}
+
 	@SuppressWarnings("unchecked")
 	private <E, L, RL, T> CompletionStage<T> fire(
 			E event,
@@ -1063,10 +1079,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 												  Function<RL, BiFunction<E, P, CompletionStage<Void>>> fun) {
 		//to preserve atomicity of the Session methods
 		//call apply() from within the arg of thenCompose()
-		return CompletionStages.loop(
-				eventListeners(eventType),
-				listener -> fun.apply((RL) listener).apply(event, extra)
-		);
+		return loop( eventListeners(eventType), listener -> fun.apply((RL) listener).apply(event, extra) );
 	}
 
 	@SuppressWarnings("deprecation")
@@ -1088,6 +1101,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		pulseTransactionCoordinator();
 
 		return fire(event, loadType, EventType.LOAD, (ReactiveLoadEventListener l) -> l::reactiveOnLoad);
+	}
+
+	private CompletionStage<Void> fireResolveNaturalId(ResolveNaturalIdEvent event) {
+		checkOpenOrWaitingForAutoClose();
+		return fire( event, EventType.RESOLVE_NATURAL_ID,
+				(ReactiveResolveNaturalIdEventListener l) -> l::reactiveResolveNaturalId )
+				.whenComplete( (c, e) -> delayedAfterCompletion() );
 	}
 
 	@Override
@@ -1368,6 +1388,101 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		public <K extends Serializable> CompletionStage<List<T>> multiLoad(List<K> ids) {
 			return perform( () -> (CompletionStage<List<T>>)
 					entityPersister.multiLoad( ids.toArray(new Serializable[0]), ReactiveSessionImpl.this, this ) );
+		}
+	}
+
+	private class NaturalIdLoadAccessImpl<T> {
+		private final EntityPersister entityPersister;
+		private LockOptions lockOptions;
+		private boolean synchronizationEnabled = true;
+
+		private NaturalIdLoadAccessImpl(EntityPersister entityPersister) {
+			this.entityPersister = entityPersister;
+
+			if ( !entityPersister.hasNaturalIdentifier() ) {
+				throw new HibernateException(
+						String.format( "Entity [%s] did not define a natural id", entityPersister.getEntityName() )
+				);
+			}
+		}
+
+		public NaturalIdLoadAccessImpl<T> with(LockOptions lockOptions) {
+			this.lockOptions = lockOptions;
+			return this;
+		}
+
+		protected void synchronizationEnabled(boolean synchronizationEnabled) {
+			this.synchronizationEnabled = synchronizationEnabled;
+		}
+
+		protected final CompletionStage<Serializable> resolveNaturalId(Map<String, Object> naturalIdParameters) {
+			performAnyNeededCrossReferenceSynchronizations();
+
+			ResolveNaturalIdEvent event =
+					new ResolveNaturalIdEvent( naturalIdParameters, entityPersister, ReactiveSessionImpl.this );
+			return fireResolveNaturalId( event )
+					.thenApply( v -> event.getEntityId() == INVALID_NATURAL_ID_REFERENCE ? null : event.getEntityId() );
+		}
+
+		protected void performAnyNeededCrossReferenceSynchronizations() {
+			if ( !synchronizationEnabled ) {
+				// synchronization (this process) was disabled
+				return;
+			}
+			if ( entityPersister.getEntityMetamodel().hasImmutableNaturalId() ) {
+				// only mutable natural-ids need this processing
+				return;
+			}
+			if ( !isTransactionInProgress() ) {
+				// not in a transaction so skip synchronization
+				return;
+			}
+
+			final PersistenceContext persistenceContext = getPersistenceContextInternal();
+//			final boolean debugEnabled = log.isDebugEnabled();
+			for ( Serializable pk : persistenceContext.getNaturalIdHelper()
+					.getCachedPkResolutions( entityPersister ) ) {
+				final EntityKey entityKey = generateEntityKey( pk, entityPersister );
+				final Object entity = persistenceContext.getEntity( entityKey );
+				final EntityEntry entry = persistenceContext.getEntry( entity );
+
+				if ( entry == null ) {
+//					if ( debugEnabled ) {
+//						log.debug(
+//								"Cached natural-id/pk resolution linked to null EntityEntry in persistence context : "
+//										+ MessageHelper.infoString( entityPersister, pk, getFactory() )
+//						);
+//					}
+					continue;
+				}
+
+				if ( !entry.requiresDirtyCheck( entity ) ) {
+					continue;
+				}
+
+				// MANAGED is the only status we care about here...
+				if ( entry.getStatus() != Status.MANAGED ) {
+					continue;
+				}
+
+				persistenceContext.getNaturalIdHelper().handleSynchronization(
+						entityPersister,
+						pk,
+						entity
+				);
+			}
+		}
+
+		protected final ReactiveIdentifierLoadAccessImpl getIdentifierLoadAccess() {
+			final ReactiveIdentifierLoadAccessImpl identifierLoadAccess = new ReactiveIdentifierLoadAccessImpl( entityPersister );
+			if ( this.lockOptions != null ) {
+				identifierLoadAccess.with( lockOptions );
+			}
+			return identifierLoadAccess;
+		}
+
+		protected EntityPersister entityPersister() {
+			return entityPersister;
 		}
 	}
 

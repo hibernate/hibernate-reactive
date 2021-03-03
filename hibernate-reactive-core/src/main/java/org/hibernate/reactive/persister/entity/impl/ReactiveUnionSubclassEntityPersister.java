@@ -298,4 +298,9 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	public String[][] getLazyPropertyColumnAliases() {
 		return super.getLazyPropertyColumnAliases();
 	}
+
+	@Override
+	public String determinePkByNaturalIdQuery(boolean[] valueNullness) {
+		return super.determinePkByNaturalIdQuery(valueNullness);
+	}
 }
