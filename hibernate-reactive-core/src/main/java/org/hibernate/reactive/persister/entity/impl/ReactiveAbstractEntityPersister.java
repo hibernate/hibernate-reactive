@@ -26,6 +26,7 @@ import org.hibernate.Session;
 import org.hibernate.StaleObjectStateException;
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeDescriptor;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.dialect.CockroachDB192Dialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.PostgreSQL81Dialect;
@@ -393,7 +394,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	default String checkSql(String sql) {
 		Dialect dialect = getFactory().getJdbcServices().getDialect();
 		//TODO: wooooo this is awful ... I believe the problem is fixed in Hibernate 6
-		if ( dialect instanceof PostgreSQL81Dialect ) {
+		if ( dialect instanceof PostgreSQL81Dialect || dialect instanceof CockroachDB192Dialect ) {
 			return sql + " returning " + delegate().getIdentifierColumnNames()[0];
 		}
 		if ( dialect instanceof DB2Dialect ) {

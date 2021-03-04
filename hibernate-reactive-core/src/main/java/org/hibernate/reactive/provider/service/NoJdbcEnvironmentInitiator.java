@@ -7,6 +7,7 @@ package org.hibernate.reactive.provider.service;
 
 import org.hibernate.HibernateException;
 import org.hibernate.boot.registry.StandardServiceInitiator;
+import org.hibernate.dialect.CockroachDB201Dialect;
 import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MariaDB103Dialect;
@@ -104,11 +105,11 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 		}
 		else if ( url.isEmpty() ) {
 			throw new HibernateException( "could not determine Dialect from JDBC driver metadata"
-					+ " (specify a connection URI with scheme 'postgresql:', 'mysql:', or 'db2:')" );
+					+ " (specify a connection URI with scheme 'postgresql:', 'mysql:', 'cockroachdb', or 'db2:')" );
 		}
 		else {
 			throw new HibernateException( "could not determine Dialect from connection URI '" + url
-					+ "' (specify a connection URI with scheme 'postgresql:', 'mysql:', or 'db2:')" );
+					+ "' (specify a connection URI with scheme 'postgresql:', 'mysql:', 'cockroachdb', or 'db2:')" );
 		}
 	}
 
@@ -128,6 +129,9 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 		}
 		else if ( url.startsWith("db2:") ) {
 			return  DB297Dialect.class;
+		}
+		else if ( url.startsWith("cockroachdb:") ) {
+			return  CockroachDB201Dialect.class;
 		}
 		else {
 			return null;
