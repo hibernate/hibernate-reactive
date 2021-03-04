@@ -208,5 +208,3 @@ At present several minor limitations remain.
   database-generated `@Version` properties is not yet supported.
 - The annotation `@org.hibernate.annotations.CollectionId` is not yet 
   supported.
-- There's no equivalent of `Session.byNaturalId()` for lookups based
-  on fields annotated `@NaturalId`.
