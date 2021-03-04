@@ -68,7 +68,6 @@ import org.hibernate.type.VersionType;
 
 import org.jboss.logging.Logger;
 
-import static org.hibernate.internal.util.collections.ArrayHelper.EMPTY_OBJECT_ARRAY;
 import static org.hibernate.internal.util.collections.ArrayHelper.join;
 import static org.hibernate.internal.util.collections.ArrayHelper.trim;
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
@@ -367,14 +366,16 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		ReactiveConnection connection = getReactiveConnection( session );
 		CompletionStage<? extends Serializable> generatedIdStage;
-		if ( getFactory().getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
+		// Ignoring it for now because it's always false and we have ways to get the id without
+		// the extra round trip for all supported databases
+//		if ( getFactory().getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
 			generatedIdStage = connection.insertAndSelectIdentifier( checkSql( sql ), params );
-		}
-		else {
-			//use an extra round trip to fetch the id
-			generatedIdStage =  connection.update( sql, params )
-					.thenCompose( v -> connection.selectIdentifier( delegate().getIdentitySelectString(), EMPTY_OBJECT_ARRAY ) );
-		}
+//		}
+//		else {
+//			//use an extra round trip to fetch the id
+//			generatedIdStage =  connection.update( sql, params )
+//					.thenCompose( v -> connection.selectIdentifier( delegate().getIdentitySelectString(), EMPTY_OBJECT_ARRAY ) );
+//		}
 		return generatedIdStage
 				.thenApply( generatedId -> {
 					log.debugf( "Natively generated identity: %s", generatedId );
