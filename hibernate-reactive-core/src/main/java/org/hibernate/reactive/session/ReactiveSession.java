@@ -17,13 +17,13 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
-import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 
 import javax.persistence.EntityGraph;
 import javax.persistence.metamodel.Attribute;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -95,7 +95,7 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 
 	<T> CompletionStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids);
 
-	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Identifier<T>... naturalIds);
+	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Map<String,Object> naturalIds);
 
 	CompletionStage<Object> reactiveImmediateLoad(String entityName, Serializable id);
 

@@ -104,8 +104,8 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <T> CompletionStage<T> find(Class<T> entityClass, Identifier<T>... naturalIds) {
-		return stage( v -> delegate.reactiveFind( entityClass, naturalIds ) );
+	public <T> CompletionStage<T> find(Class<T> entityClass, Identifier<T> id) {
+		return stage( v -> delegate.reactiveFind( entityClass, id.namedValues() ) );
 	}
 
 	@Override
