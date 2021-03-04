@@ -387,12 +387,12 @@ public interface Stage {
 		 * such persistent instance.
 		 *
 		 * @param entityClass The entity type
-		 * @param naturalIds the natural identifiers
+		 * @param naturalId the natural identifier
 		 *
 		 * @return a persistent instance or null via a {@code CompletionStage}
 		 */
 		@Incubating
-		<T> CompletionStage<T> find(Class<T> entityClass, Identifier<T>... naturalIds);
+		<T> CompletionStage<T> find(Class<T> entityClass, Identifier<T> naturalId);
 
 		/**
 		 * Return the persistent instance of the given entity class with the

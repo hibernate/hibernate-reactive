@@ -383,16 +383,16 @@ public interface Mutiny {
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
-		 * class with the given natural identifiers, or null if there is no
+		 * class with the given natural identifier, or null if there is no
 		 * such persistent instance.
 		 *
 		 * @param entityClass The entity type
-		 * @param naturalIds the natural identifiers
+		 * @param naturalId the natural identifier
 		 *
 		 * @return a persistent instance or null via a {@code Uni}
 		 */
 		@Incubating
-		<T> Uni<T> find(Class<T> entityClass, Identifier<T>... naturalIds);
+		<T> Uni<T> find(Class<T> entityClass, Identifier<T> naturalId);
 
 		/**
 		 * Return the persistent instance of the given entity class with the
