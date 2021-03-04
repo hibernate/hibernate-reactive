@@ -78,7 +78,7 @@ jobs:
     strategy:
       matrix:
         orm-version: ['[5.4,5.5)']
-        db: ['MariaDB', 'MySQL', 'PostgreSQL', 'DB2']
+        db: ['MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB']
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 1.8
