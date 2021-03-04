@@ -8,6 +8,9 @@ package org.hibernate.reactive.common;
 import org.hibernate.Incubating;
 
 import javax.persistence.metamodel.SingularAttribute;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Represents a value of an attribute that forms part of the
@@ -18,33 +21,85 @@ import javax.persistence.metamodel.SingularAttribute;
  * @param <T> the owning entity class
  */
 @Incubating
-public class Identifier<T> {
-    private final String attributeName;
-    private final Object id;
+public abstract class Identifier<T> {
 
-    private <I> Identifier(SingularAttribute<T,I> attribute, I id) {
-        this.id = id;
-        this.attributeName = attribute.getName();
+    public abstract Id<T>[] ids();
+
+    public abstract Map<String,Object> namedValues();
+
+    public static class Id<T> extends Identifier<T> {
+        private <I> Id(SingularAttribute<T,I> attribute, I id) {
+            this.id = id;
+            this.attributeName = attribute.getName();
+        }
+
+        private Id(String attributeName, Object id) {
+            this.attributeName = attributeName;
+            this.id = id;
+        }
+
+        private final String attributeName;
+        private final Object id;
+
+        public Object getId() {
+            return id;
+        }
+
+        public String getAttributeName() {
+            return attributeName;
+        }
+
+        @Override
+        public Id<T>[] ids() {
+            return new Id[]{this};
+        }
+
+        @Override
+        public Map<String, Object> namedValues() {
+            return Collections.singletonMap(attributeName, id);
+        }
     }
 
-    private Identifier(Class<T> entityClass, String attributeName, Object id) {
-        this.attributeName = attributeName;
-        this.id = id;
+    public static class Composite<T> extends Identifier<T> {
+        Id<T>[] ids;
+
+        public Composite(Id<T>[] ids) {
+            this.ids = ids;
+        }
+
+        public Id<T>[] getValues() {
+            return ids;
+        }
+
+        @Override
+        public Id<T>[] ids() {
+            return ids;
+        }
+
+        @Override
+        public Map<String, Object> namedValues() {
+            Map<String, Object> namedValues = new HashMap<>();
+            for (Id<T> id : ids) {
+                namedValues.put( id.getAttributeName(), id.getId() );
+            }
+            return namedValues;
+        }
     }
 
-    public static <T,I> Identifier<T> value(SingularAttribute<T,I> attribute, I id) {
-        return new Identifier<T>(attribute, id);
+    public static <T,I> Id<T> id(SingularAttribute<T,I> attribute, I id) {
+        return new Id<>(attribute, id);
     }
 
-    public static <T,I> Identifier<T> value(Class<T> entityClass, String attributeName, Object id) {
-        return new Identifier<T>(entityClass, attributeName, id);
+    public static <T,I> Id<T> id(String attributeName, Object id) {
+        return new Id<>(attributeName, id);
     }
 
-    public Object getId() {
-        return id;
+    public static <T,I> Id<T> id(Class<T> entityClass, String attributeName, Object id) {
+        return new Id<>(attributeName, id);
     }
 
-    public String getAttributeName() {
-        return attributeName;
+    @SafeVarargs
+    public static <T,I> Identifier<T> composite(Id<T>... ids) {
+        return new Composite<>(ids);
     }
 }

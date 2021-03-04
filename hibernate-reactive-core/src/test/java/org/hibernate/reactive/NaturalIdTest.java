@@ -14,7 +14,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
-import static org.hibernate.reactive.common.Identifier.value;
+import static org.hibernate.reactive.common.Identifier.composite;
+import static org.hibernate.reactive.common.Identifier.id;
 
 public class NaturalIdTest extends BaseReactiveTest {
 
@@ -37,20 +38,20 @@ public class NaturalIdTest extends BaseReactiveTest {
                 getSessionFactory()
                         .withSession( session -> session.persist(thing1, thing2).thenCompose( v -> session.flush() ) )
                         .thenCompose( v -> getSessionFactory().withSession(
-                                session -> session.find( Thing.class,
-                                        value(Thing.class, "naturalKey", "abc123"),
-                                        value(Thing.class, "version", 1)
-                                )
+                                session -> session.find( Thing.class, composite(
+                                        id("naturalKey", "abc123"),
+                                        id("version", 1)
+                                ) )
                         ) )
                         .thenAccept( t -> {
                             context.assertNotNull(t);
                             context.assertEquals(thing1.id, t.id);
                         } )
                         .thenCompose( v -> getSessionFactory().withSession(
-                                session -> session.find( Thing.class,
-                                        value(Thing.class, "naturalKey", "abc123"),
-                                        value(Thing.class, "version", 3)
-                                )
+                                session -> session.find( Thing.class, composite(
+                                        id(Thing.class, "naturalKey", "abc123"),
+                                        id(Thing.class, "version", 3)
+                                ) )
                         ) )
                         .thenAccept(context::assertNull)
         );

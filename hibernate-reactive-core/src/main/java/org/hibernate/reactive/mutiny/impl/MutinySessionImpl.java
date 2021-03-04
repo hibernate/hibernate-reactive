@@ -105,8 +105,8 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public <T> Uni<T> find(Class<T> entityClass, Identifier<T>... ids) {
-		return uni( () -> delegate.reactiveFind( entityClass, ids ) );
+	public <T> Uni<T> find(Class<T> entityClass, Identifier<T> id) {
+		return uni( () -> delegate.reactiveFind( entityClass, id.namedValues() ) );
 	}
 
 	@Override

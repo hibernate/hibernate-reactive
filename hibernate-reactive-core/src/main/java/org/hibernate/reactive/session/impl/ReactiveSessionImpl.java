@@ -68,7 +68,6 @@ import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.Query;
 import org.hibernate.query.internal.ParameterMetadataImpl;
 import org.hibernate.reactive.common.InternalStateAssertions;
-import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
@@ -98,7 +97,6 @@ import javax.persistence.EntityNotFoundException;
 import javax.persistence.Tuple;
 import javax.persistence.metamodel.Attribute;
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1050,11 +1048,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Identifier<T>... naturalIds) {
-		Map<String, Object> ids = new HashMap<>();
-		for (Identifier<T> naturalId: naturalIds) {
-			ids.put( naturalId.getAttributeName(), naturalId.getId() );
-		}
+	public <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Map<String,Object> ids) {
 		EntityPersister persister = getFactory().getMetamodel().locateEntityPersister(entityClass);
 		return new NaturalIdLoadAccessImpl<T>(persister).resolveNaturalId(ids)
 				.thenCompose( id -> reactiveFind( entityClass, id, null, null ) );
