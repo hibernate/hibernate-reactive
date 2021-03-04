@@ -110,6 +110,42 @@ Optionally, you can connect to the database with the [MySQL Command-Line Client]
 podman exec -it HibernateTestingMySQL mysql -U hreact -phreact
 ```
 
+## CockroachDB
+
+Use the following commands to start a [CockroachDB][cockroachdb] database with the
+configured to run the tests:
+
+[cockroachdb]:https://www.cockroachlabs.com/get-cockroachdb/
+
+```
+podman run --rm --name=HibernateTestingCockroachDB \
+    --hostname=roachrr1 -p 26257:26257 -p 8080:8080 \
+    cockroachdb/cockroach:v20.2.5 start-single-node --insecure
+```
+
+Some of tests needs temporary tables and because this is an experimental feature in
+CockroachDB, it needs to be enabled after the database has started:
+
+```
+podman exec -it HibernateTestingCockroachDB ./cockroach sql --insecure \
+    -e "SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true';"
+```
+
+When the database has started, you can run the tests on CockroachDB with:
+
+```
+./gradlew test -Pdb=CockroachDB
+```
+
+Optionally, you can connect to the database with the [Cockroach commands][cockroach-cli](`cockroach`)
+using:
+
+```
+podman exec -it HibernateTestingCockroachDB ./cockroach sql --insecure 
+```
+
+[cockroach-cli]:https://www.cockroachlabs.com/docs/stable/cockroach-commands.html
+
 ## Db2
 
 Use the following command to start a [Db2][db2] database with the required credentials
