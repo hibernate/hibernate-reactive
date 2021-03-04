@@ -178,6 +178,9 @@ public class DefaultSqlClientPool extends SqlClientPool
 							"postgresql".equalsIgnoreCase( scheme ) ) {
 						return d;
 					}
+					if ( "cockroachdb".equalsIgnoreCase( scheme ) ) {
+						return d;
+					}
 			}
 		}
 		throw new ConfigurationException( "No suitable drivers found for URI scheme: " + scheme, originalError );
@@ -191,16 +194,21 @@ public class DefaultSqlClientPool extends SqlClientPool
 	}
 
 	public static URI parse(String url) {
+
 		if ( url == null || url.trim().isEmpty() ) {
 			throw new HibernateError( "The configuration property '" + Settings.URL + "' was not provided, or is in invalid format. This is required when using the default DefaultSqlClientPool: " +
 											  "either provide the configuration setting or integrate with a different SqlClientPool implementation" );
 		}
 
 		if ( url.startsWith( "jdbc:" ) ) {
-			return URI.create( url.substring( 5 ) );
+			return URI.create( updateUrl( url.substring( 5 ) ) );
 		}
 
-		return URI.create( url );
+		return URI.create( updateUrl( url ) );
+	}
+
+	private static String updateUrl(String url) {
+		return url.replaceAll( "^cockroachdb:", "postgres:" );
 	}
 
 }
