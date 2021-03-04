@@ -363,6 +363,8 @@ These Hibernate annotations are also quite useful to know about:
 | `@BatchSize`                             | Specifies the batch size for batch fetching an
                                              association
 | `@SqlInsert`, `@SqlUpdate`, `@SqlDelete` | Specify custom DML for entity operations
+| `@NaturalId`                             | Marks a field or fields as an alternative "natural"
+                                             identifier (unique key) of the entity
 |===
 
 ==== Bean Validation annotations
