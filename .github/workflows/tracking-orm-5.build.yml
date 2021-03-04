@@ -1,18 +1,21 @@
 name: Latest ORM 5.x
 
-on:
+##
+# Disabled for now
+##
+  #on:
   # Trigger the workflow on push or pull request,
   # but only for the master branch
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
-  schedule:
+  #push:
+  #  branches:
+  #    - master
+  #pull_request:
+  #  branches:
+  #    - master
+  #schedule:
     # * is a special character in YAML so you have to quote this string
     # Run every hour at minute 25
-    - cron: '25 * * * *'
+    #  - cron: '25 * * * *'
 
 jobs:
   # The examples test the Hibernate ORM Gradle plugin. We use it for bytecode enhancements.
