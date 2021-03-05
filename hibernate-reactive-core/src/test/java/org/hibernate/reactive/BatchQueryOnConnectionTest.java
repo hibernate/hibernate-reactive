@@ -19,7 +19,6 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 public class BatchQueryOnConnectionTest extends BaseReactiveTest {
@@ -56,7 +55,7 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 
 	public List<List<Object[]>> doBatchInserts(TestContext context, int nEntities, int nEntitiesMultiple) {
 		final String insertSql = "insert into DataPoint (description, x, y, id) values ";
-		final String sql = dbType() == DBType.POSTGRESQL
+		final String sql = dbType().requiresDollarSyntax()
 				? insertSql + "($1, $2, $3, $4)"
 				: insertSql + "(?, ?, ?, ?)";
 
