@@ -157,14 +157,20 @@ public class IdentifierGeneration {
 	public static Serializable castToIdentifierType(Object generatedId, EntityPersister persister) {
 		if ( generatedId instanceof Long ) {
 			Long longId = (Long) generatedId;
+			if ( longId <= 0 ) {
+				throw new HibernateException( "Generated identifier smaller or equal to 0: " + longId );
+			}
 			Type identifierType = persister.getIdentifierType();
 			if ( identifierType == LongType.INSTANCE ) {
 				return longId;
 			}
 			else if ( identifierType == IntegerType.INSTANCE ) {
+				validateMaxValue( persister, longId, Integer.MAX_VALUE );
 				return longId.intValue();
+
 			}
 			else if ( identifierType == ShortType.INSTANCE ) {
+				validateMaxValue( persister, longId, Short.MAX_VALUE );
 				return longId.shortValue();
 			}
 			else {
@@ -178,6 +184,15 @@ public class IdentifierGeneration {
 		}
 		else {
 			return (Serializable) generatedId;
+		}
+	}
+
+	private static void validateMaxValue(EntityPersister persister, Long id, int maxValue) {
+		if ( id > maxValue ) {
+			throw new HibernateException(
+					"Generated identifier for " + persister.getEntityName() +
+							" too big to be assigned to a field of type " +
+							persister.getIdentifierType().getReturnedClass().getSimpleName() + ": " + id );
 		}
 	}
 }
