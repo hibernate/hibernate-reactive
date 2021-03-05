@@ -22,8 +22,8 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POS
  * Check that the right exception is thrown when there is an error with the credentials.
  * <p>
  *     Similar to {@link org.hibernate.reactive.configuration.ReactiveConnectionPoolTest} but at the session level.
- *     Note that the wrong configuration is also used for the schema generation but ORM catch the exception and
- *     continue anyway it in case of errors. You might just see sine warnings in the log.
+ *     Note that the wrong credentials are also used for the schema generation but exceptions are ignored during
+ *     schema generation. You might just see some warnings in the log.
  * </p>
  */
 public class WrongCredentialsTest extends BaseReactiveTest {
