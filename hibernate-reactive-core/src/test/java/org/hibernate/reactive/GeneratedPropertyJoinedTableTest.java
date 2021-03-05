@@ -29,6 +29,7 @@ import org.junit.Test;
 import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.CurrentUser.LoggedUserGenerator;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
 
@@ -39,7 +40,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 
 	// It requires native queries so we only test this on Postgres
 	@Rule
-	public DatabaseSelectionRule selectionRule = runOnlyFor( POSTGRESQL );
+	public DatabaseSelectionRule selectionRule = runOnlyFor( POSTGRESQL, COCKROACHDB );
 
 	@Override
 	protected Configuration constructConfiguration() {

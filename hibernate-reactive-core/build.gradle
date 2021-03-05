@@ -54,6 +54,7 @@ dependencies {
     testImplementation "org.testcontainers:mysql:${testcontainersVersion}"
     testImplementation "org.testcontainers:mariadb:${testcontainersVersion}"
     testImplementation "org.testcontainers:db2:${testcontainersVersion}"
+    testImplementation "org.testcontainers:cockroachdb:${testcontainersVersion}"
 }
 
 // Print a summary of the results of the tests (number of failures, successes and skipped)
@@ -121,7 +122,7 @@ tasks.addRule( "Pattern testDb<id>" ) { String taskName ->
 }
 
 // The dbs we want to test when running testAll
-def dbs = ["MariaDB", 'MySQL', 'PostgreSQL', 'DB2']
+def dbs = ["MariaDB", 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB']
 task testAll( dependsOn: dbs.collect( [] as HashSet ) { db -> "testDb${db}" } ) {
     description = "Run tests for ${dbs}"
 }
