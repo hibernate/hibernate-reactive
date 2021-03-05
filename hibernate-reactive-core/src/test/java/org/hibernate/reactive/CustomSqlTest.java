@@ -22,12 +22,13 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 
 public class CustomSqlTest extends BaseReactiveTest {
 
     @Rule
-    public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
+    public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL, COCKROACHDB );
 
     @Override
     protected Configuration constructConfiguration() {
