@@ -189,7 +189,9 @@ public abstract class BaseReactiveTest {
 			}
 		}
 
-		sessionFactory.close();
+		if ( sessionFactory != null ) {
+			sessionFactory.close();
+		}
 	}
 
 	protected Stage.SessionFactory getSessionFactory() {
