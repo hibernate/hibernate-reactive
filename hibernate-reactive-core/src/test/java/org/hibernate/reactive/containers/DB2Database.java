@@ -33,35 +33,24 @@ class DB2Database implements TestableDatabase {
 
 	@Override
 	public String getJdbcUrl() {
-		String address;
-		if ( DatabaseConfiguration.USE_DOCKER ) {
-			// Calling start() will start the container (if not already started)
-			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
-			db2.start();
-			address = db2.getJdbcUrl();
-		}
-		else {
-			address = getRegularJdbcUrl();
-		}
-		return buildJdbcUrlWithCredentials( address );
+		return buildJdbcUrlWithCredentials( address() );
 	}
 
 	@Override
 	public String getUri() {
-		String address;
+		return buildUriWithCredentials( address() );
+	}
+
+	private String address() {
 		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
 			db2.start();
-			address = db2.getJdbcUrl();
+			return db2.getJdbcUrl();
 		}
-		else {
-			address = getRegularJdbcUrl();
-		}
-		return buildUriWithCredentials( address );
+
+		return getRegularJdbcUrl();
 	}
-
-
 
 	private static String buildJdbcUrlWithCredentials(String jdbcUrl) {
 		return jdbcUrl + ":user=" + db2.getUsername() + ";password=" + db2.getPassword() + ";";
