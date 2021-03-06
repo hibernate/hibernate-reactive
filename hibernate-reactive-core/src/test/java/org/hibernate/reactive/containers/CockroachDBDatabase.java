@@ -31,24 +31,35 @@ class CockroachDBDatabase implements TestableDatabase {
 			.withReuse( true );
 
 	private String getRegularJdbcUrl() {
-		return "jdbc:postgres://localhost:26257/" + cockroachDb.getDatabaseName() + "?sslmode=disable";
+		return "jdbc:postgres://localhost:26257/" + cockroachDb.getDatabaseName();
 	}
 
 	@Override
 	public String getJdbcUrl() {
-		String address;
+		return buildJdbcUrlWithCredentials( address() )
+				.replaceAll( "^jdbc:postgre(s|sql):", "jdbc:cockroachdb:" );
+	}
+
+	@Override
+	public String getUri() {
+		return buildUriWithCredentials( address() )
+				.replaceAll( "^postgre(s|sql):", "jdbc:cockroachdb:" );
+	}
+
+	private String address() {
 		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
 			cockroachDb.start();
 			enableTemporaryTables();
-			address = cockroachDb.getJdbcUrl();
+			return disableSslMode( cockroachDb.getJdbcUrl() );
 		}
-		else {
-			address = getRegularJdbcUrl();
-		}
-		return buildJdbcUrlWithCredentials( address + "?sslmode=disable" )
-				.replaceAll( "^jdbc:postgre(s|sql):", "jdbc:cockroachdb:" );
+
+		return disableSslMode( getRegularJdbcUrl() );
+	}
+
+	private static String disableSslMode(String url) {
+		return url + "?sslmode=disable";
 	}
 
 	/**
@@ -76,22 +87,6 @@ class CockroachDBDatabase implements TestableDatabase {
 					: execResult.getStdout();
 			throw new HibernateException( "[CockroachDB] Error running " + command + " [" + execResult.getExitCode() + "]: " + error );
 		}
-	}
-
-	@Override
-	public String getUri() {
-		String address;
-		if ( DatabaseConfiguration.USE_DOCKER ) {
-			// Calling start() will start the container (if not already started)
-			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
-			cockroachDb.start();
-			address = cockroachDb.getJdbcUrl();
-		}
-		else {
-			address = getRegularJdbcUrl();
-		}
-		return buildUriWithCredentials( address + "?sslmode=disable" )
-				.replaceAll( "^postgre(s|sql):", "jdbc:cockroachdb:" );
 	}
 
 	private static String buildJdbcUrlWithCredentials(String jdbcUrl) {

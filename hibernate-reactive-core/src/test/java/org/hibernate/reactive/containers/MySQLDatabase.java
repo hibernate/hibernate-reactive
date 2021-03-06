@@ -30,21 +30,15 @@ class MySQLDatabase implements TestableDatabase {
 
 	@Override
 	public String getJdbcUrl() {
-		String address;
-		if ( DatabaseConfiguration.USE_DOCKER ) {
-			// Calling start() will start the container (if not already started)
-			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
-			mysql.start();
-			address = mysql.getJdbcUrl();
-		}
-		else {
-			address = getRegularJdbcUrl();
-		}
-		return buildJdbcUrlWithCredentials( address );
+		return buildJdbcUrlWithCredentials( address() );
 	}
 
 	@Override
 	public String getUri() {
+		return buildUriWithCredentials( address() );
+	}
+
+	private String address() {
 		String address;
 		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
@@ -55,10 +49,8 @@ class MySQLDatabase implements TestableDatabase {
 		else {
 			address = getRegularJdbcUrl();
 		}
-		return buildUriWithCredentials( address );
+		return address;
 	}
-
-
 
 	static String buildJdbcUrlWithCredentials(String jdbcUrl) {
 		return jdbcUrl + "?user=" + mysql.getUsername() + "&password=" + mysql.getPassword() + "&serverTimezone=UTC";

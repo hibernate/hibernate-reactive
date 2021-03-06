@@ -32,32 +32,23 @@ class PostgreSQLDatabase implements TestableDatabase {
 
 	@Override
 	public String getJdbcUrl() {
-		String address;
-		if ( DatabaseConfiguration.USE_DOCKER ) {
-			// Calling start() will start the container (if not already started)
-			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
-			postgresql.start();
-			address = postgresql.getJdbcUrl();
-		}
-		else {
-			address = getRegularJdbcUrl();
-		}
-		return buildJdbcUrlWithCredentials( address );
+		return buildJdbcUrlWithCredentials( address() );
 	}
 
 	@Override
 	public String getUri() {
-		String address;
+		return buildUriWithCredentials( address() );
+	}
+
+	private String address() {
 		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
 			postgresql.start();
-			address = postgresql.getJdbcUrl();
+			return postgresql.getJdbcUrl();
 		}
-		else {
-			address = getRegularJdbcUrl();
-		}
-		return buildUriWithCredentials( address );
+
+		return getRegularJdbcUrl();
 	}
 
 	private static String buildJdbcUrlWithCredentials(String jdbcUrl) {
