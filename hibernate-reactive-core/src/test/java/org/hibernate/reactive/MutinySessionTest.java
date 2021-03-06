@@ -130,6 +130,41 @@ public class MutinySessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void reactiveFindReadOnlyRefreshWithLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.call( () -> getMutinySessionFactory().withSession(
+							session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.call( pig -> {
+									session.setReadOnly(pig, true);
+									pig.setName("XXXX");
+									return session.flush()
+											.call( v -> session.refresh(pig) )
+											.invoke( v -> {
+												context.assertEquals(expectedPig.name, pig.name);
+												context.assertEquals(true, session.isReadOnly(pig));
+											} );
+								} )
+						) )
+						.call( () -> getMutinySessionFactory().withSession(
+							session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.call( pig -> {
+									session.setReadOnly(pig, false);
+									pig.setName("XXXX");
+									return session.flush()
+											.call( v -> session.refresh(pig) )
+											.invoke( v -> {
+												context.assertEquals("XXXX", pig.name);
+												context.assertEquals(false, session.isReadOnly(pig));
+											} );
+								} )
+						) )
+		);
+	}
+
+	@Test
 	public void reactiveFindThenUpgradeLock(TestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
