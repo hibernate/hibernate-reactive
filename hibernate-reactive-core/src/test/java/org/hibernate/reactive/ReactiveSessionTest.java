@@ -161,6 +161,43 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void reactiveFindReadOnlyRefreshWithLock(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test(
+				context,
+				populateDB()
+						.thenApply( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.thenCompose( pig -> {
+									session.setReadOnly(pig, true);
+									pig.setName("XXXX");
+									return session.flush()
+											.thenCompose( v -> session.refresh(pig) )
+											.thenAccept( v -> {
+												context.assertEquals(expectedPig.name, pig.name);
+												context.assertEquals(true, session.isReadOnly(pig));
+											} );
+								} )
+								.whenComplete( (v, err) -> session.close() )
+						)
+						.thenApply( v -> openSession() )
+						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() )
+								.thenCompose( pig -> {
+									session.setReadOnly(pig, false);
+									pig.setName("XXXX");
+									return session.flush()
+											.thenCompose( v -> session.refresh(pig) )
+											.thenAccept( v -> {
+												context.assertEquals("XXXX", pig.name);
+												context.assertEquals(false, session.isReadOnly(pig));
+											} );
+								} )
+								.whenComplete( (v, err) -> session.close() )
+						)
+		);
+	}
+
+	@Test
 	public void reactiveFindThenUpgradeLock(TestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
