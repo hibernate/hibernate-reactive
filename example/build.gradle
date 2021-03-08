@@ -1,4 +1,4 @@
-description = 'Hibernate Reactive Example'
+description = 'Hibernate Reactive Session Example'
 
 dependencies {
     implementation project(':hibernate-reactive-core')
