@@ -1,7 +1,7 @@
 [[getting-started]]
 = Introduction to Hibernate Reactive
 
-:example: https://github.com/hibernate/hibernate-reactive/tree/master/example
+:example: https://github.com/hibernate/hibernate-reactive/tree/master/examples/session-example
 
 Creating a new project with Hibernate Reactive isn't hard at all. In
 this short guide, we'll cover all the basic work involved in:
@@ -13,8 +13,8 @@ Last, we'll discuss some topics related to performance that you'll need
 to understand when you develop any large-scale project using Hibernate.
 
 But, before you start, we recommend taking a quick look at the very
-simplistic example program in the {example}[`example`] directory, which
-shows off all the "bits" you'll need to get your own program up and
+simplistic example program in the {example}[`session-example`] directory,
+which shows off all the "bits" you'll need to get your own program up and
 running.
 
 == Setting up a reactive Hibernate project
@@ -34,7 +34,7 @@ a preconfigured skeleton project {skeleton}[right here].
 
 === Including Hibernate Reactive in your project build
 
-:build: https://github.com/hibernate/hibernate-reactive/blob/master/example/build.gradle
+:build: https://github.com/hibernate/hibernate-reactive/blob/master/examples/session-example/build.gradle
 
 Add the following dependency to your project:
 
@@ -87,7 +87,7 @@ There's an example {build}[Gradle build] included in the example program.
 
 === Basic configuration
 
-:xml: https://github.com/hibernate/hibernate-reactive/blob/master/example/src/main/resources/META-INF/persistence.xml
+:xml: https://github.com/hibernate/hibernate-reactive/blob/master/examples/session-example/src/main/resources/META-INF/persistence.xml
 :configuration-properties: https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#configurations
 
 
@@ -166,7 +166,7 @@ This feature is extremely useful for testing.
 
 === Logging the generated SQL
 
-:log4j: https://github.com/hibernate/hibernate-reactive/blob/master/example/src/main/resources/log4j2.properties
+:log4j: https://github.com/hibernate/hibernate-reactive/blob/master/examples/session-example/src/main/resources/log4j2.properties
 
 To see the generated SQL as it's sent to the database, either:
 
