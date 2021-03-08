@@ -16,8 +16,8 @@ Hibernate Reactive may be used in any plain Java program, but is
 especially targeted toward usage in reactive environments like 
 [Quarkus][] and [Vert.x][].
 
-Currently [PostgreSQL][], [MySQL][], [MariaDB][], and [Db2][] are 
-supported.
+Currently [PostgreSQL][], [MySQL][], [MariaDB][], [Db2][], and 
+CockroachDB are supported.
 
 Learn more at <http://hibernate.org/reactive>.
 
