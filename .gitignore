@@ -11,8 +11,7 @@
 /target
 */target
 */**/target
-/build
-*/build
+**/build
 */src/main/generated
 */src/test/generated
 
