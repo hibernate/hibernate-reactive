@@ -1,24 +1,19 @@
-package org.hibernate.example.nativesql.reactive;
-
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLInsert;
-import org.hibernate.annotations.SQLUpdate;
-import org.hibernate.annotations.Subselect;
+package org.hibernate.reactive.example.session;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.ArrayList;
 import java.util.List;
 
+import static javax.persistence.CascadeType.PERSIST;
+
 @Entity
-@Subselect("select name, id from authors")
-@SQLInsert(sql = "insert into authors (name, id) values ($1, $2)")
-@SQLUpdate(sql = "")
-@SQLDelete(sql = "delete from authors where id = $1")
+@Table(name="authors")
 class Author {
 	@Id @GeneratedValue
 	private Integer id;
@@ -26,7 +21,7 @@ class Author {
 	@NotNull @Size(max=100)
 	private String name;
 
-	@OneToMany(mappedBy = "author")
+	@OneToMany(mappedBy = "author", cascade = PERSIST)
 	private List<Book> books = new ArrayList<>();
 
 	Author(String name) {

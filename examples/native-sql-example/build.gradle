@@ -54,7 +54,7 @@ dbs.each { db ->
                 group = "Execution"
                 description = "Run ${mainClass} on ${db}"
                 classpath = sourceSets.main.runtimeClasspath
-                main = "org.hibernate.example.nativesql.reactive.${mainClass}"
+                main = "org.hibernate.reactive.example.nativesql.${mainClass}"
                 // The persistence unit name defined in resources/META-INF/persistence.xml
                 args db.toLowerCase() + '-example'
             }
