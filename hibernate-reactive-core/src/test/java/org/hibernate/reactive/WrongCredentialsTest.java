@@ -9,14 +9,10 @@ import javax.persistence.Id;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
-
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 
 /**
  * Check that the right exception is thrown when there is an error with the credentials.
@@ -28,16 +24,15 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POS
  */
 public class WrongCredentialsTest extends BaseReactiveTest {
 
-	// I've decided to not test it for all databases because
-	// the error message might be different and it shouldn't be necessary
-	@Rule
-	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
+	private Configuration currentConfiguration;
+	private static String BOGUS_USER = "BogusBogus";
+	private static String BOGUS_PASSWORD = "BogusBogus";
 
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( Settings.USER, "BogusBogus" );
-		configuration.setProperty( Settings.PASS, "BogusBogus" );
+		configuration.setProperty( Settings.USER, BOGUS_USER );
+		configuration.setProperty( Settings.PASS, BOGUS_PASSWORD );
 		return configuration;
 	}
 
@@ -49,9 +44,17 @@ public class WrongCredentialsTest extends BaseReactiveTest {
 						.find( Artist.class, "Bansky" ) )
 				.handle( (v, e) -> {
 					context.assertNotNull( e );
-					context.assertTrue( e.getMessage().contains( "BogusBogus" ) );
+					context.assertTrue( isWrongCredentialsMessage(e.getMessage()), "Error message: " +  e.getMessage() );
 					return null;
 				} ) );
+	}
+
+	private boolean isWrongCredentialsMessage(String msg ) {
+		// MySQL and PostgreSQL will contain the invalid credential value
+		// Cockroach will be lower case version of the wrong user
+		// Db2 will just state it
+		return msg.toLowerCase().contains( BOGUS_USER.toLowerCase() ) ||
+				msg.contains( "Invalid credentials");
 	}
 
 	static class Artist {
