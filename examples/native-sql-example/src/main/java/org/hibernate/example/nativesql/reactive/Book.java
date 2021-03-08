@@ -1,4 +1,4 @@
-package org.hibernate.example2.reactive;
+package org.hibernate.example.nativesql.reactive;
 
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLInsert;
