@@ -1,4 +1,4 @@
-package org.hibernate.example.reactive;
+package org.hibernate.example.session.reactive;
 
 import javax.persistence.Basic;
 import javax.persistence.Entity;

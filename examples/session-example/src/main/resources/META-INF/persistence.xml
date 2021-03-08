@@ -6,8 +6,8 @@
     <persistence-unit name="postgresql-example">
         <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
 
-        <class>org.hibernate.example.reactive.Author</class>
-        <class>org.hibernate.example.reactive.Book</class>
+        <class>org.hibernate.example.session.reactive.Author</class>
+        <class>org.hibernate.example.session.reactive.Book</class>
 
         <properties>
 
@@ -41,8 +41,8 @@
     <persistence-unit name="mysql-example">
         <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
 
-        <class>org.hibernate.example.reactive.Author</class>
-        <class>org.hibernate.example.reactive.Book</class>
+        <class>org.hibernate.example.session.reactive.Author</class>
+        <class>org.hibernate.example.session.reactive.Book</class>
 
         <properties>
 
