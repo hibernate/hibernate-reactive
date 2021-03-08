@@ -72,12 +72,17 @@ We recommend you start there!
 [session]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc#using-the-reactive-session
 [performance]: https://github.com/hibernate/hibernate-reactive/blob/master/documentation/src/main/asciidoc/reference/introduction.adoc#tuning-and-performance
 
-## Example program
+## Examples
 
-There is a very simple example program in the [`example`][example] 
-directory.
+The directory [`examples`][examples] contains several small projects showing
+different features of Hibernate Reactive:
 
-[example]: https://github.com/hibernate/hibernate-reactive/tree/master/example
+  - [CRUD operations using the session](https://github.com/hibernate/hibernate-reactive/tree/master/examples/session-example)
+  - [Native queries and stateless session](https://github.com/hibernate/hibernate-reactive/tree/master/examples/native-sql-example)
+
+[examples]: https://github.com/hibernate/hibernate-reactive/tree/master/examples
+
+## Quarkus quickstarts
 
 A list of [quickstarts][Quarkus quickstarts] for Quarkus is available on GitHub:
   - [Hibernate Reactive with RESTEasy Reactive](https://github.com/quarkusio/quarkus-quickstarts/tree/master/hibernate-reactive-quickstart) quickstart
