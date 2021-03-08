@@ -1,8 +1,4 @@
-package org.hibernate.example.reactive;
-
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.Root;
+package org.hibernate.example.nativesql.reactive;
 
 import java.time.LocalDate;
 
@@ -12,12 +8,13 @@ import static java.time.Month.JUNE;
 import static java.time.Month.MAY;
 import static javax.persistence.Persistence.createEntityManagerFactory;
 import static org.hibernate.reactive.stage.Stage.SessionFactory;
-import static org.hibernate.reactive.stage.Stage.fetch;
 
 /**
  * Demonstrates the use of Hibernate Reactive with the
  * {@link java.util.concurrent.CompletionStage}-based
  * API.
+ *
+ * Here we use stateless sessions and handwritten SQL.
  */
 public class Main {
 
@@ -45,33 +42,28 @@ public class Main {
 
 		try {
 			// obtain a reactive session
-			factory.withTransaction(
+			factory.withStatelessSession(
 					// persist the Authors with their Books in a transaction
-					(session, tx) -> session.persist( author1, author2 )
+					session -> session.withTransaction(
+							tx -> session.insert( author1, author2, book1, book2, book3 )
+					)
 			)
 					// wait for it to finish
 					.toCompletableFuture().join();
 
-			factory.withSession(
+			factory.withStatelessSession(
 					// retrieve a Book
-					session -> session.find( Book.class, book1.getId() )
+					session -> session.get( Book.class, book1.getId() )
 							// print its title
 							.thenAccept( book -> out.println( book.getTitle() + " is a great book!" ) )
 			)
 					.toCompletableFuture().join();
 
-			factory.withSession(
-					// retrieve both Authors at once
-					session -> session.find( Author.class, author1.getId(), author2.getId() )
-							.thenAccept( authors -> authors.forEach( author -> out.println( author.getName() ) ) )
-			)
-					.toCompletableFuture().join();
-
-			factory.withSession(
+			factory.withStatelessSession(
 					// retrieve an Author
-					session -> session.find( Author.class, author2.getId() )
+					session -> session.get( Author.class, author2.getId() )
 							// lazily fetch their books
-							.thenCompose( author -> fetch( author.getBooks() )
+							.thenCompose( author -> session.fetch( author.getBooks() )
 									// print some info
 									.thenAccept( books -> {
 										out.println( author.getName() + " wrote " + books.size() + " books" );
@@ -81,10 +73,27 @@ public class Main {
 			)
 					.toCompletableFuture().join();
 
-			factory.withSession(
+			factory.withStatelessSession(
+					// query the entire Book entities
+					session -> session.createNativeQuery(
+							"select * from books order by title desc",
+							Book.class
+					)
+							.getResultList()
+							.thenAccept( books -> books.forEach(
+									b -> out.printf(
+											"%s: %s\n",
+											b.getIsbn(),
+											b.getTitle()
+									)
+							) )
+			)
+					.toCompletableFuture().join();
+
+			factory.withStatelessSession(
 					// query the Book titles
-					session -> session.createQuery(
-							"select title, author.name from Book order by title desc",
+					session -> session.createNativeQuery(
+							"select book.title, author.name from books book join authors author on book.author_id = author.id order by book.title desc",
 							Object[].class
 					)
 							.getResultList()
@@ -94,67 +103,21 @@ public class Main {
 			)
 					.toCompletableFuture().join();
 
-			factory.withSession(
-					// query the entire Book entities
-					session -> session.createQuery(
-							"from Book book join fetch book.author order by book.title desc",
-							Book.class
+			factory.withStatelessSession(
+					session -> session.withTransaction(
+							// delete a detached Book
+							tx -> session.delete( book2 )
 					)
-							.getResultList()
-							.thenAccept( books -> books.forEach(
-									b -> out.printf(
-											"%s: %s (%s)\n",
-											b.getIsbn(),
-											b.getTitle(),
-											b.getAuthor().getName()
-									)
-							) )
 			)
 					.toCompletableFuture().join();
 
-			factory.withSession(
-					// use a criteria query
-					session -> {
-						CriteriaQuery<Book> query = factory.getCriteriaBuilder().createQuery( Book.class );
-						Root<Author> a = query.from( Author.class );
-						Join<Author, Book> b = a.join( Author_.books );
-						query.where( a.get( Author_.name ).in( "Neal Stephenson", "William Gibson" ) );
-						query.select( b );
-						return session.createQuery( query ).getResultList().thenAccept(
-								books -> books.forEach( book -> out.println( book.getTitle() ) )
-						);
-					}
-			)
-					.toCompletableFuture().join();
-
-			factory.withSession(
-					// retrieve a Book
-					session -> session.find( Book.class, book1.getId() )
-							// fetch a lazy field of the Book
-							.thenCompose( book -> session.fetch( book, Book_.published )
-									// print the lazy field
-									.thenAccept( published -> out.printf(
-											"'%s' was published in %d\n",
-											book.getTitle(),
-											published.getYear()
-									) )
-							)
-			)
-					.toCompletableFuture().join();
-
-			factory.withTransaction(
-					// retrieve a Book
-					(session, tx) -> session.find( Book.class, book2.getId() )
-							// delete the Book
-							.thenCompose( book -> session.remove( book ) )
-			)
-					.toCompletableFuture().join();
-
-			factory.withTransaction(
-					// delete all the Books in a transaction
-					(session, tx) -> session.createQuery( "delete Book" ).executeUpdate()
-							// delete all the Authors
-							.thenCompose( $ -> session.createQuery( "delete Author" ).executeUpdate() )
+			factory.withStatelessSession(
+					session -> session.withTransaction(
+							// delete all the Books
+							tx -> session.createNativeQuery( "delete from books" ).executeUpdate()
+									//delete all the Authors
+									.thenCompose( v -> session.createNativeQuery( "delete from authors" ).executeUpdate() )
+					)
 			)
 					.toCompletableFuture().join();
 		}
