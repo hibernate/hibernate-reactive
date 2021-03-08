@@ -21,12 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        example: [ 'example', 'example2' ]
+        example: [ 'session-example', 'native-sql-example' ]
         vertx-version: ['[4,5)']
         db: ['MySQL', 'PostgreSQL']
         exclude:
-          # 'example2' doesn't run on MySQL because it has native queries
-          - example: 'example2'
+          # 'native-sql-example' doesn't run on MySQL because it has native queries
+          - example: 'native-sql-example'
             db: 'MySQL'
     services:
       # Label used to access the service container
