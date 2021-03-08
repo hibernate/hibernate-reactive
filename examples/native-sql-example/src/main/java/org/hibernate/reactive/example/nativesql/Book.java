@@ -1,21 +1,27 @@
-package org.hibernate.example.session.reactive;
+package org.hibernate.reactive.example.nativesql;
+
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLInsert;
+import org.hibernate.annotations.SQLUpdate;
+import org.hibernate.annotations.Subselect;
 
 import javax.persistence.Basic;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
-import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 import javax.validation.constraints.Size;
-
 import java.time.LocalDate;
 
 import static javax.persistence.FetchType.LAZY;
 
 @Entity
-@Table(name="books")
+@Subselect("select author_id, isbn, published, title, id from books")
+@SQLInsert(sql = "insert into books (author_id, isbn, published, title, id) values ($1, $2, $3, $4, $5)")
+@SQLUpdate(sql = "")
+@SQLDelete(sql = "delete from books where id=$1")
 class Book {
 	@Id @GeneratedValue
 	private Integer id;

@@ -1,4 +1,4 @@
-package org.hibernate.example.nativesql.reactive;
+package org.hibernate.reactive.example.nativesql;
 
 import java.time.LocalDate;
 

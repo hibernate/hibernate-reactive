@@ -1,4 +1,4 @@
-package org.hibernate.example.session.reactive;
+package org.hibernate.reactive.example.session;
 
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;

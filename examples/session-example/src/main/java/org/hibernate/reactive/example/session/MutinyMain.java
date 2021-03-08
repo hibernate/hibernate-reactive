@@ -1,4 +1,8 @@
-package org.hibernate.example.nativesql.reactive;
+package org.hibernate.reactive.example.session;
+
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.Root;
 
 import java.time.LocalDate;
 
@@ -8,12 +12,11 @@ import static java.time.Month.JUNE;
 import static java.time.Month.MAY;
 import static javax.persistence.Persistence.createEntityManagerFactory;
 import static org.hibernate.reactive.mutiny.Mutiny.SessionFactory;
+import static org.hibernate.reactive.mutiny.Mutiny.fetch;
 
 /**
  * Demonstrates the use of Hibernate Reactive with the
  * {@link io.smallrye.mutiny.Uni Mutiny}-based API.
- *
- * Here we use stateless sessions and handwritten SQL.
  */
 public class MutinyMain {
 
@@ -41,28 +44,33 @@ public class MutinyMain {
 
 		try {
 			// obtain a reactive session
-			factory.withStatelessSession(
-					session -> session.withTransaction(
-							// persist the Authors with their Books in a transaction
-							tx -> session.insertAll( author1, author2, book1, book2, book3 )
-					)
+			factory.withTransaction(
+					// persist the Authors with their Books in a transaction
+					(session, tx) -> session.persistAll( author1, author2 )
 			)
 					// wait for it to finish
 					.await().indefinitely();
 
-			factory.withStatelessSession(
+			factory.withSession(
 					// retrieve a Book
-					session -> session.get( Book.class, book1.getId() )
+					session -> session.find( Book.class, book1.getId() )
 							// print its title
 							.invoke( book -> out.println( book.getTitle() + " is a great book!" ) )
 			)
 					.await().indefinitely();
 
-			factory.withStatelessSession(
+			factory.withSession(
+					// retrieve both Authors at once
+					session -> session.find( Author.class, author1.getId(), author2.getId() )
+							.invoke( authors -> authors.forEach( author -> out.println( author.getName() ) ) )
+			)
+					.await().indefinitely();
+
+			factory.withSession(
 					// retrieve an Author
-					session -> session.get( Author.class, author2.getId() )
+					session -> session.find( Author.class, author2.getId() )
 							// lazily fetch their books
-							.chain( author -> session.fetch( author.getBooks() )
+							.chain( author -> fetch( author.getBooks() )
 									// print some info
 									.invoke( books -> {
 										out.println( author.getName() + " wrote " + books.size() + " books" );
@@ -72,10 +80,10 @@ public class MutinyMain {
 			)
 					.await().indefinitely();
 
-			factory.withStatelessSession(
+			factory.withSession(
 					// query the Book titles
-					session -> session.createNativeQuery(
-							"select book.title, author.name from books book join authors author on book.author_id = author.id order by book.title desc",
+					session -> session.createQuery(
+							"select title, author.name from Book order by title desc",
 							Object[].class
 					)
 							.getResultList()
@@ -85,38 +93,67 @@ public class MutinyMain {
 			)
 					.await().indefinitely();
 
-			factory.withStatelessSession(
+			factory.withSession(
 					// query the entire Book entities
-					session -> session.createNativeQuery(
-							"select * from books order by title desc",
+					session -> session.createQuery(
+							"from Book book join fetch book.author order by book.title desc",
 							Book.class
 					)
 							.getResultList()
 							.invoke( books -> books.forEach(
 									b -> out.printf(
-											"%s: %s\n",
+											"%s: %s (%s)\n",
 											b.getIsbn(),
-											b.getTitle()
+											b.getTitle(),
+											b.getAuthor().getName()
 									)
 							) )
 			)
 					.await().indefinitely();
 
-			factory.withStatelessSession(
-					session -> session.withTransaction(
-							// delete a detached Book
-							tx -> session.delete( book2 )
-					)
+			factory.withSession(
+					// use a criteria query
+					session -> {
+						CriteriaQuery<Book> query = factory.getCriteriaBuilder().createQuery( Book.class );
+						Root<Author> a = query.from( Author.class );
+						Join<Author, Book> b = a.join( Author_.books );
+						query.where( a.get( Author_.name ).in( "Neal Stephenson", "William Gibson" ) );
+						query.select( b );
+						return session.createQuery( query ).getResultList().invoke(
+								books -> books.forEach( book -> out.println( book.getTitle() ) )
+						);
+					}
 			)
 					.await().indefinitely();
 
-			factory.withStatelessSession(
-					session -> session.withTransaction(
-							// delete all the Books
-							tx -> session.createNativeQuery( "delete from books" ).executeUpdate()
-									//delete all the Authors
-									.chain( () -> session.createNativeQuery( "delete from authors" ).executeUpdate() )
-					)
+			factory.withSession(
+					// retrieve a Book
+					session -> session.find( Book.class, book1.getId() )
+							// fetch a lazy field of the Book
+							.chain( book -> session.fetch( book, Book_.published )
+									// print the lazy field
+									.invoke( published -> out.printf(
+											"'%s' was published in %d\n",
+											book.getTitle(),
+											published.getYear()
+									) )
+							)
+			)
+					.await().indefinitely();
+
+			factory.withTransaction(
+					// retrieve a Book
+					(session, tx) -> session.find( Book.class, book2.getId() )
+							// delete the Book
+							.chain( book -> session.remove( book ) )
+			)
+					.await().indefinitely();
+
+			factory.withTransaction(
+					// delete all the Books in a transaction
+					(session, tx) -> session.createQuery( "delete Book" ).executeUpdate()
+							//delete all the Authors
+							.call( () -> session.createQuery( "delete Author" ).executeUpdate() )
 			)
 					.await().indefinitely();
 
