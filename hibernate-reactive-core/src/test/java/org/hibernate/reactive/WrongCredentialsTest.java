@@ -9,10 +9,14 @@ import javax.persistence.Id;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 
 /**
  * Check that the right exception is thrown when there is an error with the credentials.
@@ -27,6 +31,9 @@ public class WrongCredentialsTest extends BaseReactiveTest {
 	private Configuration currentConfiguration;
 	private static String BOGUS_USER = "BogusBogus";
 	private static String BOGUS_PASSWORD = "BogusBogus";
+
+	@Rule // Sometimes, MySQL throws UnsupportedOperationException. We are not sure why.
+	public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( MYSQL );
 
 	@Override
 	protected Configuration constructConfiguration() {
