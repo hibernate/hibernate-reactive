@@ -85,8 +85,8 @@ different features of Hibernate Reactive:
 ## Quarkus quickstarts
 
 A list of [quickstarts][Quarkus quickstarts] for Quarkus is available on GitHub:
-  - [Hibernate Reactive with RESTEasy Reactive](https://github.com/quarkusio/quarkus-quickstarts/tree/main/hibernate-reactive-quickstart) quickstart
-  - [Hibernate Reactive with Vert.x Web Routes](https://github.com/quarkusio/quarkus-quickstarts/tree/main/hibernate-reactive-routes-quickstart) quickstart
+  - [Hibernate Reactive with RESTEasy Reactive](https://github.com/quarkusio/quarkus-quickstarts/tree/master/hibernate-reactive-quickstart) quickstart
+  - [Hibernate Reactive with Vert.x Web Routes](https://github.com/quarkusio/quarkus-quickstarts/tree/master/hibernate-reactive-routes-quickstart) quickstart
 
 Or you can [generate a new Quarks project](https://code.quarkus.io/?g=org.acme&a=code-with-quarkus&v=1.0.0-SNAPSHOT&b=MAVEN&s=r1s&cn=code.quarkus.io)
 that uses the Hibernate Reactive extension and start coding right away.
