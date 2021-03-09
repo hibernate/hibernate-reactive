@@ -2,13 +2,13 @@ name: Latest ORM 5.x
 
 on:
   # Trigger the workflow on push or pull request,
-  # but only for the master branch
+  # but only for the main branch
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
   schedule:
     # * is a special character in YAML so you have to quote this string
     # Run every hour at minute 25
