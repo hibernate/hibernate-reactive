@@ -31,7 +31,7 @@ description = 'Release module'
 //     ./gradlew publishDocumentation -PdocPublishBranch=production
 
 // To tag a version and trigger a release on CI (which will include publishing to Bintray and publishing documentation):
-//  ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin -PgitBranch=master
+//  ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin -PgitBranch=main
 
 final File documentationDir = mkdir( "${project.buildDir}/documentation" );
 
