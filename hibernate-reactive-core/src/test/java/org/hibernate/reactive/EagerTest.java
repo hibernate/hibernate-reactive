@@ -10,7 +10,6 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.cfg.Configuration;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.persistence.CascadeType;
@@ -93,7 +92,7 @@ public class EagerTest extends BaseReactiveTest {
 		);
 	}
 
-	@Test @Ignore
+	@Test
 	public void testEagerParentFetchQuery(TestContext context) {
 
 		Node basik = new Node("Child");
