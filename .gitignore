@@ -8,12 +8,9 @@
 .gradletasknamecache
 
 # Build output directories
-/target
-*/target
-*/**/target
+**/target
 **/build
-*/src/main/generated
-*/src/test/generated
+**/generated
 
 # IntelliJ specific files/directories
 out
