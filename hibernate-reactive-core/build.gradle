@@ -26,6 +26,10 @@ dependencies {
     implementation "io.vertx:vertx-sql-client:${vertxVersion}"
 
     // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
+
     testImplementation 'org.assertj:assertj-core:3.13.2'
     testImplementation "io.vertx:vertx-unit:${vertxVersion}"
 
@@ -90,6 +94,9 @@ tasks.withType(Test) {
 // Example:
 // gradle test -Pdb=MySQL
 test {
+    // Enable JUnit 5
+    useJUnitPlatform()
+
     def selectedDb = project.hasProperty( 'db' )
             ? project.getProperty( 'db' )
             : 'PostgreSQL'
