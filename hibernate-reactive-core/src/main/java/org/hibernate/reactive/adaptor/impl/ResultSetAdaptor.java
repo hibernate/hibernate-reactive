@@ -695,7 +695,7 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel, Calendar cal) {
-		throw new UnsupportedOperationException();
+		return getTimestamp(columnLabel);
 	}
 
 	@Override

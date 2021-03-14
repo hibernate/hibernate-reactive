@@ -11,11 +11,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
-import javax.persistence.Basic;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 
 public class TimestampTest extends BaseReactiveTest {
     @Override
@@ -29,6 +27,7 @@ public class TimestampTest extends BaseReactiveTest {
     public void test(TestContext context) {
         Record record = new Record();
         record.text = "initial text";
+        record.expiry=OffsetDateTime.now();
         test(context,
                 getMutinySessionFactory()
                         .withSession( session -> session.persist(record)
@@ -37,9 +36,13 @@ public class TimestampTest extends BaseReactiveTest {
                                     context.assertNotNull(record.created);
                                     context.assertNotNull(record.updated);
                                 } )
-                                .invoke( () -> record.text = "edited text" )
+                                .invoke( () -> {
+                                    record.text = "edited text";
+                                    record.expiry=OffsetDateTime.now().plusHours(1);
+                                } )
                                 .chain(session::flush)
                                 .invoke( () -> {
+                                    context.assertTrue( record.expiry.isBefore(OffsetDateTime.now().plusHours(2)));
                                     context.assertNotNull(record.created);
                                     context.assertNotNull(record.updated);
                                     context.assertTrue( record.updated.isAfter(record.created) );
@@ -48,17 +51,18 @@ public class TimestampTest extends BaseReactiveTest {
                         .withSession( session -> session.find(Record.class, record.id) ) )
                         .invoke( (r) -> {
                             context.assertNotNull(r.created);
+                            context.assertNotNull(r.expiry);
                             context.assertNotNull(r.updated);
                             context.assertTrue( r.updated.isAfter(r.created) );
                         } )
         );
     }
-
     @Entity(name="Record")
     static class Record {
         @GeneratedValue @Id long id;
         @Basic(optional = false) String text;
         @CreationTimestamp Instant created;
         @UpdateTimestamp Instant updated;
+        @Column OffsetDateTime expiry;
     }
 }
