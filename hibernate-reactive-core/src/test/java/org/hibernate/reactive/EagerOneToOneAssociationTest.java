@@ -6,13 +6,15 @@
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
+
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.stage.Stage;
+
 import org.junit.Test;
 
 import javax.persistence.*;
 import java.util.Objects;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 
@@ -31,16 +33,16 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 		mostPopularBook.setAuthor( author );
 		author.setMostPopularBook( mostPopularBook );
 
+		Stage.Session session = openSession();
 		test(
 				context,
-				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( mostPopularBook )
-								.thenCompose( v -> s.persist( author ) )
-								.thenCompose( v -> s.flush() )
-						)
-						.thenApply( v -> openSession() )
-						.thenCompose( s -> s.find( Book.class, 5 ) )
-						.thenAccept(context::assertNotNull)
+				session.persist( mostPopularBook, author )
+						.thenCompose( v -> session.flush() )
+						.thenCompose( v -> openSession().find( Book.class, mostPopularBook.getId() ) )
+						.thenAccept( found -> {
+							context.assertEquals( mostPopularBook, found );
+							context.assertEquals( mostPopularBook.getAuthor(), found.getAuthor() );
+						} )
 		);
 	}
 
