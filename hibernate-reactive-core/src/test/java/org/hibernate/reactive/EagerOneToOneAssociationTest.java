@@ -7,14 +7,22 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+
+import org.junit.Rule;
 import org.junit.Test;
 
 import javax.persistence.*;
 import java.util.Objects;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class EagerOneToOneAssociationTest extends BaseReactiveTest {
+
+	@Rule // See issue #673, it fails on CI
+	public DatabaseSelectionRule rule = skipTestsFor( DB2 );
 
 	@Override
 	protected Configuration constructConfiguration() {
