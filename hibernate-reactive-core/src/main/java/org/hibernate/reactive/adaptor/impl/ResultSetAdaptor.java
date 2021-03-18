@@ -241,6 +241,13 @@ public class ResultSetAdaptor implements ResultSet {
 		return (wasNull=rawValue==null) ? null : Timestamp.valueOf( toLocalDateTime(rawValue) );
 	}
 
+	@Override
+	public Timestamp getTimestamp(String columnLabel, Calendar cal) {
+		Object rawValue = row.getValue(columnLabel);
+		return (wasNull=rawValue==null) ? null :
+				Timestamp.from( toLocalDateTime(rawValue).atZone( cal.getTimeZone().toZoneId() ).toInstant() );
+	}
+
 	private static LocalDateTime toLocalDateTime(Object rawValue) {
 		if ( rawValue instanceof OffsetDateTime ) {
 			return LocalDateTime.from( (OffsetDateTime) rawValue );
@@ -690,11 +697,6 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex, Calendar cal) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public Timestamp getTimestamp(String columnLabel, Calendar cal) {
 		throw new UnsupportedOperationException();
 	}
 
