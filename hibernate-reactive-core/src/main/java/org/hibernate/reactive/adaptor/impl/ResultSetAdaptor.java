@@ -244,8 +244,7 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public Timestamp getTimestamp(String columnLabel, Calendar cal) {
 		Object rawValue = row.getValue(columnLabel);
-		return (wasNull=rawValue==null) ? null :
-				Timestamp.from( toLocalDateTime(rawValue).atZone( cal.getTimeZone().toZoneId() ).toInstant() );
+		return (wasNull=rawValue==null) ? null : Timestamp.from( toOffsetDateTime(rawValue, cal).toInstant() );
 	}
 
 	private static LocalDateTime toLocalDateTime(Object rawValue) {
@@ -254,6 +253,18 @@ public class ResultSetAdaptor implements ResultSet {
 		}
 		else if ( rawValue instanceof LocalDateTime ) {
 			return (LocalDateTime) rawValue;
+		}
+		else {
+			throw new IllegalArgumentException( "Unexpected type: " + rawValue.getClass() );
+		}
+	}
+
+	private static OffsetDateTime toOffsetDateTime(Object rawValue, Calendar cal) {
+		if ( rawValue instanceof OffsetDateTime ) {
+			return (OffsetDateTime) rawValue;
+		}
+		else if ( rawValue instanceof LocalDateTime ) {
+			return ( (LocalDateTime) rawValue ).atZone( cal.getTimeZone().toZoneId() ).toOffsetDateTime();
 		}
 		else {
 			throw new IllegalArgumentException( "Unexpected type: " + rawValue.getClass() );
