@@ -808,8 +808,7 @@ example:
 
 [source, JAVA, indent=0]
 ----
-session.getReference(detachedAuthor)
-       .chain( author -> Stage.fetch(author) )
+Stage.fetch( session.getReference(detachedAuthor) )
        .chain( author -> Stage.fetch(author.books) )
        .invoke( books -> ... )
 ----
