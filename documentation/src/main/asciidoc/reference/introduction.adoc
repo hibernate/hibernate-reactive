@@ -792,7 +792,7 @@ method of `Stage` and `Mutiny`:
 [source, JAVA, indent=0]
 ----
 session.find(Author.class, author.id)
-       .chain( author -> Stage.fetch(author.books) )
+       .chain( author -> Mutiny.fetch(author.books) )
        .invoke( books -> ... )
 ----
 
@@ -808,8 +808,8 @@ example:
 
 [source, JAVA, indent=0]
 ----
-Stage.fetch( session.getReference(detachedAuthor) )
-       .chain( author -> Stage.fetch(author.books) )
+Mutiny.fetch( session.getReference(detachedAuthor) )
+       .chain( author -> Mutiny.fetch(author.books) )
        .invoke( books -> ... )
 ----
 
