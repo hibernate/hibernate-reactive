@@ -803,6 +803,21 @@ will be needed before passing control to the process that renders the
 UI! There is no transparent lazy fetching in Hibernate Reactive, so
 patterns like "open session in view" will _not help at all_.
 
+Sometimes you might need to chain multiple calls to `fetch()`, for
+example:
+
+[source, JAVA, indent=0]
+----
+session.getReference(detachedAuthor)
+       .chain( author -> Stage.fetch(author) )
+       .chain( author -> Stage.fetch(author.books) )
+       .invoke( books -> ... )
+----
+
+IMPORTANT: `fetch()` isn't recursive! You can't fetch an association
+belonging to an unfetched entity without fetching the entity instance
+first.
+
 === Field-level lazy fetching
 
 Similarly, field-level lazy fetching&mdash;an advanced feature, which
