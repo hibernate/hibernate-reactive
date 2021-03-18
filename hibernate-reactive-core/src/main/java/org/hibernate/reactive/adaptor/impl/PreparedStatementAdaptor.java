@@ -162,6 +162,11 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 	}
 
 	@Override
+	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) {
+		put( parameterIndex, x.toInstant().atZone( cal.getTimeZone().toZoneId() ).toLocalDateTime() );
+	}
+
+	@Override
 	public void setAsciiStream(int parameterIndex, InputStream x, int length) {
 		throw new UnsupportedOperationException();
 	}
@@ -239,11 +244,6 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 	@Override
 	public void setTime(int parameterIndex, Time x, Calendar cal) {
 		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) {
-		put( parameterIndex, x.toLocalDateTime() );
 	}
 
 	@Override
