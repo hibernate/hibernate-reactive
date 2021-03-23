@@ -79,7 +79,7 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 	@Test
 	public void shortIdentifierWithStageAPI(TestContext context) {
 		ShortEntity entityA = new ShortEntity( "Short A" );
-		ShortEntity entityB = new ShortEntity( "Long B" );
+		ShortEntity entityB = new ShortEntity( "Short B" );
 
 		Stage.Session session = openSession();
 		test( context, session
@@ -97,7 +97,6 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 	/*
 	 * Mutiny API tests
 	 */
-
 
 	@Test
 	public void integerIdentifierWithMutinyAPI(TestContext context) {
@@ -138,7 +137,7 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 	@Test
 	public void shortIdentifierWithMutinyAPI(TestContext context) {
 		ShortEntity entityA = new ShortEntity( "Short A" );
-		ShortEntity entityB = new ShortEntity( "Long B" );
+		ShortEntity entityB = new ShortEntity( "Short B" );
 
 		Mutiny.Session session = openMutinySession();
 		test( context, session
