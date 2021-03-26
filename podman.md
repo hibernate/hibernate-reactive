@@ -172,3 +172,47 @@ Optionally, you can connect to the database with the [Db2 command line interface
 podman exec -ti HibernateTestingDB2 bash -c "su - hreact -c db2 connect"
 ```
 [db2-cli]:https://www.ibm.com/support/knowledgecenter/en/SSEPEK_11.0.0/comref/src/tpc/db2z_commandlineprocessor.html
+
+## Db2
+
+Use the following command to start a [Db2][db2] database with the required credentials
+and schema to run the tests:
+
+[db2]:https://www.ibm.com/analytics/db2
+
+```
+podman run --rm -e LICENSE=accept --privileged=true --name HibernateTestingDB2 \
+    -e DBNAME=hreact -e DB2INSTANCE=hreact -e DB2INST1_PASSWORD=hreact \
+    -e PERSISTENT_HOME=false -e ARCHIVE_LOGS=false -e AUTOCONFIG=false \
+    -p 50000:50000 ibmcom/db2:11.5.4.0
+```
+
+When the database has started, you can run the tests on Db2 with:
+
+```
+./gradlew test -Pdb=db2
+```
+
+Optionally, you can connect to the database with the [Db2 command line interface][db2-cli] using:
+
+```
+podman exec -ti HibernateTestingDB2 bash -c "su - hreact -c db2 connect"
+```
+[db2-cli]:https://www.ibm.com/support/knowledgecenter/en/SSEPEK_11.0.0/comref/src/tpc/db2z_commandlineprocessor.html
+
+## Microsoft SQL Server
+
+[mssql]:https://www.microsoft.com/en-gb/sql-server/
+
+Use the following command to start a [Microsoft SQL Server][mssql] database with the required credentials
+and schema to run the tests:
+
+* Server
+```
+podman run --rm -it --name HibernateTestingMSSQL -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=HReact@~~' -p 1433:1433 mcr.microsoft.com/mssql/server:2019-latest
+```
+
+* CLI
+```
+podman exec -it HibernateTestingMSSQL /opt/mssql-tools/bin/sqlcmd -S localhost -U hreact -P hreact 
+`

@@ -6,9 +6,6 @@
 package org.hibernate.reactive.pool.impl;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
@@ -34,7 +31,6 @@ import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnectOptions;
 import io.vertx.sqlclient.spi.Driver;
 
-import static java.util.Arrays.asList;
 import static org.hibernate.internal.CoreLogging.messageLogger;
 
 /**
@@ -59,15 +55,37 @@ import static org.hibernate.internal.CoreLogging.messageLogger;
 public class DefaultSqlClientPool extends SqlClientPool
 		implements ServiceRegistryAwareService, Configurable, Stoppable, Startable {
 
-	/**
-	 * The valid schemes for each driver
-	 */
-	private static final Map<String, List<String>> DRIVER_SCHEMES = new HashMap<>();
+	private enum VertxDriver {
+		DB2( "io.vertx.db2client.spi.DB2Driver", "db2" ),
+		MYSQL( "io.vertx.mysqlclient.spi.MySQLDriver", "mysql", "mariadb" ),
+		POSTGRES( "io.vertx.pgclient.spi.PgDriver", "postgres", "postgre", "postgresql", "cockroachdb" ),
+		MSSQL( "io.vertx.mssqlclient.spi.MSSQLDriver", "sqlserver" );
 
-	static {
-		DRIVER_SCHEMES.put( "io.vertx.db2client.spi.DB2Driver", asList( "db2" ) );
-		DRIVER_SCHEMES.put( "io.vertx.mysqlclient.spi.MySQLDriver", asList( "mysql", "mariadb" ) );
-		DRIVER_SCHEMES.put( "io.vertx.pgclient.spi.PgDriver", asList( "postgre", "postgres", "postgresql", "cockroachdb" ) );
+		private final String driverName;
+		private final String[] schemas;
+
+		VertxDriver(String driverName, String... schemas) {
+			this.driverName = driverName;
+			this.schemas = schemas;
+		}
+
+		public boolean matches(String schema) {
+			for ( String alias : schemas ) {
+				if ( alias.equalsIgnoreCase( schema ) ) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public static VertxDriver findByName(String driverName) {
+			for ( VertxDriver driver : values() ) {
+				if ( driver.driverName.equalsIgnoreCase( driverName ) ) {
+					return driver;
+				}
+			}
+			return null;
+		}
 	}
 
 	private Pool pools;
@@ -180,22 +198,20 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 * @return the disambiguated {@link Driver}
 	 */
 	private Driver findDriver(URI uri, ServiceConfigurationError originalError) {
-		String scheme = uri.getScheme().toLowerCase( Locale.ROOT ); // "postgresql", "mysql", "db2", etc
+		String scheme = uri.getScheme(); // "postgresql", "mysql", "db2", etc
 		for ( Driver d : ServiceLoader.load( Driver.class ) ) {
 			String driverName = d.getClass().getCanonicalName();
 			messageLogger( DefaultSqlClientPool.class ).infof( "HRX000013: Detected driver [%s]", driverName );
-			if ( driverFound( scheme, driverName ) ) {
+			if ( matchesScheme( driverName, scheme ) ) {
 				return d;
 			}
 		}
 		throw new ConfigurationException( "No suitable drivers found for URI scheme: " + uri.getScheme(), originalError );
 	}
 
-	private static boolean driverFound(String scheme, String driverName) {
-		if ( DRIVER_SCHEMES.containsKey( driverName ) ) {
-			return DRIVER_SCHEMES.get( driverName ).contains( scheme );
-		}
-		return false;
+	private boolean matchesScheme(String driverName, String scheme) {
+		VertxDriver vertxDriver = VertxDriver.findByName( driverName );
+		return vertxDriver != null && vertxDriver.matches( scheme );
 	}
 
 	@Override

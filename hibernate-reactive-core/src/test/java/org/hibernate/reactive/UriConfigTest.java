@@ -12,6 +12,7 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
 import org.hibernate.dialect.PostgreSQL10Dialect;
+import org.hibernate.dialect.SQLServer2012Dialect;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
@@ -38,9 +39,11 @@ public class UriConfigTest extends BaseReactiveTest {
             case COCKROACHDB: dialect = CockroachDB201Dialect.class; break;
             case MYSQL: dialect = MySQL8Dialect.class; break;
             case MARIA: dialect = MariaDB103Dialect.class; break;
+            case MSSQLSERVER: dialect = SQLServer2012Dialect.class; break;
             case DB2:
             default: throw new IllegalArgumentException();
         }
+
         Configuration configuration = super.constructConfiguration();
         configuration.setProperty( Environment.DIALECT, dialect.getName() );
         configuration.setProperty( Settings.URL, DatabaseConfiguration.getUri() );
@@ -50,21 +53,26 @@ public class UriConfigTest extends BaseReactiveTest {
 
     @Test
     public void testUriConfig(TestContext context) {
-        String sql;
+        String sql = selectQuery();
+        test(
+                context,
+                getSessionFactory()
+                        .withTransaction( (s, t) -> s.createNativeQuery( sql, String.class ).getSingleResult() )
+                        .thenAccept( ts -> context.assertTrue( ts instanceof String ) )
+        );
+    }
+
+    private String selectQuery() {
         switch ( DatabaseConfiguration.dbType() ) {
             case POSTGRESQL:
-            case COCKROACHDB:
-                sql = "select cast(current_timestamp as varchar)"; break;
+                return "select cast(current_timestamp as varchar)";
             case MYSQL:
-            case MARIA:
-                sql = "select cast(current_timestamp as char) from dual"; break;
+                return "select cast(current_timestamp as char) from dual";
+            case MSSQLSERVER:
+                return "select current_timestamp";
             case DB2:
-            default: throw new IllegalArgumentException();
+            default:
+                throw new IllegalArgumentException();
         }
-        test(context,
-                getSessionFactory()
-                        .withTransaction( (s,t) -> s.createNativeQuery( sql, String.class ).getSingleResult() )
-                        .thenAccept( ts -> context.assertTrue(ts instanceof String) )
-        );
     }
 }

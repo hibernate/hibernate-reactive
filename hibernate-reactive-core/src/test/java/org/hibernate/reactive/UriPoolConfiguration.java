@@ -5,12 +5,15 @@
  */
 package org.hibernate.reactive;
 
+import io.vertx.core.json.JsonObject;
 import io.vertx.db2client.DB2ConnectOptions;
+import io.vertx.mssqlclient.MSSQLConnectOptions;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnectOptions;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
+import org.hibernate.reactive.types.MSSQLConnectionUriParser;
 
 import java.net.URI;
 
@@ -31,8 +34,15 @@ public class UriPoolConfiguration implements SqlClientPoolConfiguration {
                 return MySQLConnectOptions.fromUri( uri.toString() );
             case "db2":
                 return DB2ConnectOptions.fromUri( uri.toString() );
+            case "mssql":
+                return fromUri( uri.toString() );
             default:
                 throw new IllegalArgumentException();
         }
+    }
+
+    public static MSSQLConnectOptions fromUri(String connectionUri) throws IllegalArgumentException {
+        JsonObject parsedConfiguration = MSSQLConnectionUriParser.parse( connectionUri);
+        return new MSSQLConnectOptions(parsedConfiguration);
     }
 }

@@ -33,6 +33,7 @@ dependencies {
     testImplementation "io.vertx:vertx-pg-client:${vertxVersion}"
     testImplementation "io.vertx:vertx-mysql-client:${vertxVersion}"
     testImplementation "io.vertx:vertx-db2-client:${vertxVersion}"
+    testImplementation "io.vertx:vertx-mssql-client:${vertxVersion}"
 
     // JDBC driver to test with ORM and PostgreSQL
     testRuntimeOnly "org.postgresql:postgresql:42.2.16"
@@ -55,6 +56,7 @@ dependencies {
     testImplementation "org.testcontainers:mariadb:${testcontainersVersion}"
     testImplementation "org.testcontainers:db2:${testcontainersVersion}"
     testImplementation "org.testcontainers:cockroachdb:${testcontainersVersion}"
+    testImplementation "org.testcontainers:mssqlserver:${testcontainersVersion}"
 }
 
 // Print a summary of the results of the tests (number of failures, successes and skipped)
@@ -122,7 +124,7 @@ tasks.addRule( "Pattern testDb<id>" ) { String taskName ->
 }
 
 // The dbs we want to test when running testAll
-def dbs = ["MariaDB", 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB']
+def dbs = ["MariaDB", 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer']
 task testAll( dependsOn: dbs.collect( [] as HashSet ) { db -> "testDb${db}" } ) {
     description = "Run tests for ${dbs}"
 }

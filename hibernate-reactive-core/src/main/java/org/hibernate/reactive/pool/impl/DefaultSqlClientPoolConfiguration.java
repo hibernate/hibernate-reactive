@@ -87,12 +87,23 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
     public SqlConnectOptions connectOptions(URI uri) {
 
         String scheme = uri.getScheme();
+        String path = uri.getPath();
+        //TODO: Read database name for MSSQLServer
+        String database = path.length() > 0
+                ? path.substring( 1 )
+                : "";
 
-        String database = uri.getPath().substring( 1 );
+        String host = uri.getHost();
         if ( scheme.equals("db2") && database.indexOf( ':' ) > 0 ) {
             // DB2 URLs are a bit odd and have the format:
             // jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
             database = database.substring( 0, database.indexOf( ':' ) );
+        }
+
+        int index = uri.toString().indexOf( ';' );
+        if ( scheme.equals( "sqlserver" ) && index > 0 ) {
+            URI uriWithoutParams = URI.create( uri.toString().substring( 0, index ) );
+            host = uriWithoutParams.getHost();
         }
 
         //see if the credentials were specified via properties
@@ -118,6 +129,15 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
                     int queryIndex = uri.getPath().indexOf(':') + 1;
                     if (queryIndex > 0) {
                         params = uri.getPath().substring(queryIndex).split(";");
+                    }
+                }
+                else if ( scheme.equals( "sqlserver" ) ) {
+                    String query = uri.getQuery();
+                    String rawQuery = uri.getRawQuery();
+                    String s = uri.toString();
+                    int queryIndex = s.indexOf(';') + 1;
+                    if (queryIndex > 0) {
+                        params = s.substring(queryIndex).split(";");
                     }
                 }
                 else {
@@ -149,7 +169,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
         }
 
         SqlConnectOptions connectOptions = new SqlConnectOptions()
-                .setHost( uri.getHost() )
+                .setHost( host )
                 .setPort( port )
                 .setDatabase( database )
                 .setUser( username );
@@ -192,6 +212,8 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
                 return 50000;
             case "cockroachdb":
                 return 26257;
+            case "sqlserver":
+                return 1433;
             default:
                 throw new IllegalArgumentException( "Unknown default port for scheme: " + scheme );
         }
