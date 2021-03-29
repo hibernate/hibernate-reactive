@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 import javax.persistence.Entity;
@@ -26,6 +27,8 @@ import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests @{@link ElementCollection} on a {@link java.util.Set} of basic types.
@@ -689,10 +692,11 @@ public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiv
 
 	private static void assertPhones(TestContext context, Person person, String... phones) {
 		context.assertNotNull( person );
-		context.assertEquals( phones.length, person.getPhones().size() );
-		for (int i=0; i<phones.length; i++) {
-			context.assertEquals( phones[i], person.getPhones().get(i).getNumber() );
-		}
+		context.assertNotNull( person.getPhones() );
+		List<String> personPhones = person.getPhones()
+				.stream().map( phone -> phone.getNumber() ).collect( Collectors.toList() );
+
+		assertThat( personPhones ).containsExactlyInAnyOrder( phones );
 	}
 
 	@Entity(name = "Person")

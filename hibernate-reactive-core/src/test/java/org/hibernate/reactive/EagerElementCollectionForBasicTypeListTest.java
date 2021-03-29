@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -26,7 +25,8 @@ import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
-import org.assertj.core.api.Assertions;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests @{@link ElementCollection} on a {@link List} of basic types.
@@ -602,21 +602,9 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 				.getResultList();
 	}
 
-	/**
-	 * Utility method to check the content of the collection of elements.
-	 * It sorts the expected and actual phones before comparing.
-	 */
 	private static void assertPhones(TestContext context, Person person, String... expectedPhones) {
 		context.assertNotNull( person );
-		String[] sortedExpected = Arrays.stream( expectedPhones ).sorted()
-				.sorted( String.CASE_INSENSITIVE_ORDER )
-				.collect( Collectors.toList() )
-				.toArray( new String[expectedPhones.length] );
-		List<String> sortedActual = person.getPhones().stream()
-				.sorted( String.CASE_INSENSITIVE_ORDER )
-				.collect( Collectors.toList() );
-		Assertions.assertThat( sortedActual )
-				.containsExactly( sortedExpected );
+		assertThat( person.getPhones() ).containsExactlyInAnyOrder( expectedPhones );
 	}
 
 	@Entity(name = "Person")
