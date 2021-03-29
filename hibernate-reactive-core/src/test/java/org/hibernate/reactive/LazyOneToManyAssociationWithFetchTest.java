@@ -246,12 +246,12 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( getSessionFactory().openStatelessSession() )
+				completedFuture( openStatelessSession() )
 						.thenCompose(s -> s.insert(goodOmens)
 								.thenCompose(v -> s.insert(neilGaiman))
 								.thenCompose(v -> s.insert(terryPratchett))
 						)
-						.thenApply( v -> getSessionFactory().openStatelessSession() )
+						.thenApply( v -> openStatelessSession() )
 						.thenCompose( s -> s.get(Book.class, goodOmens.getId())
 								.thenCompose(
 										book -> s.fetch( book.getAuthors() )
@@ -276,7 +276,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( getSessionFactory().openStatelessSession() )
+				completedFuture( openStatelessSession() )
 						.thenCompose(s -> s.insert(goodOmens)
 								.thenCompose(v -> s.insert(neilGaiman))
 								.thenCompose(v -> s.insert(terryPratchett))

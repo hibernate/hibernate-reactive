@@ -38,7 +38,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	@Test
 	public void testStatelessSession(TestContext context) {
 		GuineaPig pig = new GuineaPig("Aloi");
-		Stage.StatelessSession ss = getSessionFactory().openStatelessSession();
+		Stage.StatelessSession ss = openStatelessSession();
 		test(
 				context,
 				ss.insert(pig)
@@ -135,6 +135,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 						.thenAccept( rows -> context.assertEquals(1, rows) )
 						.thenCompose( v -> ss.createQuery(delete).executeUpdate() )
 						.thenAccept( rows -> context.assertEquals(1, rows) )
+						.thenAccept( v -> ss.close() )
 		);
 	}
 
