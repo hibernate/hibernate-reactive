@@ -6,6 +6,8 @@
 package org.hibernate.reactive;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RunTestOnContext;
@@ -34,6 +36,7 @@ import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
@@ -57,7 +60,14 @@ public abstract class BaseReactiveTest {
 	public Timeout rule = Timeout.seconds( 5 * 60 );
 
 	@Rule
-	public RunTestOnContext vertxContextRule = new RunTestOnContext();
+	public RunTestOnContext vertxContextRule = new RunTestOnContext( () -> {
+		VertxOptions options = new VertxOptions();
+		options.setBlockedThreadCheckInterval( 5 );
+		options.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
+		Vertx vertx = Vertx.vertx( options );
+		return vertx;
+	} );
+
 
 	private AutoCloseable session;
 	private ReactiveConnection connection;
