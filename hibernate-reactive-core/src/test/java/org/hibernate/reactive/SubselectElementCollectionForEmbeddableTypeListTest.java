@@ -11,6 +11,8 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -71,6 +73,11 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 		test( context, session.persist( p1, p2, p3 )
 				.thenCompose( v -> session.flush() )
 		);
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( "Person" ) );
 	}
 
 	@Test

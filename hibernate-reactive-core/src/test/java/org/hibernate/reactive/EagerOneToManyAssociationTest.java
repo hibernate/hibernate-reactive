@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
@@ -13,6 +12,10 @@ import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import org.junit.After;
+
+import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -24,6 +27,11 @@ public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 		configuration.addAnnotatedClass( Book.class );
 		configuration.addAnnotatedClass( Author.class );
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( Author.class, Book.class ) );
 	}
 //
 //	private CompletionStage<Integer> populateDB(Book... books) {

@@ -8,6 +8,8 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
+
+import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.*;
@@ -26,6 +28,11 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( GuineaPig.class );
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( "GuineaPig" ) );
 	}
 
 	@Test

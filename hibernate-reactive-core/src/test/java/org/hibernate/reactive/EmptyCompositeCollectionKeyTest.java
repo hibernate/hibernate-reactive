@@ -22,6 +22,7 @@ import org.hibernate.cfg.Environment;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,6 +39,11 @@ public class EmptyCompositeCollectionKeyTest extends BaseReactiveTest {
 		configuration.getProperties().put( Environment.CREATE_EMPTY_COMPOSITES_ENABLED, "true" );
 		configuration.addAnnotatedClass( Family.class );
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( "Family" ) );
 	}
 
 	@Test

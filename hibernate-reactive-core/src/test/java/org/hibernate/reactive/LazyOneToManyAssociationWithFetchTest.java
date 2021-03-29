@@ -11,6 +11,8 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.FetchProfile;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
+
+import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -35,6 +37,11 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 		configuration.addAnnotatedClass( Book.class );
 		configuration.addAnnotatedClass( Author.class );
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( "Writer", "Tome" ) );
 	}
 
 	@Test

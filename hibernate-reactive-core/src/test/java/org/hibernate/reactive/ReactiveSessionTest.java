@@ -11,6 +11,8 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.stage.Stage;
+
+import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -48,15 +50,9 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				.withSession( session -> session.createQuery( "delete GuineaPig" ).executeUpdate() );
 	}
 
-	public void after(TestContext context) {
-		test( context,
-			  cleanDB()
-				.whenComplete( (res, err) -> {
-					// in case cleanDB() fails we
-					// still have to close the factory
-					super.after( context );
-				} )
-		);
+	@After
+	public void cleanDB(TestContext context) {
+		test( context, deleteEntities( "GuineaPig" ) );
 	}
 
 	private CompletionStage<String> selectNameFromId(Integer id) {

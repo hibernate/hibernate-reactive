@@ -8,6 +8,8 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.annotations.Filter;
 import org.hibernate.cfg.Configuration;
+
+import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.*;
@@ -28,6 +30,14 @@ public class FilterTest extends BaseReactiveTest {
 		configuration.addAnnotatedClass(Node.class);
 		configuration.addAnnotatedClass(Element.class);
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( "Element" )
+				.thenCompose( v -> getSessionFactory()
+						.withTransaction( (s, t) -> s
+								.createQuery( "delete from Node" ).executeUpdate() ) ) );
 	}
 
 	@Test

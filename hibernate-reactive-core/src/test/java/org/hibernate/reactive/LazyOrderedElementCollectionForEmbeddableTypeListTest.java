@@ -9,6 +9,8 @@ import io.vertx.ext.unit.TestContext;
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,6 +52,11 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( Person.class );
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( "Person" ) );
 	}
 
 	@Before
