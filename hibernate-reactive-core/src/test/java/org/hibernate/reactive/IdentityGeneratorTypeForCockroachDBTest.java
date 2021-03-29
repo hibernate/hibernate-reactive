@@ -9,7 +9,6 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.PersistenceException;
 import javax.persistence.Table;
 
 import org.hibernate.cfg.AvailableSettings;
@@ -69,7 +68,7 @@ public class IdentityGeneratorTypeForCockroachDBTest extends BaseReactiveTest {
 		LongTypeEntity entity = new LongTypeEntity();
 
 		test( context, getMutinySessionFactory()
-				.withSession( s -> s.persist( entity ).call( s::flush ) )
+				.withTransaction( (s, tx) -> s.persist( entity ) )
 				.invoke( () -> {
 					context.assertNotNull( entity );
 					context.assertTrue( entity.id > 0 );
@@ -79,23 +78,21 @@ public class IdentityGeneratorTypeForCockroachDBTest extends BaseReactiveTest {
 
 	@Test
 	public void integerIdentityType(TestContext context) {
-		thrown.expect( PersistenceException.class );
 		thrown.expectMessage( "too big" );
 		thrown.expectMessage( "Integer" );
 
 		test( context, getMutinySessionFactory()
-				.withSession( s -> s.persist( new IntegerTypeEntity() ).call( s::flush ) )
+				.withTransaction( (s, tx) -> s.persist( new IntegerTypeEntity() ) )
 		);
 	}
 
 	@Test
 	public void shortIdentityType(TestContext context) {
-		thrown.expect( PersistenceException.class );
 		thrown.expectMessage( "too big" );
 		thrown.expectMessage( "Short" );
 
 		test( context, getMutinySessionFactory()
-				.withSession( s -> s.persist( new ShortTypeEntity() ).call( s::flush ) )
+				.withTransaction( (s, tx) -> s.persist( new ShortTypeEntity() ) )
 		);
 	}
 

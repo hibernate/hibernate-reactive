@@ -6,6 +6,7 @@
 package org.hibernate.reactive;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.ext.unit.Async;
@@ -13,6 +14,7 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -23,14 +25,16 @@ import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.testing.SessionFactoryManager;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
+
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -60,6 +64,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 @RunWith(VertxUnitRunner.class)
 public abstract class BaseReactiveTest {
 
+	public static SessionFactoryManager factoryManager = new SessionFactoryManager();
+
 	@Rule
 	public Timeout rule = Timeout.seconds( 5 * 60 );
 
@@ -74,8 +80,6 @@ public abstract class BaseReactiveTest {
 
 	private AutoCloseable session, statelessSession;
 	private ReactiveConnection connection;
-	private org.hibernate.SessionFactory sessionFactory;
-	private ReactiveConnectionPool poolProvider;
 
 	protected static void test(TestContext context, CompletionStage<?> work) {
 		// this will be added to TestContext in the next vert.x release
@@ -151,6 +155,35 @@ public abstract class BaseReactiveTest {
 
 	@Before
 	public void before(TestContext context) {
+		Async async = context.async();
+		vertxContextRule.vertx()
+				.executeBlocking(
+						// schema generation is a blocking operation and so it causes an
+						// exception when run on the Vert.x event loop. So call it using
+						// Vertx.executeBlocking()
+						this::startFactoryManager,
+						event -> {
+							if ( event.succeeded() ) {
+								async.complete();
+							}
+							else {
+								context.fail( event.cause() );
+							}
+						}
+				);
+	}
+
+	private void startFactoryManager(Promise<Object> p) {
+		try {
+			factoryManager.start( () -> createHibernateSessionFactory() );
+			p.complete();
+		}
+		catch (Throwable e) {
+			p.fail( e );
+		}
+	}
+
+	private SessionFactory createHibernateSessionFactory() {
 		Configuration configuration = constructConfiguration();
 		StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
 				.addService( VertxInstance.class, (VertxInstance) () -> vertxContextRule.vertx() )
@@ -158,24 +191,8 @@ public abstract class BaseReactiveTest {
 		addServices( builder );
 		StandardServiceRegistry registry = builder.build();
 		configureServices( registry );
-
-		// schema generation is a blocking operation and so it causes an
-		// exception when run on the Vert.x event loop. So call it using
-		// Vertx.executeBlocking()
-		Async async = context.async();
-		vertxContextRule.vertx().<SessionFactory>executeBlocking(
-				p -> p.complete( configuration.buildSessionFactory( registry ) ),
-				r -> {
-					if ( r.failed() ) {
-						context.fail( r.cause() );
-					}
-					else {
-						sessionFactory = r.result();
-						poolProvider = registry.getService( ReactiveConnectionPool.class );
-						async.complete();
-					}
-				}
-		);
+		SessionFactory sessionFactory = configuration.buildSessionFactory( registry );
+		return sessionFactory;
 	}
 
 	protected void addServices(StandardServiceRegistryBuilder builder) {}
@@ -226,14 +243,15 @@ public abstract class BaseReactiveTest {
 				connection = null;
 			}
 		}
+	}
 
-		if ( sessionFactory != null ) {
-			sessionFactory.close();
-		}
+	@AfterClass
+	public static void closeFactory() {
+		factoryManager.stop();
 	}
 
 	protected Stage.SessionFactory getSessionFactory() {
-		return sessionFactory.unwrap( Stage.SessionFactory.class );
+		return factoryManager.getHibernateSessionFactory().unwrap( Stage.SessionFactory.class );
 	}
 
 	/**
@@ -260,7 +278,7 @@ public abstract class BaseReactiveTest {
 	}
 
 	protected CompletionStage<ReactiveConnection> connection() {
-		return poolProvider.getConnection().thenApply( c -> connection = c );
+		return factoryManager.getReactiveConnectionPool().getConnection().thenApply( c -> connection = c );
 	}
 
 	/**
@@ -277,10 +295,6 @@ public abstract class BaseReactiveTest {
 		return newSession;
 	}
 
-	protected Mutiny.SessionFactory getMutinySessionFactory() {
-		return sessionFactory.unwrap( Mutiny.SessionFactory.class );
-	}
-
 	protected Mutiny.StatelessSession openMutinyStatelessSession() {
 		if ( statelessSession != null ) {
 			statelessSession.close();
@@ -290,4 +304,7 @@ public abstract class BaseReactiveTest {
 		return newSession;
 	}
 
+	protected Mutiny.SessionFactory getMutinySessionFactory() {
+		return factoryManager.getHibernateSessionFactory().unwrap( Mutiny.SessionFactory.class );
+	}
 }

@@ -165,32 +165,27 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 
 	@Test
 	public void removeOneElementWithMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, getMutinySessionFactory()
+				.withTransaction( (session, transaction) -> session
+						.find( Person.class, thePerson.getId() )
 						// Remove one element from the collection
-						.invoke( foundPerson -> foundPerson.getPhones().remove( "111-111-1111" ) )
-						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( updatedPerson -> assertPhones( context, updatedPerson, "999-999-9999", "123-456-7890" ) )
+						.invoke( foundPerson -> foundPerson.getPhones().remove( "111-111-1111" ) ) )
+				.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
+				.invoke( updatedPerson -> assertPhones( context, updatedPerson, "999-999-9999", "123-456-7890" ) )
 		);
 	}
 
 	@Test
 	public void clearCollectionOfElementsWithStageAPI(TestContext context){
-		Stage.Session session = openSession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, getSessionFactory()
+				.withTransaction( (session, transaction) -> session
+						.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
 							context.assertFalse( foundPerson.getPhones().isEmpty() );
 							foundPerson.getPhones().clear();
-						} )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() )
+						} ) )
+				.thenCompose( v -> openSession()
+						.find( Person.class, thePerson.getId() )
 						.thenAccept( changedPerson -> context.assertTrue( changedPerson.getPhones().isEmpty() ) )
 				)
 		);
@@ -198,54 +193,45 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 
 	@Test
 	public void clearCollectionOfElementsWithMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, getMutinySessionFactory()
+				.withTransaction( (session, transaction) -> session
+						.find( Person.class, thePerson.getId() )
 						.invoke( foundPerson -> {
 							context.assertFalse( foundPerson.getPhones().isEmpty() );
 							foundPerson.getPhones().clear();
-						} )
-						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( changedPerson -> context.assertTrue( changedPerson.getPhones().isEmpty() ) )
+						} ) )
+				.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
+				.invoke( changedPerson -> context.assertTrue( changedPerson.getPhones().isEmpty() ) )
 		);
 	}
 
 	@Test
-	public void removeAndAddElementWithStageAPI(TestContext context){
-		Stage.Session session = openSession();
-
-		test (
-				context,
-				session.find( Person.class, thePerson.getId())
+	public void removeAndAddElementWithStageAPI(TestContext context) {
+		test( context, getSessionFactory()
+				.withTransaction( (session, transaction) -> session
+						.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
 							context.assertNotNull( foundPerson );
 							foundPerson.getPhones().remove( "111-111-1111" );
 							foundPerson.getPhones().add( "000" );
-						} )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "999-999-9999", "123-456-7890", "000" ) )
+						} ) )
+				.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
+				.thenAccept( changedPerson -> assertPhones( context, changedPerson, "999-999-9999", "123-456-7890", "000" ) )
 		);
 	}
 
 	@Test
 	public void removeAndAddElementWithMutinyAPI(TestContext context){
-		Mutiny.Session session = openMutinySession();
-
-		test (
-				context,
-				session.find( Person.class, thePerson.getId())
+		test ( context, getMutinySessionFactory()
+				.withTransaction( (session, transaction) -> session
+						.find( Person.class, thePerson.getId() )
 						.invoke( foundPerson -> {
 							context.assertNotNull( foundPerson );
 							foundPerson.getPhones().remove( "111-111-1111" );
 							foundPerson.getPhones().add( "000" );
-						} )
-						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( person -> assertPhones( context, person, "999-999-9999", "123-456-7890", "000" ) )
+						} ) )
+				.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
+				.invoke( person -> assertPhones( context, person, "999-999-9999", "123-456-7890", "000" ) )
 		);
 	}
 

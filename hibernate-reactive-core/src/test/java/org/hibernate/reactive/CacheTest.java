@@ -9,6 +9,8 @@ import io.vertx.ext.unit.TestContext;
 import org.hibernate.annotations.Cache;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
+
+import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.Cacheable;
@@ -30,6 +32,11 @@ public class CacheTest extends BaseReactiveTest {
         configuration.setProperty( "hibernate.javax.cache.provider", "org.ehcache.jsr107.EhcacheCachingProvider" );
         configuration.setProperty( "hibernate.javax.cache.uri", "/ehcache.xml" );
         return configuration;
+    }
+
+    @After
+    public void cleanDB(TestContext context) {
+        getSessionFactory().close();
     }
 
     @Test
