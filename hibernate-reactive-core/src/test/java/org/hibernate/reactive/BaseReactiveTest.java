@@ -36,10 +36,13 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 /**
  * Base class for unit tests that need a connection to the selected db and
@@ -125,6 +128,26 @@ public abstract class BaseReactiveTest {
 		configuration.setProperty( Settings.FORMAT_SQL, System.getProperty(Settings.FORMAT_SQL, "false") );
 		configuration.setProperty( Settings.HIGHLIGHT_SQL, System.getProperty(Settings.HIGHLIGHT_SQL, "true") );
 		return configuration;
+	}
+
+	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
+		return deleteEntities( Arrays.stream( entities )
+								  .map( BaseReactiveTest::defaultEntityName )
+								  .collect( Collectors.toList() )
+								  .toArray( new String[entities.length] ) );
+	}
+
+	private static String defaultEntityName(Class<?> aClass) {
+		int index = aClass.getName().lastIndexOf( '.' );
+		index = index > -1 ? index + 1 : 0;
+		return aClass.getName().substring( index );
+	}
+
+	public CompletionStage<Void> deleteEntities(String... entities) {
+		return getSessionFactory()
+				.withTransaction( (s, tx) -> loop( entities, name -> s
+						.createQuery( "from " + name ).getResultList()
+						.thenCompose( list -> s.remove( list.toArray( new Object[list.size()] ) ) ) ) );
 	}
 
 	@Before
