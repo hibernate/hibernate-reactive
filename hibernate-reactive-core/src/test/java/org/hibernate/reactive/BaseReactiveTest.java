@@ -32,6 +32,7 @@ import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
@@ -59,8 +60,8 @@ public abstract class BaseReactiveTest {
 	@Rule
 	public Timeout rule = Timeout.seconds( 5 * 60 );
 
-	@Rule
-	public RunTestOnContext vertxContextRule = new RunTestOnContext( () -> {
+	@ClassRule
+	public static RunTestOnContext vertxContextRule = new RunTestOnContext( () -> {
 		VertxOptions options = new VertxOptions();
 		options.setBlockedThreadCheckInterval( 5 );
 		options.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
