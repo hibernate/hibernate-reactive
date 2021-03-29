@@ -211,8 +211,6 @@ public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiv
 
 	@Test
 	public void updateCollectionWithDuplicatesWithMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
 		List<Phone> phones = new ArrayList<>();
 		phones.add( new Phone( "000" ) );
 		phones.add( new Phone( "000" ) );
@@ -221,22 +219,19 @@ public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiv
 
 		Person thomas = new Person( 47, "Thomas Reaper", phones );
 
-		test(
-				context,
-				session.persist( thomas )
-						.call( session::flush )
-						.chain( () -> {
-							Mutiny.Session newSession = openMutinySession();
-							return newSession.find( Person.class, thomas.getId() )
-									// Change a couple of the elements in the collection
-									.invoke( found -> {
-										found.getPhones().set( 1, new Phone( "47" ) );
-										found.getPhones().set( 3,  new Phone( "47" ) );
-									} )
-									.call( newSession::flush )
-									.chain( () -> openMutinySession().find( Person.class, thomas.getId() ) )
-									.invoke( found -> assertPhones( context, found, "000", "47", "000", "47" ) );
+		test( context, getMutinySessionFactory()
+				.withTransaction( (session, tx) -> session.persist( thomas ) )
+				.chain( () -> getMutinySessionFactory().withSession( session -> session
+						.find( Person.class, thomas.getId() )
+						// Change a couple of the elements in the collection
+						.invoke( found -> {
+							found.getPhones().set( 1, new Phone( "47" ) );
+							found.getPhones().set( 3, new Phone( "47" ) );
 						} )
+						.call( session::flush )
+						.chain( () -> openMutinySession().find( Person.class, thomas.getId() ) )
+						.invoke( found -> assertPhones( context, found, "000", "47", "000", "47" ) )
+				) )
 		);
 	}
 
@@ -306,22 +301,16 @@ public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiv
 
 	@Test
 	public void addOneElementWithMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
 		test(
 				context,
-				session.find( Person.class, thePerson.getId() )
-						// add one element to the collection
-						.invoke( foundPerson -> foundPerson.getPhones().add( new Phone("000" ) ) )
-						.call( session::flush )
+				getMutinySessionFactory()
+						.withTransaction( (session, tx) -> session
+								.find( Person.class, thePerson.getId() )
+								// add one element to the collection
+								.invoke( foundPerson -> foundPerson.getPhones().add( new Phone( "000" ) ) ) )
 						// Check new person collection
 						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( updatedPerson ->
-										 assertPhones(
-												 context,
-												 updatedPerson,
-												 "999-999-9999", "111-111-1111", "000"
-										 ) )
+						.invoke( updatedPerson -> assertPhones( context, updatedPerson, "999-999-9999", "111-111-1111", "000" ) )
 		);
 	}
 
@@ -558,11 +547,7 @@ public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiv
 										  )
 		);
 
-		Mutiny.Session session = openMutinySession();
-
-		test( context,
-			  session.persist( secondPerson )
-					  .call( session::flush )
+		test( context, getMutinySessionFactory().withTransaction( (session, tx) -> session.persist( secondPerson ))
 					  // Check new person collection
 					  .chain( () -> openMutinySession().find( Person.class, secondPerson.getId() ) )
 					  .invoke( foundPerson -> assertPhones( context, foundPerson, "222-222-2222", "333-333-3333", "444-444-4444" ) )

@@ -31,6 +31,9 @@ import org.junit.Test;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+
 public class JoinColumnsTest extends BaseReactiveTest {
 
 	@Override
@@ -43,7 +46,14 @@ public class JoinColumnsTest extends BaseReactiveTest {
 
 	@After
 	public void cleanDB(TestContext context) {
-		test( context, deleteEntities( "SampleJoinEntity", "SampleEntity" ) );
+		if ( dbType() == DB2 ) {
+			// On Db2, the build get stuck if I don't recreate the factory each time
+			// I don't know why
+			factoryManager.stop();
+		}
+		else {
+			test( context, deleteEntities( "SampleJoinEntity", "SampleEntity" ) );
+		}
 	}
 
 	@Test
@@ -88,16 +98,16 @@ public class JoinColumnsTest extends BaseReactiveTest {
 
 		test( context, getMutinySessionFactory()
 				.withTransaction( (session, transaction) -> session.persist( sampleEntity ) )
-				.then( () -> getMutinySessionFactory()
-						.withTransaction( (session, tx) -> session.merge( sampleEntity )
-								.invokeUni( merged -> {
-									sampleJoinEntity.sampleEntity = merged;
-									merged.sampleJoinEntities.add( sampleJoinEntity );
-									return session.persist( sampleJoinEntity );
-								} )
-						)
+				.call( () -> getMutinySessionFactory().withTransaction( (session, tx) -> session
+							   .merge( sampleEntity )
+							   .chain( merged -> {
+								   sampleJoinEntity.sampleEntity = merged;
+								   merged.sampleJoinEntities.add( sampleJoinEntity );
+								   return session.persist( sampleJoinEntity );
+							   } )
+					   )
 				)
-				.then( () -> getMutinySessionFactory()
+				.call( () -> getMutinySessionFactory()
 						.withTransaction( (session, tx) -> session
 								.find( SampleJoinEntity.class, sampleJoinEntity.id )
 								.invoke( entity -> context.assertEquals( sampleJoinEntity.name, entity.name ) )
@@ -146,14 +156,14 @@ public class JoinColumnsTest extends BaseReactiveTest {
 
 		test( context, getMutinySessionFactory()
 				.withTransaction( (session, transaction) -> session.persist( sampleEntity ) )
-				.then( () -> getMutinySessionFactory()
+				.call( () -> getMutinySessionFactory()
 						.withTransaction( (session, tx) -> {
 							sampleJoinEntity.sampleEntity = sampleEntity;
 							sampleEntity.sampleJoinEntities.add( sampleJoinEntity );
 							return session.persist( sampleJoinEntity );
 						} )
 				)
-				.then( () -> getMutinySessionFactory()
+				.call( () -> getMutinySessionFactory()
 						.withTransaction( (session, tx) -> session
 								.find( SampleJoinEntity.class, sampleJoinEntity.id )
 								.invoke( entity -> context.assertEquals( sampleJoinEntity.name, entity.name ) )
@@ -179,6 +189,7 @@ public class JoinColumnsTest extends BaseReactiveTest {
 							return session.persist( sampleJoinEntity );
 						} )
 				.handle( (session, throwable) -> {
+					context.assertNotNull( throwable );
 					context.assertEquals( CompletionException.class, throwable.getClass() );
 					context.assertEquals( IllegalStateException.class, throwable.getCause().getClass() );
 					context.assertEquals( TransientPropertyValueException.class, throwable.getCause().getCause().getClass() );
@@ -197,12 +208,13 @@ public class JoinColumnsTest extends BaseReactiveTest {
 		final SampleJoinEntity sampleJoinEntity = new SampleJoinEntity();
 		sampleJoinEntity.name = "Joined entity name";
 
-		test( context, getMutinySessionFactory().withTransaction( (session, tx) -> {
-							sampleJoinEntity.sampleEntity = sampleEntity;
-							sampleEntity.sampleJoinEntities.add( sampleJoinEntity );
-							return session.persist( sampleJoinEntity );
-						} )
-				.onItem().invoke( session -> context.fail( "Expected exception not thrown" ) )
+		test( context, getMutinySessionFactory()
+				.withTransaction( (session, tx) -> {
+					sampleJoinEntity.sampleEntity = sampleEntity;
+					sampleEntity.sampleJoinEntities.add( sampleJoinEntity );
+					return session.persist( sampleJoinEntity );
+				} )
+				.onItem().invoke( v -> context.fail( "Expected exception not thrown" ) )
 				.onFailure().recoverWithUni( throwable -> {
 					context.assertNotNull( throwable );
 					context.assertEquals( IllegalStateException.class, throwable.getClass() );
