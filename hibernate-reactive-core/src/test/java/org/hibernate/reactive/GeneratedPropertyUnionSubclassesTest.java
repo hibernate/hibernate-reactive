@@ -23,6 +23,7 @@ import org.hibernate.annotations.GeneratorType;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -50,6 +51,11 @@ public class GeneratedPropertyUnionSubclassesTest extends BaseReactiveTest {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( GeneratedRegular.class );
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( GeneratedRegular.class ) );
 	}
 
 	@Test

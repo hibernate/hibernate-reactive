@@ -16,6 +16,7 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
 
+import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -34,6 +35,11 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 		configuration.addAnnotatedClass( IntegerEntity.class );
 		configuration.addAnnotatedClass( ShortEntity.class );
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( LongEntity.class, IntegerEntity.class, ShortEntity.class ) );
 	}
 
 	/*

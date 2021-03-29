@@ -23,6 +23,7 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -62,6 +63,11 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 
 		Mutiny.Session session = openMutinySession();
 		test( context, session.persist( thePerson ).call( session::flush ) );
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( "Person" ) );
 	}
 
 	@Test

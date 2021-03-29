@@ -22,6 +22,7 @@ import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -41,6 +42,11 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
         configuration.addAnnotatedClass( Book.class );
         configuration.addAnnotatedClass( Author.class );
         return configuration;
+    }
+
+    @After
+    public void cleanDb(TestContext context) {
+        test( context, deleteEntities( "Author" ) );
     }
 
     @Test

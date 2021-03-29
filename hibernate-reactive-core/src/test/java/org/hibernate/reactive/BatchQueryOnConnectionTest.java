@@ -15,6 +15,7 @@ import javax.persistence.Id;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.pool.ReactiveConnection;
 
+import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -23,6 +24,11 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 	private static final int BATCH_SIZE = 20;
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( "DataPoint" ) );
+	}
 
 	@Test
 	public void testBatchInsertSizeEqMultiple(TestContext context) {

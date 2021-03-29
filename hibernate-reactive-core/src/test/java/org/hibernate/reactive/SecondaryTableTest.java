@@ -7,6 +7,8 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+
+import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.*;
@@ -23,6 +25,11 @@ public class SecondaryTableTest extends BaseReactiveTest {
 		configuration.addAnnotatedClass( SecondaryTableTest.Book.class );
 		configuration.addAnnotatedClass( SecondaryTableTest.Author.class );
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( Book.class, Author.class ) );
 	}
 
 	@Test

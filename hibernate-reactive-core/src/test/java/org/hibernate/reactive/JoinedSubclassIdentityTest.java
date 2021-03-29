@@ -7,6 +7,8 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+
+import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -24,6 +26,11 @@ public class JoinedSubclassIdentityTest extends BaseReactiveTest {
         configuration.addAnnotatedClass(GeneratedWithIdentityParent.class);
         configuration.addAnnotatedClass(GeneratedWithIdentity.class);
         return configuration;
+    }
+
+    @After
+    public void cleanDb(TestContext context) {
+        test( context, deleteEntities( "GeneratedWithIdentityParent", "GeneratedWithIdentity" ) );
     }
 
     @Test public void testParent(TestContext context) {

@@ -43,11 +43,7 @@ public class JoinColumnsTest extends BaseReactiveTest {
 
 	@After
 	public void cleanDB(TestContext context) {
-		test( context, getMutinySessionFactory()
-				.withSession( session -> session
-						.createQuery( "delete SampleJoinEntity" ).executeUpdate()
-						.invoke( ignore -> session
-								.createQuery( "delete SampleEntity" ).executeUpdate() ) ) );
+		test( context, deleteEntities( "SampleJoinEntity", "SampleEntity" ) );
 	}
 
 	@Test
