@@ -72,8 +72,7 @@ public abstract class BaseReactiveTest {
 		return vertx;
 	} );
 
-
-	private AutoCloseable session;
+	private AutoCloseable session, statelessSession;
 	private ReactiveConnection connection;
 	private org.hibernate.SessionFactory sessionFactory;
 	private ReactiveConnectionPool poolProvider;
@@ -213,6 +212,11 @@ public abstract class BaseReactiveTest {
 			session.close();
 			session = null;
 		}
+		if ( statelessSession != null && statelessSession.isOpen() ) {
+			statelessSession.close();
+			statelessSession = null;
+		}
+
 		if ( connection != null ) {
 			try {
 				connection.close();
@@ -246,6 +250,15 @@ public abstract class BaseReactiveTest {
 		return newSession;
 	}
 
+	protected Stage.StatelessSession openStatelessSession() {
+		if ( statelessSession != null && statelessSession.isOpen() ) {
+			statelessSession.close();
+		}
+		Stage.StatelessSession newSession = getSessionFactory().openStatelessSession();
+		this.statelessSession = newSession;
+		return newSession;
+	}
+
 	protected CompletionStage<ReactiveConnection> connection() {
 		return poolProvider.getConnection().thenApply( c -> connection = c );
 	}
@@ -266,6 +279,15 @@ public abstract class BaseReactiveTest {
 
 	protected Mutiny.SessionFactory getMutinySessionFactory() {
 		return sessionFactory.unwrap( Mutiny.SessionFactory.class );
+	}
+
+	protected Mutiny.StatelessSession openMutinyStatelessSession() {
+		if ( statelessSession != null ) {
+			statelessSession.close();
+		}
+		Mutiny.StatelessSession newSession = getMutinySessionFactory().openStatelessSession();
+		this.statelessSession = newSession;
+		return newSession;
 	}
 
 }

@@ -97,13 +97,13 @@ public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( getSessionFactory().openStatelessSession() )
+				completedFuture( openStatelessSession() )
 						.thenCompose( s -> voidFuture()
 								.thenCompose( v -> s.insert(goodOmens) )
 								.thenCompose( v -> s.insert(neilGaiman) )
 								.thenCompose( v -> s.insert(terryPratchett) )
 						)
-						.thenApply( v -> getSessionFactory().openStatelessSession() )
+						.thenApply( v -> openStatelessSession() )
 						.thenCompose( s -> s.get( Book.class, goodOmens.getId() ) )
 						.thenAccept( optionalBook -> {
 							context.assertNotNull( optionalBook );
