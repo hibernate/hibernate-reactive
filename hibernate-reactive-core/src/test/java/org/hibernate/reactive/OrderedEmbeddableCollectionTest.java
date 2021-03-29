@@ -39,7 +39,6 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
     @Override
     protected Configuration constructConfiguration() {
         Configuration configuration = super.constructConfiguration();
-        configuration.addAnnotatedClass( Book.class );
         configuration.addAnnotatedClass( Author.class );
         return configuration;
     }
