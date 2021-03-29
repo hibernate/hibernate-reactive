@@ -9,6 +9,8 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
+
+import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -26,6 +28,11 @@ public class MutinySessionTest extends BaseReactiveTest {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( GuineaPig.class );
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( "GuineaPig" ) );
 	}
 
 	private Uni<Void> populateDB() {

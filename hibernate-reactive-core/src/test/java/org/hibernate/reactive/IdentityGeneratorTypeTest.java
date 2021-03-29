@@ -15,6 +15,7 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -60,6 +61,11 @@ public class IdentityGeneratorTypeTest extends BaseReactiveTest {
 		configuration.addAnnotatedClass( LongTypeEntity.class );
 		configuration.addAnnotatedClass( ShortTypeEntity.class );
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( IntegerTypeEntity.class, ShortTypeEntity.class, LongTypeEntity.class ) );
 	}
 
 	private <U extends Number, T extends TypeIdentity<U>> void assertType(

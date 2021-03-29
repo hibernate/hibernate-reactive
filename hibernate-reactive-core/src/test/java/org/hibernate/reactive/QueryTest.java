@@ -8,6 +8,8 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
+
+import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.ColumnResult;
@@ -47,6 +49,11 @@ public class QueryTest extends BaseReactiveTest {
 		configuration.addAnnotatedClass(Author.class);
 		configuration.addAnnotatedClass(Book.class);
 		return configuration;
+	}
+
+	@After
+	public void cleanDB(TestContext context) {
+		test( context, deleteEntities( "Book", "Author" ) );
 	}
 
 	@Test

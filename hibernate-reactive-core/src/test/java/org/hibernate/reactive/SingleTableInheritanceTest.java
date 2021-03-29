@@ -7,6 +7,8 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+
+import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.*;
@@ -25,6 +27,11 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 		configuration.addAnnotatedClass( SingleTableInheritanceTest.SpellBook.class );
 		configuration.addAnnotatedClass( SingleTableInheritanceTest.Author.class );
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, deleteEntities( "Book", "Author", "SpellBook" ) );
 	}
 
 	@Test
@@ -271,7 +278,7 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
+	@Entity(name="Author")
 	@Table(name = Author.TABLE)
 	public static class Author {
 

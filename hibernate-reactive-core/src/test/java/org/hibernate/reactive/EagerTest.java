@@ -10,6 +10,8 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.cfg.Configuration;
+
+import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.CascadeType;
@@ -44,6 +46,13 @@ public class EagerTest extends BaseReactiveTest {
 		configuration.addAnnotatedClass(Node.class);
 		configuration.addAnnotatedClass(Element.class);
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, getSessionFactory()
+				.withTransaction( (s, t) -> s.createQuery( "delete from Element" ).executeUpdate()
+						.thenCompose( v -> s.createQuery( "delete from Node" ).executeUpdate() ) ) );
 	}
 
 	@Test
