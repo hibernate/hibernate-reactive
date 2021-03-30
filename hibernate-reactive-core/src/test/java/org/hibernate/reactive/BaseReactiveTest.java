@@ -82,8 +82,13 @@ public abstract class BaseReactiveTest {
 	private ReactiveConnection connection;
 
 	protected static void test(TestContext context, CompletionStage<?> work) {
-		// this will be added to TestContext in the next vert.x release
-		Async async = context.async();
+		test( context.async(), context, work );
+	}
+
+	/**
+	 * For when we need to create the {@link Async} in advance
+	 */
+	protected static void test(Async async, TestContext context, CompletionStage<?> work) {
 		work.whenComplete( (res, err) -> {
 			if ( res instanceof Stage.Session ) {
 				Stage.Session s = (Stage.Session) res;
@@ -101,7 +106,13 @@ public abstract class BaseReactiveTest {
 	}
 
 	protected static void test(TestContext context, Uni<?> uni) {
-		Async async = context.async();
+		test( context.async(), context, uni );
+	}
+
+	/**
+	 * For when we need to create the {@link Async} in advance
+	 */
+	protected static void test(Async async, TestContext context, Uni<?> uni) {
 		uni.subscribe().with(
 				res -> {
 					if ( res instanceof Mutiny.Session) {
