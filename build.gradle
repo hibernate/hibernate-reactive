@@ -122,7 +122,10 @@ subprojects {
         // Only enable these for local development, never push it:
         // mavenLocal()
         // jcenter()
-        // maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+        // Example: ./gradlew build -PenableSonatypeOpenSourceSnapshotsRep
+        if ( project.hasProperty('enableSonatypeOpenSourceSnapshotsRep') ) {
+            maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
+        }
         mavenCentral()
 
         // Example: ./gradlew build -PenableJBossSnapshotsRep
