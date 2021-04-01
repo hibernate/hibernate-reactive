@@ -28,7 +28,6 @@ import org.hibernate.reactive.BaseReactiveTest;
 import org.junit.After;
 import org.junit.Test;
 
-import io.smallrye.mutiny.CompositeException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 
@@ -210,9 +209,8 @@ public class JoinColumnsTest extends BaseReactiveTest {
 				.onItem().invoke( session -> context.fail( "Expected exception not thrown" ) )
 				.onFailure().recoverWithUni( throwable -> {
 					context.assertNotNull( throwable );
-					context.assertEquals( CompositeException.class, throwable.getClass() );
-					context.assertEquals( IllegalStateException.class, throwable.getCause().getClass() );
-					context.assertEquals( TransientPropertyValueException.class, throwable.getCause().getCause().getClass() );
+					context.assertEquals( IllegalStateException.class, throwable.getClass() );
+					context.assertEquals( TransientPropertyValueException.class, throwable.getCause().getClass() );
 					return Uni.createFrom().nullItem();
 				} )
 		);
