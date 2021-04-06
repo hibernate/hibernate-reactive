@@ -11,14 +11,6 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.IntStream;
 
-
-import static java.util.Arrays.asList;
-import static java.util.Arrays.stream;
-import static org.hibernate.reactive.util.impl.CompletionStages.*;
-import static org.hibernate.reactive.util.impl.CompletionStages.total;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.loopWithoutTrampoline;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -26,7 +18,14 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 
+import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.impl.CompletionStages.loopWithoutTrampoline;
+import static org.hibernate.reactive.util.impl.CompletionStages.total;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Tests the utility methods in {@link org.hibernate.reactive.util.impl.CompletionStages}
