@@ -11,6 +11,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.stage.Stage;
 
 import org.junit.After;
 import org.junit.Before;
@@ -35,12 +36,8 @@ public class HQLQueryTest extends BaseReactiveTest {
 
 	@Before
 	public void populateDb(TestContext context) {
-		test( context, completedFuture( openSession() )
-				.thenCompose( s -> s.persist( spelt )
-				.thenCompose( v -> s.persist( rye ) )
-				.thenCompose( v -> s.persist( almond ) )
-				.thenCompose( v -> s.flush() ) )
-		);
+		test( context, getMutinySessionFactory()
+				.withTransaction( (session, transaction) -> session.persistAll( spelt, rye, almond ) ) );
 	}
 
 	@After
@@ -52,118 +49,88 @@ public class HQLQueryTest extends BaseReactiveTest {
 	@Test
 	public void testAutoFlushOnSingleResult(TestContext context) {
 		Flour semolina = new Flour( 678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
-		test(
-				context,
-				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( semolina )
-								.thenCompose( v -> s.createQuery( "from Flour where id = " + semolina.getId() ).getSingleResult() )
-								.thenAccept( found -> context.assertEquals( semolina, found ) )
-								.thenCompose( v -> s.remove( semolina ) )
-								.thenAccept( v -> s.flush() )
-						)
+		test( context, getSessionFactory().withSession( s -> s
+				.persist( semolina )
+				.thenCompose( v -> s.createQuery( "from Flour where id = " + semolina.getId() ).getSingleResult() )
+				.thenAccept( found -> context.assertEquals( semolina, found ) ) )
 		);
 	}
 
 	@Test
 	public void testAutoFlushOnResultList(TestContext context) {
 		Flour semolina = new Flour( 678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
-		test(
-				context,
-				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( semolina )
-								.thenCompose( v -> s.createQuery( "from Flour order by name" ).getResultList()
-										.thenAccept( results -> {
-											context.assertNotNull( results );
-											context.assertEquals( 4, results.size() );
-											context.assertEquals( almond, results.get( 0 ) );
-											context.assertEquals( rye, results.get( 1 ) );
-											context.assertEquals( semolina, results.get( 2 ) );
-											context.assertEquals( spelt, results.get( 3 ) );
-										} )
-								)
-								.thenCompose( v -> s.remove( semolina ) )
-								.thenAccept( v -> s.flush() )
-						)
-		);
+		test( context, getSessionFactory().withSession( s -> s
+				.persist( semolina )
+				.thenCompose( v -> s.createQuery( "from Flour order by name" ).getResultList()
+						.thenAccept( results -> {
+							context.assertNotNull( results );
+							context.assertEquals( 4, results.size() );
+							context.assertEquals( almond, results.get( 0 ) );
+							context.assertEquals( rye, results.get( 1 ) );
+							context.assertEquals( semolina, results.get( 2 ) );
+							context.assertEquals( spelt, results.get( 3 ) );
+						} )
+				)
+		) );
 	}
 
 	@Test
 	public void testSelectScalarValues(TestContext context) {
-		test(
-				context,
-				completedFuture( openSession() )
-						.thenApply( s -> s.createQuery( "SELECT 'Prova' FROM Flour WHERE id = " + rye.getId() ) )
-						.thenCompose( qr -> {
-							context.assertNotNull( qr );
-							return qr.getSingleResult();
-						} )
-						.thenAccept( found -> context.assertEquals( "Prova", found ) )
+		test( context, getSessionFactory().withSession( s -> {
+				  Stage.Query<Object> qr = s.createQuery( "SELECT 'Prova' FROM Flour WHERE id = " + rye.getId() );
+				  context.assertNotNull( qr );
+				  return qr.getSingleResult();
+			  } ).thenAccept( found -> context.assertEquals( "Prova", found ) )
 		);
 	}
 
 	@Test
 	public void testSelectWithMultipleScalarValues(TestContext context) {
-		test(
-				context,
-				completedFuture( openSession() )
-						.thenApply( s -> s.createQuery( "SELECT 'Prova', f.id FROM Flour f WHERE f.id = " + rye.getId() ) )
-						.thenCompose( qr -> {
-							context.assertNotNull( qr );
-							return qr.getSingleResult();
-						} )
-						.thenAccept( found -> {
-							context.assertTrue( found instanceof Object[] );
-							context.assertEquals( "Prova", ( (Object[]) found )[0] );
-							context.assertEquals( rye.getId(), ( (Object[]) found )[1] );
-						} )
+		test( context, getSessionFactory().withSession( s -> {
+				  Stage.Query<?> qr = s.createQuery( "SELECT 'Prova', f.id FROM Flour f WHERE f.id = " + rye.getId() );
+				  context.assertNotNull( qr );
+				  return qr.getSingleResult();
+			  } ).thenAccept( found -> {
+				  context.assertTrue( found instanceof Object[] );
+				  context.assertEquals( "Prova", ( (Object[]) found )[0] );
+				  context.assertEquals( rye.getId(), ( (Object[]) found )[1] );
+			  } )
 		);
 	}
 
 	@Test
 	public void testSingleResultQueryOnId(TestContext context) {
-		test(
-				context,
-				completedFuture( openSession() )
-						.thenApply( s -> s.createQuery( "FROM Flour WHERE id = 1" ) )
-						.thenCompose( qr -> {
-							context.assertNotNull( qr );
-							return qr.getSingleResult();
-						} )
-						.thenAccept( flour -> context.assertEquals( spelt, flour ) )
+		test( context, getSessionFactory().withSession( s -> {
+				  Stage.Query<?> qr = s.createQuery( "FROM Flour WHERE id = 1" );
+				  context.assertNotNull( qr );
+				  return qr.getSingleResult();
+			  } ).thenAccept( flour -> context.assertEquals( spelt, flour ) )
 		);
 	}
 
 	@Test
 	public void testSingleResultQueryOnName(TestContext context) {
-		test(
-				context,
-				completedFuture( openSession() )
-						.thenApply( s -> s.createQuery( "FROM Flour WHERE name = 'Almond'" ) )
-						.thenCompose( qr -> {
-							context.assertNotNull( qr );
-							return qr.getSingleResult();
-						} )
-						.thenAccept( flour -> context.assertEquals( almond, flour ) )
+		test( context, getSessionFactory().withSession( s -> {
+				  Stage.Query<?> qr = s.createQuery( "FROM Flour WHERE name = 'Almond'" );
+				  context.assertNotNull( qr );
+				  return qr.getSingleResult();
+			  } ).thenAccept( flour -> context.assertEquals( almond, flour ) )
 		);
 	}
 
 	@Test
 	public void testFromQuery(TestContext context) {
-		test(
-				context,
-				completedFuture( openSession() )
-						.thenApply( s -> s.createQuery( "FROM Flour ORDER BY name" ) )
-						.thenCompose( qr -> {
-							context.assertNotNull( qr );
-							return qr.getResultList();
-						} )
-						.thenAccept( flours -> {
-							context.assertNotNull( flours );
-							context.assertEquals( 3, flours.size() );
-							context.assertEquals( almond, flours.get( 0 ) );
-							context.assertEquals( rye, flours.get( 1 ) );
-							context.assertEquals( spelt, flours.get( 2 ) );
-						} )
+		test( context, getSessionFactory().withSession( s -> {
+				  Stage.Query<?> qr = s.createQuery( "FROM Flour ORDER BY name" ) ;
+				  context.assertNotNull( qr );
+				  return qr.getResultList();
+			  } ).thenAccept( flours -> {
+				  context.assertNotNull( flours );
+				  context.assertEquals( 3, flours.size() );
+				  context.assertEquals( almond, flours.get( 0 ) );
+				  context.assertEquals( rye, flours.get( 1 ) );
+				  context.assertEquals( spelt, flours.get( 2 ) );
+			  } )
 		);
 	}
 
