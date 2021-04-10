@@ -10,6 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
@@ -51,6 +52,11 @@ public class MultipleContextTest extends BaseReactiveTest {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( Competition.class );
 		return configuration;
+	}
+
+	@Override
+	protected void addServices(StandardServiceRegistryBuilder builder) {
+		vertxContextRule.vertx().getOrCreateContext();
 	}
 
 	@Test
