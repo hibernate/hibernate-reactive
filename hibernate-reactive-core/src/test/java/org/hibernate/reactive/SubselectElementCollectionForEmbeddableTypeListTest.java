@@ -10,7 +10,6 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.stage.Stage;
 
 import org.junit.After;
 import org.junit.Before;
@@ -68,11 +67,8 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 		phones3.add( new Phone( "111-111-1111" ) );
 		Person p3 = new Person( 999999, "Claude", phones3 );
 
-		Stage.Session session = openSession();
-
-		test( context, session.persist( p1, p2, p3 )
-				.thenCompose( v -> session.flush() )
-		);
+		test( context, getSessionFactory()
+				.withTransaction( (s, t) -> s.persist( p1, p2, p3 ) ) );
 	}
 
 	@After

@@ -5,22 +5,24 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLInsert;
-import org.hibernate.annotations.SQLUpdate;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.junit.Rule;
-import org.junit.Test;
-
+import java.time.LocalDateTime;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.time.LocalDateTime;
+
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLInsert;
+import org.hibernate.annotations.SQLUpdate;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+
+import org.junit.Rule;
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
@@ -37,39 +39,33 @@ public class CustomSqlTest extends BaseReactiveTest {
         return configuration;
     }
 
-    @Test
-    public void test(TestContext context) {
-        Record record = new Record();
-        record.text = "initial text";
-        test(context,
-                getMutinySessionFactory()
-                        .withSession( session -> session.persist(record)
-                                .chain(session::flush)
-                                .invoke( () -> record.text = "edited text" )
-                                .chain(session::flush)
-                        )
-                        .chain( () -> getMutinySessionFactory()
-                                .withSession( session -> session.find(Record.class, record.id)
-                                        .invoke( (result) -> {
-                                            context.assertNotNull(result);
-                                            context.assertEquals("edited text", result.text );
-                                            context.assertNotNull(result.updated);
-                                            context.assertNull(result.deleted);
-                                        } )
-                                        .chain(session::remove)
-                                        .chain(session::flush)
-                                ) )
-                        .chain( () -> getMutinySessionFactory()
-                                .withSession( session -> session.find(Record.class, record.id)
-                                        .invoke( (result) -> {
-                                            context.assertNotNull(result);
-                                            context.assertEquals("edited text", result.text );
-                                            context.assertNotNull(result.updated);
-                                            context.assertNotNull(result.deleted);
-                                        } )
-                                ) )
-        );
-    }
+	@Test
+	public void test(TestContext context) {
+		Record record = new Record();
+		record.text = "initial text";
+		test( context, getMutinySessionFactory().withSession( session -> session
+					  .persist( record )
+					  .chain( session::flush )
+					  .invoke( () -> record.text = "edited text" )
+					  .chain( session::flush )
+			  ).chain( () -> getMutinySessionFactory().withTransaction( (session, tx) -> session
+					  .find( Record.class, record.id )
+					  .invoke( (result) -> {
+						  context.assertNotNull( result );
+						  context.assertEquals( "edited text", result.text );
+						  context.assertNotNull( result.updated );
+						  context.assertNull( result.deleted );
+					  } ).chain( session::remove ) )
+			  ).chain( () -> getMutinySessionFactory().withSession( session -> session
+					  .find( Record.class, record.id ) ) )
+					  .invoke( (result) -> {
+						  context.assertNotNull( result );
+						  context.assertEquals( "edited text", result.text );
+						  context.assertNotNull( result.updated );
+						  context.assertNotNull( result.deleted );
+					  } )
+		);
+	}
 
     @Entity
     @Table(name="SqlRecord")

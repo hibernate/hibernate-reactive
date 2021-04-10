@@ -24,7 +24,7 @@ import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+
 
 public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 
@@ -52,15 +52,10 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 		author.setMostPopularBook( mostPopularBook );
 
 		test(
-				context,
-				completedFuture( openSession() )
-						.thenCompose( s -> s.persist( mostPopularBook )
-								.thenCompose( v -> s.persist( author ) )
-								.thenCompose( v -> s.flush() )
-						)
-						.thenApply( v -> openSession() )
-						.thenCompose( s -> s.find( Book.class, 5 ) )
-						.thenAccept(context::assertNotNull)
+				context, getSessionFactory()
+						.withTransaction( (session, transaction) -> session.persist( mostPopularBook, author ) )
+						.thenCompose( v -> getSessionFactory().withSession( session -> session.find( Book.class, 5 ) ) )
+						.thenAccept( book -> context.assertEquals( mostPopularBook, book ) )
 		);
 	}
 
@@ -74,7 +69,8 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 		@OneToOne(fetch = FetchType.EAGER)
 		Author author;
 
-		public Book() {}
+		public Book() {
+		}
 
 		public Book(Integer id, String title) {
 			this.id = id;
@@ -139,7 +135,8 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 			this.name = name;
 		}
 
-		public Author() {}
+		public Author() {
+		}
 
 		public Integer getId() {
 			return id;
