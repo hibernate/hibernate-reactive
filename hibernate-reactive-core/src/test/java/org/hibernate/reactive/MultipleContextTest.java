@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -37,7 +38,8 @@ import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
  */
 public class MultipleContextTest extends BaseReactiveTest {
 
-	private static final String ERROR_MESSAGE = "Detected use of the reactive Session from a different Thread";
+	private static final String ERROR_MESSAGE_LOWER_CASED = "Detected use of the reactive Session from a different Thread"
+			.toLowerCase( Locale.ROOT );
 
 	// These tests will fail before touching the database, so there is no reason
 	// to run them on all databases
@@ -64,7 +66,6 @@ public class MultipleContextTest extends BaseReactiveTest {
 		// Run test in the new context
 		newContext.runOnContext( event -> test( async, testContext, session
 				.persist( new Competition( "Cheese Rolling" ) )
-				.thenCompose( v -> session.flush() )
 				.handle( (v, e) -> assertExceptionThrown( e ).join() ) )
 		);
 	}
@@ -99,7 +100,6 @@ public class MultipleContextTest extends BaseReactiveTest {
 		// Run test in the new context
 		newContext.runOnContext( event -> test( async, testContext, session
 				.persist( new Competition( "Cheese Rolling" ) )
-				.call( session::flush )
 				.onItemOrFailure()
 				.transformToUni( (unused, e) -> Uni.createFrom().completionStage( assertExceptionThrown( e ) ) ) )
 		);
@@ -129,7 +129,7 @@ public class MultipleContextTest extends BaseReactiveTest {
 		Throwable t = e;
 		while ( t != null ) {
 			if ( t.getClass().equals( IllegalStateException.class )
-					&& t.getMessage().contains( ERROR_MESSAGE ) ) {
+					&& expectedMessage( t ) ) {
 				result.complete( null );
 				return result;
 			}
@@ -137,6 +137,11 @@ public class MultipleContextTest extends BaseReactiveTest {
 		}
 		result.completeExceptionally( new AssertionError( "Expected exception not thrown. Exception thrown: " + e ) );
 		return result;
+	}
+
+	private static boolean expectedMessage(Throwable t) {
+		return t.getMessage().toLowerCase( Locale.ROOT )
+				.contains( ERROR_MESSAGE_LOWER_CASED );
 	}
 
 	@Entity
