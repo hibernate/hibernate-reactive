@@ -1,4 +1,4 @@
-name: Latest Vert.x 3
+name: Latest Vert.x 4.x
 
 on:
   # Trigger the workflow on push or pull request,
@@ -24,7 +24,7 @@ jobs:
         example: [ 'session-example', 'native-sql-example' ]
         orm-version: [ '[5.4,5.5)', '[5.5,5.6)' ]
         db: [ 'MySQL', 'PostgreSQL' ]
-        vertx-version: [ '[3,4)' ]
+        vertx-version: [ '[4,5)' ]
         exclude:
           # 'native-sql-example' doesn't run on MySQL because it has native queries
           - example: 'native-sql-example'
@@ -78,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        vertx-version: ['[3,4)']
+        vertx-version: ['[4,5)']
         db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB' ]
     steps:
       - uses: actions/checkout@v2
