@@ -218,10 +218,8 @@ jobs:
             IdentityFile ~/.ssh/id_rsa_hibernate.org
     - name: Publish documentation on Hibernate.org
       run: ./gradlew publishDocumentation -PdocPublishBranch=production
-    - name: Publish release to Bintray
+    - name: Publish artifacts to OSSRH, close repository and release
       env:
-        ORG_GRADLE_PROJECT_bintrayUser: ${{ secrets.BINTRAY_USER }}
-        ORG_GRADLE_PROJECT_bintrayKey: ${{ secrets.BINTRAY_KEY }}
         ORG_GRADLE_PROJECT_sonatypeOssrhUser: ${{ secrets.SONATYPE_OSSRH_USER }}
         ORG_GRADLE_PROJECT_sonatypeOssrhPassword: ${{ secrets.SONATYPE_OSSRH_PASSWORD }}
-      run: ./gradlew bintrayUpload bintrayPublish
+      run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository

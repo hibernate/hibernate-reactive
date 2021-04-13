@@ -133,6 +133,8 @@ task renderReferenceDocumentation(type: AsciidoctorTask, group: 'Documentation')
 task assembleDocumentation(dependsOn: [aggregateJavadocs, renderReferenceDocumentation]) {
 	group 'Documentation'
 	description 'Grouping task for performing all documentation building tasks'
+
+	logger.lifecycle "Documentation groupId: '" + project.group + "', version: '" + project.version + "'"
 }
 
 assemble.dependsOn assembleDocumentation

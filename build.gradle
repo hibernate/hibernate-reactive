@@ -4,12 +4,22 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'com.diffplug.gradle.spotless' version '4.0.1'
-    id 'nu.studer.credentials' version '2.1' apply false
-    id 'com.jfrog.bintray' version '1.8.5' apply false
+    id 'nu.studer.credentials' version '2.1'
     id 'org.asciidoctor.convert' version '1.5.7' apply false
+    id 'io.github.gradle-nexus.publish-plugin' version '1.0.0'
 }
 
 ext {
+    if (!project.hasProperty('sonatypeOssrhUser')) {
+        sonatypeOssrhUser = credentials.sonatypeOssrhUser
+    }
+    if (!project.hasProperty('sonatypeOssrhPassword')) {
+        sonatypeOssrhPassword = credentials.sonatypeOssrhPassword
+    }
+}
+
+ext {
+    projectGroup = 'org.hibernate.reactive'
     projectVersionFile = file( "${rootProject.projectDir}/gradle/version.properties" )
     projectVersion = Version.parseProjectVersion( readVersionFromProperties( projectVersionFile ) )
 
@@ -21,12 +31,16 @@ ext {
     }
 }
 
+// nexusPublishing uses group and version
+// as defaults
+group = projectGroup
+version = projectVersion
+
 // Versions which need to be aligned across modules; this also
 // allows overriding the build using a parameter, which can be
 // useful to monitor compatibility for upcoming versions on CI:
 //
 // ./gradlew clean build -PhibernateOrmVersion=5.4.30-SNAPSHOT
-
 ext {
     if ( !project.hasProperty('hibernateOrmVersion') ) {
         hibernateOrmVersion = '5.4.30.Final'
@@ -62,12 +76,24 @@ ext {
 
     logger.lifecycle "Hibernate ORM Version: " + project.hibernateOrmVersion
     logger.lifecycle "Vert.x Version: " + project.vertxVersion
+    logger.lifecycle "Hibernate Reactive: " + project.version
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            username = project.sonatypeOssrhUser
+            password = project.sonatypeOssrhPassword
+        }
+    }
 }
 
 subprojects {
     apply plugin: 'java-library'
     apply plugin: 'com.diffplug.gradle.spotless'
-    group = 'org.hibernate.reactive'
+
+    // FIXME: Also setting the group and version here otherwise not all tasks will find them
+    group = projectGroup
     version = projectVersion
 
     repositories {
