@@ -1,10 +1,11 @@
 apply plugin: 'maven-publish'
 apply plugin: 'nu.studer.credentials'
-apply plugin: 'com.jfrog.bintray'
 
 // To publish snapshots:
 //  ./gradlew publish -PjbossNexusUser="<YOUR USERNAME>" -PjbossNexusPassword="<YOUR PASSWORD>"
 // To release, see task ciRelease in release/build.gradle
+// To publish on Sonatype (Maven Central):
+// ./gradlew publishToSonatype closeAndReleaseStagingRepository -PsonatypeOssrhUser="<YOUR USERNAME>" -PsonatypeOssrhPassword="<YOUR PASSWORD>"
 
 ext {
     // Credentials can be specified on the command-line using project properties,
@@ -16,18 +17,6 @@ ext {
     }
     if (!project.hasProperty('jbossNexusPassword')) {
         jbossNexusPassword = credentials.jbossNexusPassword
-    }
-    if (!project.hasProperty('bintrayUser')) {
-        bintrayUser = credentials.bintrayUser
-    }
-    if (!project.hasProperty('bintrayKey')) {
-        bintrayKey = credentials.bintrayKey
-    }
-    if (!project.hasProperty('sonatypeOssrhUser')) {
-        sonatypeOssrhUser = credentials.sonatypeOssrhUser
-    }
-    if (!project.hasProperty('sonatypeOssrhPassword')) {
-        sonatypeOssrhPassword = credentials.sonatypeOssrhPassword
     }
 }
 
@@ -77,6 +66,8 @@ publishing {
         }
     }
     publications {
+        logger.lifecycle "Publishing groupId: '" + project.group + "', version: '" + project.version + "'"
+
         publishedArtifacts(MavenPublication) {
             groupId = project.group
             version = project.version
@@ -116,35 +107,6 @@ publishing {
                         organizationUrl = 'https://hibernate.org'
                     }
                 }
-            }
-        }
-    }
-}
-
-bintray {
-    user = project.bintrayUser
-    key = project.bintrayKey
-
-    publications = ['publishedArtifacts']
-
-    pkg {
-        userOrg = 'hibernate'
-        repo = 'artifacts'
-        name = 'hibernate-reactive'
-
-        publish = true
-
-        version {
-            name = project.version
-            released = new Date()
-            vcsTag = project.version
-            gpg {
-                sign = true
-            }
-            mavenCentralSync {
-                sync = true
-                user = project.sonatypeOssrhUser
-                password = project.sonatypeOssrhPassword
             }
         }
     }
