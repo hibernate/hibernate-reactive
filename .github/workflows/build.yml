@@ -187,7 +187,7 @@ jobs:
       id: detect-version
       run: |
         sed -E 's/^projectVersion( *= *| +)([^ ]+)/::set-output name=version::\2/g' gradle/version.properties
-    - name: Publish snapshot to JBoss Nexus (experimental, Nexus rejects some binaries)
+    - name: Publish snapshot to JBoss Nexus
       env:
         ORG_GRADLE_PROJECT_jbossNexusUser: ${{ secrets.JBOSS_NEXUS_USER }}
         ORG_GRADLE_PROJECT_jbossNexusPassword: ${{ secrets.JBOSS_NEXUS_PASSWORD }}
