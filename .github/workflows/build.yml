@@ -192,7 +192,7 @@ jobs:
         ORG_GRADLE_PROJECT_jbossNexusUser: ${{ secrets.JBOSS_NEXUS_USER }}
         ORG_GRADLE_PROJECT_jbossNexusPassword: ${{ secrets.JBOSS_NEXUS_PASSWORD }}
       if: endsWith( steps.detect-version.outputs.version, '-SNAPSHOT' ) && env.ORG_GRADLE_PROJECT_jbossNexusUser
-      run: ./gradlew publish
+      run: ./gradlew publishToJBossNexus closeAndReleaseJBossNexusStagingRepository
 
   release:
     name: Release
