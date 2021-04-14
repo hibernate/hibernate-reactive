@@ -90,7 +90,7 @@ gitPublish {
     }
 
     // message used when committing changes
-    commitMessage = "Hibernate Reactive documentation for ${projectVersion}"
+    commitMessage = "[HREACTIVE] Hibernate Reactive documentation for ${projectVersion}"
 }
 
 gitPublishCopy.dependsOn assembleDocumentation
