@@ -38,7 +38,7 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
     private int loValue;
     private long hiValue;
 
-    private volatile List<CompletableFuture<Long>> queue = null;
+    private volatile List<Runnable> queue = null;
 
     protected synchronized long next() {
         return loValue>0 && loValue<getBlockSize()
@@ -70,7 +70,7 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
                     // go off and fetch the next hi value from db
                     nextHiValue(session).thenAccept( id -> {
 //						Vertx.currentContext().runOnContext(v -> {
-                        List<CompletableFuture<Long>> list;
+                        List<Runnable> list;
                         synchronized (this) {
                             // clone ref to the queue
                             list = queue;
@@ -79,14 +79,14 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
                             result.complete( next(id) );
                         }
                         // send waiting streams back to try again
-                        list.forEach( completion -> generate(session, entity)
-                                .thenAccept(completion::complete) );
+                        list.forEach(Runnable::run);
 //						} );
                     } );
                 }
                 else {
                     // wait for the concurrent fetch to complete
-                    queue.add(result);
+                    // note that we carefully capture the right session,entity here!
+                    queue.add( () -> generate(session, entity).thenAccept(result::complete) );
                 }
                 return result;
             }
