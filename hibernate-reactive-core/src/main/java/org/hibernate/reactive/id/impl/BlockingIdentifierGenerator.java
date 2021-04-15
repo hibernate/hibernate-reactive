@@ -54,6 +54,11 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 
     @Override
     public CompletionStage<Long> generate(ReactiveConnectionSupplier session, Object entity) {
+        if ( getBlockSize()<=1 ) {
+            //special case where we're not using blocking at all
+            return nextHiValue(session);
+        }
+
         long local = next();
         if ( local >= 0 ) {
             // We don't need to update or initialize the hi
