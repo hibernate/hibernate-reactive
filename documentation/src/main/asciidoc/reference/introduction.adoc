@@ -583,9 +583,10 @@ composition within a single reactive stream.
 Also remember that a Hibernate session is a lightweight object that should be
 created, used, and then discarded within a single logical unit of work.
 
-IMPORTANT: That is to say, you should reuse the same session across multiple
+IMPORTANT: That is to say, you _should_ reuse the same session across multiple
 persistence operations within a single reactive stream representing a certain
-unit of work, but don't share a session between different reactive streams!
+transaction or unit of work, but _don't_ share a session between different
+concurrent reactive streams!
 
 To obtain a reactive `Session` from the `SessionFactory`, use `withSession()`:
 
