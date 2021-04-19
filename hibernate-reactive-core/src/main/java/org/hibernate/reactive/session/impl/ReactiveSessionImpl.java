@@ -38,6 +38,7 @@ import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.AutoFlushEvent;
 import org.hibernate.event.spi.DeleteEvent;
+import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.EventType;
 import org.hibernate.event.spi.FlushEvent;
 import org.hibernate.event.spi.InitializeCollectionEvent;
@@ -121,7 +122,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.*;
  * preferred to delegation because there are places where
  * Hibernate core compares the identity of session instances.
  */
-public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession {
+public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession, EventSource {
 	private static final EntityManagerMessageLogger log = HEMLogging.messageLogger( ReactiveSessionImpl.class );
 
 	private transient ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
