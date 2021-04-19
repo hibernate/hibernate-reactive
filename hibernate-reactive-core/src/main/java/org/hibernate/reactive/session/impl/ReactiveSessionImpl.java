@@ -38,7 +38,6 @@ import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.AutoFlushEvent;
 import org.hibernate.event.spi.DeleteEvent;
-import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.EventType;
 import org.hibernate.event.spi.FlushEvent;
 import org.hibernate.event.spi.InitializeCollectionEvent;
@@ -52,6 +51,8 @@ import org.hibernate.event.spi.ResolveNaturalIdEvent;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.internal.EntityManagerMessageLogger;
+import org.hibernate.internal.HEMLogging;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
@@ -62,6 +63,7 @@ import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.loader.custom.sql.SQLCustomQuery;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
+import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.ParameterMetadata;
@@ -119,7 +121,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.*;
  * preferred to delegation because there are places where
  * Hibernate core compares the identity of session instances.
  */
-public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession, EventSource {
+public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession {
+	private static final EntityManagerMessageLogger log = HEMLogging.messageLogger( ReactiveSessionImpl.class );
 
 	private transient ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
 	private final ReactiveConnection reactiveConnection;
@@ -1566,4 +1569,34 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		super.checkOpen();
 	}
 
+	@Override
+	public void removeOrphanBeforeUpdates(String entityName, Object child) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public CompletionStage<Void> reactiveRemoveOrphanBeforeUpdates(String entityName, Object child) {
+		// TODO: The removeOrphan concept is a temporary "hack" for HHH-6484.  This should be removed once action/task
+		// ordering is improved.
+		final StatefulPersistenceContext persistenceContext = (StatefulPersistenceContext)getPersistenceContextInternal();
+		persistenceContext.beginRemoveOrphanBeforeUpdates();
+		return fireRemove( new DeleteEvent( entityName, child, false, true, this ) )
+				.thenAccept( v -> {
+					persistenceContext.endRemoveOrphanBeforeUpdates();
+					if ( log.isTraceEnabled() ) {
+						logRemoveOrphanBeforeUpdates( "end", entityName, child, persistenceContext );
+					}
+				});
+	}
+
+	private void logRemoveOrphanBeforeUpdates(String timing, String entityName, Object entity,  StatefulPersistenceContext persistenceContext) {
+		if ( log.isTraceEnabled() ) {
+			final EntityEntry entityEntry = persistenceContext.getEntry( entity );
+			log.tracef(
+					"%s remove orphan before updates: [%s]",
+					timing,
+					entityEntry == null ? entityName : MessageHelper.infoString( entityName, entityEntry.getId() )
+			);
+		}
+	}
 }
