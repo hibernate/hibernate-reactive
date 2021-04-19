@@ -741,7 +741,24 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						null,
 						object,
 						isCascadeDeleteEnabled,
-						((ReactivePersistenceContextAdapter) getPersistenceContextInternal())
+						( (ReactivePersistenceContextAdapter) getPersistenceContextInternal() )
+								.isRemovingOrphanBeforeUpates(),
+						this
+				),
+				transientEntities
+		);
+	}
+
+	@Override
+	public CompletionStage<Void> reactiveRemove(String entityName, Object child, boolean isCascadeDeleteEnabled, IdentitySet transientEntities) {
+		checkOpenOrWaitingForAutoClose();
+
+		return fireRemove(
+				new DeleteEvent(
+						entityName,
+						child,
+						isCascadeDeleteEnabled,
+						( (ReactivePersistenceContextAdapter) getPersistenceContextInternal() )
 								.isRemovingOrphanBeforeUpates(),
 						this
 				),

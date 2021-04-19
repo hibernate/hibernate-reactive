@@ -60,6 +60,8 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 
 	CompletionStage<Void> reactiveRemove(Object entity, boolean isCascadeDeleteEnabled, IdentitySet transientObjects);
 
+	CompletionStage<Void> reactiveRemove(String entityName, Object child, boolean isCascadeDeleteEnabled, IdentitySet transientEntities);
+
 	<T> CompletionStage<T> reactiveMerge(T object);
 
 	CompletionStage<Void> reactiveMerge(Object object, MergeContext copiedAlready);
