@@ -101,6 +101,8 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 
 	CompletionStage<Void> reactiveInitializeCollection(PersistentCollection collection, boolean writing);
 
+	CompletionStage<Void> reactiveRemoveOrphanBeforeUpdates(String entityName, Object child);
+
 	void setHibernateFlushMode(FlushMode flushMode);
 	FlushMode getHibernateFlushMode();
 

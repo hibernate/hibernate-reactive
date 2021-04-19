@@ -356,7 +356,9 @@ public final class Cascade<C> {
 								// If FK direction is to-parent, we must remove the orphan *before* the queued update(s)
 								// occur.  Otherwise, replacing the association on a managed entity, without manually
 								// nulling and flushing, causes FK constraint violations.
-								eventSource.removeOrphanBeforeUpdates( entityName, loadedValue );
+								ReactiveSession session = (ReactiveSession) eventSource;
+								final Object finalLoadedValue = loadedValue;
+								stage = stage.thenCompose( v -> session.reactiveRemoveOrphanBeforeUpdates( entityName, finalLoadedValue ) );
 							}
 							else {
 								// Else, we must delete after the updates.
