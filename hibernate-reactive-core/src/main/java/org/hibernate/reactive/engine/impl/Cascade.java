@@ -34,7 +34,6 @@ import org.hibernate.type.Type;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
 
@@ -350,19 +349,20 @@ public final class Cascade<C> {
 								);
 							}
 
+							final Object loaded = loadedValue;
 							if ( type.isAssociationType()
 									&& ( (AssociationType) type ).getForeignKeyDirection()
 											.equals(ForeignKeyDirection.TO_PARENT) ) {
 								// If FK direction is to-parent, we must remove the orphan *before* the queued update(s)
 								// occur.  Otherwise, replacing the association on a managed entity, without manually
 								// nulling and flushing, causes FK constraint violations.
-								ReactiveSession session = (ReactiveSession) eventSource;
-								final Object finalLoadedValue = loadedValue;
-								stage = stage.thenCompose( v -> session.reactiveRemoveOrphanBeforeUpdates( entityName, finalLoadedValue ) );
+								stage = stage.thenCompose( v -> ( (ReactiveSession) eventSource )
+										.reactiveRemoveOrphanBeforeUpdates( entityName, loaded ) );
 							}
 							else {
 								// Else, we must delete after the updates.
-								eventSource.delete( entityName, loadedValue, isCascadeDeleteEnabled, new HashSet<>() );
+								stage = stage.thenCompose( v -> ( (ReactiveSession) eventSource )
+										.reactiveRemove( entityName, loaded, isCascadeDeleteEnabled, new IdentitySet() ) );
 							}
 						}
 					}
