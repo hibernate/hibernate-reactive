@@ -7,6 +7,7 @@ package org.hibernate.reactive.pool.impl;
 
 import java.sql.ResultSet;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -24,6 +25,7 @@ final class ProxyConnection implements ReactiveConnection {
 	private final ReactiveConnectionPool sqlClientPool;
 	private ReactiveConnection connection;
 	private boolean connected;
+	private boolean closed;
 	private final String tenantId;
 
 	public ProxyConnection(ReactiveConnectionPool sqlClientPool) {
@@ -38,6 +40,11 @@ final class ProxyConnection implements ReactiveConnection {
 
 	private <T> CompletionStage<T> withConnection(Function<ReactiveConnection, CompletionStage<T>> operation) {
 		assertUseOnEventLoop();
+		if ( closed ) {
+			CompletableFuture<T> ret = new CompletableFuture<>();
+			ret.completeExceptionally( new IllegalStateException( "session is closed" ) );
+			return ret;
+		}
 		if ( !connected ) {
 			connected = true; // we're not allowed to fetch two connections!
 			CompletionStage<ReactiveConnection> connection =
@@ -49,7 +56,9 @@ final class ProxyConnection implements ReactiveConnection {
 			if ( connection == null ) {
 				// we're already in the process of fetching a connection,
 				// so this must be an illegal concurrent call
-				throw new IllegalStateException( "session is currently connecting to database" );
+				CompletableFuture<T> ret = new CompletableFuture<>();
+				ret.completeExceptionally( new IllegalStateException( "session is currently connecting to database" ) );
+				return ret;
 			}
 			return operation.apply( connection );
 		}
@@ -140,6 +149,7 @@ final class ProxyConnection implements ReactiveConnection {
 			connection.close();
 			connection = null;
 		}
+		closed = true;
 	}
 
 }
