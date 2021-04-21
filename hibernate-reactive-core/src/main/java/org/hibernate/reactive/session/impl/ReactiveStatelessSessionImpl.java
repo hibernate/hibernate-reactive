@@ -35,8 +35,6 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.ParameterMetadata;
-import org.hibernate.query.Query;
-import org.hibernate.query.internal.ParameterMetadataImpl;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
@@ -300,10 +298,8 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         checkOpen();
 
         try {
-            ParameterMetadataImpl paramMetadata =
-                    getQueryPlan( queryString, false ).getParameterMetadata();
             ReactiveQueryImpl<R> query =
-                    new ReactiveQueryImpl<>( this, paramMetadata, queryString );
+                    new ReactiveQueryImpl<>( this, getQueryPlan( queryString, false ), queryString );
             applyQuerySettingsAndHints( query );
             query.setComment( queryString );
             return query;
@@ -319,7 +315,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         try {
             // do the translation
             final ReactiveQueryImpl<R> query = createReactiveQuery( queryString );
-            resultClassChecking( resultType, query.unwrap( Query.class ) );
+            resultClassChecking( resultType, query );
             return query;
         }
         catch (RuntimeException e) {

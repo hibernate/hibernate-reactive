@@ -15,7 +15,6 @@ import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
-import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.criteria.internal.compile.ExplicitParameterInfo;
 import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
 import org.hibernate.query.internal.QueryImpl;
@@ -59,11 +58,10 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 				? QueryType.INSERT_UPDATE_DELETE
 				: QueryType.SELECT;
 	}
-
 	public ReactiveQueryImpl(SharedSessionContractImplementor producer,
-							 ParameterMetadata parameterMetadata,
+							 HQLQueryPlan hqlQueryPlan,
 							 String queryString) {
-		super( producer, parameterMetadata, queryString );
+		super( producer, hqlQueryPlan, queryString );
 		this.type = queryType( queryString );
 	}
 
