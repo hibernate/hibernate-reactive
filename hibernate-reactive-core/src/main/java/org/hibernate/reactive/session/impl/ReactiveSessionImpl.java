@@ -68,8 +68,6 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.ParameterMetadata;
-import org.hibernate.query.Query;
-import org.hibernate.query.internal.ParameterMetadataImpl;
 import org.hibernate.reactive.common.InternalStateAssertions;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
@@ -345,8 +343,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		delayedAfterCompletion();
 
 		try {
-			ParameterMetadataImpl paramMetadata = getQueryPlan( queryString, false ).getParameterMetadata();
-			ReactiveQueryImpl<R> query = new ReactiveQueryImpl<>( this, paramMetadata, queryString );
+			ReactiveQueryImpl<R> query = new ReactiveQueryImpl<>( this, getQueryPlan( queryString, false ), queryString );
 			applyQuerySettingsAndHints( query );
 			query.setComment( queryString );
 			return query;
@@ -362,7 +359,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		try {
 			// do the translation
 			final ReactiveQueryImpl<R> query = createReactiveQuery( queryString );
-			resultClassChecking( resultType, query.unwrap( Query.class ) );
+			resultClassChecking( resultType, query );
 			return query;
 		}
 		catch (RuntimeException e) {
@@ -529,8 +526,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	private <T> ReactiveQuery<T> createReactiveQuery(NamedQueryDefinition queryDefinition) {
 		String queryString = queryDefinition.getQueryString();
-		ParameterMetadataImpl paramMetadata = getQueryPlan( queryString, false ).getParameterMetadata();
-		ReactiveQueryImpl<T> query = new ReactiveQueryImpl<>( this, paramMetadata, queryString );
+		ReactiveQueryImpl<T> query = new ReactiveQueryImpl<>( this, getQueryPlan( queryString, false ), queryString );
 		applyQuerySettingsAndHints( query );
 		query.setHibernateFlushMode( queryDefinition.getFlushMode() );
 		query.setComment( comment( queryDefinition ) );
