@@ -3,7 +3,7 @@ import java.util.regex.Pattern
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'com.diffplug.gradle.spotless' version '4.0.1'
+    id 'com.diffplug.spotless' version '5.12.2'
     id 'nu.studer.credentials' version '2.1'
     id 'org.asciidoctor.convert' version '1.5.7' apply false
     id 'io.github.gradle-nexus.publish-plugin' version '1.0.0'
@@ -112,7 +112,7 @@ nexusPublishing {
 
 subprojects {
     apply plugin: 'java-library'
-    apply plugin: 'com.diffplug.gradle.spotless'
+    apply plugin: 'com.diffplug.spotless'
 
     // FIXME: Also setting the group and version here otherwise not all tasks will find them
     group = projectGroup
