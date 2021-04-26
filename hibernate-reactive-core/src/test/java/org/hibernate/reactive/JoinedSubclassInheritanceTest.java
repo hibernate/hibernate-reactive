@@ -15,7 +15,6 @@ import javax.persistence.*;
 import java.util.Date;
 import java.util.Objects;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 
@@ -40,11 +39,11 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist( book )
 								.thenCompose( v -> s.persist( author ) )
 								.thenCompose( v -> s.flush() )
-								.thenApply( v -> openSession() )
+								.thenCompose( v -> openSession() )
 								.thenCompose( s2 -> s2.find( Author.class, author.getId() ) )
 								.thenAccept( auth -> {
 									context.assertNotNull( auth );
@@ -62,7 +61,7 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist( book )
 								.thenCompose( v -> s.persist( author ) )
 								.thenCompose( v -> s.flush() )
@@ -83,11 +82,11 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 		final Author author = new Author( "Charlie Mackesy", novel );
 
 		test( context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist(novel)
 								.thenCompose( v -> s.persist(author) )
 								.thenCompose( v -> s.flush()) )
-						.thenCompose( v -> completedFuture( openSession() )
+						.thenCompose( v -> openSession()
 								.thenCompose( s -> s.find(Book.class, 6) ) )
 						.thenAccept(book -> {
 							context.assertNotNull(book);
@@ -102,11 +101,11 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 		final Author author = new Author( "Abdul Alhazred", spells );
 
 		test( context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist(spells)
 								.thenCompose( v -> s.persist(author) )
 								.thenCompose( v -> s.flush() ) )
-						.thenCompose( v -> completedFuture( openSession() ).thenCompose( s -> s.find(Book.class, 6) ) )
+						.thenCompose( v -> openSession().thenCompose( s -> s.find(Book.class, 6) ) )
 						.thenAccept(book -> {
 							context.assertNotNull(book);
 							context.assertTrue(book instanceof SpellBook);
@@ -120,9 +119,9 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 //		final Author author = new Author( "Abdul Alhazred", spells );
 
 		test( context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist(spells).thenCompose( v -> s.flush() ) )
-						.thenCompose( vv -> completedFuture( openSession() )
+						.thenCompose( vv -> openSession()
 								.thenCompose( s -> s.withTransaction( t -> s.createQuery("update SpellBook set title='x' where forbidden=false").executeUpdate() )
 										.thenCompose( v -> s.withTransaction( t -> s.createQuery("update SpellBook set forbidden=false where title='Necronomicon'").executeUpdate() ) )
 										.thenCompose( v -> s.withTransaction( t -> s.createQuery("update Book set title=title||' II' where title='Necronomicon'").executeUpdate() ) )
@@ -133,9 +132,9 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 											context.assertEquals(book.getTitle(), "Necronomicon II");
 										} )
 						) )
-						.thenCompose( vv -> completedFuture( openSession() )
+						.thenCompose( vv -> openSession()
 								.thenCompose( s -> s.withTransaction( t -> s.createQuery("delete Book where title='Necronomicon II'").executeUpdate() ) )
-								.thenApply( v -> openSession() )
+								.thenCompose( v -> openSession() )
 								.thenCompose( s -> s.find(Book.class, 6) )
 								.thenAccept( book -> context.assertNull(book) )
 						)
@@ -148,21 +147,21 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 //		final Author author = new Author( "Abdul Alhazred", spells );
 
 		test( context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist(spells).thenCompose( v -> s.flush() ) )
-						.thenCompose( v -> completedFuture( openSession() )
+						.thenCompose( v -> openSession()
 								.thenCompose( s-> s.withTransaction( t -> s.createQuery("update SpellBook set forbidden=:fob where title=:tit")
 										.setParameter("fob", false)
 										.setParameter("tit", "Necronomicon")
 										.executeUpdate() )
 						) )
-						.thenCompose( v -> completedFuture( openSession() )
+						.thenCompose( v -> openSession()
 								.thenCompose( s -> s.withTransaction( t -> s.createQuery("update Book set title=title||:sfx where title=:tit")
 										.setParameter("sfx", " II")
 										.setParameter("tit", "Necronomicon")
 										.executeUpdate() )
 						) )
-						.thenCompose( v -> completedFuture( openSession() )
+						.thenCompose( v -> openSession()
 								.thenCompose( s -> s.find( Book.class, 6) )
 								.thenAccept( book -> {
 											context.assertNotNull(book);
@@ -171,12 +170,12 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 										}
 								)
 						)
-						.thenCompose( v -> completedFuture( openSession() )
+						.thenCompose( v -> openSession()
 								.thenCompose( s -> s.withTransaction( t -> s.createQuery("delete Book where title=:tit")
 										.setParameter("tit", "Necronomicon II")
 										.executeUpdate() )
 						) )
-						.thenCompose( v -> completedFuture( openSession() ).thenCompose( s -> s.find(Book.class, 6) ) )
+						.thenCompose( v -> openSession().thenCompose( s -> s.find(Book.class, 6) ) )
 						.thenAccept( book -> context.assertNull(book) )
 		);
 	}

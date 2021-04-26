@@ -15,7 +15,6 @@ import javax.persistence.OneToOne;
 import java.io.Serializable;
 import java.util.Objects;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class OneToOneNoIdClassTest extends BaseReactiveTest {
 	@Override
@@ -33,12 +32,12 @@ public class OneToOneNoIdClassTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist( otherEntity )
 								.thenCompose( v -> s.persist( anEntity ) )
 								.thenCompose( v -> s.flush() )
 						)
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( AnEntity.class, 1 )
 								.thenAccept( optionalAnEntity -> {
 									context.assertNotNull( optionalAnEntity );

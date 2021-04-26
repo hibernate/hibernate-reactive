@@ -1516,10 +1516,15 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public void close() throws HibernateException {
+		throw new UnsupportedOperationException( "Non reactive close method called. Use 'reactiveClose()' instead." );
+	}
+
+	@Override
+	public CompletionStage<Void> reactiveClose() {
 		if ( reactiveConnection != null ) {
-			reactiveConnection.close();
+			return reactiveConnection.close();
 		}
-		super.close();
+		return voidFuture();
 	}
 
 	@Override @SuppressWarnings("unchecked")

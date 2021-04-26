@@ -217,8 +217,8 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	@Override
-	public void close() {
-		connection.close();
+	public CompletionStage<Void> close() {
+		return connection.close().toCompletionStage();
 	}
 
 	/**

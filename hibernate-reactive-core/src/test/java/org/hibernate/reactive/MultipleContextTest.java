@@ -15,6 +15,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,6 +43,8 @@ public class MultipleContextTest extends BaseReactiveTest {
 	private static final String ERROR_MESSAGE_LOWER_CASED = "Detected use of the reactive Session from a different Thread"
 			.toLowerCase( Locale.ROOT );
 
+	private Object currentSession;
+
 	// These tests will fail before touching the database, so there is no reason
 	// to run them on all databases
 	@Rule
@@ -54,12 +57,18 @@ public class MultipleContextTest extends BaseReactiveTest {
 		return configuration;
 	}
 
+	@After
+	public void closeEverything(TestContext context) {
+		test( context, closeSession( currentSession ) );
+	}
+
 	@Test
 	@Ignore
 	// I don't know why but this test fails on CI because no exception is thrown
 	public void testPersistWithStage(TestContext testContext) {
 		Async async = testContext.async();
-		Stage.Session session = openSession();
+		Stage.Session session = getSessionFactory().openSession();
+		currentSession = session;
 		Context testVertxContext = Vertx.currentContext();
 
 		// Create a different new context
@@ -76,7 +85,8 @@ public class MultipleContextTest extends BaseReactiveTest {
 	@Test
 	public void testFindWithStage(TestContext testContext) {
 		Async async = testContext.async();
-		Stage.Session session = openSession();
+		Stage.Session session = getSessionFactory().openSession();
+		currentSession = session;
 		Context testVertxContext = Vertx.currentContext();
 
 		// Create a different new context
@@ -93,7 +103,8 @@ public class MultipleContextTest extends BaseReactiveTest {
 	@Test
 	public void testOnPersistWithMutiny(TestContext testContext) {
 		Async async = testContext.async();
-		Mutiny.Session session = openMutinySession();
+		Mutiny.Session session = getMutinySessionFactory().openSession();
+		currentSession = session;
 		Context testVertxContext = Vertx.currentContext();
 
 		// Create a different new context
@@ -111,7 +122,8 @@ public class MultipleContextTest extends BaseReactiveTest {
 	@Test
 	public void testFindWithMutiny(TestContext testContext) {
 		Async async = testContext.async();
-		Mutiny.Session session = openMutinySession();
+		Mutiny.Session session = getMutinySessionFactory().openSession();
+		currentSession = session;
 		Context testVertxContext = Vertx.currentContext();
 
 		// Create a different new context

@@ -147,5 +147,7 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 
 	boolean isDirty();
 	boolean isOpen();
-	void close();
+
+	// Different approach so that we can overload the method in SessionImpl
+	CompletionStage<Void> reactiveClose();
 }

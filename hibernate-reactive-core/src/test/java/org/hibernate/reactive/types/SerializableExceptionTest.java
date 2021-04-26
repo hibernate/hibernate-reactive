@@ -56,7 +56,7 @@ public class SerializableExceptionTest extends BaseReactiveTest {
 				// For this test to fail the entity with the null field needs to be persisted before
 				// the entity with the notNullField
 				getSessionFactory().withTransaction( (s, t) -> s.persist( nullField, notNullField ) )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Basic.class, notNullField.getId() ) )
 						.thenAccept( found -> {
 							context.assertNotNull( found );

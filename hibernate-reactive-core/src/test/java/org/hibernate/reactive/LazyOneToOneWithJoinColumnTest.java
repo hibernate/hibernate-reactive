@@ -9,7 +9,6 @@ import io.vertx.ext.unit.TestContext;
 
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.mutiny.Mutiny;
 
 import org.junit.Test;
 
@@ -32,29 +31,28 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 		endpoint.webhook = webhook;
 		webhook.endpoint = endpoint;
 
-		Mutiny.Session session = openMutinySession();
-		test(
-				context,
-				session.persist( endpoint )
-						.chain( session::flush )
-						.chain( () -> openMutinySession()
-								.find( Endpoint.class, endpoint.id )
-								.invoke( optionalAnEntity -> {
-									context.assertNotNull( optionalAnEntity );
-									context.assertNotNull( optionalAnEntity.webhook );
-									// This is eager because the other table contains the reference
-									context.assertTrue( Hibernate.isInitialized( optionalAnEntity.webhook ) );
-								} )
-						)
-						.chain( () -> openMutinySession()
-								.find( EndpointWebhook.class, webhook.id )
-								.invoke( optionalAnEntity -> {
-									context.assertNotNull( optionalAnEntity );
-									context.assertNotNull( optionalAnEntity.endpoint );
-									// This i actually lazy
-									context.assertFalse( Hibernate.isInitialized( optionalAnEntity.endpoint ) );
-								} )
-						)
+		test( context, openMutinySession()
+				.chain( session -> session
+						.persist( endpoint )
+						.chain( session::flush ) )
+				.chain( this::openMutinySession )
+				.chain( session -> session
+						.find( Endpoint.class, endpoint.id )
+						.invoke( optionalAnEntity -> {
+							context.assertNotNull( optionalAnEntity );
+							context.assertNotNull( optionalAnEntity.webhook );
+							// This is eager because the other table contains the reference
+							context.assertTrue( Hibernate.isInitialized( optionalAnEntity.webhook ) );
+						} ) )
+				.chain( this::openMutinySession )
+				.chain( session -> session
+						.find( EndpointWebhook.class, webhook.id )
+						.invoke( optionalAnEntity -> {
+							context.assertNotNull( optionalAnEntity );
+							context.assertNotNull( optionalAnEntity.endpoint );
+							// This i actually lazy
+							context.assertFalse( Hibernate.isInitialized( optionalAnEntity.endpoint ) );
+						} ) )
 		);
 	}
 
@@ -67,20 +65,22 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 		webhook.endpoint = endpoint;
 
 		String query = "FROM Endpoint WHERE id = :id AND accountId = :accountId";
-		Mutiny.Session session = openMutinySession();
-		test( context,
-			  session.persist( endpoint )
-					  .call( () -> session.flush() )
-					  .call( () -> openMutinySession().createQuery( query, Endpoint.class )
-							  .setParameter( "id", endpoint.id )
-							  .setParameter( "accountId", endpoint.accountId )
-							  .getSingleResultOrNull()
-							  .invoke( result -> {
-								  context.assertNotNull( result );
-								  context.assertTrue( Hibernate.isInitialized( result.webhook ) );
-								  context.assertEquals( endpoint.id, result.id );
-								  context.assertEquals( webhook.id, result.webhook.id );
-							  } ) )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.persist( endpoint )
+						.call( () -> session.flush() ) )
+				.chain( this::openMutinySession )
+				.chain( session -> session
+						.createQuery( query, Endpoint.class )
+						.setParameter( "id", endpoint.id )
+						.setParameter( "accountId", endpoint.accountId )
+						.getSingleResultOrNull()
+						.invoke( result -> {
+							context.assertNotNull( result );
+							context.assertTrue( Hibernate.isInitialized( result.webhook ) );
+							context.assertEquals( endpoint.id, result.id );
+							context.assertEquals( webhook.id, result.webhook.id );
+						} ) )
 		);
 	}
 

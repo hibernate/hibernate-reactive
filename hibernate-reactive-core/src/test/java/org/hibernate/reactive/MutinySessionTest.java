@@ -277,7 +277,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 				context,
 				populateDB()
 						.onItem().call( () -> selectNameFromId(5).onItem().invoke( context::assertNotNull ) )
-						.onItem().transform( v -> openMutinySession() )
+						.chain( this::openMutinySession )
 						.onItem().call( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
 						.onItem().invoke( () -> context.fail() )
 						.onFailure().recoverWithItem( () -> null )
@@ -294,7 +294,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 				populateDB()
 						.chain( () -> selectNameFromId(5) )
 						.invoke( context::assertNotNull )
-						.replaceWith( this::openMutinySession )
+						.chain( this::openMutinySession )
 						.call( session -> session.remove( new GuineaPig( 5, "Aloi" ) ) )
 						.onItem().invoke( () -> context.fail() )
 						.onFailure().recoverWithItem( () -> null )

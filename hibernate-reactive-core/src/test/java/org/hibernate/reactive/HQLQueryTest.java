@@ -19,7 +19,6 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class HQLQueryTest extends BaseReactiveTest {
 
@@ -42,8 +41,8 @@ public class HQLQueryTest extends BaseReactiveTest {
 
 	@After
 	public void cleanDb(TestContext context) {
-		test( context, completedFuture( openSession() )
-				.thenCompose( s -> s.createQuery("delete Flour").executeUpdate() ) );
+		test( context, openSession()
+				.thenCompose( s -> s.createQuery( "delete Flour" ).executeUpdate() ) );
 	}
 
 	@Test

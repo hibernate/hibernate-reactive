@@ -42,9 +42,9 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 		b.string = "Hello World";
 
 		test( context,
-				completedFuture( openSession() )
+				openSession()
 				.thenCompose(s -> s.persist(b).thenCompose(v -> s.flush()))
-				.thenApply( v -> openSession() )
+				.thenCompose( v -> openSession() )
 				.thenCompose( s2 ->
 					s2.find( CustomId.class, b.getId() )
 						.thenAccept( bb -> {
@@ -60,7 +60,7 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 						.thenAccept( bt -> {
 							context.assertEquals( bt.version, 1 );
 						}))
-				.thenApply( v -> openSession() )
+				.thenCompose( v -> openSession() )
 				.thenCompose( s3 -> s3.find( CustomId.class, b.getId() ) )
 				.thenAccept( bb -> {
 					context.assertEquals(bb.version, 1);

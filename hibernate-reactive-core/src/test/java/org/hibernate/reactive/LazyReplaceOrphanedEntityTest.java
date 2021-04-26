@@ -23,14 +23,14 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.mutiny.Mutiny;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
-import org.assertj.core.api.Assertions;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 
@@ -50,8 +50,7 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 		theCampaign = new Campaign();
 		theCampaign.setSchedule( new ExecutionDate(OffsetDateTime.now(), "ALPHA") );
 
-		Mutiny.Session session = openMutinySession();
-		test( context, session.persist( theCampaign ).call( session::flush ) );
+		test( context, getMutinySessionFactory().withTransaction( (s, t) -> s.persist( theCampaign ) ) );
 	}
 
 	@After
@@ -61,47 +60,40 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 
 	@Test
 	public void testUpdateScheduleChange(TestContext context) {
-		test(
-				context,
-				getMutinySessionFactory().withSession(
-						session -> session.find( Campaign.class, theCampaign.getId() )
-								.invoke( foundCampaign -> foundCampaign.setSchedule( new ExecutionDate(
-										OffsetDateTime.now(),
-										"BETA"
-								) ) )
-								.call( session::flush )
-								.chain( () -> openMutinySession().find( Campaign.class, theCampaign.getId() ) )
-								.invoke( updatedCampaign -> Assertions.assertThat(
-										updatedCampaign.getSchedule().getCodeName() )
-										.isNotEqualTo( theCampaign.getSchedule().getCodeName() ) )
-				)
+		test( context, getMutinySessionFactory()
+				.withSession( session -> session
+						.find( Campaign.class, theCampaign.getId() )
+						.invoke( foundCampaign -> foundCampaign
+								.setSchedule( new ExecutionDate( OffsetDateTime.now(), "BETA" ) ) )
+						.call( session::flush ) )
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Campaign.class, theCampaign.getId() ) )
+				.invoke( updatedCampaign -> assertThat( updatedCampaign.getSchedule().getCodeName() )
+						.isNotEqualTo( theCampaign.getSchedule().getCodeName() ) )
 		);
 	}
 
 	@Test
 	public void testUpdateWithMultipleScheduleChanges(TestContext context) {
-		test(
-				context,
-				getMutinySessionFactory().withSession(
-						session -> session.find( Campaign.class, theCampaign.getId() )
-								.invoke( foundCampaign -> foundCampaign.setSchedule( new ExecutionDate(
-										OffsetDateTime.now(),
-										"BETA"
-								) ) )
-								.call( session::flush ) )
-						.call( () -> getMutinySessionFactory().withSession(
-								session -> session.find( Campaign.class, theCampaign.getId() )
-										.invoke( foundCampaign -> foundCampaign.setSchedule( new ExecutionDate(
-												OffsetDateTime.now(),
-												"GAMMA"
-										) ) )
-										.call( session::flush )
+		test( context, getMutinySessionFactory()
+				.withSession( session -> session
+						.find( Campaign.class, theCampaign.getId() )
+						.invoke( foundCampaign -> foundCampaign
+								.setSchedule( new ExecutionDate( OffsetDateTime.now(), "BETA" ) ) )
+						.call( session::flush ) )
+				.call( () -> getMutinySessionFactory()
+						.withSession( session -> session
+								.find( Campaign.class, theCampaign.getId() )
+								.invoke( foundCampaign -> foundCampaign
+										.setSchedule( new ExecutionDate( OffsetDateTime.now(), "GAMMA" ) ) )
+								.call( session::flush )
 						) )
-						.chain( () -> openMutinySession().find( Campaign.class, theCampaign.getId() ) )
-						.invoke( updatedCampaign -> Assertions.assertThat(
-								updatedCampaign.getSchedule().getCodeName() )
-								.isNotEqualTo( theCampaign.getSchedule().getCodeName() )
-						)
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Campaign.class, theCampaign.getId() ) )
+				.invoke( updatedCampaign -> assertThat(
+						updatedCampaign.getSchedule().getCodeName() )
+						.isNotEqualTo( theCampaign.getSchedule().getCodeName() )
+				)
 		);
 	}
 

@@ -13,8 +13,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.stage.Stage;
 
 import org.junit.After;
 import org.junit.Test;
@@ -51,12 +49,13 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 		IntegerEntity entityA = new IntegerEntity( "Integer A" );
 		IntegerEntity entityB = new IntegerEntity( "Integer B" );
 
-		Stage.Session session = openSession();
-		test( context, session
-				.persist( entityA, entityB )
-				.thenCompose( v -> session.flush() )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( entityA, entityB )
+						.thenCompose( v -> session.flush() ) )
 				.thenAccept( v -> context.assertNotEquals( entityA.id, entityB.id ) )
-				.thenCompose( v -> openSession().find( IntegerEntity.class, entityA.id, entityB.id ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( IntegerEntity.class, entityA.id, entityB.id ) )
 				.thenAccept( list -> {
 					context.assertEquals( list.size(), 2 );
 					context.assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
@@ -69,12 +68,13 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 		LongEntity entityA = new LongEntity( "Long A" );
 		LongEntity entityB = new LongEntity( "Long B" );
 
-		Stage.Session session = openSession();
-		test( context, session
-				.persist( entityA, entityB )
-				.thenCompose( v -> session.flush() )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( entityA, entityB )
+						.thenCompose( v -> session.flush() ) )
 				.thenAccept( v -> context.assertNotEquals( entityA.id, entityB.id ) )
-				.thenCompose( v -> openSession().find( LongEntity.class, entityA.id, entityB.id ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( LongEntity.class, entityA.id, entityB.id ) )
 				.thenAccept( list -> {
 					context.assertEquals( list.size(), 2 );
 					context.assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
@@ -87,12 +87,13 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 		ShortEntity entityA = new ShortEntity( "Short A" );
 		ShortEntity entityB = new ShortEntity( "Short B" );
 
-		Stage.Session session = openSession();
-		test( context, session
-				.persist( entityA, entityB )
-				.thenCompose( v -> session.flush() )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( entityA, entityB )
+						.thenCompose( v -> session.flush() ) )
 				.thenAccept( v -> context.assertNotEquals( entityA.id, entityB.id ) )
-				.thenCompose( v -> openSession().find( ShortEntity.class, entityA.id, entityB.id ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( ShortEntity.class, entityA.id, entityB.id ) )
 				.thenAccept( list -> {
 					context.assertEquals( list.size(), 2 );
 					context.assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
@@ -109,12 +110,13 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 		IntegerEntity entityA = new IntegerEntity( "Integer A" );
 		IntegerEntity entityB = new IntegerEntity( "Integer B" );
 
-		Mutiny.Session session = openMutinySession();
-		test( context, session
-				.persistAll( entityA, entityB )
-				.call( session::flush )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.persistAll( entityA, entityB )
+						.call( session::flush ) )
 				.invoke( () -> context.assertNotEquals( entityA.id, entityB.id ) )
-				.chain( () -> openMutinySession().find( IntegerEntity.class, entityA.id, entityB.id ) )
+				.chain( () -> openMutinySession() )
+				.chain( session -> session.find( IntegerEntity.class, entityA.id, entityB.id ) )
 				.invoke( list -> {
 					context.assertEquals( list.size(), 2 );
 					context.assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
@@ -127,12 +129,13 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 		LongEntity entityA = new LongEntity( "Long A" );
 		LongEntity entityB = new LongEntity( "Long B" );
 
-		Mutiny.Session session = openMutinySession();
-		test( context, session
-				.persistAll( entityA, entityB )
-				.call( session::flush )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.persistAll( entityA, entityB )
+				.call( session::flush ) )
 				.invoke( () -> context.assertNotEquals( entityA.id, entityB.id ) )
-				.chain( () -> openMutinySession().find( LongEntity.class, entityA.id, entityB.id ) )
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( LongEntity.class, entityA.id, entityB.id ) )
 				.invoke( list -> {
 					context.assertEquals( list.size(), 2 );
 					context.assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
@@ -145,12 +148,13 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 		ShortEntity entityA = new ShortEntity( "Short A" );
 		ShortEntity entityB = new ShortEntity( "Short B" );
 
-		Mutiny.Session session = openMutinySession();
-		test( context, session
-				.persistAll( entityA, entityB )
-				.call( session::flush )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.persistAll( entityA, entityB )
+						.call( session::flush ) )
 				.invoke( () -> context.assertNotEquals( entityA.id, entityB.id ) )
-				.chain( () -> openMutinySession().find( ShortEntity.class, entityA.id, entityB.id ) )
+				.chain( () -> openMutinySession() )
+				.chain( session -> session.find( ShortEntity.class, entityA.id, entityB.id ) )
 				.invoke( list -> {
 					context.assertEquals( list.size(), 2 );
 					context.assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );

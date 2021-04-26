@@ -15,9 +15,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.After;
@@ -28,7 +26,6 @@ import org.junit.Test;
 import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
  * This test class verifies that data can be persisted and queried on the same database
@@ -65,9 +62,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	public void cleanDb(TestContext context) {
 		ormFactory.close();
 
-		test( context, completedFuture( openSession() )
-				.thenCompose( s -> s.createQuery( "delete Flour" )
-						.executeUpdate() ) );
+		test( context, deleteEntities( "Flour" ) );
 	}
 
 	@Test
@@ -81,8 +76,8 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 		session.close();
 
 		// Check database with Stage session and verify 'almond' flour exists
-		Stage.Session stageSession = openSession();
-		test( context, stageSession.find( Flour.class, almond.id )
+		test( context, openSession()
+				.thenCompose( stageSession -> stageSession.find( Flour.class, almond.id ) )
 				.thenAccept( entityFound -> context.assertEquals( almond, entityFound ) )
 		);
 	}
@@ -98,8 +93,8 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 		ormSession.close();
 
 		// Check database with Mutiny session and verify 'rose' flour exists
-		Mutiny.Session mutinySession = openMutinySession();
-		test( context, mutinySession.find( Flour.class, rose.id)
+		test( context, openMutinySession()
+				.chain( session -> session.find( Flour.class, rose.id ) )
 				.invoke( foundRose -> context.assertEquals( rose, foundRose ) )
 		);
 	}

@@ -13,6 +13,7 @@ import java.util.function.Function;
 
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
 
@@ -144,12 +145,16 @@ final class ProxyConnection implements ReactiveConnection {
 	}
 
 	@Override
-	public void close() {
+	public CompletionStage<Void> close() {
+		CompletionStage<Void> stage = CompletionStages.voidFuture();
 		if ( connection != null ) {
-			connection.close();
-			connection = null;
+			stage = stage.thenCompose( v -> connection.close() );
+
 		}
-		closed = true;
+		return stage.thenAccept( v -> {
+			connection = null;
+			closed = true;
+		} );
 	}
 
 }

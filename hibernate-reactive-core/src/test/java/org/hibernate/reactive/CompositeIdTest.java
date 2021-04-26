@@ -17,7 +17,6 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class CompositeIdTest extends BaseReactiveTest {
 
@@ -96,7 +95,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 		test(
 				context,
 				populateDB()
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, new Pig(5, "Aloi") ) )
 						.thenAccept( actualPig -> {
 							assertThatPigsAreEqual( context, expectedPig, actualPig );
@@ -108,7 +107,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 	public void reactivePersist(TestContext context) {
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist( new GuineaPig( 10, "Tulip" ) )
 								.thenCompose( v -> s.flush() )
 								.whenComplete( (v,e) -> s.close() )
@@ -125,7 +124,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 				populateDB()
 						.thenCompose( v -> selectNameFromId( 5 ) )
 						.thenAccept( context::assertNotNull )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.remove( new GuineaPig( 5, "Aloi" ) )
 								.thenCompose( v -> session.flush() )
 								.whenComplete( (v, err) -> session.close() )
@@ -141,7 +140,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 		test(
 				context,
 				populateDB()
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session ->
 							session.find( GuineaPig.class, new Pig(5, "Aloi") )
 								.thenCompose( aloi -> session.remove( aloi ) )
@@ -159,7 +158,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 		test(
 				context,
 				populateDB()
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session ->
 							session.find( GuineaPig.class, new Pig(5, "Aloi") )
 								.thenAccept( pig -> {

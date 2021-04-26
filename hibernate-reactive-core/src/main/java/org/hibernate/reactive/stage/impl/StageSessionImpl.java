@@ -477,8 +477,8 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public void close() {
-		delegate.close();
+	public CompletionStage<Void> close() {
+		return stage( v -> delegate.reactiveClose() );
 	}
 
 	@Override

@@ -5,27 +5,26 @@
  */
 package org.hibernate.reactive;
 
-import io.smallrye.mutiny.Uni;
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.stage.Stage;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.OrderBy;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletionStage;
+
+import org.hibernate.cfg.Configuration;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.unit.TestContext;
 
 /**
  * Tests @{@link ElementCollection} on a {@link java.util.Set} of basic types.
@@ -64,12 +63,8 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 		phones.add( new Phone( "999-999-9999" ) );
 		phones.add( new Phone( "111-111-1111" ) );
 		thePerson = new Person( 777777, "Claude", phones );
-
-		Stage.Session session = openSession();
-
-		test( context, session.persist( thePerson )
-				.thenCompose( v -> session.flush() )
-		);
+		test( context, getSessionFactory()
+				.withTransaction( (s, t) -> s.persist( thePerson ) ) );
 	}
 
 	@After
@@ -79,66 +74,52 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 
 	@Test
 	public void persistWithMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
 		List<Phone> phones = new ArrayList<>();
 		phones.add( new Phone( "888" ) );
 		phones.add( new Phone( "555" ) );
 		Person johnny = new Person( 999, "Johnny English", phones );
 
-		test (
-				context,
-				session.persist( johnny )
-						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, johnny.getId() ) )
-						.invoke( found -> assertPhones( context, found, "555", "888" ) )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.persist( johnny )
+						.call( session::flush ) )
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Person.class, johnny.getId() ) )
+				.invoke( found -> assertPhones( context, found, "555", "888" ) )
 		);
 	}
 
 	@Test
 	public void findEntityWithElementCollectionStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
-		test ( context, session
-				.find( Person.class, thePerson.getId() )
-				.thenAccept( foundPerson -> assertPhones( context, foundPerson,"111-111-1111", "999-999-9999" ) )
+		test( context, openSession()
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( foundPerson -> assertPhones( context, foundPerson, "111-111-1111", "999-999-9999" ) )
 		);
 	}
 
 	@Test
 	public void findEntityWithElementCollectionMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
-		test ( context, session
-				.find( Person.class, thePerson.getId() )
-				.invoke( foundPerson -> assertPhones( context, foundPerson,"111-111-1111", "999-999-9999" ) )
+		test( context, openMutinySession()
+				.chain( session -> session.find( Person.class, thePerson.getId() ) )
+				.invoke( foundPerson -> assertPhones( context, foundPerson, "111-111-1111", "999-999-9999" ) )
 		);
 	}
 
 	@Test
 	public void addOneElementWithStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, openSession()
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
 						// Remove one element from the collection
-						.thenAccept( foundPerson -> foundPerson.getPhones().add(new Phone("000" )) )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( updatedPerson ->
-											 assertPhones(
-													 context,
-													 updatedPerson,
-													 "000", "111-111-1111", "999-999-9999"
-											 ) )
+						.thenAccept( foundPerson -> foundPerson.getPhones().add( new Phone( "000" ) ) )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( updatedPerson -> assertPhones( context, updatedPerson, "000", "111-111-1111", "999-999-9999" ) )
 		);
 	}
 
 	@Test
 	public void persistCollectionWithDuplicatesWithStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
 		List<Phone> phones = new ArrayList<>();
 		phones.add( new Phone( "111" ) );
 		phones.add( new Phone( "111" ) );
@@ -146,19 +127,18 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 		phones.add( new Phone( "111" ) );
 		Person thomas = new Person( 7, "Thomas Reaper", phones );
 
-		test(
-				context,
-				session.persist( thomas )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thomas.getId() ) )
-						.thenAccept( found -> assertPhones( context, found, "111", "111", "111", "111") )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( thomas )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thomas.getId() ) )
+				.thenAccept( found -> assertPhones( context, found, "111", "111", "111", "111" ) )
 		);
 	}
 
 	@Test
 	public void persistCollectionWithDuplicatesWithMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
 		List<Phone> phones = new ArrayList<>();
 		phones.add( new Phone( "111" ) );
 		phones.add( new Phone( "111" ) );
@@ -166,19 +146,18 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 		phones.add( new Phone( "111" ) );
 		Person thomas = new Person( 567, "Thomas Reaper", phones );
 
-		test(
-				context,
-				session.persist( thomas )
-						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, thomas.getId() ) )
-						.invoke( found -> assertPhones( context, found, "111", "111", "111", "111" ) )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.persist( thomas )
+						.call( session::flush ) )
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Person.class, thomas.getId() ) )
+				.invoke( found -> assertPhones( context, found, "111", "111", "111", "111" ) )
 		);
 	}
 
 	@Test
 	public void updateCollectionWithDuplicatesWithStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
 		List<Phone> phones = new ArrayList<>();
 		phones.add( new Phone( "000" ) );
 		phones.add( new Phone( "000" ) );
@@ -187,29 +166,28 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 
 		Person thomas = new Person( 47, "Thomas Reaper", phones );
 
-		test(
-				context,
-				session.persist( thomas )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> {
-							Stage.Session newSession = openSession();
-							return newSession.find( Person.class, thomas.getId() )
-									// Change one of the element in the collection
-									.thenAccept( found -> {
-										found.getPhones().set( 1, new Phone( "47" ) );
-										found.getPhones().set( 3,  new Phone( "47" ) );
-									} )
-									.thenCompose( ignore -> newSession.flush() )
-									.thenCompose( ignore -> openSession().find( Person.class, thomas.getId() ) )
-									.thenAccept( found -> assertPhones( context, found, "000", "000", "47", "47" ) );
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( thomas )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session
+						.find( Person.class, thomas.getId() )
+						// Change one of the element in the collection
+						.thenAccept( found -> {
+							found.getPhones().set( 1, new Phone( "47" ) );
+							found.getPhones().set( 3, new Phone( "47" ) );
 						} )
+						.thenCompose( ignore -> session.flush() ) )
+				.thenCompose( ignore -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thomas.getId() ) )
+				.thenAccept( found -> assertPhones( context, found, "000", "000", "47", "47" ) )
+
 		);
 	}
 
 	@Test
 	public void updateCollectionWithDuplicatesWithMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
 		List<Phone> phones = new ArrayList<>();
 		phones.add( new Phone( "000" ) );
 		phones.add( new Phone( "000" ) );
@@ -218,29 +196,26 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 
 		Person thomas = new Person( 47, "Thomas Reaper", phones );
 
-		test(
-				context,
-				session.persist( thomas )
-						.call( session::flush )
-						.chain( () -> {
-							Mutiny.Session newSession = openMutinySession();
-							return newSession.find( Person.class, thomas.getId() )
-									// Change a couple of the elements in the collection
-									.invoke( found -> {
-										found.getPhones().set( 1, new Phone( "47" ) );
-										found.getPhones().set( 3,  new Phone( "47" ) );
-									} )
-									.call( newSession::flush )
-									.chain( () -> openMutinySession().find( Person.class, thomas.getId() ) )
-									.invoke( found -> assertPhones( context, found, "000", "000", "47", "47" ) );
+		test( context, openMutinySession()
+				.chain( session -> session
+						.persist( thomas )
+						.call( session::flush ) )
+				.chain( () -> openMutinySession() )
+				.chain( newSession -> newSession.find( Person.class, thomas.getId() )
+						// Change a couple of the elements in the collection
+						.invoke( found -> {
+							found.getPhones().set( 1, new Phone( "47" ) );
+							found.getPhones().set( 3, new Phone( "47" ) );
 						} )
+						.call( newSession::flush ) )
+				.chain( () -> openMutinySession() )
+				.chain( session -> session.find( Person.class, thomas.getId() ) )
+				.invoke( found -> assertPhones( context, found, "000", "000", "47", "47" ) )
 		);
 	}
 
 	@Test
 	public void deleteElementsFromCollectionWithDuplicatesWithStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
 		List<Phone> phones = new ArrayList<>();
 		phones.add( new Phone( "000" ) );
 		phones.add( new Phone( "000" ) );
@@ -249,30 +224,28 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 
 		Person thomas = new Person( 47, "Thomas Reaper", phones );
 
-		test(
-				context,
-				session.persist( thomas )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> {
-							Stage.Session newSession = openSession();
-							return newSession.find( Person.class, thomas.getId() )
-									// Change one of the element in the collection
-									.thenAccept( found -> {
-										// it doesn't matter which elements are deleted because they are all equal
-										found.getPhones().remove( 1 );
-										found.getPhones().remove( 2 );
-									} )
-									.thenCompose( ignore -> newSession.flush() )
-									.thenCompose( ignore -> openSession().find( Person.class, thomas.getId() ) )
-									.thenAccept( found -> assertPhones( context, found, "000", "000" ) );
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( thomas )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( newSession -> newSession
+						.find( Person.class, thomas.getId() )
+						// Change one of the element in the collection
+						.thenAccept( found -> {
+							// it doesn't matter which elements are deleted because they are all equal
+							found.getPhones().remove( 1 );
+							found.getPhones().remove( 2 );
 						} )
+						.thenCompose( ignore -> newSession.flush() ) )
+				.thenCompose( ignore -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thomas.getId() ) )
+				.thenAccept( found -> assertPhones( context, found, "000", "000" ) )
 		);
 	}
 
 	@Test
 	public void deleteElementsFromCollectionWithDuplicatesWithMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
 		List<Phone> phones = new ArrayList<>();
 		phones.add( new Phone( "000" ) );
 		phones.add( new Phone( "000" ) );
@@ -281,244 +254,224 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 
 		Person thomas = new Person( 47, "Thomas Reaper", phones );
 
-		test(
-				context,
-				session.persist( thomas )
-						.call( session::flush )
-						.chain( () -> {
-							Mutiny.Session newSession = openMutinySession();
-							return newSession.find( Person.class, thomas.getId() )
-									// Change one of the element in the collection
-									.invoke( found -> {
-										// it doesn't matter which elements are deleted because they are all equal
-										found.getPhones().remove( 1 );
-										found.getPhones().remove( 2 );
-									} )
-									.call( newSession::flush )
-									.chain( () -> openMutinySession().find( Person.class, thomas.getId() ) )
-									.invoke( found -> assertPhones( context, found, "000", "000" ) );
+		test( context, openMutinySession()
+				.chain( session -> session
+						.persist( thomas )
+						.call( session::flush ) )
+				.chain( this::openMutinySession )
+				.chain( newSession -> newSession
+						.find( Person.class, thomas.getId() )
+						// Change one of the element in the collection
+						.invoke( found -> {
+							// it doesn't matter which elements are deleted because they are all equal
+							found.getPhones().remove( 1 );
+							found.getPhones().remove( 2 );
 						} )
+						.call( newSession::flush ) )
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Person.class, thomas.getId() ) )
+				.invoke( found -> assertPhones( context, found, "000", "000" ) )
 		);
 	}
 
 	@Test
 	public void addOneElementWithMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.find( Person.class, thePerson.getId() )
 						// add one element to the collection
-						.invoke( foundPerson -> foundPerson.getPhones().add( new Phone("000" ) ) )
-						.call( session::flush )
-						// Check new person collection
-						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( updatedPerson ->
-										 assertPhones(
-												 context,
-												 updatedPerson,
-												 "000", "111-111-1111", "999-999-9999"
-										 ) )
+						.invoke( foundPerson -> foundPerson.getPhones().add( new Phone( "000" ) ) )
+						.call( session::flush ) )
+				// Check new person collection
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Person.class, thePerson.getId() ) )
+				.invoke( updatedPerson -> assertPhones( context, updatedPerson, "000", "111-111-1111", "999-999-9999" ) )
 		);
 	}
 
 	@Test
 	public void removeOneElementWithStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.find( Person.class, thePerson.getId() )
 						// Remove one element from the collection
-						.thenAccept( foundPerson -> foundPerson.getPhones().remove( new Phone( "999-999-9999" ) ))
-						.thenCompose( v -> session.flush())
-						.thenCompose( v -> openSession()
-								.find( Person.class, thePerson.getId() )
-								.thenAccept( foundPerson -> assertPhones( context, foundPerson, "111-111-1111" ) )
-						)
+						.thenAccept( foundPerson -> foundPerson.getPhones().remove( new Phone( "999-999-9999" ) ) )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( foundPerson -> assertPhones( context, foundPerson, "111-111-1111" ) )
 		);
 	}
 
 	@Test
 	public void removeOneElementWithMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.find( Person.class, thePerson.getId() )
 						// Remove one element from the collection
-						.invoke( foundPerson -> foundPerson.getPhones().remove( new Phone( "999-999-9999" ) ))
-						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() )
-								.invoke( foundPerson -> assertPhones( context, foundPerson, "111-111-1111" ) ) )
+						.invoke( foundPerson -> foundPerson.getPhones().remove( new Phone( "999-999-9999" ) ) )
+						.call( session::flush ) )
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Person.class, thePerson.getId() ) )
+				.invoke( foundPerson -> assertPhones( context, foundPerson, "111-111-1111" ) )
 		);
 	}
 
 	@Test
 	public void clearCollectionElementsStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.find( Person.class, thePerson.getId() )
 						// clear collection
 						.thenAccept( foundPerson -> foundPerson.getPhones().clear() )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( s -> openSession().find( Person.class, thePerson.getId() )
-								.thenAccept( changedPerson -> assertPhones( context, changedPerson))) //context.assertTrue( changedPerson.getPhones().isEmpty() ) ) )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( s -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( changedPerson -> assertPhones( context, changedPerson ) )
 		);
 	}
 
 	@Test
 	public void clearCollectionElementsMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.find( Person.class, thePerson.getId() )
 						// clear collection
 						.invoke( foundPerson -> foundPerson.getPhones().clear() )
-						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() )
-								.invoke( changedPerson -> context.assertTrue( changedPerson.getPhones().isEmpty() ) ) )
+						.call( session::flush ) )
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Person.class, thePerson.getId() )
+						.invoke( changedPerson -> context.assertTrue( changedPerson.getPhones().isEmpty() ) ) )
 		);
 	}
 
 	@Test
 	public void removeAndAddElementWithStageAPI(TestContext context){
-		Stage.Session session = openSession();
-
-		test (
-				context,
-				session.find( Person.class, thePerson.getId())
+		test( context, openSession()
+				.thenCompose( session -> session
+						.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
 							context.assertNotNull( foundPerson );
-							foundPerson.getPhones().remove( new Phone("111-111-1111") );
-							foundPerson.getPhones().add( new Phone("000") );
+							foundPerson.getPhones().remove( new Phone( "111-111-1111" ) );
+							foundPerson.getPhones().add( new Phone( "000" ) );
 						} )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000", "999-999-9999" ) )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000", "999-999-9999" ) )
 		);
 	}
 
 	@Test
 	public void removeAndAddElementWithMutinyAPI(TestContext context){
-		Mutiny.Session session = openMutinySession();
-
-		test (
-				context,
-				session.find( Person.class, thePerson.getId())
+		test( context, openMutinySession()
+				.chain( session -> session
+						.find( Person.class, thePerson.getId() )
 						.invoke( foundPerson -> {
 							context.assertNotNull( foundPerson );
-							foundPerson.getPhones().remove(  new Phone("111-111-1111") );
-							foundPerson.getPhones().add( new Phone("000") );
+							foundPerson.getPhones().remove( new Phone( "111-111-1111" ) );
+							foundPerson.getPhones().add( new Phone( "000" ) );
 						} )
-						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( person -> assertPhones( context, person, "000", "999-999-9999" ) )
+						.call( session::flush ) )
+				.chain( () -> openMutinySession() )
+				.chain( session -> session.find( Person.class, thePerson.getId() ) )
+				.invoke( person -> assertPhones( context, person, "000", "999-999-9999" ) )
 		);
 	}
 
 	@Test
 	public void replaceSecondCollectionElementStageAPI(TestContext context){
-		Stage.Session session = openSession();
-
-		test (
-				context,
-				session.find( Person.class, thePerson.getId())
+		test( context, openSession()
+				.thenCompose( session -> session
+						.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
 							// remove existing phone and add new phone
 							foundPerson.getPhones().remove( new Phone( "999-999-9999" ) );
 							foundPerson.getPhones().add( new Phone( "000-000-0000" ) );
 						} )
-						.thenCompose(v -> session.flush())
-						.thenCompose( s -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000-000-0000", "111-111-1111" ) )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( s -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000-000-0000", "111-111-1111" ) )
 		);
 	}
 
 	@Test
 	public void replaceSecondCollectionElementMutinyAPI(TestContext context){
-		Mutiny.Session session = openMutinySession();
-
-		test (
-				context,
-				session.find( Person.class, thePerson.getId())
+		test( context, openMutinySession()
+				.chain( session -> session
+						.find( Person.class, thePerson.getId() )
 						.invoke( foundPerson -> {
 							// remove existing phone and add new phone
 							foundPerson.getPhones().remove( new Phone( "999-999-9999" ) );
 							foundPerson.getPhones().add( new Phone( "000-000-0000" ) );
 						} )
-						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( changedPerson -> assertPhones( context, changedPerson, "000-000-0000", "111-111-1111" ) )
+						.call( session::flush ) )
+				.chain( () -> openMutinySession() )
+				.chain( session -> session.find( Person.class, thePerson.getId() ) )
+				.invoke( changedPerson -> assertPhones( context, changedPerson, "000-000-0000", "111-111-1111" ) )
 		);
 	}
 
 	@Test
 	public void setNewElementCollectionStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
-		test (
-				context,
-				session.find( Person.class, thePerson.getId())
+		test( context, openSession()
+				.thenCompose( session -> session
+						.find( Person.class, thePerson.getId() )
 						// replace phones with list of 1 phone
-						.thenAccept( foundPerson -> foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) ))
-						.thenCompose(v -> session.flush())
-						.thenCompose( s -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000-000-0000" ) )
+						.thenAccept( foundPerson -> foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) ) )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( s -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000-000-0000" ) )
 		);
 	}
 
 	@Test
 	public void setNewElementCollectionMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
-		test (
-				context,
-				session.find( Person.class, thePerson.getId())
+		test( context, openMutinySession()
+				.chain( session -> session
+						.find( Person.class, thePerson.getId() )
 						// replace phones with list of 1 phone
-						.invoke( foundPerson -> foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) ))
-						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-						.invoke( changedPerson -> assertPhones( context, changedPerson, "000-000-0000" ) )
+						.invoke( foundPerson -> foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) ) )
+						.call( session::flush ) )
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Person.class, thePerson.getId() ) )
+				.invoke( changedPerson -> assertPhones( context, changedPerson, "000-000-0000" ) )
 		);
 	}
 
 	@Test
 	public void removePersonStageAPI(TestContext context){
-		Stage.Session session = openSession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.find( Person.class, thePerson.getId() )
 						// remove thePerson entity and flush
 						.thenCompose( foundPerson -> session.remove( foundPerson ) )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId()) )
-						.thenAccept( context::assertNull )
-						// Check with native query that the table is empty
-						.thenCompose( v -> selectFromPhonesWithStage( thePerson ) )
-						.thenAccept( resultList -> context.assertTrue( resultList.isEmpty() ) )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( context::assertNull )
+				// Check with native query that the table is empty
+				.thenCompose( v -> selectFromPhonesWithStage( thePerson ) )
+				.thenAccept( resultList -> context.assertTrue( resultList.isEmpty() ) )
 		);
 	}
 
 	@Test
-	public void removePersonMutinyAPI(TestContext context){
-		Mutiny.Session session = openMutinySession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+	public void removePersonMutinyAPI(TestContext context) {
+		test( context, openMutinySession()
+				.chain( session -> session
+						.find( Person.class, thePerson.getId() )
 						// remove thePerson entity and flush
 						.call( session::remove )
-						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, thePerson.getId()) )
-						.invoke( context::assertNull )
-						// Check with native query that the table is empty
-						.chain( () -> selectFromPhonesWithMutiny( thePerson ) )
-						.invoke( resultList -> context.assertTrue( resultList.isEmpty() ) )
+						.call( session::flush ) )
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Person.class, thePerson.getId() ) )
+				.invoke( context::assertNull )
+				// Check with native query that the table is empty
+				.chain( () -> selectFromPhonesWithMutiny( thePerson ) )
+				.invoke( resultList -> context.assertTrue( resultList.isEmpty() ) )
 		);
 	}
 
@@ -532,16 +485,17 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 										  )
 		);
 
-		Stage.Session session = openSession();
-
-		test( context,
-			  session.persist( secondPerson )
-					  .thenCompose( v -> session.flush() )
-					  .thenCompose( v -> openSession().find( Person.class, secondPerson.getId() ) )
-					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "222-222-2222", "333-333-3333", "444-444-4444" ) )
-					  // Check initial person collection hasn't changed
-					  .thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "111-111-1111", "999-999-9999" ) )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( secondPerson )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
+				.thenAccept( foundPerson -> assertPhones( context, foundPerson, "222-222-2222", "333-333-3333", "444-444-4444" ) )
+				// Check initial person collection hasn't changed
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( foundPerson -> assertPhones( context, foundPerson, "111-111-1111", "999-999-9999" ) )
 		);
 	}
 
@@ -555,17 +509,18 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 										  )
 		);
 
-		Mutiny.Session session = openMutinySession();
-
-		test( context,
-			  session.persist( secondPerson )
-					  .call( session::flush )
-					  // Check new person collection
-					  .chain( () -> openMutinySession().find( Person.class, secondPerson.getId() ) )
-					  .invoke( foundPerson -> assertPhones( context, foundPerson, "222-222-2222", "333-333-3333", "444-444-4444" ) )
-					  // Check initial person collection hasn't changed
-					  .chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-					  .invoke( foundPerson -> assertPhones( context, foundPerson, "111-111-1111", "999-999-9999" ) )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.persist( secondPerson )
+						.call( session::flush ) )
+				// Check new person collection
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Person.class, secondPerson.getId() ) )
+				.invoke( foundPerson -> assertPhones( context, foundPerson, "222-222-2222", "333-333-3333", "444-444-4444" ) )
+				// Check initial person collection hasn't changed
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Person.class, thePerson.getId() ) )
+				.invoke( foundPerson -> assertPhones( context, foundPerson, "111-111-1111", "999-999-9999" ) )
 		);
 	}
 
@@ -573,15 +528,15 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 	public void persistCollectionOfNullsWithStageAPI(TestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( null, null ) );
 
-		Stage.Session session = openSession();
-
-		test( context,
-			  session.persist( secondPerson )
-					  .thenCompose( v -> session.flush() )
-					  // Check new person collection
-					  .thenCompose( v -> openSession().find( Person.class, secondPerson.getId() ) )
-					  // Null values don't get persisted
-					  .thenAccept( foundPerson -> context.assertTrue( foundPerson.getPhones().isEmpty() ) )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( secondPerson )
+						.thenCompose( v -> session.flush() ) )
+				// Check new person collection
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
+				// Null values don't get persisted
+				.thenAccept( foundPerson -> context.assertTrue( foundPerson.getPhones().isEmpty() ) )
 		);
 	}
 
@@ -589,15 +544,15 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 	public void persistCollectionOfNullsWithMutinyAPI(TestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( null, null ) );
 
-		Mutiny.Session session = openMutinySession();
-
-		test( context,
-			  session.persist( secondPerson )
-					  .call( session::flush )
-					  // Check new person collection
-					  .chain( () -> openMutinySession().find( Person.class, secondPerson.getId() ) )
-					  // Null values don't get persisted
-					  .invoke( foundPerson -> context.assertTrue( foundPerson.getPhones().isEmpty() ) )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.persist( secondPerson )
+						.call( session::flush ) )
+				// Check new person collection
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Person.class, secondPerson.getId() ) )
+				// Null values don't get persisted
+				.invoke( foundPerson -> context.assertTrue( foundPerson.getPhones().isEmpty() ) )
 		);
 	}
 
@@ -605,15 +560,15 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 	public void persistCollectionWithNullsWithStageAPI(TestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( null, new Phone( "567" ), null ) );
 
-		Stage.Session session = openSession();
-
-		test( context,
-			  session.persist( secondPerson )
-					  .thenCompose( v -> session.flush() )
-					  // Check new person collection
-					  .thenCompose( v -> openSession().find( Person.class, secondPerson.getId() ) )
-					  // Null values don't get persisted
-					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "567" ) )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( secondPerson )
+						.thenCompose( v -> session.flush() ) )
+				// Check new person collection
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
+				// Null values don't get persisted
+				.thenAccept( foundPerson -> assertPhones( context, foundPerson, "567" ) )
 		);
 	}
 
@@ -621,47 +576,47 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 	public void persistCollectionWithNullsWithMutinyAPI(TestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( null, new Phone( "567" ), null ) );
 
-		Mutiny.Session session = openMutinySession();
-
-		test( context,
-			  session.persist( secondPerson )
-					  .call( session::flush )
-					  // Check new person collection
-					  .chain( () -> openMutinySession().find( Person.class, secondPerson.getId() ) )
-					  // Null values don't get persisted
-					  .invoke( foundPerson -> assertPhones( context, foundPerson, "567" ) )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.persist( secondPerson )
+						.call( session::flush ) )
+				// Check new person collection
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Person.class, secondPerson.getId() ) )
+				// Null values don't get persisted
+				.invoke( foundPerson -> assertPhones( context, foundPerson, "567" ) )
 		);
 	}
 
 	@Test
 	public void setCollectionToNullWithStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
-		test( context,
-			  session.find( Person.class, thePerson.getId() )
-					  .thenAccept( found -> {
-						  context.assertFalse( found.getPhones().isEmpty() );
-						  found.setPhones( null );
-					  } )
-					  .thenCompose( v -> session.flush() )
-					  .thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-					  .thenAccept( foundPerson -> assertPhones( context, foundPerson ) )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.find( Person.class, thePerson.getId() )
+						.thenAccept( found -> {
+							context.assertFalse( found.getPhones().isEmpty() );
+							found.setPhones( null );
+						} )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( foundPerson -> assertPhones( context, foundPerson ) )
 		);
 	}
 
 	@Test
 	public void setCollectionToNullWithMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
-		test( context,
-			  session.find( Person.class, thePerson.getId() )
-					  .invoke( found -> {
-						  context.assertFalse( found.getPhones().isEmpty() );
-						  found.setPhones( null );
-					  } )
-					  .call( session::flush )
-					  .chain( () -> openMutinySession().find( Person.class, thePerson.getId() ) )
-					  .invoke( foundPerson -> assertPhones( context, foundPerson ) )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.find( Person.class, thePerson.getId() )
+						.invoke( found -> {
+							context.assertFalse( found.getPhones().isEmpty() );
+							found.setPhones( null );
+						} )
+						.call( session::flush ) )
+				.chain( this::openMutinySession )
+				.chain( session -> session.find( Person.class, thePerson.getId() ) )
+				.invoke( foundPerson -> assertPhones( context, foundPerson ) )
 		);
 	}
 
@@ -670,10 +625,10 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 	 * associated to the selected person.
 	 */
 	private CompletionStage<List<Object>> selectFromPhonesWithStage(Person person) {
-		return openSession()
+		return openSession().thenCompose( session -> session
 				.createNativeQuery( "SELECT * FROM Person_phones where Person_id = ?" )
 				.setParameter( 1, person.getId() )
-				.getResultList();
+				.getResultList() );
 	}
 
 	/**
@@ -681,10 +636,10 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 	 * associated to the selected person
 	 */
 	private Uni<List<Object>> selectFromPhonesWithMutiny(Person person) {
-		return openMutinySession()
+		return openMutinySession().chain( session -> session
 				.createNativeQuery( "SELECT * FROM Person_phones where Person_id = ?" )
 				.setParameter( 1, person.getId() )
-				.getResultList();
+				.getResultList() );
 	}
 
 	private static void assertPhones(TestContext context, Person person, String... phones) {

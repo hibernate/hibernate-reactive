@@ -55,6 +55,7 @@ import javax.persistence.EntityGraph;
 import javax.persistence.Tuple;
 import java.io.Serializable;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
@@ -704,7 +705,20 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
     @Override
     public void close() {
-        reactiveConnection.close();
-        super.close();
+        throw new UnsupportedOperationException( "Non reactive close method called. Use close(CompletableFuture<Void> closing) instead." );
+    }
+
+    @Override
+    public void close(CompletableFuture<Void> closing) {
+        reactiveConnection.close()
+                .thenAccept( v -> super.close() )
+                .whenComplete( (unused, throwable) -> {
+                    if ( throwable != null ) {
+                        closing.completeExceptionally( throwable );
+                    }
+                    else {
+                        closing.complete( null );
+                    }
+                } );
     }
 }
