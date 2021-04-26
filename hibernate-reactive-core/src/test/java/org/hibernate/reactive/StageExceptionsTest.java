@@ -20,8 +20,6 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-
 
 public class StageExceptionsTest extends BaseReactiveTest {
 
@@ -37,7 +35,7 @@ public class StageExceptionsTest extends BaseReactiveTest {
 	public void testDuplicateKeyException(TestContext context) {
 		final Class<PersistenceException> expectedException = PersistenceException.class;
 
-		test( context, completedFuture( openSession() )
+		test( context, openSession()
 				.thenCompose( session -> session.persist( new MyPerson( "testFLush1", "unique" ) )
 						.thenCompose( v -> session.flush() )
 						.thenCompose( v -> session.persist( new MyPerson( "testFlush2", "unique" ) ) )

@@ -24,7 +24,6 @@ import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 
@@ -53,12 +52,12 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist( mostPopularBook )
 								.thenCompose( v -> s.persist( author ) )
 								.thenCompose( v -> s.flush() )
 						)
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, 5 ) )
 						.thenAccept(context::assertNotNull)
 		);

@@ -17,6 +17,7 @@ import javax.persistence.EntityGraph;
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -177,9 +178,13 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
     }
 
     @Override
-    public void close() {
-        delegate.close();
-    }
+    public CompletionStage<Void> close() {
+        return stage( v -> {
+            CompletableFuture<Void> closing = new CompletableFuture<>();
+            delegate.close( closing );
+            return closing;
+        } );
+   }
 
     @Override
     public boolean isOpen() {

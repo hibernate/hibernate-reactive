@@ -12,10 +12,8 @@ import javax.persistence.PrimaryKeyJoinColumn;
 import javax.persistence.Table;
 
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.stage.Stage;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -30,18 +28,6 @@ public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 		return configuration;
 	}
 
-	@Before
-	public void populateDb(TestContext context) {
-		Person person = new Person("Joshua", 1);
-		PersonDetails personDetails = new PersonDetails("Josh", person);
-
-		Stage.Session session = openSession();
-
-		test( context, session.persist( person, personDetails )
-				.thenCompose( v -> session.flush() )
-		);
-	}
-
 	@After
 	public void cleanDb(TestContext context) {
 		test( context, deleteEntities( "PersonDetails", "Person" ) );
@@ -49,11 +35,17 @@ public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 
 	@Test
 	public void verifyParentKeyIsSet(TestContext context) {
-		test(
-				context,
-				openSession().find( PersonDetails.class, 1 )
-						.thenAccept( foundPersonDetails ->
-								context.assertNotNull( foundPersonDetails ) )
+		Person person = new Person( "Joshua", 1 );
+		PersonDetails personDetails = new PersonDetails( "Josh", person );
+
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( person, personDetails )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenAccept( session -> session
+						.find( OneToOneMapsIdTest.PersonDetails.class, 1 )
+						.thenAccept( foundPersonDetails -> context.assertNotNull( foundPersonDetails ) ) )
 		);
 	}
 

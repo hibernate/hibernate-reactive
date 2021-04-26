@@ -15,7 +15,6 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
-import org.hibernate.reactive.common.AutoCloseable;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -47,6 +46,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Base class for unit tests that need a connection to the selected db and
@@ -78,7 +78,8 @@ public abstract class BaseReactiveTest {
 		return vertx;
 	} );
 
-	private AutoCloseable session, statelessSession;
+	private Object session;
+
 	private ReactiveConnection connection;
 
 	protected static void test(TestContext context, CompletionStage<?> work) {
@@ -90,12 +91,6 @@ public abstract class BaseReactiveTest {
 	 */
 	protected static void test(Async async, TestContext context, CompletionStage<?> work) {
 		work.whenComplete( (res, err) -> {
-			if ( res instanceof Stage.Session ) {
-				Stage.Session s = (Stage.Session) res;
-				if ( s.isOpen() ) {
-					s.close();
-				}
-			}
 			if ( err != null ) {
 				context.fail( err );
 			}
@@ -112,17 +107,9 @@ public abstract class BaseReactiveTest {
 	/**
 	 * For when we need to create the {@link Async} in advance
 	 */
-	protected static void test(Async async, TestContext context, Uni<?> uni) {
+	public static void test(Async async, TestContext context, Uni<?> uni) {
 		uni.subscribe().with(
-				res -> {
-					if ( res instanceof Mutiny.Session) {
-						Mutiny.Session session = (Mutiny.Session) res;
-						if ( session.isOpen() ) {
-							session.close();
-						}
-					}
-					async.complete();
-				},
+				res -> async.complete(),
 				throwable -> context.fail( throwable )
 		);
 	}
@@ -236,24 +223,29 @@ public abstract class BaseReactiveTest {
 
 	@After
 	public void after(TestContext context) {
-		if ( session != null && session.isOpen() ) {
-			session.close();
-			session = null;
-		}
-		if ( statelessSession != null && statelessSession.isOpen() ) {
-			statelessSession.close();
-			statelessSession = null;
-		}
+		test( context, closeSession( session )
+				.thenAccept( v -> session = null )
+				.thenCompose( v -> closeSession( connection ) )
+				.thenAccept( v -> connection = null ) );
+	}
 
-		if ( connection != null ) {
-			try {
-				connection.close();
-			}
-			catch (Exception e) {}
-			finally {
-				connection = null;
+	protected static CompletionStage<Void> closeSession(Object closable) {
+		if ( closable instanceof ReactiveConnection ) {
+			return ( (ReactiveConnection) closable ).close();
+		}
+		if ( closable instanceof Mutiny.Session) {
+			Mutiny.Session mutiny = (Mutiny.Session) closable;
+			if ( mutiny.isOpen() ) {
+				return mutiny.close().subscribeAsCompletionStage();
 			}
 		}
+		if ( closable instanceof Stage.Session) {
+			Stage.Session stage = (Stage.Session) closable;
+			if ( stage.isOpen() ) {
+				return stage.close();
+			}
+		}
+		return voidFuture();
 	}
 
 	@AfterClass
@@ -270,22 +262,13 @@ public abstract class BaseReactiveTest {
 	 *
 	 * @return a new Stage.Session
 	 */
-	protected Stage.Session openSession() {
-		if ( session != null && session.isOpen() ) {
-			session.close();
-		}
-		Stage.Session newSession = getSessionFactory().openSession();
-		this.session = newSession;
-		return newSession;
-	}
-
-	protected Stage.StatelessSession openStatelessSession() {
-		if ( statelessSession != null && statelessSession.isOpen() ) {
-			statelessSession.close();
-		}
-		Stage.StatelessSession newSession = getSessionFactory().openStatelessSession();
-		this.statelessSession = newSession;
-		return newSession;
+	protected CompletionStage<Stage.Session> openSession() {
+		return closeSession( session )
+				.thenApply( v -> {
+					Stage.Session newSession = getSessionFactory().openSession();
+					this.session = newSession;
+					return newSession;
+				} );
 	}
 
 	protected CompletionStage<ReactiveConnection> connection() {
@@ -297,22 +280,13 @@ public abstract class BaseReactiveTest {
 	 *
 	 * @return a new Mutiny.Session
 	 */
-	protected Mutiny.Session openMutinySession() {
-		if ( session != null ) {
-			session.close();
-		}
-		Mutiny.Session newSession = getMutinySessionFactory().openSession();
-		this.session = newSession;
-		return newSession;
-	}
-
-	protected Mutiny.StatelessSession openMutinyStatelessSession() {
-		if ( statelessSession != null ) {
-			statelessSession.close();
-		}
-		Mutiny.StatelessSession newSession = getMutinySessionFactory().openStatelessSession();
-		this.statelessSession = newSession;
-		return newSession;
+	protected Uni<Mutiny.Session> openMutinySession() {
+		return Uni.createFrom().completionStage( closeSession( session ) )
+				.replaceWith( () -> {
+					Mutiny.Session newSession = getMutinySessionFactory().openSession();
+					this.session = newSession;
+					return newSession;
+				} );
 	}
 
 	protected Mutiny.SessionFactory getMutinySessionFactory() {

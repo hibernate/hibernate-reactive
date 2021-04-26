@@ -17,6 +17,7 @@ import javax.persistence.EntityGraph;
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -215,8 +216,12 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
     }
 
     @Override
-    public void close() {
-        delegate.close();
+    public Uni<Void> close() {
+        return uni( () -> {
+            CompletableFuture<Void> closing = new CompletableFuture<>();
+            delegate.close( closing );
+            return closing;
+        } );
     }
 
     @Override

@@ -18,7 +18,6 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import java.util.Objects;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
  * Tests queries using positional parameters like "?1, ?2, ...",
@@ -48,8 +47,7 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 
 	@After
 	public void cleanDb(TestContext context) {
-		test( context, completedFuture( openSession() )
-				.thenCompose( s -> s.createQuery("delete Flour").executeUpdate() ) );
+		test( context, deleteEntities( "Flour" ) );
 	}
 
 	@Test

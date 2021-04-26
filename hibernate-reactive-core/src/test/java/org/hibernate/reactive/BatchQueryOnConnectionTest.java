@@ -104,7 +104,7 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 
 		test(
 				context,
-				stage.thenApply( ignore -> openSession() )
+				stage.thenCompose( ignore -> openSession() )
 				.thenCompose( s -> s.createQuery( "select count(*) from DataPoint" ).getSingleResult()
 					.thenApply( result -> {
 						context.assertEquals( (long) nEntities, result );

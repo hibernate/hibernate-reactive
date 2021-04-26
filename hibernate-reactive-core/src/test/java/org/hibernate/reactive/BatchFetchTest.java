@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class BatchFetchTest extends BaseReactiveTest {
 
@@ -66,9 +65,9 @@ public class BatchFetchTest extends BaseReactiveTest {
 		basik.parent.elements.add(new Element(basik.parent));
 
 		test( context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
-						.thenApply(v -> openSession())
+						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.createQuery("from Node n order by id", Node.class)
 								.getResultList()
 								.thenCompose( list -> {
@@ -84,7 +83,7 @@ public class BatchFetchTest extends BaseReactiveTest {
 									} );
 								})
 						)
-						.thenApply(v -> openSession())
+						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.createQuery("from Element e order by id", Element.class)
 								.getResultList()
 								.thenCompose( list -> {
@@ -118,9 +117,9 @@ public class BatchFetchTest extends BaseReactiveTest {
 		basik.parent.elements.add(new Element(basik.parent));
 
 		test( context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
-						.thenApply(v -> openSession())
+						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.find(Element.class,
 								basik.elements.get(1).id,
 								basik.elements.get(2).id,

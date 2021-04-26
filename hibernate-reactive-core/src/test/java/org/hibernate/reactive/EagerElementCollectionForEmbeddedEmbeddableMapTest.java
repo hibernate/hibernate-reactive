@@ -18,8 +18,6 @@ import javax.persistence.FetchType;
 import javax.persistence.Id;
 
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.stage.Stage;
 
 import org.junit.After;
 import org.junit.Before;
@@ -39,14 +37,12 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 
 	@Before
 	public void populateDb(TestContext context) {
-
 		thePerson = new Person( 7242000, "Claude", new Phone( MOBILE, "000") );
 		thePerson.addAlternatePhone( "aaaa", HOME, "111" );
 		thePerson.addAlternatePhone( "bbbb", WORK, "222" );
 		thePerson.addAlternatePhone( "cccc", HOME, "333" );
 
-		Mutiny.Session session = openMutinySession();
-		test( context, session.persist( thePerson ).call( session::flush ) );
+		test( context, getMutinySessionFactory().withTransaction( (s, t) -> s.persist( thePerson ) ) );
 	}
 
 	@After
@@ -56,139 +52,116 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 
 	@Test
 	public void persistWithMutinyAPI(TestContext context) {
-		Mutiny.Session session = openMutinySession();
-
 		Person johnny = new Person( 999, "Johnny English", new Phone( MOBILE, "999") );
 		johnny.addAlternatePhone( "aaaa", HOME, "888" );
 		johnny.addAlternatePhone( "bbbb", WORK, "777" );
 
-		test (
-				context,
-				session.persist( johnny )
-						.call( session::flush )
-						.chain( () -> openMutinySession().find( Person.class, johnny.getId() ) )
-						.invoke( found -> assertPhones( context, found, "999", "888", "777" ) )
+		test( context, openMutinySession()
+				.chain( session -> session
+						.persist( johnny )
+						.call( session::flush ) )
+				.chain( this::openMutinySession )
+				.chain( s -> s.find( Person.class, johnny.getId() ) )
+				.invoke( found -> assertPhones( context, found, "999", "888", "777" ) )
 		);
 	}
 
 	@Test
 	public void findEntityWithElementCollectionWithStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
-		test (
-				context,
-				session.find( Person.class, thePerson.getId() )
-						.thenAccept( found -> assertPhones( context, found, "000", "111", "222", "333" ) )
+		test( context, openSession()
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( found -> assertPhones( context, found, "000", "111", "222", "333" ) )
 		);
 	}
 
 	@Test
 	public void addOneElementWithStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.find( Person.class, thePerson.getId() )
 						// add one element to the collection
-						.thenAccept( foundPerson -> foundPerson.addAlternatePhone( "dddd", WORK,  "444" ) )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( updatedPerson ->
-											 assertPhones(
-													 context,
-													 updatedPerson,
-													 "000","111", "222", "333", "444"
-											 ) )
+						.thenAccept( foundPerson -> foundPerson.addAlternatePhone( "dddd", WORK, "444" ) )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( updatedPerson -> assertPhones( context, updatedPerson, "000","111", "222", "333", "444" ) )
 		);
 	}
 
 	@Test
 	public void removeOneElementWithStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, openSession()
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
 						// Remove one element from the collection
 						.thenAccept( foundPerson -> foundPerson.removeAlternativePhone( "cccc" ) )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( updatedPerson -> assertPhones( context, updatedPerson, "000", "111", "222" ) )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( updatedPerson -> assertPhones( context, updatedPerson, "000", "111", "222" ) )
 		);
 	}
 
 	@Test
 	public void clearCollectionOfElementsWithStageAPI(TestContext context){
-		Stage.Session session = openSession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, openSession()
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
 							context.assertFalse( foundPerson.getAlternativePhones().isEmpty() );
 							foundPerson.getAlternativePhones().clear();
 						} )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() )
-								.thenAccept(
-										changedPerson ->
-												context.assertTrue( changedPerson.getAlternativePhones().isEmpty() ) )
-						)
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( changedPerson -> context.assertTrue( changedPerson.getAlternativePhones().isEmpty() ) )
 		);
 	}
 
 	@Test
 	public void removeAndAddElementWithStageAPI(TestContext context){
-		Stage.Session session = openSession();
-
-		test (
-				context,
-				session.find( Person.class, thePerson.getId())
+		test( context, openSession()
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
 							context.assertNotNull( foundPerson );
 							foundPerson.removeAlternativePhone( "cccc" );
-							foundPerson.addAlternatePhone( "dddd", MOBILE, "444"  );
+							foundPerson.addAlternatePhone( "dddd", MOBILE, "444" );
 						} )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000", "111", "222", "444" ) )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000", "111", "222", "444" ) )
 		);
 	}
 
 	@Test
 	public void setNewElementCollectionWithStageAPI(TestContext context){
-		Stage.Session session = openSession();
-
-		test (
-				context,
-				session.find( Person.class, thePerson.getId())
+		test( context, openSession()
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
 							context.assertNotNull( foundPerson );
 							context.assertFalse( foundPerson.getAlternativePhones().isEmpty() );
-							foundPerson.getPhone().setAlternativePhones( new HashMap<>()  );
+							foundPerson.getPhone().setAlternativePhones( new HashMap<>() );
 							foundPerson.addAlternatePhone( "aaaa", WORK, "555" );
 						} )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId()) )
-						.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000", "555" ) )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000", "555" ) )
 		);
 	}
 
 	@Test
 	public void removePersonWithStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
-		test(
-				context,
-				session.find( Person.class, thePerson.getId() )
+		test( context, openSession()
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
 						// remove thePerson entity and flush
 						.thenCompose( foundPerson -> session.remove( foundPerson ) )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-						.thenAccept( nullPerson -> context.assertNull( nullPerson ) )
-						// Check with native query that the table is empty
-						.thenCompose( v -> selectFromPhonesWithStage( thePerson ) )
-						.thenAccept( resultList -> context.assertTrue( resultList.isEmpty() ) )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( nullPerson -> context.assertNull( nullPerson ) )
+				// Check with native query that the table is empty
+				.thenCompose( v -> selectFromPhonesWithStage( thePerson ) )
+				.thenAccept( resultList -> context.assertTrue( resultList.isEmpty() ) )
 		);
 	}
 
@@ -198,17 +171,16 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 		secondPerson.addAlternatePhone( "aaaa", HOME, "666" );
 		secondPerson.addAlternatePhone( "bbbb", WORK, "777" );
 
-		Stage.Session session = openSession();
-
-		test( context,
-			  session.persist( secondPerson )
-					  .thenCompose( v -> session.flush() )
-					  // Check new person collection
-					  .thenCompose( v -> openSession().find( Person.class, secondPerson.getId() ) )
-					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "123", "666", "777" ) )
-					  // Check initial person collection hasn't changed
-					  .thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "000", "111", "222", "333" ) )
+		test( context, openSession()
+				.thenCompose( session -> session.persist( secondPerson )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
+				.thenAccept( foundPerson -> assertPhones( context, foundPerson, "123", "666", "777" ) )
+				// Check initial person collection hasn't changed
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( foundPerson -> assertPhones( context, foundPerson, "000", "111", "222", "333" ) )
 		);
 	}
 
@@ -218,15 +190,13 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 		secondPerson.getAlternativePhones().put( "xxx", null );
 		secondPerson.getAlternativePhones().put( "yyy", null );
 
-		Stage.Session session = openSession();
-
-		test( context,
-			  session.persist( secondPerson )
-					  .thenCompose( v -> session.flush() )
-					  // Check new person collection
-					  .thenCompose( v -> openSession().find( Person.class, secondPerson.getId() ) )
-					  // Null values don't get persisted
-					  .thenAccept( foundPerson -> context.assertTrue( foundPerson.getAlternativePhones().isEmpty() ) )
+		test( context, openSession()
+				.thenCompose( session -> session.persist( secondPerson )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
+				// Null values don't get persisted
+				.thenAccept( foundPerson -> context.assertTrue( foundPerson.getAlternativePhones().isEmpty() ) )
 		);
 	}
 
@@ -237,31 +207,28 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 		secondPerson.getAlternativePhones().put("ggg", new AlternativePhone(MOBILE, "567" ));
 		secondPerson.getAlternativePhones().put( "yyy", null );
 
-		Stage.Session session = openSession();
-
-		test( context,
-			  session.persist( secondPerson )
-					  .thenCompose( v -> session.flush() )
-					  // Check new person collection
-					  .thenCompose( v -> openSession().find( Person.class, secondPerson.getId() ) )
-					  // Null values don't get persisted
-					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "123", "567" ) )
+		test( context, openSession()
+				.thenCompose( session -> session.persist( secondPerson )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
+				// Null values don't get persisted
+				.thenAccept( foundPerson -> assertPhones( context, foundPerson, "123", "567" ) )
 		);
 	}
 
 	@Test
 	public void setCollectionToNullWithStageAPI(TestContext context) {
-		Stage.Session session = openSession();
-
-		test( context,
-			  session.find( Person.class, thePerson.getId() )
-					  .thenAccept( found -> {
-						  context.assertFalse( found.getAlternativePhones().isEmpty() );
-						  found.getPhone().setAlternativePhones( null );
-					  } )
-					  .thenCompose( v -> session.flush() )
-					  .thenCompose( v -> openSession().find( Person.class, thePerson.getId() ) )
-					  .thenAccept( foundPerson -> assertPhones( context, foundPerson, "000" ) )
+		test( context, openSession()
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
+						.thenAccept( found -> {
+							context.assertFalse( found.getAlternativePhones().isEmpty() );
+							found.getPhone().setAlternativePhones( null );
+						} )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+				.thenAccept( foundPerson -> assertPhones( context, foundPerson, "000" ) )
 		);
 	}
 
@@ -270,10 +237,10 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 	 * associated to the selected person.
 	 */
 	private CompletionStage<List<Object>> selectFromPhonesWithStage(Person person) {
-		return openSession()
+		return openSession().thenCompose( session -> session
 				.createNativeQuery( "SELECT * FROM Person_phones where Person_id = ?" )
 				.setParameter( 1, person.getId() )
-				.getResultList();
+				.getResultList() );
 	}
 
 	private static void assertPhones(TestContext context, Person person, String mainPhone, String... phones) {

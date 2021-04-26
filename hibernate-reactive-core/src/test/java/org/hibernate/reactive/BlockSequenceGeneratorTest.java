@@ -12,7 +12,6 @@ import org.junit.Test;
 import javax.persistence.*;
 import java.util.Objects;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 
 public class BlockSequenceGeneratorTest extends BaseReactiveTest {
@@ -34,7 +33,7 @@ public class BlockSequenceGeneratorTest extends BaseReactiveTest {
 		c.string = "Goodbye";
 
 		test( context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose(s -> s.persist(new TableId("One"))
 								.thenCompose(v -> s.persist(new TableId("Two")))
 								.thenCompose(v -> s.persist(new TableId("Three")))
@@ -44,7 +43,7 @@ public class BlockSequenceGeneratorTest extends BaseReactiveTest {
 								.thenCompose(v -> s.persist(c))
 								.thenCompose(v -> s.flush())
 						)
-						.thenCompose( v -> completedFuture( openSession() )
+						.thenCompose( v -> openSession()
 								.thenCompose( s2 -> s2.find( TableId.class, b.getId() )
 										.thenAccept( bb -> {
 											context.assertNotNull( bb );
@@ -58,13 +57,13 @@ public class BlockSequenceGeneratorTest extends BaseReactiveTest {
 										.thenCompose(vv -> s2.find( TableId.class, b.getId() ))
 										.thenAccept( bt -> context.assertEquals( bt.version, 1 ))
 								) )
-						.thenCompose( v -> completedFuture( openSession() )
+						.thenCompose( v -> openSession()
 								.thenCompose( s3 -> s3.find( TableId.class, b.getId() ) ) )
 						.thenAccept( bb -> {
 							context.assertEquals(bb.version, 1);
 							context.assertEquals( bb.string, "Goodbye");
 						} )
-						.thenCompose( v -> completedFuture( openSession() )
+						.thenCompose( v -> openSession()
 								.thenCompose( s4 -> s4.find( TableId.class, c.getId() )
 										.thenAccept( cc -> {
 											context.assertNotNull( cc );

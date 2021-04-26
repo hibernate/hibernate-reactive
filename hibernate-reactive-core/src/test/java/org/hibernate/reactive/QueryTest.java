@@ -39,7 +39,6 @@ import java.util.List;
 
 import static javax.persistence.CascadeType.PERSIST;
 import static javax.persistence.FetchType.LAZY;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class QueryTest extends BaseReactiveTest {
 
@@ -81,12 +80,12 @@ public class QueryTest extends BaseReactiveTest {
 		b = delete.from(Book.class);
 
 		test(context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( session -> session.persist(author1, author2)
 								.thenCompose( v -> session.flush() )
 								.whenComplete( (v,err) -> session.close() )
 						)
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery(query).getResultList() )
 						.thenAccept( books -> {
 							context.assertEquals( 3, books.size() );
@@ -96,9 +95,9 @@ public class QueryTest extends BaseReactiveTest {
 								context.assertNotNull( book.isbn );
 							} );
 						} )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery(update).executeUpdate() )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery(delete).executeUpdate() )
 		);
 	}
@@ -132,12 +131,12 @@ public class QueryTest extends BaseReactiveTest {
 		delete.where( builder.equal( b.get("title"), t ) );
 
 		test(context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( session -> session.persist(author1, author2)
 								.thenCompose( v -> session.flush() )
 								.whenComplete( (v,err) -> session.close() )
 						)
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery(query)
 								.setParameter( t, "Snow Crash")
 								.getResultList() )
@@ -151,11 +150,11 @@ public class QueryTest extends BaseReactiveTest {
 							} );
 						} )
 
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery(update)
 								.setParameter( t, "Snow Crash")
 								.executeUpdate() )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery(delete)
 								.setParameter( t, "Snow Crash")
 								.executeUpdate() )
@@ -191,12 +190,12 @@ public class QueryTest extends BaseReactiveTest {
 		delete.where( builder.equal( b.get("title"), t ) );
 
 		test(context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( session -> session.persist(author1, author2)
 								.thenCompose( v -> session.flush() )
 								.whenComplete( (v,err) -> session.close() )
 						)
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery(query)
 								.setParameter("title", "Snow Crash")
 								.getResultList() )
@@ -210,11 +209,11 @@ public class QueryTest extends BaseReactiveTest {
 							} );
 						} )
 
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery(update)
 								.setParameter("title", "Snow Crash")
 								.executeUpdate() )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery(delete)
 								.setParameter("title", "Snow Crash")
 								.executeUpdate() )
@@ -241,12 +240,12 @@ public class QueryTest extends BaseReactiveTest {
 		query.where( a.get("name").in("Neal Stephenson", "William Gibson") );
 
 		test(context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( session -> session.persist(author1, author2)
 								.thenCompose( v -> session.flush() )
 								.whenComplete( (v,err) -> session.close() )
 						)
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery(query).getResultList() )
 						.thenAccept( books -> {
 							context.assertEquals( 2, books.size() );
@@ -270,12 +269,12 @@ public class QueryTest extends BaseReactiveTest {
 		author2.books.add(book3);
 
 		test(context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( session -> session.persist(author1, author2)
 								.thenCompose( v -> session.flush() )
 								.whenComplete( (v,err) -> session.close() )
 						)
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 					.thenCompose( session -> session.createNativeQuery("select * from books order by isbn", Book.class).getResultList() )
 					.thenAccept( books -> {
 						context.assertEquals( 3, books.size() );
@@ -300,12 +299,12 @@ public class QueryTest extends BaseReactiveTest {
 		author2.books.add(book3);
 
 		test(context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( session -> session.persist(author1, author2)
 								.thenCompose( v -> session.flush() )
 								.whenComplete( (v,err) -> session.close() )
 						)
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery("select * from books where title=?1 order by isbn", Book.class)
 								.setParameter(1, "Snow Crash")
 								.getResultList() )
@@ -319,7 +318,7 @@ public class QueryTest extends BaseReactiveTest {
 							} );
 						} )
 
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery("update books set title = ?1 where title = ?2")
 								.setParameter(1, "XXX")
 								.setParameter(2, "Snow Crash")
@@ -340,12 +339,12 @@ public class QueryTest extends BaseReactiveTest {
 		author2.books.add(book3);
 
 		test(context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( session -> session.persist(author1, author2)
 								.thenCompose( v -> session.flush() )
 								.whenComplete( (v,err) -> session.close() )
 						)
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery("select * from books where title=:title order by isbn", Book.class)
 								.setParameter("title", "Snow Crash")
 								.getResultList() )
@@ -359,7 +358,7 @@ public class QueryTest extends BaseReactiveTest {
 							} );
 						} )
 
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery("update books set title = :newtitle where title = :title")
 								.setParameter("newtitle", "XXX")
 								.setParameter("title", "Snow Crash")
@@ -380,12 +379,12 @@ public class QueryTest extends BaseReactiveTest {
 		author2.books.add(book3);
 
 		test(context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( session -> session.persist(author1, author2)
 								.thenCompose( v -> session.flush() )
 								.whenComplete( (v,err) -> session.close() )
 						)
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery(
 								"select b.title, a.name from books b join authors a on author_id=a.id order by b.isbn",
 								session.getResultSetMapping(Object[].class, "title,author")
@@ -400,7 +399,7 @@ public class QueryTest extends BaseReactiveTest {
 							} );
 						} )
 
-						.thenApply( v -> openSession() ).thenCompose(
+						.thenCompose( v -> openSession() ).thenCompose(
 								session -> session.createQuery( "select title from Book", String.class )
 										.getResultList()
 										.thenAccept( list -> context.assertTrue( list.get(0) instanceof String ) )
@@ -453,12 +452,12 @@ public class QueryTest extends BaseReactiveTest {
 		author2.books.add(book3);
 
 		test(context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( session -> session.persist(author1, author2)
 								.thenCompose( v -> session.flush() )
 								.whenComplete( (v,err) -> session.close() )
 						)
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNamedQuery("title,author (hql)", Object[].class).getResultList() )
 						.thenAccept( books -> {
 							context.assertEquals( 3, books.size() );
@@ -470,7 +469,7 @@ public class QueryTest extends BaseReactiveTest {
 							} );
 						} )
 
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery("update Book set title = ?1 where title = ?2")
 								.setParameter(1, "XXX")
 								.setParameter(2, "Snow Crash")
@@ -491,12 +490,12 @@ public class QueryTest extends BaseReactiveTest {
 		author2.books.add(book3);
 
 		test(context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( session -> session.persist(author1, author2)
 								.thenCompose( v -> session.flush() )
 								.whenComplete( (v,err) -> session.close() )
 						)
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNamedQuery("title,author (sql)", Object[].class).getResultList() )
 						.thenAccept( books -> {
 							context.assertEquals( 3, books.size() );
@@ -517,7 +516,7 @@ public class QueryTest extends BaseReactiveTest {
 				: "select current_timestamp";
 
 		test(context,
-				completedFuture(openSession())
+				openSession()
 						.thenCompose(s -> s.createNativeQuery(sql).getSingleResult())
 						.thenAccept(r -> {
 							context.assertNotNull(r);
@@ -528,7 +527,7 @@ public class QueryTest extends BaseReactiveTest {
 
 	@Test
 	public void testSingleResultQueryNull(TestContext context) {
-		test(context, completedFuture(openSession())
+		test(context, openSession()
 				.thenCompose(s -> s.createQuery("from Book").getSingleResultOrNull())
 				.thenAccept(context::assertNull)
 		);
@@ -536,7 +535,7 @@ public class QueryTest extends BaseReactiveTest {
 
 	@Test
 	public void testSingleResultQueryException(TestContext context) {
-		test(context, completedFuture(openSession())
+		test(context, openSession()
 				.thenCompose(s -> s.createQuery("from Book").getSingleResult())
 				.whenComplete((r, x) -> {
 					context.assertNull(r);
@@ -554,9 +553,10 @@ public class QueryTest extends BaseReactiveTest {
 	public void testSingleResultMultipleException(TestContext context) {
 		Author author1 = new Author("Iain M. Banks");
 		Author author2 = new Author("Neal Stephenson");
-		test(context, completedFuture(openSession())
+		test(context, openSession()
 				.thenCompose(s -> s.persist(author1, author2).thenCompose(v -> s.flush()))
-				.thenCompose(v -> openSession().createQuery("from Author").getSingleResult())
+				.thenCompose(v -> openSession())
+				.thenCompose(s -> s.createQuery("from Author").getSingleResult())
 				.whenComplete((r, x) -> {
 					context.assertNull(r);
 					context.assertNotNull(x);
@@ -566,7 +566,8 @@ public class QueryTest extends BaseReactiveTest {
 					context.assertTrue(x.getCause() instanceof NonUniqueResultException);
 					return null;
 				})
-				.thenCompose(v -> openSession().createQuery("from Author").getSingleResultOrNull())
+				.thenCompose(v -> openSession())
+				.thenCompose(s -> s.createQuery("from Author").getSingleResultOrNull())
 				.whenComplete((r, x) -> {
 					context.assertNull(r);
 					context.assertNotNull(x);

@@ -38,33 +38,30 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	@Test
 	public void testStatelessSession(TestContext context) {
 		GuineaPig pig = new GuineaPig("Aloi");
-		Stage.StatelessSession ss = openStatelessSession();
-		test(
-				context,
-				ss.insert(pig)
-						.thenCompose( v -> ss.createQuery("from GuineaPig where name=:n", GuineaPig.class)
-								.setParameter("n", pig.name)
-								.getResultList() )
-						.thenAccept( list -> {
-							context.assertFalse( list.isEmpty() );
-							context.assertEquals(1, list.size());
-							assertThatPigsAreEqual(context, pig, list.get(0));
-						} )
-						.thenCompose( v -> ss.get(GuineaPig.class, pig.id) )
-						.thenCompose( p -> {
-							assertThatPigsAreEqual(context, pig, p);
-							p.name = "X";
-							return ss.update(p);
-						} )
-						.thenCompose( v -> ss.refresh(pig) )
-						.thenAccept( v -> context.assertEquals(pig.name, "X") )
-						.thenCompose( v -> ss.createQuery("update GuineaPig set name='Y'").executeUpdate() )
-						.thenCompose( v -> ss.refresh(pig) )
-						.thenAccept( v -> context.assertEquals(pig.name, "Y") )
-						.thenCompose( v -> ss.delete(pig) )
-						.thenCompose( v -> ss.createQuery("from GuineaPig").getResultList() )
-						.thenAccept( list -> context.assertTrue( list.isEmpty() ) )
-						.thenAccept( v -> ss.close() )
+		test( context, getSessionFactory().withStatelessSession( ss -> ss
+				.insert( pig )
+				.thenCompose( v -> ss.createQuery( "from GuineaPig where name=:n", GuineaPig.class )
+						.setParameter( "n", pig.name )
+						.getResultList() )
+				.thenAccept( list -> {
+					context.assertFalse( list.isEmpty() );
+					context.assertEquals( 1, list.size() );
+					assertThatPigsAreEqual( context, pig, list.get( 0 ) );
+				} )
+				.thenCompose( v -> ss.get( GuineaPig.class, pig.id ) )
+				.thenCompose( p -> {
+					assertThatPigsAreEqual( context, pig, p );
+					p.name = "X";
+					return ss.update( p );
+				} )
+				.thenCompose( v -> ss.refresh( pig ) )
+				.thenAccept( v -> context.assertEquals( pig.name, "X" ) )
+				.thenCompose( v -> ss.createQuery( "update GuineaPig set name='Y'" ).executeUpdate() )
+				.thenCompose( v -> ss.refresh( pig ) )
+				.thenAccept( v -> context.assertEquals( pig.name, "Y" ) )
+				.thenCompose( v -> ss.delete( pig ) )
+				.thenCompose( v -> ss.createQuery( "from GuineaPig" ).getResultList() )
+				.thenAccept( list -> context.assertTrue( list.isEmpty() ) ) )
 		);
 	}
 

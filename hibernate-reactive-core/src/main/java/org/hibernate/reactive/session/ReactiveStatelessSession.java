@@ -9,6 +9,7 @@ import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 
 import javax.persistence.EntityGraph;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -60,6 +61,6 @@ public interface ReactiveStatelessSession extends ReactiveQueryExecutor {
 
     boolean isOpen();
 
-    void close();
+    void close(CompletableFuture<Void> closing);
 
 }

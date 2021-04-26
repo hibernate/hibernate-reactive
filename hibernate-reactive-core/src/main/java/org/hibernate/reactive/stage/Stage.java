@@ -17,7 +17,6 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.reactive.common.AffectedEntities;
-import org.hibernate.reactive.common.AutoCloseable;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -304,7 +303,7 @@ public interface Stage {
 	 *
 	 * @see org.hibernate.Session
 	 */
-	interface Session extends AutoCloseable {
+	interface Session {
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
@@ -1075,7 +1074,7 @@ public interface Stage {
 		 * Close the reactive session and release the underlying database
 		 * connection.
 		 */
-		void close();
+		CompletionStage<Void> close();
 
 		/**
 		 * @return false if {@link #close()} has been called
@@ -1113,7 +1112,7 @@ public interface Stage {
 	 *
 	 * @see org.hibernate.StatelessSession
 	 */
-	interface StatelessSession extends AutoCloseable {
+	interface StatelessSession {
 
 		/**
 		 * Retrieve a row.
@@ -1384,15 +1383,13 @@ public interface Stage {
 		/**
 		 * @return false if {@link #close()} has been called
 		 */
-		@Override
 		boolean isOpen();
 
 		/**
 		 * Close the reactive session and release the underlying database
 		 * connection.
 		 */
-		@Override
-		void close();
+		CompletionStage<Void> close();
 	}
 
 	/**
@@ -1570,6 +1567,7 @@ public interface Stage {
 		/**
 		 * Destroy the session factory and clean up its connection pool.
 		 */
+		@Override
 		void close();
 
 		/**

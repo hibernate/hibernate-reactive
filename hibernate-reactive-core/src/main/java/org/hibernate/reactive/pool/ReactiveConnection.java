@@ -61,6 +61,5 @@ public interface ReactiveConnection {
 
 	CompletionStage<Void> executeBatch();
 
-	void close();
-
+	CompletionStage<Void> close();
 }

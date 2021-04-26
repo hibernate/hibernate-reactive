@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class ReferenceTest extends BaseReactiveTest {
 
@@ -34,23 +33,23 @@ public class ReferenceTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist(goodOmens).thenCompose(v -> s.flush()) )
-						.thenApply(v -> openSession())
+						.thenCompose( v -> openSession() )
 						.thenCompose(s -> {
 							Book book = s.getReference(Book.class, goodOmens.getId());
 							context.assertFalse( Hibernate.isInitialized(book) );
 							return s.persist( new Author("Neil Gaiman", book) )
 									.thenCompose( v -> s.flush() );
 						} )
-						.thenApply(v -> openSession())
+						.thenCompose( v -> openSession() )
 						.thenCompose( s -> {
 							Book book = s.getReference(goodOmens);
 							context.assertFalse( Hibernate.isInitialized(book) );
 							return s.persist( new Author("Terry Pratchett", book) )
 									.thenCompose( v -> s.flush() );
 						} )
-						.thenApply(v -> openSession())
+						.thenCompose( v -> openSession() )
 						.thenCompose( s -> {
 							Book book = s.getReference(goodOmens);
 							context.assertFalse( Hibernate.isInitialized(book) );
@@ -70,14 +69,14 @@ public class ReferenceTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist(goodOmens).thenCompose(v -> s.flush()) )
-						.thenApply(v -> openSession())
+						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> {
 							Book reference = sess.getReference(goodOmens);
 							context.assertFalse( Hibernate.isInitialized(reference) );
 							sess.close();
-							return completedFuture( openSession() )
+							return openSession()
 									.thenCompose(s -> {
 										Book book = s.getReference(Book.class, reference.getId());
 										context.assertFalse( Hibernate.isInitialized(book) );
@@ -85,7 +84,7 @@ public class ReferenceTest extends BaseReactiveTest {
 										return s.persist( new Author("Neil Gaiman", book) )
 												.thenCompose( v -> s.flush() );
 									} )
-									.thenApply(v -> openSession())
+									.thenCompose( v -> openSession() )
 									.thenCompose( s -> {
 										Book book = s.getReference(reference);
 										context.assertFalse( Hibernate.isInitialized(book) );
@@ -93,7 +92,7 @@ public class ReferenceTest extends BaseReactiveTest {
 										return s.persist( new Author("Terry Pratchett", book) )
 												.thenCompose( v -> s.flush() );
 									} )
-									.thenApply(v -> openSession())
+									.thenCompose( v -> openSession() )
 									.thenCompose( s -> {
 										Book book = s.getReference(reference);
 										context.assertFalse( Hibernate.isInitialized(book) );
@@ -115,18 +114,18 @@ public class ReferenceTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist(goodOmens).thenCompose( v -> s.flush() ) )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> {
 							Book reference = sess.getReference(goodOmens);
 							context.assertFalse( Hibernate.isInitialized(reference) );
 							sess.close();
-							return completedFuture( openSession() )
+							return openSession()
 									.thenCompose( s -> s.remove( s.getReference(reference) )
 											.thenCompose( v -> s.flush() ) );
 						} )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> sess.find( Book.class, goodOmens.getId() ) )
 						.thenAccept( book -> context.assertNull(book) )
 		);
@@ -138,18 +137,18 @@ public class ReferenceTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist(goodOmens).thenCompose( v -> s.flush() ) )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> {
 							Book reference = sess.getReference(goodOmens);
 							context.assertFalse( Hibernate.isInitialized(reference) );
 							sess.close();
-							return completedFuture( openSession() )
+							return openSession()
 									.thenCompose( s -> s.lock( s.getReference(reference), LockMode.PESSIMISTIC_FORCE_INCREMENT )
 											.thenCompose( v -> s.flush() ) );
 						} )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> sess.find( Book.class, goodOmens.getId() ) )
 						.thenAccept( book -> {
 							context.assertNotNull(book);
@@ -164,19 +163,19 @@ public class ReferenceTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist(goodOmens).thenCompose( v -> s.flush() ) )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> {
 							Book reference = sess.getReference(goodOmens);
 							context.assertFalse( Hibernate.isInitialized(reference) );
 							sess.close();
-							return completedFuture( openSession() )
+							return openSession()
 									.thenCompose( s -> s.refresh( s.getReference(reference) )
 											.thenAccept( v -> context.assertTrue( Hibernate.isInitialized( s.getReference(reference) ) ) )
 											.thenCompose( v -> s.flush() ) );
 						} )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> sess.find( Book.class, goodOmens.getId() ) )
 						.thenAccept( book -> {
 							context.assertNotNull(book);

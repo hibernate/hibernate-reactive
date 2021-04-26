@@ -27,7 +27,6 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class LazyInitializationExceptionWithStage extends BaseReactiveTest {
 
@@ -55,7 +54,7 @@ public class LazyInitializationExceptionWithStage extends BaseReactiveTest {
 
 	@Test
 	public void testLazyInitializationException(TestContext context) throws Exception {
-		test( context, completedFuture( openSession() )
+		test( context, openSession()
 				.thenCompose( session ->
 				  	session.createQuery( "from Artist", Artist.class )
 						.getSingleResult()
@@ -79,7 +78,7 @@ public class LazyInitializationExceptionWithStage extends BaseReactiveTest {
 
 	@Test
 	public void testLazyInitializationExceptionNotThrown(TestContext context) throws Exception {
-		test( context, completedFuture( openSession() )
+		test( context, openSession()
 			.thenCompose( session -> session.createQuery( "from Artist", Artist.class ).getSingleResult() )
 			 // We are checking `.getPaintings()` but not doing anything with it and therefore it should work.
 			.thenAccept( artist -> artist.getPaintings() )

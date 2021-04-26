@@ -176,7 +176,7 @@ public class BatchingConnection implements ReactiveConnection {
         return delegate.rollbackTransaction();
     }
 
-    public void close() {
-        delegate.close();
+    public CompletionStage<Void> close() {
+        return delegate.close();
     }
 }

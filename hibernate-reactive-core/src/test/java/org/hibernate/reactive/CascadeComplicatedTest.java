@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -106,7 +105,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 	public void testPersist(TestContext context) {
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose(s -> s.persist(b)
 								.thenApply(v -> bId = b.id)
 								.thenCompose(v -> s.flush())
@@ -120,7 +119,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 	public void testMergeTransient(TestContext context) {
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose(s -> s.merge(b)
 								.thenAccept(bMerged -> bId = bMerged.id)
 								.thenCompose(v -> s.flush())
@@ -152,13 +151,13 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 	public void testMergeDetachedAssociationsUninitialized(TestContext context) {
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose(s -> s.persist(b)
 								.thenAccept( v -> bId = b.id )
 								.thenCompose(v -> s.flush())
 								.thenAccept(v -> s.close())
 						)
-						.thenCompose(ignore -> completedFuture( openSession() )
+						.thenCompose(ignore -> openSession()
 								.thenCompose(s2 -> s2.merge(b))
 						)
 						.thenCompose(v -> check(context))
@@ -170,7 +169,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose(s -> s.persist(b)
 								.thenAccept(v -> bId = b.id)
 								.thenCompose(v -> s.flush())
@@ -182,7 +181,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 							// Everything will need to be merged, then deleted in the proper order
 							prepareEntitiesForDelete();
 						})
-						.thenApply(v -> openSession())
+						.thenCompose( v -> openSession() )
 						.thenCompose(s2 -> s2.merge(b).thenApply(merged -> {
 							b = merged;
 							return s2;

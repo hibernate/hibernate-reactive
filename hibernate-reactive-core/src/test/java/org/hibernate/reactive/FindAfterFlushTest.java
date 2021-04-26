@@ -12,8 +12,6 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.stage.Stage;
 
 import org.junit.After;
 import org.junit.Test;
@@ -43,27 +41,23 @@ public class FindAfterFlushTest extends BaseReactiveTest {
 	@Test
 	public void findAfterFlushWithStages(TestContext context) {
 		final Webcomic wc = new Webcomic( "Girls With Slingshots ", "Danielle Corsetto" );
-		Stage.Session s = openSession();
-		test( context, s
+		test( context, getSessionFactory().withSession( s -> s
 				.persist( wc )
 				.thenCompose( $ -> s.flush() )
 				.thenCompose( $ -> s.find( Webcomic.class, wc.getId() ) )
 				.thenAccept( found -> context.assertEquals( wc, found ) )
-			  	.thenAccept( $ -> s.close() )
-		);
+		) );
 	}
 
 	@Test
 	public void findAfterFlushWithMutiny(TestContext context) {
 		final Webcomic wc = new Webcomic( "Saturday Morning Breakfast Cereal ", "Zach Weinersmith" );
-		Mutiny.Session s = openMutinySession();
-		test( context, s
+		test( context, getMutinySessionFactory().withSession( s -> s
 				.persist( wc )
 				.call( () -> s.flush() )
 				.chain( () -> s.find( Webcomic.class, wc.getId() ) )
 				.invoke( found -> context.assertEquals( wc, found ) )
-				.invoke( () -> s.close() )
-		);
+		) );
 	}
 
 	@Test

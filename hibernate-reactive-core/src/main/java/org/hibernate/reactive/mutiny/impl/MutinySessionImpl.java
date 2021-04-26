@@ -468,8 +468,8 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public void close() {
-		delegate.close();
+	public Uni<Void> close() {
+		return uni( delegate::reactiveClose );
 	}
 
 	@Override

@@ -17,7 +17,6 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLInsert;
 import org.hibernate.annotations.SQLUpdate;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.Before;
@@ -27,7 +26,6 @@ import org.junit.Test;
 import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class CustomStoredProcedureSqlTest extends BaseReactiveTest {
 
@@ -84,61 +82,56 @@ public class CustomStoredProcedureSqlTest extends BaseReactiveTest {
 		theRecord = new SimpleRecord();
 		theRecord.text = INITIAL_TEXT;
 
-		test( context,
-			  completedFuture( openSession() )
-					  .thenCompose( s -> s.createNativeQuery( INSERT_SP_SQL ).executeUpdate()
-							  .thenCompose( v -> s.createNativeQuery( UPDATE_SP_SQL ).executeUpdate() )
-							  .thenCompose( v -> s.createNativeQuery( DELETE_SP_SQL ).executeUpdate() )
-							  .thenCompose( v -> s.persist( theRecord ) )
-							  .thenCompose( v -> s.flush())
-					  )
+		test( context, openSession()
+				.thenCompose( s -> s
+						.createNativeQuery( INSERT_SP_SQL ).executeUpdate()
+						.thenCompose( v -> s.createNativeQuery( UPDATE_SP_SQL ).executeUpdate() )
+						.thenCompose( v -> s.createNativeQuery( DELETE_SP_SQL ).executeUpdate() )
+						.thenCompose( v -> s.persist( theRecord ) )
+						.thenCompose( v -> s.flush() )
+				)
 		);
 	}
 
 	@Test
 	public void testInsertStoredProcedure(TestContext context) {
-		Stage.Session session = openSession();
-
-		test(
-				context,
-				session.find( SimpleRecord.class, theRecord.id )
-						.thenAccept( foundRecord -> context.assertNotNull( foundRecord ) )
+		test( context, openSession().thenCompose( session -> session
+				.find( SimpleRecord.class, theRecord.id )
+				.thenAccept( foundRecord -> context.assertNotNull( foundRecord ) ) )
 		);
 	}
 
 	@Test
 	public void testUpdateStoredProcedure(TestContext context) {
-		Stage.Session session = openSession();
-
-		test(
-				context,
-				session.find( SimpleRecord.class, theRecord.id )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.find( SimpleRecord.class, theRecord.id )
 						.thenAccept( foundRecord -> foundRecord.text = UPDATED_TEXT )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( SimpleRecord.class, theRecord.id ) )
-						.thenAccept( foundRecord -> {
-							context.assertEquals( UPDATED_TEXT, foundRecord.text );
-							context.assertNotNull( foundRecord.updated );
-							context.assertNull( foundRecord.deleted );
-						} )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( SimpleRecord.class, theRecord.id ) )
+				.thenAccept( foundRecord -> {
+					context.assertEquals( UPDATED_TEXT, foundRecord.text );
+					context.assertNotNull( foundRecord.updated );
+					context.assertNull( foundRecord.deleted );
+				} )
 		);
 	}
 
 	@Test
 	public void testDeleteStoredProcedure(TestContext context) {
-		Stage.Session session = openSession();
-
-		test(
-				context,
-				session.find( SimpleRecord.class, theRecord.id )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.find( SimpleRecord.class, theRecord.id )
 						.thenCompose( foundRecord -> session.remove( foundRecord ) )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( SimpleRecord.class, theRecord.id ) )
-						.thenAccept( foundRecord -> {
-							context.assertEquals( INITIAL_TEXT, foundRecord.text );
-							context.assertNotNull( foundRecord.updated );
-							context.assertNotNull( foundRecord.deleted );
-						} )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( SimpleRecord.class, theRecord.id ) )
+				.thenAccept( foundRecord -> {
+					context.assertEquals( INITIAL_TEXT, foundRecord.text );
+					context.assertNotNull( foundRecord.updated );
+					context.assertNotNull( foundRecord.deleted );
+				} )
 		);
 	}
 

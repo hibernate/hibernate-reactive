@@ -52,7 +52,7 @@ public class LongLobTest extends BaseReactiveTest {
 		test(
 				context,
 				getSessionFactory().withTransaction( (s, t) -> s.persist( original ) )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( s2 -> s2.find( Basic.class, original.id )
 								.thenAccept( found -> {
 									context.assertNotNull( found );

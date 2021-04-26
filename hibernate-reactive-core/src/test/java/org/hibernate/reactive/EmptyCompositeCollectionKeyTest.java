@@ -17,9 +17,6 @@ import javax.persistence.Id;
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
-
-
-import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.After;
@@ -51,20 +48,21 @@ public class EmptyCompositeCollectionKeyTest extends BaseReactiveTest {
 		/* CASE 1:  Family has Parent + child with null names + NULL relatives */
 		Family family = new Family( 1, new Parent( new Child( null, null ) ) );
 
-		Stage.Session session = openSession();
-		test(
-				context,
-				session.persist( family ).thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Family.class, family.id ) )
-						.thenAccept( foundFamily -> {
-							context.assertTrue( Hibernate.isInitialized( foundFamily.parent.children ) );
-							context.assertNull( foundFamily.parent.nickname );
-							context.assertTrue( foundFamily.parent.children.isEmpty() );
-							context.assertNull( foundFamily.parent.child.name );
-							context.assertNull( foundFamily.parent.child.petname );
-							context.assertTrue( Hibernate.isInitialized( foundFamily.relatives ) );
-							context.assertTrue( foundFamily.relatives.isEmpty() );
-						} )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( family )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Family.class, family.id ) )
+				.thenAccept( foundFamily -> {
+					context.assertTrue( Hibernate.isInitialized( foundFamily.parent.children ) );
+					context.assertNull( foundFamily.parent.nickname );
+					context.assertTrue( foundFamily.parent.children.isEmpty() );
+					context.assertNull( foundFamily.parent.child.name );
+					context.assertNull( foundFamily.parent.child.petname );
+					context.assertTrue( Hibernate.isInitialized( foundFamily.relatives ) );
+					context.assertTrue( foundFamily.relatives.isEmpty() );
+				} )
 		);
 	}
 
@@ -73,18 +71,20 @@ public class EmptyCompositeCollectionKeyTest extends BaseReactiveTest {
 		/* CASE 2:  Family has Parent + child with null names + NULL relatives */
 		Family family = new Family( 2, new Parent() );
 
-		Stage.Session session = openSession();
-		test(
-				context, session.persist( family ).thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Family.class, family.id ) )
-						.thenAccept( foundFamily -> {
-							context.assertTrue( Hibernate.isInitialized( foundFamily.parent.children ) );
-							context.assertNull( foundFamily.parent.nickname );
-							context.assertTrue( foundFamily.parent.children.isEmpty() );
-							context.assertNotNull( foundFamily.parent.child );
-							context.assertNull( foundFamily.parent.child.petname );
-							context.assertTrue( foundFamily.relatives.isEmpty() );
-						} )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( family )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Family.class, family.id ) )
+				.thenAccept( foundFamily -> {
+					context.assertTrue( Hibernate.isInitialized( foundFamily.parent.children ) );
+					context.assertNull( foundFamily.parent.nickname );
+					context.assertTrue( foundFamily.parent.children.isEmpty() );
+					context.assertNotNull( foundFamily.parent.child );
+					context.assertNull( foundFamily.parent.child.petname );
+					context.assertTrue( foundFamily.relatives.isEmpty() );
+				} )
 		);
 	}
 
@@ -93,18 +93,20 @@ public class EmptyCompositeCollectionKeyTest extends BaseReactiveTest {
 		/* CASE 3:  Parent and children are all null */
 		Family family = new Family( 3, null );
 
-		Stage.Session session = openSession();
-		test(
-				context, session.persist( family ).thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Family.class, family.id ) )
-						.thenAccept( foundFamily -> {
-							context.assertTrue( Hibernate.isInitialized( foundFamily.parent.children ) );
-							context.assertNull( foundFamily.parent.nickname );
-							context.assertTrue( foundFamily.parent.children.isEmpty() );
-							context.assertNotNull( foundFamily.parent.child );
-							context.assertNull( foundFamily.parent.child.name );;
-							context.assertTrue( foundFamily.relatives.isEmpty() );
-						} )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( family )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Family.class, family.id ) )
+				.thenAccept( foundFamily -> {
+					context.assertTrue( Hibernate.isInitialized( foundFamily.parent.children ) );
+					context.assertNull( foundFamily.parent.nickname );
+					context.assertTrue( foundFamily.parent.children.isEmpty() );
+					context.assertNotNull( foundFamily.parent.child );
+					context.assertNull( foundFamily.parent.child.name );
+					context.assertTrue( foundFamily.relatives.isEmpty() );
+				} )
 		);
 	}
 
@@ -116,19 +118,21 @@ public class EmptyCompositeCollectionKeyTest extends BaseReactiveTest {
 		relatives.add( new Child() );
 		Family family = new Family( 4, null, relatives );
 
-		Stage.Session session = openSession();
-		test(
-				context, session.persist( family ).thenCompose( v -> session.flush() )
-						.thenCompose( v -> openSession().find( Family.class, family.id ) )
-						.thenAccept( foundFamily -> {
-							context.assertTrue( Hibernate.isInitialized( foundFamily.parent.children ) );
-							context.assertNull( foundFamily.parent.nickname );
-							context.assertTrue( foundFamily.parent.children.isEmpty() );
-							context.assertNotNull( foundFamily.parent.child );
-							context.assertNull( foundFamily.parent.child.petname );
-							context.assertFalse( foundFamily.relatives.isEmpty() );
-							context.assertNull( foundFamily.relatives.iterator().next().name );
-						} )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( family )
+						.thenCompose( v -> session.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( Family.class, family.id ) )
+				.thenAccept( foundFamily -> {
+					context.assertTrue( Hibernate.isInitialized( foundFamily.parent.children ) );
+					context.assertNull( foundFamily.parent.nickname );
+					context.assertTrue( foundFamily.parent.children.isEmpty() );
+					context.assertNotNull( foundFamily.parent.child );
+					context.assertNull( foundFamily.parent.child.petname );
+					context.assertFalse( foundFamily.relatives.isEmpty() );
+					context.assertNull( foundFamily.relatives.iterator().next().name );
+				} )
 		);
 	}
 

@@ -45,12 +45,12 @@ public class VertxEventLoopThreadTest extends BaseReactiveTest {
 				.as( "This is not a Vert.x event loop thread " + currentThread )
 				.isTrue();
 
-		test( context, openSession()
-			.find( Boardgame.class, "Wingspan" )
-			.thenAccept( v -> {
-				Thread insideThread = Thread.currentThread();
-				context.assertEquals( currentThread, insideThread );
-			} ) );
+		test( context, openSession().thenCompose( session -> session
+				.find( Boardgame.class, "Wingspan" )
+				.thenAccept( v -> {
+					Thread insideThread = Thread.currentThread();
+					context.assertEquals( currentThread, insideThread );
+				} ) ) );
 	}
 
 	@Test
@@ -60,12 +60,12 @@ public class VertxEventLoopThreadTest extends BaseReactiveTest {
 				.as( "This is not a Vert.x event loop thread " + currentThread )
 				.isTrue();
 
-		test( context, openMutinySession()
+		test( context, openMutinySession().chain( session -> session
 				.find( Boardgame.class, "The Crew: the quest for planet nine" )
 				.invoke( v -> {
 					Thread insideThread = Thread.currentThread();
 					context.assertEquals( currentThread, insideThread );
-				} ) );
+				} ) ) );
 	}
 
 	@Entity

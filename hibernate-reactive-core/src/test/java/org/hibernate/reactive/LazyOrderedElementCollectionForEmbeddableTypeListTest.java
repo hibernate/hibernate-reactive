@@ -8,7 +8,6 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.stage.Stage;
 
 import org.junit.After;
 import org.junit.Before;
@@ -66,11 +65,7 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 		phones.add( new Phone( "111-111-1111" ) );
 		thePerson = new Person( 777777, "Claude", phones );
 
-		Stage.Session session = openSession();
-
-		test( context, session.persist( thePerson )
-				.thenCompose( v -> session.flush() )
-		);
+		test( context, getSessionFactory().withTransaction( (s, t) -> s.persist( thePerson ) ) );
 	}
 
 	@Test

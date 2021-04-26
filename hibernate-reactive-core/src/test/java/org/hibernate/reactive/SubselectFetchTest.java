@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class SubselectFetchTest extends BaseReactiveTest {
 
@@ -57,9 +56,9 @@ public class SubselectFetchTest extends BaseReactiveTest {
 		basik.parent.elements.add(new Element(basik.parent));
 
 		test( context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
-						.thenApply(v -> openSession())
+						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.createQuery("from Node n order by id", Node.class)
 								.getResultList()
 								.thenCompose( list -> {

@@ -27,8 +27,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-
 /**
  * Test all the types and lifecycle callbacks that we expect to work on all supported DBs
  */
@@ -54,7 +52,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		test(
 				context,
 				getSessionFactory().withTransaction( (s, t) -> s.persist( original ) )
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( s2 -> s2.find( Basic.class, original.id )
 								.thenAccept( found -> {
 									context.assertNotNull( found );
@@ -172,7 +170,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testDateType(TestContext context) throws Exception {
+	public void testDateType(TestContext context) {
 		Date date = new Date( 2000, Calendar.JANUARY, 1 );
 		Basic basic = new Basic();
 		basic.date = date;
@@ -181,7 +179,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testDateAsTimestampType(TestContext context) throws Exception {
+	public void testDateAsTimestampType(TestContext context) {
 		Date date = new Date();
 		Basic basic = new Basic();
 		basic.dateAsTimestamp = date;
@@ -193,7 +191,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testTimeZoneType(TestContext context) throws Exception {
+	public void testTimeZoneType(TestContext context) {
 		TimeZone timeZone = TimeZone.getTimeZone( "America/Los_Angeles" );
 		Basic basic = new Basic();
 		basic.timeZone = timeZone;
@@ -202,7 +200,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testCalendarAsDateType(TestContext context) throws Exception {
+	public void testCalendarAsDateType(TestContext context) {
 		Calendar calendar = GregorianCalendar.getInstance();
 		calendar.set( Calendar.DAY_OF_MONTH,  15);
 		calendar.set( Calendar.MONTH,  7);
@@ -224,7 +222,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testCalendarAsTimestampType(TestContext context) throws Exception {
+	public void testCalendarAsTimestampType(TestContext context) {
 		Calendar calendar = GregorianCalendar.getInstance();
 		calendar.set( Calendar.DAY_OF_MONTH, 15 );
 		calendar.set( Calendar.MONTH, 7 );
@@ -245,7 +243,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLocalDateType(TestContext context) throws Exception {
+	public void testLocalDateType(TestContext context) {
 		LocalDate now = LocalDate.now();
 		Basic basic = new Basic();
 		basic.localDate = now;
@@ -254,7 +252,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLocalDateTimeType(TestContext context) throws Exception {
+	public void testLocalDateTimeType(TestContext context) {
 		// @Temporal(TemporalType.TIMESTAMP) is stored to the mills by Hibernate
 		LocalDateTime now = LocalDateTime.now()
 				// required for JDK 15+
@@ -280,7 +278,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testEmbeddableType(TestContext context) throws Exception {
+	public void testEmbeddableType(TestContext context) {
 		Embed embed = new Embed( "one", "two" );
 		Basic basic = new Basic();
 		basic.embed = embed;
@@ -291,7 +289,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testBigIntegerWithConverterType(TestContext context) throws Exception {
+	public void testBigIntegerWithConverterType(TestContext context) {
 		Basic basic = new Basic();
 		basic.bigIntegerAsString = BigInteger.TEN;
 
@@ -301,7 +299,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testBigDecimalWithUserType(TestContext context) throws Exception {
+	public void testBigDecimalWithUserType(TestContext context) {
 		Basic basic = new Basic();
 		basic.bigDecimalAsString = BigDecimal.TEN;
 
@@ -311,7 +309,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testSerializableType(TestContext context) throws Exception {
+	public void testSerializableType(TestContext context) {
 		String[] thing = { "hello", "world" };
 
 		Basic basic = new Basic();
@@ -324,7 +322,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testUUIDType(TestContext context) throws Exception {
+	public void testUUIDType(TestContext context) {
 		Basic basic = new Basic();
 		basic.uuid = UUID.fromString( "123e4567-e89b-42d3-a456-556642440000" );
 
@@ -332,15 +330,15 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testDecimalType(TestContext context) throws Exception {
+	public void testDecimalType(TestContext context) {
 		Basic basic = new Basic();
-		basic.bigDecimal = new BigDecimal( 12.12d );
+		basic.bigDecimal = new BigDecimal( "12.12" );
 
 		testField( context, basic, found -> context.assertEquals( basic.bigDecimal.floatValue(), found.bigDecimal.floatValue() ) );
 	}
 
 	@Test
-	public void testBigIntegerType(TestContext context) throws Exception {
+	public void testBigIntegerType(TestContext context) {
 		Basic basic = new Basic();
 		basic.bigInteger = BigInteger.valueOf( 123L);
 
@@ -348,7 +346,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLocalTimeType(TestContext context) throws Exception {
+	public void testLocalTimeType(TestContext context) {
 		Basic basic = new Basic();
 		basic.localTime = LocalTime.now();
 
@@ -359,7 +357,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testDateAsTimeType(TestContext context) throws Exception {
+	public void testDateAsTimeType(TestContext context) {
 		Date date = new Date();
 
 		Basic basic = new Basic();
@@ -381,7 +379,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> s.persist( basik.parent ).thenCompose( v -> s.persist( basik ) )
 								.thenAccept( v -> context.assertTrue( basik.prePersisted && !basik.postPersisted ) )
 								.thenAccept( v -> context.assertTrue( basik.parent.prePersisted && !basik.parent.postPersisted ) )
@@ -389,7 +387,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 								.thenAccept( v -> context.assertTrue( basik.prePersisted && basik.postPersisted ) )
 								.thenAccept( v -> context.assertTrue( basik.parent.prePersisted && basik.parent.postPersisted ) )
 						)
-						.thenCompose( v -> completedFuture( openSession() )
+						.thenCompose( v -> openSession()
 								.thenCompose( s2 -> s2.find( Basic.class, basik.getId() )
 										.thenCompose( basic -> {
 											context.assertNotNull( basic );
@@ -412,7 +410,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 													} );
 										} )
 								) )
-						.thenCompose( v -> completedFuture( openSession() )
+						.thenCompose( v -> openSession()
 								.thenCompose( s3 -> s3.find( Basic.class, basik.getId() )
 										.thenCompose( basic -> {
 											context.assertFalse( basic.postUpdated && basic.preUpdated );
@@ -425,7 +423,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 													.thenAccept( vv -> context.assertTrue( basic.postRemoved && basic.preRemoved ) );
 										} )
 								) )
-						.thenCompose( v -> completedFuture( openSession() )
+						.thenCompose( v -> openSession()
 								.thenCompose( s4 -> s4.find( Basic.class, basik.getId() ) )
 								.thenAccept( context::assertNull ) )
 		);

@@ -17,7 +17,6 @@ import org.junit.After;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class EagerOneToManyAssociationTest extends BaseReactiveTest {
@@ -69,14 +68,14 @@ public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 
 		test(
 				context,
-				completedFuture( openSession() )
+				openSession()
 						.thenCompose( s -> voidFuture()
 								.thenCompose( v -> s.persist(goodOmens) )
 								.thenCompose( v -> s.persist(neilGaiman) )
 								.thenCompose( v -> s.persist(terryPratchett) )
 								.thenCompose( v -> s.flush() )
 						)
-						.thenApply( v -> openSession() )
+						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, goodOmens.getId() ) )
 						.thenAccept( optionalBook -> {
 							context.assertNotNull( optionalBook );
@@ -95,22 +94,18 @@ public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 		goodOmens.getAuthors().add( neilGaiman );
 		goodOmens.getAuthors().add( terryPratchett );
 
-		test(
-				context,
-				completedFuture( openStatelessSession() )
-						.thenCompose( s -> voidFuture()
-								.thenCompose( v -> s.insert(goodOmens) )
-								.thenCompose( v -> s.insert(neilGaiman) )
-								.thenCompose( v -> s.insert(terryPratchett) )
-						)
-						.thenApply( v -> openStatelessSession() )
-						.thenCompose( s -> s.get( Book.class, goodOmens.getId() ) )
+		test( context, getSessionFactory()
+				.withStatelessSession( session -> session
+						.insert( goodOmens, neilGaiman, terryPratchett ) )
+				.thenCompose( v -> getSessionFactory().withStatelessSession( session -> session
+						.get( Book.class, goodOmens.getId() )
 						.thenAccept( optionalBook -> {
 							context.assertNotNull( optionalBook );
 							context.assertEquals( 2, optionalBook.getAuthors().size() );
-							context.assertTrue( optionalBook.getAuthors().contains( neilGaiman )  );
-							context.assertTrue( optionalBook.getAuthors().contains( terryPratchett )  );
+							context.assertTrue( optionalBook.getAuthors().contains( neilGaiman ) );
+							context.assertTrue( optionalBook.getAuthors().contains( terryPratchett ) );
 						} )
+				) )
 		);
 	}
 

@@ -13,7 +13,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.Rule;
@@ -47,12 +46,12 @@ public abstract class UUIDAsBinaryType extends BaseReactiveTest {
 			ExactSizeUUIDEntity entityA = new ExactSizeUUIDEntity( "Exact Size A" );
 			ExactSizeUUIDEntity entityB = new ExactSizeUUIDEntity( "Exact Size B" );
 
-			Mutiny.Session session = openMutinySession();
-			test( context, session
+			test( context, openMutinySession().chain( session -> session
 					.persistAll( entityA, entityB )
-					.call( session::flush )
+					.call( session::flush ) )
 					.invoke( () -> context.assertNotEquals( entityA.id, entityB.id ) )
-					.chain( () -> openMutinySession().find( ExactSizeUUIDEntity.class, entityA.id, entityB.id ) )
+					.chain( () -> openMutinySession() )
+					.chain( session -> session.find( ExactSizeUUIDEntity.class, entityA.id, entityB.id ) )
 					.invoke( list -> {
 						context.assertEquals( list.size(), 2 );
 						context.assertTrue( list.containsAll( asList( entityA, entityB ) ) );
@@ -120,12 +119,12 @@ public abstract class UUIDAsBinaryType extends BaseReactiveTest {
 			UUIDEntity entityA = new UUIDEntity( "UUID A" );
 			UUIDEntity entityB = new UUIDEntity( "UUID B" );
 
-			Mutiny.Session session = openMutinySession();
-			test( context, session
+			test( context, openMutinySession().chain( session -> session
 					.persistAll( entityA, entityB )
-					.call( session::flush )
+					.call( session::flush ) )
 					.invoke( () -> context.assertNotEquals( entityA.id, entityB.id ) )
-					.chain( () -> openMutinySession().find( UUIDEntity.class, entityA.id, entityB.id ) )
+					.chain( () -> openMutinySession() )
+					.chain( session -> session.find( UUIDEntity.class, entityA.id, entityB.id ) )
 					.invoke( list -> {
 						context.assertEquals( list.size(), 2 );
 						context.assertTrue( list.containsAll( asList( entityA, entityB ) ) );

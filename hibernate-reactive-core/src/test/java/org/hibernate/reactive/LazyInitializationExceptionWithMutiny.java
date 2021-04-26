@@ -20,7 +20,6 @@ import javax.persistence.Table;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.cfg.Configuration;
 
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,31 +57,31 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 
 	@Test
 	public void testLazyInitializationException(TestContext context) throws Exception {
-		Mutiny.Session session = openMutinySession();
 		test( context,
-				session.createQuery( "from Artist", Artist.class )
-						.getSingleResult()
-						.onItem().invoke( artist -> artist.getPaintings().size() )
-						.onItem().invoke( () -> context.fail( "Unexpected success, we expect " + LazyInitializationException.class.getName() ) )
-						.onFailure().recoverWithUni( throwable -> {
-							context.assertEquals( LazyInitializationException.class, throwable.getClass() );
-							context.assertEquals(
-									"Collection cannot be initialized: org.hibernate.reactive.LazyInitializationExceptionWithMutiny$Artist.paintings",
-									throwable.getMessage()
-							);
-							return Uni.createFrom().nullItem();
-						} )
+			  openMutinySession().chain( session -> session
+					  .createQuery( "from Artist", Artist.class )
+					  .getSingleResult() ).onItem()
+					  .invoke( artist -> artist.getPaintings().size() )
+					  .onItem().invoke( () -> context.fail( "Unexpected success, we expect " + LazyInitializationException.class.getName() ) )
+					  .onFailure().recoverWithUni( throwable -> {
+						  context.assertEquals( LazyInitializationException.class, throwable.getClass() );
+						  context.assertEquals(
+								  "Collection cannot be initialized: org.hibernate.reactive.LazyInitializationExceptionWithMutiny$Artist.paintings",
+								  throwable.getMessage()
+						  );
+						  return Uni.createFrom().nullItem();
+					  } )
 		);
 	}
 
 	@Test
 	public void testLazyInitializationExceptionNotThrown(TestContext context) throws Exception {
-		Mutiny.Session session = openMutinySession();
 		test( context,
-				session.createQuery( "from Artist", Artist.class )
-						.getSingleResult()
-						// We are checking `.getPaintings()` but not doing anything with it and therefore it should work.
-						.onItem().invoke( artist -> artist.getPaintings() )
+			  openMutinySession().chain( session -> session
+					  .createQuery( "from Artist", Artist.class )
+					  .getSingleResult() )
+					  // We are checking `.getPaintings()` but not doing anything with it and therefore it should work.
+					  .onItem().invoke( artist -> artist.getPaintings() )
 		);
 	}
 
