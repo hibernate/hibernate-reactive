@@ -54,7 +54,7 @@ public class StageExceptionsTest extends BaseReactiveTest {
 	}
 
 	@Entity
-	public class MyPerson {
+	public static class MyPerson {
 
 		@Id
 		public String name;

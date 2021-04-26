@@ -54,7 +54,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public Uni<Void> flush() {
 //		checkOpen();
-		return uni( () -> delegate.reactiveFlush() );
+		return uni( delegate::reactiveFlush );
 	}
 
 	@Override

@@ -74,9 +74,7 @@ public class FindAfterFlushTest extends BaseReactiveTest {
 						.persist( wc )
 						.thenCompose( $ -> s.flush() )
 						.thenCompose( $ -> s.find( Webcomic.class, wc.getId() ) )
-						.thenAccept( found -> {
-							context.assertEquals( wc, found );
-						} )
+						.thenAccept( found -> context.assertEquals( wc, found ) )
 				)
 		);
 	}
@@ -87,8 +85,8 @@ public class FindAfterFlushTest extends BaseReactiveTest {
 		test( context, getMutinySessionFactory()
 				.withTransaction( (s, tx) -> s
 						.persist( wc )
-						.then( () -> s.flush() )
-					  	.then( () -> s.find( Webcomic.class, wc.getId() ) )
+						.call( () -> s.flush() )
+					  	.chain( () -> s.find( Webcomic.class, wc.getId() ) )
 					  	.invoke( found -> {
 							context.assertEquals( wc, found );
 						} )
@@ -157,7 +155,7 @@ public class FindAfterFlushTest extends BaseReactiveTest {
 
 		@Override
 		public String toString() {
-			return new StringBuilder( title ).append( " by " ).append( creator ).toString();
+			return title + " by " + creator;
 		}
 	}
 }
