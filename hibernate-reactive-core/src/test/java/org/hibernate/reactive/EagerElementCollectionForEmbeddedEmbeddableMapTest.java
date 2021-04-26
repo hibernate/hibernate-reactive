@@ -216,7 +216,7 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 	public void persistCollectionOfNullsWithStageAPI(TestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty", new Phone( MOBILE, "123") );
 		secondPerson.getAlternativePhones().put( "xxx", null );
-		secondPerson.getAlternativePhones().put( "xxx", null );
+		secondPerson.getAlternativePhones().put( "yyy", null );
 
 		Stage.Session session = openSession();
 
