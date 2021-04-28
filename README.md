@@ -17,7 +17,7 @@ especially targeted toward usage in reactive environments like
 [Quarkus][] and [Vert.x][].
 
 Currently [PostgreSQL][], [MySQL][], [MariaDB][], [Db2][], and 
-CockroachDB are supported.
+[CockroachDB][] are supported.
 
 Learn more at <http://hibernate.org/reactive>.
 
@@ -48,6 +48,7 @@ Support for SQL Server is coming soon.
 [MySQL]: https://www.mysql.com
 [MariaDB]: https://mariadb.com
 [DB2]: https://www.ibm.com/analytics/db2
+[CockroachDB]: https://www.cockroachlabs.com/
 
 ## Documentation
 
