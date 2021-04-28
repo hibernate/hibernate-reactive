@@ -39,14 +39,16 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 public class ReactiveBasicCollectionPersister extends BasicCollectionPersister
 		implements ReactiveAbstractCollectionPersister {
-	private final Parameters parameters;
+
+	private Parameters parameters() {
+		return Parameters.instance( getFactory().getJdbcServices().getDialect() );
+	}
 
 	public ReactiveBasicCollectionPersister(Collection collectionBinding,
 											CollectionDataAccess cacheAccessStrategy,
 											PersisterCreationContext creationContext)
 			throws MappingException, CacheException {
 		super( collectionBinding, cacheAccessStrategy, creationContext );
-		this.parameters = Parameters.instance( getFactory().getJdbcServices().getDialect() );
 	}
 
 	public CompletionStage<Void> reactiveInitialize(Serializable key,
@@ -136,27 +138,47 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister
 	}
 
 	@Override
+	protected String generateInsertRowString() {
+		String sql = super.generateInsertRowString();
+		return parameters().process( sql );
+	}
+
+	@Override
+	protected String generateUpdateRowString() {
+		String sql = super.generateUpdateRowString();
+		return parameters().process( sql );
+	}
+
+	@Override
+	protected String generateDeleteRowString() {
+		String sql = super.generateDeleteRowString();
+		return parameters().process( sql );
+	}
+
+	@Override
+	protected String generateDeleteString() {
+		String sql = super.generateDeleteString();
+		return parameters().process( sql );
+	}
+
+	@Override
 	public String getSQLInsertRowString() {
-		String sql = super.getSQLInsertRowString();
-		return parameters.process( sql );
-	}
-
-	@Override
-	public String getSQLDeleteRowString() {
-		String sql = super.getSQLDeleteRowString();
-		return parameters.process( sql );
-	}
-
-	@Override
-	public String getSQLDeleteString() {
-		String sql = super.getSQLDeleteString();
-		return parameters.process( sql );
+		return super.getSQLInsertRowString();
 	}
 
 	@Override
 	public String getSQLUpdateRowString() {
-		String sql = super.getSQLUpdateRowString();
-		return parameters.process( sql );
+		return super.getSQLUpdateRowString();
+	}
+
+	@Override
+	public String getSQLDeleteRowString() {
+		return super.getSQLDeleteRowString();
+	}
+
+	@Override
+	public String getSQLDeleteString() {
+		return super.getSQLDeleteString();
 	}
 
 	@Override
