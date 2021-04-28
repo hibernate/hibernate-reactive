@@ -9,6 +9,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 import javax.persistence.PrimaryKeyJoinColumn;
+import javax.persistence.Table;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
@@ -57,6 +58,7 @@ public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 	}
 
 	@Entity(name = "Person")
+	@Table(name = "PrimaryKeyPerson")
 	public static class Person  {
 		@Id
 		private Integer id;
@@ -76,6 +78,7 @@ public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 	}
 
 	@Entity(name = "PersonDetails")
+	@Table(name = "PrimaryKeyPersonDetails")
 	public static class PersonDetails  {
 		@Id
 		private Integer id;
