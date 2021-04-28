@@ -66,7 +66,7 @@ and schema to run the tests:
 ```
 podman run --rm --name HibernateTestingMariaDB \
     -e MYSQL_ROOT_PASSWORD=hreact -e MYSQL_DATABASE=hreact -e MYSQL_USER=hreact -e MYSQL_PASSWORD=hreact \
-    -p 3306:3306 mariadb:10.5.8
+    -p 3306:3306 mariadb:10.5.9
 ```
 
 When the database has started, you can run the tests on MariaDB with:
