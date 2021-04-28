@@ -9,6 +9,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.MapsId;
 import javax.persistence.OneToOne;
+import javax.persistence.Table;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
@@ -57,6 +58,7 @@ public class OneToOneMapsIdTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "Person")
+	@Table(name = "MapsIdPerson")
 	public static class Person  {
 		@Id
 		private Integer id;
@@ -72,6 +74,7 @@ public class OneToOneMapsIdTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "PersonDetails")
+	@Table(name = "MapsIdPersonDetails")
 	public static class PersonDetails  {
 		@Id
 		private Integer id;
