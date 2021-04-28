@@ -40,7 +40,7 @@ jobs:
           - 3306:3306
       postgres:
         # Docker Hub image
-        image: postgres:13.1
+        image: postgres:13.2
         env:
           POSTGRES_DB: hreact
           POSTGRES_USER: hreact
