@@ -3,7 +3,7 @@
 
 [![CI Status](https://github.com/hibernate/hibernate-reactive/workflows/Hibernate%20Reactive%20CI/badge.svg)](https://github.com/hibernate/hibernate-reactive/actions?query=workflow%3A%22Hibernate+Reactive+CI%22)
 [![License](https://img.shields.io/badge/License-LGPL%202.1-green.svg)](https://opensource.org/licenses/LGPL-2.1)
-[![Download](https://api.bintray.com/packages/hibernate/artifacts/hibernate-reactive/images/download.svg)](https://bintray.com/hibernate/artifacts/hibernate-reactive/_latestVersion)
+[![Maven Central](https://img.shields.io/maven-central/v/org.hibernate.reactive/hibernate-reactive-core.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.hibernate.reactive%22)
 
 [Hibernate logo]: http://static.jboss.org/hibernate/images/hibernate_logo_whitebkg_200px.png
 
