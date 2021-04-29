@@ -34,7 +34,7 @@ public final class DefaultVertxInstance implements VertxInstance, Stoppable, Sta
     @Override
     public void stop() {
         if ( vertx != null ) {
-            vertx.close();
+            vertx.close().toCompletionStage().toCompletableFuture().join();
         }
     }
 
