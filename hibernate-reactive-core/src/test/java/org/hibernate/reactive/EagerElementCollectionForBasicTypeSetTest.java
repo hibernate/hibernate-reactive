@@ -234,15 +234,14 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 
 	@Test
 	public void setNewElementCollectionWithMutinyAPI(TestContext context) {
-		test( context, openMutinySession()
-				.chain( session -> session
+		test( context, getMutinySessionFactory()
+				.withTransaction( (session, tx) -> session
 						.find( Person.class, thePerson.getId() )
 						.invoke( foundPerson -> {
 							context.assertNotNull( foundPerson );
 							context.assertFalse( foundPerson.getPhones().isEmpty() );
 							foundPerson.setPhones( new HashSet<>( Arrays.asList( "555" ) ) );
-						} )
-						.call( session::flush ) )
+						} ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )
 				.invoke( changedPerson -> assertPhones( context, changedPerson, "555" ) )
@@ -251,12 +250,11 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 
 	@Test
 	public void removePersonWithStageAPI(TestContext context) {
-		test( context, openSession()
-				.thenCompose( session -> session
+		test( context, getSessionFactory()
+				.withTransaction( (session, tx) -> session
 						.find( Person.class, thePerson.getId() )
 						// remove thePerson entity and flush
-						.thenCompose( foundPerson -> session.remove( foundPerson ) )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( foundPerson -> session.remove( foundPerson ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( nullPerson -> context.assertNull( nullPerson ) )
