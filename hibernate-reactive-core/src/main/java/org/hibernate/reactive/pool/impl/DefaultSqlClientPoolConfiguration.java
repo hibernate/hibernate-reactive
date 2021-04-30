@@ -212,6 +212,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
                 return 50000;
             case "cockroachdb":
                 return 26257;
+            case "mssqlserver":
             case "sqlserver":
                 return 1433;
             default:
