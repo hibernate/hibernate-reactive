@@ -29,11 +29,7 @@ class ReactiveIdTableSupport extends IdTableSupportStandardImpl {
 
     @Override
     public String generateIdTableName(String baseName) {
-        StringBuilder sb = new StringBuilder(baseName.length() + 4);
-        if (dialect instanceof SQLServerDialect) {
-            sb.append("#");
-        }
-        return sb.append("ht_").append(baseName).toString();
+        return (dialect instanceof SQLServerDialect ?  "#" : "ht_") + baseName;
     }
 
     @Override
