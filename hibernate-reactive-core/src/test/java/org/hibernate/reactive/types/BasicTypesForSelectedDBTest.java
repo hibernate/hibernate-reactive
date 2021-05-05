@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MSSQLSERVER;
 
 /**
  * Test types that we expect to work only on selected DBs.
@@ -28,7 +29,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MAR
 public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 
 	@Rule
-	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, MARIA ); //TODO: make it work on Maria
+	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, MARIA, MSSQLSERVER ); //TODO: make it work on Maria
 
 	@Override
 	protected Configuration constructConfiguration() {
