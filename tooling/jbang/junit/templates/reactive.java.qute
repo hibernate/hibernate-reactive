@@ -1,0 +1,160 @@
+///usr/bin/env jbang "$0" "$@" ; exit $?
+//DEPS org.hibernate:hibernate-core:5.4.10.Final
+//DEPS junit:junit:4.12
+//DEPS javax.persistence:javax.persistence-api:2.2
+//DEPS org.hibernate.reactive:hibernate-reactive-core:1.0.0.CR4
+//DEPS org.assertj:assertj-core:3.13.2
+//DEPS io.vertx:vertx-core:4.0.3
+//DEPS io.vertx:vertx-unit:4.0.3
+//DEPS io.vertx:vertx-pg-client:4.0.3
+//DEPS io.smallrye.reactive:mutiny:0.17.0
+//
+//
+
+import java.util.concurrent.TimeUnit;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+
+import org.hibernate.SessionFactory;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.vertx.VertxInstance;
+
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.RunTestOnContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.assertj.core.api.Assertions;
+
+@RunWith(VertxUnitRunner.class)
+public class {baseName} {
+
+	@Test
+	public void junitTest(TestContext context) {
+
+		MyEntity entity = new MyEntity( "first entity", 1 );
+
+		test(
+				context,
+				getMutinySessionFactory().withSession( session -> session.persist( entity ).chain( session::flush ) )
+						.chain( () -> getMutinySessionFactory().withSession(
+								session -> session.find( MyEntity.class, entity.getId() )
+										.invoke( foundEntity ->
+												Assertions.assertThat(
+													foundEntity.getName() ).isEqualTo( entity.getName()
+													)
+										 )
+						) )
+		);
+	}
+
+	@Entity(name = "MyEntity")
+	public static class MyEntity  {
+		@Id
+		public Integer id;
+
+		public String name;
+
+		public MyEntity() {}
+
+		public MyEntity(String name, Integer id) {
+			this.name = name;
+			this.id = id;
+		}
+
+		public Integer getId() {
+			return id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		@Override
+		public String toString() {
+			return "MyEntity"
+					+ "\n\t id = " + id
+					+ "\n\t name = " + name;
+		}
+	}
+
+	@ClassRule
+	public static RunTestOnContext vertxContextRule = new RunTestOnContext( () -> {
+		VertxOptions options = new VertxOptions();
+		options.setBlockedThreadCheckInterval( 5 );
+		options.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
+		Vertx vertx = Vertx.vertx( options );
+		return vertx;
+	} );
+
+	private static SessionFactory sessionFactory;
+
+	@Before
+	public void before(TestContext context) {
+		Async async = context.async();
+		vertxContextRule.vertx()
+				.executeBlocking(
+						// schema generation is a blocking operation and so it causes an
+						// exception when run on the Vert.x event loop. So call it using
+						// Vertx.executeBlocking()
+						this::setSessionFactory,
+						event -> {
+							if ( event.succeeded() ) {
+								async.complete();
+							}
+							else {
+								context.fail( event.cause() );
+							}
+						}
+				);
+	}
+
+	private void setSessionFactory(Promise<Object> p) {
+		Configuration configuration = new Configuration();
+		configuration.setProperty( Settings.URL, "jdbc:postgresql://localhost:5432/hreact"); // TODO: Set JDBC URL value
+		configuration.setProperty( Settings.USER, "hreact"); // TODO: Set JDBC username value
+		configuration.setProperty( Settings.PASS, "hreact"); // TODO: Set JDBC password value
+		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
+		configuration.addAnnotatedClass(MyEntity.class);
+		configuration.setProperty( Settings.SHOW_SQL, System.getProperty(Settings.SHOW_SQL, "false") );
+		configuration.setProperty( Settings.HIGHLIGHT_SQL, System.getProperty(Settings.HIGHLIGHT_SQL, "true") );
+
+		StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
+				.addService( VertxInstance.class, (VertxInstance) () -> vertxContextRule.vertx() )
+				.applySettings( configuration.getProperties() );
+		StandardServiceRegistry registry = builder.build();
+
+		try {
+			sessionFactory = configuration.buildSessionFactory( registry );
+			p.complete();
+		}
+		catch (Throwable e) {
+			p.fail( e );
+		}
+	}
+
+	private Mutiny.SessionFactory getMutinySessionFactory() {
+		return sessionFactory.unwrap( Mutiny.SessionFactory.class );
+	}
+
+	public static void test(TestContext context, Uni<?> uni) {
+		Async async = context.async();
+		uni.subscribe().with(
+				res -> async.complete(),
+				throwable -> context.fail( throwable )
+		);
+	}
+}
