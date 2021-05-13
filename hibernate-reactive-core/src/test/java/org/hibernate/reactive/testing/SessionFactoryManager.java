@@ -5,11 +5,13 @@
  */
 package org.hibernate.reactive.testing;
 
+import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 /**
  * Managed the creation of a {@link SessionFactory} that can shared among tests.
@@ -43,11 +45,19 @@ public class SessionFactoryManager {
 		return poolProvider;
 	}
 
-	public void stop() {
+	public CompletionStage<Void> stop() {
 		if ( sessionFactory != null && sessionFactory.isOpen() ) {
 			sessionFactory.close();
 		}
+		final CompletionStage<Void> closeFuture;
+		if ( poolProvider == null ) {
+			closeFuture = CompletionStages.voidFuture();
+		}
+		else {
+			closeFuture = poolProvider.getCloseFuture();
+		}
 		poolProvider = null;
 		sessionFactory = null;
+		return closeFuture;
 	}
 }

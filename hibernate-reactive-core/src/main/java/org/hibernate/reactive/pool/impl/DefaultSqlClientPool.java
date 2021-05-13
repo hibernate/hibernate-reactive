@@ -9,6 +9,7 @@ import java.net.URI;
 import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
+import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateError;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -23,6 +24,7 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.service.spi.Startable;
 import org.hibernate.service.spi.Stoppable;
 
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
@@ -58,6 +60,10 @@ public class DefaultSqlClientPool extends SqlClientPool
 	private URI uri;
 	private ServiceRegistryImplementor serviceRegistry;
 
+	//Asynchronous shutdown promise: we can't return it from #close as we implement a
+	//blocking interface.
+	private volatile Future<Void> closeFuture = Future.succeededFuture();
+
 	public DefaultSqlClientPool() {}
 
 	@Override
@@ -76,6 +82,11 @@ public class DefaultSqlClientPool extends SqlClientPool
 		if ( pools == null ) {
 			pools = createPools( uri );
 		}
+	}
+
+	@Override
+	public CompletionStage<Void> getCloseFuture() {
+		return closeFuture.toCompletionStage();
 	}
 
 	@Override
@@ -187,7 +198,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 	@Override
 	public void stop() {
 		if ( pools != null ) {
-			pools.close();
+			this.closeFuture = pools.close();
 		}
 	}
 

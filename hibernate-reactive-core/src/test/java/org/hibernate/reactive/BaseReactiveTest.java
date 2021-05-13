@@ -249,8 +249,8 @@ public abstract class BaseReactiveTest {
 	}
 
 	@AfterClass
-	public static void closeFactory() {
-		factoryManager.stop();
+	public static void closeFactory(TestContext context) {
+		test( context, factoryManager.stop() );
 	}
 
 	protected Stage.SessionFactory getSessionFactory() {
