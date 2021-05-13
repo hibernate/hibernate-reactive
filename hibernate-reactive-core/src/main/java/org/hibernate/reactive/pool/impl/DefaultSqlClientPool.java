@@ -53,7 +53,7 @@ import static org.hibernate.internal.CoreLogging.messageLogger;
 public class DefaultSqlClientPool extends SqlClientPool
 		implements ServiceRegistryAwareService, Configurable, Stoppable, Startable {
 
-	private ThreadLocalPoolManager pools;
+	private Pool pools;
 	private SqlStatementLogger sqlStatementLogger;
 	private URI uri;
 	private ServiceRegistryImplementor serviceRegistry;
@@ -74,13 +74,13 @@ public class DefaultSqlClientPool extends SqlClientPool
 	@Override
 	public void start() {
 		if ( pools == null ) {
-			pools = createPools( uri );
+			pools = createPool( uri );
 		}
 	}
 
 	@Override
 	protected Pool getPool() {
-		return pools.getOrStartPool();
+		return pools;
 	}
 
 	@Override
@@ -89,34 +89,19 @@ public class DefaultSqlClientPool extends SqlClientPool
 	}
 
 	/**
-	 * Create a new {@link ThreadLocalPoolManager} for the given JDBC URL or database URI,
+	 * Create a new {@link Pool} for the given JDBC URL or database URI,
 	 * using the {@link VertxInstance} service to obtain an instance of
 	 * {@link Vertx}, and the {@link SqlClientPoolConfiguration} service
 	 * to obtain options for creating the connection pool instances.
 	 *
 	 * @param uri JDBC URL or database URI
 	 *
-	 * @return the new {@link ThreadLocalPoolManager}
+	 * @return the new {@link Pool}
 	 */
-	protected ThreadLocalPoolManager createPools(URI uri) {
+	protected Pool createPool(URI uri) {
 		SqlClientPoolConfiguration configuration = serviceRegistry.getService(SqlClientPoolConfiguration.class);
 		VertxInstance vertx = serviceRegistry.getService(VertxInstance.class);
-		return createPools( uri, configuration.connectOptions( uri ), configuration.poolOptions(), vertx.getVertx() );
-	}
-
-	/**
-	 * Create a new {@link ThreadLocalPoolManager} for the given JDBC URL or database URI,
-	 * connection pool options, and the given instance of {@link Vertx}.
-	 *
-	 * @param uri JDBC URL or database URI
-	 * @param connectOptions the connection options
-	 * @param poolOptions the connection pooling options
-	 * @param vertx the instance of {@link Vertx} to be used by the pool
-	 *
-	 * @return the new {@link ThreadLocalPoolManager}
-	 */
-	protected ThreadLocalPoolManager createPools(URI uri, SqlConnectOptions connectOptions, PoolOptions poolOptions, Vertx vertx) {
-		return new ThreadLocalPoolManager( () -> createPool( uri, connectOptions, poolOptions, vertx ) );
+		return createPool( uri, configuration.connectOptions( uri ), configuration.poolOptions(), vertx.getVertx() );
 	}
 
 	/**

@@ -29,19 +29,24 @@ import io.vertx.sqlclient.Pool;
  */
 public final class ExternalSafeSqlClientPool extends SqlClientPool implements Stoppable {
 
-	private final ThreadLocalPoolManager pools;
+	private final Pool pools;
 	private final SqlStatementLogger sqlStatementLogger;
 
-	public ExternalSafeSqlClientPool(Supplier<Pool> poolProducer, SqlStatementLogger sqlStatementLogger, boolean usePostgresStyleParameters) {
+	public ExternalSafeSqlClientPool(Supplier<Pool> poolProducer, SqlStatementLogger sqlStatementLogger) {
 		Objects.requireNonNull( poolProducer );
 		Objects.requireNonNull( sqlStatementLogger );
-		this.pools = new ThreadLocalPoolManager( poolProducer );
+		this.pools = poolProducer.get();
 		this.sqlStatementLogger = sqlStatementLogger;
+	}
+
+	@Deprecated
+	public ExternalSafeSqlClientPool(Supplier<Pool> poolProducer, SqlStatementLogger sqlStatementLogger, boolean usePostgresStyleParameters) {
+		this(poolProducer, sqlStatementLogger);
 	}
 
 	@Override
 	protected Pool getPool() {
-		return pools.getOrStartPool();
+		return pools;
 	}
 
 	@Override
