@@ -62,4 +62,12 @@ public interface ReactiveConnectionPool extends Service {
 	 */
 	ReactiveConnection getProxyConnection(String tenantId);
 
+	/**
+	 * The shutdown of the pool is actually asynchronous but the
+	 * core service registry won't return the {@link CompletionStage}.
+	 * If you need to wait for the underlying pool to be closed,
+	 * after closing the SessionFactory you can get the CompletionStage
+	 * instance from this getter.
+	 */
+	CompletionStage<Void> getCloseFuture();
 }
