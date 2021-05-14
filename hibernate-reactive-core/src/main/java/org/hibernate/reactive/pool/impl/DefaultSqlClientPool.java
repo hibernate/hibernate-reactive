@@ -105,6 +105,21 @@ public class DefaultSqlClientPool extends SqlClientPool
 	}
 
 	/**
+	 * Create a new {@link ThreadLocalPoolManager} for the given JDBC URL or database URI,
+	 * connection pool options, and the given instance of {@link Vertx}.
+	 *
+	 * @param uri JDBC URL or database URI
+	 * @param connectOptions the connection options
+	 * @param poolOptions the connection pooling options
+	 * @param vertx the instance of {@link Vertx} to be used by the pool
+	 *
+	 * @return the new {@link ThreadLocalPoolManager}
+	 */
+	protected ThreadLocalPoolManager createPools(URI uri, SqlConnectOptions connectOptions, PoolOptions poolOptions, Vertx vertx) {
+		return new ThreadLocalPoolManager( () -> createPool( uri, connectOptions, poolOptions, vertx ) );
+	}
+
+	/**
 	 * Create a new {@link Pool} for the given JDBC URL or database URI,
 	 * connection pool options, and the given instance of {@link Vertx}.
 	 *
@@ -115,20 +130,18 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 *
 	 * @return the new {@link Pool}
 	 */
-	protected ThreadLocalPoolManager createPools(URI uri, SqlConnectOptions connectOptions, PoolOptions poolOptions, Vertx vertx) {
-		return new ThreadLocalPoolManager( () -> {
-			try {
-				// First try to load the Pool using the standard ServiceLoader pattern
-				// This only works if exactly 1 Driver is on the classpath.
-				return Pool.pool( vertx, connectOptions, poolOptions );
-			}
-			catch (ServiceConfigurationError e) {
-				// Backup option if multiple drivers are on the classpath.
-				// We will be able to remove this once Vertx 3.9.2 is available
-				final Driver driver = findDriver( uri, e );
-				return driver.createPool( vertx, connectOptions, poolOptions );
-			}
-		});
+	protected Pool createPool(URI uri, SqlConnectOptions connectOptions, PoolOptions poolOptions, Vertx vertx) {
+		try {
+			// First try to load the Pool using the standard ServiceLoader pattern
+			// This only works if exactly 1 Driver is on the classpath.
+			return Pool.pool( vertx, connectOptions, poolOptions );
+		}
+		catch (ServiceConfigurationError e) {
+			// Backup option if multiple drivers are on the classpath.
+			// We will be able to remove this once Vertx 3.9.2 is available
+			final Driver driver = findDriver( uri, e );
+			return driver.createPool( vertx, connectOptions, poolOptions );
+		}
 	}
 
 	/**
