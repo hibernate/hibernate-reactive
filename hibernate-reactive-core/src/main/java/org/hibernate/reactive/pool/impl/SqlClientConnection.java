@@ -157,31 +157,23 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters) {
-		feedback(sql);
-		return Handlers.toCompletionStage(
-				handler -> client().preparedQuery( sql ).execute( parameters, handler )
-		);
+		feedback( sql );
+		return client().preparedQuery( sql ).execute( parameters ).toCompletionStage();
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQueryBatch(String sql, List<Tuple> parameters) {
-		feedback(sql);
-		return Handlers.toCompletionStage(
-				handler -> client().preparedQuery( sql ).executeBatch( parameters, handler )
-		);
+		feedback( sql );
+		return client().preparedQuery( sql ).executeBatch( parameters ).toCompletionStage();
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql) {
-		feedback(sql);
-		return Handlers.toCompletionStage(
-				handler -> client().preparedQuery( sql ).execute( handler )
-		);
+		feedback( sql );
+		return client().preparedQuery( sql ).execute().toCompletionStage();
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQueryOutsideTransaction(String sql) {
-		feedback(sql);
-		return Handlers.toCompletionStage(
-				handler -> pool.preparedQuery( sql ).execute( handler )
-		);
+		feedback( sql );
+		return pool.preparedQuery( sql ).execute().toCompletionStage();
 	}
 
 	private void feedback(String sql) {
@@ -200,19 +192,19 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> beginTransaction() {
-		return Handlers.<Transaction>toCompletionStage(connection::begin)
+		return connection.begin().toCompletionStage()
 				.thenAccept( tx -> transaction = tx );
 	}
 
 	@Override
 	public CompletionStage<Void> commitTransaction() {
-		return Handlers.<Void>toCompletionStage(transaction::commit)
+		return transaction.commit().toCompletionStage()
 				.whenComplete( (v, x) -> transaction = null );
 	}
 
 	@Override
 	public CompletionStage<Void> rollbackTransaction() {
-		return Handlers.<Void>toCompletionStage(transaction::rollback)
+		return transaction.rollback().toCompletionStage()
 				.whenComplete( (v, x) -> transaction = null );
 	}
 

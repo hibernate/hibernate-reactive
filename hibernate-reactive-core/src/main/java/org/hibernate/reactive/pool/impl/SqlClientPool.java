@@ -14,8 +14,6 @@ import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.SqlConnection;
 
-import static io.vertx.core.Future.failedFuture;
-import static io.vertx.core.Future.succeededFuture;
 
 /**
  * A pool of reactive connections backed by a supplier of
@@ -72,15 +70,7 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	}
 
 	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool) {
-		return Handlers.toCompletionStage(
-				handler -> pool.getConnection(
-						ar -> handler.handle(
-								ar.succeeded()
-										? succeededFuture( newConnection( ar.result() ) )
-										: failedFuture( ar.cause() )
-						)
-				)
-		);
+		return pool.getConnection().toCompletionStage().thenApply( this::newConnection );
 	}
 
 	private SqlClientConnection newConnection(SqlConnection connection) {
