@@ -655,6 +655,17 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void reactiveClose(TestContext context) {
+		test( context, openSession()
+				.thenCompose( session -> {
+					context.assertTrue( session.isOpen() );
+					return session.close()
+							.thenAccept( v -> context.assertFalse( session.isOpen() ) );
+				} )
+		);
+	}
+
+	@Test
 	public void testBatching(TestContext context) {
 		test(
 				context,

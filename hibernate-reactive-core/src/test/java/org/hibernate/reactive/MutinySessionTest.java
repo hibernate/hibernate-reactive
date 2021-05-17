@@ -9,6 +9,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.mutiny.Mutiny;
 
 import org.junit.After;
 import org.junit.Test;
@@ -463,6 +464,15 @@ public class MutinySessionTest extends BaseReactiveTest {
 											context.assertEquals(3, list.size());
 										} )
 						) )
+		);
+	}
+
+	@Test
+	public void reactiveClose(TestContext context) {
+		test( context, openMutinySession()
+				.invoke( session -> context.assertTrue( session.isOpen() ) )
+				.call( Mutiny.Session::close )
+				.invoke( session -> context.assertFalse( session.isOpen() ) )
 		);
 	}
 
