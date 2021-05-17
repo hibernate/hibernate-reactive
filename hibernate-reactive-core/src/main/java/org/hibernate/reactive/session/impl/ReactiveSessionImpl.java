@@ -129,6 +129,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	//Lazily initialized
 	private transient ExceptionConverter exceptionConverter;
+	private transient EventListenerRegistry eventListenerRegistry;
 
 	public ReactiveSessionImpl(SessionFactoryImpl delegate, SessionCreationOptions options,
 							   ReactiveConnection connection) {
@@ -1095,10 +1096,19 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@SuppressWarnings("deprecation")
 	private <T> Iterable<T> eventListeners(EventType<T> type) {
-		return getFactory().unwrap( SessionFactoryImplementor.class )
-				.getServiceRegistry().getService( EventListenerRegistry.class )
+		return getEventListenerRegistry()
 				.getEventListenerGroup( type )
 				.listeners();
+	}
+
+	private EventListenerRegistry getEventListenerRegistry() {
+		if ( this.eventListenerRegistry == null ) {
+			this.eventListenerRegistry = getFactory()
+					.unwrap( SessionFactoryImplementor.class )
+					.getServiceRegistry()
+					.getService( EventListenerRegistry.class );
+		}
+		return this.eventListenerRegistry;
 	}
 
 	private CompletionStage<Void> fireLoad(LoadEvent event, LoadEventListener.LoadType loadType) {
