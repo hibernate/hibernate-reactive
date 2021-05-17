@@ -1517,10 +1517,10 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public CompletionStage<Void> reactiveClose() {
-		if ( reactiveConnection != null ) {
-			return reactiveConnection.close();
-		}
-		return voidFuture();
+		CompletionStage<Void> closeStage = reactiveConnection != null
+				? reactiveConnection.close()
+				: voidFuture();
+		return closeStage.thenAccept( v -> super.close() );
 	}
 
 	@Override @SuppressWarnings("unchecked")
