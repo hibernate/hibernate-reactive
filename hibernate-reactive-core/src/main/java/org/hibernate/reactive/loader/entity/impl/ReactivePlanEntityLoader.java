@@ -8,9 +8,14 @@ package org.hibernate.reactive.loader.entity.impl;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
-import org.hibernate.engine.spi.*;
-import org.hibernate.event.service.spi.EventListenerRegistry;
-import org.hibernate.event.spi.*;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.QueryParameters;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.event.spi.EventSource;
+import org.hibernate.event.spi.PostLoadEvent;
+import org.hibernate.event.spi.PreLoadEvent;
+import org.hibernate.event.spi.PreLoadEventListener;
 import org.hibernate.loader.entity.plan.AbstractLoadPlanBasedEntityLoader;
 import org.hibernate.loader.plan.exec.internal.EntityLoadQueryDetails;
 import org.hibernate.loader.plan.exec.process.internal.AbstractRowReader;
@@ -431,12 +436,11 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 			}
 
 			final SharedSessionContractImplementor session = context.getSession();
-			@SuppressWarnings("deprecation")
+
 			final Iterable<PreLoadEventListener> listeners = session
 					.getFactory()
-					.getServiceRegistry()
-					.getService( EventListenerRegistry.class )
-					.getEventListenerGroup( EventType.PRE_LOAD )
+					.getFastSessionServices()
+					.eventListenerGroup_PRE_LOAD
 					.listeners();
 
 			return CompletionStages.loop(

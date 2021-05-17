@@ -19,9 +19,7 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
-import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.event.spi.EventType;
 import org.hibernate.event.spi.FlushEntityEvent;
 import org.hibernate.event.spi.FlushEntityEventListener;
 import org.hibernate.event.spi.FlushEvent;
@@ -169,9 +167,9 @@ public abstract class AbstractReactiveFlushingEventListener {
 
 		final EventSource source = event.getSession();
 		final Iterable<FlushEntityEventListener> flushListeners =
-				source.getFactory().getServiceRegistry()
-						.getService( EventListenerRegistry.class )
-						.getEventListenerGroup( EventType.FLUSH_ENTITY )
+				source.getFactory()
+						.getFastSessionServices()
+						.eventListenerGroup_FLUSH_ENTITY
 						.listeners();
 
 		// Among other things, updateReachables() will recursively load all
