@@ -253,7 +253,7 @@ public abstract class BaseReactiveTest {
 		factoryManager.stop();
 	}
 
-	protected Stage.SessionFactory getSessionFactory() {
+	protected static Stage.SessionFactory getSessionFactory() {
 		return factoryManager.getHibernateSessionFactory().unwrap( Stage.SessionFactory.class );
 	}
 
@@ -289,7 +289,7 @@ public abstract class BaseReactiveTest {
 				} );
 	}
 
-	protected Mutiny.SessionFactory getMutinySessionFactory() {
+	protected static Mutiny.SessionFactory getMutinySessionFactory() {
 		return factoryManager.getHibernateSessionFactory().unwrap( Mutiny.SessionFactory.class );
 	}
 }
