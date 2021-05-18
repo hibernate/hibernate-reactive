@@ -5,6 +5,18 @@
  */
 package org.hibernate.reactive.session.impl;
 
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
+import javax.persistence.EntityGraph;
+import javax.persistence.EntityNotFoundException;
+import javax.persistence.Tuple;
+import javax.persistence.metamodel.Attribute;
+
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
@@ -31,15 +43,12 @@ import org.hibernate.engine.spi.NamedQueryDefinition;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.MergeContext;
-import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.AutoFlushEvent;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.event.spi.EventType;
 import org.hibernate.event.spi.FlushEvent;
 import org.hibernate.event.spi.InitializeCollectionEvent;
 import org.hibernate.event.spi.LoadEvent;
@@ -93,26 +102,16 @@ import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
-import javax.persistence.EntityGraph;
-import javax.persistence.EntityNotFoundException;
-import javax.persistence.Tuple;
-import javax.persistence.metamodel.Attribute;
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
 import io.vertx.core.Context;
 
 import static org.hibernate.engine.spi.PersistenceContext.NaturalIdHelper.INVALID_NATURAL_ID_REFERENCE;
 import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
-import static org.hibernate.reactive.util.impl.CompletionStages.*;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * An {@link ReactiveSession} implemented by extension of
@@ -129,7 +128,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	//Lazily initialized
 	private transient ExceptionConverter exceptionConverter;
-	private transient EventListenerRegistry eventListenerRegistry;
 
 	public ReactiveSessionImpl(SessionFactoryImpl delegate, SessionCreationOptions options,
 							   ReactiveConnection connection) {
@@ -386,7 +384,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		checkOpenOrWaitingForAutoClose();
 		pulseTransactionCoordinator();
 		InitializeCollectionEvent event = new InitializeCollectionEvent( collection, this );
-		return fire( event, EventType.INIT_COLLECTION,
+
+		return fastSessionServices.eventListenerGroup_INIT_COLLECTION.fireEventOnEachListener( event,
 				(DefaultReactiveInitializeCollectionEventListener l) -> l::onReactiveInitializeCollection )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
@@ -420,7 +419,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 //			return CompletionStages.nullFuture();
 //		}
 		AutoFlushEvent event = new AutoFlushEvent( querySpaces, this );
-		return fire( event, EventType.AUTO_FLUSH, (DefaultReactiveAutoFlushEventListener l) -> l::reactiveOnAutoFlush );
+		return fastSessionServices.eventListenerGroup_AUTO_FLUSH.fireEventOnEachListener( event, (DefaultReactiveAutoFlushEventListener l) -> l::reactiveOnAutoFlush );
 	}
 
 	@Override
@@ -677,7 +676,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
-		return fire(event, EventType.PERSIST, (ReactivePersistEventListener l) -> l::reactiveOnPersist)
+		return fastSessionServices.eventListenerGroup_PERSIST.fireEventOnEachListener( event, (ReactivePersistEventListener l) -> l::reactiveOnPersist )
 				.handle( (v, e) -> {
 					checkNoUnresolvedActionsAfterOperation();
 
@@ -694,7 +693,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> firePersist(IdentitySet copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
-		return fire(event, copiedAlready, EventType.PERSIST,
+		return fastSessionServices.eventListenerGroup_PERSIST.fireEventOnEachListener( event, copiedAlready,
 				(ReactivePersistEventListener l) -> l::reactiveOnPersist)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
@@ -718,7 +717,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> firePersistOnFlush(IdentitySet copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
-		return fire(event, copiedAlready, EventType.PERSIST_ONFLUSH,
+		return fastSessionServices.eventListenerGroup_PERSIST.fireEventOnEachListener( event, copiedAlready,
 				(ReactivePersistEventListener l) -> l::reactiveOnPersist)
 				.whenComplete( (v, e) -> delayedAfterCompletion() );
 	}
@@ -767,7 +766,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireRemove(DeleteEvent event) {
 		pulseTransactionCoordinator();
 
-		return fire(event, EventType.DELETE,
+		return fastSessionServices.eventListenerGroup_DELETE.fireEventOnEachListener( event,
 				(ReactiveDeleteEventListener l) -> l::reactiveOnDelete)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
@@ -789,7 +788,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireRemove(DeleteEvent event, IdentitySet transientEntities) {
 		pulseTransactionCoordinator();
 
-		return fire(event, transientEntities, EventType.DELETE,
+		return fastSessionServices.eventListenerGroup_DELETE.fireEventOnEachListener( event, transientEntities,
 				(ReactiveDeleteEventListener l) -> l::reactiveOnDelete)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
@@ -826,7 +825,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
-		return fire(event, EventType.MERGE,
+		return fastSessionServices.eventListenerGroup_MERGE.fireEventOnEachListener( event,
 				(ReactiveMergeEventListener l) -> l::reactiveOnMerge)
 				.handle( (v,e) -> {
 					checkNoUnresolvedActionsAfterOperation();
@@ -848,7 +847,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireMerge(MergeContext copiedAlready, MergeEvent event) {
 		pulseTransactionCoordinator();
 
-		return fire(event, copiedAlready, EventType.MERGE,
+		return fastSessionServices.eventListenerGroup_MERGE.fireEventOnEachListener( event, copiedAlready,
 				(ReactiveMergeEventListener l) -> l::reactiveOnMerge)
 				.handle( (v,e) -> {
 					delayedAfterCompletion();
@@ -865,7 +864,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					}
 					return returnNullorRethrow( e );
 				});
-
 	}
 
 	@Override
@@ -887,8 +885,10 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			throw new HibernateException( "Flush during cascade is dangerous" );
 		}
 
-		return fire(new FlushEvent( this ), EventType.FLUSH,
-				(ReactiveFlushEventListener l) -> l::reactiveOnFlush)
+		return fastSessionServices.eventListenerGroup_FLUSH.fireEventOnEachListener(
+				new FlushEvent( this ),
+				(ReactiveFlushEventListener l) -> l::reactiveOnFlush
+		)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -936,7 +936,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 		pulseTransactionCoordinator();
 
-		return fire(event, EventType.REFRESH,
+		return fastSessionServices.eventListenerGroup_REFRESH.fireEventOnEachListener( event,
 				(ReactiveRefreshEventListener l) -> l::reactiveOnRefresh)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
@@ -957,7 +957,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireRefresh(IdentitySet refreshedAlready, RefreshEvent event) {
 		pulseTransactionCoordinator();
 
-		return fire(event, refreshedAlready, EventType.REFRESH,
+		return fastSessionServices.eventListenerGroup_REFRESH.fireEventOnEachListener( event, refreshedAlready,
 				(ReactiveRefreshEventListener l) -> l::reactiveOnRefresh)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
@@ -978,7 +978,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireLock(LockEvent event) {
 		pulseTransactionCoordinator();
 
-		return fire( event, EventType.LOCK, (ReactiveLockEventListener l) -> l::reactiveOnLock )
+		return fastSessionServices.eventListenerGroup_LOCK.fireEventOnEachListener( event, (ReactiveLockEventListener l) -> l::reactiveOnLock )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -1072,45 +1072,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				.thenCompose( id -> reactiveFind( entityClass, id, null, null ) );
 	}
 
-	@SuppressWarnings("unchecked")
-	private <E, L, RL, T> CompletionStage<T> fire(
-			E event,
-			EventType<L> eventType,
-			Function<RL, Function<E, CompletionStage<T>>> fun) {
-		CompletionStage<T> ret = nullFuture();
-		for ( L listener : eventListeners( eventType ) ) {
-			//to preserve atomicity of the Session methods
-			//call apply() from within the arg of thenCompose()
-			ret = ret.thenCompose( v -> fun.apply((RL) listener).apply(event) );
-		}
-		return ret;
-	}
-
-	@SuppressWarnings("unchecked")
-	private <E,L,RL,P> CompletionStage<Void> fire(E event, P extra, EventType<L> eventType,
-												  Function<RL, BiFunction<E, P, CompletionStage<Void>>> fun) {
-		//to preserve atomicity of the Session methods
-		//call apply() from within the arg of thenCompose()
-		return loop( eventListeners(eventType), listener -> fun.apply((RL) listener).apply(event, extra) );
-	}
-
-	@SuppressWarnings("deprecation")
-	private <T> Iterable<T> eventListeners(EventType<T> type) {
-		return getEventListenerRegistry()
-				.getEventListenerGroup( type )
-				.listeners();
-	}
-
-	private EventListenerRegistry getEventListenerRegistry() {
-		if ( this.eventListenerRegistry == null ) {
-			this.eventListenerRegistry = getFactory()
-					.unwrap( SessionFactoryImplementor.class )
-					.getServiceRegistry()
-					.getService( EventListenerRegistry.class );
-		}
-		return this.eventListenerRegistry;
-	}
-
 	private CompletionStage<Void> fireLoad(LoadEvent event, LoadEventListener.LoadType loadType) {
 		checkOpenOrWaitingForAutoClose();
 
@@ -1121,13 +1082,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireLoadNoChecks(LoadEvent event, LoadEventListener.LoadType loadType) {
 		pulseTransactionCoordinator();
 
-		return fire(event, loadType, EventType.LOAD, (ReactiveLoadEventListener l) -> l::reactiveOnLoad);
+		return fastSessionServices.eventListenerGroup_LOAD.fireEventOnEachListener( event, loadType, (ReactiveLoadEventListener l) -> l::reactiveOnLoad );
 	}
 
 	private CompletionStage<Void> fireResolveNaturalId(ResolveNaturalIdEvent event) {
 		checkOpenOrWaitingForAutoClose();
-		return fire( event, EventType.RESOLVE_NATURAL_ID,
-				(ReactiveResolveNaturalIdEventListener l) -> l::reactiveResolveNaturalId )
+		return fastSessionServices.eventListenerGroup_RESOLVE_NATURAL_ID.fireEventOnEachListener( event, (ReactiveResolveNaturalIdEventListener l) -> l::reactiveResolveNaturalId )
 				.whenComplete( (c, e) -> delayedAfterCompletion() );
 	}
 
