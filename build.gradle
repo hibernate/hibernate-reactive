@@ -53,7 +53,7 @@ version = projectVersion
 // ./gradlew clean build -PhibernateOrmVersion=5.4.32-SNAPSHOT
 ext {
     if ( !project.hasProperty('hibernateOrmVersion') ) {
-        hibernateOrmVersion = '5.4.31.Final'
+        hibernateOrmVersion = '5.5.0-SNAPSHOT'
     }
     // For ORM, we need a parsed version (to get the family, ...)
 
@@ -120,7 +120,7 @@ subprojects {
 
     repositories {
         // Only enable these for local development, never push it:
-        // mavenLocal()
+        mavenLocal()
         // jcenter()
         // Example: ./gradlew build -PenableSonatypeOpenSourceSnapshotsRep
         if ( project.hasProperty('enableSonatypeOpenSourceSnapshotsRep') ) {

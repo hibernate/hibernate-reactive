@@ -20,7 +20,7 @@ dependencies {
 
 buildscript {
     repositories {
-//        mavenLocal()
+        mavenLocal()
         mavenCentral()
 
         // Example: ./gradlew build -PenableJBossSnapshotsRep
