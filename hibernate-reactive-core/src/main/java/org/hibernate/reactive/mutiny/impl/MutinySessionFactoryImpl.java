@@ -74,7 +74,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	@Override
 	public Mutiny.Session openSession(String tenantId) {
 		return new MutinySessionImpl(
-				new ReactiveSessionImpl( delegate, options(), proxyConnection( tenantId ) ),
+				new ReactiveSessionImpl( delegate, options( tenantId ), proxyConnection( tenantId ) ),
 				this
 		);
 	}
@@ -88,7 +88,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	Uni<Mutiny.Session> newSession(String tenantId) throws HibernateException {
 		return uni( () -> connection( tenantId ) )
-				.map( reactiveConnection -> new ReactiveSessionImpl( delegate, options(), reactiveConnection ) )
+				.map( reactiveConnection -> new ReactiveSessionImpl( delegate, options( tenantId ), reactiveConnection ) )
 				.map( s -> new MutinySessionImpl(s, this) );
 	}
 
@@ -110,6 +110,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	private SessionCreationOptions options() {
 		return new SessionFactoryImpl.SessionBuilderImpl<>( delegate );
+	}
+
+	private SessionCreationOptions options(String tenantIdentifier) {
+		return (SessionCreationOptions) new SessionFactoryImpl.SessionBuilderImpl<>( delegate )
+				.tenantIdentifier( tenantIdentifier );
 	}
 
 	private CompletionStage<ReactiveConnection> connection(String tenantId) {
