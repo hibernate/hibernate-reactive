@@ -70,7 +70,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	@Override
 	public Stage.Session openSession(String tenantId) {
 		return new StageSessionImpl(
-				new ReactiveSessionImpl( delegate, options(), proxyConnection( tenantId ) ),
+				new ReactiveSessionImpl( delegate, options( tenantId ), proxyConnection( tenantId ) ),
 				this
 		);
 	}
@@ -92,7 +92,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	CompletionStage<Stage.Session> newSession(String tenantId) {
 		return stage( v -> connection( tenantId )
-				.thenApply( connection -> new ReactiveSessionImpl( delegate, options(), connection ) )
+				.thenApply( connection -> new ReactiveSessionImpl( delegate, options( tenantId ), connection ) )
 				.thenApply( s -> new StageSessionImpl(s, this) ) );
 	}
 
@@ -105,6 +105,11 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	private SessionCreationOptions options() {
 		return new SessionFactoryImpl.SessionBuilderImpl<>( delegate );
+	}
+
+	private SessionCreationOptions options(String tenantIdentifier) {
+		return (SessionCreationOptions) new SessionFactoryImpl.SessionBuilderImpl<>( delegate )
+				.tenantIdentifier( tenantIdentifier );
 	}
 
 	private CompletionStage<ReactiveConnection> connection(String tenantId) {
