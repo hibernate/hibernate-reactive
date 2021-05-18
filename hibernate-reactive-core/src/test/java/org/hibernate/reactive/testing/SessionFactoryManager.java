@@ -35,6 +35,10 @@ public class SessionFactoryManager {
 		}
 	}
 
+	public boolean isStarted() {
+		return sessionFactory != null;
+	}
+
 	public SessionFactory getHibernateSessionFactory() {
 		return sessionFactory;
 	}
