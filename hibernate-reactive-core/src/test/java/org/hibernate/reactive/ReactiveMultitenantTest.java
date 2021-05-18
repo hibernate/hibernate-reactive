@@ -43,11 +43,9 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 	// To check if we are using the right database we run native queries for PostgreSQL
 	@Rule
 	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
-	private static boolean createdDatabase;
 
 	@Override
 	protected Configuration constructConfiguration() {
-		createdDatabase = true;
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( GuineaPig.class );
 		configuration.setProperty( Settings.MULTI_TENANT, MultiTenancyStrategy.DATABASE.name() );
@@ -104,7 +102,7 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 
 	@AfterClass
 	public static void dropDatabases(TestContext context) {
-		if (createdDatabase) {
+		if ( factoryManager.isStarted() ) {
 			test( context, getSessionFactory()
 					.withSession( session -> Arrays
 							.stream( values() )
