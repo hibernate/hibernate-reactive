@@ -73,7 +73,7 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 							context.assertFalse( session.contains( actualPig ) );
 						} )
 						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
-						.thenCompose( pig -> session.remove( pig ) )
+						.thenCompose( session::remove )
 						.thenCompose( v -> session.flush() )
 						.whenComplete( (v, err) -> session.close() )
 		);
