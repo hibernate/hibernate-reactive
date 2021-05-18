@@ -34,7 +34,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.IntStream;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
@@ -80,13 +79,16 @@ public interface ReactiveResultSetProcessor {
 		);
 
 		final Object[] hydratedState = entityEntry.getLoadedState();
-		return CompletionStages.loopWithoutTrampoline(
-				IntStream.range( 0, hydratedState.length )
-						.filter( i-> hydratedState[ i ] instanceof CompletionStage ),
-				i -> ( (CompletionStage<Object>) hydratedState[ i ] )
-						.thenAccept( initializedEntity -> hydratedState[ i ] = initializedEntity )
-		)
-		.thenAccept(
+		CompletionStage<Void> loop = CompletionStages.voidFuture();
+		for ( int i = 0; i < hydratedState.length; i++ ) {
+			final Object o = hydratedState[i];
+			if ( o instanceof CompletionStage ) {
+				final CompletionStage<?> c = (CompletionStage) o;
+				final int currentIndex = i;
+				loop = loop.thenCompose( v -> c.thenAccept( initializedEntity -> hydratedState[ currentIndex ] = initializedEntity ) );
+			}
+		}
+		return loop.thenAccept(
 				v -> TwoPhaseLoad.initializeEntityFromEntityEntryLoadedState(
 						entity,
 						entityEntry,

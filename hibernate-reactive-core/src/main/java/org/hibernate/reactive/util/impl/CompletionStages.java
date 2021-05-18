@@ -235,13 +235,6 @@ public class CompletionStages {
 	}
 
 	/**
-	 * Same as {@link #loop(Stream, Function)} but doesn't use the trampoline pattern
-	 */
-	public static CompletionStage<Void> loopWithoutTrampoline(IntStream stream, Function<Integer,CompletionStage<?>> consumer) {
-		return loopWithoutTrampoline( stream.iterator(), consumer );
-	}
-
-	/**
 	 * Same as {@link #loop(Iterator, Function)} but doesn't use the trampoline pattern
 	 */
 	public static <T> CompletionStage<Void> loopWithoutTrampoline(Iterator<T> iterator, Function<T, CompletionStage<?>> consumer) {
