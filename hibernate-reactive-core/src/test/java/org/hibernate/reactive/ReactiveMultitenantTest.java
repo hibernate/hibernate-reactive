@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Arrays;
 import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -17,12 +18,15 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
+import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
+import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.values;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DEFAULT;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_1;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_2;
@@ -94,6 +98,23 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 						.getSingleResult()
 						.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) )
 		);
+	}
+
+	@AfterClass
+	public static void dropDatabases(TestContext context) {
+		test( context, getSessionFactory()
+				.withSession( session -> Arrays
+						.stream( values() )
+						.filter( tenant -> tenant != DEFAULT )
+						.collect(
+								CompletionStages::voidFuture,
+								(stage, tenant) -> session
+										.createNativeQuery( "drop database if exists " + tenant.getDbName() + ";" )
+										.executeUpdate()
+										.thenCompose( CompletionStages::voidFuture ),
+								(stage, stage2) -> stage.thenCompose( v -> stage2 )
+						)
+				) );
 	}
 
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
