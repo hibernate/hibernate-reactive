@@ -52,7 +52,9 @@ public class CompletionStages {
 	}
 
 	public static <T> CompletionStage<T> nullFuture() {
-		return completedFuture( null );
+		//Unsafe cast, but perfectly fine: avoids having to allocate a new instance
+		//for each different "type of null".
+		return (CompletionStage<T>) VOID;
 	}
 
 	public static <T> CompletionStage<T> completedFuture(T value) {
