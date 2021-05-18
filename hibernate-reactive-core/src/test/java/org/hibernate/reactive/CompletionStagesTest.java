@@ -112,15 +112,6 @@ public class CompletionStagesTest {
 	}
 
 	@Test
-	public void testLoopOnIntStreamWithoutTrampoline(TestContext context) {
-		test( context, loopWithoutTrampoline(
-				IntStream.range( 0, entries.length ),
-				index -> completedFuture( looped.add( entries[index] ) )
-			  ).thenAccept( v -> assertThat( looped ).containsExactly( entries ) )
-		);
-	}
-
-	@Test
 	public void testLoopWithIteratorWithoutTrampoline(TestContext context) {
 		test( context, loopWithoutTrampoline(
 				iterator( entries ),
