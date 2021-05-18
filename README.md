@@ -178,6 +178,7 @@ following commands:
     create database hreact;
     create user hreact with password 'hreact';
     grant all privileges on database hreact to hreact;
+    alter user hreact createdb;
 
 Then run `./gradlew test` from the `hibernate-reactive` directory.
 
