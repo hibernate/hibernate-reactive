@@ -11,7 +11,11 @@ import org.hibernate.param.ParameterSpecification;
 import org.hibernate.type.Type;
 
 
-public class QueryParametersAdaptor {
+public final class QueryParametersAdaptor {
+
+	private QueryParametersAdaptor() {
+		//do not construct
+	}
 
 	public static Object[] arguments(QueryParameters queryParameters,
 									 SharedSessionContractImplementor session) {
