@@ -16,7 +16,6 @@ import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.PreLoadEvent;
-import org.hibernate.event.spi.PreLoadEventListener;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.loader.plan.exec.query.spi.NamedParameterContext;
@@ -60,8 +59,7 @@ public interface ReactiveResultSetProcessor {
 			final Object entity,
 			final boolean readOnly,
 			final SharedSessionContractImplementor session,
-			final PreLoadEvent preLoadEvent,
-			Iterable<PreLoadEventListener> listeners) {
+			final PreLoadEvent preLoadEvent) {
 		final PersistenceContext persistenceContext = session.getPersistenceContext();
 		final EntityEntry entityEntry = persistenceContext.getEntry(entity);
 		if (entityEntry == null) {
@@ -94,8 +92,7 @@ public interface ReactiveResultSetProcessor {
 						entityEntry,
 						readOnly,
 						session,
-						preLoadEvent,
-						listeners
+						preLoadEvent
 				)
 		);
 	}

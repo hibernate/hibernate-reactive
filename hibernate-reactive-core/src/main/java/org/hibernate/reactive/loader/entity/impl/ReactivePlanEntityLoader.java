@@ -15,7 +15,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PostLoadEvent;
 import org.hibernate.event.spi.PreLoadEvent;
-import org.hibernate.event.spi.PreLoadEventListener;
 import org.hibernate.loader.entity.plan.AbstractLoadPlanBasedEntityLoader;
 import org.hibernate.loader.plan.exec.internal.EntityLoadQueryDetails;
 import org.hibernate.loader.plan.exec.process.internal.AbstractRowReader;
@@ -437,20 +436,13 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 
 			final SharedSessionContractImplementor session = context.getSession();
 
-			final Iterable<PreLoadEventListener> listeners = session
-					.getFactory()
-					.getFastSessionServices()
-					.eventListenerGroup_PRE_LOAD
-					.listeners();
-
 			return CompletionStages.loop(
 					hydratedEntityRegistrations,
 					registration -> resultSetProcessor.initializeEntity(
 							registration.getInstance(),
 							false,
 							session,
-							preLoadEvent,
-							listeners
+							preLoadEvent
 					)
 			);
 		}

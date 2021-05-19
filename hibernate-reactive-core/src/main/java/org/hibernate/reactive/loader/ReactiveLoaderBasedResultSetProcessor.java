@@ -14,12 +14,9 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.RowSelection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.event.spi.EventType;
 import org.hibernate.event.spi.PostLoadEvent;
 import org.hibernate.event.spi.PreLoadEvent;
-import org.hibernate.event.spi.PreLoadEventListener;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.loader.plan.exec.query.spi.NamedParameterContext;
@@ -47,16 +44,9 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 	protected static final CoreMessageLogger LOG = CoreLogging.messageLogger(ReactiveLoaderBasedResultSetProcessor.class);
 
 	private final ReactiveLoaderBasedLoader loader;
-	private final Iterable<PreLoadEventListener> listeners;
 
 	public ReactiveLoaderBasedResultSetProcessor(ReactiveLoaderBasedLoader loader) {
 		this.loader = loader;
-		this.listeners = loader
-				.getFactory()
-				.getServiceRegistry()
-				.getService(EventListenerRegistry.class)
-				.getEventListenerGroup(EventType.PRE_LOAD)
-				.listeners();
 	}
 
 	/**
@@ -149,7 +139,7 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 
 			stage = CompletionStages.loop(
 					hydratedObjects,
-					hydratedObject -> initializeEntity( hydratedObject, readOnly, session, pre, listeners )
+					hydratedObject -> initializeEntity( hydratedObject, readOnly, session, pre )
 			);
 		}
 		else {
