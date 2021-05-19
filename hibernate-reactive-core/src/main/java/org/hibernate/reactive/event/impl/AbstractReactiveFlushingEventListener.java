@@ -56,7 +56,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 		//		lazy collections during their processing.
 		// For more information, see HHH-2763
 		return voidFuture()
-				.thenCompose(v -> {
+				.thenCompose( v -> {
 					session.getJdbcCoordinator().flushBeginning();
 					session.getPersistenceContext().setFlushing( true );
 					// we need to lock the collection caches before executing entity inserts/updates in order to
@@ -91,28 +91,27 @@ public abstract class AbstractReactiveFlushingEventListener {
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 		session.getInterceptor().preFlush( persistenceContext.managedEntitiesIterator() );
 
-		CompletionStage<Void> cascades = prepareEntityFlushes(session, persistenceContext);
-		// we could move this inside if we wanted to
-		// tolerate collection initializations during
-		// collection dirty checking:
-		prepareCollectionFlushes( persistenceContext );
-		// now, any collections that are initialized
-		// inside this block do not get updated - they
-		// are ignored until the next flush
+		return prepareEntityFlushes(session, persistenceContext)
+				.thenAccept( v -> {
+					// we could move this inside if we wanted to
+					// tolerate collection initializations during
+					// collection dirty checking:
+					prepareCollectionFlushes( persistenceContext );
+					// now, any collections that are initialized
+					// inside this block do not get updated - they
+					// are ignored until the next flush
+					persistenceContext.setFlushing(true);
+					try {
+						int entityCount = flushEntities(event, persistenceContext);
+						int collectionCount = flushCollections(session, persistenceContext);
 
-		return cascades.thenAccept( v -> {
-			persistenceContext.setFlushing(true);
-			try {
-				int entityCount = flushEntities(event, persistenceContext);
-				int collectionCount = flushCollections(session, persistenceContext);
-
-				event.setNumberOfEntitiesProcessed(entityCount);
-				event.setNumberOfCollectionsProcessed(collectionCount);
-			}
-			finally {
-				persistenceContext.setFlushing(false);
-			}
-		});
+						event.setNumberOfEntitiesProcessed(entityCount);
+						event.setNumberOfCollectionsProcessed(collectionCount);
+					}
+					finally {
+						persistenceContext.setFlushing(false);
+					}
+				} );
 
 		//some statistics
 //		logFlushResults( event );
