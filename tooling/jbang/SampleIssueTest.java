@@ -78,6 +78,13 @@ public class SampleIssueTest {
 		// Use the correct JDBC url
 		configuration.setProperty( Settings.URL, "jdbc:postgresql://localhost:5432/hreact" );
 
+		// =====  OTHER Test DBs =======================================================================
+		// MYSQL: jdbc:mysql://localhost:3306/hreact?user=hreact&password=hreact&serverTimezone=UTC
+		// DB2:   jdbc:db2://localhost:50000/hreact:user=hreact;password=hreact;
+		// CockroachDB  jdbc:cockroachdb://localhost:26257/postgres?sslmode=disable&user=root
+		//  NOTE:  CockroachDB does not need password and requires //DEPS io.vertx:vertx-pg-client:4.0.3
+		// ==============================================================================================
+
 		// Credentials
 		configuration.setProperty( Settings.USER, "hreact");
 		configuration.setProperty( Settings.PASS, "hreact");
@@ -91,6 +98,7 @@ public class SampleIssueTest {
 		// Query logging
 		configuration.setProperty( Settings.SHOW_SQL, "true" );
 		configuration.setProperty( Settings.HIGHLIGHT_SQL, "true" );
+		configuration.setProperty( Settings.FORMAT_SQL, "true" );
 		return  configuration;
 	}
 
@@ -168,10 +176,12 @@ public class SampleIssueTest {
 	public static void main(String[] args) {
 		Result result = JUnitCore.runClasses( SampleIssueTest.class);
 
-		for ( Failure failure : result.getFailures()) {
-			System.out.println(failure.toString());
+		if( result.wasSuccessful() ) {
+			System.out.println( "All unit tests passed");
+		} else {
+			for ( Failure failure : result.getFailures() ) {
+				System.out.println( "TEST FAILURE: " + failure.toString() );
+			}
 		}
-
-		System.out.println(" All unit tests succeeded:  " + result.wasSuccessful());
 	}
 }
