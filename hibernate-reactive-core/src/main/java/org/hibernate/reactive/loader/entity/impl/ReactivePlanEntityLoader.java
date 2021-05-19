@@ -241,7 +241,7 @@ public class ReactivePlanEntityLoader extends AbstractLoadPlanBasedEntityLoader
 			? getStaticLoadQuery().getSqlStatement()
 			: processedSQL;
 
-		return doReactiveQueryAndInitializeNonLazyCollections( sql, (SharedSessionContractImplementor) session, parameters )
+		return doReactiveQueryAndInitializeNonLazyCollections( sql, session, parameters )
 				.thenApply( results -> extractEntityResult( results, id ) )
 				.handle( (list, err) -> {
 					logSqlException( err,
