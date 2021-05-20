@@ -94,7 +94,7 @@ public class ReactiveSubselectCollectionLoader extends ReactiveBasicCollectionLo
             final Type type) throws HibernateException {
 
         QueryParameters parameters = new QueryParameters(parameterTypes, parameterValues, namedParameters, ids);
-        return doReactiveQueryAndInitializeNonLazyCollections( (SessionImplementor) session, parameters, true )
+        return doReactiveQueryAndInitializeNonLazyCollections( session, parameters, true )
                 .handle( (list, err) -> {
                     logSqlException( err,
                             () -> "could not load collection by subselect: "

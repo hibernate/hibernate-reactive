@@ -75,8 +75,7 @@ public class ReactiveDynamicBatchingCollectionDelegator extends ReactiveCollecti
 				.getCollectionBatch( collectionPersister(), id, maxBatchSize );
 		final int numberOfIds = ArrayHelper.countNonNull( batch );
 		if ( numberOfIds <= 1 ) {
-			return singleKeyLoader.reactiveLoadCollection( (SessionImplementor) session, id,
-					collectionPersister().getKeyType() );
+			return singleKeyLoader.reactiveLoadCollection( session, id, collectionPersister().getKeyType() );
 		}
 
 		final Serializable[] idsToLoad = new Serializable[numberOfIds];
