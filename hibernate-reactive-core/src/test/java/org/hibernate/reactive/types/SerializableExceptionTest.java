@@ -5,29 +5,19 @@
  */
 package org.hibernate.reactive.types;
 
-import io.vertx.ext.unit.TestContext;
+import java.io.Serializable;
+import java.util.Objects;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 
-
 import org.junit.Test;
 
-import javax.persistence.Entity;
-
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
-
-import java.io.Serializable;
-
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
-
-import java.io.Serializable;
-
-import java.util.Objects;
+import io.vertx.ext.unit.TestContext;
 
 /**
  * Test an issue with Vert.x SQL client 3.9.2:
