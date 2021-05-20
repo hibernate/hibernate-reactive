@@ -114,7 +114,7 @@ public class EmptyCompositeCollectionKeyTest extends BaseReactiveTest {
 	@Test
 	public void testGetEntityWithNullParentNullChildAndRelatives(TestContext context) {
 		/* CASE 4:  Parent and children are all null and relatives set exists */
-		Set<Child> relatives = new HashSet<Child>();
+		Set<Child> relatives = new HashSet<>();
 		relatives.add( new Child() );
 		Family family = new Family( 4, null, relatives );
 

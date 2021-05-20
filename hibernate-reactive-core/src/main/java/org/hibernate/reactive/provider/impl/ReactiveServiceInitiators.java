@@ -55,7 +55,7 @@ public final class ReactiveServiceInitiators {
     public static final List<StandardServiceInitiator> LIST = buildInitialServiceInitiatorList();
 
     private static List<StandardServiceInitiator> buildInitialServiceInitiatorList() {
-        final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
+        final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<>();
 
         // Definitely exclusive to Hibernate Reactive, as it marks the registry as Reactive:
         serviceInitiators.add( ReactiveMarkerServiceInitiator.INSTANCE );
