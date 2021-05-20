@@ -139,8 +139,8 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 
 	private static void assertPhones(TestContext context, List<Phone> list, String... phones) {
 		context.assertEquals( phones.length, list.size() );
-		for (int i=0; i<phones.length; i++) {
-			context.assertTrue( phonesContainNumber( list, phones[i] ) );
+		for ( String phone : phones ) {
+			context.assertTrue( phonesContainNumber( list, phone ) );
 		}
 	}
 
