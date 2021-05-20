@@ -76,7 +76,7 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testJsonType(TestContext context) throws Exception {
+	public void testJsonType(TestContext context) {
 		Basic basic = new Basic();
 		basic.jsonObj = new JsonObject().put("int", 123).put("str", "hello");
 

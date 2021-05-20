@@ -106,7 +106,7 @@ public class DatabaseSelectionRule implements TestRule {
         }
 
         @Override
-        public void evaluate() throws Throwable {
+        public void evaluate() {
             Assume.assumeTrue( "Skipping test for " + db + ", rule: " + description, false );
         }
     }

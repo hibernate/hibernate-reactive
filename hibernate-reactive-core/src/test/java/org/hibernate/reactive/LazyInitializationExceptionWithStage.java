@@ -53,7 +53,7 @@ public class LazyInitializationExceptionWithStage extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLazyInitializationException(TestContext context) throws Exception {
+	public void testLazyInitializationException(TestContext context) {
 		test( context, openSession()
 				.thenCompose( session ->
 				  	session.createQuery( "from Artist", Artist.class )
@@ -77,7 +77,7 @@ public class LazyInitializationExceptionWithStage extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLazyInitializationExceptionNotThrown(TestContext context) throws Exception {
+	public void testLazyInitializationExceptionNotThrown(TestContext context) {
 		test( context, openSession()
 			.thenCompose( session -> session.createQuery( "from Artist", Artist.class ).getSingleResult() )
 			 // We are checking `.getPaintings()` but not doing anything with it and therefore it should work.

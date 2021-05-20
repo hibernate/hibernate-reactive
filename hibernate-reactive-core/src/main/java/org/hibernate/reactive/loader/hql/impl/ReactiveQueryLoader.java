@@ -140,7 +140,7 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 										 SharedSessionContractImplementor session,
 										 boolean returnProxies,
 										 ResultTransformer forcedResultTransformer,
-										 int maxRows, List<AfterLoadAction> afterLoadActions) throws SQLException {
+										 int maxRows, List<AfterLoadAction> afterLoadActions) {
 		throw new UnsupportedOperationException( "use #reactiveProcessResultSet instead." );
 	}
 
