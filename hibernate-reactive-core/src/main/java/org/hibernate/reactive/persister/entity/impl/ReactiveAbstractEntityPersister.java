@@ -380,7 +380,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return generatedIdStage
 				.thenApply( generatedId -> {
 					log.debugf( "Natively generated identity: %s", generatedId );
-					if ( generatedIdStage == null ) {
+					if ( generatedId == null ) {
 						throw new HibernateException( "The database returned no natively generated identity value" );
 					}
 					return castToIdentifierType( generatedId, this );
