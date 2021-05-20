@@ -447,12 +447,11 @@ public class ReactiveBulkIdStrategy
 //		else {
 		if (db2) {
 			statements.add( getIdTableSupport().getTruncateIdTableCommand() + " " + tableInfo.getQualifiedIdTableName() );
-			parameterSpecifications.add( NO_PARAMS );
 		}
 		else {
 			statements.add( tableInfo.getIdTableDropStatement() );
-			parameterSpecifications.add( NO_PARAMS );
 		}
+		parameterSpecifications.add( NO_PARAMS );
 	}
 
 //	@Override
