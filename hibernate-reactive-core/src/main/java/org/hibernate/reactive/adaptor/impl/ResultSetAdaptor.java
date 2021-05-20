@@ -490,7 +490,7 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public int getConcurrency() {
-		return 0;
+		return CONCUR_READ_ONLY;
 	}
 
 	@Override
