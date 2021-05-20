@@ -759,7 +759,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		if ( !delegate().isInverseTable( j ) ) {
 
-			if ( delegate().isNullableTable( j ) && delegate().isAllNull( oldFields, j ) && oldFields != null ) {
+			if ( delegate().isNullableTable( j ) && oldFields != null && delegate().isAllNull( oldFields, j ) ) {
 				// don't bother trying to update, we know there is no row there yet
 				if ( !delegate().isAllNull( fields, j ) ) {
 					return insertReactive(
