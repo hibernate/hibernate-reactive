@@ -179,7 +179,7 @@ public final class ForeignKeys {
 			// When bytecode-enhancement is used for dirty-checking, the change should
 			// only be tracked when returnedValue was nullified (1)).
 			if ( value != returnedValue && returnedValue == null
-					&& SelfDirtinessTracker.class.isInstance( self ) ) {
+					&& self instanceof SelfDirtinessTracker ) {
 				( (SelfDirtinessTracker) self ).$$_hibernate_trackChange( propertyName );
 			}
 		}
