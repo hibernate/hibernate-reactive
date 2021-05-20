@@ -56,7 +56,7 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLazyInitializationException(TestContext context) throws Exception {
+	public void testLazyInitializationException(TestContext context) {
 		test( context,
 			  openMutinySession().chain( session -> session
 					  .createQuery( "from Artist", Artist.class )
@@ -75,7 +75,7 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLazyInitializationExceptionNotThrown(TestContext context) throws Exception {
+	public void testLazyInitializationExceptionNotThrown(TestContext context) {
 		test( context,
 			  openMutinySession().chain( session -> session
 					  .createQuery( "from Artist", Artist.class )

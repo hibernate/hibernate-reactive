@@ -6,7 +6,6 @@
 package org.hibernate.reactive.containers;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -93,7 +92,7 @@ class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
     }
 
     @Override
-    public Connection createConnection(String queryString) throws SQLException, NoDriverFoundException {
+    public Connection createConnection(String queryString) throws NoDriverFoundException {
     	throw new UnsupportedOperationException();
     }
 

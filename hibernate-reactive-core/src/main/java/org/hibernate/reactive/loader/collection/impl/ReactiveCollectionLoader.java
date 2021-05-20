@@ -179,7 +179,7 @@ public class ReactiveCollectionLoader extends CollectionLoader
 										 SharedSessionContractImplementor session,
 										 boolean returnProxies,
 										 ResultTransformer forcedResultTransformer,
-										 int maxRows, List<AfterLoadAction> afterLoadActions) throws SQLException {
+										 int maxRows, List<AfterLoadAction> afterLoadActions) {
 		throw new UnsupportedOperationException( "use #reactiveProcessResultSet instead." );
 	}
 

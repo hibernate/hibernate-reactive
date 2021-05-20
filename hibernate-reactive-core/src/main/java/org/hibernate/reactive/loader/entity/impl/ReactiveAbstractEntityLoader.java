@@ -217,7 +217,7 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 										 SharedSessionContractImplementor session,
 										 boolean returnProxies,
 										 ResultTransformer forcedResultTransformer,
-										 int maxRows, List<AfterLoadAction> afterLoadActions) throws SQLException {
+										 int maxRows, List<AfterLoadAction> afterLoadActions) {
 		throw new UnsupportedOperationException( "use #reactiveProcessResultSet instead." );
 	}
 
@@ -267,12 +267,12 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 	}
 
 	@Override
-	public List<Object> doQueryAndInitializeNonLazyCollections(SharedSessionContractImplementor session, QueryParameters queryParameters, boolean returnProxies) throws HibernateException, SQLException {
+	public List<Object> doQueryAndInitializeNonLazyCollections(SharedSessionContractImplementor session, QueryParameters queryParameters, boolean returnProxies) throws HibernateException {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public List<Object> doQueryAndInitializeNonLazyCollections(SharedSessionContractImplementor session, QueryParameters queryParameters, boolean returnProxies, ResultTransformer forcedResultTransformer) throws HibernateException, SQLException {
+	public List<Object> doQueryAndInitializeNonLazyCollections(SharedSessionContractImplementor session, QueryParameters queryParameters, boolean returnProxies, ResultTransformer forcedResultTransformer) throws HibernateException {
 		throw new UnsupportedOperationException();
 	}
 }

@@ -38,7 +38,7 @@ public class LongLobTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLongLobType(TestContext context) throws Exception {
+	public void testLongLobType(TestContext context) {
 		Basic basic = new Basic();
 		basic.longLob = Long.MAX_VALUE;
 

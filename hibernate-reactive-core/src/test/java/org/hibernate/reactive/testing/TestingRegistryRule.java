@@ -34,7 +34,7 @@ public class TestingRegistryRule extends ExternalResource {
     private Registry registry;
 
     @Override
-    protected void before() throws Throwable {
+    protected void before() {
         this.vertx = Vertx.vertx();
         this.registry = new Registry( vertx );
     }
