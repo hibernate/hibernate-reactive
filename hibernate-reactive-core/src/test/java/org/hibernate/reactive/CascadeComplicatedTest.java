@@ -435,7 +435,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 		@OneToMany(cascade =  {
 				CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}
 				, mappedBy = "b")
-		private java.util.Set<G> gCollection = new java.util.HashSet<G>();
+		private java.util.Set<G> gCollection = new java.util.HashSet<>();
 
 
 		@ManyToOne(cascade =  {
@@ -477,12 +477,12 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 		private Long id;
 
 		@OneToMany(mappedBy = "c")
-		private Set<B> bCollection = new java.util.HashSet<B>();
+		private Set<B> bCollection = new java.util.HashSet<>();
 
 		@OneToMany(cascade =  {
 				CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}
 				, mappedBy = "c")
-		private Set<D> dCollection = new java.util.HashSet<D>();
+		private Set<D> dCollection = new java.util.HashSet<>();
 
 		public Long getId() {
 			return id;
@@ -505,7 +505,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 		private Long id;
 
 		@OneToMany(mappedBy = "d")
-		private java.util.Set<B> bCollection = new java.util.HashSet<B>();
+		private java.util.Set<B> bCollection = new java.util.HashSet<>();
 
 		@ManyToOne(optional = false, fetch = FetchType.LAZY)
 		private C c;
@@ -517,7 +517,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 				CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
 				mappedBy = "d"
 		)
-		private java.util.Set<F> fCollection = new java.util.HashSet<F>();
+		private java.util.Set<F> fCollection = new java.util.HashSet<>();
 
 		public Long getId() {
 			return id;
@@ -548,7 +548,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 		private Long id;
 
 		@OneToMany(mappedBy = "e")
-		private java.util.Set<D> dCollection = new java.util.HashSet<D>();
+		private java.util.Set<D> dCollection = new java.util.HashSet<>();
 
 		@ManyToOne(optional = true, fetch = FetchType.LAZY)
 		private F f;
@@ -576,7 +576,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 		@OneToMany(cascade =  {
 				CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}
 				, mappedBy = "f")
-		private java.util.Set<E> eCollection = new java.util.HashSet<E>();
+		private java.util.Set<E> eCollection = new java.util.HashSet<>();
 
 		@ManyToOne(optional = false, fetch = FetchType.LAZY)
 		private D d;
@@ -612,7 +612,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 		private B b;
 
 		@OneToMany(mappedBy = "g")
-		private java.util.Set<F> fCollection = new java.util.HashSet<F>();
+		private java.util.Set<F> fCollection = new java.util.HashSet<>();
 
 		public Long getId() {
 			return id;
