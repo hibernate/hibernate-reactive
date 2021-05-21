@@ -50,7 +50,7 @@ public abstract class UUIDAsBinaryType extends BaseReactiveTest {
 					.persistAll( entityA, entityB )
 					.call( session::flush ) )
 					.invoke( () -> context.assertNotEquals( entityA.id, entityB.id ) )
-					.chain( () -> openMutinySession() )
+					.chain( this::openMutinySession )
 					.chain( session -> session.find( ExactSizeUUIDEntity.class, entityA.id, entityB.id ) )
 					.invoke( list -> {
 						context.assertEquals( list.size(), 2 );
@@ -123,7 +123,7 @@ public abstract class UUIDAsBinaryType extends BaseReactiveTest {
 					.persistAll( entityA, entityB )
 					.call( session::flush ) )
 					.invoke( () -> context.assertNotEquals( entityA.id, entityB.id ) )
-					.chain( () -> openMutinySession() )
+					.chain( this::openMutinySession )
 					.chain( session -> session.find( UUIDEntity.class, entityA.id, entityB.id ) )
 					.invoke( list -> {
 						context.assertEquals( list.size(), 2 );

@@ -136,7 +136,7 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 								.thenCompose( s -> s.withTransaction( t -> s.createQuery("delete Book where title='Necronomicon II'").executeUpdate() ) )
 								.thenCompose( v -> openSession() )
 								.thenCompose( s -> s.find(Book.class, 6) )
-								.thenAccept( book -> context.assertNull(book) )
+								.thenAccept( context::assertNull )
 						)
 		);
 	}
@@ -176,7 +176,7 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 										.executeUpdate() )
 						) )
 						.thenCompose( v -> openSession().thenCompose( s -> s.find(Book.class, 6) ) )
-						.thenAccept( book -> context.assertNull(book) )
+						.thenAccept( context::assertNull )
 		);
 	}
 

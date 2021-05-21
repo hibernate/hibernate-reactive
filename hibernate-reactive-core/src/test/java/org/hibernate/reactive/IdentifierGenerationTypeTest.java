@@ -115,7 +115,7 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 						.persistAll( entityA, entityB )
 						.call( session::flush ) )
 				.invoke( () -> context.assertNotEquals( entityA.id, entityB.id ) )
-				.chain( () -> openMutinySession() )
+				.chain( this::openMutinySession )
 				.chain( session -> session.find( IntegerEntity.class, entityA.id, entityB.id ) )
 				.invoke( list -> {
 					context.assertEquals( list.size(), 2 );
@@ -153,7 +153,7 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 						.persistAll( entityA, entityB )
 						.call( session::flush ) )
 				.invoke( () -> context.assertNotEquals( entityA.id, entityB.id ) )
-				.chain( () -> openMutinySession() )
+				.chain( this::openMutinySession )
 				.chain( session -> session.find( ShortEntity.class, entityA.id, entityB.id ) )
 				.invoke( list -> {
 					context.assertEquals( list.size(), 2 );

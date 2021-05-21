@@ -104,7 +104,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 							context.assertFalse( session.contains( actualPig ) );
 						} )
 						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
-						.thenCompose( pig -> session.remove(pig) )
+						.thenCompose( session::remove )
 						.thenCompose( v -> session.flush() )
 		);
 	}
@@ -599,7 +599,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session ->
 							session.find( GuineaPig.class, 5 )
-								.thenCompose( aloi -> session.remove( aloi ) )
+								.thenCompose( session::remove )
 								.thenCompose( v -> session.flush() )
 								.whenComplete( (v,e) -> session.close() )
 								.thenCompose( v -> selectNameFromId( 5 ) )

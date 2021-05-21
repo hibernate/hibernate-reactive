@@ -45,7 +45,7 @@ public class OneToOneMapsIdTest extends BaseReactiveTest {
 				.thenCompose( v -> openSession() )
 				.thenAccept( session -> session
 						.find( PersonDetails.class, 1 )
-						.thenAccept( foundPersonDetails -> context.assertNotNull( foundPersonDetails ) ) )
+						.thenAccept( context::assertNotNull ) )
 		);
 	}
 

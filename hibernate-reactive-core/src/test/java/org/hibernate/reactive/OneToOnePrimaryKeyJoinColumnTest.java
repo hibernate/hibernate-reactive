@@ -45,7 +45,7 @@ public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 				.thenCompose( v -> openSession() )
 				.thenAccept( session -> session
 						.find( OneToOneMapsIdTest.PersonDetails.class, 1 )
-						.thenAccept( foundPersonDetails -> context.assertNotNull( foundPersonDetails ) ) )
+						.thenAccept( context::assertNotNull ) )
 		);
 	}
 

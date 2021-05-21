@@ -128,7 +128,7 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 						.thenAccept( resoultCount -> context.assertEquals( 1, resoultCount ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Flour.class, rye.getId() ) )
-						.thenAccept( result -> context.assertNull( result ) )
+						.thenAccept( context::assertNull )
 		);
 	}
 

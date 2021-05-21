@@ -110,7 +110,7 @@ public abstract class BaseReactiveTest {
 	public static void test(Async async, TestContext context, Uni<?> uni) {
 		uni.subscribe().with(
 				res -> async.complete(),
-				throwable -> context.fail( throwable )
+				context::fail
 		);
 	}
 
@@ -173,7 +173,7 @@ public abstract class BaseReactiveTest {
 
 	private void startFactoryManager(Promise<Object> p) {
 		try {
-			factoryManager.start( () -> createHibernateSessionFactory() );
+			factoryManager.start( this::createHibernateSessionFactory );
 			p.complete();
 		}
 		catch (Throwable e) {

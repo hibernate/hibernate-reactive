@@ -68,7 +68,7 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 		test( context, openMutinySession()
 				.chain( session -> session
 						.persist( endpoint )
-						.call( () -> session.flush() ) )
+						.call( session::flush ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session
 						.createQuery( query, Endpoint.class )

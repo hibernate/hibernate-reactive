@@ -54,7 +54,7 @@ public class FindAfterFlushTest extends BaseReactiveTest {
 		final Webcomic wc = new Webcomic( "Saturday Morning Breakfast Cereal ", "Zach Weinersmith" );
 		test( context, getMutinySessionFactory().withSession( s -> s
 				.persist( wc )
-				.call( () -> s.flush() )
+				.call( s::flush )
 				.chain( () -> s.find( Webcomic.class, wc.getId() ) )
 				.invoke( found -> context.assertEquals( wc, found ) )
 		) );
@@ -79,7 +79,7 @@ public class FindAfterFlushTest extends BaseReactiveTest {
 		test( context, getMutinySessionFactory()
 				.withTransaction( (s, tx) -> s
 						.persist( wc )
-						.call( () -> s.flush() )
+						.call( s::flush )
 					  	.chain( () -> s.find( Webcomic.class, wc.getId() ) )
 					  	.invoke( found -> {
 							context.assertEquals( wc, found );

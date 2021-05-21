@@ -81,7 +81,7 @@ public class LazyInitializationExceptionWithStage extends BaseReactiveTest {
 		test( context, openSession()
 			.thenCompose( session -> session.createQuery( "from Artist", Artist.class ).getSingleResult() )
 			 // We are checking `.getPaintings()` but not doing anything with it and therefore it should work.
-			.thenAccept( artist -> artist.getPaintings() )
+			.thenAccept( Artist::getPaintings )
 		);
 	}
 
