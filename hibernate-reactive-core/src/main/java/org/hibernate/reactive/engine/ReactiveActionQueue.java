@@ -1120,7 +1120,7 @@ public class ReactiveActionQueue {
 
 			boolean sorted = false;
 
-			long maxIterations = latestBatches.size() * latestBatches.size();
+			long maxIterations = (long) latestBatches.size() * latestBatches.size();
 			long iterations = 0;
 
 			sort:

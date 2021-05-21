@@ -37,7 +37,7 @@ class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
         // Repeatedly try and open a connection to the DB and execute a test query
         long start = System.currentTimeMillis();
         try {
-            while (System.currentTimeMillis() < start + (1000 * getStartupTimeoutSeconds())) {
+            while (System.currentTimeMillis() < start + ( 1000L * getStartupTimeoutSeconds())) {
                 try {
                     if (!isRunning()) {
                         Thread.sleep(100L);
