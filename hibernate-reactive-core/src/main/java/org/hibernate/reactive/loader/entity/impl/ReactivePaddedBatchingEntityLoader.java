@@ -21,7 +21,9 @@ import java.util.concurrent.CompletionStage;
 /**
  * A batching entity loader for {@link org.hibernate.loader.BatchFetchStyle#PADDED}.
  *
- * @see org.hibernate.loader.entity.PaddedBatchingEntityLoaderBuilder.PaddedBatchingEntityLoader
+ * @see org.hibernate.loader.entity.plan.PaddedBatchingEntityLoaderBuilder
+ * @see org.hibernate.loader.entity.plan.PaddedBatchingEntityLoader
+ *
  */
 public class ReactivePaddedBatchingEntityLoader extends ReactiveBatchingEntityLoader {
 	private final int[] batchSizes;
