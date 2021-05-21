@@ -96,12 +96,15 @@ class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
     	throw new UnsupportedOperationException();
     }
 
-    private void await(CountDownLatch latch) {
-    	try {
-    		latch.await( getStartupTimeoutSeconds(), TimeUnit.SECONDS );
-		} catch (InterruptedException e) {
-			throw new ContainerLaunchException("Container startup wait was interrupted", e);
+	private void await(CountDownLatch latch) {
+		try {
+			if ( !latch.await( getStartupTimeoutSeconds(), TimeUnit.SECONDS ) ) {
+				throw new ContainerLaunchException( "Timeout: container didn't start within the expected time" );
+			}
 		}
-    }
+		catch (InterruptedException e) {
+			throw new ContainerLaunchException( "Container startup wait was interrupted", e );
+		}
+	}
 
 }
