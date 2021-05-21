@@ -81,7 +81,7 @@ public class ReactiveDynamicBatchingEntityDelegator extends ReactiveBatchingEnti
 
 		final int numberOfIds = ArrayHelper.countNonNull( batch );
 		if ( numberOfIds <= 1 ) {
-			final Object result =  singleKeyLoader.load( id, optionalObject, session );
+			final Object result =  singleKeyLoader.load( id, optionalObject, session, lockOptions );
 			if ( result == null ) {
 				// There was no entity with the specified ID. Make sure the EntityKey does not remain
 				// in the batch to avoid including it in future batches that get executed.
