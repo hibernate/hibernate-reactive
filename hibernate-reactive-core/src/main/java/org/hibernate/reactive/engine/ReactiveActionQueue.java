@@ -1273,12 +1273,11 @@ public class ReactiveActionQueue {
 		}
 
 		private void addToBatch(BatchIdentifier batchIdentifier, ReactiveEntityInsertAction action) {
-			List<ReactiveEntityInsertAction> actions = actionBatches.get( batchIdentifier );
+			List<ReactiveEntityInsertAction> actions = actionBatches.computeIfAbsent(
+					batchIdentifier,
+					k -> new LinkedList<>()
+			);
 
-			if ( actions == null ) {
-				actions = new LinkedList<>();
-				actionBatches.put( batchIdentifier, actions );
-			}
 			actions.add( action );
 		}
 
