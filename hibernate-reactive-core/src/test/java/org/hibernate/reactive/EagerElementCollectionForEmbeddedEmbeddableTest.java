@@ -456,7 +456,7 @@ public class EagerElementCollectionForEmbeddedEmbeddableTest extends BaseReactiv
 						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
-				.thenAccept( nullPerson -> context.assertNull( nullPerson ) )
+				.thenAccept( context::assertNull )
 				// Check with native query that the table is empty
 				.thenCompose( v -> selectFromPhonesWithStage( thePerson ) )
 				.thenAccept( resultList -> context.assertTrue( resultList.isEmpty() ) )
@@ -473,7 +473,7 @@ public class EagerElementCollectionForEmbeddedEmbeddableTest extends BaseReactiv
 						.call( session::flush ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )
-				.invoke( nullPerson -> context.assertNull( nullPerson ) )
+				.invoke( context::assertNull )
 				// Check with native query that the table is empty
 				.chain( () -> selectFromPhonesWithMutiny( thePerson ) )
 				.invoke( resultList -> context.assertTrue( resultList.isEmpty() ) )

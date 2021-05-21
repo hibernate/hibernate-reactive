@@ -433,7 +433,7 @@ public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiv
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						// remove thePerson entity and flush
-						.thenCompose( foundPerson -> session.remove( foundPerson ) )
+						.thenCompose( session::remove )
 						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
@@ -627,7 +627,7 @@ public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiv
 		context.assertNotNull( person );
 		context.assertNotNull( person.getPhones() );
 		List<String> personPhones = person.getPhones()
-				.stream().map( phone -> phone.getNumber() ).collect( Collectors.toList() );
+				.stream().map( Phone::getNumber ).collect( Collectors.toList() );
 
 		assertThat( personPhones ).containsExactlyInAnyOrder( phones );
 	}

@@ -164,7 +164,7 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 						.thenCompose( s -> s.createQuery("delete Book where title='Necronomicon II'").executeUpdate() )
 						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.find(Book.class, 6))
-						.thenAccept( book -> context.assertNull(book) )
+						.thenAccept( context::assertNull )
 		);
 	}
 
@@ -194,7 +194,7 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 								.executeUpdate() )
 						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.find(Book.class, 6))
-						.thenAccept( book -> context.assertNull(book) )
+						.thenAccept( context::assertNull )
 		);
 	}
 

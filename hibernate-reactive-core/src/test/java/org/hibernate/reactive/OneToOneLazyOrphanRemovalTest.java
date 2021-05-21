@@ -54,7 +54,7 @@ public class OneToOneLazyOrphanRemovalTest extends BaseReactiveTest {
 										.assertNull( car.getEngine() ) )
 								.chain( () -> session
 										.find( Engine.class, 1 )
-										.invoke( engine -> context.assertNull( engine ) ) ) ) )
+										.invoke( context::assertNull ) ) ) )
 		);
 	}
 
@@ -74,7 +74,7 @@ public class OneToOneLazyOrphanRemovalTest extends BaseReactiveTest {
 										.assertNull( car.getPaintColor() ) )
 								.chain( () -> session
 										.find( PaintColor.class, 1 )
-										.invoke( color -> context.assertNull( color ) ) ) ) )
+										.invoke( context::assertNull ) ) ) )
 		);
 	}
 

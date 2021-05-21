@@ -97,7 +97,7 @@ public class CustomStoredProcedureSqlTest extends BaseReactiveTest {
 	public void testInsertStoredProcedure(TestContext context) {
 		test( context, openSession().thenCompose( session -> session
 				.find( SimpleRecord.class, theRecord.id )
-				.thenAccept( foundRecord -> context.assertNotNull( foundRecord ) ) )
+				.thenAccept( context::assertNotNull ) )
 		);
 	}
 
@@ -123,7 +123,7 @@ public class CustomStoredProcedureSqlTest extends BaseReactiveTest {
 		test( context, openSession()
 				.thenCompose( session -> session
 						.find( SimpleRecord.class, theRecord.id )
-						.thenCompose( foundRecord -> session.remove( foundRecord ) )
+						.thenCompose( session::remove )
 						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( SimpleRecord.class, theRecord.id ) )

@@ -173,11 +173,11 @@ public class EagerElementCollectionForBasicTypeMapTest extends BaseReactiveTest 
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						// remove thePerson entity and flush
-						.thenCompose( foundPerson -> session.remove( foundPerson ) )
+						.thenCompose( session::remove )
 						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
-				.thenAccept( nullPerson -> context.assertNull( nullPerson ) )
+				.thenAccept( context::assertNull )
 				// Check with native query that the table is empty
 				.thenCompose( v -> selectFromPhonesWithStage( thePerson ) )
 				.thenAccept( resultList -> context.assertTrue( resultList.isEmpty() ) )

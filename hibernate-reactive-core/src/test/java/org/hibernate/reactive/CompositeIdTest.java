@@ -143,7 +143,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session ->
 							session.find( GuineaPig.class, new Pig(5, "Aloi") )
-								.thenCompose( aloi -> session.remove( aloi ) )
+								.thenCompose( session::remove )
 								.thenCompose( v -> session.flush() )
 								.thenCompose( v -> selectNameFromId( 5 ) )
 								.thenAccept( context::assertNull )

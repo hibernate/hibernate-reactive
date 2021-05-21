@@ -44,7 +44,7 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 		Artist artemisia = new Artist( "Artemisia Gentileschi" );
 		getMutinySessionFactory()
 				.withTransaction( (session, tx) -> session.persist( artemisia ) )
-				.subscribe().with( success -> async.complete(), failure -> context.fail( failure ) );
+				.subscribe().with( success -> async.complete(), context::fail );
 	}
 
 	@After
@@ -52,7 +52,7 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 		Async async = context.async();
 		getMutinySessionFactory()
 				.withTransaction( (session, tx) -> session.createQuery( "delete from Artist" ).executeUpdate() )
-				.subscribe().with( success -> async.complete(), failure -> context.fail( failure ) );
+				.subscribe().with( success -> async.complete(), context::fail );
 	}
 
 	@Test
@@ -81,7 +81,7 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 					  .createQuery( "from Artist", Artist.class )
 					  .getSingleResult() )
 					  // We are checking `.getPaintings()` but not doing anything with it and therefore it should work.
-					  .onItem().invoke( artist -> artist.getPaintings() )
+					  .onItem().invoke( Artist::getPaintings )
 		);
 	}
 

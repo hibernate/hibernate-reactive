@@ -146,7 +146,7 @@ public class Main {
 					// retrieve a Book
 					(session, tx) -> session.find( Book.class, book2.getId() )
 							// delete the Book
-							.thenCompose( book -> session.remove( book ) )
+							.thenCompose( session::remove )
 			)
 					.toCompletableFuture().join();
 

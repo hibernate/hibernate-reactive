@@ -127,7 +127,7 @@ public class ReferenceTest extends BaseReactiveTest {
 						} )
 						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> sess.find( Book.class, goodOmens.getId() ) )
-						.thenAccept( book -> context.assertNull(book) )
+						.thenAccept( context::assertNull )
 		);
 	}
 

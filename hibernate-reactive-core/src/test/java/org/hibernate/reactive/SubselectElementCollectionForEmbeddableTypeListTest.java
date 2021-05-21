@@ -97,7 +97,7 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 						)
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, tx) -> session.find( Person.class, johnny.getId() )
-										.chain( result -> session.remove( result ) )
+										.chain( session::remove )
 								)
 						)
 		);

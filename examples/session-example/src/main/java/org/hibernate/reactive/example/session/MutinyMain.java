@@ -145,7 +145,7 @@ public class MutinyMain {
 					// retrieve a Book
 					(session, tx) -> session.find( Book.class, book2.getId() )
 							// delete the Book
-							.chain( book -> session.remove( book ) )
+							.chain( session::remove )
 			)
 					.await().indefinitely();
 

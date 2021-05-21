@@ -198,7 +198,7 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 		test( context, getMutinySessionFactory()
 				.withTransaction( (session, tx) -> session
 						.persist( thomas ) )
-				.chain( () -> openMutinySession() )
+				.chain( this::openMutinySession )
 				.chain( newSession -> newSession
 						.find( Person.class, thomas.getId() )
 						// Change a couple of the elements in the collection
@@ -207,7 +207,7 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 							found.getPhones().set( 3, new Phone( "47" ) );
 						} )
 						.call( newSession::flush ) )
-				.chain( () -> openMutinySession() )
+				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thomas.getId() ) )
 				.invoke( found -> assertPhones( context, found, "000", "000", "47", "47" ) )
 		);
@@ -363,7 +363,7 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 							foundPerson.getPhones().remove( new Phone( "111-111-1111" ) );
 							foundPerson.getPhones().add( new Phone( "000" ) );
 						} ) )
-				.chain( () -> openMutinySession() )
+				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )
 				.invoke( person -> assertPhones( context, person, "000", "999-999-9999" ) )
 		);
@@ -395,7 +395,7 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 							foundPerson.getPhones().remove( new Phone( "999-999-9999" ) );
 							foundPerson.getPhones().add( new Phone( "000-000-0000" ) );
 						} ) )
-				.chain( () -> openMutinySession() )
+				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )
 				.invoke( changedPerson -> assertPhones( context, changedPerson, "000-000-0000", "111-111-1111" ) )
 		);
@@ -433,7 +433,7 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 				.withTransaction( (session, tx) -> session
 						.find( Person.class, thePerson.getId() )
 						// remove thePerson entity and flush
-						.thenCompose( foundPerson -> session.remove( foundPerson ) ) )
+						.thenCompose( session::remove ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( context::assertNull )

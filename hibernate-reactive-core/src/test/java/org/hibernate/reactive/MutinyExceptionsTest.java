@@ -13,6 +13,7 @@ import javax.persistence.PersistenceException;
 import org.hibernate.HibernateException;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.mutiny.Mutiny;
 
 import org.junit.Test;
 
@@ -36,9 +37,9 @@ public class MutinyExceptionsTest extends BaseReactiveTest {
 	public void testDuplicateKeyException(TestContext context) {
 		test( context, openMutinySession()
 				.onItem().call( session -> session.persist( new Person( "testFLush1", "unique" ) ) )
-				.onItem().call( session -> session.flush() )
+				.onItem().call( Mutiny.Session::flush )
 				.onItem().call( session -> session.persist( new Person( "testFlush2", "unique" ) ) )
-				.onItem().call( session -> session.flush() )
+				.onItem().call( Mutiny.Session::flush )
 				.onItem().invoke( ignore -> context.fail( "Expected exception not thrown" ) )
 				.onFailure().recoverWithItem( err -> {
 					context.assertEquals( getExpectedException(), err.getClass() );
