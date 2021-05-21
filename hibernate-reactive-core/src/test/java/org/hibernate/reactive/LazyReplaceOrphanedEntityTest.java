@@ -112,7 +112,7 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 		// Getters and setters
 		public void setSchedule(Schedule schedule) {
 			this.schedule = schedule;
-			if( schedule != null ) {
+			if ( schedule != null ) {
 				this.schedule.setCampaign( this );
 			}
 		}
@@ -180,9 +180,8 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 
 		// Getters and setters
 
-		public Schedule setStart(OffsetDateTime start) {
+		public void setStart(OffsetDateTime start) {
 			this.start = start;
-			return null;
 		}
 
 		public OffsetDateTime getStart() {
