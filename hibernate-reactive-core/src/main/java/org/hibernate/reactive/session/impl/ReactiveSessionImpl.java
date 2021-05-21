@@ -136,8 +136,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		super( delegate, options );
 		assert Context.isOnEventLoopThread() : "This needs to be run on the Vert.x event loop";
 		this.associatedWorkThread = Thread.currentThread();
-		Integer batchSize = getConfiguredJdbcBatchSize();
-		reactiveConnection = batchSize==null || batchSize<2 ? connection :
+		//matches configuration property "hibernate.jdbc.batch_size" :
+		int batchSize = delegate.getSessionFactoryOptions().getJdbcBatchSize();
+		reactiveConnection = batchSize<2 ? connection :
 				new BatchingConnection( connection, batchSize );
 	}
 
