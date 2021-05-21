@@ -234,8 +234,9 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public byte[] getBytes(String columnLabel) {
-		Buffer buffer = row.getBuffer(columnLabel);
-		return (wasNull=buffer==null) ? null : buffer.getBytes();
+		Buffer buffer = row.getBuffer( columnLabel );
+		wasNull = buffer == null;
+		return wasNull ? null : buffer.getBytes();
 	}
 
 	@Override
@@ -686,9 +687,8 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public Blob getBlob(String columnLabel) {
 		Buffer buffer = (Buffer) row.getValue( columnLabel );
-		return ( wasNull = buffer == null )
-				? null
-				: BlobProxy.generateProxy( buffer.getBytes() );
+		wasNull = buffer == null;
+		return wasNull ? null : BlobProxy.generateProxy( buffer.getBytes() );
 	}
 
 	@Override
