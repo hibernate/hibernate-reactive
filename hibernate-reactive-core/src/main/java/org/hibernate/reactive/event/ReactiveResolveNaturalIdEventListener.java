@@ -26,6 +26,6 @@ public interface ReactiveResolveNaturalIdEventListener extends Serializable {
 	 *
 	 * @throws HibernateException Indicates a problem resolving natural id to primary key
 	 */
-	public CompletionStage<Void> reactiveResolveNaturalId(ResolveNaturalIdEvent event) throws HibernateException;
+	CompletionStage<Void> reactiveResolveNaturalId(ResolveNaturalIdEvent event) throws HibernateException;
 
 }

@@ -27,6 +27,6 @@ public interface ReactiveLoadEventListener extends Serializable {
 	 *
 	 * @throws HibernateException
 	 */
-	public CompletionStage<Void> reactiveOnLoad(LoadEvent event, LoadType loadType) throws HibernateException;
+	CompletionStage<Void> reactiveOnLoad(LoadEvent event, LoadType loadType) throws HibernateException;
 
 }
