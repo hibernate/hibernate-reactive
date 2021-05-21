@@ -54,16 +54,6 @@ public abstract class ReactiveBatchingEntityLoader implements ReactiveUniqueEnti
 	}
 
 	@Override
-	public CompletionStage<Object> load(
-			Serializable id,
-			Object optionalObject,
-			SharedSessionContractImplementor session,
-			LockOptions lockOptions,
-			Boolean readOnly) {
-		return load( id, optionalObject, session, lockOptions, readOnly );
-	}
-
-	@Override
 	public CompletionStage<Object> load(Serializable id, Object optionalObject, SharedSessionContractImplementor session, Boolean readOnly) {
 		return load( id, optionalObject, session, LockOptions.NONE, readOnly );
 	}
