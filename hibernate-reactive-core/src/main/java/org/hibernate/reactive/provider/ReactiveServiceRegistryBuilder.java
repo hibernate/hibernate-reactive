@@ -72,7 +72,7 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
         ) {
             @Override
             public StandardServiceRegistryBuilder configure(LoadedConfig loadedConfig) {
-                getAggregatedCfgXml().merge( loadedConfig );
+                super.getAggregatedCfgXml().merge( loadedConfig );
                 // super also collects the properties - here we skip that part
                 return this;
             }
