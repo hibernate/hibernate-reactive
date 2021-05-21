@@ -66,6 +66,7 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
         return new StandardServiceRegistryBuilder(
                 bootstrapServiceRegistry,
                 new HashMap<>(),
+                new ConfigLoader( bootstrapServiceRegistry ),
                 loadedConfig,
                 defaultReactiveInitiatorList()
         ) {
