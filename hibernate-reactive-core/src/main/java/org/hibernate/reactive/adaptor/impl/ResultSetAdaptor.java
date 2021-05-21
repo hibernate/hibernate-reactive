@@ -46,7 +46,7 @@ import java.util.Map;
 public class ResultSetAdaptor implements ResultSet {
 
 	private final RowIterator<Row> iterator;
-	private RowSet<Row> rows;
+	private final RowSet<Row> rows;
 	private Row row;
 	private boolean wasNull;
 
@@ -81,43 +81,50 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public boolean getBoolean(int columnIndex) {
 		Boolean bool = row.getBoolean(columnIndex);
-		return (wasNull=bool==null) ? false : bool;
+		wasNull = bool == null;
+		return !wasNull && bool;
 	}
 
 	@Override
 	public byte getByte(int columnIndex) {
 		Integer integer = row.getInteger( columnIndex );
-		return (wasNull=integer==null) ? 0 : integer.byteValue();
+		wasNull = integer == null;
+		return wasNull ? 0 : integer.byteValue();
 	}
 
 	@Override
 	public short getShort(int columnIndex) {
-		Short integer = row.getShort(columnIndex);
-		return (wasNull=integer==null) ? 0 : integer;
+		Short aShort = row.getShort( columnIndex );
+		wasNull = aShort == null;
+		return wasNull ? 0 : aShort;
 	}
 
 	@Override
 	public int getInt(int columnIndex) {
 		Integer integer = row.getInteger( columnIndex );
-		return (wasNull=integer==null) ? 0 : integer;
+		wasNull = integer == null;
+		return wasNull ? 0 : integer;
 	}
 
 	@Override
 	public long getLong(int columnIndex) {
-		Long integer = row.getLong(columnIndex);
-		return (wasNull=integer==null) ? 0 : integer;
+		Long aLong = row.getLong(columnIndex);
+		wasNull = aLong == null;
+		return wasNull ? 0 : aLong;
 	}
 
 	@Override
 	public float getFloat(int columnIndex) {
-		Float real = row.getFloat(columnIndex);
-		return (wasNull=real==null) ? 0 : real;
+		Float real = row.getFloat( columnIndex );
+		wasNull = real == null;
+		return wasNull ? 0 : real;
 	}
 
 	@Override
 	public double getDouble(int columnIndex) {
-		Double real = row.getDouble(columnIndex);
-		return (wasNull=real==null) ? 0 : real;
+		Double real = row.getDouble( columnIndex );
+		wasNull = real == null;
+		return wasNull ? 0 : real;
 	}
 
 	@Override
@@ -128,7 +135,8 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public byte[] getBytes(int columnIndex) {
 		Buffer buffer = row.getBuffer(columnIndex);
-		return (wasNull=buffer==null) ? null : buffer.getBytes();
+		wasNull = buffer == null;
+		return wasNull ? null : buffer.getBytes();
 	}
 
 	@Override
@@ -172,44 +180,51 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public boolean getBoolean(String columnLabel) {
-		Boolean bool = row.getBoolean(columnLabel);
-		return (wasNull=bool==null) ? false : bool;
+		Boolean bool = row.getBoolean( columnLabel );
+		wasNull = bool == null;
+		return !wasNull && bool;
 	}
 
 	@Override
 	public byte getByte(String columnLabel) {
 		Integer integer = row.getInteger( columnLabel );
-		return (wasNull=integer==null) ? 0 : integer.byteValue();
+		wasNull = integer == null;
+		return wasNull ? 0 : integer.byteValue();
 	}
 
 	@Override
 	public short getShort(String columnLabel) {
-		Short integer = row.getShort(columnLabel);
-		return (wasNull=integer==null) ? 0 : integer;
+		Short aShort = row.getShort( columnLabel );
+		wasNull = aShort == null;
+		return wasNull ? 0 : aShort;
 	}
 
 	@Override
 	public int getInt(String columnLabel) {
 		Integer integer = row.getInteger( columnLabel );
-		return (wasNull=integer==null) ? 0 : integer;
+		wasNull = integer == null;
+		return wasNull ? 0 : integer;
 	}
 
 	@Override
 	public long getLong(String columnLabel) {
-		Long integer = row.getLong(columnLabel);
-		return (wasNull=integer==null) ? 0 : integer;
+		Long aLong = row.getLong( columnLabel );
+		wasNull = aLong == null;
+		return wasNull ? 0 : aLong;
 	}
 
 	@Override
 	public float getFloat(String columnLabel) {
-		Float real = row.getFloat(columnLabel);
-		return (wasNull=real==null) ? 0 : real;
+		Float real = row.getFloat( columnLabel );
+		wasNull = real == null;
+		return wasNull ? 0 : real;
 	}
 
 	@Override
 	public double getDouble(String columnLabel) {
-		Double real = row.getDouble(columnLabel);
-		return (wasNull=real==null) ? 0 : real;
+		Double real = row.getDouble( columnLabel );
+		wasNull = real == null;
+		return wasNull ? 0 : real;
 	}
 
 	@Override
