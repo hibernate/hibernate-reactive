@@ -27,7 +27,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  * which selects between a single-key {@link ReactiveEntityLoader} and a batching
  * {@link ReactiveDynamicBatchingEntityLoader} depending upon how many keys it's given.
  *
- * @see org.hibernate.loader.entity.DynamicBatchingEntityLoaderBuilder.DynamicBatchingEntityLoader
+ * @see org.hibernate.loader.entity.plan.DynamicBatchingEntityLoaderBuilder
+ * @see org.hibernate.loader.entity.plan.DynamicBatchingEntityLoader
  */
 public class ReactiveDynamicBatchingEntityDelegator extends ReactiveBatchingEntityLoader {
 
