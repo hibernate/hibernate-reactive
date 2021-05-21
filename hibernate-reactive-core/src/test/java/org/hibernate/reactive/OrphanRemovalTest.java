@@ -58,7 +58,7 @@ public class OrphanRemovalTest extends BaseReactiveTest {
                         ))
                         .thenCompose(v -> getSessionFactory().withTransaction((session, transaction) ->
                                 session.createQuery("select count(*) from Product", Long.class)
-                                        .getSingleResult().thenAccept(result -> context.assertEquals(3l, result))
+                                        .getSingleResult().thenAccept( result -> context.assertEquals( 3L, result ) )
                         ))
                         .thenCompose(v -> getSessionFactory().withTransaction((session, transaction) ->
                                 session.createQuery("select name from Product" )

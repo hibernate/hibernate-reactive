@@ -146,7 +146,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	public void testBytesType(TestContext context) {
 		byte primitiveByte = 'D';
 		byte[] primitiveBytes = "This too shall pass".getBytes();
-		Byte fieldByte = new Byte( "4" );
+		Byte fieldByte = Byte.valueOf( "4" );
 
 		Basic basic = new Basic();
 		basic.primitiveByte = primitiveByte;
