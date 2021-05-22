@@ -6,6 +6,9 @@
 package org.hibernate.reactive.pool.impl;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
@@ -31,6 +34,7 @@ import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnectOptions;
 import io.vertx.sqlclient.spi.Driver;
 
+import static java.util.Arrays.asList;
 import static org.hibernate.internal.CoreLogging.messageLogger;
 
 /**
@@ -54,6 +58,17 @@ import static org.hibernate.internal.CoreLogging.messageLogger;
  */
 public class DefaultSqlClientPool extends SqlClientPool
 		implements ServiceRegistryAwareService, Configurable, Stoppable, Startable {
+
+	/**
+	 * The valid schemes for each driver
+	 */
+	private static final Map<String, List<String>> DRIVER_SCHEMES = new HashMap<>();
+
+	static {
+		DRIVER_SCHEMES.put( "io.vertx.db2client.spi.DB2Driver", asList( "db2" ) );
+		DRIVER_SCHEMES.put( "io.vertx.mysqlclient.spi.MySQLDriver", asList( "mysql", "mariadb" ) );
+		DRIVER_SCHEMES.put( "io.vertx.pgclient.spi.PgDriver", asList( "postgre", "postgres", "postgresql", "cockroachdb" ) );
+	}
 
 	private Pool pools;
 	private SqlStatementLogger sqlStatementLogger;
@@ -165,34 +180,22 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 * @return the disambiguated {@link Driver}
 	 */
 	private Driver findDriver(URI uri, ServiceConfigurationError originalError) {
-		String scheme = uri.getScheme(); // "postgresql", "mysql", "db2", etc
+		String scheme = uri.getScheme().toLowerCase( Locale.ROOT ); // "postgresql", "mysql", "db2", etc
 		for ( Driver d : ServiceLoader.load( Driver.class ) ) {
 			String driverName = d.getClass().getCanonicalName();
 			messageLogger( DefaultSqlClientPool.class ).infof( "HRX000013: Detected driver [%s]", driverName );
-			switch (driverName) {
-				case "io.vertx.db2client.spi.DB2Driver":
-					if ( "db2".equalsIgnoreCase( scheme ) ) {
-						return d;
-					}
-				case "io.vertx.mysqlclient.spi.MySQLDriver":
-					if ( "mysql".equalsIgnoreCase( scheme ) ) {
-						return d;
-					}
-					if ( "mariadb".equalsIgnoreCase( scheme ) ) {
-						return d;
-					}
-				case "io.vertx.pgclient.spi.PgDriver":
-					if ( "postgre".equalsIgnoreCase( scheme ) ||
-							"postgres".equalsIgnoreCase( scheme ) ||
-							"postgresql".equalsIgnoreCase( scheme ) ) {
-						return d;
-					}
-					if ( "cockroachdb".equalsIgnoreCase( scheme ) ) {
-						return d;
-					}
+			if ( driverFound( scheme, driverName ) ) {
+				return d;
 			}
 		}
-		throw new ConfigurationException( "No suitable drivers found for URI scheme: " + scheme, originalError );
+		throw new ConfigurationException( "No suitable drivers found for URI scheme: " + uri.getScheme(), originalError );
+	}
+
+	private static boolean driverFound(String scheme, String driverName) {
+		if ( DRIVER_SCHEMES.containsKey( driverName ) ) {
+			return DRIVER_SCHEMES.get( driverName ).contains( scheme );
+		}
+		return false;
 	}
 
 	@Override
