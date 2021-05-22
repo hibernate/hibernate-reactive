@@ -133,30 +133,81 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
+		String id = sessionId();
+		Mutiny.Session current = Vertx.currentContext().getLocal(id);
+		if ( current!=null && current.isOpen() ) {
+			return work.apply( current );
+		}
 		return newSession()
-				.chain( session -> work.apply( session ).eventually( session::close ) );
+				.chain( session -> {
+					Vertx.currentContext().putLocal(id, session);
+					return work.apply( session )
+							.eventually( () -> {
+								Vertx.currentContext().removeLocal(id);
+								return session.close();
+							} );
+				} );
 	}
 
 	@Override
 	public <T> Uni<T> withSession(String tenantId, Function<Mutiny.Session, Uni<T>> work) {
+		String id = sessionId(tenantId);
+		Mutiny.Session current = Vertx.currentContext().getLocal(id);
+		if ( current!=null && current.isOpen() ) {
+			return work.apply( current );
+		}
 		return newSession( tenantId )
-				.chain( session -> work.apply( session ).eventually( session::close ) );
+				.chain( session -> {
+					Vertx.currentContext().putLocal(id, session);
+					return work.apply(session)
+							.eventually( () -> {
+								Vertx.currentContext().removeLocal(id);
+								return session.close();
+							} );
+				} );
 	}
 
 	@Override
 	public <T> Uni<T> withStatelessSession(Function<Mutiny.StatelessSession, Uni<T>> work) {
+		String id = statelessSessionId();
+		Mutiny.StatelessSession current = Vertx.currentContext().getLocal(id);
+		if ( current!=null && current.isOpen() ) {
+			return work.apply( current );
+		}
 		return newStatelessSession()
-				.chain( session -> work.apply( session ).eventually( session::close ) );
+				.chain( session -> {
+					Vertx.currentContext().putLocal(id, session);
+					return work.apply(session).eventually( () -> {
+						Vertx.currentContext().removeLocal(id);
+						return session.close();
+					} );
+				} );
+	}
+
+	private String sessionId() {
+		return Mutiny.Session.class.getName() + '/' + delegate.getUuid();
+	}
+
+	private String sessionId(String tenantId) {
+		return sessionId() + '/' + tenantId;
+	}
+
+	private String statelessSessionId() {
+		return Mutiny.StatelessSession.class.getName() + '/' + delegate.getUuid();
+	}
+
+	private String statelessSessionId(String tenantId) {
+		return statelessSessionId() + '/' + tenantId;
 	}
 
 	@Override
 	public <T> Uni<T> withTransaction(BiFunction<Mutiny.Session, Mutiny.Transaction, Uni<T>> work) {
-		return withSession( (s) -> s.withTransaction( (t) -> work.apply(s, t) ) );
+		return withSession( s -> s.withTransaction( t -> work.apply(s, t) ) );
 	}
 
 	@Override
 	public <T> Uni<T> withTransaction(String tenantId, BiFunction<Mutiny.Session, Mutiny.Transaction, Uni<T>> work) {
-		return withSession( tenantId, (s) -> s.withTransaction( (t) -> work.apply(s, t) ) );
+		return withSession( tenantId, s -> s.withTransaction( t -> work.apply(s, t) ) );
 	}
 
 	@Override

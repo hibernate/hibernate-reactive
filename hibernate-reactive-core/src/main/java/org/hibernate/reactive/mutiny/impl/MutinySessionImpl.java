@@ -409,13 +409,21 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> Uni<T> withTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
-		return new Transaction<T>().execute( work );
+		return currentTransaction==null ? new Transaction<T>().execute(work) : work.apply(currentTransaction);
+	}
+
+	private Transaction<?> currentTransaction;
+
+	@Override
+	public Mutiny.Transaction currentTransaction() {
+		return currentTransaction;
 	}
 
 	private class Transaction<T> implements Mutiny.Transaction {
 		boolean rollback;
 
 		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
+			currentTransaction = this;
 			//noinspection Convert2MethodRef
 			return begin()
 					.chain( () -> work.apply( this ) )
@@ -429,7 +437,8 @@ public class MutinySessionImpl implements Mutiny.Session {
 					// finally, when there was no exception,
 					// commit or rollback the transaction
 					.onItem().call( () -> rollback ? rollback() : commit() )
-					.call( () -> afterCompletion() );
+					.call( () -> afterCompletion() )
+					.eventually( () -> currentTransaction = null );
 		}
 
 		Uni<Void> flush() {

@@ -1064,11 +1064,22 @@ public interface Stage {
 		 * automatically flushing the session. The transaction will be rolled
 		 * back if the work completes with an uncaught exception, or if
 		 * {@link Transaction#markForRollback()} is called.
+		 * <p>
+		 * The resulting {@link Transaction} object may also be obtained via
+		 * {@link #currentTransaction()}.
 		 *
 		 * @param work a function which accepts {@link Transaction} and returns
 		 *             the result of the work as a {@link CompletionStage}.
 		 */
 		<T> CompletionStage<T> withTransaction(Function<Transaction, CompletionStage<T>> work);
+
+		/**
+		 * Obtain the transaction currently associated with this session,
+		 * if any.
+		 *
+		 * @return the {@link Transaction} or null.
+		 */
+		Transaction currentTransaction();
 
 		/**
 		 * Close the reactive session and release the underlying database
@@ -1379,6 +1390,14 @@ public interface Stage {
 		 *             the result of the work as a {@link CompletionStage}.
 		 */
 		<T> CompletionStage<T> withTransaction(Function<Transaction, CompletionStage<T>> work);
+
+		/**
+		 * Obtain the transaction currently associated with this session,
+		 * if any.
+		 *
+		 * @return the {@link Transaction} or null.
+		 */
+		Transaction currentTransaction();
 
 		/**
 		 * @return false if {@link #close()} has been called
