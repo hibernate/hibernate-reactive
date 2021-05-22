@@ -5,15 +5,14 @@
  */
 
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS org.hibernate:hibernate-core:5.4.31.Final
 //DEPS junit:junit:4.12
 //DEPS javax.persistence:javax.persistence-api:2.2
 //DEPS org.hibernate.reactive:hibernate-reactive-core:1.0.0.CR4
 //DEPS org.hibernate.validator:hibernate-validator:6.1.5.Final
 //DEPS org.assertj:assertj-core:3.13.2
 //DEPS io.vertx:vertx-pg-client:4.0.3
-//DEPS io.vertx:vertx-db2-client:4.0.3
 //DEPS io.vertx:vertx-mysql-client:4.0.3
+//DEPS io.vertx:vertx-db2-client:4.0.3
 //DEPS io.vertx:vertx-sql-client:4.0.3
 //DEPS io.vertx:vertx-unit:4.0.3
 //
@@ -47,34 +46,88 @@ import static java.time.Month.MAY;
 import static javax.persistence.CascadeType.PERSIST;
 import static javax.persistence.FetchType.LAZY;
 
+/**
+ * JBang compatible example for Hibernate Reactive.
+ * <p>
+ * We expect the selected database (the default is PostgreSQL)
+ * to be up and running. Instructions on how to start the databases
+ * using Podman or Docker are in the
+ * <a hreaf="https://github.com/hibernate/hibernate-reactive/blob/main/podman.md">podman.md</a>
+ * file in the Hibernate Reactive project on GitHub.
+ * </p>
+ * <p>
+ * Usage example:
+ *     <dl>
+ *         <dt>1. Download JBang</dt>
+ *         <dd>See <a hreaf="https://www.jbang.dev/download">https://www.jbang.dev/download</a></dd>
+ *         <dt>2. Start the database with the right credentials</dt>
+ *         <dd>
+ *             Using Podman or Docker (you can replace {@code podman} with {@code docker}):
+ *             <pre>
+ * podman run --rm --name HibernateTestingPGSQL \
+ *     -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact \
+ *     -p 5432:5432 postgres:13.2
+ *             </pre>
+ *         </dd>
+ *         <dt>3. Run the test with JBang</dt>
+ *         <dd>
+ *             <pre>jbang Example.java</pre>
+ *         </dd>
+ *         <dt>4. (Optional) Edit the file (with IntelliJ IDEA for example):</dt>
+ *         <dd>
+ *             <pre>jbang edit --open=idea Example.java</pre>
+ *         </dd>
+ *     </dl>
+ * <p/>
+ *
+ * @see <a href="https://www.jbang.dev/">JBang</a>
+ */
 public class Example {
 
 	/**
-	 * Define the configuration parameter values for your use-case
+	 * The default URLs for the supported databases
+	 */
+	enum Database {
+		POSTGRESQL( "jdbc:postgresql://localhost:5432/hreact?user=hreact&password=hreact" ),
+		MYSQL( "jdbc:mysql://localhost:3306/hreact?user=hreact&password=hreact&serverTimezone=UTC" ),
+		MARIADB( "jdbc:mariadb://localhost:3306/hreact?user=hreact&password=hreact&serverTimezone=UTC" ),
+		DB2( "jdbc:db2://localhost:50000/hreact:user=hreact;password=hreact;" ),
+		COCKROACHDB( "jdbc:cockroachdb://localhost:26257/postgres?sslmode=disable&user=root" );
+
+		private String url;
+
+		Database(String url) {
+			this.url = url;
+		}
+
+		public String getUrl() {
+			return url;
+		}
+	}
+
+	/**
+	 * Create the {@link Configuration} for the {@link Mutiny.SessionFactory}.
 	 */
 	private static Configuration createConfiguration() {
 		Configuration configuration = new Configuration();
 
-		configuration.setProperty( Settings.URL, "jdbc:postgresql://localhost:5432/hreact" );
+		configuration.setProperty( Settings.URL, Database.MARIADB.getUrl() );
 
-		// =====  OTHER Test DBs =======================================================================
-		// MYSQL: jdbc:mysql://localhost:3306/hreact?user=hreact&password=hreact&serverTimezone=UTC
-		// DB2:   jdbc:db2://localhost:50000/hreact:user=hreact;password=hreact;
-		// CockroachDB  jdbc:cockroachdb://localhost:26257/postgres?sslmode=disable&user=root
-		//  NOTE:  CockroachDB does not need password and requires //DEPS io.vertx:vertx-pg-client:4.0.3
-		// ==============================================================================================
+		// (Optional) Override default credentials
+		// configuration.setProperty( Settings.USER, "hreact" );
+		// configuration.setProperty( Settings.PASS, "hreact" );
 
-		configuration.setProperty( Settings.USER, "hreact" );
-		configuration.setProperty( Settings.PASS, "hreact" );
-
+		// Supported values are: none, create, create-drop
 		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
 
+		// Register new entities here
 		configuration.addAnnotatedClass( Author.class );
 		configuration.addAnnotatedClass( Book.class );
 
-		configuration.setProperty( Settings.SHOW_SQL, "true" );
-		configuration.setProperty( Settings.HIGHLIGHT_SQL, "true" );
-		configuration.setProperty( Settings.FORMAT_SQL, "true" );
+		// Query logging
+		configuration.setProperty( Settings.SHOW_SQL, "false" );
+		configuration.setProperty( Settings.HIGHLIGHT_SQL, "false" );
+		configuration.setProperty( Settings.FORMAT_SQL, "false" );
 		return configuration;
 	}
 
@@ -116,10 +169,20 @@ public class Example {
 							// print its title
 							.invoke( book -> out.println( book.getTitle() + " is a great book!" ) )
 			)
+					// wait for it to finish
 					.await().indefinitely();
 		}
 	}
 
+	/**
+	 * Example of a class representing an entity.
+	 * <p>
+	 * If you create new entities, be sure to add them in {@link #createConfiguration()}.
+	 * For example:
+	 * <pre>
+	 * configuration.addAnnotatedClass( MyOtherEntity.class );
+	 * </pre>
+	 */
 	@Entity
 	@Table(name = "authors")
 	static class Author {
