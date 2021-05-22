@@ -174,7 +174,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
     @Override
     public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
-        return new Transaction<T>().execute( work );
+        return currentTransaction==null ? new Transaction<T>().execute(work) : work.apply(currentTransaction);
     }
 
     @Override
@@ -191,11 +191,19 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
         return delegate.isOpen();
     }
 
+    private Transaction<?> currentTransaction;
+
+    @Override
+    public Stage.Transaction currentTransaction() {
+        return currentTransaction;
+    }
+
     private class Transaction<T> implements Stage.Transaction {
         boolean rollback;
         Throwable error;
 
         CompletionStage<T> execute(Function<Stage.Transaction, CompletionStage<T>> work) {
+            currentTransaction = this;
             return begin()
                     .thenCompose( v -> work.apply( this ) )
                     // have to capture the error here and pass it along,
@@ -211,7 +219,8 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
                                     .handle( this::processError )
                                     // finally rethrow the original error, if any
                                     .thenApply( v -> returnOrRethrow( error, result ) )
-                    );
+                    )
+                    .whenComplete( (t, x) -> currentTransaction = null );
         }
 
         CompletionStage<Void> begin() {

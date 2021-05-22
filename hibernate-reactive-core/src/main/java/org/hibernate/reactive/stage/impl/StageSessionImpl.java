@@ -408,7 +408,14 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
-		return new Transaction<T>().execute( work );
+		return currentTransaction==null ? new Transaction<T>().execute(work) : work.apply(currentTransaction);
+	}
+
+	private Transaction<?> currentTransaction;
+
+	@Override
+	public Stage.Transaction currentTransaction() {
+		return currentTransaction;
 	}
 
 	private class Transaction<T> implements Stage.Transaction {
@@ -416,6 +423,7 @@ public class StageSessionImpl implements Stage.Session {
 		Throwable error;
 
 		CompletionStage<T> execute(Function<Stage.Transaction, CompletionStage<T>> work) {
+			currentTransaction = this;
 			return begin()
 					.thenCompose( v -> work.apply( this ) )
 					// only flush() if the work completed with no exception
@@ -433,7 +441,8 @@ public class StageSessionImpl implements Stage.Session {
 									.handle( this::processError )
 									// finally rethrow the original error, if any
 									.thenApply( v -> returnOrRethrow( error, result ) )
-					);
+					)
+					.whenComplete( (t, x) -> currentTransaction = null );
 		}
 
 		CompletionStage<Void> flush() {

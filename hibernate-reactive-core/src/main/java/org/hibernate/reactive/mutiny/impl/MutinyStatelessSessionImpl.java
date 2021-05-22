@@ -173,13 +173,21 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
     @Override
     public <T> Uni<T> withTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
-        return new Transaction<T>().execute( work );
+        return currentTransaction==null ? new Transaction<T>().execute(work) : work.apply(currentTransaction);
+    }
+
+    private Transaction<?> currentTransaction;
+
+    @Override
+    public Mutiny.Transaction currentTransaction() {
+        return currentTransaction;
     }
 
     private class Transaction<T> implements Mutiny.Transaction {
         boolean rollback;
 
         Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
+            currentTransaction = this;
             //noinspection Convert2MethodRef
             return begin()
                     .chain( () -> work.apply( this ) )
@@ -189,7 +197,8 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
                     .onCancellation().call( () -> rollback() )
                     // finally, when there was no exception,
                     // commit or rollback the transaction
-                    .onItem().call( () -> rollback ? rollback() : commit() );
+                    .onItem().call( () -> rollback ? rollback() : commit() )
+                    .eventually( () -> currentTransaction = null );
         }
 
         Uni<Void> begin() {
