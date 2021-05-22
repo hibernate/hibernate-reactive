@@ -484,6 +484,18 @@ public class MutinySessionTest extends BaseReactiveTest {
 		context.assertEquals( "GuineaPig", pig.getName() );
 	}
 
+	@Test
+	public void reactiveThreadBoundTransaction(TestContext context) {
+		test( context, getMutinySessionFactory().withTransaction(
+				(session, transaction) -> session.createQuery("from GuineaPig").getResultList().invoke( list -> {
+					context.assertNotNull( Mutiny.currentTransaction() );
+					context.assertFalse( Mutiny.currentTransaction().isMarkedForRollback() );
+					Mutiny.currentTransaction().markForRollback();
+					context.assertTrue( Mutiny.currentTransaction().isMarkedForRollback() );
+					context.assertTrue( transaction.isMarkedForRollback() );
+				} ) ) );
+	}
+
 
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
 		context.assertNotNull( actual );

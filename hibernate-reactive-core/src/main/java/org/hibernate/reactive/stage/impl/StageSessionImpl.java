@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import io.vertx.core.Vertx;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -408,7 +409,8 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
-		return new Transaction<T>().execute( work );
+		Stage.Transaction current = Vertx.currentContext().getLocal( Stage.Transaction.class.getName() );
+		return current==null ? new Transaction<T>().execute(work) : work.apply(current);
 	}
 
 	private class Transaction<T> implements Stage.Transaction {
@@ -433,7 +435,8 @@ public class StageSessionImpl implements Stage.Session {
 									.handle( this::processError )
 									// finally rethrow the original error, if any
 									.thenApply( v -> returnOrRethrow( error, result ) )
-					);
+					)
+					.whenComplete( (t,x) -> cleanup() );
 		}
 
 		CompletionStage<Void> flush() {
@@ -441,6 +444,7 @@ public class StageSessionImpl implements Stage.Session {
 		}
 
 		CompletionStage<Void> begin() {
+			Vertx.currentContext().putLocal( Stage.Transaction.class.getName(), this );
 			return delegate.getReactiveConnection().beginTransaction();
 		}
 
@@ -450,6 +454,10 @@ public class StageSessionImpl implements Stage.Session {
 					.thenApply( v -> delegate.getReactiveConnection() )
 					.thenCompose( c -> rollback ? c.rollbackTransaction() : c.commitTransaction() )
 					.thenCompose( v -> actionQueue.afterTransactionCompletion( !rollback ) );
+		}
+
+		void cleanup() {
+			Vertx.currentContext().removeLocal( Stage.Transaction.class.getName() );
 		}
 
 		<R> R processError(R result, Throwable e) {

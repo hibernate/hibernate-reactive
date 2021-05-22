@@ -6,6 +6,7 @@
 package org.hibernate.reactive.mutiny.impl;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Vertx;
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
@@ -173,7 +174,8 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
     @Override
     public <T> Uni<T> withTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
-        return new Transaction<T>().execute( work );
+        Mutiny.Transaction current = Vertx.currentContext().getLocal( Mutiny.Transaction.class.getName() );
+        return current==null ? new Transaction<T>().execute(work) : work.apply(current);
     }
 
     private class Transaction<T> implements Mutiny.Transaction {
@@ -189,10 +191,12 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
                     .onCancellation().call( () -> rollback() )
                     // finally, when there was no exception,
                     // commit or rollback the transaction
-                    .onItem().call( () -> rollback ? rollback() : commit() );
+                    .onItem().call( () -> rollback ? rollback() : commit() )
+                    .eventually( () -> cleanup() );
         }
 
         Uni<Void> begin() {
+            Vertx.currentContext().putLocal( Mutiny.Transaction.class.getName(), this );
             return Uni.createFrom().completionStage( delegate.getReactiveConnection().beginTransaction() );
         }
 
@@ -202,6 +206,10 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
         Uni<Void> commit() {
             return Uni.createFrom().completionStage( delegate.getReactiveConnection().commitTransaction() );
+        }
+
+        private void cleanup() {
+            Vertx.currentContext().removeLocal( Mutiny.Transaction.class.getName() );
         }
 
         @Override

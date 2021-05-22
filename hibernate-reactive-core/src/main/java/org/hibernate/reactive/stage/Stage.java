@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.stage;
 
+import io.vertx.core.Vertx;
 import org.hibernate.Cache;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
@@ -1064,6 +1065,9 @@ public interface Stage {
 		 * automatically flushing the session. The transaction will be rolled
 		 * back if the work completes with an uncaught exception, or if
 		 * {@link Transaction#markForRollback()} is called.
+		 * <p>
+		 * The resulting {@link Transaction} object may also be obtained via
+		 * {@link #currentTransaction()}.
 		 *
 		 * @param work a function which accepts {@link Transaction} and returns
 		 *             the result of the work as a {@link CompletionStage}.
@@ -1512,6 +1516,9 @@ public interface Stage {
 		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
 		 * automatically, and the transaction committed automatically.
+		 * <p>
+		 * The resulting {@link Transaction} object may also be obtained via
+		 * {@link #currentTransaction()}.
 		 *
 		 * @param work a function which accepts the session and returns
 		 *             the result of the work as a {@link CompletionStage}.
@@ -1608,5 +1615,16 @@ public interface Stage {
 			throw new LazyInitializationException("session closed");
 		}
 		return ( (ReactiveSession) session ).reactiveFetch( association, false );
+	}
+
+	/**
+	 * Obtain the transaction associated with the current reactive stream,
+	 * if any, or return null if there is no transaction associated with
+	 * the current stream.
+	 *
+	 * @return a {@link Stage.Transaction} or null
+	 */
+	static Stage.Transaction currentTransaction() {
+		return Vertx.currentContext().getLocal( Stage.Transaction.class.getName() );
 	}
 }

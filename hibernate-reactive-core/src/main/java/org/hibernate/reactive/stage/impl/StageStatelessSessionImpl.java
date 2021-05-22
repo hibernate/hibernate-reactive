@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import io.vertx.core.Vertx;
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
@@ -174,7 +175,8 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
     @Override
     public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
-        return new Transaction<T>().execute( work );
+        Stage.Transaction current = Vertx.currentContext().getLocal( Stage.Transaction.class.getName() );
+        return current==null ? new Transaction<T>().execute(work) : work.apply(current);
     }
 
     @Override
@@ -211,16 +213,23 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
                                     .handle( this::processError )
                                     // finally rethrow the original error, if any
                                     .thenApply( v -> returnOrRethrow( error, result ) )
-                    );
+                    )
+                    .whenComplete( (t,x) -> cleanup() );
         }
 
         CompletionStage<Void> begin() {
+            Vertx.currentContext().putLocal( Stage.Transaction.class.getName(), this );
             return delegate.getReactiveConnection().beginTransaction();
         }
 
         CompletionStage<Void> end() {
+            Vertx.currentContext().removeLocal( Stage.Transaction.class.getName() );
             ReactiveConnection c = delegate.getReactiveConnection();
             return rollback ? c.rollbackTransaction() : c.commitTransaction();
+        }
+
+        void cleanup() {
+            Vertx.currentContext().removeLocal( Stage.Transaction.class.getName() );
         }
 
         <R> R processError(R result, Throwable e) {

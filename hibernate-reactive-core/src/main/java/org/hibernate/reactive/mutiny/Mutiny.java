@@ -6,6 +6,7 @@
 package org.hibernate.reactive.mutiny;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Vertx;
 import org.hibernate.Cache;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
@@ -1062,6 +1063,9 @@ public interface Mutiny {
 		 * automatically flushing the session. The transaction will be rolled
 		 * back if the work completes with an uncaught exception, or if
 		 * {@link Transaction#markForRollback()} is called.
+		 * <p>
+		 * The resulting {@link Transaction} object may also be obtained via
+		 * {@link #currentTransaction()}.
 		 *
 		 * @param work a function which accepts {@link Transaction} and returns
 		 *             the result of the work as a {@link Uni}.
@@ -1510,6 +1514,9 @@ public interface Mutiny {
 		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
 		 * automatically, and the transaction committed automatically.
+		 * <p>
+		 * The resulting {@link Transaction} object may also be obtained via
+		 * {@link #currentTransaction()}.
 		 *
 		 * @param work a function which accepts the session and returns
 		 *             the result of the work as a {@link Uni}.
@@ -1608,5 +1615,16 @@ public interface Mutiny {
 		return Uni.createFrom().completionStage(
 				( (ReactiveSession) session ).reactiveFetch( association, false )
 		);
+	}
+
+	/**
+	 * Obtain the transaction associated with the current reactive stream,
+	 * if any, or return null if there is no transaction associated with
+	 * the current stream.
+	 *
+	 * @return a {@link Transaction} or null
+	 */
+	static Transaction currentTransaction() {
+		return Vertx.currentContext().getLocal( Mutiny.Transaction.class.getName() );
 	}
 }
