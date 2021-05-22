@@ -33,7 +33,8 @@ public class FilterTest extends BaseReactiveTest {
 
 	@After
 	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "Element" )
+		test( context, closeSession()
+				.thenCompose( v -> deleteEntities( "Element" ) )
 				.thenCompose( v -> getSessionFactory()
 						.withTransaction( (s, t) -> s
 								.createQuery( "delete from Node" ).executeUpdate() ) ) );

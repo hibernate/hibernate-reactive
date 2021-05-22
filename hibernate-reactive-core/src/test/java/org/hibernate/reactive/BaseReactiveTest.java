@@ -275,6 +275,10 @@ public abstract class BaseReactiveTest {
 		return factoryManager.getReactiveConnectionPool().getConnection().thenApply( c -> connection = c );
 	}
 
+	protected CompletionStage<Void> closeSession() {
+		return closeSession( session );
+	}
+
 	/**
 	 * Close the existing open session and create a new {@link Mutiny.Session}
 	 *
@@ -291,5 +295,9 @@ public abstract class BaseReactiveTest {
 
 	protected static Mutiny.SessionFactory getMutinySessionFactory() {
 		return factoryManager.getHibernateSessionFactory().unwrap( Mutiny.SessionFactory.class );
+	}
+
+	protected Uni<Void> closeMutinySession() {
+		return Uni.createFrom().completionStage( closeSession( session ) );
 	}
 }
