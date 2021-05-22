@@ -174,6 +174,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 					if ( "db2".equalsIgnoreCase( scheme ) ) {
 						return d;
 					}
+					break;
 				case "io.vertx.mysqlclient.spi.MySQLDriver":
 					if ( "mysql".equalsIgnoreCase( scheme ) ) {
 						return d;
@@ -181,6 +182,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 					if ( "mariadb".equalsIgnoreCase( scheme ) ) {
 						return d;
 					}
+					break;
 				case "io.vertx.pgclient.spi.PgDriver":
 					if ( "postgre".equalsIgnoreCase( scheme ) ||
 							"postgres".equalsIgnoreCase( scheme ) ||
@@ -190,6 +192,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 					if ( "cockroachdb".equalsIgnoreCase( scheme ) ) {
 						return d;
 					}
+					break;
 			}
 		}
 		throw new ConfigurationException( "No suitable drivers found for URI scheme: " + scheme, originalError );
