@@ -133,6 +133,10 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
+		Mutiny.Session current = Vertx.currentContext().getLocal( Mutiny.Session.class.getName() );
+		if ( current!=null ) {
+			return work.apply( current );
+		}
 		return newSession()
 				.chain( session -> work.apply( session ).eventually( session::close ) );
 	}
@@ -145,6 +149,10 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withStatelessSession(Function<Mutiny.StatelessSession, Uni<T>> work) {
+		Mutiny.StatelessSession current = Vertx.currentContext().getLocal( Mutiny.StatelessSession.class.getName() );
+		if ( current!=null ) {
+			return work.apply( current );
+		}
 		return newStatelessSession()
 				.chain( session -> work.apply( session ).eventually( session::close ) );
 	}

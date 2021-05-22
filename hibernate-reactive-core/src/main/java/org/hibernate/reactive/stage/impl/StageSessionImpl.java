@@ -45,6 +45,7 @@ public class StageSessionImpl implements Stage.Session {
 	public StageSessionImpl(ReactiveSession session, StageSessionFactoryImpl factory) {
 		this.delegate = session;
 		this.factory = factory;
+		Vertx.currentContext().putLocal( Stage.Session.class.getName(), this );
 	}
 
 	private <T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stage) {
@@ -409,8 +410,14 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
-		Stage.Transaction current = Vertx.currentContext().getLocal( Stage.Transaction.class.getName() );
-		return current==null ? new Transaction<T>().execute(work) : work.apply(current);
+		return currentTransaction==null ? new Transaction<T>().execute(work) : work.apply(currentTransaction);
+	}
+
+	private Transaction<?> currentTransaction;
+
+	@Override
+	public Stage.Transaction currentTransaction() {
+		return currentTransaction;
 	}
 
 	private class Transaction<T> implements Stage.Transaction {
@@ -444,7 +451,7 @@ public class StageSessionImpl implements Stage.Session {
 		}
 
 		CompletionStage<Void> begin() {
-			Vertx.currentContext().putLocal( Stage.Transaction.class.getName(), this );
+			currentTransaction = this;
 			return delegate.getReactiveConnection().beginTransaction();
 		}
 
@@ -457,7 +464,7 @@ public class StageSessionImpl implements Stage.Session {
 		}
 
 		void cleanup() {
-			Vertx.currentContext().removeLocal( Stage.Transaction.class.getName() );
+			currentTransaction = null;
 		}
 
 		<R> R processError(R result, Throwable e) {
@@ -486,6 +493,7 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public CompletionStage<Void> close() {
+		Vertx.currentContext().removeLocal( Stage.Session.class.getName() );
 		return stage( v -> delegate.reactiveClose() );
 	}
 

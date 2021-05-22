@@ -1075,6 +1075,14 @@ public interface Stage {
 		<T> CompletionStage<T> withTransaction(Function<Transaction, CompletionStage<T>> work);
 
 		/**
+		 * Obtain the transaction currently associated with this session,
+		 * if any.
+		 *
+		 * @return the {@link Transaction} or null.
+		 */
+		Transaction currentTransaction();
+
+		/**
 		 * Close the reactive session and release the underlying database
 		 * connection.
 		 */
@@ -1385,6 +1393,14 @@ public interface Stage {
 		<T> CompletionStage<T> withTransaction(Function<Transaction, CompletionStage<T>> work);
 
 		/**
+		 * Obtain the transaction currently associated with this session,
+		 * if any.
+		 *
+		 * @return the {@link Transaction} or null.
+		 */
+		Transaction currentTransaction();
+
+		/**
 		 * @return false if {@link #close()} has been called
 		 */
 		boolean isOpen();
@@ -1516,9 +1532,6 @@ public interface Stage {
 		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
 		 * automatically, and the transaction committed automatically.
-		 * <p>
-		 * The resulting {@link Transaction} object may also be obtained via
-		 * {@link #currentTransaction()}.
 		 *
 		 * @param work a function which accepts the session and returns
 		 *             the result of the work as a {@link CompletionStage}.
@@ -1618,13 +1631,24 @@ public interface Stage {
 	}
 
 	/**
-	 * Obtain the transaction associated with the current reactive stream,
-	 * if any, or return null if there is no transaction associated with
+	 * Obtain the session associated with the current reactive stream,
+	 * if any, or return null if there is no session associated with
 	 * the current stream.
 	 *
-	 * @return a {@link Stage.Transaction} or null
+	 * @return a {@link Session} or null
 	 */
-	static Stage.Transaction currentTransaction() {
-		return Vertx.currentContext().getLocal( Stage.Transaction.class.getName() );
+	static Session currentSession() {
+		return Vertx.currentContext().getLocal( Session.class.getName() );
+	}
+
+	/**
+	 * Obtain the stateless session associated with the current reactive stream,
+	 * if any, or return null if there is no stateless session associated with
+	 * the current stream.
+	 *
+	 * @return a {@link StatelessSession} or null
+	 */
+	static StatelessSession currentStatelessSession() {
+		return Vertx.currentContext().getLocal( StatelessSession.class.getName() );
 	}
 }

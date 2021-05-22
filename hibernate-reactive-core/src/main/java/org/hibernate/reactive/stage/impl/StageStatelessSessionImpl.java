@@ -37,6 +37,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
     public StageStatelessSessionImpl(ReactiveStatelessSession delegate, StageSessionFactoryImpl factory) {
         this.delegate = delegate;
         this.factory = factory;
+        Vertx.currentContext().putLocal( Stage.StatelessSession.class.getName(), this );
     }
 
     private <T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stage) {
@@ -175,12 +176,12 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
     @Override
     public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
-        Stage.Transaction current = Vertx.currentContext().getLocal( Stage.Transaction.class.getName() );
-        return current==null ? new Transaction<T>().execute(work) : work.apply(current);
+        return currentTransaction==null ? new Transaction<T>().execute(work) : work.apply(currentTransaction);
     }
 
     @Override
     public CompletionStage<Void> close() {
+        Vertx.currentContext().removeLocal( Stage.StatelessSession.class.getName() );
         return stage( v -> {
             CompletableFuture<Void> closing = new CompletableFuture<>();
             delegate.close( closing );
@@ -191,6 +192,13 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
     @Override
     public boolean isOpen() {
         return delegate.isOpen();
+    }
+
+    private Transaction<?> currentTransaction;
+
+    @Override
+    public Stage.Transaction currentTransaction() {
+        return currentTransaction;
     }
 
     private class Transaction<T> implements Stage.Transaction {
@@ -218,7 +226,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
         }
 
         CompletionStage<Void> begin() {
-            Vertx.currentContext().putLocal( Stage.Transaction.class.getName(), this );
+            currentTransaction = this;
             return delegate.getReactiveConnection().beginTransaction();
         }
 
@@ -229,7 +237,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
         }
 
         void cleanup() {
-            Vertx.currentContext().removeLocal( Stage.Transaction.class.getName() );
+            currentTransaction = null;
         }
 
         <R> R processError(R result, Throwable e) {

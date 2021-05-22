@@ -754,10 +754,10 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	public void reactiveThreadBoundTransaction(TestContext context) {
 		test( context, getSessionFactory().withTransaction(
 				(session, transaction) -> session.createQuery("from GuineaPig").getResultList().thenAccept( list -> {
-					context.assertNotNull( Stage.currentTransaction() );
-					context.assertFalse( Stage.currentTransaction().isMarkedForRollback() );
-					Stage.currentTransaction().markForRollback();
-					context.assertTrue( Stage.currentTransaction().isMarkedForRollback() );
+					context.assertNotNull( Stage.currentSession().currentTransaction() );
+					context.assertFalse( Stage.currentSession().currentTransaction().isMarkedForRollback() );
+					Stage.currentSession().currentTransaction().markForRollback();
+					context.assertTrue( Stage.currentSession().currentTransaction().isMarkedForRollback() );
 					context.assertTrue( transaction.isMarkedForRollback() );
 				} ) ) );
 	}

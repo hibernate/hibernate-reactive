@@ -125,6 +125,10 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	}
 	@Override
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
+		Stage.Session current = Vertx.currentContext().getLocal( Stage.Session.class.getName() );
+		if ( current!=null ) {
+			return work.apply( current );
+		}
 		return newSession().thenCompose(
 				session -> work.apply(session).whenComplete( (r, e) -> session.close() )
 		);
@@ -139,6 +143,10 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	@Override
 	public <T> CompletionStage<T> withStatelessSession(Function<Stage.StatelessSession, CompletionStage<T>> work) {
+		Stage.StatelessSession current = Vertx.currentContext().getLocal( Stage.StatelessSession.class.getName() );
+		if ( current!=null ) {
+			return work.apply( current );
+		}
 		return newStatelessSession().thenCompose(
 				session -> work.apply(session).whenComplete( (r, e) -> session.close() )
 		);

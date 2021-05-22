@@ -46,6 +46,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	public MutinySessionImpl(ReactiveSession session, MutinySessionFactoryImpl factory) {
 		this.delegate = session;
 		this.factory = factory;
+		Vertx.currentContext().putLocal( Mutiny.Session.class.getName(), this );
 	}
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
@@ -410,8 +411,14 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> Uni<T> withTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
-		Mutiny.Transaction current = Vertx.currentContext().getLocal( Mutiny.Transaction.class.getName() );
-		return current==null ? new Transaction<T>().execute(work) : work.apply(current);
+		return currentTransaction==null ? new Transaction<T>().execute(work) : work.apply(currentTransaction);
+	}
+
+	private Transaction<?> currentTransaction;
+
+	@Override
+	public Mutiny.Transaction currentTransaction() {
+		return currentTransaction;
 	}
 
 	private class Transaction<T> implements Mutiny.Transaction {
@@ -440,7 +447,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 		}
 
 		Uni<Void> begin() {
-			Vertx.currentContext().putLocal( Mutiny.Transaction.class.getName(), this );
+			currentTransaction = this;
 			return Uni.createFrom().completionStage( delegate.getReactiveConnection().beginTransaction() );
 		}
 
@@ -461,7 +468,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 		}
 
 		private void cleanup() {
-			Vertx.currentContext().removeLocal( Mutiny.Transaction.class.getName() );
+			currentTransaction = null;
 		}
 
 		@Override
@@ -477,6 +484,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public Uni<Void> close() {
+		Vertx.currentContext().removeLocal( Mutiny.Session.class.getName() );
 		return uni( delegate::reactiveClose );
 	}
 
