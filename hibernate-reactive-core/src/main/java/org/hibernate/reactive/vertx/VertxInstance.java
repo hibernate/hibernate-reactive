@@ -11,7 +11,8 @@ import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.service.Service;
 
 /**
- * Used by {@link DefaultSqlClientPool}
+ * Used by {@link DefaultSqlClientPool} and
+ * {@link org.hibernate.reactive.context.impl.VertxContext}
  * to obtain an instance of {@link Vertx}. The default instance is
  * {@link org.hibernate.reactive.vertx.impl.DefaultVertxInstance}.
  * <p>

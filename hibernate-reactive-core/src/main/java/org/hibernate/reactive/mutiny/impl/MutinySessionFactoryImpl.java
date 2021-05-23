@@ -7,24 +7,21 @@ package org.hibernate.reactive.mutiny.impl;
 
 import io.smallrye.mutiny.Uni;
 
-import io.vertx.core.Context;
-import io.vertx.core.Vertx;
 import org.hibernate.Cache;
 import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
-import org.hibernate.reactive.vertx.VertxInstance;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.metamodel.Metamodel;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -39,27 +36,17 @@ import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnE
 public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	private final SessionFactoryImpl delegate;
-	private final VertxInstance vertxInstance;
-	private final Executor vertxExecutor;
 	private final ReactiveConnectionPool connectionPool;
+	private final Context context;
 
 	public MutinySessionFactoryImpl(SessionFactoryImpl delegate) {
 		this.delegate = delegate;
-		this.vertxInstance = delegate.getServiceRegistry().getService( VertxInstance.class );
+		this.context = delegate.getServiceRegistry().getService( Context.class );
 		this.connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
-		this.vertxExecutor = runnable -> {
-			Context context = vertxInstance.getVertx().getOrCreateContext();
-			if ( Vertx.currentContext() == context ) {
-				runnable.run();
-			}
-			else {
-				context.runOnContext( x -> runnable.run() );
-			}
-		};
 	}
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
-		return Uni.createFrom().completionStage(stageSupplier).runSubscriptionOn(vertxExecutor);
+		return Uni.createFrom().completionStage(stageSupplier).runSubscriptionOn( context );
 	}
 
 	@Override
@@ -134,16 +121,16 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	@Override
 	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
 		String id = sessionId();
-		Mutiny.Session current = Vertx.currentContext().getLocal(id);
+		Mutiny.Session current = context.get(Mutiny.Session.class, id);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
 		return newSession()
 				.chain( session -> {
-					Vertx.currentContext().putLocal(id, session);
+					context.put(Mutiny.Session.class, id, session);
 					return work.apply( session )
 							.eventually( () -> {
-								Vertx.currentContext().removeLocal(id);
+								context.remove(Mutiny.Session.class, id);
 								return session.close();
 							} );
 				} );
@@ -152,16 +139,16 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	@Override
 	public <T> Uni<T> withSession(String tenantId, Function<Mutiny.Session, Uni<T>> work) {
 		String id = sessionId(tenantId);
-		Mutiny.Session current = Vertx.currentContext().getLocal(id);
+		Mutiny.Session current = context.get(Mutiny.Session.class, id);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
 		return newSession( tenantId )
 				.chain( session -> {
-					Vertx.currentContext().putLocal(id, session);
+					context.put(Mutiny.Session.class, id, session);
 					return work.apply(session)
 							.eventually( () -> {
-								Vertx.currentContext().removeLocal(id);
+								context.remove(Mutiny.Session.class, id);
 								return session.close();
 							} );
 				} );
@@ -170,15 +157,15 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	@Override
 	public <T> Uni<T> withStatelessSession(Function<Mutiny.StatelessSession, Uni<T>> work) {
 		String id = statelessSessionId();
-		Mutiny.StatelessSession current = Vertx.currentContext().getLocal(id);
+		Mutiny.StatelessSession current = context.get(Mutiny.StatelessSession.class, id);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
 		return newStatelessSession()
 				.chain( session -> {
-					Vertx.currentContext().putLocal(id, session);
+					context.put(Mutiny.StatelessSession.class, id, session);
 					return work.apply(session).eventually( () -> {
-						Vertx.currentContext().removeLocal(id);
+						context.remove(Mutiny.StatelessSession.class, id);
 						return session.close();
 					} );
 				} );

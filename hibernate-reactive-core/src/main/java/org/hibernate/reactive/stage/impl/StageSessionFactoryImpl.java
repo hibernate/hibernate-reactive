@@ -5,23 +5,20 @@
  */
 package org.hibernate.reactive.stage.impl;
 
-import io.vertx.core.Context;
-import io.vertx.core.Vertx;
 import org.hibernate.Cache;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.vertx.VertxInstance;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.metamodel.Metamodel;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -36,27 +33,17 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	private final SessionFactoryImpl delegate;
-	private final VertxInstance vertxInstance;
-	private final Executor vertxExecutor;
 	private final ReactiveConnectionPool connectionPool;
+	private final Context context;
 
 	public StageSessionFactoryImpl(SessionFactoryImpl delegate) {
 		this.delegate = delegate;
-		this.vertxInstance = delegate.getServiceRegistry().getService( VertxInstance.class );
+		this.context = delegate.getServiceRegistry().getService( Context.class );
 		this.connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
-		this.vertxExecutor = runnable -> {
-			Context context = vertxInstance.getVertx().getOrCreateContext();
-			if ( Vertx.currentContext() == context ) {
-				runnable.run();
-			}
-			else {
-				context.runOnContext( x -> runnable.run() );
-			}
-		};
 	}
 
 	<T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stageSupplier) {
-		return voidFuture().thenComposeAsync(stageSupplier, vertxExecutor);
+		return voidFuture().thenComposeAsync( stageSupplier, context );
 	}
 
 	@Override
@@ -127,17 +114,17 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	@Override
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
 		String id = sessionId();
-		Stage.Session current = Vertx.currentContext().getLocal(id);
+		Stage.Session current = context.get(Stage.Session.class, id);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
 		return newSession().thenCompose(
 				session -> {
-					Vertx.currentContext().putLocal(id, session);
+					context.put(Stage.Session.class, id, session);
 					return work.apply(session)
 							.handle(this::handler)
 							.thenCompose( handler -> {
-						        Vertx.currentContext().removeLocal(id);
+						        context.remove(Stage.Session.class, id);
 								return session.close().thenApply(handler);
 							} );
 				}
@@ -147,17 +134,17 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	@Override
 	public <T> CompletionStage<T> withSession(String tenantId, Function<Stage.Session, CompletionStage<T>> work) {
 		String id = sessionId(tenantId);
-		Stage.Session current = Vertx.currentContext().getLocal(id);
+		Stage.Session current = context.get(Stage.Session.class, id);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
 		return newSession( tenantId ).thenCompose(
 				session -> {
-					Vertx.currentContext().putLocal(id, session);
+					context.put(Stage.Session.class, id, session);
 					return work.apply(session)
 							.handle(this::handler)
 							.thenCompose( handler -> {
-						        Vertx.currentContext().removeLocal(id);
+						        context.remove(Stage.Session.class, id);
 								return session.close().thenApply(handler);
 							} );
 				}
@@ -167,17 +154,17 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	@Override
 	public <T> CompletionStage<T> withStatelessSession(Function<Stage.StatelessSession, CompletionStage<T>> work) {
 		String id = statelessSessionId();
-		Stage.StatelessSession current = Vertx.currentContext().getLocal(id);
+		Stage.StatelessSession current = context.get(Stage.StatelessSession.class, id);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
 		return newStatelessSession().thenCompose(
 				session -> {
-					Vertx.currentContext().putLocal(id, session);
+					context.put(Stage.StatelessSession.class, id, session);
 					return work.apply(session)
 							.handle(this::handler)
 							.thenCompose( handler -> {
-						        Vertx.currentContext().removeLocal(id);
+						        context.remove(Stage.StatelessSession.class, id);
 								return session.close().thenApply(handler);
 							} );
 				}
