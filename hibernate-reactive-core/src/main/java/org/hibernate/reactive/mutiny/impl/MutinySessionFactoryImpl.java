@@ -144,7 +144,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 					return work.apply( session )
 							.eventually( () -> {
 								Vertx.currentContext().removeLocal(id);
-								session.close();
+								return session.close();
 							} );
 				} );
 	}
@@ -162,7 +162,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 					return work.apply(session)
 							.eventually( () -> {
 								Vertx.currentContext().removeLocal(id);
-								session.close();
+								return session.close();
 							} );
 				} );
 	}
@@ -179,7 +179,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 					Vertx.currentContext().putLocal(id, session);
 					return work.apply(session).eventually( () -> {
 						Vertx.currentContext().removeLocal(id);
-						session.close();
+						return session.close();
 					} );
 				} );
 	}

@@ -25,6 +25,7 @@ import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -133,10 +134,12 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		return newSession().thenCompose(
 				session -> {
 					Vertx.currentContext().putLocal(id, session);
-					return work.apply(session).whenComplete( (r, e) -> {
-						Vertx.currentContext().removeLocal(id);
-						session.close();
-					} );
+					return work.apply(session)
+							.handle(this::handler)
+							.thenCompose( handler -> {
+						        Vertx.currentContext().removeLocal(id);
+								return session.close().thenApply(handler);
+							} );
 				}
 		);
 	}
@@ -151,10 +154,12 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		return newSession( tenantId ).thenCompose(
 				session -> {
 					Vertx.currentContext().putLocal(id, session);
-					return work.apply(session).whenComplete( (r, e) -> {
-						Vertx.currentContext().removeLocal(id);
-						session.close();
-					} );
+					return work.apply(session)
+							.handle(this::handler)
+							.thenCompose( handler -> {
+						        Vertx.currentContext().removeLocal(id);
+								return session.close().thenApply(handler);
+							} );
 				}
 		);
 	}
@@ -169,12 +174,18 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		return newStatelessSession().thenCompose(
 				session -> {
 					Vertx.currentContext().putLocal(id, session);
-					return work.apply(session).whenComplete( (r, e) -> {
-						Vertx.currentContext().removeLocal(id);
-						session.close();
-					} );
+					return work.apply(session)
+							.handle(this::handler)
+							.thenCompose( handler -> {
+						        Vertx.currentContext().removeLocal(id);
+								return session.close().thenApply(handler);
+							} );
 				}
 		);
+	}
+
+	private <T> Function<Void, T> handler(T result, Throwable exception) {
+		return exception == null ? v -> result : v -> rethrow(exception);
 	}
 
 	private String sessionId() {
