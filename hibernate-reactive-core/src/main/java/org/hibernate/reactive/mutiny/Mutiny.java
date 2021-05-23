@@ -6,7 +6,6 @@
 package org.hibernate.reactive.mutiny;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Vertx;
 import org.hibernate.Cache;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
@@ -1628,27 +1627,5 @@ public interface Mutiny {
 		return Uni.createFrom().completionStage(
 				( (ReactiveSession) session ).reactiveFetch( association, false )
 		);
-	}
-
-	/**
-	 * Obtain the session associated with the current reactive stream,
-	 * if any, or return null if there is no session associated with
-	 * the current stream.
-	 *
-	 * @return a {@link Session} or null
-	 */
-	static Session currentSession() {
-		return Vertx.currentContext().getLocal( Session.class.getName() );
-	}
-
-	/**
-	 * Obtain the stateless session associated with the current reactive stream,
-	 * if any, or return null if there is no stateless session associated with
-	 * the current stream.
-	 *
-	 * @return a {@link StatelessSession} or null
-	 */
-	static StatelessSession currentStatelessSession() {
-		return Vertx.currentContext().getLocal( StatelessSession.class.getName() );
 	}
 }

@@ -488,10 +488,10 @@ public class MutinySessionTest extends BaseReactiveTest {
 	public void reactiveThreadBoundTransaction(TestContext context) {
 		test( context, getMutinySessionFactory().withTransaction(
 				(session, transaction) -> session.createQuery("from GuineaPig").getResultList().invoke( list -> {
-					context.assertNotNull( Mutiny.currentSession().currentTransaction() );
-					context.assertFalse( Mutiny.currentSession().currentTransaction().isMarkedForRollback() );
-					Mutiny.currentSession().currentTransaction().markForRollback();
-					context.assertTrue( Mutiny.currentSession().currentTransaction().isMarkedForRollback() );
+					context.assertNotNull( session.currentTransaction() );
+					context.assertFalse( session.currentTransaction().isMarkedForRollback() );
+					session.currentTransaction().markForRollback();
+					context.assertTrue( session.currentTransaction().isMarkedForRollback() );
 					context.assertTrue( transaction.isMarkedForRollback() );
 				} ) ) );
 	}

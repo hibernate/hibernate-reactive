@@ -6,7 +6,6 @@
 package org.hibernate.reactive.mutiny.impl;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Vertx;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -46,7 +45,6 @@ public class MutinySessionImpl implements Mutiny.Session {
 	public MutinySessionImpl(ReactiveSession session, MutinySessionFactoryImpl factory) {
 		this.delegate = session;
 		this.factory = factory;
-		Vertx.currentContext().putLocal( Mutiny.Session.class.getName(), this );
 	}
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
@@ -484,7 +482,6 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public Uni<Void> close() {
-		Vertx.currentContext().removeLocal( Mutiny.Session.class.getName() );
 		return uni( delegate::reactiveClose );
 	}
 

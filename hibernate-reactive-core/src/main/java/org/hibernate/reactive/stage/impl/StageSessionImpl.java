@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.stage.impl;
 
-import io.vertx.core.Vertx;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -45,7 +44,6 @@ public class StageSessionImpl implements Stage.Session {
 	public StageSessionImpl(ReactiveSession session, StageSessionFactoryImpl factory) {
 		this.delegate = session;
 		this.factory = factory;
-		Vertx.currentContext().putLocal( Stage.Session.class.getName(), this );
 	}
 
 	private <T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stage) {
@@ -493,7 +491,6 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public CompletionStage<Void> close() {
-		Vertx.currentContext().removeLocal( Stage.Session.class.getName() );
 		return stage( v -> delegate.reactiveClose() );
 	}
 

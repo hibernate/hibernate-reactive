@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.stage.impl;
 
-import io.vertx.core.Vertx;
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
@@ -37,7 +36,6 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
     public StageStatelessSessionImpl(ReactiveStatelessSession delegate, StageSessionFactoryImpl factory) {
         this.delegate = delegate;
         this.factory = factory;
-        Vertx.currentContext().putLocal( Stage.StatelessSession.class.getName(), this );
     }
 
     private <T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stage) {
@@ -181,7 +179,6 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
     @Override
     public CompletionStage<Void> close() {
-        Vertx.currentContext().removeLocal( Stage.StatelessSession.class.getName() );
         return stage( v -> {
             CompletableFuture<Void> closing = new CompletableFuture<>();
             delegate.close( closing );
@@ -231,7 +228,6 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
         }
 
         CompletionStage<Void> end() {
-            Vertx.currentContext().removeLocal( Stage.Transaction.class.getName() );
             ReactiveConnection c = delegate.getReactiveConnection();
             return rollback ? c.rollbackTransaction() : c.commitTransaction();
         }

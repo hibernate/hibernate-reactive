@@ -125,41 +125,82 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	}
 	@Override
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
-		Stage.Session current = Vertx.currentContext().getLocal( Stage.Session.class.getName() );
-		if ( current!=null ) {
+		String id = sessionId();
+		Stage.Session current = Vertx.currentContext().getLocal(id);
+		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
 		return newSession().thenCompose(
-				session -> work.apply(session).whenComplete( (r, e) -> session.close() )
+				session -> {
+					Vertx.currentContext().putLocal(id, session);
+					return work.apply(session).whenComplete( (r, e) -> {
+						Vertx.currentContext().removeLocal(id);
+						session.close();
+					} );
+				}
 		);
 	}
 
 	@Override
 	public <T> CompletionStage<T> withSession(String tenantId, Function<Stage.Session, CompletionStage<T>> work) {
+		String id = sessionId(tenantId);
+		Stage.Session current = Vertx.currentContext().getLocal(id);
+		if ( current!=null && current.isOpen() ) {
+			return work.apply( current );
+		}
 		return newSession( tenantId ).thenCompose(
-				session -> work.apply(session).whenComplete( (r, e) -> session.close() )
+				session -> {
+					Vertx.currentContext().putLocal(id, session);
+					return work.apply(session).whenComplete( (r, e) -> {
+						Vertx.currentContext().removeLocal(id);
+						session.close();
+					} );
+				}
 		);
 	}
 
 	@Override
 	public <T> CompletionStage<T> withStatelessSession(Function<Stage.StatelessSession, CompletionStage<T>> work) {
-		Stage.StatelessSession current = Vertx.currentContext().getLocal( Stage.StatelessSession.class.getName() );
-		if ( current!=null ) {
+		String id = statelessSessionId();
+		Stage.StatelessSession current = Vertx.currentContext().getLocal(id);
+		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
 		return newStatelessSession().thenCompose(
-				session -> work.apply(session).whenComplete( (r, e) -> session.close() )
+				session -> {
+					Vertx.currentContext().putLocal(id, session);
+					return work.apply(session).whenComplete( (r, e) -> {
+						Vertx.currentContext().removeLocal(id);
+						session.close();
+					} );
+				}
 		);
+	}
+
+	private String sessionId() {
+		return Stage.Session.class.getName() + '/' + delegate.getUuid();
+	}
+
+	private String sessionId(String tenantId) {
+		return sessionId() + '/' + tenantId;
+	}
+
+	private String statelessSessionId() {
+		return Stage.StatelessSession.class.getName() + '/' + delegate.getUuid();
+	}
+
+	private String statelessSessionId(String tenantId) {
+		return statelessSessionId() + '/' + tenantId;
 	}
 
 	@Override
 	public <T> CompletionStage<T> withTransaction(BiFunction<Stage.Session, Stage.Transaction, CompletionStage<T>> work) {
-		return withSession( (s) -> s.withTransaction( (t) -> work.apply(s, t) ) );
+		return withSession( s -> s.withTransaction( t -> work.apply(s, t) ) );
 	}
 
 	@Override
 	public <T> CompletionStage<T> withTransaction(String tenantId, BiFunction<Stage.Session, Stage.Transaction, CompletionStage<T>> work) {
-		return withSession( tenantId, (s) -> s.withTransaction( (t) -> work.apply(s, t) ) );
+		return withSession( tenantId, s -> s.withTransaction( t -> work.apply(s, t) ) );
 	}
 
 	@Override

@@ -6,7 +6,6 @@
 package org.hibernate.reactive.mutiny.impl;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Vertx;
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
@@ -36,7 +35,6 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
     public MutinyStatelessSessionImpl(ReactiveStatelessSession delegate, MutinySessionFactoryImpl factory) {
         this.delegate = delegate;
         this.factory = factory;
-        Vertx.currentContext().putLocal( Mutiny.StatelessSession.class.getName(), this );
     }
 
     <T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
@@ -232,7 +230,6 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
     @Override
     public Uni<Void> close() {
-        Vertx.currentContext().removeLocal( Mutiny.StatelessSession.class.getName() );
         return uni( () -> {
             CompletableFuture<Void> closing = new CompletableFuture<>();
             delegate.close( closing );
