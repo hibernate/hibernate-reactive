@@ -203,6 +203,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
         Throwable error;
 
         CompletionStage<T> execute(Function<Stage.Transaction, CompletionStage<T>> work) {
+            currentTransaction = this;
             return begin()
                     .thenCompose( v -> work.apply( this ) )
                     // have to capture the error here and pass it along,
@@ -219,21 +220,16 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
                                     // finally rethrow the original error, if any
                                     .thenApply( v -> returnOrRethrow( error, result ) )
                     )
-                    .whenComplete( (t,x) -> cleanup() );
+                    .whenComplete( (t, x) -> currentTransaction = null );
         }
 
         CompletionStage<Void> begin() {
-            currentTransaction = this;
             return delegate.getReactiveConnection().beginTransaction();
         }
 
         CompletionStage<Void> end() {
             ReactiveConnection c = delegate.getReactiveConnection();
             return rollback ? c.rollbackTransaction() : c.commitTransaction();
-        }
-
-        void cleanup() {
-            currentTransaction = null;
         }
 
         <R> R processError(R result, Throwable e) {

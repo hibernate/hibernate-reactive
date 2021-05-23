@@ -423,6 +423,7 @@ public class StageSessionImpl implements Stage.Session {
 		Throwable error;
 
 		CompletionStage<T> execute(Function<Stage.Transaction, CompletionStage<T>> work) {
+			currentTransaction = this;
 			return begin()
 					.thenCompose( v -> work.apply( this ) )
 					// only flush() if the work completed with no exception
@@ -441,7 +442,7 @@ public class StageSessionImpl implements Stage.Session {
 									// finally rethrow the original error, if any
 									.thenApply( v -> returnOrRethrow( error, result ) )
 					)
-					.whenComplete( (t,x) -> cleanup() );
+					.whenComplete( (t, x) -> currentTransaction = null );
 		}
 
 		CompletionStage<Void> flush() {
@@ -449,7 +450,6 @@ public class StageSessionImpl implements Stage.Session {
 		}
 
 		CompletionStage<Void> begin() {
-			currentTransaction = this;
 			return delegate.getReactiveConnection().beginTransaction();
 		}
 
@@ -459,10 +459,6 @@ public class StageSessionImpl implements Stage.Session {
 					.thenApply( v -> delegate.getReactiveConnection() )
 					.thenCompose( c -> rollback ? c.rollbackTransaction() : c.commitTransaction() )
 					.thenCompose( v -> actionQueue.afterTransactionCompletion( !rollback ) );
-		}
-
-		void cleanup() {
-			currentTransaction = null;
 		}
 
 		<R> R processError(R result, Throwable e) {

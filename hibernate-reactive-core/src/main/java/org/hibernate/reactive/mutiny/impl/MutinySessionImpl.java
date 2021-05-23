@@ -423,6 +423,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 		boolean rollback;
 
 		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
+			currentTransaction = this;
 			//noinspection Convert2MethodRef
 			return begin()
 					.chain( () -> work.apply( this ) )
@@ -437,7 +438,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 					// commit or rollback the transaction
 					.onItem().call( () -> rollback ? rollback() : commit() )
 					.call( () -> afterCompletion() )
-					.eventually( () -> cleanup() );
+					.eventually( () -> currentTransaction = null );
 		}
 
 		Uni<Void> flush() {
@@ -445,7 +446,6 @@ public class MutinySessionImpl implements Mutiny.Session {
 		}
 
 		Uni<Void> begin() {
-			currentTransaction = this;
 			return Uni.createFrom().completionStage( delegate.getReactiveConnection().beginTransaction() );
 		}
 
@@ -463,10 +463,6 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 		private Uni<Void> afterCompletion() {
 			return Uni.createFrom().completionStage( delegate.getReactiveActionQueue().afterTransactionCompletion(!rollback) );
-		}
-
-		private void cleanup() {
-			currentTransaction = null;
 		}
 
 		@Override

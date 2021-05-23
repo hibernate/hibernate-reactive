@@ -187,6 +187,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
         boolean rollback;
 
         Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
+            currentTransaction = this;
             //noinspection Convert2MethodRef
             return begin()
                     .chain( () -> work.apply( this ) )
@@ -197,11 +198,10 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
                     // finally, when there was no exception,
                     // commit or rollback the transaction
                     .onItem().call( () -> rollback ? rollback() : commit() )
-                    .eventually( () -> cleanup() );
+                    .eventually( () -> currentTransaction = null );
         }
 
         Uni<Void> begin() {
-            currentTransaction = this;
             return Uni.createFrom().completionStage( delegate.getReactiveConnection().beginTransaction() );
         }
 
@@ -211,10 +211,6 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
         Uni<Void> commit() {
             return Uni.createFrom().completionStage( delegate.getReactiveConnection().commitTransaction() );
-        }
-
-        private void cleanup() {
-            currentTransaction = null;
         }
 
         @Override
