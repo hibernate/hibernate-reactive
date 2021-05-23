@@ -40,7 +40,7 @@ public class EmptyCompositeCollectionKeyTest extends BaseReactiveTest {
 
 	@After
 	public void cleanDb(TestContext context) {
-		test( context, closeSession().thenCompose( v -> deleteEntities( "Family" ) ) );
+		test( context, deleteEntities( "Family" ) );
 	}
 
 	@Test

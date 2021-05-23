@@ -244,7 +244,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<Object> check(TestContext context) {
-		return closeSession().thenCompose( i -> getSessionFactory().withSession(sCheck -> sCheck.find(B.class, bId)
+		return  getSessionFactory().withSession(sCheck -> sCheck.find(B.class, bId)
 				.thenApply(bCheck -> {
 					context.assertEquals(b, bCheck);
 					context.assertFalse(Hibernate.isInitialized(bCheck.getC()));
@@ -350,7 +350,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 							return bCheck;
 						})
 				)
-		) );
+		);
 	}
 
 	@Override

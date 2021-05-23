@@ -68,8 +68,8 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 
 	@After
 	public void clearDb(TestContext context) {
-		test( context, closeMutinySession().chain( v -> getMutinySessionFactory().withTransaction( (s, tx) -> s
-				.createQuery( "delete from FamousPerson" ).executeUpdate() ) ) );
+		test( context, getMutinySessionFactory().withTransaction( (s, tx) -> s
+				.createQuery( "delete from FamousPerson" ).executeUpdate() ) );
 	}
 
 	@Test
