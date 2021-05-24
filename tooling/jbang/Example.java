@@ -7,7 +7,7 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS junit:junit:4.12
 //DEPS javax.persistence:javax.persistence-api:2.2
-//DEPS org.hibernate.reactive:hibernate-reactive-core:1.0.0.CR4
+//DEPS org.hibernate.reactive:hibernate-reactive-core:1.0.0.CR5
 //DEPS org.hibernate.validator:hibernate-validator:6.1.5.Final
 //DEPS org.assertj:assertj-core:3.13.2
 //DEPS io.vertx:vertx-pg-client:4.0.3
