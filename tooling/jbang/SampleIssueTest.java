@@ -110,7 +110,7 @@ public class SampleIssueTest {
 	private Configuration createConfiguration() {
 		Configuration configuration = new Configuration();
 
-		configuration.setProperty( Settings.URL, Database.MYSQL.getUrl() );
+		configuration.setProperty( Settings.URL, Database.POSTGRESQL.getUrl() );
 
 		// (Optional) Override default credentials
 		// configuration.setProperty( Settings.USER, "hreact" );

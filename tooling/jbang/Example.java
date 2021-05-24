@@ -111,7 +111,7 @@ public class Example {
 	private static Configuration createConfiguration() {
 		Configuration configuration = new Configuration();
 
-		configuration.setProperty( Settings.URL, Database.MARIADB.getUrl() );
+		configuration.setProperty( Settings.URL, Database.POSTGRESQL.getUrl() );
 
 		// (Optional) Override default credentials
 		// configuration.setProperty( Settings.USER, "hreact" );
