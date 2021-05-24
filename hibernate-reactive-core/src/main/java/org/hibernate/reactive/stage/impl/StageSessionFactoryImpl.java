@@ -35,11 +35,15 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
 	private final Context context;
+	private final String sessionId;
+	private final String statelessSessionId;
 
 	public StageSessionFactoryImpl(SessionFactoryImpl delegate) {
 		this.delegate = delegate;
-		this.context = delegate.getServiceRegistry().getService( Context.class );
-		this.connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
+		context = delegate.getServiceRegistry().getService( Context.class );
+		connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
+		sessionId = Stage.Session.class.getName() + '/' + delegate.getUuid();
+		statelessSessionId = Stage.StatelessSession.class.getName() + '/' + delegate.getUuid();
 	}
 
 	<T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stageSupplier) {
@@ -113,18 +117,17 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	}
 	@Override
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
-		String id = sessionId();
-		Stage.Session current = context.get(Stage.Session.class, id);
+		Stage.Session current = context.get(Stage.Session.class, sessionId);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
 		return newSession().thenCompose(
 				session -> {
-					context.put(Stage.Session.class, id, session);
+					context.put(Stage.Session.class, sessionId, session);
 					return work.apply(session)
 							.handle(this::handler)
 							.thenCompose( handler -> {
-						        context.remove(Stage.Session.class, id);
+						        context.remove(Stage.Session.class, sessionId);
 								return session.close().thenApply(handler);
 							} );
 				}
@@ -133,7 +136,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	@Override
 	public <T> CompletionStage<T> withSession(String tenantId, Function<Stage.Session, CompletionStage<T>> work) {
-		String id = sessionId(tenantId);
+		String id = sessionId + '/' + tenantId;
 		Stage.Session current = context.get(Stage.Session.class, id);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
@@ -153,18 +156,17 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	@Override
 	public <T> CompletionStage<T> withStatelessSession(Function<Stage.StatelessSession, CompletionStage<T>> work) {
-		String id = statelessSessionId();
-		Stage.StatelessSession current = context.get(Stage.StatelessSession.class, id);
+		Stage.StatelessSession current = context.get(Stage.StatelessSession.class, statelessSessionId);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
 		return newStatelessSession().thenCompose(
 				session -> {
-					context.put(Stage.StatelessSession.class, id, session);
+					context.put(Stage.StatelessSession.class, statelessSessionId, session);
 					return work.apply(session)
 							.handle(this::handler)
 							.thenCompose( handler -> {
-						        context.remove(Stage.StatelessSession.class, id);
+						        context.remove(Stage.StatelessSession.class, statelessSessionId);
 								return session.close().thenApply(handler);
 							} );
 				}
@@ -173,22 +175,6 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	private <T> Function<Void, T> handler(T result, Throwable exception) {
 		return exception == null ? v -> result : v -> rethrow(exception);
-	}
-
-	private String sessionId() {
-		return Stage.Session.class.getName() + '/' + delegate.getUuid();
-	}
-
-	private String sessionId(String tenantId) {
-		return sessionId() + '/' + tenantId;
-	}
-
-	private String statelessSessionId() {
-		return Stage.StatelessSession.class.getName() + '/' + delegate.getUuid();
-	}
-
-	private String statelessSessionId(String tenantId) {
-		return statelessSessionId() + '/' + tenantId;
 	}
 
 	@Override
