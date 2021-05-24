@@ -751,15 +751,34 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void reactiveThreadBoundTransaction(TestContext context) {
+	public void testTransactionPropagation(TestContext context) {
 		test( context, getSessionFactory().withTransaction(
-				(session, transaction) -> session.createQuery("from GuineaPig").getResultList().thenAccept( list -> {
-					context.assertNotNull( session.currentTransaction() );
-					context.assertFalse( session.currentTransaction().isMarkedForRollback() );
-					session.currentTransaction().markForRollback();
-					context.assertTrue( session.currentTransaction().isMarkedForRollback() );
-					context.assertTrue( transaction.isMarkedForRollback() );
-				} ) ) );
+				(session, transaction) -> session.createQuery("from GuineaPig").getResultList()
+						.thenCompose( list -> {
+							context.assertNotNull( session.currentTransaction() );
+							context.assertFalse( session.currentTransaction().isMarkedForRollback() );
+							session.currentTransaction().markForRollback();
+							context.assertTrue( session.currentTransaction().isMarkedForRollback() );
+							context.assertTrue( transaction.isMarkedForRollback() );
+							return session.withTransaction( t -> {
+								context.assertTrue( t.isMarkedForRollback() );
+								return session.createQuery("from GuineaPig").getResultList();
+							} );
+						} )
+		) );
+	}
+
+	@Test
+	public void testSessionPropagation(TestContext context) {
+		test( context, getSessionFactory().withSession( session -> {
+			context.assertEquals( false, session.isDefaultReadOnly() );
+			session.setDefaultReadOnly(true);
+			return session.createQuery("from GuineaPig").getResultList()
+					.thenCompose( list -> getSessionFactory().withSession(s -> {
+						context.assertEquals( true, s.isDefaultReadOnly() );
+						return s.createQuery("from GuineaPig").getResultList();
+					} ) );
+		} ) );
 	}
 
 	@Entity(name="GuineaPig")
