@@ -20,7 +20,12 @@ dependencies {
 
 buildscript {
     repositories {
-//        mavenLocal()
+        // Example: ./gradlew build -PenableMavenLocalRepo
+        if ( project.hasProperty('enableMavenLocalRepo') ) {
+            // Useful for local development, it should be disabled otherwise
+            mavenLocal()
+        }
+
         mavenCentral()
 
         // Example: ./gradlew build -PenableJBossSnapshotsRep
