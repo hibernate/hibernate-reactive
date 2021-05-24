@@ -1065,9 +1065,20 @@ public interface Mutiny {
 		 * <p>
 		 * The resulting {@link Transaction} object may also be obtained via
 		 * {@link #currentTransaction()}.
+		 * <p>
+		 * <il>
+		 * <li> If there is already a transaction associated with this session,
+		 * the work is executed in the context of the existing transaction, and
+		 * no new transaction is initiated.
+		 * <li> If there is no transaction associated with this session, a new
+		 * transaction is started, and the work is executed in the context of
+		 * the new transaction.
+		 * </il>
 		 *
 		 * @param work a function which accepts {@link Transaction} and returns
 		 *             the result of the work as a {@link Uni}.
+		 *
+		 * @see SessionFactory#withTransaction(BiFunction)
 		 */
 		<T> Uni<T> withTransaction(Function<Transaction, Uni<T>> work);
 
@@ -1075,7 +1086,11 @@ public interface Mutiny {
 		 * Obtain the transaction currently associated with this session,
 		 * if any.
 		 *
-		 * @return the {@link Transaction} or null.
+		 * @return the {@link Transaction}, or null if no transaction
+		 * was started using {@link #withTransaction(Function)}.
+		 *
+		 * @see #withTransaction(Function)
+		 * @see SessionFactory#withTransaction(BiFunction)
 		 */
 		Transaction currentTransaction();
 
@@ -1383,9 +1398,19 @@ public interface Mutiny {
 		 * automatically flushing the session. The transaction will be rolled
 		 * back if the work completes with an uncaught exception, or if
 		 * {@link Transaction#markForRollback()} is called.
+		 * <il>
+		 * <li> If there is already a transaction associated with this session,
+		 * the work is executed in the context of the existing transaction, and
+		 * no new transaction is initiated.
+		 * <li> If there is no transaction associated with this session, a new
+		 * transaction is started, and the work is executed in the context of
+		 * the new transaction.
+		 * </il>
 		 *
 		 * @param work a function which accepts {@link Transaction} and returns
 		 *             the result of the work as a {@link Uni}.
+		 *
+		 * @see SessionFactory#withTransaction(BiFunction)
 		 */
 		<T> Uni<T> withTransaction(Function<Transaction, Uni<T>> work);
 
@@ -1393,7 +1418,11 @@ public interface Mutiny {
 		 * Obtain the transaction currently associated with this session,
 		 * if any.
 		 *
-		 * @return the {@link Transaction} or null.
+		 * @return the {@link Transaction}, or null if no transaction
+		 * was started using {@link #withTransaction(Function)}.
+		 *
+		 * @see #withTransaction(Function)
+		 * @see SessionFactory#withTransaction(BiFunction)
 		 */
 		Transaction currentTransaction();
 
@@ -1504,7 +1533,16 @@ public interface Mutiny {
 		/**
 		 * Perform work using a {@link Session reactive session}.
 		 * <p>
-		 * The session will be closed automatically.
+		 * <il>
+		 * <li>If there is already a session associated with the current
+		 * reactive stream, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no session associated with the
+		 * current stream, a new session will be created.
+		 * </il>
+		 * <p>
+		 * The session will be closed automatically, but must be flushed
+		 * explicitly if necessary.
 		 *
 		 * @param work a function which accepts the session and returns
 		 *             the result of the work as a {@link Uni}.
@@ -1515,7 +1553,15 @@ public interface Mutiny {
 		 * Perform work using a {@link Session reactive session} for
 		 * a specified tenant.
 		 * <p>
-		 * The session will be closed automatically.
+		 * <il>
+		 * <li>If there is already a session associated with the current
+		 * reactive stream, and the given tenant, then the work will be
+		 * executed using that session.
+		 * <li>Otherwise, a new session will be created.
+		 * </il>
+		 * <p>
+		 * The session will be closed automatically, but must be flushed
+		 * explicitly if necessary.
 		 *
 		 * @param tenantId the id of the tenant
 		 * @param work a function which accepts the session and returns
@@ -1541,6 +1587,14 @@ public interface Mutiny {
 		/**
 		 * Perform work using a {@link StatelessSession stateless session}.
 		 * <p>
+		 * <il>
+		 * <li>If there is already a stateless session associated with the
+		 * current reactive stream, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no stateless session associated with the
+		 * current stream, a new stateless session will be created.
+		 * </il>
+		 * <p>
 		 * The session will be closed automatically.
 		 *
 		 * @param work a function which accepts the session and returns
@@ -1559,7 +1613,7 @@ public interface Mutiny {
 		 * @param work a function which accepts the session and returns
 		 *             the result of the work as a {@link Uni}.
 		 *
-		 * @see #withSession(Function)
+		 * @see #withSession(String, Function)
 		 * @see Session#withTransaction(Function)
 		 */
 		<T> Uni<T> withTransaction(String tenantId, BiFunction<Session, Transaction, Uni<T>> work);
