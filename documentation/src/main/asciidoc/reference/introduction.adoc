@@ -600,6 +600,10 @@ sessionFactory.withSession(
 );
 ----
 
+The resulting `Session` object is automatically associated with the current
+reactive stream, and so nested calls to `withSession()` in a given stream
+automatically obtain the same shared session.
+
 Alternatively, you may use `openSession()`, but you must remember to `close()`
 the session when you're done.
 
@@ -847,6 +851,14 @@ session.withTransaction( tx -> session.persist(book) )
 ----
 
 The session is automatically flushed at the end of the transaction.
+
+For a given `Session` object, nested calls to `withTransaction()` occur
+within the same shared transaction context. However, notice that the
+transaction is a _resource local_ transaction only, and does not span
+multiple datasources.
+
+IMPORTANT: Hibernate Reactive does not currently support distributed (XA)
+transactions.
 
 For extra convenience, there's a method that opens a session and starts a
 transaction in one call:
