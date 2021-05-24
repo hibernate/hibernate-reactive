@@ -72,6 +72,7 @@ import org.jboss.logging.Logger;
 import static org.hibernate.internal.util.collections.ArrayHelper.join;
 import static org.hibernate.internal.util.collections.ArrayHelper.trim;
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
+import static org.hibernate.persister.entity.AbstractEntityPersister.VERSION_COLUMN_ALIAS;
 import static org.hibernate.persister.entity.AbstractEntityPersister.determineValueNullness;
 import static org.hibernate.persister.entity.AbstractEntityPersister.isValueGenerationRequired;
 import static org.hibernate.pretty.MessageHelper.infoString;
@@ -1046,7 +1047,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 						if ( !isVersioned() ) {
 							return this;
 						}
-						return getVersionType().nullSafeGet( resultSet, getVersionColumnName(), session, null );
+						return getVersionType().nullSafeGet( resultSet, VERSION_COLUMN_ALIAS, session, null );
 					}
 					catch (SQLException sqle) {
 						//can never happen
