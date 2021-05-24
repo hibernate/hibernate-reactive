@@ -15,6 +15,7 @@ import javax.persistence.Version;
 import org.hibernate.LockMode;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
@@ -31,6 +32,7 @@ import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DE
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_1;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
  * This class creates multiple additional databases so that we can check that queries run
@@ -100,6 +102,44 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testTenantSelectionStatelessSession(TestContext context) {
+		TENANT_RESOLVER.setTenantIdentifier( TENANT_1 );
+		test( context,
+				completedFuture(getSessionFactory().openStatelessSession())
+				.thenCompose( session -> session
+						.createNativeQuery( "select current_database()" )
+						.getSingleResult()
+						.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) ) )
+				.thenAccept( unused -> TENANT_RESOLVER.setTenantIdentifier( TENANT_2 ) )
+				.thenCompose( unused -> completedFuture( getSessionFactory().openStatelessSession()) )
+				.thenCompose( session -> session
+						.createNativeQuery( "select current_database()" )
+						.getSingleResult()
+						.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) )
+		);
+	}
+
+	@Test
+	public void testTenantSelectionStatelessSessionMutiny(TestContext context) {
+		TENANT_RESOLVER.setTenantIdentifier( TENANT_1 );
+		Mutiny.StatelessSession t1Session = getMutinySessionFactory().openStatelessSession();
+		test( context, t1Session
+				.createNativeQuery( "select current_database()" )
+				.getSingleResult()
+				.invoke( result -> {
+					context.assertEquals( TENANT_1.getDbName(), result );
+					TENANT_RESOLVER.setTenantIdentifier( TENANT_2 );
+				} )
+				.eventually( t1Session::close )
+				.replaceWith( () -> getMutinySessionFactory().openStatelessSession() )
+				.call( t2Session -> t2Session
+						.createNativeQuery( "select current_database()" )
+						.getSingleResult()
+						.invoke( result -> context.assertEquals( TENANT_2.getDbName(), result ) )
+						.call( t2Session::close ) )
+		);
+	}
 	@AfterClass
 	public static void dropDatabases(TestContext context) {
 		if ( factoryManager.isStarted() ) {
