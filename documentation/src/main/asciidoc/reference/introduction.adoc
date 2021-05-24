@@ -854,8 +854,9 @@ The session is automatically flushed at the end of the transaction.
 
 For a given `Session` object, nested calls to `withTransaction()` occur
 within the same shared transaction context. However, notice that the
-transaction is a _resource local_ transaction only, and does not span
-multiple datasources.
+transaction is a _resource local_ transaction only, delegated to the
+underlying Vert.x database client, and does not span multiple datasources,
+nor integrate with JPA container-managed transactions.
 
 IMPORTANT: Hibernate Reactive does not currently support distributed (XA)
 transactions.
@@ -868,9 +869,7 @@ transaction in one call:
 sessionFactory.withTransaction( (session, tx) -> session.persist(book) )
 ----
 
-Note that these are "resource local" transactions, delegated to the underlying
-Vert.x database client. At present Hibernate Reactive does not integrate with
-container-managed transactions.
+This is probably the most convenient thing to use most of the time.
 
 == Tuning and performance
 
