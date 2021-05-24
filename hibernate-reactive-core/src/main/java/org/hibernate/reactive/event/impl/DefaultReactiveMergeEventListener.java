@@ -31,7 +31,6 @@ import org.hibernate.type.TypeHelper;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.IntStream;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -456,18 +455,23 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			ReactiveSession session = source.unwrap(ReactiveSession.class);
 			final Object[] mergeState = persister.getPropertyValues(entity);
 			final Object[] managedState = persister.getPropertyValues(target);
-			stage = CompletionStages.loop(
-					IntStream.range(0, mergeState.length)
-							// Cascade-merge mappings do not determine what needs to be fetched.
-							// The value only needs to be fetched if the incoming value (mergeState[i])
-							// is initialized, but its corresponding managed state is not initialized.
-							// Initialization must be done before copyValues executes.
-							.filter( i-> Hibernate.isInitialized( mergeState[i] )
-										&& !Hibernate.isInitialized( managedState[i] ) ),
-					i -> session.reactiveFetch( managedState[i], true )
-			);
+			stage = CompletionStages.loop( 0, mergeState.length, i -> reactiveFetch( session, mergeState, managedState, i ) );
 		}
 		return stage.thenAccept( v -> copyValues( persister, entity, target, source, mergeContext ) );
+	}
+
+	private CompletionStage<?> reactiveFetch(
+			ReactiveSession session,
+			Object[] mergeState,
+			Object[] managedState,
+			Integer i) {
+		// Cascade-merge mappings do not determine what needs to be fetched.
+		// The value only needs to be fetched if the incoming value (mergeState[i])
+		// is initialized, but its corresponding managed state is not initialized.
+		// Initialization must be done before copyValues executes.
+		return Hibernate.isInitialized( mergeState[i] ) && !Hibernate.isInitialized( managedState[i] )
+					? session.reactiveFetch( managedState[i], true )
+					: voidFuture();
 	}
 
 	protected void copyValues(
