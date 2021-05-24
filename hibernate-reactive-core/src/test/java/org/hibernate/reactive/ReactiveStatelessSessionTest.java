@@ -136,6 +136,35 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testTransactionPropagation(TestContext context) {
+		test( context, getSessionFactory().withStatelessSession(
+				session -> session.withTransaction( transaction -> session.createQuery("from GuineaPig").getResultList()
+						.thenCompose( list -> {
+							context.assertNotNull( session.currentTransaction() );
+							context.assertFalse( session.currentTransaction().isMarkedForRollback() );
+							session.currentTransaction().markForRollback();
+							context.assertTrue( session.currentTransaction().isMarkedForRollback() );
+							context.assertTrue( transaction.isMarkedForRollback() );
+							return session.withTransaction( t -> {
+								context.assertTrue( t.isMarkedForRollback() );
+								return session.createQuery("from GuineaPig").getResultList();
+							} );
+						} ) )
+		) );
+	}
+
+	@Test
+	public void testSessionPropagation(TestContext context) {
+		test( context, getSessionFactory().withStatelessSession(
+				session -> session.createQuery("from GuineaPig").getResultList()
+						.thenCompose( list -> getSessionFactory().withStatelessSession( s -> {
+							context.assertEquals( session, s );
+							return s.createQuery("from GuineaPig").getResultList();
+						} ) )
+		) );
+	}
+
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
 		context.assertNotNull( actual );
 		context.assertEquals( expected.getId(), actual.getId() );
