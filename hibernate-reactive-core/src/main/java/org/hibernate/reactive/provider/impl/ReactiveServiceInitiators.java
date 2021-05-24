@@ -55,6 +55,9 @@ public final class ReactiveServiceInitiators {
 
     public static final List<StandardServiceInitiator> LIST = buildInitialServiceInitiatorList();
 
+    // Note that Quarkus uses a different list for the initialization of the services.
+    // If you update this list makes sure to check that reactive still works with Quarkus
+    // in native mode.
     private static List<StandardServiceInitiator> buildInitialServiceInitiatorList() {
         final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<>();
 
