@@ -38,11 +38,15 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
 	private final Context context;
+	private final String sessionId;
+	private final String statelessSessionId;
 
 	public MutinySessionFactoryImpl(SessionFactoryImpl delegate) {
 		this.delegate = delegate;
-		this.context = delegate.getServiceRegistry().getService( Context.class );
-		this.connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
+		context = delegate.getServiceRegistry().getService( Context.class );
+		connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
+		sessionId = Mutiny.Session.class.getName() + '/' + delegate.getUuid();
+		statelessSessionId = Mutiny.StatelessSession.class.getName() + '/' + delegate.getUuid();
 	}
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
@@ -120,17 +124,16 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
-		String id = sessionId();
-		Mutiny.Session current = context.get(Mutiny.Session.class, id);
+		Mutiny.Session current = context.get(Mutiny.Session.class, sessionId);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
 		return newSession()
 				.chain( session -> {
-					context.put(Mutiny.Session.class, id, session);
+					context.put(Mutiny.Session.class, sessionId, session);
 					return work.apply( session )
 							.eventually( () -> {
-								context.remove(Mutiny.Session.class, id);
+								context.remove(Mutiny.Session.class, sessionId);
 								return session.close();
 							} );
 				} );
@@ -138,7 +141,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withSession(String tenantId, Function<Mutiny.Session, Uni<T>> work) {
-		String id = sessionId(tenantId);
+		String id = sessionId + '/' + tenantId;
 		Mutiny.Session current = context.get(Mutiny.Session.class, id);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
@@ -156,35 +159,18 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withStatelessSession(Function<Mutiny.StatelessSession, Uni<T>> work) {
-		String id = statelessSessionId();
-		Mutiny.StatelessSession current = context.get(Mutiny.StatelessSession.class, id);
+		Mutiny.StatelessSession current = context.get(Mutiny.StatelessSession.class, statelessSessionId);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
 		return newStatelessSession()
 				.chain( session -> {
-					context.put(Mutiny.StatelessSession.class, id, session);
+					context.put(Mutiny.StatelessSession.class, statelessSessionId, session);
 					return work.apply(session).eventually( () -> {
-						context.remove(Mutiny.StatelessSession.class, id);
+						context.remove(Mutiny.StatelessSession.class, statelessSessionId);
 						return session.close();
 					} );
 				} );
-	}
-
-	private String sessionId() {
-		return Mutiny.Session.class.getName() + '/' + delegate.getUuid();
-	}
-
-	private String sessionId(String tenantId) {
-		return sessionId() + '/' + tenantId;
-	}
-
-	private String statelessSessionId() {
-		return Mutiny.StatelessSession.class.getName() + '/' + delegate.getUuid();
-	}
-
-	private String statelessSessionId(String tenantId) {
-		return statelessSessionId() + '/' + tenantId;
 	}
 
 	@Override
