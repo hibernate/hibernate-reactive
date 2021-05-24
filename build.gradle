@@ -119,13 +119,16 @@ subprojects {
     version = projectVersion
 
     repositories {
-        // Only enable these for local development, never push it:
-        // mavenLocal()
-        // jcenter()
+        // Example: ./gradlew build -PenableMavenLocalRepo
+        if ( project.hasProperty('enableMavenLocalRepo') ) {
+            // Useful for local development, it should be disabled otherwise
+            mavenLocal()
+        }
         // Example: ./gradlew build -PenableSonatypeOpenSourceSnapshotsRep
         if ( project.hasProperty('enableSonatypeOpenSourceSnapshotsRep') ) {
             maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
         }
+
         mavenCentral()
 
         // Example: ./gradlew build -PenableJBossSnapshotsRep
