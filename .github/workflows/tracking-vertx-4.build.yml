@@ -23,7 +23,7 @@ jobs:
       matrix:
         example: [ 'session-example', 'native-sql-example' ]
         db: [ 'MySQL', 'PostgreSQL' ]
-        vertx-version: [ '[4.0,4.1)','[4.1,4.2)' ]
+        vertx-version: [ '[4.1,4.2)' ]
         exclude:
           # 'native-sql-example' doesn't run on MySQL because it has native queries
           - example: 'native-sql-example'
@@ -77,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        vertx-version: [ '[4.0,4.1)','[4.1,4.2)' ]
+        vertx-version: [ '[4.1,4.2)' ]
         db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB' ]
     steps:
       - uses: actions/checkout@v2
