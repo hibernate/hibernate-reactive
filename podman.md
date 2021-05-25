@@ -37,7 +37,7 @@ required credentials and schema to run the tests:
 ```
 podman run --rm --name HibernateTestingPGSQL \
     -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact \
-    -p 5432:5432 postgres:13.2
+    -p 5432:5432 postgres:13.3
 ```
 
 When the database has started, you can run the tests on PostgreSQL with:
@@ -66,7 +66,7 @@ and schema to run the tests:
 ```
 podman run --rm --name HibernateTestingMariaDB \
     -e MYSQL_ROOT_PASSWORD=hreact -e MYSQL_DATABASE=hreact -e MYSQL_USER=hreact -e MYSQL_PASSWORD=hreact \
-    -p 3306:3306 mariadb:10.5.9
+    -p 3306:3306 mariadb:10.5.10
 ```
 
 When the database has started, you can run the tests on MariaDB with:
@@ -93,7 +93,7 @@ and schema to run the tests:
 ```
 podman run --rm --name HibernateTestingMySQL \
     -e MYSQL_ROOT_PASSWORD=hreact -e MYSQL_DATABASE=hreact -e MYSQL_USER=hreact -e MYSQL_PASSWORD=hreact \
-    -p 3306:3306 mysql:8.0.24
+    -p 3306:3306 mysql:8.0.25
 ```
 
 When the database has started, you can run the tests on MySQL with:
