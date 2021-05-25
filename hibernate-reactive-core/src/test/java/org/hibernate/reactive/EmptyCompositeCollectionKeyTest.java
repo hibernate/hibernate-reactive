@@ -17,19 +17,15 @@ import javax.persistence.Id;
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.After;
-import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 
 public class EmptyCompositeCollectionKeyTest extends BaseReactiveTest {
-	@Rule
-	public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( DB2 );
+
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
