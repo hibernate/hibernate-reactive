@@ -14,6 +14,7 @@ import org.hibernate.service.spi.Configurable;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.hibernate.internal.CoreLogging.messageLogger;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getInt;
@@ -39,6 +40,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
     private Integer idleTimeout;
     private Integer cacheMaxSize;
     private Integer sqlLimit;
+    private Integer poolCleanerPeriod;
     private String user;
     private String pass;
 
@@ -52,20 +54,31 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
         sqlLimit = getInteger( Settings.PREPARED_STATEMENT_CACHE_SQL_LIMIT, configuration );
         connectTimeout = getInteger( Settings.POOL_CONNECT_TIMEOUT, configuration );
         idleTimeout = getInteger( Settings.POOL_IDLE_TIMEOUT, configuration );
+        poolCleanerPeriod = getInteger( Settings.POOL_CLEANER_PERIOD, configuration );
     }
 
     @Override
     public PoolOptions poolOptions() {
         PoolOptions poolOptions = new PoolOptions();
-        messageLogger( DefaultSqlClientPool.class).infof( "HRX000012: Connection pool size: %d", poolSize );
+        messageLogger( DefaultSqlClientPool.class ).infof( "HRX000025: Connection pool size: %d", poolSize );
         poolOptions.setMaxSize( poolSize );
         if (maxWaitQueueSize!=null) {
-            messageLogger( DefaultSqlClientPool.class).infof( "HRX000013: Connection pool max wait queue size: %d", maxWaitQueueSize );
-            poolOptions.setMaxWaitQueueSize(maxWaitQueueSize);
+            messageLogger( DefaultSqlClientPool.class).infof( "HRX000026: Connection pool max wait queue size: %d", maxWaitQueueSize );
+            poolOptions.setMaxWaitQueueSize(maxWaitQueueSize );
         }
         if (idleTimeout!=null) {
-            messageLogger( DefaultSqlClientPool.class).infof( "HRX000013: Connection pool idle timeout: %d", idleTimeout );
+            messageLogger( DefaultSqlClientPool.class ).infof( "HRX000027: Connection pool idle timeout: %d ms", idleTimeout );
             poolOptions.setIdleTimeout(idleTimeout);
+            poolOptions.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
+        }
+        if (connectTimeout!=null) {
+            messageLogger( DefaultSqlClientPool.class ).infof( "HRX000028: Connection pool connection timeout: %d ms", connectTimeout );
+            poolOptions.setConnectionTimeout(connectTimeout);
+            poolOptions.setConnectionTimeoutUnit(TimeUnit.MILLISECONDS);
+        }
+        if (poolCleanerPeriod!=null) {
+            messageLogger( DefaultSqlClientPool.class ).infof( "HRX000029: Connection pool cleaner period: %d ms", poolCleanerPeriod );
+            poolOptions.setPoolCleanerPeriod(poolCleanerPeriod);
         }
         return poolOptions;
     }
@@ -149,24 +162,21 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
         if (cacheMaxSize!=null) {
             if (cacheMaxSize <= 0) {
-                messageLogger( DefaultSqlClientPool.class).infof( "HRX000014: Prepared statement cache disabled", cacheMaxSize );
+                messageLogger( DefaultSqlClientPool.class ).infof( "HRX000014: Prepared statement cache disabled", cacheMaxSize );
                 connectOptions.setCachePreparedStatements(false);
             }
             else {
-                messageLogger( DefaultSqlClientPool.class).infof( "HRX000015: Prepared statement cache max size: %d", cacheMaxSize );
+                messageLogger( DefaultSqlClientPool.class ).infof( "HRX000015: Prepared statement cache max size: %d", cacheMaxSize );
                 connectOptions.setCachePreparedStatements(true);
                 connectOptions.setPreparedStatementCacheMaxSize(cacheMaxSize);
             }
         }
 
         if (sqlLimit!=null) {
-            messageLogger( DefaultSqlClientPool.class).infof( "HRX000016: Prepared statement cache SQL limit: %d", sqlLimit );
+            messageLogger( DefaultSqlClientPool.class ).infof( "HRX000016: Prepared statement cache SQL limit: %d", sqlLimit );
             connectOptions.setPreparedStatementCacheSqlLimit(sqlLimit);
         }
 
-        if (connectTimeout!=null) {
-            connectOptions.setConnectTimeout(connectTimeout);
-        }
         return connectOptions;
     }
 
