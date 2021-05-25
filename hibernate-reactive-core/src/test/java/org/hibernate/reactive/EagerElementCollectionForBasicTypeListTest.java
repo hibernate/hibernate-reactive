@@ -16,19 +16,15 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
 
 /**
  * Tests @{@link ElementCollection} on a {@link List} of basic types.
@@ -46,9 +42,6 @@ import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
  * @see EagerElementCollectionForEmbeddableTypeListTest
  */
 public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest {
-
-	@Rule
-	public DatabaseSelectionRule db2WithVertx4BugRule = skipTestsFor( DB2 );
 
 	private Person thePerson;
 
