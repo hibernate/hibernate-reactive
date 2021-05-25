@@ -912,8 +912,9 @@ following configuration properties:
 | Configuration property name                          | Purpose
 
 | `hibernate.vertx.pool.max_wait_queue_size`           | The maximum connection requests allowed in the wait queue
-| `hibernate.vertx.pool.connect_timeout`               | The maximum time to wait when opening a new connection, in milliseconds
-| `hibernate.vertx.pool.idle_timeout`                  | The maximum time a connection may sit idle, in seconds
+| `hibernate.vertx.pool.connect_timeout`               | The maximum time to wait when requesting a pooled connection, in milliseconds
+| `hibernate.vertx.pool.idle_timeout`                  | The maximum time a connection may sit idle, in milliseconds
+| `hibernate.vertx.pool.cleaner_period`                | The Vert.x connection pool cleaner period, in milliseconds
 | `hibernate.vertx.prepared_statement_cache.max_size`  | The maximum size of the prepared statement cache
 | `hibernate.vertx.prepared_statement_cache.sql_limit` | The maximum length of prepared statement SQL string that will be cached
 |===
