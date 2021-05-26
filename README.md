@@ -65,6 +65,9 @@ everything you need to know to get started, including:
 
 We recommend you start there!
 
+The [Vert.x and Hibernate Reactive How-to][vertx-hr] explains how to use
+Hibernate in Vert.x.
+
 [introduction]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc
 
 [build]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#including-hibernate-reactive-in-your-project-build
@@ -72,6 +75,8 @@ We recommend you start there!
 [model]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#mapping-entity-classes
 [session]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#using-the-reactive-session
 [performance]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#tuning-and-performance
+
+[vertx-hr]: https://how-to.vertx.io/hibernate-reactive-howto/
 
 ## Examples
 
