@@ -66,6 +66,36 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testStatelessSessionWithNamed(TestContext context) {
+		GuineaPig pig = new GuineaPig("Aloi");
+		test( context, getSessionFactory().withStatelessSession( ss -> ss
+				.insert( pig )
+				.thenCompose( v -> ss.createNamedQuery( "findbyname", GuineaPig.class )
+						.setParameter( "n", pig.name )
+						.getResultList() )
+				.thenAccept( list -> {
+					context.assertFalse( list.isEmpty() );
+					context.assertEquals( 1, list.size() );
+					assertThatPigsAreEqual( context, pig, list.get( 0 ) );
+				} )
+				.thenCompose( v -> ss.get( GuineaPig.class, pig.id ) )
+				.thenCompose( p -> {
+					assertThatPigsAreEqual( context, pig, p );
+					p.name = "X";
+					return ss.update( p );
+				} )
+				.thenCompose( v -> ss.refresh( pig ) )
+				.thenAccept( v -> context.assertEquals( pig.name, "X" ) )
+				.thenCompose( v -> ss.createNamedQuery( "updatebyname" ).executeUpdate() )
+				.thenCompose( v -> ss.refresh( pig ) )
+				.thenAccept( v -> context.assertEquals( pig.name, "Y" ) )
+				.thenCompose( v -> ss.delete( pig ) )
+				.thenCompose( v -> ss.createNamedQuery( "findall" ).getResultList() )
+				.thenAccept( list -> context.assertTrue( list.isEmpty() ) ) )
+		);
+	}
+
+	@Test
 	public void testStatelessSessionWithNative(TestContext context) {
 		GuineaPig pig = new GuineaPig("Aloi");
 		Stage.StatelessSession ss = getSessionFactory().openStatelessSession();
@@ -170,6 +200,10 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 		context.assertEquals( expected.getId(), actual.getId() );
 		context.assertEquals( expected.getName(), actual.getName() );
 	}
+
+	@NamedQuery(name = "findbyname", query = "from GuineaPig where name=:n")
+	@NamedQuery(name = "updatebyname", query = "update GuineaPig set name='Y'")
+	@NamedQuery(name = "findall", query = "from GuineaPig")
 
 	@Entity(name="GuineaPig")
 	@Table(name="Piggy")

@@ -56,4 +56,18 @@ public interface ReactiveQueryExecutor extends ReactiveConnectionSupplier {
     <T> EntityGraph<T> createEntityGraph(Class<T> entity);
     <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name);
     <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name);
+
+    <R> ReactiveQuery<R> createReactiveQuery(String queryString);
+
+    <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType);
+
+    <R> ReactiveQuery<R> createReactiveNamedQuery(String name);
+
+    <R> ReactiveQuery<R> createReactiveNamedQuery(String name, Class<R> resultClass);
+
+    <T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString);
+
+    <T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultType);
+
+    <T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping);
 }

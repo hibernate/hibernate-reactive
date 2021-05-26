@@ -47,16 +47,6 @@ public interface ReactiveStatelessSession extends ReactiveQueryExecutor {
 
     CompletionStage<Void> reactiveRefreshAll(Object... entities);
 
-    <R> ReactiveQuery<R> createReactiveQuery(String queryString);
-
-    <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType);
-
-    <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString);
-
-    <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultType);
-
-    <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping);
-
     <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
 
     boolean isOpen();

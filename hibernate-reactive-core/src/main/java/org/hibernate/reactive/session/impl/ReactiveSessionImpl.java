@@ -122,7 +122,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession, EventSource {
 	private static final EntityManagerMessageLogger log = HEMLogging.messageLogger( ReactiveSessionImpl.class );
 
-	private transient ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
+	private transient final ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
 	private final ReactiveConnection reactiveConnection;
 	private final Thread associatedWorkThread;
 
