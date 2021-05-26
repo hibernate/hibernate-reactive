@@ -18,6 +18,8 @@ import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.NamedQueryDefinition;
+import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -71,7 +73,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         implements ReactiveStatelessSession {
 
-    private ReactiveConnection reactiveConnection;
+    private final ReactiveConnection reactiveConnection;
     private final boolean allowBytecodeProxy;
 
     private final ReactiveStatelessSession batchingHelperSession;
@@ -333,6 +335,104 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     }
 
     @Override
+    public <R> ReactiveQuery<R> createReactiveNamedQuery(String name) {
+        return buildReactiveQueryFromName( name, null );
+    }
+
+    @Override
+    public <R> ReactiveQuery<R> createReactiveNamedQuery(String name, Class<R> resultClass) {
+        return buildReactiveQueryFromName( name, resultClass );
+    }
+
+    //TODO nasty copy/paste
+    private <T> ReactiveQuery<T> buildReactiveQueryFromName(String name, Class<T> resultType) {
+        checkOpen();
+        try {
+            pulseTransactionCoordinator();
+            delayedAfterCompletion();
+
+            // todo : apply stored setting at the JPA Query level too
+
+            NamedQueryDefinition namedQueryDefinition =
+                    getFactory().getNamedQueryRepository()
+                            .getNamedQueryDefinition( name );
+            if ( namedQueryDefinition != null ) {
+                return createReactiveQuery( namedQueryDefinition, resultType );
+            }
+
+            NamedSQLQueryDefinition nativeQueryDefinition =
+                    getFactory().getNamedQueryRepository()
+                            .getNamedSQLQueryDefinition( name );
+            if ( nativeQueryDefinition != null ) {
+                return createReactiveNativeQuery( nativeQueryDefinition, resultType );
+            }
+
+            throw getExceptionConverter().convert(
+                    new IllegalArgumentException( "no query defined for name '" + name + "'" )
+            );
+        }
+        catch (RuntimeException e) {
+            throw !( e instanceof IllegalArgumentException ) ? new IllegalArgumentException( e ) : e;
+        }
+    }
+
+    //TODO fix nasty copy/paste
+    private <T> ReactiveQuery<T> createReactiveQuery(NamedQueryDefinition namedQueryDefinition,
+                                                     Class<T> resultType) {
+        final ReactiveQuery<T> query = createReactiveQuery( namedQueryDefinition );
+        if ( resultType != null ) {
+            resultClassChecking( resultType, createQuery( namedQueryDefinition ) );
+        }
+        return query;
+    }
+
+    //TODO fix nasty copy/paste
+    private <T> ReactiveQuery<T> createReactiveQuery(NamedQueryDefinition queryDefinition) {
+        String queryString = queryDefinition.getQueryString();
+        ReactiveQueryImpl<T> query = new ReactiveQueryImpl<>( this, getQueryPlan( queryString, false ), queryString );
+        applyQuerySettingsAndHints( query );
+        query.setHibernateFlushMode( queryDefinition.getFlushMode() );
+        query.setComment( comment( queryDefinition ) );
+        if ( queryDefinition.getLockOptions() != null ) {
+            query.setLockOptions( queryDefinition.getLockOptions() );
+        }
+
+        initQueryFromNamedDefinition( query, queryDefinition );
+
+        return query;
+    }
+
+    //TODO fix nasty copy/paste
+    private <T> ReactiveNativeQuery<T> createReactiveNativeQuery(NamedSQLQueryDefinition queryDefinition,
+                                                                 Class<T> resultType) {
+        if ( resultType != null
+                && !Tuple.class.equals( resultType )
+                && !Object[].class.equals( resultType ) ) {
+            resultClassChecking( resultType, queryDefinition );
+        }
+
+        ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>(
+                queryDefinition,
+                this,
+                getFactory().getQueryPlanCache()
+                        .getSQLParameterMetadata( queryDefinition.getQueryString(), false )
+        );
+        if ( Tuple.class.equals( resultType ) ) {
+            query.setResultTransformer( new NativeQueryTupleTransformer() );
+        }
+        applyQuerySettingsAndHints( query );
+        query.setHibernateFlushMode( queryDefinition.getFlushMode() );
+        query.setComment( comment(queryDefinition) );
+        if ( queryDefinition.getLockOptions() != null ) {
+            query.setLockOptions( queryDefinition.getLockOptions() );
+        }
+
+        initQueryFromNamedDefinition( query, queryDefinition );
+
+        return query;
+    }
+
+    @Override
     public <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString) {
         checkOpen();
 
@@ -409,6 +509,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
                 })
                 //TODO: this typecast is rubbish
                 .thenApply( list -> (List<T>) list );
+    }
+
+    private static String comment(NamedQueryDefinition queryDefinition) {
+        return queryDefinition.getComment() != null
+                ? queryDefinition.getComment()
+                : queryDefinition.getName();
     }
 
     @Override

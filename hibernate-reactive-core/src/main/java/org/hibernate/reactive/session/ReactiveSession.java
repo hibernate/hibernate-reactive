@@ -76,20 +76,6 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 
 	CompletionStage<Void> reactiveLock(Object entity, LockOptions lockMode);
 
-	<T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString);
-
-	<T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping);
-
-	<T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultType);
-
-	<T> ReactiveQuery<T> createReactiveQuery(String queryString);
-
-	<T> ReactiveQuery<T> createReactiveQuery(String queryString, Class<T> resultType);
-
-	<R> ReactiveQuery<R> createReactiveNamedQuery(String name);
-
-	<R> ReactiveQuery<R> createReactiveNamedQuery(String name, Class<R> resultClass);
-
 	<T> CompletionStage<T> reactiveGet(Class<T> entityClass, Serializable id);
 
 	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Object id,

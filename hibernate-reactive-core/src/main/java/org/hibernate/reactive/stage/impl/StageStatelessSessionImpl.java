@@ -88,6 +88,16 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
     }
 
     @Override
+    public <R> Stage.Query<R> createNamedQuery(String name) {
+        return new StageQueryImpl<>( delegate.createReactiveNamedQuery( name ), factory );
+    }
+
+    @Override
+    public <R> Stage.Query<R> createNamedQuery(String name, Class<R> resultType) {
+        return new StageQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ), factory );
+    }
+
+    @Override
     public <R> Stage.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
         return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery ), factory );
     }
