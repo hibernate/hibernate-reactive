@@ -89,7 +89,7 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
 						.thenCompose( session::remove )
 						.thenCompose( v -> session.flush() )
-						.whenComplete( (v, err) -> session.close() )
+						.thenCompose( v -> session.close() )
 		);
 	}
 
@@ -142,11 +142,11 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 		Stage.Session t1Session = getSessionFactory().openSession( TENANT_1.name() );
 		test( context, selectCurrentDB( t1Session )
 				.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
-				.whenComplete( (v, e) -> t1Session.close() )
+				.thenCompose( v -> t1Session.close() )
 				.thenApply( unused -> getSessionFactory().openSession( TENANT_2.name() ) )
 				.thenCompose( t2Session -> selectCurrentDB( t2Session )
 						.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) )
-						.whenComplete( (v, e) -> t2Session.close() ) )
+						.thenCompose( v -> t2Session.close() ) )
 		);
 	}
 

@@ -74,8 +74,7 @@ public abstract class BaseReactiveTest {
 		VertxOptions options = new VertxOptions();
 		options.setBlockedThreadCheckInterval( 5 );
 		options.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
-		Vertx vertx = Vertx.vertx( options );
-		return vertx;
+		return Vertx.vertx( options );
 	} );
 
 	private Object session;
@@ -148,7 +147,7 @@ public abstract class BaseReactiveTest {
 		return getSessionFactory()
 				.withTransaction( (s, tx) -> loop( entities, name -> s
 						.createQuery( "from " + name ).getResultList()
-						.thenCompose( list -> s.remove( list.toArray( new Object[list.size()] ) ) ) ) );
+						.thenCompose( list -> s.remove( list.toArray( new Object[0] ) ) ) ) );
 	}
 
 	@Before
@@ -189,8 +188,7 @@ public abstract class BaseReactiveTest {
 		addServices( builder );
 		StandardServiceRegistry registry = builder.build();
 		configureServices( registry );
-		SessionFactory sessionFactory = configuration.buildSessionFactory( registry );
-		return sessionFactory;
+		return configuration.buildSessionFactory( registry );
 	}
 
 	protected void addServices(StandardServiceRegistryBuilder builder) {}

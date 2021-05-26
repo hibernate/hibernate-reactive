@@ -5,8 +5,14 @@
  */
 package org.hibernate.reactive;
 
-import io.smallrye.mutiny.Uni;
-import io.vertx.ext.unit.TestContext;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.metamodel.EntityType;
+
 import org.hibernate.LockMode;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -14,12 +20,8 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.After;
 import org.junit.Test;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.metamodel.EntityType;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.unit.TestContext;
 
 
 public class MutinySessionTest extends BaseReactiveTest {
@@ -48,19 +50,19 @@ public class MutinySessionTest extends BaseReactiveTest {
 		return getMutinySessionFactory().withSession(
 				session -> session.createQuery("SELECT name FROM GuineaPig WHERE id = " + id )
 						.getResultList()
-						.map(
-								rowSet -> {
-									switch ( rowSet.size() ) {
-										case 0:
-											return null;
-										case 1:
-											return (String) rowSet.get(0);
-										default:
-											throw new AssertionError("More than one result returned: " + rowSet.size());
-									}
-								}
-						)
+						.map( MutinySessionTest::nameFromResult )
 		);
+	}
+
+	private static String nameFromResult(List<Object> rowSet) {
+		switch ( rowSet.size() ) {
+			case 0:
+				return null;
+			case 1:
+				return (String) rowSet.get( 0 );
+			default:
+				throw new AssertionError( "More than one result returned: " + rowSet.size() );
+		}
 	}
 
 	@Test
@@ -458,7 +460,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 											context.assertNotNull(pig);
 											i.getAndIncrement();
 										} )
-										.collectItems().asList()
+										.collect().asList()
 										.invoke( list -> {
 											context.assertEquals(3, i.get());
 											context.assertEquals(3, list.size());
