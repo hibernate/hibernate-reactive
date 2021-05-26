@@ -11,7 +11,8 @@ import java.util.function.Supplier;
 import org.hibernate.SessionFactory;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.util.impl.CompletionStages;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Managed the creation of a {@link SessionFactory} that can shared among tests.
@@ -55,7 +56,7 @@ public class SessionFactoryManager {
 		}
 		final CompletionStage<Void> closeFuture;
 		if ( poolProvider == null ) {
-			closeFuture = CompletionStages.voidFuture();
+			closeFuture = voidFuture();
 		}
 		else {
 			closeFuture = poolProvider.getCloseFuture();

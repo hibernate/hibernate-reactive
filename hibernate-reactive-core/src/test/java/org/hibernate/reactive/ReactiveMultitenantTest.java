@@ -79,7 +79,6 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
 						.thenCompose( session::remove )
 						.thenCompose( v -> session.flush() )
-						.whenComplete( (v, err) -> session.close() )
 		);
 	}
 

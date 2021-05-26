@@ -95,7 +95,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> ss.delete(pig) )
 						.thenCompose( v -> ss.createNativeQuery("select id from Piggy").getResultList() )
 						.thenAccept( list -> context.assertTrue( list.isEmpty() ) )
-						.thenAccept( v -> ss.close() )
+						.thenCompose( v -> ss.close() )
 		);
 	}
 
@@ -132,7 +132,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 						.thenAccept( rows -> context.assertEquals(1, rows) )
 						.thenCompose( v -> ss.createQuery(delete).executeUpdate() )
 						.thenAccept( rows -> context.assertEquals(1, rows) )
-						.thenAccept( v -> ss.close() )
+						.thenCompose( v -> ss.close() )
 		);
 	}
 

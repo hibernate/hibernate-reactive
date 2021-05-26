@@ -6,7 +6,10 @@
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
+
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.stage.Stage;
+
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -14,6 +17,7 @@ import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.Table;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
@@ -52,41 +56,43 @@ public class CompositeIdTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<String> selectNameFromId(Integer id) {
-		return getSessionFactory().withSession(
-				session -> session.createQuery("SELECT name FROM GuineaPig WHERE id = " + id )
-						.getResultList()
-						.thenApply(
-								rowSet -> {
-									switch ( rowSet.size() ) {
-										case 0:
-											return null;
-										case 1:
-											return (String) rowSet.get(0);
-										default:
-											throw new AssertionError("More than one result returned: " + rowSet.size());
-									}
-								}
-						)
-		);
+		return getSessionFactory().withSession( session -> selectNameFromId( session, id ) );
+	}
+
+	private CompletionStage<String> selectNameFromId(Stage.Session session, Integer id) {
+		return session.createQuery( "SELECT name FROM GuineaPig WHERE id = " + id )
+				.getResultList()
+				.thenApply( CompositeIdTest::nameFromResult );
+	}
+
+	private static String nameFromResult(List<Object> rowSet) {
+		switch ( rowSet.size() ) {
+			case 0:
+				return null;
+			case 1:
+				return (String) rowSet.get( 0 );
+			default:
+				throw new AssertionError( "More than one result returned: " + rowSet.size() );
+		}
 	}
 
 	private CompletionStage<Double> selectWeightFromId(Integer id) {
 		return getSessionFactory().withSession(
 				session -> session.createQuery("SELECT weight FROM GuineaPig WHERE id = " + id )
 						.getResultList()
-						.thenApply(
-								rowSet -> {
-									switch ( rowSet.size() ) {
-										case 0:
-											return null;
-										case 1:
-											return (Double) rowSet.get(0);
-										default:
-											throw new AssertionError("More than one result returned: " + rowSet.size());
-									}
-								}
-						)
+						.thenApply( CompositeIdTest::weightFromResult )
 		);
+	}
+
+	private static Double weightFromResult(List<Object> rowSet) {
+		switch ( rowSet.size() ) {
+			case 0:
+				return null;
+			case 1:
+				return (Double) rowSet.get(0);
+			default:
+				throw new AssertionError("More than one result returned: " + rowSet.size());
+		}
 	}
 
 	@Test
@@ -97,9 +103,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 				populateDB()
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, new Pig(5, "Aloi") ) )
-						.thenAccept( actualPig -> {
-							assertThatPigsAreEqual( context, expectedPig, actualPig );
-						} )
+						.thenAccept( actualPig -> assertThatPigsAreEqual( context, expectedPig, actualPig ) )
 		);
 	}
 
@@ -110,7 +114,6 @@ public class CompositeIdTest extends BaseReactiveTest {
 				openSession()
 						.thenCompose( s -> s.persist( new GuineaPig( 10, "Tulip" ) )
 								.thenCompose( v -> s.flush() )
-								.whenComplete( (v,e) -> s.close() )
 						)
 						.thenCompose( v -> selectNameFromId( 10 ) )
 						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
@@ -127,7 +130,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.remove( new GuineaPig( 5, "Aloi" ) )
 								.thenCompose( v -> session.flush() )
-								.whenComplete( (v, err) -> session.close() )
+								.thenCompose( v -> session.close() )
 						)
 						.thenCompose( v -> selectNameFromId( 5 ) )
 						.thenAccept( context::assertNull )
@@ -145,9 +148,8 @@ public class CompositeIdTest extends BaseReactiveTest {
 							session.find( GuineaPig.class, new Pig(5, "Aloi") )
 								.thenCompose( session::remove )
 								.thenCompose( v -> session.flush() )
-								.thenCompose( v -> selectNameFromId( 5 ) )
+								.thenCompose( v -> selectNameFromId( session,5 ) )
 								.thenAccept( context::assertNull )
-								.whenComplete( (v, err) -> session.close() )
 						)
 		);
 	}
@@ -168,7 +170,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 									pig.setWeight( NEW_WEIGHT );
 								} )
 								.thenCompose( v -> session.flush() )
-								.whenComplete( (v, err) -> session.close() )
+								.thenCompose( v -> session.close() )
 								.thenCompose( v -> selectWeightFromId( 5 ) )
 								.thenAccept( w -> context.assertEquals( NEW_WEIGHT, w ) ) )
 		);

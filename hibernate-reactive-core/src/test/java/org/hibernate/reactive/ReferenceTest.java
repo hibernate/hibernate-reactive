@@ -75,7 +75,6 @@ public class ReferenceTest extends BaseReactiveTest {
 						.thenCompose( sess -> {
 							Book reference = sess.getReference(goodOmens);
 							context.assertFalse( Hibernate.isInitialized(reference) );
-							sess.close();
 							return openSession()
 									.thenCompose(s -> {
 										Book book = s.getReference(Book.class, reference.getId());
@@ -120,7 +119,6 @@ public class ReferenceTest extends BaseReactiveTest {
 						.thenCompose( sess -> {
 							Book reference = sess.getReference(goodOmens);
 							context.assertFalse( Hibernate.isInitialized(reference) );
-							sess.close();
 							return openSession()
 									.thenCompose( s -> s.remove( s.getReference(reference) )
 											.thenCompose( v -> s.flush() ) );
@@ -143,7 +141,6 @@ public class ReferenceTest extends BaseReactiveTest {
 						.thenCompose( sess -> {
 							Book reference = sess.getReference(goodOmens);
 							context.assertFalse( Hibernate.isInitialized(reference) );
-							sess.close();
 							return openSession()
 									.thenCompose( s -> s.lock( s.getReference(reference), LockMode.PESSIMISTIC_FORCE_INCREMENT )
 											.thenCompose( v -> s.flush() ) );
@@ -169,7 +166,6 @@ public class ReferenceTest extends BaseReactiveTest {
 						.thenCompose( sess -> {
 							Book reference = sess.getReference(goodOmens);
 							context.assertFalse( Hibernate.isInitialized(reference) );
-							sess.close();
 							return openSession()
 									.thenCompose( s -> s.refresh( s.getReference(reference) )
 											.thenAccept( v -> context.assertTrue( Hibernate.isInitialized( s.getReference(reference) ) ) )

@@ -20,6 +20,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Version;
 import javax.persistence.metamodel.EntityType;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
@@ -49,19 +50,19 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		return getSessionFactory().withSession(
 				session -> session.createQuery("SELECT name FROM GuineaPig WHERE id = " + id )
 						.getResultList()
-						.thenApply(
-								rowSet -> {
-									switch ( rowSet.size() ) {
-										case 0:
-											return null;
-										case 1:
-											return (String) rowSet.get(0);
-										default:
-											throw new AssertionError("More than one result returned: " + rowSet.size());
-									}
-								}
-						)
+						.thenApply( ReactiveSessionTest::nameFromResult )
 		);
+	}
+
+	private static String nameFromResult(List<Object> rowSet) {
+		switch ( rowSet.size() ) {
+			case 0:
+				return null;
+			case 1:
+				return (String) rowSet.get( 0 );
+			default:
+				throw new AssertionError( "More than one result returned: " + rowSet.size() );
+		}
 	}
 
 	@Test
@@ -159,7 +160,6 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 												context.assertEquals(true, session.isReadOnly(pig));
 											} );
 								} )
-								.whenComplete( (v, err) -> session.close() )
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() )
@@ -515,7 +515,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				openSession()
 						.thenCompose( s -> s.persist( new GuineaPig( 10, "Tulip" ) )
 								.thenCompose( v -> s.flush() )
-								.whenComplete( (v,e) -> s.close() )
+								.thenCompose( v -> s.close() )
 						)
 						.thenCompose( v -> selectNameFromId( 10 ) )
 						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
@@ -529,7 +529,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				openSession()
 						.thenCompose(
 								s -> s.withTransaction( t -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
-										.whenComplete( (vv,e) -> s.close() )
+										.thenCompose( v -> s.close() )
 						)
 						.thenCompose( vv -> selectNameFromId( 10 ) )
 						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
@@ -547,7 +547,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 												.thenCompose( v -> s.flush() )
 												.thenAccept( v -> { throw new RuntimeException(); } )
 								)
-										.whenComplete( (v,e) -> s.close() )
+										.thenCompose( v -> s.close() )
 						)
 						.handle( (v, e) -> null )
 						.thenCompose( vv -> selectNameFromId( 10 ) )
@@ -566,7 +566,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 												.thenCompose( vv -> s.flush() )
 												.thenAccept( vv -> t.markForRollback() )
 								)
-										.whenComplete( (v,e) -> s.close() )
+										.thenCompose( v -> s.close() )
 						)
 						.thenCompose( vv -> selectNameFromId( 10 ) )
 						.thenAccept( context::assertNull )
@@ -583,7 +583,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.remove( new GuineaPig( 5, "Aloi" ) )
 								.thenCompose( v -> session.flush() )
-								.whenComplete( (v, err) -> session.close() )
+								.thenCompose( v -> session.close() )
 						)
 						.thenCompose( v -> selectNameFromId( 5 ) )
 						.thenAccept( context::assertNull )
@@ -601,7 +601,6 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 							session.find( GuineaPig.class, 5 )
 								.thenCompose( session::remove )
 								.thenCompose( v -> session.flush() )
-								.whenComplete( (v,e) -> session.close() )
 								.thenCompose( v -> selectNameFromId( 5 ) )
 								.thenAccept( context::assertNull ) )
 		);
@@ -622,7 +621,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 									pig.setName( NEW_NAME );
 								} )
 								.thenCompose( v -> session.flush() )
-								.whenComplete( (v,e) -> session.close() )
+								.thenCompose( v -> session.close() )
 						)
 						.thenCompose( v -> selectNameFromId( 5 ) )
 						.thenAccept( name -> context.assertEquals( NEW_NAME, name ) )
@@ -646,7 +645,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 									pig.version = 10; //ignored by Hibernate
 								} )
 								.thenCompose( v -> session.flush() )
-								.whenComplete( (v,e) -> session.close() )
+								.thenCompose( v -> session.close() )
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( GuineaPig.class, 5 )
@@ -678,7 +677,6 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 										.getSingleResult()
 										.thenAccept( count -> context.assertEquals( 3L, count) )
 								)
-								.thenAccept( vv -> s.close() )
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.<GuineaPig>createQuery("from GuineaPig")
@@ -687,7 +685,6 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.thenCompose( v -> s.<Long>createQuery("select count(*) from GuineaPig where name='Zero'")
 										.getSingleResult()
 										.thenAccept( count -> context.assertEquals( 3L, count) )
-										.thenAccept( vv -> s.close() )
 								) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.<GuineaPig>createQuery("from GuineaPig")
@@ -696,7 +693,6 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.thenCompose( v -> s.<Long>createQuery("select count(*) from GuineaPig")
 										.getSingleResult()
 										.thenAccept( count -> context.assertEquals( 0L, count) )
-										.thenAccept( vv -> s.close() )
 								)
 						)
 		);
@@ -732,7 +728,6 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenAccept( rows -> context.assertEquals(1, rows) )
 						.thenCompose( v -> s.createNativeQuery("select id from pig").getResultList() )
 						.thenAccept( list -> context.assertTrue( list.isEmpty() ) )
-						.thenAccept( v -> s.close() )
 		);
 	}
 

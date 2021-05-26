@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * This test uses a complicated model that requires Hibernate to delay
@@ -109,7 +108,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 						.thenCompose(s -> s.persist(b)
 								.thenApply(v -> bId = b.id)
 								.thenCompose(v -> s.flush())
-								.thenAccept(v -> s.close())
+								.thenCompose(v -> s.close())
 						)
 						.thenCompose(ignore -> check( context ))
 		);
@@ -123,7 +122,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 						.thenCompose(s -> s.merge(b)
 								.thenAccept(bMerged -> bId = bMerged.id)
 								.thenCompose(v -> s.flush())
-								.thenAccept(v -> s.close())
+								.thenCompose(v -> s.close())
 								.thenCompose(v -> check(context)))
 		);
 	}
@@ -155,7 +154,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 						.thenCompose(s -> s.persist(b)
 								.thenAccept( v -> bId = b.id )
 								.thenCompose(v -> s.flush())
-								.thenAccept(v -> s.close())
+								.thenCompose(v -> s.close())
 						)
 						.thenCompose(ignore -> openSession()
 								.thenCompose(s2 -> s2.merge(b))
@@ -173,7 +172,7 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 						.thenCompose(s -> s.persist(b)
 								.thenAccept(v -> bId = b.id)
 								.thenCompose(v -> s.flush())
-								.thenAccept(v -> s.close())
+								.thenCompose(v -> s.close())
 						)
 						.thenCompose(ignore -> check(context))
 						.thenAccept(ignore -> {
@@ -206,15 +205,14 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 							g = merged;
 							return s2;
 						}))
-						.thenCompose( s2 -> voidFuture()
-								.thenCompose(v -> s2.remove(f))
+						.thenCompose( s2 -> s2.remove(f)
 								.thenCompose(v -> s2.remove(g))
 								.thenCompose(v -> s2.remove(b))
 								.thenCompose(v -> s2.remove(d))
 								.thenCompose(v -> s2.remove(e))
 								.thenCompose(v -> s2.remove(c))
 								.thenCompose(v -> s2.flush())
-								.thenAccept(v -> s2.close())
+								.thenCompose(v -> s2.close())
 						)
 		);
 	}
