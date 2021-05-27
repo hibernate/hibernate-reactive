@@ -24,8 +24,8 @@ import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 import org.hibernate.reactive.stage.Stage;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -137,23 +137,14 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 				? connectionPool.getProxyConnection()
 				: connectionPool.getProxyConnection( tenantId );
 	}
+
 	@Override
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
 		Stage.Session current = context.get(Stage.Session.class, sessionId);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return newSession().thenCompose(
-				session -> {
-					context.put(Stage.Session.class, sessionId, session);
-					return work.apply(session)
-							.handle(this::handler)
-							.thenCompose( handler -> {
-						        context.remove(Stage.Session.class, sessionId);
-								return session.close().thenApply(handler);
-							} );
-				}
-		);
+		return withSession( Stage.Session.class, newSession(), Stage.Session::close, work, sessionId );
 	}
 
 	@Override
@@ -163,17 +154,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return newSession( tenantId ).thenCompose(
-				session -> {
-					context.put(Stage.Session.class, id, session);
-					return work.apply(session)
-							.handle(this::handler)
-							.thenCompose( handler -> {
-						        context.remove(Stage.Session.class, id);
-								return session.close().thenApply(handler);
-							} );
-				}
-		);
+		return withSession( Stage.Session.class, newSession( tenantId ), Stage.Session::close, work, id );
 	}
 
 	@Override
@@ -182,17 +163,25 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return newStatelessSession().thenCompose(
-				session -> {
-					context.put(Stage.StatelessSession.class, statelessSessionId, session);
-					return work.apply(session)
-							.handle(this::handler)
-							.thenCompose( handler -> {
-						        context.remove(Stage.StatelessSession.class, statelessSessionId);
-								return session.close().thenApply(handler);
-							} );
-				}
-		);
+		return withSession( Stage.StatelessSession.class, newStatelessSession(), Stage.StatelessSession::close, work, statelessSessionId );
+	}
+
+	private <S, T> CompletionStage<T> withSession(
+			Class<S> sessionType,
+			CompletionStage<S> sessionStage,
+			Function<S, CompletionStage<Void>> closeSession,
+			Function<S, CompletionStage<T>> work,
+			String sessionId) {
+		return sessionStage.thenCompose( session -> {
+			context.put( sessionType, sessionId, session );
+			return voidFuture()
+					.thenCompose( v -> work.apply( session ) )
+					.handle( this::handler )
+					.thenCompose( handler -> {
+						context.remove( sessionType, sessionId );
+						return closeSession.apply( session ).thenApply( handler );
+					} );
+		} );
 	}
 
 	private <T> Function<Void, T> handler(T result, Throwable exception) {
