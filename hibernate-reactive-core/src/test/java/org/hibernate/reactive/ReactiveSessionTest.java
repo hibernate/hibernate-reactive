@@ -741,12 +741,6 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		context.assertEquals( "GuineaPig", pig.getName() );
 	}
 
-	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
-		context.assertNotNull( actual );
-		context.assertEquals( expected.getId(), actual.getId() );
-		context.assertEquals( expected.getName(), actual.getName() );
-	}
-
 	@Test
 	public void testTransactionPropagation(TestContext context) {
 		test( context, getSessionFactory().withTransaction(
@@ -793,6 +787,40 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 					return null;
 				})
 		);
+	}
+
+	@Test
+	public void testExceptionInWithSession(TestContext context) {
+		final Stage.Session[] savedSession = new Stage.Session[1];
+		test( context, getSessionFactory().withSession( session -> {
+			context.assertTrue( session.isOpen() );
+			savedSession[0] = session;
+			throw new RuntimeException( "No Panic: This is just a test" );
+		} ).handle( (o, t) -> {
+			context.assertNotNull( t );
+			context.assertFalse( savedSession[0].isOpen(), "Session should be closed" );
+			return null;
+		} ) );
+	}
+
+	@Test
+	public void testExceptionInWithTransaction(TestContext context) {
+		final Stage.Session[] savedSession = new Stage.Session[1];
+		test( context, getSessionFactory().withTransaction( (session, tx) -> {
+			context.assertTrue( session.isOpen() );
+			savedSession[0] = session;
+			throw new RuntimeException( "No Panic: This is just a test" );
+		} ).handle( (o, t) -> {
+			context.assertNotNull( t );
+			context.assertFalse( savedSession[0].isOpen(), "Session should be closed" );
+			return null;
+		} ) );
+	}
+
+	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
+		context.assertNotNull( actual );
+		context.assertEquals( expected.getId(), actual.getId() );
+		context.assertEquals( expected.getName(), actual.getName() );
 	}
 
 	@Entity(name="GuineaPig")

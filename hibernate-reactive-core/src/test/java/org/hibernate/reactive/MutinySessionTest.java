@@ -217,7 +217,6 @@ public class MutinySessionTest extends BaseReactiveTest {
 						.withSession( s -> s.persist( new GuineaPig( 10, "Tulip" ) ).onItem().call(s::flush) )
 						.onItem().transformToUni( v -> selectNameFromId(10) )
 						.onItem().invoke( selectRes -> context.assertEquals( "Tulip", selectRes ) )
-
 		);
 	}
 
@@ -531,6 +530,38 @@ public class MutinySessionTest extends BaseReactiveTest {
 					context.assertTrue(t instanceof PersistenceException);
 				})
 				.onFailure().recoverWithNull()
+		);
+	}
+
+	@Test
+	public void testExceptionInWithSession(TestContext context) {
+		final Mutiny.Session[] savedSession = new Mutiny.Session[1];
+		test( context, getMutinySessionFactory()
+				.withSession( session -> {
+					context.assertTrue( session.isOpen() );
+					savedSession[0] = session;
+					throw new RuntimeException( "No Panic: This is just a test" );
+				} )
+				.onItem().invoke( () -> context.fail( "Test should throw an exception" ) )
+				.onFailure()
+				.recoverWithNull()
+				.invoke( () -> context.assertFalse( savedSession[0].isOpen(), "Session should be closed" ) )
+		);
+	}
+
+	@Test
+	public void testExceptionInWithTransaction(TestContext context) {
+		final Mutiny.Session[] savedSession = new Mutiny.Session[1];
+		test( context, getMutinySessionFactory()
+				.withTransaction( (session, tx) -> {
+					context.assertTrue( session.isOpen() );
+					savedSession[0] = session;
+					throw new RuntimeException( "No Panic: This is just a test" );
+				} )
+				.onItem().invoke( () -> context.fail( "Test should throw an exception" ) )
+				.onFailure()
+				.recoverWithNull()
+				.invoke( () -> context.assertFalse( savedSession[0].isOpen(), "Session should be closed" ) )
 		);
 	}
 
