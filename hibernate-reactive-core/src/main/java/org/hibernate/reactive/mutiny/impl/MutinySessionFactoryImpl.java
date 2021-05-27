@@ -73,14 +73,18 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	Uni<Mutiny.Session> newSession() throws HibernateException {
 		SessionCreationOptions options = options();
 		return uni( () -> connection( options.getTenantIdentifier() ) )
-				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveSessionImpl( delegate, options, reactiveConnection ) ) )
-				.map( s -> new MutinySessionImpl(s, this) );
+				.chain( reactiveConnection -> create(
+						reactiveConnection, () -> new ReactiveSessionImpl( delegate, options, reactiveConnection ) ) )
+				.map( s -> new MutinySessionImpl( s, this ) );
 	}
 
 	Uni<Mutiny.Session> newSession(String tenantId) throws HibernateException {
 		return uni( () -> connection( tenantId ) )
-				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), reactiveConnection ) ) )
-				.map( s -> new MutinySessionImpl(s, this) );
+				.chain( reactiveConnection -> create(
+						reactiveConnection,
+						() -> new ReactiveSessionImpl( delegate, options( tenantId ), reactiveConnection )
+				) )
+				.map( s -> new MutinySessionImpl( s, this ) );
 	}
 
 	/**
@@ -110,8 +114,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	Uni<Mutiny.StatelessSession> newStatelessSession() throws HibernateException {
 		SessionCreationOptions options = options();
 		return uni( () -> connection( options.getTenantIdentifier() ) )
-				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveStatelessSessionImpl( delegate, options, reactiveConnection ) ) )
-				.map( s -> new MutinyStatelessSessionImpl(s, this) );
+				.chain( reactiveConnection -> create(
+						reactiveConnection,
+						() -> new ReactiveStatelessSessionImpl( delegate, options, reactiveConnection )
+				) )
+				.map( s -> new MutinyStatelessSessionImpl( s, this ) );
 	}
 
 	private SessionCreationOptions options() {
@@ -125,8 +132,10 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	Uni<Mutiny.StatelessSession> newStatelessSession(String tenantId) {
 		return uni( () -> connection( tenantId ) )
-				.map( reactiveConnection -> new ReactiveStatelessSessionImpl(
-						delegate, options( tenantId ), reactiveConnection ) )
+				.chain( reactiveConnection -> create(
+						reactiveConnection,
+						() -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), reactiveConnection )
+				) )
 				.map( s -> new MutinyStatelessSessionImpl( s, this ) );
 	}
 
@@ -169,7 +178,10 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Mutiny.StatelessSession.class, newStatelessSession(), Mutiny.StatelessSession::close, work, statelessSessionId );
+		return withSession(
+				Mutiny.StatelessSession.class, newStatelessSession(), Mutiny.StatelessSession::close, work,
+				statelessSessionId
+		);
 	}
 
 	@Override
@@ -179,14 +191,10 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return newStatelessSession( tenantId )
-				.chain( session -> {
-					context.put( Mutiny.StatelessSession.class, id, session );
-					return work.apply( session ).eventually( () -> {
-						context.remove( Mutiny.StatelessSession.class, id );
-						return session.close();
-					} );
-				} );
+		return withSession(
+				Mutiny.StatelessSession.class, newStatelessSession( tenantId ), Mutiny.StatelessSession::close, work,
+				id
+		);
 	}
 
 	private<S, T> Uni<T> withSession(

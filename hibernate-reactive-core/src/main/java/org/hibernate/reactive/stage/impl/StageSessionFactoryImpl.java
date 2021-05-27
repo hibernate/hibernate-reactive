@@ -107,8 +107,10 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	CompletionStage<Stage.StatelessSession> newStatelessSession(String tenantId) {
 		return stage( v -> connection( tenantId )
-				.thenApply(
-						connection -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) )
+				.thenCompose( reactiveConnection -> create(
+						reactiveConnection,
+						() -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), reactiveConnection )
+				) )
 				.thenApply( s -> new StageStatelessSessionImpl( s, this ) ) );
 	}
 
@@ -170,11 +172,14 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	@Override
 	public <T> CompletionStage<T> withStatelessSession(Function<Stage.StatelessSession, CompletionStage<T>> work) {
-		Stage.StatelessSession current = context.get(Stage.StatelessSession.class, statelessSessionId);
-		if ( current!=null && current.isOpen() ) {
+		Stage.StatelessSession current = context.get( Stage.StatelessSession.class, statelessSessionId );
+		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Stage.StatelessSession.class, newStatelessSession(), Stage.StatelessSession::close, work, statelessSessionId );
+		return withSession(
+				Stage.StatelessSession.class, newStatelessSession(), Stage.StatelessSession::close, work,
+				statelessSessionId
+		);
 	}
 
 	@Override
@@ -185,16 +190,10 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return newStatelessSession( tenantId ).thenCompose(
-				session -> {
-					context.put( Stage.StatelessSession.class, id, session );
-					return work.apply( session )
-							.handle( this::handler )
-							.thenCompose( handler -> {
-								context.remove( Stage.StatelessSession.class, id );
-								return session.close().thenApply( handler );
-							} );
-				}
+
+		return withSession(
+				Stage.StatelessSession.class, newStatelessSession( tenantId ), Stage.StatelessSession::close, work,
+				sessionId
 		);
 	}
 
