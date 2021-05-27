@@ -303,7 +303,7 @@ public interface Mutiny {
 	 *
 	 * @see org.hibernate.Session
 	 */
-	interface Session {
+	interface Session extends Closeable {
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
@@ -1136,7 +1136,7 @@ public interface Mutiny {
 	 *
 	 * @see org.hibernate.StatelessSession
 	 */
-	interface StatelessSession {
+	interface StatelessSession extends Closeable {
 
 		/**
 		 * Retrieve a row.
@@ -1668,6 +1668,13 @@ public interface Mutiny {
 		 * @return false if {@link #close()} has been called
 		 */
 		boolean isOpen();
+	}
+
+	/**
+	 * An object whose {@link #close()} method returns a {@link Uni}.
+	 */
+	interface Closeable {
+		Uni<Void> close();
 	}
 
 	/**

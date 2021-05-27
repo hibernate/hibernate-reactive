@@ -136,7 +136,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Mutiny.Session.class, newSession(), Mutiny.Session::close, work, sessionId );
+		return withSession( Mutiny.Session.class, newSession(), work, sessionId );
 	}
 
 	@Override
@@ -146,7 +146,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Mutiny.Session.class, newSession( tenantId ), Mutiny.Session::close, work, id );
+		return withSession( Mutiny.Session.class, newSession( tenantId ), work, id );
 	}
 
 	@Override
@@ -155,20 +155,19 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Mutiny.StatelessSession.class, newStatelessSession(), Mutiny.StatelessSession::close, work, statelessSessionId );
+		return withSession( Mutiny.StatelessSession.class, newStatelessSession(), work, statelessSessionId );
 	}
 
-	private<S, T> Uni<T> withSession(
+	private<S extends Mutiny.Closeable, T> Uni<T> withSession(
 			Class<S> sessionType,
 			Uni<S> sessionUni,
-			Function<S, Uni<Void>> closeSession,
 			Function<S, Uni<T>> work,
 			String id) {
 		return sessionUni.chain( session -> Uni.createFrom().voidItem()
 				.invoke( () -> context.put( sessionType, id, session ) )
 				.chain( () -> work.apply( session ) )
 				.eventually( () -> context.remove( sessionType, id ) )
-				.eventually( () -> closeSession.apply( session ) )
+				.eventually(session::close)
 		);
 	}
 
