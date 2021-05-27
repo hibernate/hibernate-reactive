@@ -103,7 +103,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	Uni<Mutiny.StatelessSession> newStatelessSession() throws HibernateException {
 		SessionCreationOptions options = options();
 		return uni( () -> connection( options.getTenantIdentifier() ) )
-				.map( reactiveConnection -> new ReactiveStatelessSessionImpl( delegate, options, reactiveConnection ) )
+				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveStatelessSessionImpl( delegate, options, reactiveConnection ) ) )
 				.map( s -> new MutinyStatelessSessionImpl(s, this) );
 	}
 
@@ -132,19 +132,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
-		Mutiny.Session current = context.get(Mutiny.Session.class, sessionId);
-		if ( current!=null && current.isOpen() ) {
+		Mutiny.Session current = context.get( Mutiny.Session.class, sessionId );
+		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return newSession()
-				.chain( session -> {
-					context.put(Mutiny.Session.class, sessionId, session);
-					return work.apply( session )
-							.eventually( () -> {
-								context.remove(Mutiny.Session.class, sessionId);
-								return session.close();
-							} );
-				} );
+		return withSession( Mutiny.Session.class, newSession(), Mutiny.Session::close, work, sessionId );
 	}
 
 	@Override
@@ -154,31 +146,30 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return newSession( tenantId )
-				.chain( session -> {
-					context.put(Mutiny.Session.class, id, session);
-					return work.apply(session)
-							.eventually( () -> {
-								context.remove(Mutiny.Session.class, id);
-								return session.close();
-							} );
-				} );
+		return withSession( Mutiny.Session.class, newSession( tenantId ), Mutiny.Session::close, work, id );
 	}
 
 	@Override
 	public <T> Uni<T> withStatelessSession(Function<Mutiny.StatelessSession, Uni<T>> work) {
-		Mutiny.StatelessSession current = context.get(Mutiny.StatelessSession.class, statelessSessionId);
-		if ( current!=null && current.isOpen() ) {
+		Mutiny.StatelessSession current = context.get( Mutiny.StatelessSession.class, statelessSessionId );
+		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return newStatelessSession()
-				.chain( session -> {
-					context.put(Mutiny.StatelessSession.class, statelessSessionId, session);
-					return work.apply(session).eventually( () -> {
-						context.remove(Mutiny.StatelessSession.class, statelessSessionId);
-						return session.close();
-					} );
-				} );
+		return withSession( Mutiny.StatelessSession.class, newStatelessSession(), Mutiny.StatelessSession::close, work, statelessSessionId );
+	}
+
+	private<S, T> Uni<T> withSession(
+			Class<S> sessionType,
+			Uni<S> sessionUni,
+			Function<S, Uni<Void>> closeSession,
+			Function<S, Uni<T>> work,
+			String id) {
+		return sessionUni.chain( session -> Uni.createFrom().voidItem()
+				.invoke( () -> context.put( sessionType, id, session ) )
+				.chain( () -> work.apply( session ) )
+				.eventually( () -> context.remove( sessionType, id ) )
+				.eventually( () -> closeSession.apply( session ) )
+		);
 	}
 
 	@Override
