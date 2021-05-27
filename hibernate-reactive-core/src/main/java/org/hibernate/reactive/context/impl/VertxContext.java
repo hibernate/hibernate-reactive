@@ -24,9 +24,13 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
         return vertxInstance.getVertx().getOrCreateContext();
     }
 
+    private io.vertx.core.Context currentContext() {
+        return Vertx.currentContext();
+    }
+
     @Override
     public void injectServices(ServiceRegistryImplementor serviceRegistry) {
-        vertxInstance = serviceRegistry.getService(VertxInstance.class);
+        vertxInstance = serviceRegistry.getService( VertxInstance.class );
     }
 
     @Override
@@ -36,12 +40,21 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 
     @Override
     public <T> T get(Class<T> key, String id) {
-        return getOrCreateContext().getLocal( id );
+        final io.vertx.core.Context context = currentContext();
+        if ( context != null ) {
+            return context.getLocal( id );
+        }
+        else {
+            return null;
+        }
     }
 
     @Override
     public void remove(Class<?> key, String id) {
-        getOrCreateContext().removeLocal( id );
+        final io.vertx.core.Context context = currentContext();
+        if ( context != null ) {
+            context.removeLocal( id );
+        }
     }
 
     @Override
