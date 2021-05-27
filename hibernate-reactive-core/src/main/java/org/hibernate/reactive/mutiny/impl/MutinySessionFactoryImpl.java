@@ -100,6 +100,13 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		);
 	}
 
+	public Mutiny.StatelessSession openStatelessSession(String tenantId) {
+		return new MutinyStatelessSessionImpl(
+				new ReactiveStatelessSessionImpl( delegate, options( tenantId ), proxyConnection( tenantId ) ),
+				this
+		);
+	}
+
 	Uni<Mutiny.StatelessSession> newStatelessSession() throws HibernateException {
 		SessionCreationOptions options = options();
 		return uni( () -> connection( options.getTenantIdentifier() ) )
@@ -114,6 +121,13 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	private SessionCreationOptions options(String tenantIdentifier) {
 		return (SessionCreationOptions) new SessionFactoryImpl.SessionBuilderImpl<>( delegate )
 				.tenantIdentifier( tenantIdentifier );
+	}
+
+	Uni<Mutiny.StatelessSession> newStatelessSession(String tenantId) {
+		return uni( () -> connection( tenantId ) )
+				.map( reactiveConnection -> new ReactiveStatelessSessionImpl(
+						delegate, options( tenantId ), reactiveConnection ) )
+				.map( s -> new MutinyStatelessSessionImpl( s, this ) );
 	}
 
 	private CompletionStage<ReactiveConnection> connection(String tenantId) {
@@ -156,6 +170,23 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 			return work.apply( current );
 		}
 		return withSession( Mutiny.StatelessSession.class, newStatelessSession(), Mutiny.StatelessSession::close, work, statelessSessionId );
+	}
+
+	@Override
+	public <T> Uni<T> withStatelessSession(String tenantId, Function<Mutiny.StatelessSession, Uni<T>> work) {
+		String id = statelessSessionId + '/' + tenantId;
+		Mutiny.StatelessSession current = context.get( Mutiny.StatelessSession.class, id );
+		if ( current != null && current.isOpen() ) {
+			return work.apply( current );
+		}
+		return newStatelessSession( tenantId )
+				.chain( session -> {
+					context.put( Mutiny.StatelessSession.class, id, session );
+					return work.apply( session ).eventually( () -> {
+						context.remove( Mutiny.StatelessSession.class, id );
+						return session.close();
+					} );
+				} );
 	}
 
 	private<S, T> Uni<T> withSession(

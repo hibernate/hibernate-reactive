@@ -1556,6 +1556,20 @@ public interface Stage {
 		StatelessSession openStatelessSession();
 
 		/**
+		 * Obtain a {@link StatelessSession reactive stateless session}.
+		 * <p>
+		 * The underlying database connection is obtained lazily when
+		 * the returned {@link StatelessSession} needs to access the
+		 * database.
+		 * <p>
+		 * The client must explicitly close the session by calling
+		 * {@link StatelessSession#close()}.
+		 *
+		 * @param tenantId the id of the tenant
+		 */
+		StatelessSession openStatelessSession(String tenantId);
+
+		/**
 		 * Perform work using a {@link Session reactive session}.
 		 * <p>
 		 * <il>
@@ -1642,6 +1656,25 @@ public interface Stage {
 		 *             the result of the work as a {@link CompletionStage}.
 		 */
 		<T> CompletionStage<T> withStatelessSession(Function<StatelessSession, CompletionStage<T>> work);
+
+		/**
+		 * Perform work using a {@link StatelessSession stateless session}.
+		 * <p>
+		 * <il>
+		 * <li>If there is already a stateless session associated with the
+		 * current reactive stream, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no stateless session associated with the
+		 * current stream, a new stateless session will be created.
+		 * </il>
+		 * <p>
+		 * The session will be closed automatically.
+		 *
+		 * @param tenantId the id of the tenant
+		 * @param work a function which accepts the session and returns
+		 *             the result of the work as a {@link CompletionStage}.
+		 */
+		<T> CompletionStage<T> withStatelessSession(String tenantId, Function<StatelessSession, CompletionStage<T>> work);
 
 		/**
 		 * @return an instance of {@link CriteriaBuilder} for creating

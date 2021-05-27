@@ -77,6 +77,14 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		);
 	}
 
+	@Override
+	public Stage.StatelessSession openStatelessSession(String tenantId) {
+		return new StageStatelessSessionImpl(
+				new ReactiveStatelessSessionImpl( delegate, options( tenantId ), proxyConnection( tenantId ) ),
+				this
+		);
+	}
+
 	CompletionStage<Stage.Session> newSession() {
 		SessionCreationOptions options = options();
 		return stage( v -> connection( options.getTenantIdentifier() )
@@ -95,6 +103,13 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		return stage( v -> connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options, connection ) ) )
 				.thenApply( s -> new StageStatelessSessionImpl(s, this) ) );
+	}
+
+	CompletionStage<Stage.StatelessSession> newStatelessSession(String tenantId) {
+		return stage( v -> connection( tenantId )
+				.thenApply(
+						connection -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) )
+				.thenApply( s -> new StageStatelessSessionImpl( s, this ) ) );
 	}
 
 	/**
@@ -160,6 +175,27 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 			return work.apply( current );
 		}
 		return withSession( Stage.StatelessSession.class, newStatelessSession(), Stage.StatelessSession::close, work, statelessSessionId );
+	}
+
+	@Override
+	public <T> CompletionStage<T> withStatelessSession(String tenantId,
+			Function<Stage.StatelessSession, CompletionStage<T>> work) {
+		String id = statelessSessionId + '/' + tenantId;
+		Stage.StatelessSession current = context.get( Stage.StatelessSession.class, id );
+		if ( current != null && current.isOpen() ) {
+			return work.apply( current );
+		}
+		return newStatelessSession( tenantId ).thenCompose(
+				session -> {
+					context.put( Stage.StatelessSession.class, id, session );
+					return work.apply( session )
+							.handle( this::handler )
+							.thenCompose( handler -> {
+								context.remove( Stage.StatelessSession.class, id );
+								return session.close().thenApply( handler );
+							} );
+				}
+		);
 	}
 
 	private <S, T> CompletionStage<T> withSession(
