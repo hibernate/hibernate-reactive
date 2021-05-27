@@ -817,6 +817,20 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		} ) );
 	}
 
+	@Test
+	public void testExceptionInWithStatelessSession(TestContext context) {
+		final Stage.StatelessSession[] savedSession = new Stage.StatelessSession[1];
+		test( context, getSessionFactory().withStatelessSession( session -> {
+			context.assertTrue( session.isOpen() );
+			savedSession[0] = session;
+			throw new RuntimeException( "No Panic: This is just a test" );
+		} ).handle( (o, t) -> {
+			context.assertNotNull( t );
+			context.assertFalse( savedSession[0].isOpen(), "Session should be closed" );
+			return null;
+		} ) );
+	}
+
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
 		context.assertNotNull( actual );
 		context.assertEquals( expected.getId(), actual.getId() );
