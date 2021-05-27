@@ -17,11 +17,13 @@ import org.junit.Test;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.PersistenceException;
 import javax.persistence.Table;
 import javax.persistence.Version;
 import javax.persistence.metamodel.EntityType;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -774,6 +776,23 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						return s.createQuery("from GuineaPig").getResultList();
 					} ) );
 		} ) );
+	}
+
+	@Test
+	public void testDupeException(TestContext context) {
+		test(
+				context,
+				getSessionFactory()
+						.withTransaction((s, t) -> s.persist( new GuineaPig( 10, "Tulip" ) ))
+						.thenCompose(v -> getSessionFactory()
+								.withTransaction((s, t) -> s.persist( new GuineaPig( 10, "Tulip" ) ))
+						).handle((i, t) -> {
+					context.assertNotNull(t);
+					context.assertTrue(t instanceof CompletionException);
+					context.assertTrue(t.getCause() instanceof PersistenceException);
+					return null;
+				})
+		);
 	}
 
 	@Entity(name="GuineaPig")
