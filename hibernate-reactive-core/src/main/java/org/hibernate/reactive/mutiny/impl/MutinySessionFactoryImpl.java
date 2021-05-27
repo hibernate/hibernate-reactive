@@ -73,14 +73,31 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	Uni<Mutiny.Session> newSession() throws HibernateException {
 		SessionCreationOptions options = options();
 		return uni( () -> connection( options.getTenantIdentifier() ) )
-				.map( reactiveConnection -> new ReactiveSessionImpl( delegate, options, reactiveConnection ) )
+				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveSessionImpl( delegate, options, reactiveConnection ) ) )
 				.map( s -> new MutinySessionImpl(s, this) );
 	}
 
 	Uni<Mutiny.Session> newSession(String tenantId) throws HibernateException {
 		return uni( () -> connection( tenantId ) )
-				.map( reactiveConnection -> new ReactiveSessionImpl( delegate, options( tenantId ), reactiveConnection ) )
+				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), reactiveConnection ) ) )
 				.map( s -> new MutinySessionImpl(s, this) );
+	}
+
+	/**
+	 * Close the connection if something goes wrong during the creation of the session
+	 */
+	private <S> Uni<S> create(ReactiveConnection connection, Supplier<S> supplier) {
+		try {
+			return Uni.createFrom().item( supplier.get() );
+		}
+		catch (Throwable t) {
+			return Uni.createFrom()
+					.completionStage( connection.close() )
+					// There has been an error already,
+					// if another happens while closing the connection we will ignore it
+					.onItemOrFailure()
+					.transformToUni( (unused, throwable) -> Uni.createFrom().failure( t ) );
+		}
 	}
 
 	@Override

@@ -5,9 +5,11 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.metamodel.Metamodel;
 
@@ -23,6 +25,7 @@ import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 import org.hibernate.reactive.stage.Stage;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -78,21 +81,40 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	CompletionStage<Stage.Session> newSession() {
 		SessionCreationOptions options = options();
 		return stage( v -> connection( options.getTenantIdentifier() )
-				.thenApply( connection -> new ReactiveSessionImpl( delegate, options, connection ) )
+				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options, connection ) ) )
 				.thenApply( s -> new StageSessionImpl(s, this) ) );
 	}
 
 	CompletionStage<Stage.Session> newSession(String tenantId) {
 		return stage( v -> connection( tenantId )
-				.thenApply( connection -> new ReactiveSessionImpl( delegate, options( tenantId ), connection ) )
+				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), connection ) ) )
 				.thenApply( s -> new StageSessionImpl(s, this) ) );
 	}
 
 	CompletionStage<Stage.StatelessSession> newStatelessSession() {
 		SessionCreationOptions options = options();
 		return stage( v -> connection( options.getTenantIdentifier() )
-				.thenApply( connection -> new ReactiveStatelessSessionImpl( delegate, options, connection ) )
+				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options, connection ) ) )
 				.thenApply( s -> new StageStatelessSessionImpl(s, this) ) );
+	}
+
+	/**
+	 * Close the connection if something goes wrong during the creation of the session
+ 	 */
+	private <S> CompletionStage<S> create(ReactiveConnection connection, Supplier<S> supplier) {
+		try {
+			return completedFuture( supplier.get() );
+		}
+		catch (Throwable t) {
+			CompletableFuture<S> future = new CompletableFuture<>();
+			connection.close().handle( (unused, closingException) -> {
+				// There has been an error already,
+				// if another happens while closing the connection we will ignore it
+				future.completeExceptionally( t );
+				return null;
+			} );
+			return future;
+		}
 	}
 
 	private SessionCreationOptions options() {
