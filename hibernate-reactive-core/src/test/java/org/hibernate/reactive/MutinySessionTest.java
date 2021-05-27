@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.PersistenceException;
 import javax.persistence.Table;
 import javax.persistence.metamodel.EntityType;
 
@@ -515,6 +516,22 @@ public class MutinySessionTest extends BaseReactiveTest {
 						return s.createQuery("from GuineaPig").getResultList();
 					} ) );
 		} ) );
+	}
+
+	@Test
+	public void testDupeException(TestContext context) {
+		test(
+				context,
+				getMutinySessionFactory()
+						.withTransaction((s, t) -> s.persist( new GuineaPig( 10, "Tulip" ) ))
+				.chain(() -> getMutinySessionFactory()
+						.withTransaction((s, t) -> s.persist( new GuineaPig( 10, "Tulip" ) ))
+				).onItemOrFailure().invoke((i, t) -> {
+					context.assertNotNull(t);
+					context.assertTrue(t instanceof PersistenceException);
+				})
+				.onFailure().recoverWithNull()
+		);
 	}
 
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
