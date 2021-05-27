@@ -565,6 +565,22 @@ public class MutinySessionTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testExceptionInWithStatelessSession(TestContext context) {
+		final Mutiny.StatelessSession[] savedSession = new Mutiny.StatelessSession[1];
+		test( context, getMutinySessionFactory()
+				.withStatelessSession( session -> {
+					context.assertTrue( session.isOpen() );
+					savedSession[0] = session;
+					throw new RuntimeException( "No Panic: This is just a test" );
+				} )
+				.onItem().invoke( () -> context.fail( "Test should throw an exception" ) )
+				.onFailure()
+				.recoverWithNull()
+				.invoke( () -> context.assertFalse( savedSession[0].isOpen(), "Session should be closed" ) )
+		);
+	}
+
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
 		context.assertNotNull( actual );
 		context.assertEquals( expected.getId(), actual.getId() );
