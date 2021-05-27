@@ -9,11 +9,11 @@
 //DEPS javax.persistence:javax.persistence-api:2.2
 //DEPS org.hibernate.reactive:hibernate-reactive-core:1.0.0.CR5
 //DEPS org.assertj:assertj-core:3.13.2
-//DEPS io.vertx:vertx-pg-client:4.1.0.CR1
-//DEPS io.vertx:vertx-mysql-client:4.1.0.CR1
-//DEPS io.vertx:vertx-db2-client:4.1.0.CR1
-//DEPS io.vertx:vertx-sql-client:4.1.0.CR1
-//DEPS io.vertx:vertx-unit:4.1.0.CR1
+//DEPS io.vertx:vertx-pg-client:4.1.0.CR2
+//DEPS io.vertx:vertx-mysql-client:4.1.0.CR2
+//DEPS io.vertx:vertx-db2-client:4.1.0.CR2
+//DEPS io.vertx:vertx-sql-client:4.1.0.CR2
+//DEPS io.vertx:vertx-unit:4.1.0.CR2
 //
 //
 
