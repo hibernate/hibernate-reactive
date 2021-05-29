@@ -38,15 +38,22 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
 	private final Context context;
-	private final String sessionId;
-	private final String statelessSessionId;
+
+	/**
+	 * We store the current sessions in the Context for simplified use;
+	 * these are the constant keys, including the SessionFactory's UUID
+	 * for correct scoping.
+	 * In case of multi-tenancy these will need to be used as prefixes.
+	 */
+	private final String contextKeyForSession;
+	private final String contextKeyForStatelessSession;
 
 	public MutinySessionFactoryImpl(SessionFactoryImpl delegate) {
 		this.delegate = delegate;
 		context = delegate.getServiceRegistry().getService( Context.class );
 		connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
-		sessionId = Mutiny.Session.class.getName() + '/' + delegate.getUuid();
-		statelessSessionId = Mutiny.StatelessSession.class.getName() + '/' + delegate.getUuid();
+		contextKeyForSession = Mutiny.Session.class.getName() + '/' + delegate.getUuid();
+		contextKeyForStatelessSession = Mutiny.StatelessSession.class.getName() + '/' + delegate.getUuid();
 	}
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
@@ -132,16 +139,16 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
-		Mutiny.Session current = context.get( Mutiny.Session.class, sessionId );
+		Mutiny.Session current = context.get( Mutiny.Session.class, contextKeyForSession );
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Mutiny.Session.class, newSession(), work, sessionId );
+		return withSession( Mutiny.Session.class, newSession(), work, contextKeyForSession );
 	}
 
 	@Override
 	public <T> Uni<T> withSession(String tenantId, Function<Mutiny.Session, Uni<T>> work) {
-		String id = sessionId + '/' + tenantId;
+		String id = contextKeyForSession + '/' + tenantId;
 		Mutiny.Session current = context.get(Mutiny.Session.class, id);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
@@ -151,11 +158,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withStatelessSession(Function<Mutiny.StatelessSession, Uni<T>> work) {
-		Mutiny.StatelessSession current = context.get( Mutiny.StatelessSession.class, statelessSessionId );
+		Mutiny.StatelessSession current = context.get( Mutiny.StatelessSession.class, contextKeyForStatelessSession );
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Mutiny.StatelessSession.class, newStatelessSession(), work, statelessSessionId );
+		return withSession( Mutiny.StatelessSession.class, newStatelessSession(), work, contextKeyForStatelessSession );
 	}
 
 	private<S extends Mutiny.Closeable, T> Uni<T> withSession(
