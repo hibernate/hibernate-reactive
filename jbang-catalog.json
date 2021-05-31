@@ -1,0 +1,13 @@
+{
+  "catalogs": {},
+  "aliases": {
+    "example": {
+      "script-ref": "tooling/jbang/Example.java",
+      "description": "An application example. Starts PostgreSQL using Testcontainers and Docker"
+    },
+    "testcase": {
+      "script-ref": "tooling/jbang/ReactiveTest.java",
+      "description": "A Hibernate Reactive JUnit test using Docker, Testcontainers and Vert.x Unit"
+    }
+  }
+}

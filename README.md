@@ -66,7 +66,7 @@ everything you need to know to get started, including:
 We recommend you start there!
 
 The [Vert.x and Hibernate Reactive How-to][vertx-hr] explains how to use
-Hibernate in Vert.x.
+Hibernate Reactive in Vert.x.
 
 [introduction]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc
 
@@ -96,6 +96,25 @@ A list of [quickstarts][Quarkus quickstarts] for Quarkus is available on GitHub:
 
 Or you can [generate a new Quarks project](https://code.quarkus.io/?g=org.acme&a=code-with-quarkus&v=1.0.0-SNAPSHOT&b=MAVEN&s=r1s&cn=code.quarkus.io)
 that uses the Hibernate Reactive extension and start coding right away.
+
+## Examples using JBang
+
+With [JBang](https://www.jbang.dev/) you can run one of the examples available in the catalog
+without having to clone the repository or setup the project in the IDE.
+Once you have downloaded JBang, the list of examples is available via: 
+```
+jbang alias list hibernate/hibernate-reactive
+```
+
+If you want to run one of the example (in this case the one called `example`), you can do it with:
+```
+jbang example@hibernate/hibernate-reactive
+```
+
+or you can [open it in your editor](https://github.com/jbangdev/jbang#editing) (IntelliJ IDEA in this case) with:
+```
+jbang edit --open=idea testcase@hibernate/hibernate-reactive
+```
 
 ## Gradle build
 
