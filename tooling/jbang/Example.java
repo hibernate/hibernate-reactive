@@ -5,15 +5,21 @@
  */
 
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS javax.persistence:javax.persistence-api:2.2
-//DEPS org.hibernate.reactive:hibernate-reactive-core:1.0.0.CR5
-//DEPS org.hibernate.validator:hibernate-validator:6.1.5.Final
-//DEPS io.vertx:vertx-pg-client:4.1.0.CR2
-//DEPS io.vertx:vertx-mysql-client:4.1.0.CR2
-//DEPS io.vertx:vertx-db2-client:4.1.0.CR2
-//DEPS io.vertx:vertx-sql-client:4.1.0.CR2
-//DEPS io.vertx:vertx-unit:4.1.0.CR2
+//DEPS io.vertx:vertx-pg-client:${vertx.version:4.1.0.CR2}
+//DEPS io.vertx:vertx-mysql-client:${vertx.version:4.1.0.CR2}
+//DEPS io.vertx:vertx-db2-client:${vertx.version:4.1.0.CR2}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:1.0.0.CR5}
+//DEPS org.testcontainers:postgresql:1.15.3
+//DEPS org.testcontainers:mysql:1.15.3
+//DEPS org.testcontainers:db2:1.15.3
+//DEPS org.testcontainers:mariadb:1.15.3
+//DEPS org.testcontainers:cockroachdb:1.15.3
 //
+//// These dependencies are for Testcontainers and
+/// you don't need them to use Hibernate Reactive
+//DEPS org.postgresql:postgresql:42.2.16
+//DEPS mysql:mysql-connector-java:8.0.25
+//DEPS org.mariadb.jdbc:mariadb-java-client:2.7.3
 //
 
 import java.time.LocalDate;
@@ -26,9 +32,6 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Past;
-import javax.validation.constraints.Size;
 
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -36,6 +39,8 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.Settings;
+
+import org.testcontainers.containers.PostgreSQLContainer;
 
 import static java.lang.System.out;
 import static java.time.Month.JANUARY;
@@ -45,63 +50,42 @@ import static javax.persistence.CascadeType.PERSIST;
 import static javax.persistence.FetchType.LAZY;
 
 /**
- * JBang compatible example for Hibernate Reactive.
+ * <a hreaf="https://www.jbang.dev/">JBang</a> compatible example for Hibernate Reactive.
  * <p>
- * We expect the selected database (the default is PostgreSQL)
- * to be up and running. Instructions on how to start the databases
- * using Podman or Docker are in the
- * <a hreaf="https://github.com/hibernate/hibernate-reactive/blob/main/podman.md">podman.md</a>
- * file in the Hibernate Reactive project on GitHub.
+ * It uses Testcontainers to start PostgreSQL on the default port.
+ * </p>
+ * <p>
+ *     Instructions on how to start the containers using Podman or Docker are available
+ *     in the <a hreaf="https://github.com/hibernate/hibernate-reactive/blob/main/podman.md">podman.md</a>
+ *     file on GitHub.
  * </p>
  * <p>
  * Usage example:
  *     <dl>
  *         <dt>1. Download JBang</dt>
  *         <dd>See <a hreaf="https://www.jbang.dev/download">https://www.jbang.dev/download</a></dd>
- *         <dt>2. Start the database with the right credentials</dt>
- *         <dd>
- *             Using Podman or Docker (you can replace {@code podman} with {@code docker}):
- *             <pre>
- * podman run --rm --name HibernateTestingPGSQL \
- *     -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact \
- *     -p 5432:5432 postgres:13.2
- *             </pre>
- *         </dd>
- *         <dt>3. Run the test with JBang</dt>
+ *         <dt>2. Run the example with JBang</dt>
  *         <dd>
  *             <pre>jbang Example.java</pre>
  *         </dd>
- *         <dt>4. (Optional) Edit the file (with IntelliJ IDEA for example):</dt>
+ *         <dt>3. (Optional) Edit the file (with IntelliJ IDEA for example):</dt>
  *         <dd>
  *             <pre>jbang edit --open=idea Example.java</pre>
  *         </dd>
  *     </dl>
  * <p/>
- *
- * @see <a href="https://www.jbang.dev/">JBang</a>
  */
 public class Example {
 
 	/**
-	 * The default URLs for the supported databases
+	 * We are providing an example for PostgreSQL, but you can start one of the other databases and change
+	 * the {@link Settings#URL} configuration accordingly.
+	 * Examples of URL for each database are available in the {@link Database} enum.
 	 */
-	enum Database {
-		POSTGRESQL( "jdbc:postgresql://localhost:5432/hreact?user=hreact&password=hreact" ),
-		MYSQL( "jdbc:mysql://localhost:3306/hreact?user=hreact&password=hreact&serverTimezone=UTC" ),
-		MARIADB( "jdbc:mariadb://localhost:3306/hreact?user=hreact&password=hreact&serverTimezone=UTC" ),
-		DB2( "jdbc:db2://localhost:50000/hreact:user=hreact;password=hreact;" ),
-		COCKROACHDB( "jdbc:cockroachdb://localhost:26257/postgres?sslmode=disable&user=root" );
-
-		private String url;
-
-		Database(String url) {
-			this.url = url;
-		}
-
-		public String getUrl() {
-			return url;
-		}
-	}
+	static PostgreSQLContainer<?> database = new PostgreSQLContainer( "postgres:13.2" )
+			.withUsername( "hreact" )
+			.withPassword( "hreact" )
+			.withDatabaseName( "hreact" );
 
 	/**
 	 * Create the {@link Configuration} for the {@link Mutiny.SessionFactory}.
@@ -109,7 +93,10 @@ public class Example {
 	private static Configuration createConfiguration() {
 		Configuration configuration = new Configuration();
 
-		configuration.setProperty( Settings.URL, Database.POSTGRESQL.getUrl() );
+		// URL to a running database.
+		// Testcontainers will start the database on the first available port
+		configuration.setProperty( Settings.URL, Database.POSTGRESQL
+				.getUrl( database.getMappedPort( 5432 ) ) );
 
 		// (Optional) Override default credentials
 		// configuration.setProperty( Settings.USER, "hreact" );
@@ -141,6 +128,9 @@ public class Example {
 
 	public static void main(String[] args) {
 		out.println( "== Mutiny API Example ==" );
+		out.println();
+		out.println("Starting database with Testcontainers");
+		database.start();
 
 		// define some test data
 		Author author1 = new Author( "Iain M. Banks" );
@@ -161,11 +151,16 @@ public class Example {
 					// wait for it to finish
 					.await().indefinitely();
 
+			out.println();
+			out.println( "Looking for the book \"" + book1.getTitle() + "\"..." );
 			factory.withSession(
 					// retrieve a Book
 					session -> session.find( Book.class, book1.getId() )
-							// print its title
-							.invoke( book -> out.println( book.getTitle() + " is a great book!" ) )
+							// author is a lazy association, we need to fetch it first if we want to use it
+							.chain( book -> session.fetch( book.getAuthor() )
+									// print its title and author
+									.invoke( author -> out.println( "FOUND: \"" + book.getTitle() + "\"" + " by " + author.getName() + " is a great book!" ) )
+							)
 			)
 					// wait for it to finish
 					.await().indefinitely();
@@ -173,7 +168,7 @@ public class Example {
 	}
 
 	/**
-	 * Example of a class representing an entity.
+	 * Example of classes representing entities.
 	 * <p>
 	 * If you create new entities, be sure to add them in {@link #createConfiguration()}.
 	 * For example:
@@ -188,8 +183,6 @@ public class Example {
 		@GeneratedValue
 		private Integer id;
 
-		@NotNull
-		@Size(max = 100)
 		private String name;
 
 		@OneToMany(mappedBy = "author", cascade = PERSIST)
@@ -222,19 +215,13 @@ public class Example {
 		@GeneratedValue
 		private Integer id;
 
-		@Size(min = 13, max = 13)
 		private String isbn;
 
-		@NotNull
-		@Size(max = 100)
 		private String title;
 
 		@Basic(fetch = LAZY)
-		@NotNull
-		@Past
 		private LocalDate published;
 
-		@NotNull
 		@ManyToOne(fetch = LAZY)
 		private Author author;
 
@@ -266,6 +253,47 @@ public class Example {
 
 		LocalDate getPublished() {
 			return published;
+		}
+	}
+
+	/**
+	 * Show an example of different URL strings for each supported database.
+	 * <p>
+	 *     You can start the database using Testcontainers or following the instructions
+	 *     in the <a hreaf="https://github.com/hibernate/hibernate-reactive/blob/main/podman.md">podman.md</a>
+	 *     file on the Hibernate Reactive repository on GitHub.
+	 * </p>
+	 */
+	enum Database {
+		POSTGRESQL( "postgresql://localhost:5432/hreact?user=hreact&password=hreact" ),
+		MYSQL( "mysql://localhost:3306/hreact?user=hreact&password=hreact&serverTimezone=UTC" ),
+		MARIADB( "mariadb://localhost:3306/hreact?user=hreact&password=hreact&serverTimezone=UTC" ),
+		DB2( "db2://localhost:50000/hreact:user=hreact;password=hreact;" ),
+		COCKROACHDB( "cockroachdb://localhost:26257/postgres?sslmode=disable&user=root" );
+
+		private String url;
+
+		Database(String url) {
+			this.url = url;
+		}
+
+		/**
+		 * The URL string on the default port.
+		 *
+		 * @return a URL string value for the property {@link Settings#URL}
+		 */
+		public String getUrl() {
+			return url;
+		}
+
+		/**
+		 * The URL for a database that's not listening on the default port.
+		 *
+		 * @param port the port of the database to connect to
+		 * @return @return a URL string value for the property {@link Settings#URL}
+		 */
+		public String getUrl(int port) {
+			return url.replaceAll( "localhost:\\d+", "localhost:" + port );
 		}
 	}
 }
