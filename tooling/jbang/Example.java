@@ -5,10 +5,6 @@
  */
 
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.vertx:vertx-pg-client:${vertx.version:4.1.0.CR2}
-//DEPS io.vertx:vertx-mysql-client:${vertx.version:4.1.0.CR2}
-//DEPS io.vertx:vertx-db2-client:${vertx.version:4.1.0.CR2}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:1.0.0.CR5}
 //DEPS org.testcontainers:postgresql:1.15.3
 //DEPS org.testcontainers:mysql:1.15.3
 //DEPS org.testcontainers:db2:1.15.3
@@ -21,6 +17,10 @@
 //DEPS mysql:mysql-connector-java:8.0.25
 //DEPS org.mariadb.jdbc:mariadb-java-client:2.7.3
 //
+//DEPS io.vertx:vertx-pg-client:${vertx.version:4.1.0}
+//DEPS io.vertx:vertx-mysql-client:${vertx.version:4.1.0}
+//DEPS io.vertx:vertx-db2-client:${vertx.version:4.1.0}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:1.0.0.CR6}
 
 import java.time.LocalDate;
 import java.util.ArrayList;
