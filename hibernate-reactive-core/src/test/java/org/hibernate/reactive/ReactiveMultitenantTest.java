@@ -15,6 +15,7 @@ import javax.persistence.Version;
 import org.hibernate.LockMode;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
@@ -96,6 +97,46 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
 						.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) )
+		);
+	}
+
+	@Test
+	public void testTenantSelectionStatelessSession(TestContext context) {
+		TENANT_RESOLVER.setTenantIdentifier( TENANT_1 );
+		Stage.StatelessSession t1Session = getSessionFactory().openStatelessSession();
+		test( context, t1Session
+				.createNativeQuery( "select current_database()" )
+				.getSingleResult()
+				.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
+				.thenAccept( unused -> {
+					TENANT_RESOLVER.setTenantIdentifier( TENANT_2 );
+					t1Session.close();
+				} )
+				.thenCompose( session -> getSessionFactory().openStatelessSession()
+						.createNativeQuery( "select current_database()" )
+						.getSingleResult()
+						.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) )
+		);
+	}
+
+	@Test
+	public void testTenantSelectionStatelessSessionMutiny(TestContext context) {
+		TENANT_RESOLVER.setTenantIdentifier( TENANT_1 );
+		Mutiny.StatelessSession t1Session = getMutinySessionFactory().openStatelessSession();
+		test( context, t1Session
+				.createNativeQuery( "select current_database()" )
+				.getSingleResult()
+				.invoke( result -> {
+					context.assertEquals( TENANT_1.getDbName(), result );
+					TENANT_RESOLVER.setTenantIdentifier( TENANT_2 );
+				} )
+				.eventually( t1Session::close )
+				.replaceWith( () -> getMutinySessionFactory().openStatelessSession() )
+				.call( t2Session -> t2Session
+						.createNativeQuery( "select current_database()" )
+						.getSingleResult()
+						.invoke( result -> context.assertEquals( TENANT_2.getDbName(), result ) )
+						.call( t2Session::close ) )
 		);
 	}
 
