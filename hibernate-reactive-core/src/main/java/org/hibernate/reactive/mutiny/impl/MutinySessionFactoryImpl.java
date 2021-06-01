@@ -187,6 +187,8 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withStatelessSession(String tenantId, Function<Mutiny.StatelessSession, Uni<T>> work) {
+		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
+		Objects.requireNonNull( work, "parameter 'work' is required" );
 		String id = contextKeyForStatelessSession + '/' + tenantId;
 		Mutiny.StatelessSession current = context.get( Mutiny.StatelessSession.class, id );
 		if ( current != null && current.isOpen() ) {
