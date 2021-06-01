@@ -108,10 +108,8 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 				.createNativeQuery( "select current_database()" )
 				.getSingleResult()
 				.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
-				.thenAccept( unused -> {
-					TENANT_RESOLVER.setTenantIdentifier( TENANT_2 );
-					t1Session.close();
-				} )
+				.thenCompose( unused -> t1Session.close() )
+				.thenAccept( unused -> TENANT_RESOLVER.setTenantIdentifier( TENANT_2 ) )
 				.thenCompose( session -> getSessionFactory().openStatelessSession()
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
@@ -126,11 +124,9 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 		test( context, t1Session
 				.createNativeQuery( "select current_database()" )
 				.getSingleResult()
-				.invoke( result -> {
-					context.assertEquals( TENANT_1.getDbName(), result );
-					TENANT_RESOLVER.setTenantIdentifier( TENANT_2 );
-				} )
+				.invoke( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
 				.eventually( t1Session::close )
+				.invoke( result -> TENANT_RESOLVER.setTenantIdentifier( TENANT_2 ) )
 				.replaceWith( () -> getMutinySessionFactory().openStatelessSession() )
 				.call( t2Session -> t2Session
 						.createNativeQuery( "select current_database()" )
