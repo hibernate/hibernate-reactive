@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -150,6 +151,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	@Override
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
+		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Stage.Session current = context.get(Stage.Session.class, sessionId);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
@@ -159,6 +161,8 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	@Override
 	public <T> CompletionStage<T> withSession(String tenantId, Function<Stage.Session, CompletionStage<T>> work) {
+		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
+		Objects.requireNonNull( work, "parameter 'work' is required" );
 		String id = sessionId + '/' + tenantId;
 		Stage.Session current = context.get(Stage.Session.class, id);
 		if ( current!=null && current.isOpen() ) {
@@ -169,6 +173,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	@Override
 	public <T> CompletionStage<T> withStatelessSession(Function<Stage.StatelessSession, CompletionStage<T>> work) {
+		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Stage.StatelessSession current = context.get(Stage.StatelessSession.class, statelessSessionId);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
@@ -177,8 +182,9 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	}
 
 	@Override
-	public <T> CompletionStage<T> withStatelessSession(String tenantId,
-			Function<Stage.StatelessSession, CompletionStage<T>> work) {
+	public <T> CompletionStage<T> withStatelessSession(String tenantId, Function<Stage.StatelessSession, CompletionStage<T>> work) {
+		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
+		Objects.requireNonNull( work, "parameter 'work' is required" );
 		String id = statelessSessionId + '/' + tenantId;
 		Stage.StatelessSession current = context.get( Stage.StatelessSession.class, id );
 		if ( current != null && current.isOpen() ) {
