@@ -107,8 +107,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	CompletionStage<Stage.StatelessSession> newStatelessSession(String tenantId) {
 		return stage( v -> connection( tenantId )
-				.thenApply(
-						connection -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) )
+				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) ) )
 				.thenApply( s -> new StageStatelessSessionImpl( s, this ) ) );
 	}
 
