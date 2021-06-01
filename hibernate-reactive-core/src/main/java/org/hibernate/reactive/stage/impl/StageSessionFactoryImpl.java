@@ -157,7 +157,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Stage.Session.class, newSession(), Stage.Session::close, work, sessionId );
+		return withSession( Stage.Session.class, newSession(), work, sessionId );
 	}
 
 	@Override
@@ -167,7 +167,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Stage.Session.class, newSession( tenantId ), Stage.Session::close, work, id );
+		return withSession( Stage.Session.class, newSession( tenantId ), work, id );
 	}
 
 	@Override
@@ -190,17 +190,15 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-
 		return withSession(
 				Stage.StatelessSession.class, newStatelessSession( tenantId ), Stage.StatelessSession::close, work,
 				sessionId
 		);
 	}
 
-	private <S, T> CompletionStage<T> withSession(
+	private <S extends Stage.Closeable, T> CompletionStage<T> withSession(
 			Class<S> sessionType,
 			CompletionStage<S> sessionStage,
-			Function<S, CompletionStage<Void>> closeSession,
 			Function<S, CompletionStage<T>> work,
 			String sessionId) {
 		return sessionStage.thenCompose( session -> {
@@ -210,7 +208,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 					.handle( this::handler )
 					.thenCompose( handler -> {
 						context.remove( sessionType, sessionId );
-						return closeSession.apply( session )
+						return session.close()
 								// Using .handle (instead of .thenApply(handler) because
 								// I want to rethrow the original exception in case an error
 								// occurs while closing the session

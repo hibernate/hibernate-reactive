@@ -5,11 +5,12 @@
  */
 package org.hibernate.reactive.context.impl;
 
-import io.vertx.core.Vertx;
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.ServiceRegistryAwareService;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
+
+import static io.vertx.core.Vertx.currentContext;
 
 /**
  * An adaptor for the Vert.x {@link io.vertx.core.Context}.
@@ -20,34 +21,45 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 
     private VertxInstance vertxInstance;
 
-    private io.vertx.core.Context getOrCreateContext() {
-        return vertxInstance.getVertx().getOrCreateContext();
-    }
-
     @Override
     public void injectServices(ServiceRegistryImplementor serviceRegistry) {
-        vertxInstance = serviceRegistry.getService(VertxInstance.class);
+        vertxInstance = serviceRegistry.getService( VertxInstance.class );
     }
 
     @Override
     public <T> void put(Class<T> key, String id, T instance) {
-        getOrCreateContext().putLocal( id, instance );
+        final io.vertx.core.Context context = currentContext();
+        if ( context != null ) {
+            context.putLocal( id, instance );
+        }
+        else {
+            throw new IllegalStateException("No Vert.x context active");
+        }
     }
 
     @Override
     public <T> T get(Class<T> key, String id) {
-        return getOrCreateContext().getLocal( id );
+        final io.vertx.core.Context context = currentContext();
+        if ( context != null ) {
+            return context.getLocal( id );
+        }
+        else {
+            return null;
+        }
     }
 
     @Override
     public void remove(Class<?> key, String id) {
-        getOrCreateContext().removeLocal( id );
+        final io.vertx.core.Context context = currentContext();
+        if ( context != null ) {
+            context.removeLocal( id );
+        }
     }
 
     @Override
     public void execute(Runnable runnable) {
-        io.vertx.core.Context context = getOrCreateContext();
-        if ( Vertx.currentContext() == context ) {
+        io.vertx.core.Context context = vertxInstance.getVertx().getOrCreateContext();
+        if ( currentContext() == context ) {
             runnable.run();
         }
         else {

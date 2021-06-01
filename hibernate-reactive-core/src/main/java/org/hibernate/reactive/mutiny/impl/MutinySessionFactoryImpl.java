@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.mutiny.impl;
 
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -38,15 +39,23 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
 	private final Context context;
-	private final String sessionId;
-	private final String statelessSessionId;
+
+	/**
+	 * We store the current sessions in the Context for simplified use;
+	 * these are the constant keys, including the SessionFactory's UUID
+	 * for correct scoping.
+	 * In case of multi-tenancy these will need to be used as prefixes.
+	 */
+	private final String contextKeyForSession;
+	private final String contextKeyForStatelessSession;
 
 	public MutinySessionFactoryImpl(SessionFactoryImpl delegate) {
+		Objects.requireNonNull( delegate );
 		this.delegate = delegate;
 		context = delegate.getServiceRegistry().getService( Context.class );
 		connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
-		sessionId = Mutiny.Session.class.getName() + '/' + delegate.getUuid();
-		statelessSessionId = Mutiny.StatelessSession.class.getName() + '/' + delegate.getUuid();
+		contextKeyForSession = Mutiny.Session.class.getName() + '/' + delegate.getUuid();
+		contextKeyForStatelessSession = Mutiny.StatelessSession.class.getName() + '/' + delegate.getUuid();
 	}
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
@@ -64,6 +73,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public Mutiny.Session openSession(String tenantId) {
+		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		return new MutinySessionImpl(
 				new ReactiveSessionImpl( delegate, options( tenantId ), proxyConnection( tenantId ) ),
 				this
@@ -155,26 +165,30 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	@Override
 	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
-		Mutiny.Session current = context.get( Mutiny.Session.class, sessionId );
+		Objects.requireNonNull( work, "parameter 'work' is required" );
+		Mutiny.Session current = context.get( Mutiny.Session.class, contextKeyForSession );
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Mutiny.Session.class, newSession(), Mutiny.Session::close, work, sessionId );
+		return withSession( Mutiny.Session.class, newSession(), work, contextKeyForSession );
 	}
 
 	@Override
 	public <T> Uni<T> withSession(String tenantId, Function<Mutiny.Session, Uni<T>> work) {
-		String id = sessionId + '/' + tenantId;
+		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
+		Objects.requireNonNull( work, "parameter 'work' is required" );
+		String id = contextKeyForSession + '/' + tenantId;
 		Mutiny.Session current = context.get(Mutiny.Session.class, id);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Mutiny.Session.class, newSession( tenantId ), Mutiny.Session::close, work, id );
+		return withSession( Mutiny.Session.class, newSession( tenantId ), work, id );
 	}
 
 	@Override
 	public <T> Uni<T> withStatelessSession(Function<Mutiny.StatelessSession, Uni<T>> work) {
-		Mutiny.StatelessSession current = context.get( Mutiny.StatelessSession.class, statelessSessionId );
+		Objects.requireNonNull( work, "parameter 'work' is required" );
+		Mutiny.StatelessSession current = context.get( Mutiny.StatelessSession.class, contextKeyForStatelessSession );
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
@@ -197,27 +211,28 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 		);
 	}
 
-	private<S, T> Uni<T> withSession(
+	private<S extends Mutiny.Closeable, T> Uni<T> withSession(
 			Class<S> sessionType,
 			Uni<S> sessionUni,
-			Function<S, Uni<Void>> closeSession,
 			Function<S, Uni<T>> work,
-			String id) {
+			String contextId) {
 		return sessionUni.chain( session -> Uni.createFrom().voidItem()
-				.invoke( () -> context.put( sessionType, id, session ) )
+				.invoke( () -> context.put( sessionType, contextId, session ) )
 				.chain( () -> work.apply( session ) )
-				.eventually( () -> context.remove( sessionType, id ) )
-				.eventually( () -> closeSession.apply( session ) )
+				.eventually( () -> context.remove( sessionType, contextId ) )
+				.eventually(session::close)
 		);
 	}
 
 	@Override
 	public <T> Uni<T> withTransaction(BiFunction<Mutiny.Session, Mutiny.Transaction, Uni<T>> work) {
+		Objects.requireNonNull( work, "parameter 'work' is required" );
 		return withSession( s -> s.withTransaction( t -> work.apply(s, t) ) );
 	}
 
 	@Override
 	public <T> Uni<T> withTransaction(String tenantId, BiFunction<Mutiny.Session, Mutiny.Transaction, Uni<T>> work) {
+		Objects.requireNonNull( work, "parameter 'work' is required" );
 		return withSession( tenantId, s -> s.withTransaction( t -> work.apply(s, t) ) );
 	}
 

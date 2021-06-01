@@ -303,7 +303,7 @@ public interface Stage {
 	 *
 	 * @see org.hibernate.Session
 	 */
-	interface Session {
+	interface Session extends Closeable {
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
@@ -1138,7 +1138,7 @@ public interface Stage {
 	 *
 	 * @see org.hibernate.StatelessSession
 	 */
-	interface StatelessSession {
+	interface StatelessSession extends Closeable {
 
 		/**
 		 * Retrieve a row.
@@ -1703,6 +1703,13 @@ public interface Stage {
 		 * @return false if {@link #close()} has been called
 		 */
 		boolean isOpen();
+	}
+
+	/**
+	 * An object whose {@link #close()} method returns a {@link CompletionStage}.
+	 */
+	interface Closeable {
+		CompletionStage<Void> close();
 	}
 
 	/**
