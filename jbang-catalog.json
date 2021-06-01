@@ -3,7 +3,7 @@
   "aliases": {
     "example": {
       "script-ref": "tooling/jbang/Example.java",
-      "description": "An application example. Starts PostgreSQL using Testcontainers and Docker"
+      "description": "An application example. The database must be available before running it. See https://github.com/hibernate/hibernate-reactive/blob/main/podman.md"
     },
     "testcase": {
       "script-ref": "tooling/jbang/ReactiveTest.java",
