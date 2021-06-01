@@ -5,18 +5,6 @@
  */
 
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS org.testcontainers:postgresql:1.15.3
-//DEPS org.testcontainers:mysql:1.15.3
-//DEPS org.testcontainers:db2:1.15.3
-//DEPS org.testcontainers:mariadb:1.15.3
-//DEPS org.testcontainers:cockroachdb:1.15.3
-//
-//// These dependencies are for Testcontainers and
-/// you don't need them to use Hibernate Reactive
-//DEPS org.postgresql:postgresql:42.2.16
-//DEPS mysql:mysql-connector-java:8.0.25
-//DEPS org.mariadb.jdbc:mariadb-java-client:2.7.3
-//
 //DEPS io.vertx:vertx-pg-client:${vertx.version:4.1.0}
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:4.1.0}
 //DEPS io.vertx:vertx-db2-client:${vertx.version:4.1.0}
@@ -40,8 +28,6 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.Settings;
 
-import org.testcontainers.containers.PostgreSQLContainer;
-
 import static java.lang.System.out;
 import static java.time.Month.JANUARY;
 import static java.time.Month.JUNE;
@@ -52,23 +38,31 @@ import static javax.persistence.FetchType.LAZY;
 /**
  * <a hreaf="https://www.jbang.dev/">JBang</a> compatible example for Hibernate Reactive.
  * <p>
- * It uses Testcontainers to start PostgreSQL on the default port.
+ * The selected database must be available before running the example.
  * </p>
  * <p>
- *     Instructions on how to start the containers using Podman or Docker are available
- *     in the <a hreaf="https://github.com/hibernate/hibernate-reactive/blob/main/podman.md">podman.md</a>
- *     file on GitHub.
+ * Instructions on how to start the containers using Podman or Docker are available
+ * in the <a hreaf="https://github.com/hibernate/hibernate-reactive/blob/main/podman.md">podman.md</a>
+ * file on GitHub.
  * </p>
  * <p>
  * Usage example:
  *     <dl>
  *         <dt>1. Download JBang</dt>
  *         <dd>See <a hreaf="https://www.jbang.dev/download">https://www.jbang.dev/download</a></dd>
- *         <dt>2. Run the example with JBang</dt>
+ *         <dt>2. Start a database (default is PostgreSQL)</dt>
+ *         <dd>
+ *             <pre>
+ *                 podman run --rm --name HibernateTestingPGSQL \
+ *                      -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact \
+ *                      -p 5432:5432 postgres:13.3
+ *              </pre>
+ *         </dd>
+ *         <dt>3. Run the example with JBang</dt>
  *         <dd>
  *             <pre>jbang Example.java</pre>
  *         </dd>
- *         <dt>3. (Optional) Edit the file (with IntelliJ IDEA for example):</dt>
+ *         <dt>4. (Optional) Edit the file (with IntelliJ IDEA for example):</dt>
  *         <dd>
  *             <pre>jbang edit --open=idea Example.java</pre>
  *         </dd>
@@ -78,14 +72,9 @@ import static javax.persistence.FetchType.LAZY;
 public class Example {
 
 	/**
-	 * We are providing an example for PostgreSQL, but you can start one of the other databases and change
-	 * the {@link Settings#URL} configuration accordingly.
-	 * Examples of URL for each database are available in the {@link Database} enum.
+	 * You can change this value to select a different database
 	 */
-	static PostgreSQLContainer<?> database = new PostgreSQLContainer( "postgres:13.2" )
-			.withUsername( "hreact" )
-			.withPassword( "hreact" )
-			.withDatabaseName( "hreact" );
+	private static final Database DATABASE = Database.POSTGRESQL;
 
 	/**
 	 * Create the {@link Configuration} for the {@link Mutiny.SessionFactory}.
@@ -93,16 +82,14 @@ public class Example {
 	private static Configuration createConfiguration() {
 		Configuration configuration = new Configuration();
 
-		// URL to a running database.
-		// Testcontainers will start the database on the first available port
-		configuration.setProperty( Settings.URL, Database.POSTGRESQL
-				.getUrl( database.getMappedPort( 5432 ) ) );
+		// The URL to connect to
+		configuration.setProperty( Settings.URL, DATABASE.getUrl() );
 
 		// (Optional) Override default credentials
 		// configuration.setProperty( Settings.USER, "hreact" );
 		// configuration.setProperty( Settings.PASS, "hreact" );
 
-		// Supported values are: none, create, create-drop
+		// Schema generation. Supported values are create, drop, create-drop, drop-create, none
 		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
 
 		// Register new entities here
@@ -129,8 +116,9 @@ public class Example {
 	public static void main(String[] args) {
 		out.println( "== Mutiny API Example ==" );
 		out.println();
-		out.println("Starting database with Testcontainers");
-		database.start();
+		out.println( "Expected database: " + DATABASE );
+		out.println( "Connection URL: " + DATABASE.getUrl() );
+		out.println();
 
 		// define some test data
 		Author author1 = new Author( "Iain M. Banks" );
@@ -259,9 +247,9 @@ public class Example {
 	/**
 	 * Show an example of different URL strings for each supported database.
 	 * <p>
-	 *     You can start the database using Testcontainers or following the instructions
-	 *     in the <a hreaf="https://github.com/hibernate/hibernate-reactive/blob/main/podman.md">podman.md</a>
-	 *     file on the Hibernate Reactive repository on GitHub.
+	 * One way to start the selected container is by following the instructions
+	 * in the <a hreaf="https://github.com/hibernate/hibernate-reactive/blob/main/podman.md">podman.md</a>
+	 * file on the Hibernate Reactive repository on GitHub.
 	 * </p>
 	 */
 	enum Database {
@@ -284,16 +272,6 @@ public class Example {
 		 */
 		public String getUrl() {
 			return url;
-		}
-
-		/**
-		 * The URL for a database that's not listening on the default port.
-		 *
-		 * @param port the port of the database to connect to
-		 * @return @return a URL string value for the property {@link Settings#URL}
-		 */
-		public String getUrl(int port) {
-			return url.replaceAll( "localhost:\\d+", "localhost:" + port );
 		}
 	}
 }
