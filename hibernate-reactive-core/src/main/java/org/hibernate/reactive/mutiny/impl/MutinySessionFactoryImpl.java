@@ -124,6 +124,12 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 				.map( s -> new MutinyStatelessSessionImpl(s, this) );
 	}
 
+	Uni<Mutiny.StatelessSession> newStatelessSession(String tenantId) {
+		return uni( () -> connection( tenantId ) )
+				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), reactiveConnection ) ) )
+				.map( s -> new MutinyStatelessSessionImpl( s, this ) );
+	}
+
 	private SessionCreationOptions options() {
 		return new SessionFactoryImpl.SessionBuilderImpl<>( delegate );
 	}
@@ -131,13 +137,6 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	private SessionCreationOptions options(String tenantIdentifier) {
 		return (SessionCreationOptions) new SessionFactoryImpl.SessionBuilderImpl<>( delegate )
 				.tenantIdentifier( tenantIdentifier );
-	}
-
-	Uni<Mutiny.StatelessSession> newStatelessSession(String tenantId) {
-		return uni( () -> connection( tenantId ) )
-				.map( reactiveConnection -> new ReactiveStatelessSessionImpl(
-						delegate, options( tenantId ), reactiveConnection ) )
-				.map( s -> new MutinyStatelessSessionImpl( s, this ) );
 	}
 
 	private CompletionStage<ReactiveConnection> connection(String tenantId) {
