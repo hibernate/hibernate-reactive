@@ -217,9 +217,21 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	}
 
 	@Override
+	public <T> Uni<T> withStatelessTransaction(BiFunction<Mutiny.StatelessSession, Mutiny.Transaction, Uni<T>> work) {
+		Objects.requireNonNull( work, "parameter 'work' is required" );
+		return withStatelessSession( s -> s.withTransaction( t -> work.apply(s, t) ) );
+	}
+
+	@Override
 	public <T> Uni<T> withTransaction(String tenantId, BiFunction<Mutiny.Session, Mutiny.Transaction, Uni<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		return withSession( tenantId, s -> s.withTransaction( t -> work.apply(s, t) ) );
+	}
+
+	@Override
+	public <T> Uni<T> withStatelessTransaction(String tenantId, BiFunction<Mutiny.StatelessSession, Mutiny.Transaction, Uni<T>> work) {
+		Objects.requireNonNull( work, "parameter 'work' is required" );
+		return withStatelessSession( tenantId, s -> s.withTransaction( t -> work.apply(s, t) ) );
 	}
 
 	@Override

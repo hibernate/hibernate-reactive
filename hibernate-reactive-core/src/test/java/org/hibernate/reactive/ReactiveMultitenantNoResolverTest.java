@@ -160,6 +160,28 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testWithStatelessTransactionWithTenant(TestContext context) {
+		test( context, getSessionFactory()
+				.withStatelessTransaction( TENANT_1.name(), (session, tx) -> selectCurrentDB( session )
+						.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) ) )
+				.thenCompose( unused -> getSessionFactory()
+						.withStatelessTransaction( TENANT_2.name(), (session, tx) -> selectCurrentDB( session )
+								.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) ) )
+		);
+	}
+
+	@Test
+	public void testWithStatelessTransactionWithTenantWithMutiny(TestContext context) {
+		test( context, getMutinySessionFactory()
+				.withStatelessTransaction( TENANT_1.name(), (session, tx) -> selectCurrentDB( session )
+						.invoke( result -> context.assertEquals( TENANT_1.getDbName(), result ) ) )
+				.chain( unused -> getMutinySessionFactory()
+						.withStatelessTransaction( TENANT_2.name(), (session, tx) -> selectCurrentDB( session )
+								.invoke( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) ) )
+		);
+	}
+
+	@Test
 	public void testOpenSessionWithTenant(TestContext context) {
 		Stage.Session t1Session = getSessionFactory().openSession( TENANT_1.name() );
 		test( context, selectCurrentDB( t1Session )
@@ -265,6 +287,14 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 		thrown.expectMessage( "no tenant identifier" );
 
 		test( context, getSessionFactory().withTransaction( (s, t) -> selectCurrentDB( s ) ) );
+	}
+
+	@Test
+	public void testWithStatelessTransactionThrowsExceptionWithoutTenant(TestContext context) {
+		thrown.expectCause( isA( HibernateException.class ) );
+		thrown.expectMessage( "no tenant identifier" );
+
+		test( context, getSessionFactory().withStatelessTransaction( (s, t) -> selectCurrentDB( s ) ) );
 	}
 
 	@Test
