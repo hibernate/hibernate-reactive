@@ -14,7 +14,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.IntStream;
 import javax.persistence.metamodel.Attribute;
 
 import org.hibernate.AssertionFailure;
@@ -502,16 +501,15 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		Object[] state = loadedState;
-		return loop(
-				IntStream.iterate(span-1, (i) -> i-1 ).limit( span ),
-				table -> deleteReactive(
-						id,
-						version,
-						table,
-						deleteStrings[table],
-						session,
-						state
-				)
+		return loop( 0, span,
+					 table -> deleteReactive(
+							 id,
+							 version,
+							 span - table - 1,
+							 deleteStrings[span - table - 1],
+							 session,
+							 state
+					 )
 		);
 	}
 
@@ -729,8 +727,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		// Now update only the tables with dirty properties (and the table with the version number)
-		return loop(
-				IntStream.range(0, span).filter( i-> tableUpdateNeeded[i] ),
+		return loop( 0, span, i-> tableUpdateNeeded[i],
 				table -> updateOrInsertReactive(
 						id,
 						fields,

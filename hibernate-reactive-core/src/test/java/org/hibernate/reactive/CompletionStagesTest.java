@@ -79,6 +79,12 @@ public class CompletionStagesTest {
 	}
 
 	@Test
+	public void testLoopOnArrayIndex(TestContext context) {
+		test( context, loop( 0, entries.length, index -> completedFuture( looped.add( entries[index] ) ) )
+				.thenAccept( v -> assertThat( looped ).containsExactly( entries ) ) );
+	}
+
+	@Test
 	public void testLoopOnArray(TestContext context) {
 		test( context, loop( entries, entry -> completedFuture( looped.add( entry ) ) )
 				.thenAccept( v -> assertThat( looped ).containsExactly( entries ) ) );
@@ -100,15 +106,6 @@ public class CompletionStagesTest {
 	public void testLoopOnStream(TestContext context) {
 		test( context, loop( stream( entries ), entry -> completedFuture( looped.add( entry ) ) )
 				.thenAccept( v -> assertThat( looped ).containsExactly( entries ) ) );
-	}
-
-	@Test
-	public void testLoopOnIntStream(TestContext context) {
-		test( context, loop(
-				IntStream.range( 0, entries.length ),
-				index -> completedFuture( looped.add( entries[index] ) )
-			  ).thenAccept( v -> assertThat( looped ).containsExactly( entries ) )
-		);
 	}
 
 	@Test

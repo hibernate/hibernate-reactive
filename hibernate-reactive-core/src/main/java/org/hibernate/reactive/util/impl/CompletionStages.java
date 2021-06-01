@@ -10,15 +10,13 @@ import com.ibm.asyncutil.iteration.AsyncTrampoline;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class CompletionStages {
@@ -101,7 +99,7 @@ public class CompletionStages {
 	 * }
 	 * </pre>
 	 */
-	public static <T> CompletionStage<Integer> total(int start, int end, Function<Integer,CompletionStage<Integer>> consumer) {
+	public static CompletionStage<Integer> total(int start, int end, Function<Integer,CompletionStage<Integer>> consumer) {
 		return AsyncIterator.range( start, end )
 				.thenCompose( i -> consumer.apply( i.intValue() ) )
 				.fold( 0, Integer::sum );
@@ -143,8 +141,12 @@ public class CompletionStages {
 	 * }
 	 * </pre>
 	 */
-	public static <T> CompletionStage<Void> loop(T[] array, Function<T,CompletionStage<?>> consumer) {
-		return loop( Arrays.stream(array), consumer );
+	public static <T> CompletionStage<Void> loop(T[] array, Function<T, CompletionStage<?>> consumer) {
+		return loop( 0, array.length, index -> consumer.apply( array[index] ) );
+	}
+
+	public static <T> CompletionStage<Void> loop(T[] array, Predicate<T> filter, Function<T, CompletionStage<?>> consumer) {
+		return loop( 0, array.length, index -> filter.test( array[index] ), index -> consumer.apply( array[index] ) );
 	}
 
 	/**
@@ -155,25 +157,25 @@ public class CompletionStages {
 	 * }
 	 * </pre>
 	 */
-	public static <T> CompletionStage<Void> loop(Iterator<T> iterator, BiFunction<T,Integer,CompletionStage<?>> consumer) {
+	public static <T> CompletionStage<Void> loop(Iterator<T> iterator, BiFunction<T, Integer, CompletionStage<?>> consumer) {
 		if ( iterator.hasNext() ) {
-			AtomicInteger index = new AtomicInteger( 0 );
-			return AsyncTrampoline.asyncWhile( () -> consumer.apply( iterator.next(), index.getAndIncrement() )
-					.thenApply( r -> iterator.hasNext() ));
+			return AsyncTrampoline.asyncWhile(
+					index -> iterator.hasNext(),
+					index -> consumer
+							.apply( iterator.next(), index )
+							.thenApply( u -> index + 1 ),
+					0
+			).thenAccept( CompletionStages::voidFuture );
 		}
-		else {
-			return voidFuture();
-		}
+		return voidFuture();
 	}
 
-	public static <T> CompletionStage<Void> loop(Iterator<T> iterator, Function<T,CompletionStage<?>> consumer) {
+	public static <T> CompletionStage<Void> loop(Iterator<T> iterator, Function<T, CompletionStage<?>> consumer) {
 		if ( iterator.hasNext() ) {
 			return AsyncTrampoline.asyncWhile( () -> consumer.apply( iterator.next() )
-					.thenApply( r -> iterator.hasNext() ));
+					.thenApply( r -> iterator.hasNext() ) );
 		}
-		else {
-			return voidFuture();
-		}
+		return voidFuture();
 	}
 
 	/**
@@ -204,26 +206,35 @@ public class CompletionStages {
 	/**
 	 * Equivalent to:
 	 * <pre>
-	 * Iterator iterator = inStream.iterator();
-	 * while( iterator.hasNext()) {
-	 *   consumer.apply( iterator.next() );
-	 * }
-	 * </pre>
-	 */
-	public static CompletionStage<Void> loop(IntStream stream, Function<Integer,CompletionStage<?>> consumer) {
-		return loop( stream.iterator(), consumer );
-	}
-
-	/**
-	 * Equivalent to:
-	 * <pre>
 	 * for ( int i = start; i < end; i++ ) {
 	 *   consumer.apply( i );
 	 * }
 	 * </pre>
 	 */
-	public static CompletionStage<Void> loop(int start, int end, Function<Integer,CompletionStage<?>> consumer) {
-		return loop( IntStream.range(start, end), consumer );
+	public static CompletionStage<Void> loop(int start, int end, Function<Integer, CompletionStage<?>> consumer) {
+		return loop( start, end, index -> true, consumer );
+	}
+
+	public static CompletionStage<Void> loop(int start, int end, Predicate<Integer> filter, Function<Integer, CompletionStage<?>> consumer) {
+		if ( start < end ) {
+			int realStart = next( start, end, filter);
+			return AsyncTrampoline.asyncWhile(
+					index -> index < end,
+					index -> consumer.apply( index )
+								.thenApply( u -> next( index + 1, end, filter ) ),
+					realStart
+			).thenCompose( CompletionStages::voidFuture );
+		}
+		return voidFuture();
+	}
+
+	// Skip all the indexes not matching the filter
+	private static int next(int start, int end, Predicate<Integer> filter) {
+		int index = start;
+		while ( index < end && !filter.test( index ) ) {
+			index++;
+		}
+		return index;
 	}
 
 	public static CompletionStage<Void> applyToAll(Function<Object, CompletionStage<?>> op, Object[] entity) {
