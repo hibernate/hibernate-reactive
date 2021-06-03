@@ -224,8 +224,18 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	}
 
 	@Override
+	public <T> CompletionStage<T> withStatelessTransaction(BiFunction<Stage.StatelessSession, Stage.Transaction, CompletionStage<T>> work) {
+		return withStatelessSession( s -> s.withTransaction( t -> work.apply(s, t) ) );
+	}
+
+	@Override
 	public <T> CompletionStage<T> withTransaction(String tenantId, BiFunction<Stage.Session, Stage.Transaction, CompletionStage<T>> work) {
 		return withSession( tenantId, s -> s.withTransaction( t -> work.apply(s, t) ) );
+	}
+
+	@Override
+	public <T> CompletionStage<T> withStatelessTransaction(String tenantId, BiFunction<Stage.StatelessSession, Stage.Transaction, CompletionStage<T>> work) {
+		return withStatelessSession( tenantId, s -> s.withTransaction( t -> work.apply( s, t ) ) );
 	}
 
 	@Override

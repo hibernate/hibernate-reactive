@@ -1640,6 +1640,35 @@ public interface Stage {
 		<T> CompletionStage<T> withTransaction(String tenantId, BiFunction<Session, Transaction, CompletionStage<T>> work);
 
 		/**
+		 * Perform work using a {@link StatelessSession reactive session} within an
+		 * associated {@link Transaction transaction}.
+		 * <p>
+		 * The session will be closed automatically, and the transaction committed automatically.
+		 *
+		 * @param work a function which accepts the stateless session and returns
+		 *             the result of the work as a {@link CompletionStage}.
+		 *
+		 * @see #withStatelessSession(Function)
+		 * @see StatelessSession#withTransaction(Function)
+		 */
+		<T> CompletionStage<T> withStatelessTransaction(BiFunction<StatelessSession, Transaction, CompletionStage<T>> work);
+
+		/**
+		 * Perform work using a {@link StatelessSession reactive session} within an
+		 * associated {@link Transaction transaction}.
+		 * <p>
+		 * The session will be closed automatically, and the transaction committed automatically.
+		 *
+		 * @param tenantId the id of the tenant
+		 * @param work a function which accepts the stateless session and returns
+		 *             the result of the work as a {@link CompletionStage}.
+		 *
+		 * @see #withStatelessSession(String, Function)
+		 * @see StatelessSession#withTransaction(Function)
+		 */
+		<T> CompletionStage<T> withStatelessTransaction(String tenantId, BiFunction<StatelessSession, Transaction, CompletionStage<T>> work);
+
+		/**
 		 * Perform work using a {@link StatelessSession stateless session}.
 		 * <p>
 		 * <il>

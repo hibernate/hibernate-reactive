@@ -1622,6 +1622,20 @@ public interface Mutiny {
 		<T> Uni<T> withTransaction(BiFunction<Session, Transaction, Uni<T>> work);
 
 		/**
+		 * Perform work using a {@link StatelessSession reactive session} within an
+		 * associated {@link Transaction transaction}.
+		 * <p>
+		 * The session will be closed automatically and the transaction committed automatically.
+		 *
+		 * @param work a function which accepts the stateless session and returns
+		 *             the result of the work as a {@link Uni}.
+		 *
+		 * @see #withStatelessSession(Function)
+		 * @see StatelessSession#withTransaction(Function)
+		 */
+		<T> Uni<T> withStatelessTransaction(BiFunction<StatelessSession, Transaction, Uni<T>> work);
+
+		/**
 		 * Perform work using a {@link StatelessSession stateless session}.
 		 * <p>
 		 * <il>
@@ -1673,6 +1687,21 @@ public interface Mutiny {
 		 * @see Session#withTransaction(Function)
 		 */
 		<T> Uni<T> withTransaction(String tenantId, BiFunction<Session, Transaction, Uni<T>> work);
+
+		/**
+		 * Perform work using a {@link StatelessSession reactive session} for a
+		 * specified tenant within an associated {@link Transaction transaction}.
+		 * <p>
+		 * The session will be closed automatically and the transaction committed automatically.
+		 *
+		 * @param tenantId the id of the tenant
+		 * @param work a function which accepts the stateless session and returns
+		 *             the result of the work as a {@link Uni}.
+		 *
+		 * @see #withStatelessSession(String, Function)
+		 * @see StatelessSession#withTransaction(Function)
+		 */
+		<T> Uni<T> withStatelessTransaction(String tenantId, BiFunction<StatelessSession, Transaction, Uni<T>> work);
 
 		/**
 		 * @return an instance of {@link CriteriaBuilder} for creating
