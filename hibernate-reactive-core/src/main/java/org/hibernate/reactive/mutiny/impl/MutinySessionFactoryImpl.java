@@ -46,16 +46,16 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	 * for correct scoping.
 	 * In case of multi-tenancy these will need to be used as prefixes.
 	 */
-	private final String contextKeyForSession;
-	private final String contextKeyForStatelessSession;
+	private final Context.Key<Mutiny.Session> contextKeyForSession;
+	private final Context.Key<Mutiny.StatelessSession> contextKeyForStatelessSession;
 
 	public MutinySessionFactoryImpl(SessionFactoryImpl delegate) {
 		Objects.requireNonNull( delegate );
 		this.delegate = delegate;
 		context = delegate.getServiceRegistry().getService( Context.class );
 		connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
-		contextKeyForSession = Mutiny.Session.class.getName() + '/' + delegate.getUuid();
-		contextKeyForStatelessSession = Mutiny.StatelessSession.class.getName() + '/' + delegate.getUuid();
+		contextKeyForSession = new Context.Key<>( Mutiny.Session.class, delegate.getUuid() );
+		contextKeyForStatelessSession = new Context.Key<>( Mutiny.StatelessSession.class, delegate.getUuid() );
 	}
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
@@ -156,56 +156,57 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	@Override
 	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		Mutiny.Session current = context.get( Mutiny.Session.class, contextKeyForSession );
+		Mutiny.Session current = context.get( contextKeyForSession );
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Mutiny.Session.class, newSession(), work, contextKeyForSession );
+		return withSession( newSession(), work, contextKeyForSession );
 	}
 
 	@Override
 	public <T> Uni<T> withSession(String tenantId, Function<Mutiny.Session, Uni<T>> work) {
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		String id = contextKeyForSession + '/' + tenantId;
-		Mutiny.Session current = context.get(Mutiny.Session.class, id);
+		Context.Key<Mutiny.Session> key =
+				new Context.Key<>( Mutiny.Session.class, delegate.getUuid() + '/' + tenantId );
+		Mutiny.Session current = context.get(key);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Mutiny.Session.class, newSession( tenantId ), work, id );
+		return withSession( newSession( tenantId ), work, key );
 	}
 
 	@Override
 	public <T> Uni<T> withStatelessSession(Function<Mutiny.StatelessSession, Uni<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		Mutiny.StatelessSession current = context.get( Mutiny.StatelessSession.class, contextKeyForStatelessSession );
+		Mutiny.StatelessSession current = context.get( contextKeyForStatelessSession );
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Mutiny.StatelessSession.class, newStatelessSession(), work, contextKeyForStatelessSession );
+		return withSession( newStatelessSession(), work, contextKeyForStatelessSession );
 	}
 
 	@Override
 	public <T> Uni<T> withStatelessSession(String tenantId, Function<Mutiny.StatelessSession, Uni<T>> work) {
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		String id = contextKeyForStatelessSession + '/' + tenantId;
-		Mutiny.StatelessSession current = context.get( Mutiny.StatelessSession.class, id );
+		Context.Key<Mutiny.StatelessSession> key =
+				new Context.Key<>( Mutiny.StatelessSession.class, delegate.getUuid() + '/' + tenantId );
+		Mutiny.StatelessSession current = context.get( key );
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Mutiny.StatelessSession.class, newStatelessSession(tenantId), work, id );
+		return withSession( newStatelessSession(tenantId), work, key );
 	}
 
 	private<S extends Mutiny.Closeable, T> Uni<T> withSession(
-			Class<S> sessionType,
 			Uni<S> sessionUni,
 			Function<S, Uni<T>> work,
-			String contextId) {
+			Context.Key<S> contextKey) {
 		return sessionUni.chain( session -> Uni.createFrom().voidItem()
-				.invoke( () -> context.put( sessionType, contextId, session ) )
+				.invoke( () -> context.put( contextKey, session ) )
 				.chain( () -> work.apply( session ) )
-				.eventually( () -> context.remove( sessionType, contextId ) )
+				.eventually( () -> context.remove( contextKey ) )
 				.eventually(session::close)
 		);
 	}
