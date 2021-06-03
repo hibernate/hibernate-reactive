@@ -38,15 +38,15 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
 	private final Context context;
-	private final String sessionId;
-	private final String statelessSessionId;
+	private final Context.Key<Stage.Session> contextKeyForSession;
+	private final Context.Key<Stage.StatelessSession> contextKeyForStatelessSession;
 
 	public StageSessionFactoryImpl(SessionFactoryImpl delegate) {
 		this.delegate = delegate;
 		context = delegate.getServiceRegistry().getService( Context.class );
 		connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
-		sessionId = Stage.Session.class.getName() + '/' + delegate.getUuid();
-		statelessSessionId = Stage.StatelessSession.class.getName() + '/' + delegate.getUuid();
+		contextKeyForSession = new Context.Key<>( Stage.Session.class, delegate.getUuid() );
+		contextKeyForStatelessSession = new Context.Key<>( Stage.StatelessSession.class, delegate.getUuid() );
 	}
 
 	<T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stageSupplier) {
@@ -152,59 +152,60 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	@Override
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		Stage.Session current = context.get(Stage.Session.class, sessionId);
+		Stage.Session current = context.get( contextKeyForSession );
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Stage.Session.class, newSession(), work, sessionId );
+		return withSession( newSession(), work, contextKeyForSession );
 	}
 
 	@Override
 	public <T> CompletionStage<T> withSession(String tenantId, Function<Stage.Session, CompletionStage<T>> work) {
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		String id = sessionId + '/' + tenantId;
-		Stage.Session current = context.get(Stage.Session.class, id);
+		Context.Key<Stage.Session> key =
+				new Context.Key<>( Stage.Session.class, delegate.getUuid() + '/' + tenantId );
+		Stage.Session current = context.get( key );
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Stage.Session.class, newSession( tenantId ), work, id );
+		return withSession( newSession( tenantId ), work, key );
 	}
 
 	@Override
 	public <T> CompletionStage<T> withStatelessSession(Function<Stage.StatelessSession, CompletionStage<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		Stage.StatelessSession current = context.get(Stage.StatelessSession.class, statelessSessionId);
+		Stage.StatelessSession current = context.get( contextKeyForStatelessSession );
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Stage.StatelessSession.class, newStatelessSession(), work, statelessSessionId );
+		return withSession( newStatelessSession(), work, contextKeyForStatelessSession );
 	}
 
 	@Override
 	public <T> CompletionStage<T> withStatelessSession(String tenantId, Function<Stage.StatelessSession, CompletionStage<T>> work) {
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		String id = statelessSessionId + '/' + tenantId;
-		Stage.StatelessSession current = context.get( Stage.StatelessSession.class, id );
+		Context.Key<Stage.StatelessSession> key =
+				new Context.Key<>( Stage.StatelessSession.class, delegate.getUuid() + '/' + tenantId );
+		Stage.StatelessSession current = context.get( key );
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( Stage.StatelessSession.class, newStatelessSession(tenantId), work, statelessSessionId );
+		return withSession( newStatelessSession(tenantId), work, key );
 	}
 
 	private <S extends Stage.Closeable, T> CompletionStage<T> withSession(
-			Class<S> sessionType,
 			CompletionStage<S> sessionStage,
 			Function<S, CompletionStage<T>> work,
-			String sessionId) {
+			Context.Key<S> contextKey) {
 		return sessionStage.thenCompose( session -> {
-			context.put( sessionType, sessionId, session );
+			context.put( contextKey, session );
 			return voidFuture()
 					.thenCompose( v -> work.apply( session ) )
 					.handle( this::handler )
 					.thenCompose( handler -> {
-						context.remove( sessionType, sessionId );
+						context.remove( contextKey );
 						return session.close()
 								// Using .handle (instead of .thenApply(handler) because
 								// I want to rethrow the original exception in case an error

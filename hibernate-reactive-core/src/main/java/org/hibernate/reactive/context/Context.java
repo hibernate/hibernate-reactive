@@ -7,6 +7,7 @@ package org.hibernate.reactive.context;
 
 import org.hibernate.service.Service;
 
+import java.util.Objects;
 import java.util.concurrent.Executor;
 
 /**
@@ -21,18 +22,18 @@ public interface Context extends Executor, Service {
     /**
      * Associate a value with the current reactive stream.
      */
-    <T> void put(Class<T> key, String id, T instance);
+    <T> void put(Key<T> key, T instance);
 
     /**
      * Get a value associated with the current reactive stream,
      * or return null.
      */
-    <T> T get(Class<T> key, String id);
+    <T> T get(Key<T> key);
 
     /**
      * Remove a value associated with the current reactive stream.
      */
-    void remove(Class<?> key, String id);
+    void remove(Key<?> key);
 
     /**
      * Run the given command in a context.
@@ -43,4 +44,28 @@ public interface Context extends Executor, Service {
      */
     @Override
     void execute(Runnable runnable);
+
+    final class Key<T> {
+        Class<T> type;
+        String id;
+
+        public Key(Class<T> type, String id) {
+            this.type = type;
+            this.id = id;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (this == object) return true;
+            if (!(object instanceof Key)) return false;
+            Key<?> key = (Key<?>) object;
+            return Objects.equals( id, key.id )
+                && Objects.equals( type, key.type );
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(type, id);
+        }
+    }
 }
