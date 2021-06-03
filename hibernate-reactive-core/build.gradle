@@ -71,7 +71,7 @@ tasks.withType(Test) {
     defaultCharacterEncoding = "UTF-8"
     testLogging {
         displayGranularity 1
-        showStandardStreams = false
+        showStandardStreams = project.hasProperty('showStandardOutput')
         showStackTraces = true
         exceptionFormat = 'full'
         events 'PASSED', 'FAILED', 'SKIPPED'
