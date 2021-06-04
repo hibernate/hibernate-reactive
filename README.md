@@ -165,6 +165,11 @@ the property `includeTests` represents the name of the test to run
 and can contain the wildcard '*'. The property is optional but
 running all tests on all databases might take a lot of time.
 
+You can also enable/disable logging standard output streams for your
+tests by adding the following property:
+
+    -PshowStandardOutput
+
 There are three ways to start the test database.
     
 #### If you have Docker installed
