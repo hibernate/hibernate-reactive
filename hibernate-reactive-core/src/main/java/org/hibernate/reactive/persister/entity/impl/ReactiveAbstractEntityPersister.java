@@ -263,7 +263,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 										  SharedSessionContractImplementor session);
 
 	@Override
-	default CompletionStage<?> insertReactive(
+	default CompletionStage<Void> insertReactive(
 			Serializable id,
 			Object[] fields,
 			Object object,
@@ -303,7 +303,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 	}
 
-	default CompletionStage<?> insertReactive(
+	default CompletionStage<Void> insertReactive(
 			Serializable id,
 			Object[] fields,
 			boolean[] notNull,
@@ -404,7 +404,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return sql;
 	}
 
-	default CompletionStage<?> deleteReactive(
+	default CompletionStage<Void> deleteReactive(
 			Serializable id,
 			Object version,
 			int j,
@@ -469,7 +469,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				.update( sql, params, useBatch, new DeleteExpectation( id, j, expectation, this ) );
 	}
 
-	default CompletionStage<?> deleteReactive(
+	default CompletionStage<Void> deleteReactive(
 			Serializable id, Object version, Object object,
 			SharedSessionContractImplementor session) {
 		final int span = delegate().getTableSpan();
@@ -641,7 +641,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Expectation expectation,
 			PreparedStatement statement, String sql) throws HibernateException;
 
-	default CompletionStage<?> updateReactive(
+	default CompletionStage<Void> updateReactive(
 			final Serializable id,
 			final Object[] fields,
 			int[] dirtyFields,
@@ -747,7 +747,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	String[] getUpdateStrings(boolean byRowId, boolean hasUninitializedLazyProperties);
 
-	default CompletionStage<?> updateOrInsertReactive(
+	default CompletionStage<Void> updateOrInsertReactive(
 			final Serializable id,
 			final Object[] fields,
 			final Object[] oldFields,
@@ -786,7 +786,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			}
 			else {
 				return updateReactive( id, fields, oldFields, rowId, includeProperty, j, oldVersion, sql, session )
-						.thenApply( updated -> {
+						.thenCompose( updated -> {
 							if ( !updated && !delegate().isAllNull( fields, j ) ) {
 								// Nothing has been updated because the row isn't in the db
 								// Run an insert instead
@@ -799,7 +799,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 										session
 								);
 							}
-							return null;
+							return voidFuture();
 						} );
 			}
 		}
@@ -1132,7 +1132,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 	}
 
-	default CompletionStage<?> reactiveInitializeLazyPropertiesFromDatastore(
+	default CompletionStage<Object> reactiveInitializeLazyPropertiesFromDatastore(
 			final String fieldName,
 			final Object entity,
 			final SharedSessionContractImplementor session,

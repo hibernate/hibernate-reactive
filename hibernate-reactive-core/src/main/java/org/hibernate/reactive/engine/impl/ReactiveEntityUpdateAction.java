@@ -94,7 +94,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 		}
 
 		ReactiveEntityPersister reactivePersister = (ReactiveEntityPersister) persister;
-		CompletionStage<?> update = veto
+		CompletionStage<Void> update = veto
 				? voidFuture()
 				: reactivePersister.updateReactive(
 						id,

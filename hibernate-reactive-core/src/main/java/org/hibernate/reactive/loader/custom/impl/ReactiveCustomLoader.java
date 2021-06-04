@@ -42,7 +42,7 @@ import org.hibernate.type.Type;
  *
  * @author Gavin King
  */
-public class ReactiveCustomLoader extends CustomLoader implements CachingReactiveLoader, ReactiveLoaderBasedLoader {
+public class ReactiveCustomLoader<T> extends CustomLoader implements CachingReactiveLoader<T>, ReactiveLoaderBasedLoader {
 
 	private static class ProcessedCustomQuery implements CustomQuery {
 		private final CustomQuery delegate;
@@ -88,7 +88,7 @@ public class ReactiveCustomLoader extends CustomLoader implements CachingReactiv
 		return parameters;
 	}
 
-	public CompletionStage<List<Object>> reactiveList(
+	public CompletionStage<List<T>> reactiveList(
 			SharedSessionContractImplementor session,
 			QueryParameters queryParameters) throws HibernateException {
 		return reactiveListIgnoreQueryCache( getSQLString(), getQueryIdentifier(), session, queryParameters );

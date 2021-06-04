@@ -293,7 +293,7 @@ public class DefaultReactiveDeleteEventListener
 	 * @param persister The entity persister.
 	 * @param transientEntities A cache of already deleted entities.
 	 */
-	protected CompletionStage<?> deleteEntity(
+	protected CompletionStage<Void> deleteEntity(
 			final EventSource session,
 			final Object entity,
 			final EntityEntry entityEntry,
@@ -337,7 +337,7 @@ public class DefaultReactiveDeleteEventListener
 		persistenceContext.setEntryStatus( entityEntry, Status.DELETED );
 		final EntityKey key = session.generateEntityKey( entityEntry.getId(), persister );
 
-		CompletionStage<?> beforeDelete = cascadeBeforeDelete( session, persister, entity, entityEntry, transientEntities );
+		CompletionStage<Void> beforeDelete = cascadeBeforeDelete( session, persister, entity, entityEntry, transientEntities );
 
 		CompletionStage<Void> nullifyAndAction = new ForeignKeys.Nullifier(
 				entity,
@@ -406,7 +406,7 @@ public class DefaultReactiveDeleteEventListener
 		return deletedState;
 	}
 
-	protected CompletionStage<?> cascadeBeforeDelete(
+	protected CompletionStage<Void> cascadeBeforeDelete(
 			EventSource session,
 			EntityPersister persister,
 			Object entity,

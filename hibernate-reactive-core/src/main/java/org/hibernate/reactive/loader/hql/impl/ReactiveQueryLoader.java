@@ -36,7 +36,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * A reactive {@link QueryLoader} for HQL queries.
  */
-public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveLoader, ReactiveLoaderBasedLoader {
+public class ReactiveQueryLoader<T> extends QueryLoader implements CachingReactiveLoader<T>, ReactiveLoaderBasedLoader {
 
 	private final QueryTranslatorImpl queryTranslator;
 	private final SessionFactoryImplementor factory;
@@ -88,7 +88,7 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 		return parameters;
 	}
 
-	public CompletionStage<List<Object>> reactiveList(
+	public CompletionStage<List<T>> reactiveList(
 			SharedSessionContractImplementor session,
 			QueryParameters queryParameters) throws HibernateException {
 		checkQuery( queryParameters );
@@ -105,7 +105,7 @@ public class ReactiveQueryLoader extends QueryLoader implements CachingReactiveL
 	 * by subclasses that implement cacheable queries
 	 * @see QueryLoader#list(SharedSessionContractImplementor, QueryParameters, Set, Type[])
 	 */
-	protected CompletionStage<List<Object>> reactiveList(
+	protected CompletionStage<List<T>> reactiveList(
 			final SharedSessionContractImplementor session,
 			final QueryParameters queryParameters,
 			final Set<Serializable> querySpaces,

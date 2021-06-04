@@ -200,8 +200,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
                     else {
                         id = assignIdIfNecessary( id, entity, persister,this );
                         persister.setIdentifier( entity, id, this );
-                        return persister.insertReactive( id, state, entity, this )
-                                .thenApply( v-> null );
+                        return persister.insertReactive( id, state, entity, this );
                     }
                 } );
     }
@@ -212,8 +211,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         ReactiveEntityPersister persister = getEntityPersister( null, entity );
         Serializable id = persister.getIdentifier( entity, this );
         Object version = persister.getVersion( entity );
-        return persister.deleteReactive( id, version, entity, this )
-                .thenApply( v -> null );
+        return persister.deleteReactive( id, version, entity, this );
     }
 
     @Override
@@ -232,8 +230,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         else {
             oldVersion = null;
         }
-        return persister.updateReactive( id, state, null, false, null, oldVersion, entity, null, this )
-                .thenApply( v -> null );
+        return persister.updateReactive( id, state, null, false, null, oldVersion, entity, null, this );
     }
 
     @Override
@@ -474,41 +471,42 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private <T> ReactiveHQLQueryPlan<T> getReactivePlan(String query, QueryParameters parameters) {
+        HQLQueryPlan plan = parameters.getQueryPlan();
+        if (plan == null) {
+            plan = getQueryPlan( query, false );
+        }
+        return (ReactiveHQLQueryPlan<T>) plan;
+    }
+
     @Override
     public <T> CompletionStage<List<T>> reactiveList(String query, QueryParameters parameters) {
         checkOpen();
         parameters.validateParameters();
 
-        HQLQueryPlan plan = parameters.getQueryPlan();
-        ReactiveHQLQueryPlan reactivePlan = plan == null
-                ? getQueryPlan( query, false )
-                : (ReactiveHQLQueryPlan) plan;
-
+        ReactiveHQLQueryPlan<T> reactivePlan = getReactivePlan( query, parameters );
         return reactivePlan.performReactiveList( parameters, this )
                 .whenComplete( (list, x) -> {
                     getPersistenceContext().clear();
                     afterOperation( x == null );
-                } )
-                //TODO: this typecast is rubbish
-                .thenApply( list -> (List<T>) list );
+                } );
     }
 
     @Override
     public <T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters parameters) {
         checkOpen();
 
-        ReactiveCustomLoader loader = new ReactiveCustomLoader(
+        ReactiveCustomLoader<T> loader = new ReactiveCustomLoader<>(
                 getNativeQueryPlan( spec ).getCustomQuery(),
                 getFactory()
         );
 
         return loader.reactiveList(this, parameters)
-                .whenComplete((r, x) -> {
+                .whenComplete( (r, x) -> {
                     getPersistenceContext().clear();
                     afterOperation(x == null);
-                })
-                //TODO: this typecast is rubbish
-                .thenApply( list -> (List<T>) list );
+                } );
     }
 
     private static String comment(NamedQueryDefinition queryDefinition) {
@@ -517,17 +515,17 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
                 : queryDefinition.getName();
     }
 
-    @Override
-    protected ReactiveHQLQueryPlan getQueryPlan(String query, boolean shallow) throws HibernateException {
-        return (ReactiveHQLQueryPlan) super.getQueryPlan( query, shallow );
+    @SuppressWarnings("unchecked")
+    private ReactiveHQLQueryPlan<Void> getReactivePlan(String query) {
+        return (ReactiveHQLQueryPlan<Void>) getQueryPlan( query, false );
     }
 
     @Override
     public CompletionStage<Integer> executeReactiveUpdate(String query, QueryParameters parameters) {
         checkOpen();
         parameters.validateParameters();
-        ReactiveHQLQueryPlan reactivePlan = getQueryPlan( query, false );
-        return reactivePlan.performExecuteReactiveUpdate( parameters, this )
+        return getReactivePlan( query )
+                .performExecuteReactiveUpdate( parameters, this )
                 .whenComplete( (count, x) -> {
                     getPersistenceContext().clear();
                     afterOperation( x == null );

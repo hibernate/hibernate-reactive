@@ -111,8 +111,7 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 			updateStage = updateStage
 					.thenCompose( v -> reactivePersister.reactiveDeleteRows( collection, key, session ) )
 					.thenCompose( v -> reactivePersister.reactiveUpdateRows( collection, key, session ) )
-					.thenCompose( v -> reactivePersister.reactiveInsertRows( collection, key, session ) )
-					.thenAccept( ignore -> {} );
+					.thenCompose( v -> reactivePersister.reactiveInsertRows( collection, key, session ) );
 		}
 
 		return updateStage.thenAccept(v -> {

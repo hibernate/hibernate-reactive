@@ -69,7 +69,6 @@ import org.hibernate.internal.SessionImpl;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.jpa.spi.CriteriaQueryTupleTransformer;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
-import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.loader.custom.sql.SQLCustomQuery;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
@@ -401,11 +400,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				} );
 	}
 
-	@Override
-	protected ReactiveHQLQueryPlan getQueryPlan(String query, boolean shallow) throws HibernateException {
-		return (ReactiveHQLQueryPlan) super.getQueryPlan( query, shallow );
-	}
-
 	//TODO: parameterize the SessionFactory constructor by ReactiveNativeSQLQueryPlan::new
 //	@Override
 //	protected ReactiveNativeSQLQueryPlan getNativeQueryPlan(NativeSQLQuerySpecification spec) throws HibernateException {
@@ -420,7 +414,17 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 //			return CompletionStages.nullFuture();
 //		}
 		AutoFlushEvent event = new AutoFlushEvent( querySpaces, this );
-		return fastSessionServices.eventListenerGroup_AUTO_FLUSH.fireEventOnEachListener( event, (DefaultReactiveAutoFlushEventListener l) -> l::reactiveOnAutoFlush );
+		return fastSessionServices.eventListenerGroup_AUTO_FLUSH.fireEventOnEachListener( event,
+				(DefaultReactiveAutoFlushEventListener l) -> l::reactiveOnAutoFlush );
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> ReactiveHQLQueryPlan<T> getReactivePlan(String query, QueryParameters parameters) {
+		HQLQueryPlan plan = parameters.getQueryPlan();
+		if (plan == null) {
+			plan = getQueryPlan( query, false );
+		}
+		return (ReactiveHQLQueryPlan<T>) plan;
 	}
 
 	@Override
@@ -429,11 +433,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		pulseTransactionCoordinator();
 		parameters.validateParameters();
 
-		HQLQueryPlan plan = parameters.getQueryPlan();
-		ReactiveHQLQueryPlan reactivePlan = plan == null
-				? getQueryPlan( query, false )
-				: (ReactiveHQLQueryPlan) plan;
-
+		ReactiveHQLQueryPlan<T> reactivePlan = getReactivePlan( query, parameters );
 		return reactiveAutoFlushIfRequired( reactivePlan.getQuerySpaces() )
 				// FIXME: I guess I can fix this as a separate issue
 //				dontFlushFromFind++;   //stops flush being called multiple times if this method is recursively called
@@ -442,26 +442,19 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 //					dontFlushFromFind--;
 					afterOperation( x == null );
 					delayedAfterCompletion();
-				} )
-				//TODO: this typecast is rubbish
-				.thenApply( list -> (List<T>) list );
+				} );
 	}
 
 	@Override
 	public <T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters parameters) {
-		return listReactiveCustomQuery( getNativeQueryPlan( spec ).getCustomQuery(), parameters)
-				//TODO: this typecast is rubbish
-				.thenApply( list -> (List<T>) list );
-	}
-
-	private CompletionStage<List<Object>> listReactiveCustomQuery(CustomQuery customQuery, QueryParameters parameters) {
 		checkOpenOrWaitingForAutoClose();
 		checkTransactionSynchStatus();
 
-		ReactiveCustomLoader loader = new ReactiveCustomLoader( customQuery, getFactory() );
+		ReactiveCustomLoader<T> loader =
+				new ReactiveCustomLoader<>( getNativeQueryPlan( spec ).getCustomQuery(), getFactory() );
 //		dontFlushFromFind++;  //stops flush being called multiple times if this method is recursively called
 		return reactiveAutoFlushIfRequired( loader.getQuerySpaces() )
-				.thenCompose( v -> loader.reactiveList( this, parameters ) )
+				.thenCompose( v -> loader.reactiveList(this, parameters) )
 				.whenComplete( (r, e) -> {
 //					dontFlushFromFind--;
 					afterOperation( e == null );
@@ -615,13 +608,18 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	private ReactiveHQLQueryPlan<Void> getReactivePlan(String query) {
+		return (ReactiveHQLQueryPlan<Void>) getQueryPlan( query, false );
+	}
+
 	@Override
 	public CompletionStage<Integer> executeReactiveUpdate(String query, QueryParameters parameters) {
 		checkOpenOrWaitingForAutoClose();
 		pulseTransactionCoordinator();
 		parameters.validateParameters();
 
-		ReactiveHQLQueryPlan reactivePlan = getQueryPlan( query, false );
+		ReactiveHQLQueryPlan<Void> reactivePlan = getReactivePlan( query );
 		return reactiveAutoFlushIfRequired( reactivePlan.getQuerySpaces() )
 				.thenAccept( v -> verifyImmutableEntityUpdate( reactivePlan ) )
 				.thenCompose( v -> reactivePlan.performExecuteReactiveUpdate( parameters, this ) )
@@ -677,7 +675,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
-		return fastSessionServices.eventListenerGroup_PERSIST.fireEventOnEachListener( event, (ReactivePersistEventListener l) -> l::reactiveOnPersist )
+		return fastSessionServices.eventListenerGroup_PERSIST.fireEventOnEachListener( event,
+				(ReactivePersistEventListener l) -> l::reactiveOnPersist )
 				.handle( (v, e) -> {
 					checkNoUnresolvedActionsAfterOperation();
 
@@ -979,7 +978,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireLock(LockEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_LOCK.fireEventOnEachListener( event, (ReactiveLockEventListener l) -> l::reactiveOnLock )
+		return fastSessionServices.eventListenerGroup_LOCK.fireEventOnEachListener( event,
+				(ReactiveLockEventListener l) -> l::reactiveOnLock )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -1083,12 +1083,14 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireLoadNoChecks(LoadEvent event, LoadEventListener.LoadType loadType) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_LOAD.fireEventOnEachListener( event, loadType, (ReactiveLoadEventListener l) -> l::reactiveOnLoad );
+		return fastSessionServices.eventListenerGroup_LOAD.fireEventOnEachListener( event, loadType,
+				(ReactiveLoadEventListener l) -> l::reactiveOnLoad );
 	}
 
 	private CompletionStage<Void> fireResolveNaturalId(ResolveNaturalIdEvent event) {
 		checkOpenOrWaitingForAutoClose();
-		return fastSessionServices.eventListenerGroup_RESOLVE_NATURAL_ID.fireEventOnEachListener( event, (ReactiveResolveNaturalIdEventListener l) -> l::reactiveResolveNaturalId )
+		return fastSessionServices.eventListenerGroup_RESOLVE_NATURAL_ID.fireEventOnEachListener( event,
+				(ReactiveResolveNaturalIdEventListener l) -> l::reactiveResolveNaturalId )
 				.whenComplete( (c, e) -> delayedAfterCompletion() );
 	}
 
