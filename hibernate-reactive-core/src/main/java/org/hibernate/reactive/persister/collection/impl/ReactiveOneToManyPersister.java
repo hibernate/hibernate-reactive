@@ -34,7 +34,6 @@ import java.util.concurrent.CompletionStage;
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.zeroFuture;
 
 /**
  * A reactive {@link OneToManyPersister}
@@ -208,12 +207,10 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 		CompletionStage<Void> result = voidFuture();
 		if ( isRowDeleteEnabled() ) {
 			Expectation deleteExpectation = appropriateExpectation( getDeleteCheckStyle() );
-			result = result.thenCompose( v -> loop(
-					0,
-					entries.size(),
-					(i) -> {
-						Object entry = entries.get(i);
-						if ( collection.needsUpdating( entry, i, elementType ) ) {  // will still be issued when it used to be null
+			result = result.thenCompose( v -> loop( 0, entries.size(),
+					i -> collection.needsUpdating( entries.get( i ), i, elementType ),  // will still be issued when it used to be null
+					i -> {
+							Object entry = entries.get(i);
 							int offset = 1;
 							return getReactiveConnection( session ).update(
 									getSQLDeleteRowString(),
@@ -224,39 +221,29 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 									deleteExpectation.canBeBatched(),
 									new ExpectationAdaptor( deleteExpectation, getSQLDeleteRowString(), getSQLExceptionConverter() )
 							);
-						}
-						else {
-							return voidFuture();
-						}
 					}
 			) );
 		}
 		if ( isRowInsertEnabled() ) {
 			Expectation insertExpectation = appropriateExpectation( getInsertCheckStyle() );
-			result = result.thenCompose( v -> loop(
-					0,
-					entries.size(),
-					(i) -> {
+			result = result.thenCompose( v -> loop( 0, entries.size(),
+					i -> collection.needsUpdating( entries.get( i ), i, elementType ),  // will still be issued when it used to be null
+					i -> {
 						Object entry = entries.get(i);
-						if ( collection.needsUpdating( entry, i, elementType ) ) {  // will still be issued when it used to be null
-							return getReactiveConnection( session ).update(
-									getSQLInsertRowString(),
-									PreparedStatementAdaptor.bind( st -> {
-										int offset = 1;
-										offset += insertExpectation.prepare( st );
-										int loc = writeKey( st, id, offset, session );
-										if ( hasIndex && !indexContainsFormula ) {
-											loc = writeIndexToWhere( st, collection.getIndex( entry, i, this ), loc, session );
-										}
-										writeElementToWhere( st, collection.getElement( entry ), loc, session );
-									} ),
-									insertExpectation.canBeBatched(),
-									new ExpectationAdaptor( insertExpectation, getSQLInsertRowString(), getSQLExceptionConverter() )
-							);
-						}
-						else {
-							return zeroFuture();
-						}
+						return getReactiveConnection( session ).update(
+								getSQLInsertRowString(),
+								PreparedStatementAdaptor.bind( st -> {
+									int offset = 1;
+									offset += insertExpectation.prepare( st );
+									int loc = writeKey( st, id, offset, session );
+									if ( hasIndex && !indexContainsFormula ) {
+										loc = writeIndexToWhere( st, collection.getIndex( entry, i, this ), loc, session );
+									}
+									writeElementToWhere( st, collection.getElement( entry ), loc, session );
+								} ),
+								insertExpectation.canBeBatched(),
+								new ExpectationAdaptor( insertExpectation, getSQLInsertRowString(), getSQLExceptionConverter() )
+						);
 					}
 			) );
 		}
@@ -288,40 +275,37 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 			}
 
 			Expectation expectation = appropriateExpectation( getUpdateCheckStyle() );
-			return stage.thenCompose( v -> loop(
-					0,
-					entries.size(),
-					(index) -> {
+			return stage.thenCompose( v -> loop( 0, entries.size(),
+					index -> {
 						Object entry = entries.get( index );
-						if ( entry != null && collection.entryExists( entry, index ) ) {
-							return getReactiveConnection( session ).update(
-									getSQLUpdateRowString(),
-									PreparedStatementAdaptor.bind( st -> {
-										int offset = 1;
-										offset += expectation.prepare( st );
-										if ( hasIdentifier ) {
-											offset = writeIdentifier(
-													st,
-													collection.getIdentifier( entry, index ),
-													offset,
-													session
-											);
-										}
-										offset = writeIndex(
+						return entry != null && collection.entryExists( entry, index );
+					},
+					index -> {
+						Object entry = entries.get( index );
+						return getReactiveConnection( session ).update(
+								getSQLUpdateRowString(),
+								PreparedStatementAdaptor.bind( st -> {
+									int offset = 1;
+									offset += expectation.prepare( st );
+									if ( hasIdentifier ) {
+										offset = writeIdentifier(
 												st,
-												collection.getIndex( entry, index, this ),
+												collection.getIdentifier( entry, index ),
 												offset,
 												session
 										);
-										offset = writeElement( st, collection.getElement(entry), offset, session );
-									} ),
-									expectation.canBeBatched(),
-									new ExpectationAdaptor( expectation, getSQLUpdateRowString(), getSQLExceptionConverter() )
-							);
-						}
-						else {
-							return zeroFuture();
-						}
+									}
+									offset = writeIndex(
+											st,
+											collection.getIndex( entry, index, this ),
+											offset,
+											session
+									);
+									offset = writeElement( st, collection.getElement(entry), offset, session );
+								} ),
+								expectation.canBeBatched(),
+								new ExpectationAdaptor( expectation, getSQLUpdateRowString(), getSQLExceptionConverter() )
+						);
 					}
 			) );
 		}

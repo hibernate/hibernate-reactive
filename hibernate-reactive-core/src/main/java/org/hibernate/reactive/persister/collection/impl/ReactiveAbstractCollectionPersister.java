@@ -5,6 +5,14 @@
  */
 package org.hibernate.reactive.persister.collection.impl;
 
+import java.io.Serializable;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
@@ -15,21 +23,13 @@ import org.hibernate.jdbc.Expectation;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.jboss.logging.Logger;
 
-import java.io.Serializable;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.jboss.logging.Logger;
 
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.zeroFuture;
 
 /**
  * Reactive version of {@link org.hibernate.persister.collection.AbstractCollectionPersister}
@@ -69,21 +69,15 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
         Expectation expectation = appropriateExpectation( getInsertCheckStyle() );
         return loop(
                 entries,
-                (entry, index) -> {
-                    if ( collection.entryExists( entry, index ) ) {
-                        return connection.update(
-                                getSQLInsertRowString(),
-                                insertRowsParamValues( entry, index, collection, id, session ),
-                                expectation.canBeBatched(),
-                                new ExpectationAdaptor( expectation, getSQLInsertRowString(), getSqlExceptionConverter() )
-                        );
-                        //TODO: compose() reactive version of collection.afterRowInsert()
-                    }
-                    else {
-                        return zeroFuture();
-                    }
-                }
+                collection::entryExists,
+                (entry, index) -> connection.update(
+                        getSQLInsertRowString(),
+                        insertRowsParamValues( entry, index, collection, id, session ),
+                        expectation.canBeBatched(),
+                        new ExpectationAdaptor( expectation, getSQLInsertRowString(), getSqlExceptionConverter() )
+                )
         );
+        //TODO: compose() reactive version of collection.afterRowInsert()
     }
 
     /**
@@ -169,20 +163,13 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
         Expectation expectation = appropriateExpectation( getInsertCheckStyle() );
         return loop(
                 entries.iterator(),
-                (entry, index) -> {
-                    if ( collection.needsInserting( entry, index, getElementType() ) ) {
-                        return connection.update(
-                                getSQLInsertRowString(),
-                                insertRowsParamValues( entry, index, collection, id, session ),
-                                expectation.canBeBatched(),
-                                new ExpectationAdaptor( expectation, getSQLInsertRowString(), getSqlExceptionConverter() )
-                        );
-                        //TODO: compose() a reactive version of collection.afterRowInsert()
-                    }
-                    else {
-                        return zeroFuture();
-                    }
-                }
+                (entry, index) -> collection.needsInserting( entry, index, getElementType() ),
+                (entry, index) -> connection.update(
+                        getSQLInsertRowString(),
+                        insertRowsParamValues( entry, index, collection, id, session ),
+                        expectation.canBeBatched(),
+                        new ExpectationAdaptor( expectation, getSQLInsertRowString(), getSqlExceptionConverter() ) )
+                //TODO: compose() a reactive version of collection.afterRowInsert()
         ).thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
     }
 

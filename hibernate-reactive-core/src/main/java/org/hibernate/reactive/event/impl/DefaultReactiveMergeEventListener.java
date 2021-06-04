@@ -5,33 +5,48 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import org.hibernate.*;
+import java.io.Serializable;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
+import org.hibernate.AssertionFailure;
+import org.hibernate.Hibernate;
+import org.hibernate.HibernateException;
+import org.hibernate.ObjectDeletedException;
+import org.hibernate.StaleObjectStateException;
+import org.hibernate.WrongClassException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.engine.internal.CascadePoint;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.PersistentAttributeInterceptable;
+import org.hibernate.engine.spi.PersistentAttributeInterceptor;
+import org.hibernate.engine.spi.SelfDirtinessTracker;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.internal.EntityState;
 import org.hibernate.event.internal.EventUtil;
 import org.hibernate.event.internal.MergeContext;
-import org.hibernate.event.spi.*;
+import org.hibernate.event.spi.EntityCopyObserver;
+import org.hibernate.event.spi.EntityCopyObserverFactory;
+import org.hibernate.event.spi.EventSource;
+import org.hibernate.event.spi.MergeEvent;
+import org.hibernate.event.spi.MergeEventListener;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingAction;
 import org.hibernate.reactive.event.ReactiveMergeEventListener;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.TypeHelper;
-
-import java.io.Serializable;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
-import java.util.stream.IntStream;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -456,16 +471,14 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			ReactiveSession session = source.unwrap(ReactiveSession.class);
 			final Object[] mergeState = persister.getPropertyValues(entity);
 			final Object[] managedState = persister.getPropertyValues(target);
-			stage = CompletionStages.loop(
-					IntStream.range(0, mergeState.length)
-							// Cascade-merge mappings do not determine what needs to be fetched.
-							// The value only needs to be fetched if the incoming value (mergeState[i])
-							// is initialized, but its corresponding managed state is not initialized.
-							// Initialization must be done before copyValues executes.
-							.filter( i-> Hibernate.isInitialized( mergeState[i] )
-										&& !Hibernate.isInitialized( managedState[i] ) ),
-					i -> session.reactiveFetch( managedState[i], true )
-			);
+
+			// Cascade-merge mappings do not determine what needs to be fetched.
+			// The value only needs to be fetched if the incoming value (mergeState[i])
+			// is initialized, but its corresponding managed state is not initialized.
+			// Initialization must be done before copyValues executes.
+			stage = CompletionStages.loop(0, mergeState.length,
+										  i -> Hibernate.isInitialized( mergeState[i] ) && !Hibernate.isInitialized( managedState[i] ),
+										  i -> session.reactiveFetch( managedState[i], true ) );
 		}
 		return stage.thenAccept( v -> copyValues( persister, entity, target, source, mergeContext ) );
 	}

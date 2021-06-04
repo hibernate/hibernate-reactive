@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
@@ -33,10 +32,10 @@ import org.hibernate.reactive.engine.impl.ReactiveCollectionRecreateAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionRemoveAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionUpdateAction;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.jboss.logging.Logger;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -128,11 +127,11 @@ public abstract class AbstractReactiveFlushingEventListener {
 
 		IdentitySet copiedAlready = new IdentitySet( 10 );
 		//safe from concurrent modification because of how concurrentEntries() is implemented on IdentityMap
-		return CompletionStages.loop(
-				Arrays.stream( persistenceContext.reentrantSafeEntityEntries() )
-						.filter( entry -> flushable( entry.getValue() ) ),
-				entry -> cascadeOnFlush( session, entry.getValue().getPersister(), entry.getKey(), copiedAlready )
-		);
+		Map.Entry<Object, EntityEntry>[] entries = persistenceContext.reentrantSafeEntityEntries();
+		return loop(
+				entries,
+				index -> flushable( entries[index].getValue() ),
+				index -> cascadeOnFlush( session, entries[index].getValue().getPersister(), entries[index].getKey(), copiedAlready ) );
 	}
 
 	private static boolean flushable(EntityEntry entry) {

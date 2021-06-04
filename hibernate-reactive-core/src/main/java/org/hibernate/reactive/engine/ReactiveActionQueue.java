@@ -654,17 +654,19 @@ public class ReactiveActionQueue {
 		// todo : consider ways to improve the double iteration of Executables here:
 		//		1) we explicitly iterate list here to perform Executable#execute()
 		//		2) ExecutableList#getQuerySpaces also iterates the Executables to collect query spaces.
-		return CompletionStages.loop(
-				list,
-				e -> e.reactiveExecute()
-						.whenComplete( (v2, x1) -> {
-							if ( e.getBeforeTransactionCompletionProcess() != null ) {
-								beforeTransactionProcesses().register( e.getBeforeTransactionCompletionProcess() );
-							}
-							if ( e.getAfterTransactionCompletionProcess() != null ) {
-								afterTransactionProcesses().register( e.getAfterTransactionCompletionProcess() );
-							}
-						} )
+		return CompletionStages.loop( 0, list.size(),
+				index -> {
+					final E e = list.get( index );
+					return e.reactiveExecute()
+							.whenComplete( (v2, x1) -> {
+								if ( e.getBeforeTransactionCompletionProcess() != null ) {
+									beforeTransactionProcesses().register( e.getBeforeTransactionCompletionProcess() );
+								}
+								if ( e.getAfterTransactionCompletionProcess() != null ) {
+									afterTransactionProcesses().register( e.getAfterTransactionCompletionProcess() );
+								}
+							} );
+				}
 		)
 		.whenComplete( (v, x) -> {
 			if ( session.getFactory().getSessionFactoryOptions().isQueryCacheEnabled() ) {
