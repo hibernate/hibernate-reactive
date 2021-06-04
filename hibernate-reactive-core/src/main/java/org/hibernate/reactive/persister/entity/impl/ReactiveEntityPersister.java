@@ -34,7 +34,7 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	 *
 	 * @see EntityPersister#insert(Serializable, Object[], Object, SharedSessionContractImplementor)
 	 */
-	CompletionStage<?> insertReactive(
+	CompletionStage<Void> insertReactive(
 			Serializable id,
 			Object[] fields,
 			Object object,
@@ -55,7 +55,7 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	 *
 	 * @see EntityPersister#delete(Serializable, Object, Object, SharedSessionContractImplementor)
 	 */
-	CompletionStage<?> deleteReactive(
+	CompletionStage<Void> deleteReactive(
 			Serializable id,
 			Object version,
 			Object object,
@@ -67,7 +67,7 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	 *
 	 * @see EntityPersister#update(Serializable, Object[], int[], boolean, Object[], Object, Object, Object, SharedSessionContractImplementor)
 	 */
-	CompletionStage<?> updateReactive(
+	CompletionStage<Void> updateReactive(
 			Serializable id,
 			Object[] fields, int[] dirtyFields,
 			boolean hasDirtyCollection,

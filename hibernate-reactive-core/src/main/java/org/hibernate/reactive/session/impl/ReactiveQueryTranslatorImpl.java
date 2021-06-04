@@ -50,11 +50,11 @@ import antlr.collections.AST;
  *
  * throws {@link UnsupportedOperationException} if a non reactive method is invoked
  */
-public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
+public class ReactiveQueryTranslatorImpl<T> extends QueryTranslatorImpl {
 
 	private final Parameters parameters;
 
-	private ReactiveQueryLoader queryLoader;
+	private ReactiveQueryLoader<T> queryLoader;
 
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger(
 			CoreMessageLogger.class,
@@ -85,7 +85,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 
 	@Override
 	protected QueryLoader createQueryLoader(HqlSqlWalker w, SessionFactoryImplementor factory) {
-		queryLoader = new ReactiveQueryLoader( this, factory, w.getSelectClause() );
+		queryLoader = new ReactiveQueryLoader<>( this, factory, w.getSelectClause() );
 		return queryLoader;
 	}
 
@@ -102,7 +102,7 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 	/**
 	 * The reactive version of {@link QueryTranslatorImpl#list(SharedSessionContractImplementor, QueryParameters)}.
 	 */
-	public CompletionStage<List<Object>> reactiveList(SharedSessionContractImplementor session,
+	public CompletionStage<List<T>> reactiveList(SharedSessionContractImplementor session,
 													  QueryParameters queryParameters)
 			throws HibernateException {
 		// Delegate to the QueryLoader...
@@ -147,9 +147,9 @@ public class ReactiveQueryTranslatorImpl extends QueryTranslatorImpl {
 						int max = !hasLimit || queryParameters.getRowSelection().getMaxRows() == null
 								? -1
 								: queryParameters.getRowSelection().getMaxRows();
-						List<Object> tmp = new ArrayList<>();
+						List<T> tmp = new ArrayList<>();
 						IdentitySet distinction = new IdentitySet();
-						for ( final Object result : results ) {
+						for ( T result : results ) {
 							if ( !distinction.add( result ) ) {
 								continue;
 							}

@@ -43,7 +43,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
  *
  * @author Gavin King
  */
-public interface CachingReactiveLoader extends ReactiveLoader {
+public interface CachingReactiveLoader<T> extends ReactiveLoader {
 
 	CoreMessageLogger log = CoreLogging.messageLogger( Loader.class );
 
@@ -73,7 +73,7 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 				} );
 	}
 
-	default CompletionStage<List<Object>> reactiveListIgnoreQueryCache(
+	default CompletionStage<List<T>> reactiveListIgnoreQueryCache(
 			String sql, String queryIdentifier,
 			SharedSessionContractImplementor session,
 			QueryParameters queryParameters) {
@@ -81,7 +81,7 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 				.thenApply( result -> getResultList( result, queryParameters.getResultTransformer() ) );
 	}
 
-	default CompletionStage<List<Object>> reactiveListUsingQueryCache(
+	default CompletionStage<List<T>> reactiveListUsingQueryCache(
 			final String sql,
 			final String queryIdentifier,
 			final SharedSessionContractImplementor session,
@@ -179,7 +179,7 @@ public interface CachingReactiveLoader extends ReactiveLoader {
 
 	boolean areResultSetRowsTransformedImmediately();
 
-	List<Object> getResultList(List<?> results, ResultTransformer resultTransformer) throws QueryException;
+	List<T> getResultList(List<?> results, ResultTransformer resultTransformer) throws QueryException;
 
 	@Override
 	default Object[] toParameterArray(QueryParameters queryParameters, SharedSessionContractImplementor session) {

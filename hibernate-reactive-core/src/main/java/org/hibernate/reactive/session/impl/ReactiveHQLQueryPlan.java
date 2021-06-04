@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * A reactific {@link HQLQueryPlan}
  */
-class ReactiveHQLQueryPlan extends HQLQueryPlan {
+class ReactiveHQLQueryPlan<T> extends HQLQueryPlan {
 
 	private static final CoreMessageLogger log = CoreLogging.messageLogger( HQLQueryPlan.class );
 
@@ -79,7 +79,7 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 	/**
 	 * @see HQLQueryPlan#performList(QueryParameters, SharedSessionContractImplementor)
 	 */
-	public CompletionStage<List<Object>> performReactiveList(QueryParameters queryParameters,
+	public CompletionStage<List<T>> performReactiveList(QueryParameters queryParameters,
 															 SharedSessionContractImplementor session)
 			throws HibernateException {
 		if ( log.isTraceEnabled() ) {
@@ -110,23 +110,16 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 
 		//fast path to avoid unnecessary allocation and copying
 		if ( translators.length == 1 ) {
-			ReactiveQueryTranslatorImpl reactiveTranslator = (ReactiveQueryTranslatorImpl) translators[0];
-			return reactiveTranslator.reactiveList( session, queryParametersToUse );
+			return translator( translators[0] ).reactiveList( session, queryParametersToUse );
 		}
 		final int guessedResultSize = guessResultSize( rowSelection );
-		final List<Object> combinedResults = new ArrayList<>( guessedResultSize );
-		final IdentitySet distinction;
-		if ( needsLimit ) {
-			distinction = new IdentitySet( guessedResultSize );
-		}
-		else {
-			distinction = null;
-		}
+		final List<T> combinedResults = new ArrayList<>( guessedResultSize );
+		final IdentitySet distinction = needsLimit ? new IdentitySet(guessedResultSize) : null;
 
 		AtomicInteger includedCount = new AtomicInteger();
 		return CompletionStages.loop(
 				translators,
-				translator -> ((ReactiveQueryTranslatorImpl) translator)
+				translator -> translator( translator )
 						.reactiveList( session, queryParametersToUse )
 						.thenAccept( tmpList -> {
 							if ( needsLimit ) {
@@ -140,15 +133,15 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 	}
 
 	private void needsLimitLoop(QueryParameters queryParameters,
-								List<Object> combinedResults,
+								List<T> combinedResults,
 								IdentitySet distinction,
 								AtomicInteger includedCount,
-								List<Object> tmpList) {
+								List<T> tmpList) {
 		// NOTE : firstRow is zero-based
 		RowSelection rowSelection = queryParameters.getRowSelection();
 		final int first = rowSelection.getFirstRow() == null ? 0 : rowSelection.getFirstRow();
 		final int max = rowSelection.getMaxRows() == null ? -1 : rowSelection.getMaxRows();
-		for ( final Object result : tmpList ) {
+		for ( T result : tmpList ) {
 			if ( !distinction.add( result ) ) {
 				continue;
 			}
@@ -182,9 +175,13 @@ class ReactiveHQLQueryPlan extends HQLQueryPlan {
 							session.getSharedContract(),
 							translator.getQuerySpaces()
 					) );
-					return ((ReactiveQueryTranslatorImpl) translator)
-							.executeReactiveUpdate( queryParameters, session );
+					return translator( translator ).executeReactiveUpdate( queryParameters, session );
 				}
 		);
+	}
+
+	@SuppressWarnings("unchecked")
+	private ReactiveQueryTranslatorImpl<T> translator(QueryTranslator translator) {
+		return (ReactiveQueryTranslatorImpl<T>) translator;
 	}
 }

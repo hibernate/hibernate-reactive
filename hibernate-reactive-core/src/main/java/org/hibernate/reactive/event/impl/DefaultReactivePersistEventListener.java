@@ -152,10 +152,9 @@ public class DefaultReactivePersistEventListener
 		final Object entity = source.getPersistenceContextInternal().unproxy( event.getObject() );
 		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
 
-		if ( createCache.add( entity ) ) {
-			return justCascade( createCache, source, entity, persister );
-		}
-		return voidFuture();
+		return createCache.add( entity )
+				? justCascade( createCache, source, entity, persister )
+				: voidFuture();
 	}
 
 	private CompletionStage<Void> justCascade(IdentitySet createCache, EventSource source, Object entity, EntityPersister persister) {
@@ -176,11 +175,9 @@ public class DefaultReactivePersistEventListener
 		final EventSource source = event.getSession();
 		final Object entity = source.getPersistenceContextInternal().unproxy( event.getObject() );
 
-		if ( createCache.add( entity ) ) {
-			return reactiveSaveWithGeneratedId( entity, event.getEntityName(), createCache, source, false )
-					.thenApply( v -> null );
-		}
-		return voidFuture();
+		return createCache.add( entity )
+				? reactiveSaveWithGeneratedId( entity, event.getEntityName(), createCache, source, false )
+				: voidFuture();
 	}
 
 	private CompletionStage<Void> entityIsDeleted(PersistEvent event, IdentitySet createCache) {
@@ -196,10 +193,9 @@ public class DefaultReactivePersistEventListener
 			);
 		}
 
-		if ( createCache.add( entity ) ) {
-			return justCascade( createCache, source, entity, persister );
-		}
-		return voidFuture();
+		return createCache.add( entity )
+				? justCascade( createCache, source, entity, persister )
+				: voidFuture();
 	}
 
 	@Override

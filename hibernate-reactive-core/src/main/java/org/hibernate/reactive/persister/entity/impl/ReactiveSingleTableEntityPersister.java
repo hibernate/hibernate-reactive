@@ -306,7 +306,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public CompletionStage<?> initializeLazyPropertiesFromDatastore(String fieldName, Object entity,
+	public CompletionStage<Object> initializeLazyPropertiesFromDatastore(String fieldName, Object entity,
 																	   SharedSessionContractImplementor session,
 																	   Serializable id, EntityEntry entry) {
 		return reactiveInitializeLazyPropertiesFromDatastore(fieldName, entity, session, id, entry);
