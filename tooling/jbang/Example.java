@@ -1,14 +1,15 @@
+///usr/bin/env jbang "$0" "$@" ; exit $?
 /* Hibernate, Relational Persistence for Idiomatic Java
  *
  * SPDX-License-Identifier: LGPL-2.1-or-later
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
 
-///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS io.vertx:vertx-pg-client:${vertx.version:4.1.0}
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:4.1.0}
 //DEPS io.vertx:vertx-db2-client:${vertx.version:4.1.0}
 //DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:1.0.0.CR6}
+//DEPS org.slf4j:slf4j-simple:1.7.30
 
 import java.time.LocalDate;
 import java.util.ArrayList;
