@@ -78,7 +78,13 @@ public class OrphanRemovalTest extends BaseReactiveTest {
         public Version(Product product) {
             this.product = product;
         }
+
         Version() {}
+
+        @Override
+        public String toString() {
+            return Version.class.getSimpleName() + ":" + id + ":" + product;
+        }
     }
 
     @Entity(name = "Product")
@@ -104,6 +110,11 @@ public class OrphanRemovalTest extends BaseReactiveTest {
         public void addVersion(Version version) {
             versions.add(version);
         }
+
+        @Override
+        public String toString() {
+            return Product.class.getSimpleName() + ":" + id + ":" + name + ":" + shop;
+        }
     }
 
     @Entity(name = "Shop")
@@ -124,6 +135,11 @@ public class OrphanRemovalTest extends BaseReactiveTest {
 
         public void addProduct(Product product) {
             products.add(product);
+        }
+
+        @Override
+        public String toString() {
+            return Shop.class.getSimpleName() + ":" + id + ":" + name;
         }
     }
 
