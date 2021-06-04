@@ -32,7 +32,6 @@ import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.Type;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
@@ -554,9 +553,10 @@ public final class Cascade<C> {
 		final Collection<?> orphans;
 		if ( pc.wasInitialized() ) {
 			final CollectionEntry ce = eventSource.getPersistenceContextInternal().getCollectionEntry( pc );
-			orphans = ce==null
-					? Collections.EMPTY_LIST
-					: ce.getOrphans( entityName, pc );
+			if ( ce == null ) {
+				return;
+			}
+			orphans = ce.getOrphans( entityName, pc );
 		}
 		else {
 			orphans = pc.getQueuedOrphans( entityName );
