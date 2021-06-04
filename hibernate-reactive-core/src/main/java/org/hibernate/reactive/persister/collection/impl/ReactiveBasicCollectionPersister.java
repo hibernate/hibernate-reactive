@@ -208,22 +208,19 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister
 
 		Expectation expectation = appropriateExpectation( getUpdateCheckStyle() );
 		boolean useBatch = expectation.canBeBatched() && session.getConfiguredJdbcBatchSize() > 1;
-		return loop(
-				orderedIndices( collection, entries ),
-				index -> {
-					Object entry = entries.get( index );
-					if ( collection.needsUpdating( entry, index, elementType ) ) {
-						return getReactiveConnection( session ).update(
-								getSQLUpdateRowString(),
-								updateRowsParamValues( entry, index, collection, id, session ),
-								useBatch,
-								new ExpectationAdaptor( expectation, getSQLUpdateRowString(), getSQLExceptionConverter() )
-						);
-					}
-					else {
-						return voidFuture();
-					}
-				}
+		final Integer[] indices = orderedIndices( collection, entries );
+		return loop( indices,
+					 i -> collection.needsUpdating(
+							 entries.get( indices[i] ),
+							 indices[i],
+							 elementType
+					 ),
+					 i -> getReactiveConnection( session ).update(
+							 getSQLUpdateRowString(),
+							 updateRowsParamValues( entries.get( indices[i] ), indices[i], collection, id, session ),
+							 useBatch,
+							 new ExpectationAdaptor( expectation, getSQLUpdateRowString(), getSQLExceptionConverter() )
+					 )
 		);
 	}
 
