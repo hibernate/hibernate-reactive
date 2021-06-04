@@ -72,7 +72,7 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 
 	CompletionStage<Void> reactiveRefresh(Object entity, LockOptions lockMode);
 
-	CompletionStage<?> reactiveRefresh(Object child, IdentitySet refreshedAlready);
+	CompletionStage<Void> reactiveRefresh(Object child, IdentitySet refreshedAlready);
 
 	CompletionStage<Void> reactiveLock(Object entity, LockOptions lockMode);
 

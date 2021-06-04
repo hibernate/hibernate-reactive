@@ -50,7 +50,7 @@ public class CascadingActions {
 	public static final CascadingAction<IdentitySet> DELETE =
 			new BaseCascadingAction<IdentitySet>(org.hibernate.engine.spi.CascadingActions.DELETE) {
 		@Override
-		public CompletionStage<?> cascade(
+		public CompletionStage<Void> cascade(
 				EventSource session,
 				Object child,
 				String entityName,
@@ -69,7 +69,7 @@ public class CascadingActions {
 	public static final CascadingAction<IdentitySet> PERSIST =
 			new BaseCascadingAction<IdentitySet>(org.hibernate.engine.spi.CascadingActions.PERSIST) {
 		@Override
-		public CompletionStage<?> cascade(
+		public CompletionStage<Void> cascade(
 				EventSource session,
 				Object child,
 				String entityName,
@@ -89,7 +89,7 @@ public class CascadingActions {
 	public static final CascadingAction<IdentitySet> PERSIST_ON_FLUSH =
 			new BaseCascadingAction<IdentitySet>(org.hibernate.engine.spi.CascadingActions.PERSIST_ON_FLUSH) {
 		@Override
-		public CompletionStage<?> cascade(
+		public CompletionStage<Void> cascade(
 				EventSource session,
 				Object child,
 				String entityName,
@@ -141,7 +141,7 @@ public class CascadingActions {
 	public static final CascadingAction<MergeContext> MERGE =
 			new BaseCascadingAction<MergeContext>(org.hibernate.engine.spi.CascadingActions.MERGE) {
 				@Override
-				public CompletionStage<?> cascade(
+				public CompletionStage<Void> cascade(
 						EventSource session,
 						Object child,
 						String entityName,
@@ -160,7 +160,7 @@ public class CascadingActions {
 	public static final CascadingAction<IdentitySet> REFRESH =
 			new BaseCascadingAction<IdentitySet>(org.hibernate.engine.spi.CascadingActions.REFRESH) {
 		@Override
-		public CompletionStage<?> cascade(
+		public CompletionStage<Void> cascade(
 				EventSource session,
 				Object child,
 				String entityName,
@@ -178,7 +178,7 @@ public class CascadingActions {
 	public static final CascadingAction<LockOptions> LOCK =
 			new BaseCascadingAction<LockOptions>(org.hibernate.engine.spi.CascadingActions.LOCK) {
 				@Override
-				public CompletionStage<?> cascade(
+				public CompletionStage<Void> cascade(
 						EventSource session,
 						Object child,
 						String entityName,

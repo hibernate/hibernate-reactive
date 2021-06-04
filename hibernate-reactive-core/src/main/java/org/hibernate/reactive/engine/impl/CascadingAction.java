@@ -35,7 +35,7 @@ public interface CascadingAction<C> {
 	 * which is specific to each CascadingAction type
 	 * @param isCascadeDeleteEnabled Are cascading deletes enabled.
 	 */
-	CompletionStage<?> cascade(
+	CompletionStage<Void> cascade(
 			EventSource session,
 			Object child,
 			String entityName,
