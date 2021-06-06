@@ -9,5 +9,37 @@
       "script-ref": "tooling/jbang/ReactiveTest.java",
       "description": "A Hibernate Reactive JUnit test using Docker, Testcontainers and Vert.x Unit"
     }
+  },
+  "templates": {
+    "pg-reproducer": {
+      "file-refs": {
+        "{basename}.java": "tooling/jbang/PostgreSQLReactiveTest.java.qute"
+      },
+      "description": "Template for a test with PostgreSQL using Junit 4, Vert.x Unit and Testcontainers"
+    },
+    "mysql-reproducer": {
+      "file-refs": {
+        "{basename}.java": "tooling/jbang/MySQLReactiveTest.java.qute"
+      },
+      "description": "Template for a test with MySQL using Junit 4, Vert.x Unit and Testcontainers"
+    },
+    "mariadb-reproducer": {
+      "file-refs": {
+        "{basename}.java": "tooling/jbang/MariaDBReactiveTest.java.qute"
+      },
+      "description": "Template for a test with MariaDB using Junit 4, Vert.x Unit and Testcontainers"
+    },
+    "db2-reproducer": {
+      "file-refs": {
+        "{basename}.java": "tooling/jbang/Db2ReactiveTest.java.qute"
+      },
+      "description": "Template for a test with Db2 using Junit 4, Vert.x Unit and Testcontainers"
+    },
+    "cockroachdb-reproducer": {
+      "file-refs": {
+        "{basename}.java": "tooling/jbang/CockroachDBReactiveTest.java.qute"
+      },
+      "description": "Template for a test with CockroachDB using Junit 4, Vert.x Unit and Testcontainers"
+    }
   }
 }
