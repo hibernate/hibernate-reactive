@@ -9,12 +9,5 @@
       "script-ref": "tooling/jbang/ReactiveTest.java",
       "description": "A Hibernate Reactive JUnit test using Docker, Testcontainers and Vert.x Unit"
     }
-  },
-  "templates": {
-    "reproducer": {
-      "file-refs": {
-        "{basename}.java": "tooling/jbang/ReactiveTestTemplate.java.qute"
-      }
-    }
   }
 }
