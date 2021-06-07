@@ -88,5 +88,5 @@ jobs:
       - name: Print the effective ORM version used
         run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate:hibernate-core -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing -PenableJBossSnapshotsRep
       - name: Build and Test with ${{ matrix.db }}
-        run: ./gradlew build -Pdb=${{ matrix.db }} -Pdocker -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing -PenableJBossSnapshotsRep
+        run: ./gradlew build -Pdb=${{ matrix.db }} -Pdocker -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing -PenableJBossSnapshotsRep -PshowStandardOutput
 

@@ -111,7 +111,7 @@ jobs:
       with:
         java-version: 1.8
     - name: Build and Test with ${{ matrix.db }}
-      run: ./gradlew build -Pdocker -Pdb=${{ matrix.db }}
+      run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
     - name: Upload reports (if build failed)
       uses: actions/upload-artifact@v2
       if: failure()
@@ -162,7 +162,7 @@ jobs:
         java-version: 8
     - name: Build and Test with Java ${{ matrix.java.name }}
       run: |
-        ./gradlew build -Pdocker -Ptest.jdk.version=${{ matrix.java.java-version }} \
+        ./gradlew build -PshowStandardOutput -Pdocker -Ptest.jdk.version=${{ matrix.java.java-version }} \
             -Porg.gradle.java.installations.paths=${{ steps.install-mainjdk.outputs.path }},${{ steps.install-testjdk.outputs.path }}
     - name: Upload reports (if build failed)
       uses: actions/upload-artifact@v2
