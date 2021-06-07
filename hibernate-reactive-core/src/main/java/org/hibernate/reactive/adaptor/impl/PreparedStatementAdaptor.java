@@ -21,6 +21,7 @@ import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.JDBCType;
 import java.sql.NClob;
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
@@ -93,7 +94,7 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setNull(int parameterIndex, int sqlType) {
-		put( parameterIndex, null );
+		put( parameterIndex, JDBCType.valueOf(sqlType) );
 	}
 
 	@Override

@@ -5,12 +5,15 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.sql.JDBCType;
 import java.sql.ResultSet;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
+import io.vertx.sqlclient.data.NullValue;
 import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
@@ -51,13 +54,15 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Integer> update(String sql, Object[] paramValues) {
+		translateNulls( paramValues );
 		return update( sql, Tuple.wrap( paramValues ) );
 	}
 
 	@Override
 	public CompletionStage<int[]> update(String sql, List<Object[]> batchParamValues) {
 		final List<Tuple> tuples = new ArrayList<>( batchParamValues.size() );
-		for ( Object[] paramValues : batchParamValues) {
+		for ( Object[] paramValues : batchParamValues ) {
+			translateNulls( paramValues );
 			tuples.add( Tuple.wrap( paramValues ) );
 		}
 		return updateBatch( sql, tuples );
@@ -72,11 +77,13 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Long> insertAndSelectIdentifier(String sql, Object[] paramValues) {
+		translateNulls( paramValues );
 		return insertAndSelectIdentifier( sql, Tuple.wrap( paramValues ) );
 	}
 
 	@Override
 	public CompletionStage<Long> selectIdentifier(String sql, Object[] paramValues) {
+		translateNulls( paramValues );
 		return preparedQuery( sql, Tuple.wrap( paramValues ) )
 				.thenApply( rowSet -> {
 					for (Row row: rowSet) {
@@ -93,11 +100,13 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Result> select(String sql, Object[] paramValues) {
+		translateNulls( paramValues );
 		return preparedQuery( sql, Tuple.wrap( paramValues ) ).thenApply(RowSetResult::new);
 	}
 
 	@Override
 	public CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues) {
+		translateNulls( paramValues );
 		return preparedQuery( sql, Tuple.wrap( paramValues ) ).thenApply(ResultSetAdaptor::new);
 	}
 
@@ -263,5 +272,59 @@ public class SqlClientConnection implements ReactiveConnection {
 	@Override
 	public CompletionStage<Void> executeBatch() {
 		return voidFuture();
+	}
+
+	private static void translateNulls(Object[] paramValues) {
+		for (int i = 0; i < paramValues.length; i++) {
+			Object arg = paramValues[i];
+			if (arg instanceof JDBCType) {
+				paramValues[i] = toNullValue( (JDBCType) arg );
+			}
+		}
+	}
+
+	private static NullValue toNullValue(JDBCType jdbcType) {
+		switch ( jdbcType.getVendorTypeNumber() ) {
+			case Types.BOOLEAN:
+			case Types.BIT: //we misuse BIT in H5
+				return NullValue.Boolean;
+			case Types.VARCHAR:
+			case Types.NVARCHAR:
+			case Types.CHAR:
+			case Types.NCHAR:
+			case Types.CLOB:
+			case Types.NCLOB:
+			case Types.LONGVARCHAR:
+			case Types.LONGNVARCHAR:
+				return NullValue.String;
+			case Types.FLOAT:
+			case Types.DOUBLE:
+			case Types.REAL:
+				return NullValue.Double;
+			case Types.BIGINT:
+				return NullValue.Long;
+			case Types.INTEGER:
+				return NullValue.Integer;
+			case Types.SMALLINT:
+			case Types.TINYINT: //should really map to Byte
+				return NullValue.Short;
+			case Types.DECIMAL:
+				return NullValue.BigDecimal;
+			case Types.BINARY:
+			case Types.BLOB:
+			case Types.LONGVARBINARY:
+				return NullValue.Buffer;
+			case Types.TIMESTAMP:
+				return NullValue.LocalDateTime;
+			case Types.DATE:
+				return NullValue.LocalDate;
+			case Types.TIME:
+				return NullValue.LocalTime;
+			case Types.TIMESTAMP_WITH_TIMEZONE:
+				return NullValue.OffsetDateTime;
+			case Types.TIME_WITH_TIMEZONE:
+				return NullValue.OffsetTime;
+			default: return null;
+		}
 	}
 }
