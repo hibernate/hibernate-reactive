@@ -310,6 +310,7 @@ public class SqlClientConnection implements ReactiveConnection {
 				return NullValue.Short;
 			case Types.DECIMAL:
 				return NullValue.BigDecimal;
+			case Types.VARBINARY:
 			case Types.BINARY:
 			case Types.BLOB:
 			case Types.LONGVARBINARY:
