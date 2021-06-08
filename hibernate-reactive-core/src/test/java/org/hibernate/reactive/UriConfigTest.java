@@ -54,22 +54,19 @@ public class UriConfigTest extends BaseReactiveTest {
     @Test
     public void testUriConfig(TestContext context) {
         String sql = selectQuery();
-        test(
-                context,
-                getSessionFactory()
+        test( context, getSessionFactory()
                         .withTransaction( (s, t) -> s.createNativeQuery( sql, String.class ).getSingleResult() )
-                        .thenAccept( ts -> context.assertTrue( ts instanceof String ) )
+                        .thenAccept( context::assertNotNull )
         );
     }
 
     private String selectQuery() {
         switch ( DatabaseConfiguration.dbType() ) {
             case POSTGRESQL:
+            case MSSQLSERVER:
                 return "select cast(current_timestamp as varchar)";
             case MYSQL:
                 return "select cast(current_timestamp as char) from dual";
-            case MSSQLSERVER:
-                return "select current_timestamp";
             case DB2:
             default:
                 throw new IllegalArgumentException();
