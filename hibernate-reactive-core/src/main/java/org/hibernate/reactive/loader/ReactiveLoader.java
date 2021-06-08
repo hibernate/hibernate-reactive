@@ -105,12 +105,11 @@ public interface ReactiveLoader {
 
 		// Applying LIMIT clause.
 		final LimitHandler limitHandler = limitHandler( queryParameters.getRowSelection(), session );
-		String sql = limitHandler.processSql( queryParameters.getFilteredSQL(), queryParameters.getRowSelection() );
+		String sql = limitHandler.processSql( queryParameters.getFilteredSQL(), queryParameters );
 
 		// Adding locks and comments.
 		sql = preprocessSQL( sql, queryParameters, session.getFactory(), afterLoadActions );
-
-		Object[] parameterArray = toParameterArray( queryParameters, session );
+		Object[] parameterArray = toParameterArray( queryParameters, session, limitHandler );
 
 		boolean hasFilter = session.getLoadQueryInfluencers().hasEnabledFilters();
 		if ( hasFilter ) {
@@ -179,7 +178,7 @@ public interface ReactiveLoader {
 	 */
 	default void discoverTypes(QueryParameters queryParameters, ResultSet resultSet) {}
 
-	default Object[] toParameterArray(QueryParameters queryParameters, SharedSessionContractImplementor session) {
-		return QueryParametersAdaptor.arguments( queryParameters, session );
+	default Object[] toParameterArray(QueryParameters queryParameters, SharedSessionContractImplementor session, LimitHandler limitHandler) {
+		return QueryParametersAdaptor.arguments( queryParameters, session, limitHandler );
 	}
 }
