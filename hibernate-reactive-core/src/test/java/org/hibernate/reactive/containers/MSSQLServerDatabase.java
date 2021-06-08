@@ -67,8 +67,9 @@ class MSSQLServerDatabase implements TestableDatabase {
 		return jdbcUrl + ";user=" + mssqlserver.getUsername() + ";password=" + mssqlserver.getPassword();
 	}
 
-	private static String buildUriWithCredentials(String jdbcUrl) {
-		return jdbcUrl + ";user=" + mssqlserver.getUsername() + ";password=" + mssqlserver.getPassword();
+	// Example: sqlserver://[user[:[password]]@]host[:port][/database][?attribute1=value1&attribute2=value2
+	private static String buildUriWithCredentials(String uri) {
+		return uri + "?user=" + mssqlserver.getUsername() + "&password=" + mssqlserver.getPassword();
 	}
 
 	private MSSQLServerDatabase() {
