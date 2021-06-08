@@ -28,8 +28,27 @@ public class SQLServerParameters extends Parameters {
         return new Parser(sql, parameterCount).result();
     }
 
+    /* Offset and Fetch gets applied just before the execution of the query but because we know
+     * how the string looks like for Sql Server, it's faster to replace the last bit instead
+     * of processing the whole query
+     */
     @Override
     public String processLimit(String sql, Object[] parameterArray, boolean hasOffset) {
+        if (isProcessingNotRequired(sql)) {
+            return sql;
+        }
+
+        // Replace 'offset ? fetch next ? rows only' with the @P style parameters for Sql Server
+        int index = hasOffset ? parameterArray.length - 1 : parameterArray.length;
+        int pos = sql.indexOf( " offset ?" );
+        if ( pos > -1 ) {
+            String sqlProcessed = sql.substring( 0, pos ) + " offset @P" + index++ + " rows";
+            if ( sql.indexOf( " fetch next ?" ) > -1 ) {
+                sqlProcessed += " fetch next @P" + index + " rows only ";
+            }
+            return sqlProcessed;
+        }
+
         return sql;
     }
 
