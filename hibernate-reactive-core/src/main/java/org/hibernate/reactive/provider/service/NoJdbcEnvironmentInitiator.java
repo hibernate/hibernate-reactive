@@ -135,10 +135,18 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 			return  CockroachDB201Dialect.class;
 		}
 		else if ( url.startsWith("sqlserver:") ) {
-			return  SQLServer2012Dialect.class;
+			return  NullableSQLServerDialect.class;
 		}
 		else {
 			return null;
+		}
+	}
+
+	public static final class NullableSQLServerDialect extends SQLServer2012Dialect {
+
+		@Override
+		public String getNullColumnString() {
+			return " null";
 		}
 	}
 }
