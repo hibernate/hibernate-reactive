@@ -1,11 +1,9 @@
+[![Hibernate team logo](http://static.jboss.org/hibernate/images/hibernate_logo_whitebkg_200px.png)](https://hibernate.org/reactive)
 
-![Hibernate logo][]
-
-[![CI Status](https://github.com/hibernate/hibernate-reactive/workflows/Hibernate%20Reactive%20CI/badge.svg)](https://github.com/hibernate/hibernate-reactive/actions?query=workflow%3A%22Hibernate+Reactive+CI%22)
-[![License](https://img.shields.io/badge/License-LGPL%202.1-green.svg)](https://opensource.org/licenses/LGPL-2.1)
-[![Maven Central](https://img.shields.io/maven-central/v/org.hibernate.reactive/hibernate-reactive-core.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.hibernate.reactive%22)
-
-[Hibernate logo]: http://static.jboss.org/hibernate/images/hibernate_logo_whitebkg_200px.png
+[![Main branch build status](https://github.com/hibernate/hibernate-reactive/workflows/Hibernate%20Reactive%20CI/badge.svg?style=flat)](https://github.com/hibernate/hibernate-reactive/actions?query=workflow%3A%22Hibernate+Reactive+CI%22)
+[![LGPL-2.1 license](https://img.shields.io/badge/License-LGPL%202.1-green.svg?logo=GNU&style=flat)](https://opensource.org/licenses/LGPL-2.1?)
+[![Latest version on Maven Central](https://img.shields.io/maven-central/v/org.hibernate.reactive/hibernate-reactive-core.svg?label=Maven%20Central&logo=apache-maven&style=flat)](https://search.maven.org/search?q=g:%22org.hibernate.reactive%22)
+[![Developers stream on Zulip](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg?logo=zulip&style=flat)](https://hibernate.zulipchat.com/#narrow/stream/205413-hibernate-reactive-dev)
 
 # Hibernate Reactive
 
@@ -242,3 +240,4 @@ At present several minor limitations remain.
   database-generated `@Version` properties is not yet supported.
 - The annotation `@org.hibernate.annotations.CollectionId` is not yet 
   supported.
+
