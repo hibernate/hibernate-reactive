@@ -94,7 +94,7 @@ tasks.withType(Test) {
 test {
     def selectedDb = project.hasProperty( 'db' )
             ? project.getProperty( 'db' )
-            : 'PostgreSQL'
+            : 'sqlserver'
     afterSuite { desc, result ->
         loggingSummary( selectedDb, result, desc )
     }
