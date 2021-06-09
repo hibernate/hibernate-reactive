@@ -20,7 +20,7 @@ class MSSQLServerDatabase implements TestableDatabase {
 
 	public static final MSSQLServerDatabase INSTANCE = new MSSQLServerDatabase();
 
-	public static final String PASSWORD = "HReact@~~";
+	public static final String PASSWORD = "~!HReact!~";
 
 	/**
 	 * Holds configuration for the Microsoft SQL Server database container. If the build is run with <code>-Pdocker</code> then

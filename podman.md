@@ -209,12 +209,12 @@ and schema to run the tests:
 
 * Server
 ```
-podman run --rm -it --name HibernateTestingMSSQL -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=HReact@~~' -p 1433:1433 mcr.microsoft.com/mssql/server:2019-latest
+podman run --rm -it --name HibernateTestingMSSQL -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD='~!HReact!~' -p 1433:1433 mcr.microsoft.com/mssql/server:2019-latest
 ```
 
 CLI
 ```
-podman exec -it HibernateTestingMSSQL /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P HReact@~~
+podman exec -it HibernateTestingMSSQL /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P ~!HReact!~
 ```
 
 [mssql-cli]:https://docs.microsoft.com/en-us/sql/tools/sqlcmd-utility?view=sql-server-ver15
