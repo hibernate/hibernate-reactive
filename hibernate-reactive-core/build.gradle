@@ -35,8 +35,11 @@ dependencies {
     testImplementation "io.vertx:vertx-db2-client:${vertxVersion}"
     testImplementation "io.vertx:vertx-mssql-client:${vertxVersion}"
 
-    // JDBC driver to test with ORM and PostgreSQL
+    // JDBC driver to test with ORM and PostgreSQL and for Tescontainers with CockroachDB
     testRuntimeOnly "org.postgresql:postgresql:42.2.16"
+
+    // JDBC driver for Testcontainers with MS SQL Server
+    testRuntimeOnly "com.microsoft.sqlserver:mssql-jdbc:9.2.1.jre8"
 
     // EHCache
     testRuntimeOnly "org.ehcache:ehcache:3.8.1"
