@@ -29,6 +29,7 @@ import org.hibernate.dialect.CockroachDB192Dialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.PostgreSQL81Dialect;
+import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
@@ -396,6 +397,13 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		//TODO: wooooo this is awful ... I believe the problem is fixed in Hibernate 6
 		if ( dialect instanceof PostgreSQL81Dialect || dialect instanceof CockroachDB192Dialect ) {
 			return sql + " returning " + delegate().getIdentifierColumnNames()[0];
+		}
+		if ( dialect instanceof SQLServerDialect ) {
+			// FIXME: Just a POC
+			if ( sql.contains( " default values" ) ) {
+				return sql.replace( " default values", " OUTPUT INSERTED." + delegate().getIdentifierColumnNames()[0] + " default values");
+			}
+			return sql.replace( " values ", " OUTPUT INSERTED." + delegate().getIdentifierColumnNames()[0] + " values ");
 		}
 		if ( dialect instanceof DB2Dialect ) {
 			return "select " + delegate().getIdentifierColumnNames()[0] + " from NEW TABLE (" + sql + ")";
