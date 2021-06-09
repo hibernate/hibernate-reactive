@@ -85,7 +85,6 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
     @Override
     public SqlConnectOptions connectOptions(URI uri) {
-
         String scheme = uri.getScheme();
         String path = uri.getPath();
         //TODO: Read database name for MSSQLServer
@@ -93,17 +92,23 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
                 ? path.substring( 1 )
                 : "";
 
-        String host = uri.getHost();
         if ( scheme.equals("db2") && database.indexOf( ':' ) > 0 ) {
             // DB2 URLs are a bit odd and have the format:
             // jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
             database = database.substring( 0, database.indexOf( ':' ) );
         }
 
+        String host = uri.getHost();
+        int port = uri.getPort();
         int index = uri.toString().indexOf( ';' );
-        if ( scheme.equals( "sqlserver" ) && index > 0 ) {
+        if ( scheme.contains( "sqlserver" ) && index > 0 ) {
             URI uriWithoutParams = URI.create( uri.toString().substring( 0, index ) );
             host = uriWithoutParams.getHost();
+            port = uriWithoutParams.getPort();
+        }
+
+        if ( port == -1 ) {
+            port = defaultPort( scheme );
         }
 
         //see if the credentials were specified via properties
@@ -131,7 +136,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
                         params = uri.getPath().substring(queryIndex).split(";");
                     }
                 }
-                else if ( scheme.equals( "sqlserver" ) ) {
+                else if ( scheme.contains( "sqlserver" ) ) {
                     String query = uri.getQuery();
                     String rawQuery = uri.getRawQuery();
                     String s = uri.toString();
@@ -160,10 +165,6 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
             }
         }
 
-        int port = uri.getPort() == -1
-                ? defaultPort( scheme )
-                : uri.getPort();
-
         if ( username == null ) {
             throw new HibernateError( "database username not specified (set the property 'javax.persistence.jdbc.user', or include it as a parameter in the connection URL)" );
         }
@@ -173,6 +174,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
                 .setPort( port )
                 .setDatabase( database )
                 .setUser( username );
+
         if (password != null) {
             connectOptions.setPassword( password );
         }
@@ -212,8 +214,8 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
                 return 50000;
             case "cockroachdb":
                 return 26257;
-            case "mssqlserver":
             case "sqlserver":
+            case "mssqlserver":
                 return 1433;
             default:
                 throw new IllegalArgumentException( "Unknown default port for scheme: " + scheme );
