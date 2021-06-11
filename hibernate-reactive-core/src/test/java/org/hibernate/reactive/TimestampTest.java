@@ -6,9 +6,11 @@
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.cfg.Configuration;
+
 import org.junit.Test;
 
 import javax.persistence.Basic;
@@ -16,49 +18,55 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 public class TimestampTest extends BaseReactiveTest {
-    @Override
-    protected Configuration constructConfiguration() {
-        Configuration configuration = super.constructConfiguration();
-        configuration.addAnnotatedClass(Record.class);
-        return configuration;
-    }
+	@Override
+	protected Configuration constructConfiguration() {
+		Configuration configuration = super.constructConfiguration();
+		configuration.addAnnotatedClass( Record.class );
+		return configuration;
+	}
 
-    @Test
-    public void test(TestContext context) {
-        Record record = new Record();
-        record.text = "initial text";
-        test(context,
-                getMutinySessionFactory()
-                        .withSession( session -> session.persist(record)
-                                .chain(session::flush)
-                                .invoke( () -> {
-                                    context.assertNotNull(record.created);
-                                    context.assertNotNull(record.updated);
-                                } )
-                                .invoke( () -> record.text = "edited text" )
-                                .chain(session::flush)
-                                .invoke( () -> {
-                                    context.assertNotNull(record.created);
-                                    context.assertNotNull(record.updated);
-                                    context.assertTrue( record.updated.isAfter(record.created) );
-                                } )
-                        ).chain( () -> getMutinySessionFactory()
-                        .withSession( session -> session.find(Record.class, record.id) ) )
-                        .invoke( (r) -> {
-                            context.assertNotNull(r.created);
-                            context.assertNotNull(r.updated);
-                            context.assertTrue( r.updated.isAfter(r.created) );
-                        } )
-        );
-    }
+	@Test
+	public void test(TestContext context) {
+		Record record = new Record();
+		record.text = "initial text";
+		test( context, getMutinySessionFactory()
+				.withSession( session -> session.persist( record )
+						.chain( session::flush )
+						.invoke( () -> context.assertEquals(
+								record.created.truncatedTo( ChronoUnit.MILLIS ),
+								record.updated.truncatedTo( ChronoUnit.MILLIS )
+						) )
+						.invoke( () -> record.text = "edited text" )
+						.chain( session::flush )
+						.invoke( () -> assertInstants( context, record ) ) )
+				.chain( () -> getMutinySessionFactory().withSession( session -> session
+						.find( Record.class, record.id ) ) )
+				.invoke( r -> assertInstants( context, record ) )
+		);
+	}
 
-    @Entity(name="Record")
-    static class Record {
-        @GeneratedValue @Id long id;
-        @Basic(optional = false) String text;
-        @CreationTimestamp Instant created;
-        @UpdateTimestamp Instant updated;
-    }
+	private static void assertInstants(TestContext ctx, Record r) {
+		ctx.assertNotNull( r.created );
+		ctx.assertNotNull( r.updated );
+		ctx.assertTrue(
+				r.updated.isAfter( r.created ),
+				"Updated instant is before created. Updated[" + r.updated + "], Created[" + r.created + "]"
+		);
+	}
+
+	@Entity(name = "Record")
+	static class Record {
+		@GeneratedValue
+		@Id
+		long id;
+		@Basic(optional = false)
+		String text;
+		@CreationTimestamp
+		Instant created;
+		@UpdateTimestamp
+		Instant updated;
+	}
 }
