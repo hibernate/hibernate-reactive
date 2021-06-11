@@ -36,8 +36,8 @@ public class TimestampTest extends BaseReactiveTest {
 				.withSession( session -> session.persist( record )
 						.chain( session::flush )
 						.invoke( () -> context.assertEquals(
-								record.created.truncatedTo( ChronoUnit.MILLIS ),
-								record.updated.truncatedTo( ChronoUnit.MILLIS )
+								record.created.truncatedTo( ChronoUnit.HOURS ),
+								record.updated.truncatedTo( ChronoUnit.HOURS )
 						) )
 						.invoke( () -> record.text = "edited text" )
 						.chain( session::flush )
