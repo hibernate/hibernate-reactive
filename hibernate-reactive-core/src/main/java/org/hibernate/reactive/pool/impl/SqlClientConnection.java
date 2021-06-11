@@ -117,6 +117,11 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	@Override
+	public CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues) {
+		return preparedQueryOutsideTransaction( sql, Tuple.wrap( paramValues ) ).thenApply(ResultSetAdaptor::new);
+	}
+
+	@Override
 	public CompletionStage<Void> execute(String sql) {
 		return preparedQuery( sql ).thenApply( ignore -> null );
 	}
@@ -192,6 +197,11 @@ public class SqlClientConnection implements ReactiveConnection {
 	public CompletionStage<RowSet<Row>> preparedQueryOutsideTransaction(String sql) {
 		feedback( sql );
 		return pool.preparedQuery( sql ).execute().toCompletionStage();
+	}
+
+	public CompletionStage<RowSet<Row>> preparedQueryOutsideTransaction(String sql, Tuple parameters) {
+		feedback( sql );
+		return pool.preparedQuery( sql ).execute( parameters ).toCompletionStage();
 	}
 
 	private void feedback(String sql) {

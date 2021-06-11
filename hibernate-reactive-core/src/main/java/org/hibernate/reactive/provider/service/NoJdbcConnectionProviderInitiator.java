@@ -29,8 +29,10 @@ public class NoJdbcConnectionProviderInitiator implements StandardServiceInitiat
 	public ConnectionProvider initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
 		ConnectionProvider provider = ConnectionProviderInitiator.INSTANCE.initiateService(configurationValues, registry);
 		if (provider instanceof DriverManagerConnectionProviderImpl) {
-			registry.getService( SchemaManagementTool.class )
-					.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) );
+			final SchemaManagementTool schemaManagementTool = registry.getService( SchemaManagementTool.class );
+			final ReactiveGenerationTarget reactiveGenerationTarget = new ReactiveGenerationTarget( registry );
+					schemaManagementTool.setCustomDatabaseGenerationTarget( reactiveGenerationTarget );
+
 			return NoJdbcConnectionProvider.INSTANCE;
 		}
 		return provider;

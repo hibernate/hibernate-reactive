@@ -31,8 +31,8 @@ public class NoJdbcMultiTenantConnectionProviderInitiator implements StandardSer
             return null;
         }
 
-        registry.getService( SchemaManagementTool.class )
-                .setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) );
+        final SchemaManagementTool schemaManagementTool = registry.getService( SchemaManagementTool.class );
+        schemaManagementTool.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) );
 
         return new NoJdbcMultiTenantConnectionProvider();
     }
