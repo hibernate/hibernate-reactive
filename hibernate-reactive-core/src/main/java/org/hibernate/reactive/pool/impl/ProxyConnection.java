@@ -130,6 +130,11 @@ final class ProxyConnection implements ReactiveConnection {
 	}
 
 	@Override
+	public CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues) {
+		return withConnection( conn -> conn.selectJdbcOutsideTransaction( sql, paramValues ) );
+	}
+
+	@Override
 	public CompletionStage<Long> selectIdentifier(String sql, Object[] paramValues) {
 		return withConnection( conn -> conn.selectIdentifier( sql, paramValues ) );
 	}
