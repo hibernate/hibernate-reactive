@@ -15,6 +15,7 @@ jobs:
     strategy:
       matrix:
         db: [ 'MSSQLServer' ]
+        vertx-version: [ '[4.1,4.2)' ]
     steps:
     - uses: actions/checkout@v2
     - name: Get year/month for cache key
@@ -36,8 +37,10 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
+    - name: Print the effective Vert.x version used
+      run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency io.vertx -PvertxVersion='${{ matrix.vertx-version }}' -PenableSonatypeOpenSourceSnapshotsRep
     - name: Build and Test with ${{ matrix.db }}
-      run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }} -PvertxVersion='[4.1,4.2)' -PenableSonatypeOpenSourceSnapshotsRep
+      run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }} -PvertxVersion='${{ matrix.vertx-version }}' -PenableSonatypeOpenSourceSnapshotsRep
     - name: Upload reports (if build failed)
       uses: actions/upload-artifact@v2
       if: failure()
