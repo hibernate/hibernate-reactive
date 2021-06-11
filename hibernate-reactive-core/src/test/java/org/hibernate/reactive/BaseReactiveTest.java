@@ -6,6 +6,7 @@
 package org.hibernate.reactive;
 
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -22,6 +23,7 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
+import org.hibernate.reactive.provider.service.ReactiveSchemaManagementTool;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.SessionFactoryManager;
 import org.hibernate.reactive.vertx.VertxInstance;
@@ -132,9 +134,9 @@ public abstract class BaseReactiveTest {
 
 	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
 		return deleteEntities( Arrays.stream( entities )
-								  .map( BaseReactiveTest::defaultEntityName )
-								  .collect( Collectors.toList() )
-								  .toArray( new String[entities.length] ) );
+									   .map( BaseReactiveTest::defaultEntityName )
+									   .collect( Collectors.toList() )
+									   .toArray( new String[entities.length] ) );
 	}
 
 	private static String defaultEntityName(Class<?> aClass) {
@@ -152,27 +154,32 @@ public abstract class BaseReactiveTest {
 
 	@Before
 	public void before(TestContext context) {
-		Async async = context.async();
+		test( context, setupSessionFactory( constructConfiguration() ) );
+	}
+
+	protected CompletionStage<Void> setupSessionFactory(Configuration configuration) {
+		CompletableFuture<Void> future = new CompletableFuture<>();
 		vertxContextRule.vertx()
 				.executeBlocking(
 						// schema generation is a blocking operation and so it causes an
 						// exception when run on the Vert.x event loop. So call it using
 						// Vertx.executeBlocking()
-						this::startFactoryManager,
+						promise -> startFactoryManager( promise, configuration ),
 						event -> {
 							if ( event.succeeded() ) {
-								async.complete();
+								future.complete( null );
 							}
 							else {
-								context.fail( event.cause() );
+								future.completeExceptionally( event.cause() );
 							}
 						}
 				);
+		return future;
 	}
 
-	private void startFactoryManager(Promise<Object> p) {
+	private void startFactoryManager(Promise<Object> p, Configuration configuration ) {
 		try {
-			factoryManager.start( this::createHibernateSessionFactory );
+			factoryManager.start( () -> createHibernateSessionFactory( configuration ) );
 			p.complete();
 		}
 		catch (Throwable e) {
@@ -180,8 +187,7 @@ public abstract class BaseReactiveTest {
 		}
 	}
 
-	private SessionFactory createHibernateSessionFactory() {
-		Configuration configuration = constructConfiguration();
+	private SessionFactory createHibernateSessionFactory(Configuration configuration) {
 		StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
 				.addService( VertxInstance.class, (VertxInstance) () -> vertxContextRule.vertx() )
 				.applySettings( configuration.getProperties() );
@@ -203,19 +209,21 @@ public abstract class BaseReactiveTest {
 	protected void configureServices(StandardServiceRegistry registry) {
 		if ( dbType() == DBType.MYSQL ) {
 			registry.getService( ConnectionProvider.class ); //force the NoJdbcConnectionProvider to load first
-			registry.getService( SchemaManagementTool.class )
-					.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) {
-						@Override
-						public void prepare() {
-							super.prepare();
-							accept("set foreign_key_checks = 0");
-						}
-						@Override
-						public void release() {
-							accept("set foreign_key_checks = 1");
-							super.release();
-						}
-					} );
+			ReactiveSchemaManagementTool tool = (ReactiveSchemaManagementTool) registry.getService(
+					SchemaManagementTool.class
+			);
+			tool.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) {
+				@Override
+				public void prepare() {
+					super.prepare();
+					accept("set foreign_key_checks = 0");
+				}
+				@Override
+				public void release() {
+					accept("set foreign_key_checks = 1");
+					super.release();
+				}
+			} );
 		}
 	}
 

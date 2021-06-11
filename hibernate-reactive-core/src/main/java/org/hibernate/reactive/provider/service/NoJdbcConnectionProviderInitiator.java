@@ -10,7 +10,6 @@ import org.hibernate.engine.jdbc.connections.internal.ConnectionProviderInitiato
 import org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.hibernate.tool.schema.spi.SchemaManagementTool;
 
 import java.util.Map;
 
@@ -29,8 +28,6 @@ public class NoJdbcConnectionProviderInitiator implements StandardServiceInitiat
 	public ConnectionProvider initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
 		ConnectionProvider provider = ConnectionProviderInitiator.INSTANCE.initiateService(configurationValues, registry);
 		if (provider instanceof DriverManagerConnectionProviderImpl) {
-			registry.getService( SchemaManagementTool.class )
-					.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) );
 			return NoJdbcConnectionProvider.INSTANCE;
 		}
 		return provider;
