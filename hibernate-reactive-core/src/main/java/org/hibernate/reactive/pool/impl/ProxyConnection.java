@@ -24,7 +24,7 @@ import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnE
 final class ProxyConnection implements ReactiveConnection {
 
 	private final ReactiveConnectionPool sqlClientPool;
-	private ReactiveConnection connection;
+	private CompletionStage<ReactiveConnection> connection;
 	private boolean connected;
 	private boolean closed;
 	private final String tenantId;
@@ -48,20 +48,12 @@ final class ProxyConnection implements ReactiveConnection {
 		}
 		if ( !connected ) {
 			connected = true; // we're not allowed to fetch two connections!
-			CompletionStage<ReactiveConnection> connection =
+			connection =
 					tenantId == null ? sqlClientPool.getConnection() : sqlClientPool.getConnection( tenantId );
-			return connection.thenApply( newConnection -> this.connection = newConnection )
-					.thenCompose( operation );
+			return connection.thenCompose( operation );
 		}
 		else {
-			if ( connection == null ) {
-				// we're already in the process of fetching a connection,
-				// so this must be an illegal concurrent call
-				CompletableFuture<T> ret = new CompletableFuture<>();
-				ret.completeExceptionally( new IllegalStateException( "session is currently connecting to database" ) );
-				return ret;
-			}
-			return operation.apply( connection );
+			return connection.thenCompose( operation );
 		}
 	}
 
@@ -148,7 +140,7 @@ final class ProxyConnection implements ReactiveConnection {
 	public CompletionStage<Void> close() {
 		CompletionStage<Void> stage = CompletionStages.voidFuture();
 		if ( connection != null ) {
-			stage = stage.thenCompose( v -> connection.close() );
+			stage = stage.thenCompose( v -> connection.thenCompose(ReactiveConnection::close) );
 
 		}
 		return stage.thenAccept( v -> {
