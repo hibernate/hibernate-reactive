@@ -430,6 +430,8 @@ public class ResultSetAdaptor implements ResultSet {
 
 			@Override
 			public String getColumnTypeName(int column) {
+				// This information is in rows.columnDescriptors().get( column-1 ).dataType.name
+				// but does not appear to be accessible.
 				return null;
 			}
 

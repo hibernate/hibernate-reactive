@@ -29,6 +29,7 @@ import org.hibernate.reactive.provider.service.NoJdbcConnectionProviderInitiator
 import org.hibernate.reactive.provider.service.NoJdbcEnvironmentInitiator;
 import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveQueryTranslatorFactoryInitiator;
+import org.hibernate.reactive.provider.service.ReactiveSchemaManagementToolInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInitiator;
 import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
@@ -38,7 +39,6 @@ import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
 import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
-import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -83,7 +83,6 @@ public final class ReactiveServiceInitiators {
         serviceInitiators.add( PropertyAccessStrategyResolverInitiator.INSTANCE );
 
         serviceInitiators.add( ImportSqlCommandExtractorInitiator.INSTANCE );
-        serviceInitiators.add( SchemaManagementToolInitiator.INSTANCE );
 
         //Custom for Hibernate Reactive:
         serviceInitiators.add( NoJdbcEnvironmentInitiator.INSTANCE );
@@ -104,6 +103,9 @@ public final class ReactiveServiceInitiators {
         serviceInitiators.add( BatchBuilderInitiator.INSTANCE );
         serviceInitiators.add( JdbcServicesInitiator.INSTANCE );
         serviceInitiators.add( RefCursorSupportInitiator.INSTANCE );
+
+        //Custom for Hibernate Reactive:
+        serviceInitiators.add( ReactiveSchemaManagementToolInitiator.INSTANCE );
 
         //Custom for Hibernate Reactive:
         serviceInitiators.add( ReactiveQueryTranslatorFactoryInitiator.INSTANCE );

@@ -6,6 +6,7 @@
 package org.hibernate.reactive;
 
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -124,7 +125,7 @@ public abstract class BaseReactiveTest {
 			doneTablespace = true;
 		}
 		//Use JAVA_TOOL_OPTIONS='-Dhibernate.show_sql=true'
-		configuration.setProperty( Settings.SHOW_SQL, System.getProperty(Settings.SHOW_SQL, "false") );
+		configuration.setProperty( Settings.SHOW_SQL, System.getProperty(Settings.SHOW_SQL, "true") );
 		configuration.setProperty( Settings.FORMAT_SQL, System.getProperty(Settings.FORMAT_SQL, "false") );
 		configuration.setProperty( Settings.HIGHLIGHT_SQL, System.getProperty(Settings.HIGHLIGHT_SQL, "true") );
 		return configuration;
@@ -132,9 +133,9 @@ public abstract class BaseReactiveTest {
 
 	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
 		return deleteEntities( Arrays.stream( entities )
-								  .map( BaseReactiveTest::defaultEntityName )
-								  .collect( Collectors.toList() )
-								  .toArray( new String[entities.length] ) );
+									   .map( BaseReactiveTest::defaultEntityName )
+									   .collect( Collectors.toList() )
+									   .toArray( new String[entities.length] ) );
 	}
 
 	private static String defaultEntityName(Class<?> aClass) {
@@ -152,27 +153,32 @@ public abstract class BaseReactiveTest {
 
 	@Before
 	public void before(TestContext context) {
-		Async async = context.async();
+		test( context, setupSessionFactory( constructConfiguration() ) );
+	}
+
+	protected CompletionStage<Void> setupSessionFactory(Configuration configuration) {
+		CompletableFuture<Void> future = new CompletableFuture<>();
 		vertxContextRule.vertx()
 				.executeBlocking(
 						// schema generation is a blocking operation and so it causes an
 						// exception when run on the Vert.x event loop. So call it using
 						// Vertx.executeBlocking()
-						this::startFactoryManager,
+						promise -> startFactoryManager( promise, configuration ),
 						event -> {
 							if ( event.succeeded() ) {
-								async.complete();
+								future.complete( null );
 							}
 							else {
-								context.fail( event.cause() );
+								future.completeExceptionally( event.cause() );
 							}
 						}
 				);
+		return future;
 	}
 
-	private void startFactoryManager(Promise<Object> p) {
+	private void startFactoryManager(Promise<Object> p, Configuration configuration ) {
 		try {
-			factoryManager.start( this::createHibernateSessionFactory );
+			factoryManager.start( () -> createHibernateSessionFactory( configuration ) );
 			p.complete();
 		}
 		catch (Throwable e) {
@@ -180,8 +186,7 @@ public abstract class BaseReactiveTest {
 		}
 	}
 
-	private SessionFactory createHibernateSessionFactory() {
-		Configuration configuration = constructConfiguration();
+	private SessionFactory createHibernateSessionFactory(Configuration configuration) {
 		StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
 				.addService( VertxInstance.class, (VertxInstance) () -> vertxContextRule.vertx() )
 				.applySettings( configuration.getProperties() );
