@@ -37,7 +37,7 @@ jobs:
       with:
         java-version: 1.8
     - name: Build and Test with ${{ matrix.db }}
-      run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
+      run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }} -PvertxVersion='[4.1,4.2)' -PenableSonatypeOpenSourceSnapshotsRep
     - name: Upload reports (if build failed)
       uses: actions/upload-artifact@v2
       if: failure()
