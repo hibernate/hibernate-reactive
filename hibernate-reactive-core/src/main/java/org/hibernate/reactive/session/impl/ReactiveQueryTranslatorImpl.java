@@ -30,10 +30,13 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.param.ParameterSpecification;
+import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.bulk.StatementsWithParameters;
 import org.hibernate.reactive.loader.hql.impl.ReactiveQueryLoader;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.jboss.logging.Logger;
 
@@ -195,8 +198,7 @@ public class ReactiveQueryTranslatorImpl<T> extends QueryTranslatorImpl {
 		}
 		else {
 			return new StatementsWithParameters() {
-				final ParameterSpecification[] parameterSpecifications =
-						getCollectedParameterSpecifications().toArray( new ParameterSpecification[0] );
+				final ParameterSpecification[] parameterSpecifications = getCollectedParameterSpecifications().toArray( new ParameterSpecification[0] );
 				final String[] statements = process( executor.getSqlStatements(), parameterSpecifications.length );
 
 				@Override
@@ -213,7 +215,32 @@ public class ReactiveQueryTranslatorImpl<T> extends QueryTranslatorImpl {
 
 				@Override
 				public CompletionStage<Integer> execute(ReactiveQueryExecutor session, QueryParameters queryParameters) {
-					return null;
+					return CompletionStages.total( 0
+							, statements.length
+							, i -> executeStatement( statements[i], QueryParametersAdaptor.arguments( queryParameters, getParameterSpecifications()[i], session.getSharedContract() ), this, session ) );
+				}
+
+				private CompletionStage<Integer> executeStatement(String sql,
+																  Object[] arguments,
+																  StatementsWithParameters statementsWithParameters,
+																  ReactiveQueryExecutor session) {
+					ReactiveConnection connection = session.getReactiveConnection();
+					if ( !statementsWithParameters.isSchemaDefinitionStatement( sql ) ) {
+						return connection.update( sql, arguments );
+					}
+					else if ( statementsWithParameters.isTransactionalStatement( sql ) ) {
+						// a DML statement that should be executed within the
+						// transaction (local temporary tables)
+						return connection.execute( sql ).thenApply( v -> 0 );
+					}
+					else {
+						// a DML statement that should be executed outside the
+						// transaction (global temporary tables)
+						return connection.executeOutsideTransaction( sql )
+								// ignore errors creating tables, since a create
+								// table fails whenever the table already exists
+								.handle( (v, x) -> 0 );
+					}
 				}
 
 				@Override
@@ -221,6 +248,8 @@ public class ReactiveQueryTranslatorImpl<T> extends QueryTranslatorImpl {
 					return false;
 				}
 			};
+
+
 		}
 	}
 
