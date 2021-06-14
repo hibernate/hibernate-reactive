@@ -152,6 +152,12 @@ public class ResultSetAdaptor implements ResultSet {
 	}
 
 	@Override
+	public Time getTime(int columnIndex, Calendar cal) {
+		LocalTime localTime = row.getLocalTime(columnIndex);
+		return (wasNull=localTime==null) ? null : Time.valueOf(localTime);
+	}
+
+	@Override
 	public Timestamp getTimestamp(int columnIndex) {
 		LocalDateTime localDateTime = row.getLocalDateTime(columnIndex);
 		return (wasNull=localDateTime==null) ? null : Timestamp.valueOf(localDateTime);
@@ -249,6 +255,12 @@ public class ResultSetAdaptor implements ResultSet {
 	public Time getTime(String columnLabel) {
 		LocalTime localTime = row.getLocalTime(columnLabel);
 		return (wasNull=localTime==null) ? null : Time.valueOf(localTime);
+	}
+
+	@Override
+	public Time getTime(String columnLabel, Calendar cal) {
+		LocalTime localTime = row.getLocalTime( columnLabel );
+		return ( wasNull = localTime == null ) ? null : Time.valueOf( localTime );
 	}
 
 	@Override
@@ -708,16 +720,6 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Date getDate(String columnLabel, Calendar cal) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public Time getTime(int columnIndex, Calendar cal) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public Time getTime(String columnLabel, Calendar cal) {
 		throw new UnsupportedOperationException();
 	}
 

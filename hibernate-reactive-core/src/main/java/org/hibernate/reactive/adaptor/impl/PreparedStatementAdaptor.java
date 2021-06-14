@@ -158,6 +158,11 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 	}
 
 	@Override
+	public void setTime(int parameterIndex, Time x, Calendar cal) {
+		put( parameterIndex, x.toLocalTime() );
+	}
+
+	@Override
 	public void setTimestamp(int parameterIndex, Timestamp x) {
 		put( parameterIndex, x.toLocalDateTime() );
 	}
@@ -240,11 +245,6 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 	@Override
 	public void setDate(int parameterIndex, Date x, Calendar cal) {
 		put( parameterIndex, x.toLocalDate() );
-	}
-
-	@Override
-	public void setTime(int parameterIndex, Time x, Calendar cal) {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override
