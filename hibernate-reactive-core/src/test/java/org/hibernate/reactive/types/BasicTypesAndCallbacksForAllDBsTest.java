@@ -20,6 +20,8 @@ import java.net.URL;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -371,6 +373,30 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testDuration(TestContext context) {
+		Basic basic = new Basic();
+		basic.duration = Duration.ofMillis( 1894657L );
+
+		testField( context, basic, found -> {
+			context.assertTrue( found.duration instanceof Duration );
+			context.assertEquals( basic.duration, found.duration );
+		} );
+	}
+
+	@Test
+	public void testInstant(TestContext context) {
+		Basic basic = new Basic();
+		basic.instant = Instant.now();
+
+		testField( context, basic, found -> {
+			context.assertTrue( found.instant instanceof Instant );
+			// Without the truncated it fails with JDK 15+
+			context.assertEquals( basic.instant.truncatedTo( ChronoUnit.MILLIS ),
+								  found.instant.truncatedTo( ChronoUnit.MILLIS ) );
+		} );
+	}
+
+	@Test
 	public void testCallbacksAndVersioning(TestContext context) {
 		Basic parent = new Basic( "Parent" );
 		Basic basik = new Basic( "Hello World" );
@@ -564,6 +590,10 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		private LocalTime localTime;
 		@Temporal(TemporalType.TIME)
 		Date dateAsTime;
+
+		Instant instant;
+
+		Duration duration;
 
 		@Transient
 		boolean prePersisted;
