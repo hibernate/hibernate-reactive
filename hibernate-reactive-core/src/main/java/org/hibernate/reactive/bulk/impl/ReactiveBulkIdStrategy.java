@@ -35,10 +35,12 @@ import org.hibernate.mapping.Table;
 import org.hibernate.param.ParameterSpecification;
 import org.hibernate.persister.collection.AbstractCollectionPersister;
 import org.hibernate.persister.entity.Queryable;
+import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.bulk.StatementsWithParameters;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.pool.impl.Parameters;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.Delete;
 import org.hibernate.sql.Update;
@@ -50,7 +52,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.total;
 
 /**
  * A reactive version of {@link AbstractMultiTableBulkIdStrategyImpl} used
@@ -73,10 +78,6 @@ public class ReactiveBulkIdStrategy
 	private final Parameters parameters;
 
 	private StandardServiceRegistry serviceRegistry;
-
-//	private boolean useSessionIdColumn() {
-//		return db2;
-//	}
 
 	public ReactiveBulkIdStrategy(MetadataImplementor metadata) {
 		this( metadata.getDatabase().getDialect() );
@@ -146,6 +147,9 @@ public class ReactiveBulkIdStrategy
 
 		private final String[] statements;
 		private final ParameterSpecification[][] parameterSpecifications;
+
+		private final String[] createTempStatemets;
+		private final ParameterSpecification[][] createTempParameterSpecifications;
 		private final Queryable targetedPersister;
 
 		@Override
@@ -156,8 +160,11 @@ public class ReactiveBulkIdStrategy
 		public TableBasedUpdateHandlerImpl(SessionFactoryImplementor factory, HqlSqlWalker walker) {
 			super( factory, walker );
 
-			ArrayList<String> statements = new ArrayList<>();
-			ArrayList<ParameterSpecification[]> parameterSpecifications = new ArrayList<>();
+			List<String> statements = new ArrayList<>();
+			List<ParameterSpecification[]> parameterSpecifications = new ArrayList<>();
+
+			List<String> createTempStatements = new ArrayList<>();
+			List<ParameterSpecification[]> createTempParameterSpecifications = new ArrayList<>();
 
 			UpdateStatement updateStatement = (UpdateStatement) walker.getAST();
 			FromElement fromElement = updateStatement.getFromClause().getFromElement();
@@ -169,7 +176,7 @@ public class ReactiveBulkIdStrategy
 			String[] tableNames = targetedPersister.getConstraintOrderedTableNameClosure();
 			String[][] columnNames = targetedPersister.getContraintOrderedTableKeyColumnClosure();
 
-			createTempTable( statements, parameterSpecifications, tableInfo );
+			createTempTable( createTempStatements, createTempParameterSpecifications, tableInfo );
 
 			ProcessedWhereClause processedWhereClause = processWhereClause( updateStatement.getWhereClause() );
 			String idInsertSelect = generateIdInsertSelect( bulkTargetAlias, tableInfo, processedWhereClause );
@@ -212,6 +219,9 @@ public class ReactiveBulkIdStrategy
 
 			this.statements = ArrayHelper.toStringArray( statements );
 			this.parameterSpecifications = parameterSpecifications.toArray( new ParameterSpecification[0][] );
+
+			this.createTempStatemets = ArrayHelper.toStringArray( createTempStatements );
+			this.createTempParameterSpecifications = createTempParameterSpecifications.toArray( new ParameterSpecification[0][] );
 		}
 
 		@Override
@@ -237,6 +247,52 @@ public class ReactiveBulkIdStrategy
 		@Override
 		public Queryable getTargetedQueryable() {
 			return targetedPersister;
+		}
+
+		@Override
+		public CompletionStage<Integer> execute(ReactiveQueryExecutor session, QueryParameters queryParameters) {
+			return total( 0, createTempStatemets.length, i -> executeQueryStatement( createTempStatemets[i], session ) )
+					.thenCompose( z -> total(
+							0, statements.length,
+							i -> executeStatement(
+									statements[i],
+									QueryParametersAdaptor.arguments(
+											queryParameters,
+											parameterSpecifications[i],
+											session.getSharedContract()
+									),
+									this,
+									session
+							)
+					) );
+		}
+
+		private CompletionStage<Integer> executeQueryStatement(String sql, ReactiveQueryExecutor session) {
+			ReactiveConnection connection = session.getReactiveConnection();
+			return connection.executeStatement( sql ).thenCompose( CompletionStages::zeroFuture );
+		}
+
+		private CompletionStage<Integer> executeStatement(String sql,
+														  Object[] arguments,
+														  StatementsWithParameters statementsWithParameters,
+														  ReactiveQueryExecutor session) {
+			ReactiveConnection connection = session.getReactiveConnection();
+			if ( !statementsWithParameters.isSchemaDefinitionStatement( sql ) ) {
+				return connection.update( sql, arguments );
+			}
+			else if ( statementsWithParameters.isTransactionalStatement( sql ) ) {
+				// a DML statement that should be executed within the
+				// transaction (local temporary tables)
+				return connection.execute( sql ).thenApply( v -> 0 );
+			}
+			else {
+				// a DML statement that should be executed outside the
+				// transaction (global temporary tables)
+				return connection.executeOutsideTransaction( sql )
+						// ignore errors creating tables, since a create
+						// table fails whenever the table already exists
+						.handle( (v, x) -> 0 );
+			}
 		}
 
 		@Override
@@ -282,9 +338,11 @@ public class ReactiveBulkIdStrategy
 			implements MultiTableBulkIdStrategy.DeleteHandler, StatementsWithParameters {
 
 		private final Queryable targetedPersister;
+		private final String[] createTempStatements;
+		private final ParameterSpecification[][] createTempParameterSpecifications;
 
-		private final ParameterSpecification[][] parameterSpecifications;
 		private final String[] statements;
+		private final ParameterSpecification[][] parameterSpecifications;
 
 		@Override
 		public ParameterSpecification[][] getParameterSpecifications() {
@@ -294,8 +352,11 @@ public class ReactiveBulkIdStrategy
 		public TableBasedDeleteHandlerImpl(SessionFactoryImplementor factory, HqlSqlWalker walker) {
 			super( factory, walker );
 
-			ArrayList<String> statements = new ArrayList<>();
-			ArrayList<ParameterSpecification[]> parameterSpecifications = new ArrayList<>();
+			List<String> statements = new ArrayList<>();
+			List<ParameterSpecification[]> parameterSpecifications = new ArrayList<>();
+
+			List<String> createTempStatements = new ArrayList<>();
+			List<ParameterSpecification[]> createTempParameterSpecifications = new ArrayList<>();
 
 			DeleteStatement deleteStatement = (DeleteStatement) walker.getAST();
 			FromElement fromElement = deleteStatement.getFromClause().getFromElement();
@@ -303,7 +364,7 @@ public class ReactiveBulkIdStrategy
 			targetedPersister = fromElement.getQueryable();
 			IdTableInfoImpl tableInfo = getIdTableInfo( targetedPersister );
 
-			createTempTable( statements, parameterSpecifications, tableInfo );
+			createTempTable( createTempStatements, createTempParameterSpecifications, tableInfo );
 
 			ProcessedWhereClause processedWhereClause = processWhereClause( deleteStatement.getWhereClause() );
 			String idInsertSelect = generateIdInsertSelect( bulkTargetAlias, tableInfo, processedWhereClause );
@@ -353,6 +414,9 @@ public class ReactiveBulkIdStrategy
 
 			dropTempTable( statements, parameterSpecifications, tableInfo );
 
+			this.createTempStatements = ArrayHelper.toStringArray( createTempStatements );
+			this.createTempParameterSpecifications = createTempParameterSpecifications.toArray( new ParameterSpecification[0][] );
+
 			this.statements = ArrayHelper.toStringArray( statements );
 			this.parameterSpecifications = parameterSpecifications.toArray( new ParameterSpecification[0][] );
 		}
@@ -391,6 +455,55 @@ public class ReactiveBulkIdStrategy
 		}
 
 		@Override
+		public CompletionStage<Integer> execute(ReactiveQueryExecutor session, QueryParameters queryParameters) {
+			return executeCreateTempStatement( session, queryParameters )
+					.thenCompose( v -> total(
+					0, statements.length,
+					i -> executeStatement( statements[i], QueryParametersAdaptor.arguments(
+							queryParameters,
+							parameterSpecifications[i],
+							session.getSharedContract()
+										   ),
+										   this,
+										   session
+					) ) );
+		}
+
+		private CompletionStage<Integer> executeCreateTempStatement(
+				ReactiveQueryExecutor session,
+				QueryParameters queryParameters) {
+			return total( 0, createTempStatements.length, i -> executeQueryStatement( createTempStatements[i], session ) );
+		}
+
+		private CompletionStage<Integer> executeQueryStatement(String sql, ReactiveQueryExecutor session) {
+			ReactiveConnection connection = session.getReactiveConnection();
+			return connection.executeStatement( sql ).thenCompose( CompletionStages::zeroFuture );
+		}
+
+		private CompletionStage<Integer> executeStatement(String sql,
+														  Object[] arguments,
+														  StatementsWithParameters statementsWithParameters,
+														  ReactiveQueryExecutor session) {
+			ReactiveConnection connection = session.getReactiveConnection();
+			if ( !statementsWithParameters.isSchemaDefinitionStatement( sql ) ) {
+				return connection.update( sql, arguments );
+			}
+			else if ( statementsWithParameters.isTransactionalStatement( sql ) ) {
+				// a DML statement that should be executed within the
+				// transaction (local temporary tables)
+				return connection.execute( sql ).thenApply( v -> 0 );
+			}
+			else {
+				// a DML statement that should be executed outside the
+				// transaction (global temporary tables)
+				return connection.executeOutsideTransaction( sql )
+						// ignore errors creating tables, since a create
+						// table fails whenever the table already exists
+						.handle( (v, x) -> 0 );
+			}
+		}
+
+		@Override
 		public int execute(SharedSessionContractImplementor session, QueryParameters queryParameters) {
 			throw new UnsupportedOperationException();
 		}
@@ -416,8 +529,8 @@ public class ReactiveBulkIdStrategy
 //		}
 	}
 
-	private void createTempTable(ArrayList<String> statements,
-								 ArrayList<ParameterSpecification[]> parameterSpecifications,
+	private void createTempTable(List<String> statements,
+								 List<ParameterSpecification[]> parameterSpecifications,
 								 IdTableInfoImpl tableInfo) {
 		if (db2) {
 			if ( createdGlobalTemporaryTables.add( tableInfo.getQualifiedIdTableName() ) ) {
@@ -434,8 +547,8 @@ public class ReactiveBulkIdStrategy
 		}
 	}
 
-	private void dropTempTable(ArrayList<String> statements,
-							   ArrayList<ParameterSpecification[]> parameterSpecifications,
+	private void dropTempTable(List<String> statements,
+							   List<ParameterSpecification[]> parameterSpecifications,
 							   IdTableInfoImpl tableInfo) {
 //		if ( useSessionIdColumn() ) {
 //			Delete drop = new Delete()

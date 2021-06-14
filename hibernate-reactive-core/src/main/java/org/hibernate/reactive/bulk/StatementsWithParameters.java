@@ -5,7 +5,11 @@
  */
 package org.hibernate.reactive.bulk;
 
+import java.util.concurrent.CompletionStage;
+
+import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.param.ParameterSpecification;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 
 /**
  * A list of SQL statements to be executed as a single logical unit.
@@ -44,4 +48,6 @@ public interface StatementsWithParameters {
         return statement.startsWith("create ")
             || statement.startsWith("drop ");
     }
+
+    CompletionStage<Integer> execute(ReactiveQueryExecutor session, QueryParameters queryParameters);
 }

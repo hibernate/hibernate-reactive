@@ -18,6 +18,7 @@ import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PropertyKind;
@@ -113,6 +114,13 @@ public class SqlClientConnection implements ReactiveConnection {
 	@Override
 	public CompletionStage<Void> execute(String sql) {
 		return preparedQuery( sql ).thenApply( ignore -> null );
+	}
+
+	@Override
+	public CompletionStage<Void> executeStatement(String sql) {
+		feedback( sql );
+		return client().query( sql ).execute().toCompletionStage()
+				.thenCompose( CompletionStages::voidFuture );
 	}
 
 	@Override
