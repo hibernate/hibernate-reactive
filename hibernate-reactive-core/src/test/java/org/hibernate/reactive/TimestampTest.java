@@ -51,8 +51,9 @@ public class TimestampTest extends BaseReactiveTest {
 	private static void assertInstants(TestContext ctx, Record r) {
 		ctx.assertNotNull( r.created );
 		ctx.assertNotNull( r.updated );
+		// Sometimes, when the test suite is fast enough, they might be the same
 		ctx.assertTrue(
-				r.updated.isAfter( r.created ),
+				r.updated.compareTo( r.created ) >= 0,
 				"Updated instant is before created. Updated[" + r.updated + "], Created[" + r.created + "]"
 		);
 	}
