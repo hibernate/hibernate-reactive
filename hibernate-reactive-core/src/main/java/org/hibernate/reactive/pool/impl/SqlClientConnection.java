@@ -21,6 +21,7 @@ import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PropertyKind;
@@ -118,6 +119,13 @@ public class SqlClientConnection implements ReactiveConnection {
 	@Override
 	public CompletionStage<Void> execute(String sql) {
 		return preparedQuery( sql ).thenApply( ignore -> null );
+	}
+
+	@Override
+	public CompletionStage<Void> executeStatement(String sql) {
+		feedback( sql );
+		return client().query( sql ).execute().toCompletionStage()
+				.thenCompose( CompletionStages::voidFuture );
 	}
 
 	@Override
@@ -311,6 +319,7 @@ public class SqlClientConnection implements ReactiveConnection {
 				return NullValue.Short;
 			case Types.DECIMAL:
 				return NullValue.BigDecimal;
+			case Types.VARBINARY:
 			case Types.BINARY:
 			case Types.BLOB:
 			case Types.LONGVARBINARY:
