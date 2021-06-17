@@ -35,7 +35,7 @@ dependencies {
     testImplementation "io.vertx:vertx-db2-client:${vertxVersion}"
 
     // JDBC driver to test with ORM and PostgreSQL
-    testRuntimeOnly "org.postgresql:postgresql:42.2.16"
+    testRuntimeOnly "org.postgresql:postgresql:42.2.22"
 
     // EHCache
     testRuntimeOnly "org.ehcache:ehcache:3.8.1"
