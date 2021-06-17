@@ -27,6 +27,7 @@ public class UriPoolConfiguration implements SqlClientPoolConfiguration {
             case "postgresql":
             case "postgres":
                 return PgConnectOptions.fromUri( uri.toString() );
+            case "mariadb":
             case "mysql":
                 return MySQLConnectOptions.fromUri( uri.toString() );
             case "db2":
