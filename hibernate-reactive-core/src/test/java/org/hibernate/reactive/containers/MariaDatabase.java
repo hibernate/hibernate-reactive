@@ -55,7 +55,8 @@ class MariaDatabase implements TestableDatabase {
 	}
 
 	private static String buildUriWithCredentials(String jdbcUrl) {
-		return "mariadb://" + maria.getUsername() + ":" + maria.getPassword() + "@" + jdbcUrl.substring(13);
+		return "mariadb://" + maria.getUsername() + ":" + maria.getPassword() + "@"
+				+ jdbcUrl.substring( "jdbc:mariadb://".length() );
 	}
 
 	private MariaDatabase() {
