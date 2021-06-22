@@ -41,7 +41,12 @@ public class Json implements UserType {
 
     @Override
     public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
-        return rs.getObject(names[0]);
+        Object rsObject = rs.getObject( names[0] );
+        // Currently Vertx does not return JsonObject type from MariaDb so adding type check to convert the String value
+        if ( rsObject instanceof String ) {
+            return new JsonObject( rsObject.toString() );
+        }
+        return rsObject;
     }
 
     @Override
