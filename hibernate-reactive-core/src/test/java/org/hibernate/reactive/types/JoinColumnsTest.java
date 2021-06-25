@@ -31,9 +31,6 @@ import org.junit.Test;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
-
 public class JoinColumnsTest extends BaseReactiveTest {
 
 	@Override
@@ -46,14 +43,7 @@ public class JoinColumnsTest extends BaseReactiveTest {
 
 	@After
 	public void cleanDB(TestContext context) {
-		if ( dbType() == DB2 ) {
-			// On Db2, the build get stuck if I don't recreate the factory each time
-			// I don't know why
-			factoryManager.stop();
-		}
-		else {
-			test( context, deleteEntities( "SampleJoinEntity", "SampleEntity" ) );
-		}
+		test( context, deleteEntities( "SampleJoinEntity", "SampleEntity" ) );
 	}
 
 	@Test
