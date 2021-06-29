@@ -11,7 +11,7 @@ class DB2Database implements TestableDatabase {
 
 	public static DB2Database INSTANCE = new DB2Database();
 
-	public final static String IMAGE_NAME = "ibmcom/db2:11.5.5.1";
+	public final static String IMAGE_NAME = "ibmcom/db2:11.5.6.0";
 
 	/**
 	 * Holds configuration for the DB2 database container. If the build is run with <code>-Pdocker</code> then
