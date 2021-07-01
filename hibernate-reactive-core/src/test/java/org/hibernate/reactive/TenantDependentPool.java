@@ -7,12 +7,14 @@ package org.hibernate.reactive;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -120,6 +122,21 @@ public class TenantDependentPool extends DefaultSqlClientPool {
         @Override
         public void close(Handler<AsyncResult<Void>> handler) {
             poolMap.forEach( (tenant, pool) -> pool.close( handler ) );
+        }
+
+        @Override
+        public Pool connectHandler(Handler<SqlConnection> handler) {
+            return poolMap.get( defaultTenantId ).connectHandler( handler );
+        }
+
+        @Override
+        public Pool connectionProvider(Function<Context, Future<SqlConnection>> provider) {
+            return poolMap.get( defaultTenantId ).connectionProvider( provider );
+        }
+
+        @Override
+        public int size() {
+            return poolMap.get( defaultTenantId ).size();
         }
 
         @Override

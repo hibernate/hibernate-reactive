@@ -35,6 +35,7 @@ import io.vertx.sqlclient.SqlConnectOptions;
 import io.vertx.sqlclient.spi.Driver;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hibernate.internal.CoreLogging.messageLogger;
 
 /**
@@ -151,7 +152,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 			// Backup option if multiple drivers are on the classpath.
 			// We will be able to remove this once Vertx 3.9.2 is available
 			final Driver driver = findDriver( uri, e );
-			return driver.createPool( vertx, connectOptions, poolOptions );
+			return driver.createPool( vertx, singletonList( connectOptions ), poolOptions );
 		}
 	}
 
