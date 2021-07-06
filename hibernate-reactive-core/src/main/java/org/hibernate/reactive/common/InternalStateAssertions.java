@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive.common;
 
+import java.util.Locale;
+
 import io.vertx.core.Context;
 
 /**
@@ -14,7 +16,14 @@ import io.vertx.core.Context;
  */
 public final class InternalStateAssertions {
 
-	private static final boolean ENFORCE = Boolean.getBoolean( "org.hibernate.reactive.common.InternalStateAssertions.ENFORCE" );
+	/**
+	 * Unless this system property is explicitly set to "false", we will enforce these checks.
+	 */
+	private static final boolean ENFORCE = ! "false".equalsIgnoreCase(
+			System.getProperty( "org.hibernate.reactive.common.InternalStateAssertions.ENFORCE", "true" )
+			.toLowerCase( Locale.ROOT )
+			.trim()
+	);
 
 	private InternalStateAssertions() {
 		//do not construct
