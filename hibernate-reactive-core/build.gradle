@@ -17,7 +17,7 @@ dependencies {
     api 'io.smallrye.reactive:mutiny:0.18.0'
 
     //Logging
-    implementation 'org.jboss.logging:jboss-logging:3.4.1.Final'
+    implementation 'org.jboss.logging:jboss-logging:3.4.2.Final'
     implementation 'com.ibm.async:asyncutil:0.1.0'
 //    compileOnly 'org.jboss.logging:jboss-logging-annotations:2.1.0.Final'
 //    annotationProcessor 'org.jboss.logging:jboss-logging-processor:2.1.0.Final'
@@ -26,7 +26,7 @@ dependencies {
     implementation "io.vertx:vertx-sql-client:${vertxVersion}"
 
     // Testing
-    testImplementation 'org.assertj:assertj-core:3.19.0'
+    testImplementation 'org.assertj:assertj-core:3.20.2'
     testImplementation "io.vertx:vertx-unit:${vertxVersion}"
 
     // Drivers
@@ -35,7 +35,7 @@ dependencies {
     testImplementation "io.vertx:vertx-db2-client:${vertxVersion}"
 
     // JDBC driver to test with ORM and PostgreSQL
-    testRuntimeOnly "org.postgresql:postgresql:42.2.22"
+    testRuntimeOnly "org.postgresql:postgresql:42.2.23"
 
     // EHCache
     testRuntimeOnly "org.ehcache:ehcache:3.8.1"
@@ -46,7 +46,7 @@ dependencies {
     }
 
     // log4j
-    testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.14.0'
+    testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.14.1'
 //    testRuntimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
 
     // Testcontainers
