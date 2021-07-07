@@ -4,8 +4,8 @@ dependencies {
     implementation project(':hibernate-reactive-core')
 
     // Hibernate Validator (optional)
-    implementation 'org.hibernate.validator:hibernate-validator:6.1.5.Final'
-    runtimeOnly 'org.glassfish:jakarta.el:3.0.3'
+    implementation 'org.hibernate.validator:hibernate-validator:6.2.0.Final'
+    runtimeOnly 'org.glassfish:jakarta.el:4.0.1'
 
     // JPA metamodel generation for criteria queries (optional)
     annotationProcessor "org.hibernate:hibernate-jpamodelgen:${hibernateOrmVersion}"
@@ -14,7 +14,7 @@ dependencies {
     runtimeOnly "io.vertx:vertx-pg-client:${vertxVersion}"
 
     // logging (optional)
-    runtimeOnly "org.apache.logging.log4j:log4j-core:2.13.3"
+    runtimeOnly "org.apache.logging.log4j:log4j-core:2.14.1"
 //    runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
 }
 
