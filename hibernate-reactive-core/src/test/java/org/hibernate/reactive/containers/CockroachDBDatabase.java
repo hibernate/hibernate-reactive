@@ -16,7 +16,7 @@ class CockroachDBDatabase implements TestableDatabase {
 
 	public static CockroachDBDatabase INSTANCE = new CockroachDBDatabase();
 
-	public final static String IMAGE_NAME = "cockroachdb/cockroach:v21.1.1";
+	public final static String IMAGE_NAME = "cockroachdb/cockroach:v21.1.5";
 
 	/**
 	 * Holds configuration for the CockroachDB database container. If the build is run with <code>-Pdocker</code> then

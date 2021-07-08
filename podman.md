@@ -120,7 +120,7 @@ configured to run the tests:
 ```
 podman run --rm --name=HibernateTestingCockroachDB \
     --hostname=roachrr1 -p 26257:26257 -p 8080:8080 \
-    cockroachdb/cockroach:v21.1.1 start-single-node --insecure
+    cockroachdb/cockroach:v21.1.5 start-single-node --insecure
 ```
 
 Some of tests needs temporary tables and because this is an experimental feature in
