@@ -101,7 +101,6 @@ import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
-import io.vertx.core.Context;
 
 import static org.hibernate.engine.spi.PersistenceContext.NaturalIdHelper.INVALID_NATURAL_ID_REFERENCE;
 import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
@@ -131,7 +130,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public ReactiveSessionImpl(SessionFactoryImpl delegate, SessionCreationOptions options,
 							   ReactiveConnection connection) {
 		super( delegate, options );
-		assert Context.isOnEventLoopThread() : "This needs to be run on the Vert.x event loop";
+		InternalStateAssertions.assertUseOnEventLoop();
 		this.associatedWorkThread = Thread.currentThread();
 		//matches configuration property "hibernate.jdbc.batch_size" :
 		int batchSize = delegate.getSessionFactoryOptions().getJdbcBatchSize();
