@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +20,8 @@ import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.Configurable;
@@ -36,7 +39,6 @@ import io.vertx.sqlclient.spi.Driver;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.hibernate.internal.CoreLogging.messageLogger;
 
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
@@ -59,6 +61,8 @@ import static org.hibernate.internal.CoreLogging.messageLogger;
  */
 public class DefaultSqlClientPool extends SqlClientPool
 		implements ServiceRegistryAwareService, Configurable, Stoppable, Startable {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	/**
 	 * The valid schemes for each driver
@@ -165,7 +169,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 */
 	protected URI jdbcUrl(Map<?,?> configurationValues) {
 		String url = ConfigurationHelper.getString( Settings.URL, configurationValues );
-		messageLogger( DefaultSqlClientPool.class ).infof( "HRX000011: SQL Client URL [%s]", url );
+		LOG.sqlClientUrl( url);
 		return parse( url );
 	}
 
@@ -184,7 +188,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 		String scheme = uri.getScheme().toLowerCase( Locale.ROOT ); // "postgresql", "mysql", "db2", etc
 		for ( Driver d : ServiceLoader.load( Driver.class ) ) {
 			String driverName = d.getClass().getCanonicalName();
-			messageLogger( DefaultSqlClientPool.class ).infof( "HRX000013: Detected driver [%s]", driverName );
+			LOG.detectedDriver( driverName );
 			if ( driverFound( scheme, driverName ) ) {
 				return d;
 			}
