@@ -5,18 +5,20 @@
  */
 package org.hibernate.reactive.pool.impl;
 
-import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.SqlConnectOptions;
-
-import org.hibernate.HibernateError;
-import org.hibernate.reactive.provider.Settings;
-import org.hibernate.service.spi.Configurable;
-
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.hibernate.internal.CoreLogging.messageLogger;
+import org.hibernate.HibernateError;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.service.spi.Configurable;
+
+import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.SqlConnectOptions;
+
 import static org.hibernate.internal.util.config.ConfigurationHelper.getInt;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getInteger;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
@@ -31,6 +33,8 @@ import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
  * functionality.
  */
 public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfiguration, Configurable {
+
+    private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
     private static final int DEFAULT_POOL_SIZE = 5;
 
@@ -60,24 +64,25 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
     @Override
     public PoolOptions poolOptions() {
         PoolOptions poolOptions = new PoolOptions();
-        messageLogger( DefaultSqlClientPool.class ).infof( "HRX000025: Connection pool size: %d", poolSize );
+
+        LOG.connectionPoolSize( poolSize );
         poolOptions.setMaxSize( poolSize );
         if (maxWaitQueueSize!=null) {
-            messageLogger( DefaultSqlClientPool.class).infof( "HRX000026: Connection pool max wait queue size: %d", maxWaitQueueSize );
+            LOG.connectionPoolMaxWaitSize( maxWaitQueueSize );
             poolOptions.setMaxWaitQueueSize(maxWaitQueueSize );
         }
         if (idleTimeout!=null) {
-            messageLogger( DefaultSqlClientPool.class ).infof( "HRX000027: Connection pool idle timeout: %d ms", idleTimeout );
+            LOG.connectionPoolIdleTimeout( idleTimeout );
             poolOptions.setIdleTimeout(idleTimeout);
             poolOptions.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
         }
         if (connectTimeout!=null) {
-            messageLogger( DefaultSqlClientPool.class ).infof( "HRX000028: Connection pool connection timeout: %d ms", connectTimeout );
+            LOG.connectionPoolTimeout( connectTimeout );
             poolOptions.setConnectionTimeout(connectTimeout);
             poolOptions.setConnectionTimeoutUnit(TimeUnit.MILLISECONDS);
         }
         if (poolCleanerPeriod!=null) {
-            messageLogger( DefaultSqlClientPool.class ).infof( "HRX000029: Connection pool cleaner period: %d ms", poolCleanerPeriod );
+            LOG.connectionPoolCleanerPeriod( poolCleanerPeriod );
             poolOptions.setPoolCleanerPeriod(poolCleanerPeriod);
         }
         return poolOptions;
@@ -162,18 +167,18 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
         if (cacheMaxSize!=null) {
             if (cacheMaxSize <= 0) {
-                messageLogger( DefaultSqlClientPool.class ).infof( "HRX000014: Prepared statement cache disabled", cacheMaxSize );
+                LOG.preparedStatementCacheDisabled();
                 connectOptions.setCachePreparedStatements(false);
             }
             else {
-                messageLogger( DefaultSqlClientPool.class ).infof( "HRX000015: Prepared statement cache max size: %d", cacheMaxSize );
+                LOG.preparedStatementCacheMaxSize( cacheMaxSize );
                 connectOptions.setCachePreparedStatements(true);
                 connectOptions.setPreparedStatementCacheMaxSize(cacheMaxSize);
             }
         }
 
         if (sqlLimit!=null) {
-            messageLogger( DefaultSqlClientPool.class ).infof( "HRX000016: Prepared statement cache SQL limit: %d", sqlLimit );
+            LOG.preparedStatementCacheSQLLimit( sqlLimit );
             connectOptions.setPreparedStatementCacheSqlLimit(sqlLimit);
         }
 

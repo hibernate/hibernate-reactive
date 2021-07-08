@@ -5,12 +5,13 @@
  */
 package org.hibernate.reactive.provider.impl;
 
+import java.lang.invoke.MethodHandles;
+
 import org.hibernate.boot.Metadata;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventType;
 import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.internal.CoreLogging;
 import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveDeleteEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveFlushEntityEventListener;
@@ -24,6 +25,8 @@ import org.hibernate.reactive.event.impl.DefaultReactivePersistOnFlushEventListe
 import org.hibernate.reactive.event.impl.DefaultReactivePostLoadEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveRefreshEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveResolveNaturalIdEventListener;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 
 /**
@@ -35,6 +38,8 @@ import org.hibernate.service.spi.SessionFactoryServiceRegistry;
  * is marked as being reactive.
  */
 public class ReactiveIntegrator implements Integrator {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	@Override
 	public void integrate(
@@ -52,7 +57,7 @@ public class ReactiveIntegrator implements Integrator {
 	private void attachEventContextManagingListenersIfRequired(SessionFactoryServiceRegistry serviceRegistry) {
 		if ( ReactiveModeCheck.isReactiveRegistry( serviceRegistry ) ) {
 
-			CoreLogging.messageLogger(ReactiveIntegrator.class).info("HRX000001: Hibernate Reactive Preview");
+			LOG.startHibernateReactive();
 
 			EventListenerRegistry eventListenerRegistry = serviceRegistry.getService( EventListenerRegistry.class );
 			eventListenerRegistry.addDuplicationStrategy( ReplacementDuplicationStrategy.INSTANCE );

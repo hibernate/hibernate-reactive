@@ -8,10 +8,12 @@ package org.hibernate.reactive.pool.impl;
 import org.hibernate.HibernateException;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
-import org.hibernate.internal.CoreLogging;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
 /**
@@ -20,6 +22,8 @@ import java.util.Map;
  * strategy.
  */
 public class SqlClientPoolConfigurationInitiator implements StandardServiceInitiator<SqlClientPoolConfiguration> {
+
+    private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
     public static final SqlClientPoolConfigurationInitiator INSTANCE = new SqlClientPoolConfigurationInitiator();
 
@@ -30,7 +34,7 @@ public class SqlClientPoolConfigurationInitiator implements StandardServiceIniti
             return new DefaultSqlClientPoolConfiguration();
         }
         else {
-            CoreLogging.messageLogger( DefaultSqlClientPool.class ).infof( "HRX000017: Using SQL client configuration [%s]", configClassName );
+            LOG.sqlClientConfiguration( configClassName );
             final ClassLoaderService classLoaderService = registry.getService( ClassLoaderService.class );
             try {
                 return (SqlClientPoolConfiguration) classLoaderService.classForName( configClassName ).newInstance();

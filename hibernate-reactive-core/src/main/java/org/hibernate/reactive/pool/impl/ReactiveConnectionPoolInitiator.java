@@ -8,14 +8,15 @@ package org.hibernate.reactive.pool.impl;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.classloading.spi.ClassLoadingException;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.service.spi.ServiceException;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
-
-import static org.hibernate.internal.CoreLogging.messageLogger;
 
 /**
  * A Hibernate {@link StandardServiceInitiator service initiator} that
@@ -27,6 +28,8 @@ import static org.hibernate.internal.CoreLogging.messageLogger;
  * @see DefaultSqlClientPool
  */
 public class ReactiveConnectionPoolInitiator implements StandardServiceInitiator<ReactiveConnectionPool> {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	public static final ReactiveConnectionPoolInitiator INSTANCE = new ReactiveConnectionPoolInitiator();
 
@@ -59,8 +62,7 @@ public class ReactiveConnectionPoolInitiator implements StandardServiceInitiator
 			}
 
 			try {
-				messageLogger(ReactiveConnectionPoolInitiator.class)
-						.infof( "HRX000018: instantiating reactive pool: %s", implClass.getName() );
+				LOG.instantiatingReactivePool( implClass );
 				return implClass.newInstance();
 			}
 			catch (Exception e) {
