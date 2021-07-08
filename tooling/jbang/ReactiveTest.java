@@ -229,8 +229,8 @@ public class ReactiveTest {
 	enum Database {
 		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:13.3" ) ),
 		MYSQL( () -> new MySQLContainer( "mysql:8.0.25" ) ),
-		MARIADB( () -> new MariaDBContainer( "mariadb:10.5.10" ) ),
 		DB2( () -> new Db2Container( "ibmcom/db2:11.5.5.1" ).acceptLicense() ),
+		MARIADB( () -> new MariaDBContainer( "mariadb:10.6.2" ) ),
 		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v21.1.5" ) );
 
 		private final Supplier<JdbcDatabaseContainer<?>> containerSupplier;

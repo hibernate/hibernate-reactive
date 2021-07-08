@@ -62,7 +62,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class {baseName} {
 
 	@ClassRule
-	public static MariaDBContainer<?> database = new MariaDBContainer<>( "mariadb:10.5.10" );
+	public static MariaDBContainer<?> database = new MariaDBContainer<>( "mariadb:10.6.2" );
 
 	private Mutiny.SessionFactory sessionFactory;
 
