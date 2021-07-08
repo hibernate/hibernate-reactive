@@ -227,7 +227,7 @@ public class ReactiveTest {
 	 * It's a wrapper around the testcontainers classes.
 	 */
 	enum Database {
-		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:13.2" ) ),
+		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:13.3" ) ),
 		MYSQL( () -> new MySQLContainer( "mysql:8.0.25" ) ),
 		MARIADB( () -> new MariaDBContainer( "mariadb:10.5.10" ) ),
 		DB2( () -> new Db2Container( "ibmcom/db2:11.5.5.1" ).acceptLicense() ),
