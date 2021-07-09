@@ -5,6 +5,10 @@
  */
 package org.hibernate.reactive.event.impl;
 
+import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -23,13 +27,13 @@ import org.hibernate.engine.spi.Status;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.loader.entity.CacheEntityLoaderHelper;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.event.ReactiveLoadEventListener;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.tuple.IdentifierProperty;
@@ -37,9 +41,6 @@ import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.EmbeddedComponentType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
-
-import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
@@ -64,7 +65,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 public class DefaultReactiveLoadEventListener implements LoadEventListener, ReactiveLoadEventListener {
 
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultReactiveLoadEventListener.class );
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	/**
 	 * This method is not reactive but we expect it to be called only when a proxy can be returned.
@@ -84,7 +85,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		final EntityPersister persister = getPersister( event );
 
 		if ( persister == null ) {
-			throw new HibernateException( "Unable to locate persister: " + event.getEntityClassName() );
+			throw LOG.unableToLocatePersister( event.getEntityClassName() );
 		}
 
 		// Since this method is not reactive, we're not expecting to hit the
@@ -132,7 +133,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 
 		final ReactiveEntityPersister persister = (ReactiveEntityPersister) getPersister( event );
 		if ( persister == null ) {
-			throw new HibernateException( "Unable to locate persister: " + event.getEntityClassName() );
+			throw LOG.unableToLocatePersister( event.getEntityClassName() );
 		}
 
 		CompletionStage<Void> result = checkId( event, loadType, persister ).thenCompose(

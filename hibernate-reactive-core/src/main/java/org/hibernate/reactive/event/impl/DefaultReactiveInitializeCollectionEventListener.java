@@ -6,6 +6,7 @@
 package org.hibernate.reactive.event.impl;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
@@ -17,12 +18,11 @@ import org.hibernate.engine.spi.CollectionEntry;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.event.internal.DefaultInitializeCollectionEventListener;
 import org.hibernate.event.spi.InitializeCollectionEvent;
 import org.hibernate.event.spi.InitializeCollectionEventListener;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.persister.collection.CollectionPersister;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
@@ -31,7 +31,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class DefaultReactiveInitializeCollectionEventListener implements InitializeCollectionEventListener {
 
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultInitializeCollectionEventListener.class );
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	@Override
 	public void onInitializeCollection(InitializeCollectionEvent event) throws HibernateException {
@@ -47,7 +47,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 
 		CollectionEntry ce = source.getPersistenceContextInternal().getCollectionEntry( collection );
 		if ( ce == null ) {
-			throw new HibernateException( "collection was evicted" );
+			throw LOG.collectionWasEvicted();
 		}
 		if ( !collection.wasInitialized() ) {
 			final CollectionPersister loadedPersister = ce.getLoadedPersister();

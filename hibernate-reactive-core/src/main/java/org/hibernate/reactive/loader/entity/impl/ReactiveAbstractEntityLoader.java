@@ -6,6 +6,7 @@
 package org.hibernate.reactive.loader.entity.impl;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -29,6 +30,8 @@ import org.hibernate.reactive.loader.ReactiveLoaderBasedLoader;
 import org.hibernate.reactive.loader.ReactiveLoaderBasedResultSetProcessor;
 import org.hibernate.reactive.loader.ReactiveResultSetProcessor;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
@@ -44,6 +47,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
  */
 public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 		implements ReactiveUniqueEntityLoader, ReactiveLoaderBasedLoader {
+
+	protected static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveLoaderBasedResultSetProcessor resultSetProcessor;
 	private final Parameters parameters;
@@ -110,12 +115,7 @@ public abstract class ReactiveAbstractEntityLoader extends AbstractEntityLoader
 						return list.get( 0 );
 					}
 			}
-			throw new HibernateException(
-					"More than one row with the given identifier was found: " +
-							id +
-							", for class: " +
-							persister.getEntityName()
-			);
+			throw LOG.moreThanOneRowWithTheGivenIdentifier( id, persister.getEntityName() );
 		} );
 	}
 

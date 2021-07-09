@@ -40,6 +40,8 @@ import org.hibernate.query.ParameterMetadata;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.BatchingConnection;
@@ -54,6 +56,7 @@ import org.hibernate.tuple.entity.EntityMetamodel;
 import javax.persistence.EntityGraph;
 import javax.persistence.Tuple;
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -72,6 +75,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
  */
 public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         implements ReactiveStatelessSession {
+
+    private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
     private final ReactiveConnection reactiveConnection;
     private final boolean allowBytecodeProxy;
@@ -720,7 +725,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity, String name) {
         RootGraphImplementor<?> entityGraph = createEntityGraph(name);
         if ( !entityGraph.getGraphedType().getJavaType().equals(entity) ) {
-            throw new HibernateException("wrong entity type");
+            throw LOG.wrongEntityType();
         }
         return (RootGraphImplementor<T>) entityGraph;
     }
@@ -729,7 +734,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     public <T> RootGraphImplementor<T> getEntityGraph(Class<T> entity, String name) {
         RootGraphImplementor<?> entityGraph = getEntityGraph(name);
         if ( !entityGraph.getGraphedType().getJavaType().equals(entity) ) {
-            throw new HibernateException("wrong entity type");
+            throw LOG.wrongEntityType();
         }
         return (RootGraphImplementor<T>) entityGraph;
     }

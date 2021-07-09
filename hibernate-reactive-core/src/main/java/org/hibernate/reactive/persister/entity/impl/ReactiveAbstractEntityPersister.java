@@ -6,6 +6,7 @@
 package org.hibernate.reactive.persister.entity.impl;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -45,13 +46,14 @@ import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.AbstractEntityPersister;
-import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
 import org.hibernate.persister.entity.Lockable;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLoaderBuilder;
 import org.hibernate.reactive.loader.entity.impl.ReactiveEntityLoader;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
@@ -65,8 +67,6 @@ import org.hibernate.tuple.NonIdentifierAttribute;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
 import org.hibernate.type.VersionType;
-
-import org.jboss.logging.Logger;
 
 import static org.hibernate.internal.util.collections.ArrayHelper.join;
 import static org.hibernate.internal.util.collections.ArrayHelper.trim;
@@ -102,7 +102,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * @see ReactiveSingleTableEntityPersister
  */
 public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister, OuterJoinLoadable, Lockable {
-	Logger log = Logger.getLogger( JoinedSubclassEntityPersister.class );
+	Log log = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	default Parameters parameters() {
 		return Parameters.instance( getFactory().getJdbcServices().getDialect() );
@@ -182,9 +182,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				.thenAccept( rs -> {
 					try {
 						if ( !rs.next() ) {
-							throw new HibernateException( "Unable to locate row for retrieval of generated properties: " +
-											infoString( this, id, getFactory() )
-							);
+							throw log.unableToRetrieveGeneratedProperties( infoString( this, id, getFactory() ) );
 						}
 						int propertyIndex = -1;
 						for ( NonIdentifierAttribute attribute : getEntityMetamodel().getProperties() ) {
@@ -381,7 +379,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				.thenApply( generatedId -> {
 					log.debugf( "Natively generated identity: %s", generatedId );
 					if ( generatedId == null ) {
-						throw new HibernateException( "The database returned no natively generated identity value" );
+						throw log.noNativelyGeneratedValueReturned();
 					}
 					return castToIdentifierType( generatedId, this );
 				} );
@@ -571,7 +569,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		final boolean useVersion = j == 0 && delegate().isVersioned();
 
 		if ( log.isTraceEnabled() ) {
-			log.tracev( "Updating entity: {0}", infoString(delegate(), id, delegate().getFactory() ) );
+			log.tracev( "Updating entity: {0}", infoString( delegate(), id, delegate().getFactory() ) );
 			if ( useVersion ) {
 				log.tracev( "Existing version: {0} -> New version:{1}", oldVersion, fields[delegate().getVersionProperty()] );
 			}

@@ -66,7 +66,7 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 					  .onFailure().recoverWithUni( throwable -> {
 						  context.assertEquals( LazyInitializationException.class, throwable.getClass() );
 						  context.assertEquals(
-								  "Collection cannot be initialized: org.hibernate.reactive.LazyInitializationExceptionWithMutiny$Artist.paintings",
+								  "HR000056: Collection cannot be initialized: org.hibernate.reactive.LazyInitializationExceptionWithMutiny$Artist.paintings",
 								  throwable.getMessage()
 						  );
 						  return Uni.createFrom().nullItem();

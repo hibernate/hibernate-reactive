@@ -5,6 +5,10 @@
  */
 package org.hibernate.reactive.event.impl;
 
+import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -18,11 +22,9 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.AbstractReassociateEventListener;
-import org.hibernate.event.internal.DefaultLockEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LockEvent;
 import org.hibernate.event.spi.LockEventListener;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;
@@ -30,12 +32,10 @@ import org.hibernate.reactive.engine.impl.ForeignKeys;
 import org.hibernate.reactive.engine.impl.ReactiveEntityIncrementVersionProcess;
 import org.hibernate.reactive.engine.impl.ReactiveEntityVerifyVersionProcess;
 import org.hibernate.reactive.event.ReactiveLockEventListener;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.jboss.logging.Logger;
-
-import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
@@ -44,10 +44,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 public class DefaultReactiveLockEventListener extends AbstractReassociateEventListener
 		implements LockEventListener, ReactiveLockEventListener {
 
-	private static final CoreMessageLogger log = Logger.getMessageLogger(
-			CoreMessageLogger.class,
-			DefaultLockEventListener.class.getName()
-	);
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	@Override
 	public CompletionStage<Void> reactiveOnLock(LockEvent event) throws HibernateException {
@@ -56,11 +53,11 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 		}
 
 		if ( event.getLockMode() == LockMode.WRITE ) {
-			throw new HibernateException( "Invalid lock mode for lock()" );
+			throw LOG.invalidLockModeForLock();
 		}
 
 		if ( event.getLockMode() == LockMode.UPGRADE_SKIPLOCKED ) {
-			log.explicitSkipLockedLockCombo();
+			LOG.explicitSkipLockedLockCombo();
 		}
 
 		EventSource source = event.getSession();
@@ -159,8 +156,8 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 				);
 			}
 
-			if ( log.isTraceEnabled() ) {
-				log.tracev(
+			if ( LOG.isTraceEnabled() ) {
+				LOG.tracev(
 						"Locking {0} in mode: {1}",
 						infoString( entry.getPersister(), entry.getId(), source.getFactory() ),
 						requestedLockMode

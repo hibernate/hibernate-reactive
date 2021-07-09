@@ -6,6 +6,7 @@
 package org.hibernate.reactive.engine.impl;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
@@ -25,6 +26,8 @@ import org.hibernate.event.spi.PreCollectionUpdateEvent;
 import org.hibernate.event.spi.PreCollectionUpdateEventListener;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
@@ -38,6 +41,8 @@ import static org.hibernate.pretty.MessageHelper.collectionInfoString;
  * @see org.hibernate.action.internal.CollectionUpdateAction
  */
 public class ReactiveCollectionUpdateAction extends CollectionAction implements ReactiveExecutable {
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
 	private final boolean emptySnapshot;
 
 	public ReactiveCollectionUpdateAction(
@@ -82,10 +87,7 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 		}
 		else if ( collection.needsRecreate( corePersister ) ) {
 			if ( affectedByFilters ) {
-				throw new HibernateException(
-						"cannot recreate collection while filter is enabled: "
-								+ collectionInfoString( corePersister, collection, key, session )
-				);
+				throw LOG.cannotRecreateCollectionWhileFilterIsEnabled( collectionInfoString( corePersister, collection, key, session ) );
 			}
 			if ( !emptySnapshot ) {
 				updateStage = updateStage

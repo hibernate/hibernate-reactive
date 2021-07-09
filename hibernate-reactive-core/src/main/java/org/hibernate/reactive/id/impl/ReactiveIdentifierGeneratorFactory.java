@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.id.impl;
 
-import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
 import org.hibernate.id.Configurable;
 import org.hibernate.id.IdentifierGenerator;
@@ -18,15 +17,20 @@ import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.id.enhanced.TableStructure;
 import org.hibernate.id.factory.internal.DefaultIdentifierGeneratorFactory;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.type.Type;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Properties;
 
 /**
  * @author Gavin King
  */
 public class ReactiveIdentifierGeneratorFactory extends DefaultIdentifierGeneratorFactory {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private ServiceRegistryImplementor serviceRegistry;
 
@@ -95,7 +99,7 @@ public class ReactiveIdentifierGeneratorFactory extends DefaultIdentifierGenerat
 			reactiveGenerator = new SequenceReactiveIdentifierGenerator();
 		}
 		else if (generator instanceof SelectGenerator) {
-			throw new HibernateException("SelectGenerator is not supported in Hibernate Reactive");
+			throw LOG.selectGeneratorIsNotSupportedInHibernateReactive();
 		}
 		else {
 			//nothing to do

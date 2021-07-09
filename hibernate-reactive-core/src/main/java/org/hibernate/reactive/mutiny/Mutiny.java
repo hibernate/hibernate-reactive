@@ -5,23 +5,11 @@
  */
 package org.hibernate.reactive.mutiny;
 
-import io.smallrye.mutiny.Uni;
-import org.hibernate.Cache;
-import org.hibernate.CacheMode;
-import org.hibernate.Filter;
-import org.hibernate.FlushMode;
-import org.hibernate.Incubating;
-import org.hibernate.LazyInitializationException;
-import org.hibernate.LockMode;
-import org.hibernate.collection.internal.AbstractPersistentCollection;
-import org.hibernate.collection.spi.PersistentCollection;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.reactive.common.AffectedEntities;
-import org.hibernate.reactive.common.Identifier;
-import org.hibernate.reactive.common.ResultSetMapping;
-import org.hibernate.reactive.session.ReactiveSession;
-
+import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import javax.persistence.EntityGraph;
 import javax.persistence.Parameter;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -30,10 +18,25 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.Metamodel;
-import java.io.Serializable;
-import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+
+import org.hibernate.Cache;
+import org.hibernate.CacheMode;
+import org.hibernate.Filter;
+import org.hibernate.FlushMode;
+import org.hibernate.Incubating;
+import org.hibernate.LockMode;
+import org.hibernate.collection.internal.AbstractPersistentCollection;
+import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.reactive.common.AffectedEntities;
+import org.hibernate.reactive.common.Identifier;
+import org.hibernate.reactive.common.ResultSetMapping;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.session.ReactiveSession;
+
+import io.smallrye.mutiny.Uni;
 
 /**
  * An API for Hibernate Reactive where non-blocking operations are
@@ -44,6 +47,8 @@ import java.util.function.Function;
  * the similarly-named interfaces in Hibernate ORM.
  */
 public interface Mutiny {
+	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
 	/**
 	 * A non-blocking counterpart to the Hibernate
 	 * {@link org.hibernate.query.Query} interface, allowing reactive
@@ -1767,8 +1772,8 @@ public interface Mutiny {
 		else {
 			return Uni.createFrom().item( association );
 		}
-		if (session==null) {
-			throw new LazyInitializationException("session closed");
+		if ( session == null ) {
+			throw LOG.sessionClosedLazyInitializationException();
 		}
 		return Uni.createFrom().completionStage(
 				( (ReactiveSession) session ).reactiveFetch( association, false )

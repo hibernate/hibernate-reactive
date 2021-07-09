@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.session.impl;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,19 +27,18 @@ import org.hibernate.hql.internal.ast.exec.MultiTableDeleteExecutor;
 import org.hibernate.hql.internal.ast.exec.MultiTableUpdateExecutor;
 import org.hibernate.hql.internal.ast.exec.StatementExecutor;
 import org.hibernate.hql.internal.ast.tree.QueryNode;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.loader.hql.QueryLoader;
 import org.hibernate.param.ParameterSpecification;
 import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.bulk.StatementsWithParameters;
 import org.hibernate.reactive.loader.hql.impl.ReactiveQueryLoader;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
-
-import org.jboss.logging.Logger;
 
 import antlr.RecognitionException;
 import antlr.collections.AST;
@@ -52,14 +52,11 @@ import antlr.collections.AST;
  */
 public class ReactiveQueryTranslatorImpl<T> extends QueryTranslatorImpl {
 
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
 	private final Parameters parameters;
 
 	private ReactiveQueryLoader<T> queryLoader;
-
-	private static final CoreMessageLogger LOG = Logger.getMessageLogger(
-			CoreMessageLogger.class,
-			ReactiveQueryTranslatorImpl.class.getName()
-	);
 
 	private final SessionFactoryImplementor factory;
 
@@ -120,9 +117,7 @@ public class ReactiveQueryTranslatorImpl<T> extends QueryTranslatorImpl {
 		if ( hasLimit && containsCollectionFetches() ) {
 			boolean fail = session.getFactory().getSessionFactoryOptions().isFailOnPaginationOverCollectionFetchEnabled();
 			if (fail) {
-				throw new HibernateException("firstResult/maxResults specified with collection fetch. " +
-						"In memory pagination was about to be applied. " +
-						"Failing because 'Fail on pagination over collection fetch' is enabled.");
+				throw LOG.firstOrMaxResultsFailedBecausePaginationOverCollectionIsEnabled();
 			}
 			else {
 				LOG.firstOrMaxResultsSpecifiedWithCollectionFetch();

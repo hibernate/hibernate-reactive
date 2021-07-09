@@ -17,19 +17,20 @@ import org.hibernate.event.internal.WrapVisitor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEntityEvent;
 import org.hibernate.event.spi.FlushEntityEventListener;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.impl.ReactiveEntityUpdateAction;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
@@ -44,7 +45,8 @@ import static org.hibernate.pretty.MessageHelper.infoString;
  * {@code ReactiveFlushEntityEventListener} interface.
  */
 public class DefaultReactiveFlushEntityEventListener implements FlushEntityEventListener, CallbackRegistryConsumer {
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultReactiveFlushEntityEventListener.class );
+
+	protected static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private CallbackRegistry callbackRegistry;
 
@@ -72,10 +74,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 				throw new AssertionFailure( "null id in " + persister.getEntityName() + " entry (don't flush the Session after an exception occurs)" );
 			}
 			if ( !persister.getIdentifierType().isEqual( id, oid, session.getFactory() ) ) {
-				throw new HibernateException(
-						"identifier of an instance of " + persister.getEntityName() + " was altered from "
-								+ id + " to " + oid
-				);
+				throw LOG.identifierAltered( persister.getEntityName(), id, oid );
 			}
 		}
 
@@ -112,18 +111,15 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 
 				final Type propertyType = propertyTypes[naturalIdentifierPropertyIndex];
 				if ( !propertyType.isEqual( current[naturalIdentifierPropertyIndex], snapshot[i] ) ) {
-					throw new HibernateException(
-							String.format(
-									"An immutable natural identifier of entity %s was altered from %s to %s",
-									persister.getEntityName(),
-									propertyTypes[naturalIdentifierPropertyIndex].toLoggableString(
-											snapshot[i],
-											session.getFactory()
-									),
-									propertyTypes[naturalIdentifierPropertyIndex].toLoggableString(
-											current[naturalIdentifierPropertyIndex],
-											session.getFactory()
-									)
+					throw LOG.immutableNaturalIdentifierAltered(
+							persister.getEntityName(),
+							propertyTypes[naturalIdentifierPropertyIndex].toLoggableString(
+									snapshot[i],
+									session.getFactory()
+							),
+							propertyTypes[naturalIdentifierPropertyIndex].toLoggableString(
+									current[naturalIdentifierPropertyIndex],
+									session.getFactory()
 							)
 					);
 				}
