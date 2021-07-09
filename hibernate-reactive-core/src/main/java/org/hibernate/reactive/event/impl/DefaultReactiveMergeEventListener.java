@@ -6,6 +6,7 @@
 package org.hibernate.reactive.event.impl;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
@@ -33,14 +34,14 @@ import org.hibernate.event.spi.EntityCopyObserverFactory;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.MergeEvent;
 import org.hibernate.event.spi.MergeEventListener;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingAction;
 import org.hibernate.reactive.event.ReactiveMergeEventListener;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
@@ -56,7 +57,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEventListener<MergeContext>
 		implements ReactiveMergeEventListener, MergeEventListener {
 
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultReactiveMergeEventListener.class );
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+//	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultReactiveMergeEventListener.class );
 
 	@Override
 	public void onMerge(MergeEvent event) throws HibernateException {
@@ -303,7 +305,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			// check that entity id = requestedId
 			Serializable entityId = persister.getIdentifier( entity, source );
 			if ( !persister.getIdentifierType().isEqual( id, entityId, source.getFactory() ) ) {
-				throw new HibernateException( "merge requested with id not matching id of passed entity" );
+				throw LOG.mergeRequestedIdNotMatchingIdOfPassedEntity();
 			}
 		}
 

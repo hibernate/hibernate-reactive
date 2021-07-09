@@ -5,7 +5,10 @@
  */
 package org.hibernate.reactive.loader.entity.impl;
 
-import org.hibernate.HibernateException;
+import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.internal.BatchFetchQueueHelper;
@@ -14,9 +17,8 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.persister.entity.OuterJoinLoadable;
-
-import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 
 /**
  * A batching entity loader for {@link org.hibernate.loader.BatchFetchStyle#PADDED}.
@@ -26,6 +28,9 @@ import java.util.concurrent.CompletionStage;
  *
  */
 public class ReactivePaddedBatchingEntityLoader extends ReactiveBatchingEntityLoader {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
 	private final int[] batchSizes;
 	private final ReactiveEntityLoader[] loaders;
 
@@ -67,10 +72,10 @@ public class ReactivePaddedBatchingEntityLoader extends ReactiveBatchingEntityLo
 	private void validate(int max) {
 		// these are more indicative of internal problems then user error...
 		if ( batchSizes[0] != max ) {
-			throw new HibernateException( "Unexpected batch size spread" );
+			throw LOG.unexpectedBatchSizeSpread();
 		}
 		if ( batchSizes[batchSizes.length-1] != 1 ) {
-			throw new HibernateException( "Unexpected batch size spread" );
+			throw LOG.unexpectedBatchSizeSpread();
 		}
 	}
 

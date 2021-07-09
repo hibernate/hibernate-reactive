@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.id.impl;
 
-import org.hibernate.HibernateException;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.boot.model.relational.QualifiedName;
 import org.hibernate.boot.model.relational.QualifiedNameParser;
@@ -20,6 +19,8 @@ import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
@@ -29,6 +30,7 @@ import org.hibernate.type.ShortType;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.util.Properties;
 import java.util.concurrent.CompletionStage;
 
@@ -39,6 +41,8 @@ import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class IdentifierGeneration {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	/**
 	 * Determine the name of the sequence (or table if this resolves to a physical table)
@@ -158,7 +162,7 @@ public class IdentifierGeneration {
 		if ( generatedId instanceof Long ) {
 			Long longId = (Long) generatedId;
 			if ( longId <= 0 ) {
-				throw new HibernateException( "Generated identifier smaller or equal to 0: " + longId );
+				throw LOG.generatedIdentifierSmallerOrEqualThanZero( longId );
 			}
 			Type identifierType = persister.getIdentifierType();
 			if ( identifierType == LongType.INSTANCE ) {
@@ -174,12 +178,7 @@ public class IdentifierGeneration {
 				return longId.shortValue();
 			}
 			else {
-				throw new HibernateException(
-						"cannot generate identifiers of type "
-								+ identifierType.getReturnedClass().getSimpleName()
-								+ " for: "
-								+ persister.getEntityName()
-				);
+				throw LOG.cannotGenerateIdentifiersOfType(identifierType.getReturnedClass().getSimpleName(),persister.getEntityName() );
 			}
 		}
 		else {
@@ -189,10 +188,7 @@ public class IdentifierGeneration {
 
 	private static void validateMaxValue(EntityPersister persister, Long id, int maxValue) {
 		if ( id > maxValue ) {
-			throw new HibernateException(
-					"Generated identifier for " + persister.getEntityName() +
-							" too big to be assigned to a field of type " +
-							persister.getIdentifierType().getReturnedClass().getSimpleName() + ": " + id );
+			throw LOG.generatedIdentifierTooBigForTheField(persister.getEntityName(), persister.getIdentifierType().getReturnedClass().getSimpleName(), id );
 		}
 	}
 }

@@ -6,6 +6,7 @@
 package org.hibernate.reactive.session.impl;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,7 +22,6 @@ import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
-import org.hibernate.LazyInitializationException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
@@ -61,8 +61,6 @@ import org.hibernate.event.spi.ResolveNaturalIdEvent;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
-import org.hibernate.internal.EntityManagerMessageLogger;
-import org.hibernate.internal.HEMLogging;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
@@ -91,6 +89,8 @@ import org.hibernate.reactive.event.ReactiveResolveNaturalIdEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveInitializeCollectionEventListener;
 import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -118,7 +118,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * Hibernate core compares the identity of session instances.
  */
 public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession, EventSource {
-	private static final EntityManagerMessageLogger log = HEMLogging.messageLogger( ReactiveSessionImpl.class );
+	private static final Log log = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private transient final ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
 	private final ReactiveConnection reactiveConnection;
@@ -166,8 +166,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public Object immediateLoad(String entityName, Serializable id) throws HibernateException {
-		throw new LazyInitializationException("reactive sessions do not support transparent lazy fetching"
-				+ " - use Session.fetch() (entity '" + entityName + "' with id '" + id + "' was not loaded)");
+		throw log.lazyInitializationException( entityName, id );
 	}
 
 	/**
@@ -371,11 +370,14 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Deprecated
 	@Override
 	public void initializeCollection(PersistentCollection collection, boolean writing) {
-		String message = "Collection cannot be initialized";
-		if ( collection != null) {
-			message +=  ": " + collection.getRole();
+		throw log.collectionCannotBeInitializedlazyInitializationException( collectionRoleLogMessage( collection ) );
+	}
+
+	private static String collectionRoleLogMessage(PersistentCollection collection) {
+		if ( collection == null ) {
+			return "collection is null";
 		}
-		throw new LazyInitializationException( message );
+		return collection.getRole();
 	}
 
 	@Override
@@ -881,7 +883,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		pulseTransactionCoordinator();
 
 		if ( getPersistenceContextInternal().getCascadeLevel() > 0 ) {
-			throw new HibernateException( "Flush during cascade is dangerous" );
+			throw log.flushDuringCascadeIsDangerous();
 		}
 
 		return fastSessionServices.eventListenerGroup_FLUSH.fireEventOnEachListener(
@@ -1383,9 +1385,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			this.entityPersister = entityPersister;
 
 			if ( !entityPersister.hasNaturalIdentifier() ) {
-				throw new HibernateException(
-						String.format( "Entity [%s] did not define a natural id", entityPersister.getEntityName() )
-				);
+				throw log.entityDidNotDefinedNaturalId( entityPersister.getEntityName() );
 			}
 		}
 
@@ -1499,7 +1499,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity, String name) {
 		RootGraphImplementor<?> entityGraph = super.createEntityGraph(name);
 		if ( !entityGraph.getGraphedType().getJavaType().equals(entity) ) {
-			throw new HibernateException("wrong entity type");
+			throw log.wrongEntityType();
 		}
 		return (RootGraphImplementor<T>) entityGraph;
 	}
@@ -1512,7 +1512,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <T> RootGraphImplementor<T> getEntityGraph(Class<T> entity, String name) {
 		RootGraphImplementor<?> entityGraph = super.getEntityGraph(name);
 		if ( !entityGraph.getGraphedType().getJavaType().equals(entity) ) {
-			throw new HibernateException("wrong entity type");
+			throw log.wrongEntityType();
 		}
 		return (RootGraphImplementor<T>) entityGraph;
 	}

@@ -17,15 +17,16 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PostLoadEvent;
 import org.hibernate.event.spi.PreLoadEvent;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.loader.plan.exec.query.spi.NamedParameterContext;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.Loadable;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 
+import java.lang.invoke.MethodHandles;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -41,7 +42,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * @author Gail Badner
  */
 public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetProcessor {
-	protected static final CoreMessageLogger LOG = CoreLogging.messageLogger(ReactiveLoaderBasedResultSetProcessor.class);
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveLoaderBasedLoader loader;
 
@@ -181,9 +182,7 @@ public class ReactiveLoaderBasedResultSetProcessor implements ReactiveResultSetP
 								final EntityEntry entityEntry = persistenceContext.getEntry( hydratedObject );
 								if ( entityEntry == null ) {
 									// big problem
-									throw new HibernateException(
-											"Could not locate EntityEntry immediately after two-phase load"
-									);
+									throw LOG.couldNotLocateEntityEntryAfterTwoPhaseLoad();
 								}
 								Loadable persister = (Loadable) entityEntry.getPersister();
 								afterLoadAction.afterLoad( session, hydratedObject, persister );

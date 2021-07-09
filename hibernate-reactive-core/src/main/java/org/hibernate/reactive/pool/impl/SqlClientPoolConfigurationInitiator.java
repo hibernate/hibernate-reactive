@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.pool.impl;
 
-import org.hibernate.HibernateException;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.reactive.logging.impl.Log;
@@ -40,9 +39,7 @@ public class SqlClientPoolConfigurationInitiator implements StandardServiceIniti
                 return (SqlClientPoolConfiguration) classLoaderService.classForName( configClassName ).newInstance();
             }
             catch (Exception e) {
-                throw new HibernateException(
-                        "Could not instantiate SQL client pool configuration [" + configClassName + "]", e
-                );
+                throw LOG.couldNotInstantiatePoolConfiguration( configClassName, e );
             }
         }
     }

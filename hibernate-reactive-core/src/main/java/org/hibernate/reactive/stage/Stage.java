@@ -6,6 +6,7 @@
 package org.hibernate.reactive.stage;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
@@ -24,7 +25,6 @@ import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
-import org.hibernate.LazyInitializationException;
 import org.hibernate.LockMode;
 import org.hibernate.collection.internal.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
@@ -33,6 +33,8 @@ import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
@@ -45,6 +47,8 @@ import org.hibernate.reactive.util.impl.CompletionStages;
  * the similarly-named interfaces in Hibernate ORM.
  */
 public interface Stage {
+	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
 	/**
 	 * A non-blocking counterpart to the Hibernate
 	 * {@link org.hibernate.query.Query} interface, allowing reactive
@@ -1769,8 +1773,8 @@ public interface Stage {
 		else {
 			return CompletionStages.completedFuture( association );
 		}
-		if (session==null) {
-			throw new LazyInitializationException("session closed");
+		if ( session == null ) {
+			throw LOG.sessionClosedLazyInitializationException();
 		}
 		return ( (ReactiveSession) session ).reactiveFetch( association, false );
 	}

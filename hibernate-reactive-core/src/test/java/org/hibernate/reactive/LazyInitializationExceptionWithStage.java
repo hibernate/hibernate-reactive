@@ -68,7 +68,7 @@ public class LazyInitializationExceptionWithStage extends BaseReactiveTest {
 									context.assertEquals( CompletionException.class, throwable.getClass() );
 									context.assertEquals( LazyInitializationException.class, throwable.getCause().getClass() );
 									context.assertEquals(
-											"org.hibernate.LazyInitializationException: Collection cannot be initialized: org.hibernate.reactive.LazyInitializationExceptionWithStage$Artist.paintings",
+											"org.hibernate.LazyInitializationException: HR000056: Collection cannot be initialized: org.hibernate.reactive.LazyInitializationExceptionWithStage$Artist.paintings",
 											throwable.getMessage() );
 								}
 								return null;

@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.provider.service;
 
-import org.hibernate.HibernateException;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.dialect.CockroachDB201Dialect;
 import org.hibernate.dialect.DB297Dialect;
@@ -21,9 +20,12 @@ import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentImpl;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
+import java.lang.invoke.MethodHandles;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
@@ -34,6 +36,8 @@ import java.util.Map;
  * the Hibernate {@link org.hibernate.dialect.Dialect} from the JDBC URL.
  */
 public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
 	public static final NoJdbcEnvironmentInitiator INSTANCE = new NoJdbcEnvironmentInitiator();
 
 	@Override
@@ -104,12 +108,10 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 			return new JdbcEnvironmentImpl( registry, dialectFactory.buildDialect( configurationValues, null ) );
 		}
 		else if ( url.isEmpty() ) {
-			throw new HibernateException( "could not determine Dialect from JDBC driver metadata"
-					+ " (specify a connection URI with scheme 'postgresql:', 'mysql:', 'cockroachdb', or 'db2:')" );
+			throw LOG.couldNotDetermineDialectFromJdbcDriverMetadata();
 		}
 		else {
-			throw new HibernateException( "could not determine Dialect from connection URI '" + url
-					+ "' (specify a connection URI with scheme 'postgresql:', 'mysql:', 'cockroachdb', or 'db2:')" );
+			throw LOG.couldNotDetermineDialectFromConnectionURI(url);
 		}
 	}
 
