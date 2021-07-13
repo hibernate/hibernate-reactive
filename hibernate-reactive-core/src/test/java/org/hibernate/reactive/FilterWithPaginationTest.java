@@ -17,14 +17,11 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
@@ -36,13 +33,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Test the combination of filters, max results and first result.
  */
 public class FilterWithPaginationTest extends BaseReactiveTest {
-
-	/**
-	 * There's probably a bug in the Vert.x Db2 SQL client.
-	 * See: https://github.com/eclipse-vertx/vertx-sql-client/issues/887
-	 */
-	@Rule
-	public DatabaseSelectionRule skipDB2 = DatabaseSelectionRule.skipTestsFor( DatabaseConfiguration.DBType.DB2 );
 
 	FamousPerson margaret = new FamousPerson( 1L, "Margaret Howe Lovatt", Status.LIVING, "the woman who lived in a half-flooded home with a dolphin." );
 	FamousPerson nellie = new FamousPerson( 2L, "Nellie Bly", Status.DECEASED, "In 1888, she traveled around the world in 72 days." );
