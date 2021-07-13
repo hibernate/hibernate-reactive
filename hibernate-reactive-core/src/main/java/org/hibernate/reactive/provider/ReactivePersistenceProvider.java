@@ -5,33 +5,34 @@
  */
 package org.hibernate.reactive.provider;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.spi.LoadState;
+import javax.persistence.spi.PersistenceProvider;
+import javax.persistence.spi.PersistenceUnitInfo;
+import javax.persistence.spi.ProviderUtil;
+
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
-
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.provider.impl.ReactiveEntityManagerFactoryBuilder;
 import org.hibernate.reactive.provider.impl.ReactiveProviderChecker;
-import org.jboss.logging.Logger;
-
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.PersistenceException;
-import javax.persistence.spi.LoadState;
-import javax.persistence.spi.PersistenceProvider;
-import javax.persistence.spi.PersistenceUnitInfo;
-import javax.persistence.spi.ProviderUtil;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /**
  * JPA {@link PersistenceProvider} for Hibernate Reactive.
  */
 public class ReactivePersistenceProvider implements PersistenceProvider {
 
-	private static final Logger log = Logger.getLogger( ReactivePersistenceProvider.class );
+	private static final Log log = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
 	private final PersistenceUtilHelper.MetadataCache cache = new PersistenceUtilHelper.MetadataCache();
 
 	/**
@@ -61,15 +62,14 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 			units = PersistenceXmlParser.locatePersistenceUnits( properties );
 		}
 		catch (Exception e) {
-			log.debug( "Unable to locate persistence units", e );
-			throw new PersistenceException( "Unable to locate persistence units", e );
+			throw log.unableToLocatePersistenceUnits( e );
 		}
 
 		log.debugf( "Located and parsed %s persistence units; checking each", units.size() );
 
 		if ( persistenceUnitName == null && units.size() > 1 ) {
 			// no persistence-unit name to look for was given and we found multiple persistence-units
-			throw new PersistenceException( "No name provided and multiple persistence units found" );
+			throw log.noNameProvidedAndMultiplePersistenceUnitsFound();
 		}
 
 		for ( ParsedPersistenceXmlDescriptor persistenceUnit : units ) {
