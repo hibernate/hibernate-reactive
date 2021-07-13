@@ -5,6 +5,10 @@
  */
 package org.hibernate.reactive.event.impl;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.ObjectDeletedException;
 import org.hibernate.PersistentObjectException;
@@ -17,8 +21,6 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PersistEvent;
 import org.hibernate.event.spi.PersistEventListener;
 import org.hibernate.id.ForeignGenerator;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
@@ -27,9 +29,8 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.engine.impl.CascadingAction;
 import org.hibernate.reactive.engine.impl.CascadingActions;
 import org.hibernate.reactive.event.ReactivePersistEventListener;
-
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
@@ -41,8 +42,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 public class DefaultReactivePersistEventListener
 		extends AbstractReactiveSaveEventListener<IdentitySet>
 		implements PersistEventListener, ReactivePersistEventListener, CallbackRegistryConsumer {
-
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultReactivePersistEventListener.class );
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	@Override
 	protected CascadingAction<IdentitySet> getCascadeReactiveAction() {

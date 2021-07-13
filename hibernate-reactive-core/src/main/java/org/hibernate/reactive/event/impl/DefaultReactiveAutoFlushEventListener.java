@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.event.impl;
 
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.FlushMode;
@@ -15,13 +16,12 @@ import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.event.spi.AutoFlushEvent;
 import org.hibernate.event.spi.AutoFlushEventListener;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.internal.CoreMessageLogger;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.event.ReactiveAutoFlushEventListener;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.stat.spi.StatisticsImplementor;
-
-import org.jboss.logging.Logger;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -29,7 +29,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlushingEventListener
 		implements ReactiveAutoFlushEventListener, AutoFlushEventListener {
 
-	private static final CoreMessageLogger LOG = Logger.getMessageLogger( CoreMessageLogger.class, DefaultReactiveAutoFlushEventListener.class.getName() );
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	@Override
 	public CompletionStage<Void> reactiveOnAutoFlush(AutoFlushEvent event) throws HibernateException {

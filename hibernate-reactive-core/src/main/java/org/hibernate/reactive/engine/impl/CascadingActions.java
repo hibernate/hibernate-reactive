@@ -5,6 +5,10 @@
  */
 package org.hibernate.reactive.engine.impl;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Iterator;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
 import org.hibernate.TransientPropertyValueException;
@@ -12,19 +16,16 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.MergeContext;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
-import org.jboss.logging.Logger;
-
-import java.util.Iterator;
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -33,10 +34,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * a {@link Stage.Session reactive session}.
  */
 public class CascadingActions {
-	private static final CoreMessageLogger LOG = Logger.getMessageLogger(
-			CoreMessageLogger.class,
-			CascadingAction.class.getName()
-	);
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	/**
 	 * Disallow instantiation

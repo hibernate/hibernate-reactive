@@ -5,22 +5,23 @@
  */
 package org.hibernate.reactive.event.impl;
 
+import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.event.internal.AbstractLockUpgradeEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.ResolveNaturalIdEvent;
 import org.hibernate.event.spi.ResolveNaturalIdEventListener;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.reactive.event.ReactiveResolveNaturalIdEventListener;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
-
-import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -33,7 +34,7 @@ public class DefaultReactiveResolveNaturalIdEventListener
 		extends AbstractLockUpgradeEventListener
 		implements ReactiveResolveNaturalIdEventListener, ResolveNaturalIdEventListener {
 
-	private static final CoreMessageLogger log = CoreLogging.messageLogger( DefaultReactiveResolveNaturalIdEventListener.class );
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	@Override
 	public void onResolveNaturalId(ResolveNaturalIdEvent event) throws HibernateException {
@@ -58,8 +59,8 @@ public class DefaultReactiveResolveNaturalIdEventListener
 	protected CompletionStage<Serializable> resolveNaturalId(ResolveNaturalIdEvent event) {
 		EntityPersister persister = event.getEntityPersister();
 
-		if ( log.isTraceEnabled() ) {
-			log.tracev(
+		if ( LOG.isTraceEnabled() ) {
+			LOG.tracev(
 					"Attempting to resolve: {0}#{1}",
 					MessageHelper.infoString( persister ),
 					event.getNaturalIdValues()
@@ -68,8 +69,8 @@ public class DefaultReactiveResolveNaturalIdEventListener
 
 		Serializable entityId = resolveFromCache( event );
 		if ( entityId != null ) {
-			if ( log.isTraceEnabled() ) {
-				log.tracev(
+			if ( LOG.isTraceEnabled() ) {
+				LOG.tracev(
 						"Resolved object in cache: {0}#{1}",
 						MessageHelper.infoString( persister ),
 						event.getNaturalIdValues()
@@ -78,8 +79,8 @@ public class DefaultReactiveResolveNaturalIdEventListener
 			return completedFuture( entityId );
 		}
 
-		if ( log.isTraceEnabled() ) {
-			log.tracev(
+		if ( LOG.isTraceEnabled() ) {
+			LOG.tracev(
 					"Object not resolved in any cache: {0}#{1}",
 					MessageHelper.infoString( persister ),
 					event.getNaturalIdValues()

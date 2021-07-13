@@ -10,6 +10,7 @@ import java.io.Serializable;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LazyInitializationException;
+import org.hibernate.cache.CacheException;
 
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.annotations.Cause;
@@ -18,6 +19,7 @@ import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
 
+import static org.jboss.logging.Logger.Level.ERROR;
 import static org.jboss.logging.Logger.Level.INFO;
 import static org.jboss.logging.Logger.Level.WARN;
 
@@ -79,9 +81,6 @@ public interface Log extends BasicLogger {
 	@LogMessage(level = INFO)
 	@Message(id = 29, value = "Connection pool cleaner period: %1$d ms")
 	void connectionPoolCleanerPeriod(Integer poolCleanerPeriod);
-
-	@Message(id = 30, value = "Error running '%1$s'")
-	HibernateException cockroachErrorRunningCommand(String command, @Cause Throwable error);
 
 	@Message(id = 31, value = "More than one row with the given identifier was found: %1$s, for class: %2$s")
 	HibernateException moreThanOneRowWithTheGivenIdentifier(Object id, String entityName);
@@ -161,6 +160,10 @@ public interface Log extends BasicLogger {
 	@Message(id = 56, value = "Collection cannot be initialized: %1$s")
 	LazyInitializationException collectionCannotBeInitializedlazyInitializationException(String role);
 
+	@LogMessage(level = ERROR)
+	@Message(id = 57, value = "Failed to execute statement [$1%s]")
+	void failedToExecuteStatement(String sql, String s, @Cause Throwable t);
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )
@@ -168,8 +171,28 @@ public interface Log extends BasicLogger {
 
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = INFO)
+	@Message(id = 114, value = "Handling transient entity in delete processing" )
+	void handlingTransientEntity();
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = WARN)
+	@Message(id = 180, value = "FirstResult/maxResults specified on polymorphic query; applying in memory!")
+	void needsLimit();
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = WARN)
+	@Message(id = 245, value = "Manipulation query [%s] resulted in [%s] split queries" )
+	void splitQueries(String sourceQuery, int length);
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = INFO)
 	@Message(id = 327, value = "Error performing load command")
 	void unableToLoadCommand(@Cause HibernateException e);
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = ERROR)
+	@Message(id = 353, value = "Could not release a cache lock : %s" )
+	void unableToReleaseCacheLock(CacheException ce);
 
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)

@@ -5,6 +5,13 @@
  */
 package org.hibernate.reactive.loader;
 
+import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.internal.TwoPhaseLoad;
@@ -16,23 +23,17 @@ import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.PreLoadEvent;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.loader.plan.exec.query.spi.NamedParameterContext;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.reactive.session.ReactiveQueryExecutor;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.OneToOneType;
-
-import java.io.Serializable;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
@@ -42,7 +43,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  */
 public interface ReactiveResultSetProcessor {
 
-	CoreMessageLogger LOG = CoreLogging.messageLogger(ReactiveLoaderBasedResultSetProcessor.class);
+	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	CompletionStage<List<Object>> reactiveExtractResults(
 			ResultSet resultSet,
@@ -54,7 +55,6 @@ public interface ReactiveResultSetProcessor {
 			ResultTransformer forcedResultTransformer,
 			List<AfterLoadAction> afterLoadActionList) throws SQLException;
 
-	@SuppressWarnings("unchecked")
 	default CompletionStage<Void> initializeEntity(
 			final Object entity,
 			final boolean readOnly,

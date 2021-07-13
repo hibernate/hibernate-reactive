@@ -5,15 +5,18 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.*;
-import org.hibernate.event.spi.*;
-import org.hibernate.internal.CoreMessageLogger;
-import org.hibernate.reactive.event.ReactiveFlushEventListener;
-import org.hibernate.stat.spi.StatisticsImplementor;
-import org.jboss.logging.Logger;
-
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
+
+import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.event.spi.EventSource;
+import org.hibernate.event.spi.FlushEvent;
+import org.hibernate.event.spi.FlushEventListener;
+import org.hibernate.reactive.event.ReactiveFlushEventListener;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.stat.spi.StatisticsImplementor;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -23,10 +26,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 public class DefaultReactiveFlushEventListener extends AbstractReactiveFlushingEventListener
 		implements ReactiveFlushEventListener, FlushEventListener {
 
-	private static final CoreMessageLogger LOG = Logger.getMessageLogger(
-			CoreMessageLogger.class,
-			DefaultReactiveFlushEventListener.class.getName()
-	);
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	@Override
 	public CompletionStage<Void> reactiveOnFlush(FlushEvent event) throws HibernateException {
