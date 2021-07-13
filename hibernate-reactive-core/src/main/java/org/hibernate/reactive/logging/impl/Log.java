@@ -8,6 +8,8 @@ package org.hibernate.reactive.logging.impl;
 
 import java.io.Serializable;
 
+import javax.persistence.PersistenceException;
+
 import org.hibernate.HibernateException;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.cache.CacheException;
@@ -201,6 +203,12 @@ public interface Log extends BasicLogger {
 			+ "original thread: '%1$s' current Thread: '%2$s'")
 	IllegalStateException detectedUsedOfTheSessionOnTheWrongThread(String expectedThreadName, String currentThreadName);
 
+	@Message(id = 70, value = "Unable to locate persistence units")
+	PersistenceException unableToLocatePersistenceUnits(@Cause Throwable e);
+
+	@Message(id = 71, value= "No name provided and multiple persistence units found")
+	PersistenceException noNameProvidedAndMultiplePersistenceUnitsFound();
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )
@@ -235,4 +243,5 @@ public interface Log extends BasicLogger {
 	@LogMessage(level = WARN)
 	@Message(id = 447, value= "Explicit use of UPGRADE_SKIPLOCKED in lock() calls is not recommended; use normal UPGRADE locking instead")
 	void explicitSkipLockedLockCombo();
+
 }
