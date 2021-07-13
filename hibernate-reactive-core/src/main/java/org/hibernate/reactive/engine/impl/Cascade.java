@@ -5,6 +5,12 @@
  */
 package org.hibernate.reactive.engine.impl;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.CacheMode;
 import org.hibernate.Hibernate;
 import org.hibernate.HibernateException;
@@ -17,12 +23,12 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.type.AssociationType;
 import org.hibernate.type.CollectionType;
@@ -30,11 +36,6 @@ import org.hibernate.type.CompositeType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.Type;
-
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -50,7 +51,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * @see CascadingAction
  */
 public final class Cascade<C> {
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( Cascade.class );
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final CascadingAction<C> action;
 	private final EntityPersister persister;

@@ -5,30 +5,63 @@
  */
 package org.hibernate.reactive.engine;
 
+import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.PropertyValueException;
-import org.hibernate.action.internal.*;
+import org.hibernate.action.internal.AbstractEntityInsertAction;
+import org.hibernate.action.internal.BulkOperationCleanupAction;
+import org.hibernate.action.internal.EntityAction;
+import org.hibernate.action.internal.EntityActionVetoException;
+import org.hibernate.action.internal.EntityDeleteAction;
+import org.hibernate.action.internal.QueuedOperationCollectionAction;
+import org.hibernate.action.internal.UnresolvedEntityInsertActions;
 import org.hibernate.action.spi.AfterTransactionCompletionProcess;
 import org.hibernate.action.spi.BeforeTransactionCompletionProcess;
 import org.hibernate.action.spi.Executable;
 import org.hibernate.cache.CacheException;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
-import org.hibernate.engine.spi.*;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
+import org.hibernate.engine.spi.ActionQueue;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.ExecutableList;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.reactive.engine.impl.*;
+import org.hibernate.reactive.engine.impl.ReactiveCollectionRecreateAction;
+import org.hibernate.reactive.engine.impl.ReactiveCollectionRemoveAction;
+import org.hibernate.reactive.engine.impl.ReactiveCollectionUpdateAction;
+import org.hibernate.reactive.engine.impl.ReactiveEntityDeleteAction;
+import org.hibernate.reactive.engine.impl.ReactiveEntityIdentityInsertAction;
+import org.hibernate.reactive.engine.impl.ReactiveEntityInsertAction;
+import org.hibernate.reactive.engine.impl.ReactiveEntityRegularInsertAction;
+import org.hibernate.reactive.engine.impl.ReactiveEntityUpdateAction;
+import org.hibernate.reactive.engine.impl.ReactiveOrphanRemovalAction;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
-import org.hibernate.type.*;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import org.hibernate.type.CollectionType;
+import org.hibernate.type.CompositeType;
+import org.hibernate.type.EntityType;
+import org.hibernate.type.ForeignKeyDirection;
+import org.hibernate.type.Type;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -38,7 +71,9 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * operations are queued before execution during a flush.
  */
 public class ReactiveActionQueue {
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( ReactiveActionQueue.class );
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
 	/**
 	 * A LinkedHashMap containing providers for all the ExecutableLists, inserted in execution order
 	 */

@@ -18,8 +18,9 @@ import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LogCategory;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 
 import com.ibm.asyncutil.iteration.AsyncIterator;
 
@@ -27,8 +28,7 @@ import static com.ibm.asyncutil.iteration.AsyncTrampoline.asyncWhile;
 
 public class CompletionStages {
 
-	private static final CoreMessageLogger log =
-			CoreLogging.messageLogger("org.hibernate.reactive.errors");
+	private static final Log LOG = LoggerFactory.make( Log.class, new LogCategory( "org.hibernate.reactive.errors" ) );
 
 	// singleton instances:
 	private static final CompletionStage<Void> VOID = completedFuture( null );
@@ -107,8 +107,7 @@ public class CompletionStages {
 
 	public static void logSqlException(Throwable t, Supplier<String> message, String sql) {
 		if ( t != null ) {
-			log.error( "failed to execute statement [" + sql + "]" );
-			log.error( message.get(), t );
+			LOG.failedToExecuteStatement( sql, message.get(), t );
 		}
 	}
 

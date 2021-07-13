@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.event.impl;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
@@ -22,7 +23,6 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEntityEvent;
 import org.hibernate.event.spi.FlushEntityEventListener;
 import org.hibernate.event.spi.FlushEvent;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
@@ -31,9 +31,9 @@ import org.hibernate.reactive.engine.impl.CascadingActions;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionRecreateAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionRemoveAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionUpdateAction;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
-
-import org.jboss.logging.Logger;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -45,7 +45,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 public abstract class AbstractReactiveFlushingEventListener {
 
-	private static final CoreMessageLogger LOG = Logger.getMessageLogger( CoreMessageLogger.class, AbstractReactiveFlushingEventListener.class.getName() );
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	protected CompletionStage<Void> performExecutions(EventSource session) {
 		LOG.trace( "Executing flush" );

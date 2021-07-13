@@ -5,20 +5,23 @@
  */
 package org.hibernate.reactive.loader.collection.impl;
 
+import java.lang.invoke.MethodHandles;
+
 import org.hibernate.MappingException;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.loader.collection.OneToManyJoinWalker;
 import org.hibernate.loader.collection.OneToManyLoader;
 import org.hibernate.persister.collection.QueryableCollection;
-import org.jboss.logging.Logger;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 
 /**
  * A reactive {@link OneToManyLoader}
  */
 public class ReactiveOneToManyLoader extends ReactiveCollectionLoader {
-	private static final CoreMessageLogger LOG = Logger.getMessageLogger(CoreMessageLogger.class, OneToManyLoader.class.getName());
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	public ReactiveOneToManyLoader(
 			QueryableCollection oneToManyPersister,

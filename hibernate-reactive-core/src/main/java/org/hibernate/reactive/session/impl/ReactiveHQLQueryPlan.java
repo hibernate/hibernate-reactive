@@ -5,6 +5,13 @@
  */
 package org.hibernate.reactive.session.impl;
 
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.BulkOperationCleanupAction;
@@ -15,24 +22,18 @@ import org.hibernate.engine.spi.RowSelection;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.hql.spi.QueryTranslator;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A reactific {@link HQLQueryPlan}
  */
 class ReactiveHQLQueryPlan<T> extends HQLQueryPlan {
 
-	private static final CoreMessageLogger log = CoreLogging.messageLogger( HQLQueryPlan.class );
+	private static final Log log = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	public ReactiveHQLQueryPlan(
 			String hql,

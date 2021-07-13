@@ -58,7 +58,6 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		implements ReactiveMergeEventListener, MergeEventListener {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-//	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultReactiveMergeEventListener.class );
 
 	@Override
 	public void onMerge(MergeEvent event) throws HibernateException {

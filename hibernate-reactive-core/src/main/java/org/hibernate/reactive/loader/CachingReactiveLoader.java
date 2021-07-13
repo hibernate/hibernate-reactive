@@ -5,6 +5,15 @@
  */
 package org.hibernate.reactive.loader;
 
+import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+
 import org.hibernate.HibernateException;
 import org.hibernate.QueryException;
 import org.hibernate.cache.spi.FilterKey;
@@ -13,23 +22,14 @@ import org.hibernate.cache.spi.QueryResultsCache;
 import org.hibernate.dialect.pagination.LimitHandler;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
-import org.hibernate.loader.Loader;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.event.impl.UnexpectedAccessToTheDatabase;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.transform.CacheableResultTransformer;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
-
-import java.io.Serializable;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
@@ -45,7 +45,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
  */
 public interface CachingReactiveLoader<T> extends ReactiveLoader {
 
-	CoreMessageLogger log = CoreLogging.messageLogger( Loader.class );
+	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	default CompletionStage<List<Object>> doReactiveList(
 			final String sql,
@@ -99,7 +99,7 @@ public interface CachingReactiveLoader<T> extends ReactiveLoader {
 			cachedList = getReactiveResultFromQueryCache( session, queryParameters, querySpaces, resultTypes, queryCache, key );
 		}
 		catch (UnexpectedAccessToTheDatabase e) {
-			log.debugf( "Some of the entities are not in the cache. The cache will be ignored for query: %s ", sql );
+			LOG.debugf( "Some of the entities are not in the cache. The cache will be ignored for query: %s ", sql );
 
 			// Some of the entities in the query results aren't cached and therefore it trys to load them from the db.
 			// Currently this scenario causes an AssertionFailure exception because we cannot deal with the

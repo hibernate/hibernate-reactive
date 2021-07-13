@@ -6,6 +6,7 @@
 package org.hibernate.reactive.persister.collection.impl;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -18,13 +19,12 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.exception.spi.SQLExceptionConverter;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-
-import org.jboss.logging.Logger;
 
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
@@ -35,10 +35,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * Reactive version of {@link org.hibernate.persister.collection.AbstractCollectionPersister}
  */
 public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionPersister {
-    CoreMessageLogger LOG = Logger.getMessageLogger(
-            CoreMessageLogger.class,
-            ReactiveBasicCollectionPersister.class.getName()
-    );
+
+    Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
     default ReactiveConnection getReactiveConnection(SharedSessionContractImplementor session) {
         return ( (ReactiveConnectionSupplier) session ).getReactiveConnection();

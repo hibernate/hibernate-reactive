@@ -5,18 +5,29 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import org.hibernate.*;
+import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
+import org.hibernate.HibernateException;
+import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
+import org.hibernate.PersistentObjectException;
+import org.hibernate.UnresolvableObjectException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.SoftLock;
 import org.hibernate.engine.internal.CascadePoint;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.ActionQueue;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.internal.EvictVisitor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.RefreshEvent;
 import org.hibernate.event.spi.RefreshEventListener;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.metamodel.spi.MetamodelImplementor;
 import org.hibernate.persister.collection.CollectionPersister;
@@ -24,15 +35,13 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;
 import org.hibernate.reactive.event.ReactiveRefreshEventListener;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveAbstractEntityPersister;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.Type;
-
-import java.io.Serializable;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -43,7 +52,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 public class DefaultReactiveRefreshEventListener
 		implements RefreshEventListener, ReactiveRefreshEventListener {
 
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( DefaultReactiveRefreshEventListener.class );
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	public CompletionStage<Void> reactiveOnRefresh(RefreshEvent event) throws HibernateException {
 		return reactiveOnRefresh( event, new IdentitySet( 10 ) );
