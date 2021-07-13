@@ -15,6 +15,8 @@ import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
@@ -24,6 +26,7 @@ import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Attribute;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -37,6 +40,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
  * {@code Session} and {@link org.hibernate.Session}.
  */
 public class StageSessionImpl implements Stage.Session {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveSession delegate;
 	private final StageSessionFactoryImpl factory;
@@ -277,7 +282,7 @@ public class StageSessionImpl implements Stage.Session {
 			case ALWAYS:
 				return FlushMode.ALWAYS;
 			default:
-				throw new IllegalStateException("impossible flush mode");
+				throw LOG.impossibleFlushModeIllegalState();
 		}
 	}
 

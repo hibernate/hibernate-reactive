@@ -89,7 +89,7 @@ public class ReactiveIdentifierGeneratorFactory extends DefaultIdentifierGenerat
 				reactiveGenerator = new SequenceReactiveIdentifierGenerator();
 			}
 			else {
-				throw new IllegalStateException("unknown structure type");
+				throw LOG.unknownStructureType();
 			}
 		}
 		else if (generator instanceof TableGenerator) {

@@ -5,7 +5,11 @@
  */
 package org.hibernate.reactive.common;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Locale;
+
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 
 import io.vertx.core.Context;
 
@@ -15,6 +19,8 @@ import io.vertx.core.Context;
  * @author Sanne Grinovero
  */
 public final class InternalStateAssertions {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	/**
 	 * Unless this system property is explicitly set to "false", we will enforce these checks.
@@ -31,14 +37,13 @@ public final class InternalStateAssertions {
 
 	public static void assertUseOnEventLoop() {
 		if ( ENFORCE && (! Context.isOnEventLoopThread() ) ) {
-			throw new IllegalStateException( "This method should exclusively be invoked from a Vert.x EventLoop thread; currently running on thread '" + Thread.currentThread().getName() + '\'' );
+			throw LOG.shouldBeInvokedInVertxEventLoopThread( Thread.currentThread().getName() );
 		}
 	}
 
 	public static void assertCurrentThreadMatches(Thread expectedThread) {
 		if ( ENFORCE && ( Thread.currentThread() != expectedThread ) ) {
-			throw new IllegalStateException( "Detected use of the reactive Session from a different Thread than the one which was used to open the reactive Session - this suggests an invalid integration; "
-			+ "original thread: '" + expectedThread.getName() + "' current Thread: '" + Thread.currentThread().getName() + '\'' );
+			throw LOG.detectedUsedOfTheSessionOnTheWrongThread( expectedThread.getName(), Thread.currentThread().getName() );
 		}
 	}
 

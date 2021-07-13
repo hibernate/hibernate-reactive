@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.lang.invoke.MethodHandles;
 import java.sql.JDBCType;
 import java.sql.ResultSet;
 import java.sql.Types;
@@ -17,6 +18,8 @@ import io.vertx.sqlclient.data.NullValue;
 import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 
 import io.vertx.sqlclient.Pool;
@@ -36,6 +39,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * A reactive connection based on Vert.x's {@link SqlConnection}.
  */
 public class SqlClientConnection implements ReactiveConnection {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private static PropertyKind<Long> mySqlLastInsertedId;
 
@@ -143,12 +148,8 @@ public class SqlClientConnection implements ReactiveConnection {
 				} while ( resultNext != null && i < parametersBatch.size() );
 			}
 
-			if ( resultNext != null ) {
-				throw new IllegalStateException( "Number of results is greater than number of batched parameters." );
-			}
-
-			if ( i != parametersBatch.size() ) {
-				throw new IllegalStateException( "Number of results is not equal to number of batched parameters." );
+			if ( resultNext != null || i != parametersBatch.size() ) {
+				throw LOG.numberOfResultsGreaterThanBatchedParameters();
 			}
 
 			return updateCounts;

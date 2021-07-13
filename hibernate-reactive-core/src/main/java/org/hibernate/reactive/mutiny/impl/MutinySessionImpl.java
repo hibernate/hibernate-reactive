@@ -15,6 +15,8 @@ import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -24,6 +26,7 @@ import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Attribute;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -38,6 +41,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
  * {@code Session} and {@link org.hibernate.Session}.
  */
 public class MutinySessionImpl implements Mutiny.Session {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveSession delegate;
 	private final MutinySessionFactoryImpl factory;
@@ -278,7 +283,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 			case ALWAYS:
 				return FlushMode.ALWAYS;
 			default:
-				throw new IllegalStateException("impossible flush mode");
+				throw LOG.impossibleFlushModeIllegalState();
 		}
 	}
 

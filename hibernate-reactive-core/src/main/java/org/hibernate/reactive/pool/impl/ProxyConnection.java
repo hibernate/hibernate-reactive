@@ -5,12 +5,15 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.lang.invoke.MethodHandles;
 import java.sql.ResultSet;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -22,6 +25,8 @@ import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnE
  * underlying connection lazily.
  */
 final class ProxyConnection implements ReactiveConnection {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveConnectionPool sqlClientPool;
 	private ReactiveConnection connection;
@@ -43,7 +48,7 @@ final class ProxyConnection implements ReactiveConnection {
 		assertUseOnEventLoop();
 		if ( closed ) {
 			CompletableFuture<T> ret = new CompletableFuture<>();
-			ret.completeExceptionally( new IllegalStateException( "session is closed" ) );
+			ret.completeExceptionally( LOG.sessionIsClosed() );
 			return ret;
 		}
 		if ( !connected ) {
@@ -58,7 +63,7 @@ final class ProxyConnection implements ReactiveConnection {
 				// we're already in the process of fetching a connection,
 				// so this must be an illegal concurrent call
 				CompletableFuture<T> ret = new CompletableFuture<>();
-				ret.completeExceptionally( new IllegalStateException( "session is currently connecting to database" ) );
+				ret.completeExceptionally( LOG.sessionIsConnectingToTheDatabase() );
 				return ret;
 			}
 			return operation.apply( connection );

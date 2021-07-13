@@ -12,6 +12,8 @@ import org.hibernate.query.criteria.internal.ValueHandlerFactory;
 import org.hibernate.query.criteria.internal.compile.ImplicitParameterBinding;
 import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
 import org.hibernate.query.criteria.internal.compile.RenderingContext;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.CriteriaQueryOptions;
 import org.hibernate.reactive.session.ReactiveQuery;
@@ -19,6 +21,7 @@ import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.type.Type;
 
 import javax.persistence.TypedQuery;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 /**
@@ -28,6 +31,8 @@ import java.util.List;
  * @author Gavin King
  */
 public class ReactiveCriteriaQueryImpl<T> extends CriteriaQueryImpl<T> implements Criteria<T> {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	public ReactiveCriteriaQueryImpl(CriteriaBuilderImpl criteriaBuilder, Class<T> returnType) {
 		super(criteriaBuilder, returnType);
@@ -83,19 +88,12 @@ public class ReactiveCriteriaQueryImpl<T> extends CriteriaQueryImpl<T> implement
 	private static void validateSelection(Type[] returnTypes, SelectionImplementor<?> selection) {
 		if ( selection.isCompoundSelection() ) {
 			if ( returnTypes.length != selection.getCompoundSelectionItems().size() ) {
-				throw new IllegalStateException(
-						"Number of return values [" + returnTypes.length +
-								"] did not match expected [" +
-								selection.getCompoundSelectionItems().size() + "]"
-				);
+				throw LOG.unexpectedNumberOfReturnedValues( returnTypes.length, selection.getCompoundSelectionItems().size() );
 			}
 		}
 		else {
 			if  (returnTypes.length > 1 ) {
-				throw new IllegalStateException(
-						"Number of return values [" + returnTypes.length +
-								"] did not match expected [1]"
-				);
+				throw LOG.unexpectedNumberOfReturnedValues( returnTypes.length, 1 );
 			}
 		}
 	}

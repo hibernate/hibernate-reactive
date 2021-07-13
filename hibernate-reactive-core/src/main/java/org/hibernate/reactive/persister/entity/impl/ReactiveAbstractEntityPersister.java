@@ -684,7 +684,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		// Ensure that an immutable or non-modifiable entity is not being updated unless it is
 		// in the process of being deleted.
 		if ( entry == null && !delegate().isMutable() ) {
-			throw new IllegalStateException( "Updating immutable entity that is not in session yet!" );
+			throw log.updatingImmutableEntityThatsNotInTheSession();
 		}
 		if ( ( delegate().getEntityMetamodel().isDynamicUpdate() && dirtyFields != null ) ) {
 			// We need to generate the UPDATE SQL when dynamic-update="true"
