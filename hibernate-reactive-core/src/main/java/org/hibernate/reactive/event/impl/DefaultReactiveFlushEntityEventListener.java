@@ -564,9 +564,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 					// references to transient entities set to null before being deleted. No other
 					// fields should be updated.
 					if ( values != entry.getDeletedState() ) {
-						throw new IllegalStateException(
-								"Entity has status Status.DELETED but values != entry.getDeletedState"
-						);
+						throw LOG.entityDeleteStateIllegal();
 					}
 					// Even if loadedState == null, we can dirty-check by comparing currentState and
 					// entry.getDeletedState() because the only fields to be updated are those that

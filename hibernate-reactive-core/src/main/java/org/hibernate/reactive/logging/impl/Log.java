@@ -161,8 +161,45 @@ public interface Log extends BasicLogger {
 	LazyInitializationException collectionCannotBeInitializedlazyInitializationException(String role);
 
 	@LogMessage(level = ERROR)
-	@Message(id = 57, value = "Failed to execute statement [$1%s]")
+	@Message(id = 57, value = "Failed to execute statement [$1%s]: $2%s")
 	void failedToExecuteStatement(String sql, String s, @Cause Throwable t);
+
+	@Message(id = 58, value = "Impossible flush mode")
+	IllegalStateException impossibleFlushModeIllegalState();
+
+	@Message(id = 59, value = "Number of results is greater than number of batched parameters")
+	IllegalStateException numberOfResultsGreaterThanBatchedParameters();
+
+	@Message(id = 60, value = "Session is closed")
+	IllegalStateException sessionIsClosed();
+
+	@Message(id = 61, value = "Session is currently connecting to database")
+	IllegalStateException sessionIsConnectingToTheDatabase();
+
+	@Message(id = 62, value = "Updating immutable entity that is not in session yet!")
+	IllegalStateException updatingImmutableEntityThatsNotInTheSession();
+
+	@Message(id = 63, value = "Entity has status Status.DELETED but values != entry.getDeletedState")
+	IllegalStateException entityDeleteStateIllegal();
+
+	@Message(id = 64, value = "Number of return values [%1$s] did not match expected [%2$s]")
+	IllegalStateException unexpectedNumberOfReturnedValues(int length, int size);
+
+	@Message(id = 65, value = "No Vert.x context active")
+	IllegalStateException notVertxContextActive();
+
+	@Message(id = 66, value = "Unknown structure type")
+	IllegalStateException unknownStructureType();
+
+	@Message(id = 67, value= "Service not initialized")
+	IllegalStateException serviceNotInitialized();
+
+	@Message(id = 68, value = "This method should exclusively be invoked from a Vert.x EventLoop thread; currently running on thread '%1$s'")
+	IllegalStateException shouldBeInvokedInVertxEventLoopThread(String name);
+
+	@Message(id = 69, value = "Detected use of the reactive Session from a different Thread than the one which was used to open the reactive Session - this suggests an invalid integration; "
+			+ "original thread: '%1$s' current Thread: '%2$s'")
+	IllegalStateException detectedUsedOfTheSessionOnTheWrongThread(String expectedThreadName, String currentThreadName);
 
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)

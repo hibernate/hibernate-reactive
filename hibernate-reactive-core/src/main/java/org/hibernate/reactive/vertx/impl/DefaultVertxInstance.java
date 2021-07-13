@@ -5,7 +5,12 @@
  */
 package org.hibernate.reactive.vertx.impl;
 
+import java.lang.invoke.MethodHandles;
+
 import io.vertx.core.Vertx;
+
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.Startable;
 import org.hibernate.service.spi.Stoppable;
@@ -21,12 +26,14 @@ import org.hibernate.service.spi.Stoppable;
  */
 public final class DefaultVertxInstance implements VertxInstance, Stoppable, Startable {
 
+    private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
     private Vertx vertx;
 
     @Override
     public Vertx getVertx() {
         if ( vertx == null ) {
-            throw new IllegalStateException("Service not initialized");
+            throw LOG.serviceNotInitialized();
         }
         return vertx;
     }

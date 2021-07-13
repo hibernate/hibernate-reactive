@@ -5,9 +5,13 @@
  */
 package org.hibernate.reactive.context.impl;
 
+import java.lang.invoke.MethodHandles;
+
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.ContextInternal;
 import org.hibernate.reactive.context.Context;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.ServiceRegistryAwareService;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
@@ -18,6 +22,8 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
  * @author Gavin King
  */
 public class VertxContext implements Context, ServiceRegistryAwareService {
+
+    private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
     private VertxInstance vertxInstance;
 
@@ -37,7 +43,7 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
             context.localContextData().put( key, instance );
         }
         else {
-            throw new IllegalStateException("No Vert.x context active");
+            throw LOG.notVertxContextActive();
         }
     }
 
