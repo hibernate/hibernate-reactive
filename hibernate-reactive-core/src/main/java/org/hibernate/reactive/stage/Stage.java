@@ -5,6 +5,20 @@
  */
 package org.hibernate.reactive.stage;
 
+import java.io.Serializable;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import javax.persistence.EntityGraph;
+import javax.persistence.Parameter;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
+import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.Metamodel;
+
 import org.hibernate.Cache;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
@@ -21,20 +35,6 @@ import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
-
-import javax.persistence.EntityGraph;
-import javax.persistence.Parameter;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaDelete;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.CriteriaUpdate;
-import javax.persistence.metamodel.Attribute;
-import javax.persistence.metamodel.Metamodel;
-import java.io.Serializable;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * An API for Hibernate Reactive where non-blocking operations are
