@@ -187,6 +187,9 @@ jobs:
     - name: Export path to JDK 8
       id: mainjdk-exportpath
       run: echo "::set-output name=path::${JAVA_HOME}"
+    - name: Display exact version of JDK ${{ matrix.java.name }}
+      run: |
+        ${{ steps.testjdk-exportpath.outputs.path }}/bin/java -version
     - name: Build and Test with Java ${{ matrix.java.name }}
       run: |
         ./gradlew build -PshowStandardOutput -Pdocker -Ptest.jdk.version=${{ matrix.java.java_version_numeric }} \
