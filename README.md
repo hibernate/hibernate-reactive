@@ -35,9 +35,9 @@ Hibernate Reactive has been tested with:
 - Db2 11.5
 - CockroachDB 21.1
 - [Hibernate ORM][] 5.5.4.Final
-- [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 4.1.1
-- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 4.1.1
-- [Vert.x Reactive Db2 Client](https://vertx.io/docs/vertx-db2-client/java/) 4.1.1
+- [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 4.1.2
+- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 4.1.2
+- [Vert.x Reactive Db2 Client](https://vertx.io/docs/vertx-db2-client/java/) 4.1.2
 - [Quarkus][Quarkus] via the Hibernate Reactive extension
 
 Support for SQL Server is coming soon.
