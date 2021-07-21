@@ -222,6 +222,21 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     @Override
     public CompletionStage<Void> reactiveUpdate(Object entity) {
         checkOpen();
+        if ( entity instanceof HibernateProxy ) {
+            final LazyInitializer hibernateLazyInitializer = ( (HibernateProxy) entity ).getHibernateLazyInitializer();
+            if ( hibernateLazyInitializer.isUninitialized() ) {
+                return reactiveFetch( entity, true ).thenCompose(
+                        fetchedEntity -> executeReactiveUpdate( fetchedEntity ) );
+            }
+            else {
+                return executeReactiveUpdate( hibernateLazyInitializer.getImplementation() );
+            }
+        }
+
+        return executeReactiveUpdate( entity );
+    }
+
+    private CompletionStage<Void> executeReactiveUpdate(Object entity) {
         ReactiveEntityPersister persister = getEntityPersister( null, entity );
         Serializable id = persister.getIdentifier( entity, this );
         Object[] state = persister.getPropertyValues( entity );
