@@ -223,24 +223,23 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     public CompletionStage<Void> reactiveUpdate(Object entity) {
         checkOpen();
         if ( entity instanceof HibernateProxy ) {
-            Object proxy = entity;
             final LazyInitializer hibernateLazyInitializer = ( (HibernateProxy) entity ).getHibernateLazyInitializer();
             if ( hibernateLazyInitializer.isUninitialized() ) {
                 return reactiveFetch( entity, true )
-                        .thenCompose( fetchedEntity -> executeReactiveUpdate(proxy, fetchedEntity) );
+                        .thenCompose( fetchedEntity -> executeReactiveUpdate(entity, fetchedEntity) );
             }
             else {
-                return executeReactiveUpdate( proxy, hibernateLazyInitializer.getImplementation() );
+                return executeReactiveUpdate( entity, hibernateLazyInitializer.getImplementation() );
             }
         }
 
-        return executeReactiveUpdate( null,  entity );
+        return executeReactiveUpdate( entity,  entity );
     }
 
-    private CompletionStage<Void> executeReactiveUpdate(Object proxy, Object entity) {
+    private CompletionStage<Void> executeReactiveUpdate(Object stateEntity, Object entity) {
         ReactiveEntityPersister persister = getEntityPersister( null, entity );
         Serializable id = persister.getIdentifier( entity, this );
-        Object[] state = proxy != null ? persister.getPropertyValues( proxy ) : persister.getPropertyValues( entity );
+        Object[] state = persister.getPropertyValues( stateEntity );
         Object oldVersion;
         if ( persister.isVersioned() ) {
             oldVersion = persister.getVersion( entity );

@@ -23,6 +23,9 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
+/**
+ * @see org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl#reactiveUpdate(Object)
+ */
 public class ReactiveStatelessUpdateTest  extends BaseReactiveTest {
 
 	@Override
@@ -59,14 +62,13 @@ public class ReactiveStatelessUpdateTest  extends BaseReactiveTest {
 							SampleEntity entityFromDb = joinEntityFromDatabase.sampleEntity;
 							entityFromDb.sampleField = "updated field";
 							// Intended to test updating unmanaged proxy entity in this transaction
-							// @See ReactiveStatelessSessionImpl.updateReactive()
 							return s.update( entityFromDb );
 						} )
 				)
-				.invoke( () -> getMutinySessionFactory().withSession( session -> session
+				.chain( () -> getMutinySessionFactory().withSession( session -> session
 						.createQuery( "from SampleEntity", SampleEntity.class )
 						.getSingleResult()
-						.onItem().invoke( () -> context.assertEquals("updated field", sampleEntity.sampleField  ) ))
+						.onItem().invoke( result -> context.assertEquals( "updated field", result.sampleField ) ) )
 				)
 		);
 	}
@@ -91,19 +93,17 @@ public class ReactiveStatelessUpdateTest  extends BaseReactiveTest {
 						(s, t) -> s
 								// fetching entity in this transaction to trigger logic for
 								// updating a managed proxy entity
-								// @See ReactiveStatelessSessionImpl.updateReactive()
 								.fetch( joinEntityFromDatabase.sampleEntity )
 								.chain( fetchedEntity -> {
 									SampleEntity entityFromDb = fetchedEntity;
 									entityFromDb.sampleField = "updated field";
-									// Without the fix it fails here
 									return s.update( entityFromDb );
 								} ) )
 				)
-				.invoke( () -> getMutinySessionFactory().withSession( session -> session
+				.chain( () -> getMutinySessionFactory().withSession( session -> session
 						.createQuery( "from SampleEntity", SampleEntity.class )
 						.getSingleResult()
-						.onItem().invoke( () -> context.assertEquals("updated field", sampleEntity.sampleField  ) ))
+						.onItem().invoke( result -> context.assertEquals("updated field", result.sampleField  ) ))
 				)
 		);
 	}
