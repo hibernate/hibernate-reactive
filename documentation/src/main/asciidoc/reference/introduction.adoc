@@ -393,6 +393,10 @@ It's illegal to access persistent fields from outside the entity class.
 Therefore, external access to persistent fields must be intermediated via
 getter and setter methods defined by the entity class.
 
+IMPORTANT: If you access fields of an unfetched entity instance from code
+outside the entity class, you'll obtain bogus `null` or default (zero)
+values!
+
 When you use Hibernate Reactive in Quarkus, these requirements are relaxed,
 and you can use public fields instead of getters and setters if you prefer.
 
