@@ -65,6 +65,7 @@ import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNece
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.generateId;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 /**
@@ -222,6 +223,21 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
     @Override
     public CompletionStage<Void> reactiveUpdate(Object entity) {
         checkOpen();
+        if ( entity instanceof HibernateProxy ) {
+            final LazyInitializer hibernateLazyInitializer = ( (HibernateProxy) entity ).getHibernateLazyInitializer();
+            return hibernateLazyInitializer.isUninitialized()
+                    ? failedFuture( LOG.uninitializedProxyUpdate( entity.getClass() ) )
+                    : executeReactiveUpdate( hibernateLazyInitializer.getImplementation() );
+        }
+
+        return executeReactiveUpdate( entity );
+    }
+
+    /**
+     * @param entity a detached entity or initialized proxy
+     * @return a void stage
+     */
+    private CompletionStage<Void> executeReactiveUpdate(Object entity) {
         ReactiveEntityPersister persister = getEntityPersister( null, entity );
         Serializable id = persister.getIdentifier( entity, this );
         Object[] state = persister.getPropertyValues( entity );

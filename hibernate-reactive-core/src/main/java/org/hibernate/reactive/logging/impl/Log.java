@@ -209,6 +209,9 @@ public interface Log extends BasicLogger {
 	@Message(id = 71, value= "No name provided and multiple persistence units found")
 	PersistenceException noNameProvidedAndMultiplePersistenceUnitsFound();
 
+	@Message(id = 72, value= "Cannot update an uninitialized proxy. Make sure to fetch the value before trying to update it: %1$s")
+	HibernateException uninitializedProxyUpdate(Object entity);
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )
