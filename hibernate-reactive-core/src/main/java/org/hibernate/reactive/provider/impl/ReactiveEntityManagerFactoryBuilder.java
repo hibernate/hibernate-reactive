@@ -12,10 +12,12 @@ import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
+import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.reactive.bulk.impl.ReactiveBulkIdStrategy;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
+import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilder;
 
 import javax.persistence.EntityManagerFactory;
@@ -50,6 +52,8 @@ public final class ReactiveEntityManagerFactoryBuilder extends EntityManagerFact
         );
         optionsBuilder.enableCollectionInDefaultFetchGroup(true);
         optionsBuilder.applyMultiTableBulkIdStrategy( new ReactiveBulkIdStrategy( metadata ) );
+        int batchSize = ConfigurationHelper.getInt( Settings.STATEMENT_BATCH_SIZE, getConfigurationValues(), 0 );
+        optionsBuilder.applyJdbcBatchSize(batchSize);
 
         final SessionFactoryBuilderImpl defaultBuilder = new SessionFactoryBuilderImpl( metadata, optionsBuilder );
         final SessionFactoryBuilderImplementor reactiveSessionFactoryBuilder = new ReactiveSessionFactoryBuilder( metadata, defaultBuilder );

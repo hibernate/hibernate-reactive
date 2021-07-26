@@ -11,12 +11,24 @@ import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
 import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
 import org.hibernate.boot.spi.SessionFactoryBuilderService;
+import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.bulk.impl.ReactiveBulkIdStrategy;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.service.spi.Configurable;
+
+import java.util.Map;
 
 /**
  * A {@link SessionFactoryBuilderService} that creates instances of {@link ReactiveSessionFactoryBuilder}.
  */
-final class ReactiveSessionFactoryBuilderService implements SessionFactoryBuilderService {
+final class ReactiveSessionFactoryBuilderService implements SessionFactoryBuilderService, Configurable {
+
+	private int batchSize;
+
+	@Override
+	public void configure(Map configurationValues) {
+		batchSize = ConfigurationHelper.getInt(Settings.STATEMENT_BATCH_SIZE, configurationValues, 0);
+	}
 
 	@Override
 	public SessionFactoryBuilderImplementor createSessionFactoryBuilder(final MetadataImpl metadata, final BootstrapContext bootstrapContext) {
@@ -26,6 +38,7 @@ final class ReactiveSessionFactoryBuilderService implements SessionFactoryBuilde
 		);
 		optionsBuilder.enableCollectionInDefaultFetchGroup(true);
 		optionsBuilder.applyMultiTableBulkIdStrategy( new ReactiveBulkIdStrategy( metadata ) );
+		optionsBuilder.applyJdbcBatchSize(batchSize);
 		return new ReactiveSessionFactoryBuilder( metadata, new SessionFactoryBuilderImpl( metadata, optionsBuilder ) );
 	}
 
