@@ -174,20 +174,20 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 												.getResultList()
 												.thenAccept( list -> {
 													context.assertEquals(
-															list.get( 0 ),
-															"CREATE UNIQUE INDEX asimple_pkey ON public.asimple USING btree (id)"
+															"CREATE UNIQUE INDEX asimple_pkey ON public.asimple USING btree (id)",
+															list.get( 0 )
 													);
 													context.assertEquals(
-															list.get( 1 ),
-															"CREATE INDEX i_asimple_avalue_astringvalue ON public.asimple USING btree (avalue, astringvalue DESC)"
+															"CREATE INDEX i_asimple_avalue_astringvalue ON public.asimple USING btree (avalue, astringvalue DESC)",
+															list.get( 1 )
 													);
 													context.assertEquals(
-															list.get( 2 ),
-															"CREATE INDEX i_asimple_avalue_data ON public.asimple USING btree (avalue DESC, data)"
+															"CREATE INDEX i_asimple_avalue_data ON public.asimple USING btree (avalue DESC, data)",
+															list.get( 2 )
 													);
 													context.assertEquals(
-															list.get( 3 ),
-															"CREATE UNIQUE INDEX u_asimple_astringvalue ON public.asimple USING btree (astringvalue)"
+															"CREATE UNIQUE INDEX u_asimple_astringvalue ON public.asimple USING btree (astringvalue)",
+															list.get( 3 )
 													);
 												} )
 										)
@@ -196,8 +196,8 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 												.getSingleResult()
 												.thenAccept( result ->
 																	 context.assertEquals(
-																			 result,
-																			 "CREATE UNIQUE INDEX aother_pkey ON public.aother USING btree (id1, id2)"
+																			 "CREATE UNIQUE INDEX aother_pkey ON public.aother USING btree (id1, id2)",
+																			 result
 																	 )
 												)
 										)
@@ -206,8 +206,8 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 												.getSingleResult()
 												.thenAccept( result ->
 																	 context.assertEquals(
-																			 result,
-																			 "CREATE UNIQUE INDEX aanother_pkey ON public.aanother USING btree (id)"
+																			 "CREATE UNIQUE INDEX aanother_pkey ON public.aanother USING btree (id)",
+																			 result
 																	 )
 												)
 										)
@@ -221,8 +221,8 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 															  .getSingleResult()
 															  .thenAccept( result ->
 																				   context.assertEquals(
-																						   result,
-																						   "FOREIGN KEY (id1, id2) REFERENCES aother(id1, id2)"
+																						   "FOREIGN KEY (id1, id2) REFERENCES aother(id1, id2)",
+																						   result
 																				   )
 															  )
 										)
@@ -235,8 +235,8 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 															  .getSingleResult()
 															  .thenAccept( result ->
 																				   context.assertEquals(
-																						   result,
-																						   "FOREIGN KEY (aanother_id) REFERENCES aanother(id)"
+																						   "FOREIGN KEY (aanother_id) REFERENCES aanother(id)",
+																						   result
 																				   )
 															  )
 										)
