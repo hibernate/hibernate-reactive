@@ -52,31 +52,31 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 
 		// Generate the inner query first.
 		final StringBuilder innerQuery = new StringBuilder()
-				.append( "SELECT ci.relname AS index_name" )
-				.append( " , CASE i.indisclustered WHEN true THEN " ).append( DatabaseMetaData.tableIndexClustered )
-				.append( " ELSE CASE am.amname WHEN 'hash' THEN " ).append( DatabaseMetaData.tableIndexHashed )
-				.append( " ELSE " ).append( DatabaseMetaData.tableIndexOther ).append( " END" )
-				.append( " END AS index_type" )
-				.append( " , (information_schema._pg_expandarray(i.indkey)).n AS position" )
-				.append( " , ci.oid AS ci_iod" )
-				.append( " FROM pg_catalog.pg_class ct" )
-				.append( " JOIN pg_catalog.pg_namespace n ON (ct.relnamespace = n.oid)" )
- 				.append( " JOIN pg_catalog.pg_index i ON (ct.oid = i.indrelid)" )
-				.append( " JOIN pg_catalog.pg_class ci ON (ci.oid = i.indexrelid)" )
-				.append( " JOIN pg_catalog.pg_am am ON (ci.relam = am.oid)" )
-				.append( " WHERE true" );
+				.append( "select ci.relname as index_name" )
+				.append( " , case i.indisclustered when true then " ).append( DatabaseMetaData.tableIndexClustered )
+				.append( " else case am.amname when 'hash' then " ).append( DatabaseMetaData.tableIndexHashed )
+				.append( " else " ).append( DatabaseMetaData.tableIndexOther ).append( " end" )
+				.append( " end as index_type" )
+				.append( " , (information_schema._pg_expandarray(i.indkey)).n as position" )
+				.append( " , ci.oid as ci_iod" )
+				.append( " from pg_catalog.pg_class ct" )
+				.append( " join pg_catalog.pg_namespace n on (ct.relnamespace = n.oid)" )
+ 				.append( " join pg_catalog.pg_index i on (ct.oid = i.indrelid)" )
+				.append( " join pg_catalog.pg_class ci on (ci.oid = i.indexrelid)" )
+				.append( " join pg_catalog.pg_am am on (ci.relam = am.oid)" )
+				.append( " where true" );
 
 		final List<Object> parameterValues = new ArrayList<>();
 
-		appendClauseAndParameterIfNotNull( " AND n.nspname = ", schemaFilter, innerQuery, parameterValues );
-		appendClauseAndParameterIfNotNull( " AND ct.relname = ", tableName.getText(), innerQuery, parameterValues );
+		appendClauseAndParameterIfNotNull( " and n.nspname = ", schemaFilter, innerQuery, parameterValues );
+		appendClauseAndParameterIfNotNull( " and ct.relname = ", tableName.getText(), innerQuery, parameterValues );
 
 		return getExtractionContext().getQueryResults(
-				"SELECT tmp.index_name AS " + getResultSetIndexNameLabel() +
-						", tmp.index_type AS " + getResultSetIndexTypeLabel() +
-						", trim(both '\"' from pg_catalog.pg_get_indexdef(tmp.ci_iod, tmp.position, false)) AS " + getResultSetColumnNameLabel() +
-						" FROM ( " + innerQuery + " ) tmp" +
-						" ORDER BY " + getResultSetIndexNameLabel() + ", tmp.position",
+				"select tmp.index_name as " + getResultSetIndexNameLabel() +
+						", tmp.index_type as " + getResultSetIndexTypeLabel() +
+						", trim(both '\"' from pg_catalog.pg_get_indexdef(tmp.ci_iod, tmp.position, false)) as " + getResultSetColumnNameLabel() +
+						" from ( " + innerQuery + " ) tmp" +
+						" order by " + getResultSetIndexNameLabel() + ", tmp.position",
 				parameterValues.toArray(),
 				processor
 		);
@@ -90,27 +90,27 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 			ExtractionContext.ResultSetProcessor<T> processor
 	) throws SQLException {
 		final StringBuilder sb = new StringBuilder()
-				.append( "SELECT NULL AS " ).append( getResultSetPrimaryKeyCatalogLabel() )
-				.append( ", pkn.nspname AS " ).append( getResultSetPrimaryKeySchemaLabel() )
-				.append( ", pkc.relname AS " ).append( getResultSetPrimaryKeyTableLabel() )
-				.append( ", pka.attname AS " ).append( getResultSetPrimaryKeyColumnNameLabel() )
-				.append( ", fka.attname AS " ).append( getResultSetForeignKeyColumnNameLabel() )
-				.append( ", pos.n AS " ).append( getResultSetColumnPositionColumn() )
-				.append( ", con.conname AS " ).append( getResultSetForeignKeyLabel() )
-				.append( " FROM pg_catalog.pg_namespace pkn, pg_catalog.pg_class pkc, pg_catalog.pg_attribute pka" )
+				.append( "select null as " ).append( getResultSetPrimaryKeyCatalogLabel() )
+				.append( ", pkn.nspname as " ).append( getResultSetPrimaryKeySchemaLabel() )
+				.append( ", pkc.relname as " ).append( getResultSetPrimaryKeyTableLabel() )
+				.append( ", pka.attname as " ).append( getResultSetPrimaryKeyColumnNameLabel() )
+				.append( ", fka.attname as " ).append( getResultSetForeignKeyColumnNameLabel() )
+				.append( ", pos.n as " ).append( getResultSetColumnPositionColumn() )
+				.append( ", con.conname as " ).append( getResultSetForeignKeyLabel() )
+				.append( " from pg_catalog.pg_namespace pkn, pg_catalog.pg_class pkc, pg_catalog.pg_attribute pka" )
 				.append( ",  pg_catalog.pg_namespace fkn, pg_catalog.pg_class fkc, pg_catalog.pg_attribute fka" )
 				.append( ", pg_catalog.pg_constraint con" )
-				.append( ", pg_catalog.generate_series(1, CAST( (SELECT setting FROM pg_catalog.pg_settings WHERE name='max_index_keys') AS INTEGER ) ) pos(n)" )
-				.append( " WHERE pkn.oid = pkc.relnamespace AND pkc.oid = pka.attrelid AND pka.attnum = con.confkey[pos.n] AND con.confrelid = pkc.oid" )
-				.append( " AND fkn.oid = fkc.relnamespace AND fkc.oid = fka.attrelid AND fka.attnum = con.conkey[pos.n] AND con.conrelid = fkc.oid" )
-				.append( " AND con.contype = 'f' " );
+				.append( ", pg_catalog.generate_series(1, cast( (select setting from pg_catalog.pg_settings where name='max_index_keys') as integer ) ) pos(n)" )
+				.append( " where pkn.oid = pkc.relnamespace and pkc.oid = pka.attrelid and pka.attnum = con.confkey[pos.n] and con.confrelid = pkc.oid" )
+				.append( " and fkn.oid = fkc.relnamespace and fkc.oid = fka.attrelid and fka.attnum = con.conkey[pos.n] and con.conrelid = fkc.oid" )
+				.append( " and con.contype = 'f' " );
 
 		final List<Object> parameterValues = new ArrayList<>();
 
-		appendClauseAndParameterIfNotNull( " AND fkn.nspname = ", schemaFilter, sb, parameterValues );
-		appendClauseAndParameterIfNotNull( " AND fkc.relname = ", tableName, sb, parameterValues );
+		appendClauseAndParameterIfNotNull( " and fkn.nspname = ", schemaFilter, sb, parameterValues );
+		appendClauseAndParameterIfNotNull( " and fkc.relname = ", tableName, sb, parameterValues );
 
-		sb.append( " ORDER BY pkn.nspname,pkc.relname, con.conname, pos.n");
+		sb.append( " order by pkn.nspname,pkc.relname, con.conname, pos.n");
 
 		return getExtractionContext().getQueryResults( sb.toString(), parameterValues.toArray(), processor );
 	}
