@@ -11,7 +11,6 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.Lob;
 import javax.persistence.Table;
 import javax.persistence.Version;
 
@@ -33,7 +32,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQL
 /**
  * Test types that we expect to work only on selected DBs.
  */
-public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
+public class UserJsonTypeTest extends BaseReactiveTest {
 
 	@Rule
 	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, SQLSERVER );
@@ -49,38 +48,9 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 	public void deleteTable(TestContext context) {
 		test( context,
 			  getSessionFactory().withSession(
-					  session -> session.createQuery( "delete from Basic" ).executeUpdate()
+					  session -> session.createQuery( "delete from JsonEntity" ).executeUpdate()
 			  )
 		);
-	}
-
-	@Test
-	public void testStringLobType(TestContext context) {
-		String text = "hello world once upon a time it was the best of times it was the worst of times goodbye";
-		StringBuilder longText = new StringBuilder();
-		for ( int i = 0; i < 1000; i++ ) {
-			longText.append( text );
-		}
-		String book = longText.toString();
-
-		Basic basic = new Basic();
-		basic.book = book;
-
-		testField( context, basic, found -> context.assertEquals( book, found.book ) );
-	}
-
-	@Test
-	public void testBytesLobType(TestContext context) {
-		String text = "hello world once upon a time it was the best of times it was the worst of times goodbye";
-		StringBuilder longText = new StringBuilder();
-		for ( int i = 0; i < 1000; i++ ) {
-			longText.append( text );
-		}
-		byte[] pic = longText.toString().getBytes();
-
-		Basic basic = new Basic();
-		basic.pic = pic;
-		testField( context, basic, found -> context.assertTrue( Objects.deepEquals( pic, found.pic ) ) );
 	}
 
 	@Test
@@ -88,7 +58,15 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 		Basic basic = new Basic();
 		basic.jsonObj = new JsonObject().put("int", 123).put("str", "hello");
 
-		testField( context, basic, found -> context.assertEquals( basic.jsonObj, found.jsonObj) );
+		testField( context, basic, found -> context.assertEquals(basic.jsonObj, found.jsonObj) );
+	}
+
+	@Test
+	public void testNullJsonType(TestContext context) {
+		Basic basic = new Basic();
+		basic.jsonObj = null;
+
+		testField( context, basic, found -> context.assertEquals(basic.jsonObj, found.jsonObj) );
 	}
 
 	/**
@@ -108,15 +86,13 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity(name="Basic") @Table(name="Basic")
+	@Entity(name="JsonEntity")
+	@Table(name="JsonEntity")
 	private static class Basic {
 
 		@Id @GeneratedValue Integer id;
 		@Version Integer version;
 		String string;
-
-		@Lob @Column(length = 100_000) protected byte[] pic;
-		@Lob @Column(length = 100_000) protected String book;
 
 		@Type(type="org.hibernate.reactive.types.Json")
 		@Column(columnDefinition = "json")
@@ -127,12 +103,6 @@ public class BasicTypesForSelectedDBTest extends BaseReactiveTest {
 
 		public Basic(String string) {
 			this.string = string;
-		}
-
-		public Basic(String string, byte[] pic, String book) {
-			this.string = string;
-			this.pic = pic;
-			this.book = book;
 		}
 
 		public Basic(Integer id, String string) {
