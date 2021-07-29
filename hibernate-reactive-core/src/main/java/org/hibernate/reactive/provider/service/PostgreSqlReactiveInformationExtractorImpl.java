@@ -17,7 +17,11 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.tool.schema.extract.spi.ExtractionContext;
 
 /**
- * @Author Gail Badner
+ * An implementation of {@link AbstractReactiveInformationSchemaBasedExtractorImpl}
+ * specifically for PostgreSQL that obtains metadata from PostgreSQL's system
+ * tables, when it is not available from PosgreSQL's information_schema.
+ *
+ * @author Gail Badner
  */
 public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactiveInformationSchemaBasedExtractorImpl {
 
@@ -44,11 +48,20 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 
 	@Override
 	protected <T> T processIndexInfoResultSet(
-			String catalogFilter,
-			String schemaFilter,
-			Identifier tableName,
+			String catalog,
+			String schema,
+			String table,
+			boolean unique,
 			boolean approximate,
 			ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
+
+		// This implementation is based on org.postgresql.jdbc.PgDatabaseMetaData#getIndexInfo.
+		// It excludes columns that are specified by DatabaseMetaData#getIndexInfo, but
+		// not specified by AbstractInformationExtractorImpl#processIndexInfoResultSet.
+
+		// TODO: How should the "approximate" parameter be used?
+		// org.postgresql.jdbc.PgDatabaseMetaData#getIndexInfo
+		// does not use that argument. It is currently ignored here as well.
 
 		// Generate the inner query first.
 		final StringBuilder innerQuery = new StringBuilder()
@@ -68,8 +81,12 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 
 		final List<Object> parameterValues = new ArrayList<>();
 
-		appendClauseAndParameterIfNotNull( " and n.nspname = ", schemaFilter, innerQuery, parameterValues );
-		appendClauseAndParameterIfNotNull( " and ct.relname = ", tableName.getText(), innerQuery, parameterValues );
+		appendClauseAndParameterIfNotNull( " and n.nspname = ", schema, innerQuery, parameterValues );
+		appendClauseAndParameterIfNotNull( " and ct.relname = ", table, innerQuery, parameterValues );
+
+		if (unique) {
+			innerQuery.append( " AND i.indisunique = true" );
+		}
 
 		return getExtractionContext().getQueryResults(
 				"select tmp.index_name as " + getResultSetIndexNameLabel() +
@@ -84,11 +101,16 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 
 	@Override
 	protected <T> T processImportedKeysResultSet(
-			String catalogFilter,
-			String schemaFilter,
-			String tableName,
+			String catalog,
+			String schema,
+			String table,
 			ExtractionContext.ResultSetProcessor<T> processor
 	) throws SQLException {
+
+		// This implementation is based on org.postgresql.jdbc.PgDatabaseMetaData#getImportedExportedKeys.
+		// It excludes columns that are specified by DatabaseMetaData#getImportedKeys, but
+		// not specified by AbstractInformationExtractorImpl#processImportedKeysResultSet.
+
 		final StringBuilder sb = new StringBuilder()
 				.append( "select null as " ).append( getResultSetPrimaryKeyCatalogLabel() )
 				.append( ", pkn.nspname as " ).append( getResultSetPrimaryKeySchemaLabel() )
@@ -107,10 +129,11 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 
 		final List<Object> parameterValues = new ArrayList<>();
 
-		appendClauseAndParameterIfNotNull( " and fkn.nspname = ", schemaFilter, sb, parameterValues );
-		appendClauseAndParameterIfNotNull( " and fkc.relname = ", tableName, sb, parameterValues );
+		appendClauseAndParameterIfNotNull( " and fkn.nspname = ", schema, sb, parameterValues );
+		appendClauseAndParameterIfNotNull( " and fkc.relname = ", table, sb, parameterValues );
 
-		sb.append( " order by pkn.nspname,pkc.relname, con.conname, pos.n");
+		// No need to order by catalog since it is always null.
+		sb.append( " order by pkn.nspname, pkc.relname, con.conname, pos.n");
 
 		return getExtractionContext().getQueryResults( sb.toString(), parameterValues.toArray(), processor );
 	}
