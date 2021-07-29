@@ -12,9 +12,13 @@ import java.util.List;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.tool.schema.extract.internal.AbstractInformationExtractorImpl;
 import org.hibernate.tool.schema.extract.spi.ExtractionContext;
+import org.hibernate.tool.schema.extract.spi.InformationExtractor;
 
 /**
- * @Author Gail Badner
+ * An implementation of {@link InformationExtractor} that obtains metadata
+ * information from a database's information_schema.
+ *
+ * @author Gail Badner
  */
 public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extends AbstractInformationExtractorImpl  {
 
@@ -130,7 +134,7 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 	protected <T> T processCatalogsResultSet(ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
 		return getExtractionContext().getQueryResults(
 				String.format(
-						"SELECT catalog_name AS %s FROM information_schema.information_schema_catalog_name",
+						"select catalog_name as %s from information_schema.information_schema_catalog_name",
 						getResultSetCatalogLabel()
 				),
 				null,
@@ -140,16 +144,16 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 
 	@Override
 	protected <T> T processSchemaResultSet(
-			String catalogFilter,
-			String schemaFilter,
+			String catalog,
+			String schemaPattern,
 			ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
 		final StringBuilder sb = new StringBuilder()
-				.append( "SELECT catalog_name AS " ).append( getResultSetCatalogLabel() )
-				.append( " , schema_name AS "  ).append( getResultSetSchemaLabel() )
-				.append( " FROM information_schema.schemata WHERE true" );
+				.append( "select catalog_name as " ).append( getResultSetCatalogLabel() )
+				.append( " , schema_name as "  ).append( getResultSetSchemaLabel() )
+				.append( " from information_schema.schemata where true" );
 		final List<Object> parameters = new ArrayList<>();
-		appendClauseAndParameterIfNotNull( " AND catalog_name = ", catalogFilter, sb, parameters );
-		appendClauseAndParameterIfNotNull( " AND schema_name = ", schemaFilter, sb, parameters );
+		appendClauseAndParameterIfNotNull( " and catalog_name = ", catalog, sb, parameters );
+		appendClauseAndParameterIfNotNull( " and schema_name like ", schemaPattern, sb, parameters );
 		return getExtractionContext().getQueryResults( sb.toString(), parameters.toArray(), processor );
 	}
 
@@ -170,39 +174,39 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 
 	@Override
 	protected <T> T processTableResultSet(
-			String catalogFilter,
-			String schemaFilter,
-			String tableNameFilter,
-			String[] tableTypes,
+			String catalog,
+			String schemaPattern,
+			String tableNamePattern,
+			String[] types,
 			ExtractionContext.ResultSetProcessor<T> processor
 	) throws SQLException {
 
 		final StringBuilder sb = new StringBuilder()
-				.append( "SELECT table_catalog AS " ).append( getResultSetCatalogLabel() )
-				.append( " , table_schema AS "  ).append( getResultSetSchemaLabel() )
-				.append( " , table_name AS " ).append( getResultSetTableNameLabel() )
-				.append( " , table_type AS " ).append( getResultSetTableTypeLabel() )
-				.append( " , null AS " ).append( getResultSetRemarksLabel() )
+				.append( "select table_catalog as " ).append( getResultSetCatalogLabel() )
+				.append( " , table_schema as "  ).append( getResultSetSchemaLabel() )
+				.append( " , table_name as " ).append( getResultSetTableNameLabel() )
+				.append( " , table_type as " ).append( getResultSetTableTypeLabel() )
+				.append( " , null as " ).append( getResultSetRemarksLabel() )
 				// Remarks are not available from information_schema.
 				// Hibernate ORM does not currently do anything with remarks,
 				// so just return null for now.
-				.append( " FROM information_schema.tables WHERE true" );
+				.append( " from information_schema.tables where true" );
 		List<Object> parameterValues = new ArrayList<>();
-		appendClauseAndParameterIfNotNull( " AND table_catalog = ", catalogFilter, sb, parameterValues );
-		appendClauseAndParameterIfNotNull( " AND table_schema = ", schemaFilter, sb, parameterValues );
-		appendClauseAndParameterIfNotNull( " AND table_name = ", tableNameFilter, sb, parameterValues );
+		appendClauseAndParameterIfNotNull( " and table_catalog = ", catalog, sb, parameterValues );
+		appendClauseAndParameterIfNotNull( " and table_schema like ", schemaPattern, sb, parameterValues );
+		appendClauseAndParameterIfNotNull( " and table_name like ", tableNamePattern, sb, parameterValues );
 
-		if ( tableTypes != null && tableTypes.length > 0 ) {
+		if ( types != null && types.length > 0 ) {
 			appendClauseAndParameterIfNotNull(
-					" AND table_type IN ( ",
-					tableTypes[0].equals( "TABLE" ) ? getResultSetTableTypesPhysicalTableConstant() : tableTypes[0],
+					" and table_type in ( ",
+					types[0].equals( "TABLE" ) ? getResultSetTableTypesPhysicalTableConstant() : types[0],
 					sb,
 					parameterValues
 			);
-			for ( int i = 1 ; i < tableTypes.length ; i++ ) {
+			for ( int i = 1 ; i < types.length ; i++ ) {
 				appendClauseAndParameterIfNotNull(
 						", ",
-						tableTypes[i].equals( "TABLE" ) ? getResultSetTableTypesPhysicalTableConstant() : tableTypes[i],
+						types[i].equals( "TABLE" ) ? getResultSetTableTypesPhysicalTableConstant() : types[i],
 						sb,
 						parameterValues
 				);
@@ -214,25 +218,26 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 
 	@Override
 	protected <T> T processColumnsResultSet(
-			String catalogFilter,
-			String schemaFilter,
-			String tableName,
+			String catalog,
+			String schemaPattern,
+			String tableNamePattern,
+			String columnNamePattern,
 			ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
 
 		final StringBuilder sb = new StringBuilder()
-				.append( "SELECT table_name AS " ).append( getResultSetTableNameLabel() )
-				.append( ", column_name AS " ).append( getResultSetColumnNameLabel() )
-				.append( ", udt_name AS " ).append( getResultSetTypeNameLabel() )
-				.append( ", null AS " ).append( getResultSetColumnSizeLabel() )
+				.append( "select table_name as " ).append( getResultSetTableNameLabel() )
+				.append( ", column_name as " ).append( getResultSetColumnNameLabel() )
+				.append( ", udt_name as " ).append( getResultSetTypeNameLabel() )
+				.append( ", null as " ).append( getResultSetColumnSizeLabel() )
 				// Column size is fairly complicated to get out of information_schema
 				// and likely to be DB-dependent. Currently, Hibernate ORM does not use
 				// column size for anything, so for now, just return null.
-				.append( ", null AS " ) .append( getResultSetDecimalDigitsLabel() )
+				.append( ", null as " ) .append( getResultSetDecimalDigitsLabel() )
 				// Decimal digits is fairly complicated to get out of information_schema
 				// and likely to be DB-dependent. Currently, Hibernate ORM does not use
 				// decimal digits for anything, so for now, just return null.
-				.append( ", is_nullable AS " ).append( getResultSetIsNullableLabel() )
-				.append( ", null AS " ).append( getResultSetSqlTypeCodeLabel() )
+				.append( ", is_nullable as " ).append( getResultSetIsNullableLabel() )
+				.append( ", null as " ).append( getResultSetSqlTypeCodeLabel() )
 				// SQL type code is not available from information_schema,
 				// and, for PostgreSQL at least, it appears to be hard-coded
 				// into the JDBC driver. Currently, Hibernate ORM only uses
@@ -241,14 +246,14 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 				// Hibernate's metadata for the column. ORM also considers
 				// the same column type name as a match, so the SQL code is
 				// optional. For now, just return null for the SQL type code.
-				.append( " FROM information_schema.columns WHERE true" );
+				.append( " from information_schema.columns where true" );
 
 		final List<Object> parameterValues = new ArrayList<>();
-		appendClauseAndParameterIfNotNull( " AND table_catalog = " , catalogFilter, sb, parameterValues );
-		appendClauseAndParameterIfNotNull( " AND table_schema = " , schemaFilter, sb, parameterValues );
-		appendClauseAndParameterIfNotNull( " AND table_name = " , tableName, sb, parameterValues );
+		appendClauseAndParameterIfNotNull( " and table_catalog = " , catalog, sb, parameterValues );
+		appendClauseAndParameterIfNotNull( " and table_schema like " , schemaPattern, sb, parameterValues );
+		appendClauseAndParameterIfNotNull( " and table_name like " , tableNamePattern, sb, parameterValues );
 
-		sb.append(  "ORDER BY table_name, column_name, ordinal_position" );
+		sb.append(  " order by table_catalog, table_schema, table_name, column_name, ordinal_position" );
 
 		return getExtractionContext().getQueryResults( sb.toString(), parameterValues.toArray(), processor );
 	}

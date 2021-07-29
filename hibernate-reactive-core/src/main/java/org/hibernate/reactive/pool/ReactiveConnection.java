@@ -50,6 +50,21 @@ public interface ReactiveConnection {
 	CompletionStage<Result> select(String sql);
 	CompletionStage<Result> select(String sql, Object[] paramValues);
 	CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues);
+
+	/**
+	 * This method is intended to be used only for queries returning
+	 * a ResultSet that must be executed outside of any "current"
+	 * transaction (i.e with autocommit=true).
+	 * <p/>
+	 * For example, it would be appropriate to use this method when
+	 * performing queries on information_schema or system tables in
+	 * order to obtain metadata information about catalogs, schemas,
+	 * tables, etc.
+	 *
+	 * @param sql - the query to execute outside of a transaction
+	 * @param paramValues - a non-null array of parameter values
+	 * @return the CompletionStage<ResultSet> from executing the query.
+	 */
 	CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues);
 
 	CompletionStage<Long> insertAndSelectIdentifier(String sql, Object[] paramValues);

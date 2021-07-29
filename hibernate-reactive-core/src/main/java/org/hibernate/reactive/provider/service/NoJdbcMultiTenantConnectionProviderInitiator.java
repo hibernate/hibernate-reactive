@@ -9,7 +9,6 @@ import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.hibernate.tool.schema.spi.SchemaManagementTool;
 
 import java.util.Map;
 
@@ -30,9 +29,6 @@ public class NoJdbcMultiTenantConnectionProviderInitiator implements StandardSer
             // nothing to do, but given the separate hierarchies have to handle this here.
             return null;
         }
-
-        final SchemaManagementTool schemaManagementTool = registry.getService( SchemaManagementTool.class );
-        schemaManagementTool.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) );
 
         return new NoJdbcMultiTenantConnectionProvider();
     }

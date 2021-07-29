@@ -23,6 +23,7 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
+import org.hibernate.reactive.provider.service.ReactiveSchemaManagementTool;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.SessionFactoryManager;
 import org.hibernate.reactive.vertx.VertxInstance;
@@ -208,19 +209,21 @@ public abstract class BaseReactiveTest {
 	protected void configureServices(StandardServiceRegistry registry) {
 		if ( dbType() == DBType.MYSQL ) {
 			registry.getService( ConnectionProvider.class ); //force the NoJdbcConnectionProvider to load first
-			registry.getService( SchemaManagementTool.class )
-					.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) {
-						@Override
-						public void prepare() {
-							super.prepare();
-							accept("set foreign_key_checks = 0");
-						}
-						@Override
-						public void release() {
-							accept("set foreign_key_checks = 1");
-							super.release();
-						}
-					} );
+			ReactiveSchemaManagementTool tool = (ReactiveSchemaManagementTool) registry.getService(
+					SchemaManagementTool.class
+			);
+			tool.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) {
+				@Override
+				public void prepare() {
+					super.prepare();
+					accept("set foreign_key_checks = 0");
+				}
+				@Override
+				public void release() {
+					accept("set foreign_key_checks = 1");
+					super.release();
+				}
+			} );
 		}
 	}
 
