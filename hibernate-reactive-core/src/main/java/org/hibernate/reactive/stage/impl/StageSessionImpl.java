@@ -206,11 +206,7 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <R> Stage.Query<R> createNativeQuery(String sql, Class<R> resultType) {
-		boolean knownType = delegate.getFactory().getMetamodel()
-				.entityPersisters().containsKey( resultType.getName() );
-		return knownType
-				? new StageQueryImpl<>( delegate.createReactiveNativeQuery(sql, resultType), factory )
-				: new StageQueryImpl<>( delegate.createReactiveNativeQuery(sql), factory );
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery(sql, resultType), factory );
 	}
 
 	@Override

@@ -316,20 +316,16 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultClass) {
 		try {
 			ReactiveNativeQuery<T> query = createReactiveNativeQuery( sqlString );
-			handleNativeQueryResult( query, resultClass );
+			if ( getMetamodel().entityPersisters().containsKey( resultClass.getName() ) ) {
+				query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
+			}
+			else if ( Tuple.class.equals(resultClass) ) {
+				query.setResultTransformer( new NativeQueryTupleTransformer() );
+			}
 			return query;
 		}
 		catch ( RuntimeException he ) {
 			throw getExceptionConverter().convert( he );
-		}
-	}
-
-	private <T> void handleNativeQueryResult(ReactiveNativeQuery<T> query, Class<T> resultClass) {
-		if ( Tuple.class.equals( resultClass ) ) {
-			query.setResultTransformer( new NativeQueryTupleTransformer() );
-		}
-		else {
-			query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
 		}
 	}
 

@@ -427,6 +427,15 @@ public class QueryTest extends BaseReactiveTest {
 													context.assertTrue( tuple[0] instanceof String );
 												} )
 										)
+										.thenCompose( vv -> session.createNativeQuery("select title, isbn, id from books", Tuple.class )
+												.getResultList()
+												.thenAccept( list -> {
+													Tuple tuple = list.get(0);
+													context.assertEquals( 3, tuple.toArray().length );
+													context.assertTrue( tuple.get(0) instanceof String );
+													context.assertTrue( tuple.get("isbn") instanceof String );
+												} )
+										)
 								)
 		);
 	}

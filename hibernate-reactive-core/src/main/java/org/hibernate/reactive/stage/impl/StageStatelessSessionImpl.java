@@ -75,11 +75,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
     @Override
     public <R> Stage.Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-        boolean knownType = delegate.getFactory().getMetamodel()
-                .entityPersisters().containsKey( resultType.getName() );
-        return knownType
-                ? new StageQueryImpl<>( delegate.createReactiveNativeQuery(queryString, resultType), factory )
-                : new StageQueryImpl<>( delegate.createReactiveNativeQuery(queryString), factory );
+        return new StageQueryImpl<>( delegate.createReactiveNativeQuery(queryString, resultType), factory );
     }
 
     @Override
