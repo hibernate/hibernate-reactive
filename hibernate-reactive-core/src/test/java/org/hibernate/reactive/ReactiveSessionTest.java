@@ -6,11 +6,16 @@
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
+
 import org.hibernate.LockMode;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.common.AffectedEntities;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
+import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.stage.impl.StageSessionImpl;
 
 import org.junit.After;
 import org.junit.Test;
@@ -26,6 +31,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class ReactiveSessionTest extends BaseReactiveTest {
@@ -698,6 +704,28 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								)
 						)
 		);
+	}
+
+	@Test
+	public void testBatchingConnection() {
+		Stage.Session session = getSessionFactory().openSession();
+		try {
+			assertThat(((StageSessionImpl)session).getReactiveConnection()).isInstanceOf( BatchingConnection.class );
+		}
+		finally {
+			closeSession( session );
+		}
+	}
+
+	@Test
+	public void testBatchingConnectionMutiny() {
+		Mutiny.Session session = getMutinySessionFactory().openSession();
+		try {
+			assertThat(((MutinySessionImpl)session).getReactiveConnection() ).isInstanceOf( BatchingConnection.class );
+		}
+		finally {
+			closeSession( session );
+		}
 	}
 
 	@Test

@@ -17,6 +17,7 @@ import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
@@ -74,6 +75,10 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public <T> CompletionStage<T> unproxy(T association) {
 		return stage( v -> delegate.reactiveFetch(association, true) );
+	}
+
+	public ReactiveConnection getReactiveConnection() {
+		return delegate.getReactiveConnection();
 	}
 
 	@Override
