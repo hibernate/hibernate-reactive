@@ -17,6 +17,18 @@ simplistic example program in the {example}[`session-example`] directory,
 which shows off all the "bits" you'll need to get your own program up and
 running.
 
+== Information about Hibernate ORM
+
+This document assumes some passing familiarity with Hibernate ORM or another
+implementation of JPA. If you've never used JPA before, that's OK, but you
+might need to refer to the following sources of information at some points
+in this text:
+
+- the http://hibernate.org/orm/documentation/5.5/[documentation for Hibernate ORM],
+- the https://jcp.org/aboutJava/communityprocess/mrel/jsr338/index.html[JPA 2.2 specification], or
+- https://www.manning.com/books/java-persistence-with-hibernate-second-edition[Java Persistence with Hibernate],
+  the latest edition of the book originally titled _Hibernate in Action_.
+
 == Setting up a reactive Hibernate project
 
 :skeleton: https://code.quarkus.io/?g=org.acme&a=code-with-quarkus&v=1.0.0-SNAPSHOT&b=MAVEN&c=org.acme.ExampleResource&s=r1s.8XW.fmW.ih0&cn=code.quarkus.io
