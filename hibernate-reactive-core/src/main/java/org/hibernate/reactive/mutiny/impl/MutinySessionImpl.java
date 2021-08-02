@@ -207,11 +207,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String sql, Class<R> resultType) {
-		boolean knownType = delegate.getFactory().getMetamodel()
-				.entityPersisters().containsKey( resultType.getName() );
-		return knownType
-				? new MutinyQueryImpl<>( delegate.createReactiveNativeQuery(sql, resultType), factory )
-				: new MutinyQueryImpl<>( delegate.createReactiveNativeQuery(sql), factory );
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery(sql, resultType), factory );
 	}
 
 	@Override

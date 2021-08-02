@@ -33,6 +33,7 @@ import org.hibernate.jpa.spi.CriteriaQueryTupleTransformer;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.loader.custom.sql.SQLCustomQuery;
+import org.hibernate.metamodel.spi.MetamodelImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
@@ -343,15 +344,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         }
     }
 
-    private <T> void handleNativeQueryResult(ReactiveNativeQuery<T> query, Class<T> resultClass) {
-        if ( Tuple.class.equals( resultClass ) ) {
-            query.setResultTransformer( new NativeQueryTupleTransformer() );
-        }
-        else {
-            query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
-        }
-    }
-
     @Override
     public <R> ReactiveQuery<R> createReactiveNamedQuery(String name) {
         return buildReactiveQueryFromName( name, null );
@@ -468,11 +460,21 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
         }
     }
 
+    public MetamodelImplementor getMetamodel() {
+        checkOpen();
+        return getFactory().getMetamodel();
+    }
+
     @Override
     public <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultClass) {
         try {
             ReactiveNativeQuery<T> query = createReactiveNativeQuery( sqlString );
-            handleNativeQueryResult( query, resultClass );
+            if ( getMetamodel().entityPersisters().containsKey( resultClass.getName() ) ) {
+                query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
+            }
+            else if ( Tuple.class.equals(resultClass) ) {
+                query.setResultTransformer( new NativeQueryTupleTransformer() );
+            }
             return query;
         }
         catch ( RuntimeException he ) {
