@@ -18,6 +18,7 @@ import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveSession;
 
@@ -82,6 +83,10 @@ public class MutinySessionImpl implements Mutiny.Session {
 		//it's important that this method does not hit the database!
 		//TODO: how can we guarantee that?
 		return delegate.getReference( entityClass, id );
+	}
+
+	public ReactiveConnection getReactiveConnection() {
+		return delegate.getReactiveConnection();
 	}
 
 	@Override
