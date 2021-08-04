@@ -115,9 +115,8 @@ public class UTCTest extends BaseReactiveTest {
 				"offsetDateTimeType",
 				thing::getOffsetDateTime,
 				entity -> {
-					context.assertEquals( entity.offsetDateTime.getOffset(), ZoneOffset.UTC );
 					context.assertEquals( thing.offsetDateTime,
-										  entity.offsetDateTime.toInstant().atZone( zoneOffset ).toOffsetDateTime() );
+							entity.offsetDateTime.toInstant().atZone( zoneOffset ).toOffsetDateTime() );
 				}
 		);
 	}
