@@ -166,9 +166,7 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 		if ( parameter != null ) {
 			parameters.add( parameter );
 			sb.append( clause );
-			// TODO: PostgreSQL does not seem to accept "?" parameter placeholders.
-			//       It does accept $<position>. Will this work for all dialects?
-			sb.append( "$").append( parameters.size() );
+			sb.append( "?");
 		}
 	}
 
