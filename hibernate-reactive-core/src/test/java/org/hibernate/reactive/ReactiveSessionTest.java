@@ -11,7 +11,6 @@ import org.hibernate.LockMode;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.common.AffectedEntities;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.stage.Stage;
@@ -707,25 +706,19 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testBatchingConnection() {
-		Stage.Session session = getSessionFactory().openSession();
-		try {
-			assertThat(((StageSessionImpl)session).getReactiveConnection()).isInstanceOf( BatchingConnection.class );
-		}
-		finally {
-			closeSession( session );
-		}
+	public void testBatchingConnection(TestContext context) {
+		test( context, openSession()
+				.thenAccept( session -> assertThat( ( (StageSessionImpl) session ).getReactiveConnection() )
+						.isInstanceOf( BatchingConnection.class ) )
+		);
 	}
 
 	@Test
-	public void testBatchingConnectionMutiny() {
-		Mutiny.Session session = getMutinySessionFactory().openSession();
-		try {
-			assertThat(((MutinySessionImpl)session).getReactiveConnection() ).isInstanceOf( BatchingConnection.class );
-		}
-		finally {
-			closeSession( session );
-		}
+	public void testBatchingConnectionMutiny(TestContext context) {
+		test( context, openMutinySession()
+				.invoke( session -> assertThat( ( (MutinySessionImpl) session ).getReactiveConnection() )
+						.isInstanceOf( BatchingConnection.class ) )
+		);
 	}
 
 	@Test
