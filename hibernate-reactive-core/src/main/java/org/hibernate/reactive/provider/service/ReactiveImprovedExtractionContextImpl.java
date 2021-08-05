@@ -14,6 +14,7 @@ import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.resource.transaction.spi.DdlTransactionIsolator;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.tool.schema.internal.exec.ImprovedExtractionContextImpl;
@@ -82,9 +83,13 @@ public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionCon
 			Object[] positionalParameters,
 			CompletionStage<ReactiveConnection> connectionStage) {
 		final Object[] parametersToUse = positionalParameters != null ? positionalParameters : new Object[0];
-		return connectionStage.thenCompose( c -> c.selectJdbcOutsideTransaction( queryString, parametersToUse ) )
+		final Parameters parametersDialectSpecific = Parameters.instance(
+				getJdbcEnvironment().getDialect()
+		);
+		final String queryToUse = parametersDialectSpecific.process( queryString, parametersToUse.length );
+		return connectionStage.thenCompose( c -> c.selectJdbcOutsideTransaction( queryToUse, parametersToUse ) )
 				.handle( (resultSet, err) -> {
-					logSqlException( err, () -> "could not execute query ", queryString );
+					logSqlException( err, () -> "could not execute query ", queryToUse );
 					return returnOrRethrow( err, resultSet );
 				} )
 				.toCompletableFuture()
