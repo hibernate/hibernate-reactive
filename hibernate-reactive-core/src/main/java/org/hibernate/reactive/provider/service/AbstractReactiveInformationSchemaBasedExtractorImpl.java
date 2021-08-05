@@ -225,7 +225,8 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 		final StringBuilder sb = new StringBuilder()
 				.append( "select table_name as " ).append( getResultSetTableNameLabel() )
 				.append( ", column_name as " ).append( getResultSetColumnNameLabel() )
-				.append( ", udt_name as " ).append( getResultSetTypeNameLabel() )
+				.append( ", " ).append( getInformationSchemaColumnsDataTypeColumn() )
+				.append( " as " ).append( getResultSetTypeNameLabel() )
 				.append( ", null as " ).append( getResultSetColumnSizeLabel() )
 				// Column size is fairly complicated to get out of information_schema
 				// and likely to be DB-dependent. Currently, Hibernate ORM does not use
@@ -254,5 +255,17 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 		sb.append(  " order by table_catalog, table_schema, table_name, column_name, ordinal_position" );
 
 		return getExtractionContext().getQueryResults( sb.toString(), parameterValues.toArray(), processor );
+	}
+
+	/**
+	 * Gets the name of column in information_schema.columns for the
+	 * database-specific column type.
+	 *
+	 * @return the name of column in information_schema.columns for the
+	 * database-specific column type
+	 */
+	protected String getInformationSchemaColumnsDataTypeColumn() {
+		// The SQL-92 standard says the column name is DATA_TYPE.
+		return "data_type";
 	}
 }

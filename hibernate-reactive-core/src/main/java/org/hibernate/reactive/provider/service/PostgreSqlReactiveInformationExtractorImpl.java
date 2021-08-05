@@ -74,7 +74,7 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 				.append( " , ci.oid as ci_iod" )
 				.append( " from pg_catalog.pg_class ct" )
 				.append( " join pg_catalog.pg_namespace n on (ct.relnamespace = n.oid)" )
- 				.append( " join pg_catalog.pg_index i on (ct.oid = i.indrelid)" )
+				.append( " join pg_catalog.pg_index i on (ct.oid = i.indrelid)" )
 				.append( " join pg_catalog.pg_class ci on (ci.oid = i.indexrelid)" )
 				.append( " join pg_catalog.pg_am am on (ci.relam = am.oid)" )
 				.append( " where true" );
@@ -84,7 +84,7 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 		appendClauseAndParameterIfNotNull( " and n.nspname = ", schema, innerQuery, parameterValues );
 		appendClauseAndParameterIfNotNull( " and ct.relname = ", table, innerQuery, parameterValues );
 
-		if (unique) {
+		if ( unique ) {
 			innerQuery.append( " AND i.indisunique = true" );
 		}
 
@@ -133,8 +133,13 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 		appendClauseAndParameterIfNotNull( " and fkc.relname = ", table, sb, parameterValues );
 
 		// No need to order by catalog since it is always null.
-		sb.append( " order by pkn.nspname, pkc.relname, con.conname, pos.n");
+		sb.append( " order by pkn.nspname, pkc.relname, con.conname, pos.n" );
 
 		return getExtractionContext().getQueryResults( sb.toString(), parameterValues.toArray(), processor );
+	}
+
+	@Override
+	protected String getInformationSchemaColumnsDataTypeColumn() {
+		return "udt_name";
 	}
 }
