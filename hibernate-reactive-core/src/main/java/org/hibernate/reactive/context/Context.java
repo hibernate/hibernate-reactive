@@ -45,27 +45,76 @@ public interface Context extends Executor, Service {
     @Override
     void execute(Runnable runnable);
 
-    final class Key<T> {
-        Class<T> type;
-        String id;
+    interface Key<T> {
 
-        public Key(Class<T> type, String id) {
+    }
+
+    final class BaseKey<T> implements Key<T> {
+        private final Class<T> type;
+        private final String id;
+        private final int hash;
+
+        public BaseKey(Class<T> type, String id) {
+            Objects.requireNonNull( type );
+            Objects.requireNonNull( id );
             this.type = type;
             this.id = id;
+            this.hash = id.hashCode() * 31 + type.hashCode();
         }
 
         @Override
         public boolean equals(Object object) {
-            if (this == object) return true;
-            if (!(object instanceof Key)) return false;
-            Key<?> key = (Key<?>) object;
+            if ( this == object ) {
+                return true;
+            }
+            if ( !( object instanceof BaseKey ) ) {
+                return false;
+            }
+            BaseKey<?> key = (BaseKey<?>) object;
             return Objects.equals( id, key.id )
                 && Objects.equals( type, key.type );
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(type, id);
+            return hash;
         }
     }
+
+    final class MultitenantKey<T> implements Key<T> {
+        final BaseKey<T> base;
+        final String tenantId;
+
+        public MultitenantKey(BaseKey<T> base, String tenantId) {
+            Objects.requireNonNull( base );
+            Objects.requireNonNull( tenantId );
+            this.base = base;
+            this.tenantId = tenantId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if ( this == o ) {
+                return true;
+            }
+            if ( !( o instanceof MultitenantKey ) ) {
+                return false;
+            }
+
+            MultitenantKey<?> that = (MultitenantKey<?>) o;
+
+            if ( !base.equals( that.base ) ) {
+                return false;
+            }
+            return tenantId.equals( that.tenantId );
+        }
+
+        @Override
+        public int hashCode() {
+            int result = base.hashCode();
+            result = 31 * result + tenantId.hashCode();
+            return result;
+        }
+    }
+
 }

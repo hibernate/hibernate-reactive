@@ -38,15 +38,15 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
 	private final Context context;
-	private final Context.Key<Stage.Session> contextKeyForSession;
-	private final Context.Key<Stage.StatelessSession> contextKeyForStatelessSession;
+	private final Context.BaseKey<Stage.Session> contextKeyForSession;
+	private final Context.BaseKey<Stage.StatelessSession> contextKeyForStatelessSession;
 
 	public StageSessionFactoryImpl(SessionFactoryImpl delegate) {
 		this.delegate = delegate;
 		context = delegate.getServiceRegistry().getService( Context.class );
 		connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
-		contextKeyForSession = new Context.Key<>( Stage.Session.class, delegate.getUuid() );
-		contextKeyForStatelessSession = new Context.Key<>( Stage.StatelessSession.class, delegate.getUuid() );
+		contextKeyForSession = new Context.BaseKey<>( Stage.Session.class, delegate.getUuid() );
+		contextKeyForStatelessSession = new Context.BaseKey<>( Stage.StatelessSession.class, delegate.getUuid() );
 	}
 
 	<T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stageSupplier) {
@@ -163,8 +163,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	public <T> CompletionStage<T> withSession(String tenantId, Function<Stage.Session, CompletionStage<T>> work) {
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		Context.Key<Stage.Session> key =
-				new Context.Key<>( Stage.Session.class, delegate.getUuid() + '/' + tenantId );
+		Context.Key<Stage.Session> key = new Context.MultitenantKey<>( this.contextKeyForSession, tenantId );
 		Stage.Session current = context.get( key );
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
@@ -186,8 +185,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	public <T> CompletionStage<T> withStatelessSession(String tenantId, Function<Stage.StatelessSession, CompletionStage<T>> work) {
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		Context.Key<Stage.StatelessSession> key =
-				new Context.Key<>( Stage.StatelessSession.class, delegate.getUuid() + '/' + tenantId );
+		Context.Key<Stage.StatelessSession> key = new Context.MultitenantKey<>( this.contextKeyForStatelessSession, tenantId );
 		Stage.StatelessSession current = context.get( key );
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
