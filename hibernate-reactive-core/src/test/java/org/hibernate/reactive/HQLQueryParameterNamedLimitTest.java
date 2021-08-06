@@ -129,6 +129,28 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 		);
 	}
 
+	/**
+	 * Some databases (see MSSQL) generate a different SQL query when the first result is set to 0
+	 */
+	@Test
+	public void testFirstResultZeroAndMaxResults(TestContext context) {
+		test(
+				context,
+				openSession()
+						.thenCompose( s ->
+											  s.createQuery( "from Flour where name = :name order by id" )
+													  .setParameter( "name", almond.getName() )
+													  .setFirstResult( 0 )
+													  .setMaxResults( 10 )
+													  .getResultList()
+													  .thenAccept( results -> {
+														  context.assertEquals( 1, results.size() );
+														  context.assertEquals( almond, results.get( 0 ) );
+													  } )
+						)
+		);
+	}
+
 	@Test
 	public void testFirstResultMaxResultsMultipleResults(TestContext context) {
 		test(
