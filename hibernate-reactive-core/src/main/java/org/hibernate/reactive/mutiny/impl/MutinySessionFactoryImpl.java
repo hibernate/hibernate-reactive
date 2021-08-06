@@ -18,6 +18,8 @@ import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.context.Context;
+import org.hibernate.reactive.context.impl.BaseKey;
+import org.hibernate.reactive.context.impl.MultitenantKey;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
@@ -46,16 +48,16 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	 * for correct scoping.
 	 * In case of multi-tenancy these will need to be used as prefixes.
 	 */
-	private final Context.BaseKey<Mutiny.Session> contextKeyForSession;
-	private final Context.BaseKey<Mutiny.StatelessSession> contextKeyForStatelessSession;
+	private final BaseKey<Mutiny.Session> contextKeyForSession;
+	private final BaseKey<Mutiny.StatelessSession> contextKeyForStatelessSession;
 
 	public MutinySessionFactoryImpl(SessionFactoryImpl delegate) {
 		Objects.requireNonNull( delegate );
 		this.delegate = delegate;
 		context = delegate.getServiceRegistry().getService( Context.class );
 		connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
-		contextKeyForSession = new Context.BaseKey<>( Mutiny.Session.class, delegate.getUuid() );
-		contextKeyForStatelessSession = new Context.BaseKey<>( Mutiny.StatelessSession.class, delegate.getUuid() );
+		contextKeyForSession = new BaseKey<>( Mutiny.Session.class, delegate.getUuid() );
+		contextKeyForStatelessSession = new BaseKey<>( Mutiny.StatelessSession.class, delegate.getUuid() );
 	}
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
@@ -167,7 +169,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	public <T> Uni<T> withSession(String tenantId, Function<Mutiny.Session, Uni<T>> work) {
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		Context.Key<Mutiny.Session> key = new Context.MultitenantKey( contextKeyForSession, tenantId );
+		Context.Key<Mutiny.Session> key = new MultitenantKey( contextKeyForSession, tenantId );
 		Mutiny.Session current = context.get(key);
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
@@ -189,7 +191,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	public <T> Uni<T> withStatelessSession(String tenantId, Function<Mutiny.StatelessSession, Uni<T>> work) {
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		Context.Key<Mutiny.StatelessSession> key = new Context.MultitenantKey<>( this.contextKeyForStatelessSession, tenantId );
+		Context.Key<Mutiny.StatelessSession> key = new MultitenantKey<>( this.contextKeyForStatelessSession, tenantId );
 		Mutiny.StatelessSession current = context.get( key );
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
