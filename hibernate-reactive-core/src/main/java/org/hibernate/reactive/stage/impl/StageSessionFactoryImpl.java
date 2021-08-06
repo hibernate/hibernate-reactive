@@ -17,6 +17,8 @@ import org.hibernate.Cache;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.context.Context;
+import org.hibernate.reactive.context.impl.BaseKey;
+import org.hibernate.reactive.context.impl.MultitenantKey;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
@@ -38,15 +40,15 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
 	private final Context context;
-	private final Context.BaseKey<Stage.Session> contextKeyForSession;
-	private final Context.BaseKey<Stage.StatelessSession> contextKeyForStatelessSession;
+	private final BaseKey<Stage.Session> contextKeyForSession;
+	private final BaseKey<Stage.StatelessSession> contextKeyForStatelessSession;
 
 	public StageSessionFactoryImpl(SessionFactoryImpl delegate) {
 		this.delegate = delegate;
 		context = delegate.getServiceRegistry().getService( Context.class );
 		connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
-		contextKeyForSession = new Context.BaseKey<>( Stage.Session.class, delegate.getUuid() );
-		contextKeyForStatelessSession = new Context.BaseKey<>( Stage.StatelessSession.class, delegate.getUuid() );
+		contextKeyForSession = new BaseKey<>( Stage.Session.class, delegate.getUuid() );
+		contextKeyForStatelessSession = new BaseKey<>( Stage.StatelessSession.class, delegate.getUuid() );
 	}
 
 	<T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stageSupplier) {
@@ -163,7 +165,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	public <T> CompletionStage<T> withSession(String tenantId, Function<Stage.Session, CompletionStage<T>> work) {
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		Context.Key<Stage.Session> key = new Context.MultitenantKey<>( this.contextKeyForSession, tenantId );
+		Context.Key<Stage.Session> key = new MultitenantKey<>( this.contextKeyForSession, tenantId );
 		Stage.Session current = context.get( key );
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
@@ -185,7 +187,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	public <T> CompletionStage<T> withStatelessSession(String tenantId, Function<Stage.StatelessSession, CompletionStage<T>> work) {
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		Context.Key<Stage.StatelessSession> key = new Context.MultitenantKey<>( this.contextKeyForStatelessSession, tenantId );
+		Context.Key<Stage.StatelessSession> key = new MultitenantKey<>( this.contextKeyForStatelessSession, tenantId );
 		Stage.StatelessSession current = context.get( key );
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
