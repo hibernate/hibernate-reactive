@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.util.Locale;
+
 public class SQLServerParameters extends Parameters {
 
     public static final SQLServerParameters INSTANCE = new SQLServerParameters();
@@ -47,12 +49,28 @@ public class SQLServerParameters extends Parameters {
                     ? " offset 0"
                     : " offset @P" + index++;
             String sqlProcessed = sql.substring( 0, pos ) + offsetQueryString + " rows";
-            if ( sql.indexOf( " fetch next ?" ) > -1 ) {
+            if ( sql.contains( " fetch next ?" ) ) {
                 sqlProcessed += " fetch next @P" + index + " rows only ";
             }
             return sqlProcessed;
         }
+        // Different Hibernate ORM versions may use different lowercase/uppercase letters
+        if ( sql.toLowerCase( Locale.ROOT ).startsWith( "select top(?)" ) ) {
+            // 13 is the length of the string "select top(?)"
+            String sqlProcessed = "select top(@P" + index + ")" + sql.substring( 13 );
+            shiftValues( parameterArray );
+            return sqlProcessed;
+        }
         return sql;
+    }
+
+    /**
+     * Left shift all the values in the array (moving the first value to the end)
+     */
+    private void shiftValues(Object[] parameterArray) {
+        Object temp = parameterArray[0];
+        System.arraycopy( parameterArray, 1, parameterArray, 0, parameterArray.length - 1 );
+        parameterArray[parameterArray.length - 1] = temp;
     }
 
     private static class Parser {
