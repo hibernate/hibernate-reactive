@@ -154,6 +154,29 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 		);
 	}
 
+	/**
+	 * Some databases (see MSSQL) generate a different SQL query to limit the results
+	 * when the HQL query has no order by clause
+	 */
+	@Test
+	public void testFirstResultZeroAndMaxResultsWithoutOrder(TestContext context) {
+		test(
+				context,
+				openSession()
+						.thenCompose( s ->
+											  s.createQuery( "from Flour where name = ?1" )
+													  .setParameter( 1, almond.getName() )
+													  .setFirstResult( 0 )
+													  .setMaxResults( 10 )
+													  .getResultList()
+													  .thenAccept( results -> {
+														  context.assertEquals( 1, results.size() );
+														  context.assertEquals( almond, results.get( 0 ) );
+													  } )
+						)
+		);
+	}
+
 	@Test
 	public void testFirstResultMaxResultsMultipleResults(TestContext context) {
 		test(
