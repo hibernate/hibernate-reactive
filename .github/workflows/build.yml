@@ -71,9 +71,10 @@ jobs:
         # refresh cache every month to avoid unlimited growth
         key: gradle-examples-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
     - name: Set up JDK 1.8
+      uses: actions/setup-java@v2.1.0
       with:
-        java-version: 1.8
-      uses: actions/setup-java@v1
+        distribution: 'adopt'
+        java-version: 8
     - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
       run: ./gradlew :${{ matrix.example }}:runAllExamplesOn${{ matrix.db }}
     - name: Upload reports (if build failed)
@@ -107,9 +108,10 @@ jobs:
         # refresh cache every month to avoid unlimited growth
         key: gradle-db-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
     - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
+      uses: actions/setup-java@v2.1.0
       with:
-        java-version: 1.8
+        distribution: 'adopt'
+        java-version: 8
     - name: Build and Test with ${{ matrix.db }}
       run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
     - name: Upload reports (if build failed)
@@ -125,12 +127,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # To list the available "feature versions" (ignore "tip_version", it's not relevant):
+        # https://api.adoptium.net/v3/info/available_releases
+        # To list the available releases for a given "feature version" (example for 16):
+        # https://api.adoptium.net/v3/assets/latest/16/hotspot
         java:
-          - { name: "8", java-version: 8, release_type: "ga" }
-          - { name: "11", java-version: 11, release_type: "ga" }
-          - { name: "15", java-version: 15, release_type: "ga" }
-          - { name: "16", java-version: 16, release_type: "ga" }
-          - { name: "17-ea", java-version: 17, release_type: "ea" }
+          - { name: "8", java_version_numeric: 8 }
+          - { name: "11", java_version_numeric: 11 }
+          - { name: "15", java_version_numeric: 15 }
+          - { name: "16", java_version_numeric: 16 }
+          - { name: "17-ea", java_version_numeric: 17 }
     steps:
     - uses: actions/checkout@v2
     - name: Get year/month for cache key
@@ -149,21 +155,28 @@ jobs:
         # refresh cache every month to avoid unlimited growth
         key: gradle-java${{ matrix.java }}-${{ steps.get-date.outputs.yearmonth }}
     - name: Set up JDK ${{ matrix.java.name }}
-      uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-      id: install-testjdk
+      uses: actions/setup-java@v2.1.0
       with:
-        java-version: ${{ matrix.java.java-version }}
-        release_type: ${{ matrix.java.release_type }}
+        distribution: 'adopt'
+        java-version: ${{ matrix.java.name }}
+        check-latest: true
+    - name: Export path to JDK ${{ matrix.java.name }}
+      id: testjdk-exportpath
+      run: echo "::set-output name=path::${JAVA_HOME}"
     # Always use JDK 8 to build the main code: that's what we use for releases.
     - name: Set up JDK 8
-      uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-      id: install-mainjdk
+      uses: actions/setup-java@v2.1.0
       with:
+        distribution: 'adopt'
         java-version: 8
+        check-latest: true
+    - name: Export path to JDK 8
+      id: mainjdk-exportpath
+      run: echo "::set-output name=path::${JAVA_HOME}"
     - name: Build and Test with Java ${{ matrix.java.name }}
       run: |
-        ./gradlew build -PshowStandardOutput -Pdocker -Ptest.jdk.version=${{ matrix.java.java-version }} \
-            -Porg.gradle.java.installations.paths=${{ steps.install-mainjdk.outputs.path }},${{ steps.install-testjdk.outputs.path }}
+        ./gradlew build -PshowStandardOutput -Pdocker -Ptest.jdk.version=${{ matrix.java.java_version_numeric }} \
+            -Porg.gradle.java.installations.paths=${{ steps.mainjdk-exportpath.outputs.path }},${{ steps.testjdk-exportpath.outputs.path }}
     - name: Upload reports (if build failed)
       uses: actions/upload-artifact@v2
       if: failure()
@@ -178,9 +191,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
+      uses: actions/setup-java@v2.1.0
       with:
-        java-version: 1.8
+        distribution: 'adopt'
+        java-version: 8
     - name: Create artifacts
       run: ./gradlew assemble
     - name: Detect the version of Hibernate Reactive
@@ -201,9 +215,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
+      uses: actions/setup-java@v2.1.0
       with:
-        java-version: 1.8
+        distribution: 'adopt'
+        java-version: 8
     - name: Create artifacts
       run: ./gradlew assemble
     - name: Install SSH key
