@@ -34,21 +34,24 @@ public class SQLServerParameters extends Parameters {
      */
     @Override
     public String processLimit(String sql, Object[] parameterArray, boolean hasOffset) {
-        if (isProcessingNotRequired(sql)) {
+        if ( isProcessingNotRequired( sql ) ) {
             return sql;
         }
 
         // Replace 'offset ? fetch next ? rows only' with the @P style parameters for Sql Server
         int index = hasOffset ? parameterArray.length - 1 : parameterArray.length;
-        int pos = sql.indexOf( " offset ?" );
+        int pos = sql.indexOf( " offset " );
         if ( pos > -1 ) {
-            String sqlProcessed = sql.substring( 0, pos ) + " offset @P" + index++ + " rows";
+            // The dialect doesn't use a parameter if the offset is 0
+            String offsetQueryString = sql.contains( " offset 0 " )
+                    ? " offset 0"
+                    : " offset @P" + index++;
+            String sqlProcessed = sql.substring( 0, pos ) + offsetQueryString + " rows";
             if ( sql.indexOf( " fetch next ?" ) > -1 ) {
                 sqlProcessed += " fetch next @P" + index + " rows only ";
             }
             return sqlProcessed;
         }
-
         return sql;
     }
 
