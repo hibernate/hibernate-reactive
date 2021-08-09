@@ -667,6 +667,8 @@ automatically obtain the same shared session.
 
 Alternatively, you may use `openSession()`, but you must remember to `close()`
 the session when you're done.
+And you must take great care to only access each session from within exactly
+one Vert.x context (See the <<_vert_x_context>> paragraph for more details).
 
 [source, JAVA, indent=0]
 ----
@@ -933,6 +935,119 @@ sessionFactory.withTransaction( (session, tx) -> session.persist(book) )
 ----
 
 This is probably the most convenient thing to use most of the time.
+
+=== Vert.x context
+
+:vertx-context-introduction: https://vertx.io/blog/an-introduction-to-the-vert-x-context-object/
+
+The session is not thread-safe, using it in different threads may cause issues that are hard to debug.
+When it's created, a session is bound to a {vertx-context-introduction}[Vert.x context]
+and needs to be used in the same context after that.
+
+Hibernate Reactive will take care of this when the application uses `withSession`,
+`withStatelessSession` or `withTransaction` (See <<_obtaining_a_reactive_session>>).
+
+When using `openSession` or `openStatelessSession`, one need to make sure
+to use it in the right Vert.x context or the following exception might occur:
+
+[source, JAVA, indent=0]
+----
+HR000068: This method should exclusively be invoked from a Vert.x EventLoop thread; ...
+----
+
+One way to run the code in the correct Vert.x context is the following:
+
+[source, JAVA, indent=0]
+----
+Context currentContext = Vertx.currentContext();
+currentContext.runOnContext( event -> {
+   // Here you will be able to use the session
+});
+----
+
+=== Vert.x instance service
+
+This service tells Hibernate Reactive which Vert.x instance to use when it
+creates a session. It also acts as an integration point for your application
+in case you need a custom Vert.x instance (Hibernate Reactive will create a
+default one otherwise).
+
+You can override the service programmatically:
+
+[source, JAVA, indent=0]
+----
+final Vertx myVertx = ...
+Configuration configuration = new Configuration();
+StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
+        .addService( VertxInstance.class, (VertxInstance) () -> myVertx )
+        .applySettings( configuration.getProperties() );
+StandardServiceRegistry registry = builder.build();
+SessionFactory sessionFactory = configuration.buildSessionFactory( registry );
+----
+
+Or, you can use the `ServiceContributor` interface and register your implementation of the
+`VertxInstance` interface:
+
+1. Add a text file named `org.hibernate.service.spi.ServiceContributor` under 
++
+[source, JAVA, indent=0]
+----
+/META-INF/services/
+----
+
+2. The text file will contain the path to the class implementing the `ServiceContributor` interface: 
++
+[source, JAVA, indent=0]
+----
+org.myproject.MyServiceContributor
+----
++
+This is an example of what `MyVertxProvider` and `MyServiceContributor` might look like:
++
+[source, JAVA, indent=0]
+----
+public class MyServiceContributor implements ServiceContributor {
+
+  @Override
+  public void contribute(StandardServiceRegistryBuilder serviceRegistryBuilder) {
+    serviceRegistryBuilder.addService( VertxInstance.class, new MyVertxProvider() );
+  }
+
+}
+----
++
+[source, JAVA, indent=0]
+----
+public class MyVertxProvider implements VertxInstance {
+
+  private final Vertx vertx;
+
+  public MyVertxProvider() {
+    this.vertx = Vertx.vertx();
+  }
+
+  @Override
+  public Vertx getVertx() {
+    return vertx;
+  }
+
+}
+----
+
+You can access the `ServiceRegistry` from the `Stage.SessionFactory` or
+`Mutiny.SessionFactory` using the `org.hibernate.reactive.common.spi.Implementor`
+interface:
+
+[source, JAVA, indent=0]
+----
+Mutiny.SessionFactory sessionFactory = ...
+VertxInstance vertxInstance = ((Implementor) sessionFactory)
+					.getServiceRegistry()
+ 					.getService( VertxInstance.class );
+Vertx vertx = vertxInstance.getVertx();
+----
+
+The same will work for `Stage.SessionFactory`.
 
 == Tuning and performance
 
