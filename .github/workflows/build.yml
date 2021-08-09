@@ -137,6 +137,8 @@ jobs:
           - { name: "15", java_version_numeric: 15 }
           - { name: "16", java_version_numeric: 16 }
           - { name: "17-ea", java_version_numeric: 17 }
+          - { name: "18-ea", java_version_numeric: 18,
+              download_url: "https://download.java.net/java/early_access/jdk18/4/GPL/openjdk-18-ea+4_linux-x64_bin.tar.gz" }
     steps:
     - uses: actions/checkout@v2
     - name: Get year/month for cache key
@@ -154,7 +156,19 @@ jobs:
           .gradle/wrapper
         # refresh cache every month to avoid unlimited growth
         key: gradle-java${{ matrix.java }}-${{ steps.get-date.outputs.yearmonth }}
-    - name: Set up JDK ${{ matrix.java.name }}
+    - name: Manually download JDK ${{ matrix.java.name }}
+      if: matrix.java.download_url != ''
+      run: wget -O $RUNNER_TEMP/java_package.tar.gz ${{ matrix.java.download_url }}
+    - name: Set up JDK ${{ matrix.java.name }} (manually downloaded)
+      if: matrix.java.download_url != ''
+      uses: actions/setup-java@v2.1.0
+      with:
+        distribution: 'jdkfile'
+        jdkFile: ${{ runner.temp }}/java_package.tar.gz
+        java-version: ${{ matrix.java.name }}
+        architecture: x64
+    - name: Set up JDK ${{ matrix.java.name }} (automatically downloaded)
+      if: matrix.java.download_url == ''
       uses: actions/setup-java@v2.1.0
       with:
         distribution: 'adopt'
