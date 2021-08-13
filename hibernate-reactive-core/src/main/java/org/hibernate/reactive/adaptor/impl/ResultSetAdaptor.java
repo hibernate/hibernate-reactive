@@ -214,7 +214,20 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public long getLong(String columnLabel) {
-		Long aLong = row.getLong( columnLabel );
+		// PostgreSQL stores sequence metadata in information_schema as Strings.
+		// First try to get the value as a Long; if that fails, try to get
+		// as a String and try to parse it as a Long.
+		Long aLong;
+		try {
+			aLong = row.getLong(columnLabel);
+		}
+		catch (ClassCastException ex) {
+			// Check if the value is a String that can be converted to a Long
+			final String aString = row.getString(columnLabel);
+			// aString won't be null; check just because...
+			aLong = aString != null ? Long.parseLong(aString) : null;
+		}
+
 		wasNull = aLong == null;
 		return wasNull ? 0 : aLong;
 	}
