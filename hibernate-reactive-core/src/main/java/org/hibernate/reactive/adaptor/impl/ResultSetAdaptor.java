@@ -225,7 +225,15 @@ public class ResultSetAdaptor implements ResultSet {
 			// Check if the value is a String that can be converted to a Long
 			final String aString = row.getString(columnLabel);
 			// aString won't be null; check just because...
-			aLong = aString != null ? Long.parseLong(aString) : null;
+			try {
+				aLong = aString != null ? Long.parseLong( aString ) : null;
+			}
+			catch (ClassCastException exNotAString) {
+				// The value is neither a long nor a String that can be
+				// parsed as a long.
+				// Throw the original exception.
+				throw ex;
+			}
 		}
 
 		wasNull = aLong == null;
