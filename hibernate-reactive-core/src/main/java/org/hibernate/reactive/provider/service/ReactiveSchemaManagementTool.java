@@ -9,6 +9,7 @@ import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.dialect.CockroachDB201Dialect;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.MySQL8Dialect;
 import org.hibernate.dialect.PostgreSQL10Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.resource.transaction.spi.DdlTransactionIsolator;
@@ -61,6 +62,9 @@ public class ReactiveSchemaManagementTool extends HibernateSchemaManagementTool 
 			}
 			if ( dialect instanceof CockroachDB201Dialect ) {
 				return new PostgreSqlReactiveInformationExtractorImpl( extractionContext );
+			}
+			else if ( dialect instanceof MySQL8Dialect ) {
+				return new MySqlReactiveInformationExtractorImpl( extractionContext );
 			}
 			else {
 				throw new NotYetImplementedException(

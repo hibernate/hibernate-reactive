@@ -81,8 +81,8 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 
 		final List<Object> parameterValues = new ArrayList<>();
 
-		appendClauseAndParameterIfNotNull( " and n.nspname = ", schema, innerQuery, parameterValues );
-		appendClauseAndParameterIfNotNull( " and ct.relname = ", table, innerQuery, parameterValues );
+		appendClauseAndParameterIfNotNullOrEmpty( " and n.nspname = ", schema, innerQuery, parameterValues );
+		appendClauseAndParameterIfNotNullOrEmpty( " and ct.relname = ", table, innerQuery, parameterValues );
 
 		if ( unique ) {
 			innerQuery.append( " AND i.indisunique = true" );
@@ -129,8 +129,8 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 
 		final List<Object> parameterValues = new ArrayList<>();
 
-		appendClauseAndParameterIfNotNull( " and fkn.nspname = ", schema, sb, parameterValues );
-		appendClauseAndParameterIfNotNull( " and fkc.relname = ", table, sb, parameterValues );
+		appendClauseAndParameterIfNotNullOrEmpty( " and fkn.nspname = ", schema, sb, parameterValues );
+		appendClauseAndParameterIfNotNullOrEmpty( " and fkc.relname = ", table, sb, parameterValues );
 
 		// No need to order by catalog since it is always null.
 		sb.append( " order by pkn.nspname, pkc.relname, con.conname, pos.n" );

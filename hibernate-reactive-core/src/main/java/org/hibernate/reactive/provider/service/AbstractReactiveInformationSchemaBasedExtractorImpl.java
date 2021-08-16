@@ -152,22 +152,24 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 				.append( " , schema_name as "  ).append( getResultSetSchemaLabel() )
 				.append( " from information_schema.schemata where true" );
 		final List<Object> parameters = new ArrayList<>();
-		appendClauseAndParameterIfNotNull( " and catalog_name = ", catalog, sb, parameters );
-		appendClauseAndParameterIfNotNull( " and schema_name like ", schemaPattern, sb, parameters );
+		appendClauseAndParameterIfNotNullOrEmpty( " and catalog_name = ", catalog, sb, parameters );
+		appendClauseAndParameterIfNotNullOrEmpty( " and schema_name like ", schemaPattern, sb, parameters );
 		return getExtractionContext().getQueryResults( sb.toString(), parameters.toArray(), processor );
 	}
 
-	protected void appendClauseAndParameterIfNotNull(
+	protected boolean appendClauseAndParameterIfNotNullOrEmpty(
 			String clause,
 			Object parameter,
 			StringBuilder sb,
 			List<Object> parameters) {
 
-		if ( parameter != null ) {
+		if ( parameter != null && ( ! String.class.isInstance( parameter ) || ! ( (String) parameter ).isEmpty() ) ) {
 			parameters.add( parameter );
 			sb.append( clause );
 			sb.append( "?");
+			return true;
 		}
+		return false;
 	}
 
 	@Override
@@ -179,9 +181,17 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 			ExtractionContext.ResultSetProcessor<T> processor
 	) throws SQLException {
 
+		final String catalogColumn = getDatabaseCatalogColumnName(
+				"table_catalog",
+				"table_schema"
+		);
+		final String schemaColumn = getDatabaseSchemaColumnName(
+				"table_catalog",
+				"table_schema"
+		);
 		final StringBuilder sb = new StringBuilder()
-				.append( "select table_catalog as " ).append( getResultSetCatalogLabel() )
-				.append( " , table_schema as "  ).append( getResultSetSchemaLabel() )
+				.append( "select ").append( catalogColumn ).append( " as " ).append( getResultSetCatalogLabel() )
+				.append( " , " ).append( schemaColumn ).append( " as " ).append( getResultSetSchemaLabel() )
 				.append( " , table_name as " ).append( getResultSetTableNameLabel() )
 				.append( " , table_type as " ).append( getResultSetTableTypeLabel() )
 				.append( " , null as " ).append( getResultSetRemarksLabel() )
@@ -190,19 +200,19 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 				// so just return null for now.
 				.append( " from information_schema.tables where true" );
 		List<Object> parameterValues = new ArrayList<>();
-		appendClauseAndParameterIfNotNull( " and table_catalog = ", catalog, sb, parameterValues );
-		appendClauseAndParameterIfNotNull( " and table_schema like ", schemaPattern, sb, parameterValues );
-		appendClauseAndParameterIfNotNull( " and table_name like ", tableNamePattern, sb, parameterValues );
+		appendClauseAndParameterIfNotNullOrEmpty( " and " + catalogColumn + " = ", catalog, sb, parameterValues );
+		appendClauseAndParameterIfNotNullOrEmpty( " and " + schemaColumn + " like ", schemaPattern, sb, parameterValues );
+		appendClauseAndParameterIfNotNullOrEmpty( " and table_name like ", tableNamePattern, sb, parameterValues );
 
 		if ( types != null && types.length > 0 ) {
-			appendClauseAndParameterIfNotNull(
+			appendClauseAndParameterIfNotNullOrEmpty(
 					" and table_type in ( ",
 					types[0].equals( "TABLE" ) ? getResultSetTableTypesPhysicalTableConstant() : types[0],
 					sb,
 					parameterValues
 			);
 			for ( int i = 1 ; i < types.length ; i++ ) {
-				appendClauseAndParameterIfNotNull(
+				appendClauseAndParameterIfNotNullOrEmpty(
 						", ",
 						types[i].equals( "TABLE" ) ? getResultSetTableTypesPhysicalTableConstant() : types[i],
 						sb,
@@ -248,9 +258,17 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 				.append( " from information_schema.columns where true" );
 
 		final List<Object> parameterValues = new ArrayList<>();
-		appendClauseAndParameterIfNotNull( " and table_catalog = " , catalog, sb, parameterValues );
-		appendClauseAndParameterIfNotNull( " and table_schema like " , schemaPattern, sb, parameterValues );
-		appendClauseAndParameterIfNotNull( " and table_name like " , tableNamePattern, sb, parameterValues );
+		final String catalogColumn = getDatabaseCatalogColumnName(
+				"table_catalog",
+				"table_schema"
+		);
+		final String schemaColumn = getDatabaseSchemaColumnName(
+				"table_catalog",
+				"table_schema"
+		);
+		appendClauseAndParameterIfNotNullOrEmpty( " and " + catalogColumn + " = " , catalog, sb, parameterValues );
+		appendClauseAndParameterIfNotNullOrEmpty( " and " + schemaColumn + " like " , schemaPattern, sb, parameterValues );
+		appendClauseAndParameterIfNotNullOrEmpty( " and table_name like " , tableNamePattern, sb, parameterValues );
 
 		sb.append(  " order by table_catalog, table_schema, table_name, column_name, ordinal_position" );
 
@@ -267,5 +285,14 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 	protected String getInformationSchemaColumnsDataTypeColumn() {
 		// The SQL-92 standard says the column name is DATA_TYPE.
 		return "data_type";
+	}
+
+	protected String getDatabaseCatalogColumnName(String catalogColumnName, String schemaColumnName ) {
+		return catalogColumnName;
+
+	}
+
+	protected String getDatabaseSchemaColumnName(String catalogColumnName, String schemaColumnName ) {
+		return schemaColumnName;
 	}
 }
