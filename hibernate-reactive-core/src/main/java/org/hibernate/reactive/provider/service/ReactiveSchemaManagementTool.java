@@ -7,6 +7,7 @@ package org.hibernate.reactive.provider.service;
 
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.cfg.NotYetImplementedException;
+import org.hibernate.dialect.CockroachDB201Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.PostgreSQL10Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
@@ -56,6 +57,9 @@ public class ReactiveSchemaManagementTool extends HibernateSchemaManagementTool 
 		public InformationExtractor createInformationExtractor(ExtractionContext extractionContext) {
 			final Dialect dialect = extractionContext.getJdbcEnvironment().getDialect();
 			if ( dialect instanceof PostgreSQL10Dialect ) {
+				return new PostgreSqlReactiveInformationExtractorImpl( extractionContext );
+			}
+			if ( dialect instanceof CockroachDB201Dialect ) {
 				return new PostgreSqlReactiveInformationExtractorImpl( extractionContext );
 			}
 			else {
