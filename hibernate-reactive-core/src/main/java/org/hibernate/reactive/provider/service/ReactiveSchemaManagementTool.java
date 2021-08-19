@@ -8,6 +8,7 @@ package org.hibernate.reactive.provider.service;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
 import org.hibernate.dialect.PostgreSQL10Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
@@ -59,7 +60,7 @@ public class ReactiveSchemaManagementTool extends HibernateSchemaManagementTool 
 			if ( dialect instanceof PostgreSQL10Dialect ) {
 				return new PostgreSqlReactiveInformationExtractorImpl( extractionContext );
 			}
-			else if ( dialect instanceof MySQL8Dialect ) {
+			else if ( dialect instanceof MySQL8Dialect || dialect instanceof MariaDB103Dialect ) {
 				return new MySqlReactiveInformationExtractorImpl( extractionContext );
 			}
 			else {
