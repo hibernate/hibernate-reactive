@@ -74,55 +74,55 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public String getString(int columnIndex) {
-		String string = row.getString(columnIndex);
+		String string = row.getString( columnIndex - 1 );
 		return (wasNull=string==null) ? null : string;
 	}
 
 	@Override
 	public boolean getBoolean(int columnIndex) {
-		Boolean bool = row.getBoolean(columnIndex);
+		Boolean bool = row.getBoolean(columnIndex - 1);
 		wasNull = bool == null;
 		return !wasNull && bool;
 	}
 
 	@Override
 	public byte getByte(int columnIndex) {
-		Integer integer = row.getInteger( columnIndex );
+		Integer integer = row.getInteger( columnIndex - 1 );
 		wasNull = integer == null;
 		return wasNull ? 0 : integer.byteValue();
 	}
 
 	@Override
 	public short getShort(int columnIndex) {
-		Short aShort = row.getShort( columnIndex );
+		Short aShort = row.getShort( columnIndex - 1 );
 		wasNull = aShort == null;
 		return wasNull ? 0 : aShort;
 	}
 
 	@Override
 	public int getInt(int columnIndex) {
-		Integer integer = row.getInteger( columnIndex );
+		Integer integer = row.getInteger( columnIndex - 1 );
 		wasNull = integer == null;
 		return wasNull ? 0 : integer;
 	}
 
 	@Override
 	public long getLong(int columnIndex) {
-		Long aLong = row.getLong(columnIndex);
+		Long aLong = row.getLong( columnIndex - 1 );
 		wasNull = aLong == null;
 		return wasNull ? 0 : aLong;
 	}
 
 	@Override
 	public float getFloat(int columnIndex) {
-		Float real = row.getFloat( columnIndex );
+		Float real = row.getFloat( columnIndex - 1 );
 		wasNull = real == null;
 		return wasNull ? 0 : real;
 	}
 
 	@Override
 	public double getDouble(int columnIndex) {
-		Double real = row.getDouble( columnIndex );
+		Double real = row.getDouble( columnIndex - 1 );
 		wasNull = real == null;
 		return wasNull ? 0 : real;
 	}
@@ -134,32 +134,32 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public byte[] getBytes(int columnIndex) {
-		Buffer buffer = row.getBuffer(columnIndex);
+		Buffer buffer = row.getBuffer( columnIndex - 1 );
 		wasNull = buffer == null;
 		return wasNull ? null : buffer.getBytes();
 	}
 
 	@Override
 	public Date getDate(int columnIndex) {
-		LocalDate localDate = row.getLocalDate(columnIndex);
+		LocalDate localDate = row.getLocalDate( columnIndex - 1 );
 		return (wasNull=localDate==null) ? null : java.sql.Date.valueOf(localDate);
 	}
 
 	@Override
 	public Time getTime(int columnIndex) {
-		LocalTime localTime = row.getLocalTime(columnIndex);
+		LocalTime localTime = row.getLocalTime( columnIndex - 1);
 		return (wasNull=localTime==null) ? null : Time.valueOf(localTime);
 	}
 
 	@Override
 	public Time getTime(int columnIndex, Calendar cal) {
-		LocalTime localTime = row.getLocalTime(columnIndex);
+		LocalTime localTime = row.getLocalTime( columnIndex - 1 );
 		return (wasNull=localTime==null) ? null : Time.valueOf(localTime);
 	}
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex) {
-		LocalDateTime localDateTime = row.getLocalDateTime(columnIndex);
+		LocalDateTime localDateTime = row.getLocalDateTime( columnIndex - 1 );
 		return (wasNull=localDateTime==null) ? null : Timestamp.valueOf(localDateTime);
 	}
 
@@ -332,7 +332,7 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public <T> T getObject(int columnIndex, Class<T> type) {
-		T object = row.get(type, columnIndex);
+		T object = row.get(type, columnIndex - 1);
 		return (wasNull=object==null) ? null : object;
 	}
 
@@ -490,7 +490,7 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Object getObject(int columnIndex) {
-		Object object = row.getValue( columnIndex );
+		Object object = row.getValue( columnIndex - 1 );
 		return (wasNull=object==null) ? null : object;
 	}
 
@@ -508,7 +508,7 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex) {
-		BigDecimal decimal = row.getBigDecimal(columnIndex);
+		BigDecimal decimal = row.getBigDecimal(columnIndex - 1);
 		return (wasNull=decimal==null) ? null : decimal;
 	}
 
