@@ -134,7 +134,6 @@ jobs:
         java:
           - { name: "8", java_version_numeric: 8 }
           - { name: "11", java_version_numeric: 11 }
-          - { name: "15", java_version_numeric: 15 }
           - { name: "16", java_version_numeric: 16 }
           - { name: "17-ea", java_version_numeric: 17 }
           - { name: "18-ea", java_version_numeric: 18,
