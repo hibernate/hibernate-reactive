@@ -287,11 +287,43 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 		return "data_type";
 	}
 
+	/**
+	 * Given a catalog column name and a schema column name in an
+	 * information_schema table/view, this method returns the column
+	 * used for storing the catalog name, or <code null/>, if there
+	 * is no valid column containing the catalog name.
+	 * <p/>
+	 * MySQL, for example, uses the schema name column
+	 * in the information_schema to store the catalog name.
+	 * (@see MySqlReactiveInformationExtractorImpl)
+	 *
+	 * @param catalogColumnName - the catalog column name
+	 * @param schemaColumnName  - the schema column name
+	 * @return the column used for storing the catalog name,
+	 * or <code null/> if there is no valid column containing
+	 * the catalog name.
+	 */
 	protected String getDatabaseCatalogColumnName(String catalogColumnName, String schemaColumnName ) {
 		return catalogColumnName;
 
 	}
 
+	/**
+	 * Given a catalog column name and a schema column name in an
+	 * information_schema table/view, this method returns the column
+	 * used for storing the schema name, or <code null/>, if there
+	 * is no valid column containing the schema name.
+	 * <p/>
+	 * MySQL, for example, does not have a valid column in
+	 * in the information_schema to store the schema name.
+	 * (@see MySqlReactiveInformationExtractorImpl)
+	 *
+	 * @param catalogColumnName - the catalog column name
+	 * @param schemaColumnName  - the schema column name
+	 * @return the column used for storing the schema name,
+	 * or <code null/> if there is no valid column containing
+	 * the schema name.
+	 */
 	protected String getDatabaseSchemaColumnName(String catalogColumnName, String schemaColumnName ) {
 		return schemaColumnName;
 	}
