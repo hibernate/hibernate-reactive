@@ -16,12 +16,11 @@ import org.hibernate.tool.schema.extract.spi.ExtractionContext;
 /**
  * An implementation of {@link AbstractReactiveInformationSchemaBasedExtractorImpl}
  * specifically for MySQL that obtains metadata from MySQL's non-standard
- * information_schema tables, when it is not available from PosgreSQL's
- * information_schema.
+ * information_schema tables.
  *<p/>
  * MySQL's schema is actually a catalog. MySQL's implementation of
  * {@link java.sql.DatabaseMetaData} automatically changes catalog
- * arguments to refer to a schema columns instead. Unfortunately,
+ * arguments to refer to schema columns instead. Unfortunately,
  * MySQL's information_schema stores catalog names in
  * a schema name column. This class works around that idiosyncrasy.
  *
@@ -43,7 +42,7 @@ public class MySqlReactiveInformationExtractorImpl extends AbstractReactiveInfor
 	}
 
 	protected String getDatabaseSchemaColumnName(String catalogColumnName, String schemaColumnName ) {
-		return "null";
+		return null;
 	}
 
 	@Override
@@ -124,15 +123,11 @@ public class MySqlReactiveInformationExtractorImpl extends AbstractReactiveInfor
 				.append( " from information_schema.statistics where true" );
 
 		final List<Object> parameters = new ArrayList<>();
-		// MySQL's information_schema stores the catalog name in
-		// the schema_name column. This is why the schema_name column is
-		// returned with the column label, getResultSetCatalogLabel().
-		final String catalogColumnNameClause =
-				" and " +
-						getDatabaseCatalogColumnName( "table_catalog", "table_schema" ) +
-						" = ";
-		appendClauseAndParameterIfNotNullOrEmpty( catalogColumnNameClause, catalog, sb, parameters );
+		// MySQL's information_schema.statistics stores the catalog name in
+		// the schema_name column. This is why the table_schema column is
+		// is constrained to be catalog value.
 		assert schema == null || schema.isEmpty();
+		appendClauseAndParameterIfNotNullOrEmpty( " and table_schema = ", catalog, sb, parameters );
 		appendClauseAndParameterIfNotNullOrEmpty( " and table_name = ", table, sb, parameters );
 
 		if ( unique ) {
@@ -149,67 +144,38 @@ public class MySqlReactiveInformationExtractorImpl extends AbstractReactiveInfor
 			String catalog, String schema, String table, ExtractionContext.ResultSetProcessor<T> processor)
 			throws SQLException {
 
-		// All necessary information can be found in information_schema.key_column_usage,
-		// *except* for the catalog for the primary key that is imported.
-		// The catalog for the primary key is available from information_schema.referential_constraints
-		// in the unique_constraint_catalog column.
-
-		// The extensive join with information_schema.referential_constraints is done
-		// in order to return that catalog for the primary key. If we can assume that
-		// the catalog for the primary key is the same as the constraint_catalog column in
-		// information_schema.key_column_usage, then the join can be removed.
-
-		final String referencedTableCatalogColumn = getDatabaseCatalogColumnName(
-				"r.unique_constraint_catalog",
-				"k.referenced_table_schema"
-		);
-		final String referencedTableSchemaColumn = getDatabaseSchemaColumnName(
-				"r.unique_constraint_catalog",
-				"k.referenced_table_schema"
-		);
+		// MySQL's information_schema.key_column_usage stores the catalog name in
+		// the schema_name column. This is why the referenced_table_schema column is
+		// returned with the label returned by #getResultSetPrimaryKeyCatalogLabel()
+		// and null is returned with the label returned by #getResultSetPrimaryKeySchemaLabel().
 
 		final StringBuilder sb = new StringBuilder()
-				.append( "select k.constraint_name as " ).append( getResultSetForeignKeyLabel() )
-				.append( ", " ).append( referencedTableCatalogColumn ).append( " as " ).append( getResultSetPrimaryKeyCatalogLabel() )
-				.append( ", " ).append( referencedTableSchemaColumn ).append( " as " ).append( getResultSetPrimaryKeySchemaLabel() )
-				.append( ", k.referenced_table_name as " ).append( getResultSetPrimaryKeyTableLabel() )
-				.append( ", k.referenced_column_name as ").append( getResultSetPrimaryKeyColumnNameLabel() )
-				.append( ", k.column_name as " ).append( getResultSetForeignKeyColumnNameLabel() )
-				.append( " from information_schema.key_column_usage k, information_schema.referential_constraints r" )
-				.append( " where true" );
+				.append( "select constraint_name as " ).append( getResultSetForeignKeyLabel() )
+				.append( ", referenced_table_schema as " ).append( getResultSetPrimaryKeyCatalogLabel() )
+				.append( ", null as " ).append( getResultSetPrimaryKeySchemaLabel() )
+				.append( ", referenced_table_name as " ).append( getResultSetPrimaryKeyTableLabel() )
+				.append( ", referenced_column_name as ").append( getResultSetPrimaryKeyColumnNameLabel() )
+				.append( ", column_name as " ).append( getResultSetForeignKeyColumnNameLabel() )
+				.append( " from information_schema.key_column_usage" )
+				// Exclude primary keys, which do not have a referenced table.
+				.append( " where referenced_table_name is not null" );
 
-		// The following are join constraints that may be unnecessary
-		sb.append( " and k.constraint_catalog = r.constraint_catalog" )
-				.append( " and k.constraint_schema = r.constraint_schema" )
-				.append( " and k.constraint_name = r.constraint_name" )
-				.append( " and k.table_name = r.table_name" )
-				.append( " and k.referenced_table_name = r.referenced_table_name" );
 
 		// Now add constraints for the requested catalog/schema/table
 
 		final List<Object> parameters = new ArrayList<>();
 		final List<String> orderByList = new ArrayList<>();
 
-		final String catalogColumn = getDatabaseCatalogColumnName(
-				"k.table_catalog",
-				"k.table_schema"
-		);
-		final String catalogColumnClause = " and " + catalogColumn + " = ";
-		if ( appendClauseAndParameterIfNotNullOrEmpty( catalogColumnClause, catalog, sb, parameters ) ) {
-			orderByList.add( catalogColumn );
+		// MySQL's information_schema.statistics stores the catalog name in
+		// the schema_name column. This is why the table_schema column
+		// is constrained to be catalog value.
+		if ( appendClauseAndParameterIfNotNullOrEmpty( " and table_schema = ", catalog, sb, parameters ) ) {
+			orderByList.add( "table_schema" );
 		}
-		final String schemaColumn = getDatabaseSchemaColumnName(
-				"k.table_catalog",
-				"k.table_schema"
-		);
-		final String schemaColumnClause = " and " + schemaColumn + " = ";
-		if ( appendClauseAndParameterIfNotNullOrEmpty( schemaColumnClause, schema, sb, parameters ) ) {
-			orderByList.add( schemaColumn );
+		if ( appendClauseAndParameterIfNotNullOrEmpty( " and table_name = ", table, sb, parameters ) ) {
+			orderByList.add( "table_name" );
 		}
-		if ( appendClauseAndParameterIfNotNullOrEmpty( " and k.table_name = ", table, sb, parameters ) ) {
-			orderByList.add( "k.table_name" );
-		}
-		orderByList.add( "k.ordinal_position" );
+		orderByList.add( "ordinal_position" );
 
 		if ( orderByList.size() > 0 ) {
 			sb.append( " order by " ).append( orderByList.get( 0 ) );
