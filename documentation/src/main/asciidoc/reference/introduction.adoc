@@ -24,7 +24,7 @@ implementation of JPA. If you've never used JPA before, that's OK, but you
 might need to refer to the following sources of information at some points
 in this text:
 
-- the http://hibernate.org/orm/documentation/5.5/[documentation for Hibernate ORM],
+- the http://hibernate.org/orm/documentation/5.6/[documentation for Hibernate ORM],
 - the https://jcp.org/aboutJava/communityprocess/mrel/jsr338/index.html[JPA 2.2 specification], or
 - https://www.manning.com/books/java-persistence-with-hibernate-second-edition[Java Persistence with Hibernate],
   the latest edition of the book originally titled _Hibernate in Action_.
