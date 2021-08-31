@@ -235,8 +235,6 @@ database by following the instructions in [podman.md](podman.md).
 We're working hard to support the full feature set of Hibernate ORM. 
 At present several minor limitations remain.
 
-- Automatic update or validation of an existing database schema require 
-  use of JDBC.
 - The annotation `@org.hibernate.annotations.Source` for 
   database-generated `@Version` properties is not yet supported.
 - The annotation `@org.hibernate.annotations.CollectionId` is not yet 
