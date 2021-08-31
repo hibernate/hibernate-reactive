@@ -32,11 +32,6 @@ public class MySqlReactiveInformationExtractorImpl extends AbstractReactiveInfor
 		super( extractionContext );
 	}
 
-	@Override
-	protected String getResultSetTableTypesPhysicalTableConstant() {
-		return "BASE TABLE";
-	}
-
 	protected String getDatabaseCatalogColumnName(String catalogColumnName, String schemaColumnName ) {
 		return schemaColumnName;
 	}

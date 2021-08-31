@@ -181,7 +181,7 @@ and schema to run the tests:
 [mssql]:https://www.microsoft.com/en-gb/sql-server/
 
 ```
-podman run --rm -it --name HibernateTestingMSSQL -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD='~!HReact!~' -p 1433:1433 mcr.microsoft.com/mssql/server:2019-latest
+podman run --rm -it --name HibernateTestingMSSQL -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=~!HReact!~' -p 1433:1433 mcr.microsoft.com/mssql/server:2019-latest
 ```
 
 When the database has started, you can run the tests on MS SQL Server with:

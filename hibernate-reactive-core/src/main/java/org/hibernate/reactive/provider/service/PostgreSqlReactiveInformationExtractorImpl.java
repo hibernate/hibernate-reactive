@@ -32,11 +32,6 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 	}
 
 	@Override
-	protected String getResultSetTableTypesPhysicalTableConstant() {
-		return "BASE TABLE";
-	}
-
-	@Override
 	protected <T> T processPrimaryKeysResultSet(
 			String catalogFilter,
 			String schemaFilter,
