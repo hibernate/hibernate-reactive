@@ -1,3 +1,5 @@
+# Run the build using the latest ORM 5.x snapshots
+# so that we can spot integration issues early
 name: Latest ORM 5.x
 
 on:
@@ -22,7 +24,7 @@ jobs:
     strategy:
       matrix:
         example: [ 'session-example', 'native-sql-example' ]
-        orm-version: [ '5.6.0.Beta1' ]
+        orm-version: [ '[5.6,5.7)' ]
         db: ['MySQL', 'PostgreSQL']
         exclude:
           # 'native-sql-example' doesn't run on MySQL because it has native queries
@@ -77,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        orm-version: [ '5.6.0.Beta1' ]
+        orm-version: [ '[5.6,5.7)' ]
         db: ['MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer']
     steps:
       - uses: actions/checkout@v2
