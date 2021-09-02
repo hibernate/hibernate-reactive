@@ -1516,62 +1516,13 @@ public interface Stage {
 	 */
 	interface SessionFactory extends AutoCloseable {
 
-		/**
-		 * Obtain a new {@link Session reactive session}, the main
-		 * interaction point between the user's program and Hibernate
-		 * Reactive.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link Session} needs to access the database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link Session#close()}.
-		 *
-		 * @see #withSession(Function)
-		 */
-		Session openSession();
+		CompletionStage<Session> openSession();
 
-		/**
-		 * Obtain a new {@link Session reactive session} for a
-		 * specified tenant.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link Session} needs to access the database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link Session#close()}.
-		 *
-		 * @param tenantId the id of the tenant
-		 *
-		 * @see #withSession(Function)
-		 */
-		Session openSession(String tenantId);
+		CompletionStage<Session> openSession(String tenantId);
 
-		/**
-		 * Obtain a {@link StatelessSession reactive stateless session}.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link StatelessSession} needs to access the
-		 * database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link StatelessSession#close()}.
-		 */
-		StatelessSession openStatelessSession();
+		CompletionStage<StatelessSession> openStatelessSession();
 
-		/**
-		 * Obtain a {@link StatelessSession reactive stateless session}.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link StatelessSession} needs to access the
-		 * database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link StatelessSession#close()}.
-		 *
-		 * @param tenantId the id of the tenant
-		 */
-		StatelessSession openStatelessSession(String tenantId);
+		CompletionStage<StatelessSession> openStatelessSession(String tenantId);
 
 		/**
 		 * Perform work using a {@link Session reactive session}.

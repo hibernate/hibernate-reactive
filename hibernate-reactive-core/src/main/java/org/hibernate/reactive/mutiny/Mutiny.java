@@ -23,6 +23,7 @@ import org.hibernate.Cache;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
+import org.hibernate.HibernateException;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.collection.internal.AbstractPersistentCollection;
@@ -1515,62 +1516,15 @@ public interface Mutiny {
 	 */
 	interface SessionFactory extends AutoCloseable {
 
-		/**
-		 * Obtain a new {@link Session reactive session}, the main
-		 * interaction point between the user's program and Hibernate
-		 * Reactive.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link Session} needs to access the database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link Session#close()}.
-		 *
-		 * @see #withSession(Function)
-		 */
-		Session openSession();
+		Uni<Session> openSession();
 
-		/**
-		 * Obtain a new {@link Session reactive session} for a
-		 * specified tenant.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link Session} needs to access the database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link Session#close()}.
-		 *
-		 * @param tenantId the id of the tenant
-		 *
-		 * @see #withSession(Function)
-		 */
-		Session openSession(String tenantId);
+		Uni<Mutiny.Session> openSession(String tenantId);
 
-		/**
-		 * Obtain a {@link StatelessSession reactive stateless session}.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link StatelessSession} needs to access the
-		 * database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link StatelessSession#close()}.
-		 */
-		StatelessSession openStatelessSession();
+		Session getCurrentContextualSession();
 
-		/**
-		 * Obtain a {@link StatelessSession reactive stateless session}.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link StatelessSession} needs to access the
-		 * database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link StatelessSession#close()}.
-		 *
-		 * @param tenantId the id of the tenant
-		 */
-		StatelessSession openStatelessSession(String tenantId);
+		Uni<StatelessSession> openStatelessSession() throws HibernateException;
+
+		Uni<StatelessSession> openStatelessSession(String tenantId);
 
 		/**
 		 * Perform work using a {@link Session reactive session}.

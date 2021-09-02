@@ -56,59 +56,30 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	}
 
 	@Override
-	public Stage.Session openSession() {
-		SessionCreationOptions options = options();
-		return new StageSessionImpl(
-				new ReactiveSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) ),
-				this
-		);
-	}
-
-	@Override
-	public Stage.Session openSession(String tenantId) {
-		return new StageSessionImpl(
-				new ReactiveSessionImpl( delegate, options( tenantId ), proxyConnection( tenantId ) ),
-				this
-		);
-	}
-
-	public Stage.StatelessSession openStatelessSession() {
-		SessionCreationOptions options = options();
-		return new StageStatelessSessionImpl(
-				new ReactiveStatelessSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) ),
-				this
-		);
-	}
-
-	@Override
-	public Stage.StatelessSession openStatelessSession(String tenantId) {
-		return new StageStatelessSessionImpl(
-				new ReactiveStatelessSessionImpl( delegate, options( tenantId ), proxyConnection( tenantId ) ),
-				this
-		);
-	}
-
-	CompletionStage<Stage.Session> newSession() {
+	public CompletionStage<Stage.Session> openSession() {
 		SessionCreationOptions options = options();
 		return stage( v -> connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options, connection ) ) )
 				.thenApply( s -> new StageSessionImpl(s, this) ) );
 	}
 
-	CompletionStage<Stage.Session> newSession(String tenantId) {
+	@Override
+	public CompletionStage<Stage.Session> openSession(String tenantId) {
 		return stage( v -> connection( tenantId )
 				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), connection ) ) )
 				.thenApply( s -> new StageSessionImpl(s, this) ) );
 	}
 
-	CompletionStage<Stage.StatelessSession> newStatelessSession() {
+	@Override
+	public CompletionStage<Stage.StatelessSession> openStatelessSession() {
 		SessionCreationOptions options = options();
 		return stage( v -> connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options, connection ) ) )
 				.thenApply( s -> new StageStatelessSessionImpl(s, this) ) );
 	}
 
-	CompletionStage<Stage.StatelessSession> newStatelessSession(String tenantId) {
+	@Override
+	public CompletionStage<Stage.StatelessSession> openStatelessSession(String tenantId) {
 		return stage( v -> connection( tenantId )
 				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) ) )
 				.thenApply( s -> new StageStatelessSessionImpl( s, this ) ) );
@@ -158,7 +129,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( newSession(), work, contextKeyForSession );
+		return withSession( openSession(), work, contextKeyForSession );
 	}
 
 	@Override
@@ -170,7 +141,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( newSession( tenantId ), work, key );
+		return withSession( openSession( tenantId ), work, key );
 	}
 
 	@Override
@@ -180,7 +151,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( newStatelessSession(), work, contextKeyForStatelessSession );
+		return withSession( openStatelessSession(), work, contextKeyForStatelessSession );
 	}
 
 	@Override
@@ -192,7 +163,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( newStatelessSession(tenantId), work, key );
+		return withSession( openStatelessSession( tenantId), work, key );
 	}
 
 	private <S extends Stage.Closeable, T> CompletionStage<T> withSession(

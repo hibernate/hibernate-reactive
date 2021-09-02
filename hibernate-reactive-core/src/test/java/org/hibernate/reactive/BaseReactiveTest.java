@@ -236,6 +236,14 @@ public abstract class BaseReactiveTest {
 	}
 
 	protected static CompletionStage<Void> closeSession(Object closable) {
+		if ( closable instanceof CompletionStage<?> ) {
+			CompletionStage closableStage = (CompletionStage) closable;
+			return closableStage.thenCompose( obj -> closeSession( obj ) );
+		}
+		if ( closable instanceof Uni<?> ) {
+			Uni closableUni = (Uni) closable;
+			return closableUni.subscribeAsCompletionStage().thenCompose( obj -> closeSession( obj ) );
+		}
 		if ( closable instanceof ReactiveConnection ) {
 			return ( (ReactiveConnection) closable ).close();
 		}
@@ -270,11 +278,12 @@ public abstract class BaseReactiveTest {
 	 */
 	protected CompletionStage<Stage.Session> openSession() {
 		return closeSession( session )
-				.thenApply( v -> {
-					Stage.Session newSession = getSessionFactory().openSession();
-					this.session = newSession;
-					return newSession;
-				} );
+				.thenCompose( v -> getSessionFactory().openSession()
+						.thenApply( newSession -> {
+							this.session = newSession;
+							return newSession;
+						} )
+				);
 	}
 
 	protected CompletionStage<ReactiveConnection> connection() {
@@ -288,11 +297,11 @@ public abstract class BaseReactiveTest {
 	 */
 	protected Uni<Mutiny.Session> openMutinySession() {
 		return Uni.createFrom().completionStage( closeSession( session ) )
-				.replaceWith( () -> {
-					Mutiny.Session newSession = getMutinySessionFactory().openSession();
-					this.session = newSession;
-					return newSession;
-				} );
+				.replaceWith(
+					getMutinySessionFactory().openSession().invoke( newSession -> {
+						this.session = newSession;
+					} )
+				);
 	}
 
 	protected static Mutiny.SessionFactory getMutinySessionFactory() {

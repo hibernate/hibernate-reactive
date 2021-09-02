@@ -7,6 +7,7 @@ package org.hibernate.reactive;
 
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
@@ -67,75 +68,83 @@ public class MultipleContextTest extends BaseReactiveTest {
 	// I don't know why but this test fails on CI because no exception is thrown
 	public void testPersistWithStage(TestContext testContext) {
 		Async async = testContext.async();
-		Stage.Session session = getSessionFactory().openSession();
-		currentSession = session;
+		CompletionStage<Stage.Session> sessionStage = getSessionFactory().openSession();
+		currentSession = sessionStage;
 		Context testVertxContext = Vertx.currentContext();
 
 		// Create a different new context
 		Context newContext = Vertx.vertx().getOrCreateContext();
 		Assertions.assertThat( testVertxContext ).isNotEqualTo( newContext );
 
-		// Run test in the new context
-		newContext.runOnContext( event -> test( async, testContext, session
-				.persist( new Competition( "Cheese Rolling" ) )
-				.handle( (v, e) -> assertExceptionThrown( e ).join() ) )
-		);
+		test( testContext, sessionStage.thenAccept( session ->
+			// Run test in the new context
+			newContext.runOnContext( event -> test( async, testContext, session
+					.persist( new Competition( "Cheese Rolling" ) )
+					.handle( (v, e) -> assertExceptionThrown( e ).join() ) )
+			)
+		) );
 	}
 
 	@Test
 	public void testFindWithStage(TestContext testContext) {
 		Async async = testContext.async();
-		Stage.Session session = getSessionFactory().openSession();
-		currentSession = session;
+		CompletionStage<Stage.Session> sessionStage = getSessionFactory().openSession();
+		currentSession = sessionStage;
 		Context testVertxContext = Vertx.currentContext();
 
 		// Create a different new context
 		Context newContext = Vertx.vertx().getOrCreateContext();
 		Assertions.assertThat( testVertxContext ).isNotEqualTo( newContext );
 
-		// Run test in the new context
-		newContext.runOnContext( event -> test( async, testContext, session
-				.find( Competition.class, "Chess boxing" )
-				.handle( (v, e) -> assertExceptionThrown( e ).join() ) )
-		);
+		test( testContext, sessionStage.thenAccept( session ->
+			 // Run test in the new context
+			 newContext.runOnContext( event -> test( async, testContext, session
+					 .find( Competition.class, "Chess boxing" )
+					 .handle( (v, e) -> assertExceptionThrown( e ).join() ) )
+			 )
+	  	) );
 	}
 
 	@Test
 	public void testOnPersistWithMutiny(TestContext testContext) {
-		Async async = testContext.async();
-		Mutiny.Session session = getMutinySessionFactory().openSession();
-		currentSession = session;
+		final Async async = testContext.async();
+		Uni<Mutiny.Session> sessionUni = getMutinySessionFactory().openSession();
+		currentSession = sessionUni;
 		Context testVertxContext = Vertx.currentContext();
 
 		// Create a different new context
 		Context newContext = Vertx.vertx().getOrCreateContext();
 		Assertions.assertThat( testVertxContext ).isNotEqualTo( newContext );
 
-		// Run test in the new context
-		newContext.runOnContext( event -> test( async, testContext, session
-				.persist( new Competition( "Cheese Rolling" ) )
-				.onItemOrFailure()
-				.transformToUni( (unused, e) -> Uni.createFrom().completionStage( assertExceptionThrown( e ) ) ) )
-		);
+		test( testContext, sessionUni.invoke( session ->
+			// Run test in the new context
+			newContext.runOnContext( event -> test( async, testContext, session
+					.persist( new Competition( "Cheese Rolling" ) )
+					.onItemOrFailure()
+					.transformToUni( (unused, e) -> Uni.createFrom().completionStage( assertExceptionThrown( e ) ) ) )
+			)
+		) );
 	}
 
 	@Test
 	public void testFindWithMutiny(TestContext testContext) {
-		Async async = testContext.async();
-		Mutiny.Session session = getMutinySessionFactory().openSession();
-		currentSession = session;
+		final Async async = testContext.async();
+		Uni<Mutiny.Session> sessionUni = getMutinySessionFactory().openSession();
+		currentSession = sessionUni;
 		Context testVertxContext = Vertx.currentContext();
 
 		// Create a different new context
 		Context newContext = Vertx.vertx().getOrCreateContext();
 		Assertions.assertThat( testVertxContext ).isNotEqualTo( newContext );
 
-		// Run test in the new context
-		newContext.runOnContext( event -> test( async, testContext, session
-				.find( Competition.class, "Chess boxing" )
-				.onItemOrFailure()
-				.transformToUni( (unused, e) -> Uni.createFrom().completionStage( assertExceptionThrown( e ) ) ) )
-		);
+		test( testContext, sessionUni.invoke( session -> {
+			// Run test in the new context
+			newContext.runOnContext( event -> test( async, testContext, session
+					.find( Competition.class, "Chess boxing" )
+					.onItemOrFailure()
+					.transformToUni( (unused, e) -> Uni.createFrom().completionStage( assertExceptionThrown( e ) ) ) )
+			);
+		} ) );
 	}
 
 	// Check that at least one exception has the expected message

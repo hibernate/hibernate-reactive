@@ -70,26 +70,27 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 	@Test
 	public void reactivePersistFindDelete(TestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
-		Stage.Session session = getSessionFactory().openSession( DEFAULT.name() );
 		test(
 				context,
-				session.persist( guineaPig )
-						.thenCompose( v -> session.flush() )
-						.thenAccept( v -> session.detach( guineaPig ) )
-						.thenAccept( v -> context.assertFalse( session.contains( guineaPig ) ) )
-						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
-						.thenAccept( actualPig -> {
-							assertThatPigsAreEqual( context, guineaPig, actualPig );
-							context.assertTrue( session.contains( actualPig ) );
-							context.assertFalse( session.contains( guineaPig ) );
-							context.assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
-							session.detach( actualPig );
-							context.assertFalse( session.contains( actualPig ) );
-						} )
-						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
-						.thenCompose( session::remove )
-						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> session.close() )
+				getSessionFactory().openSession( DEFAULT.name() )
+						.thenCompose( session -> session
+							.persist( guineaPig )
+							.thenCompose( v -> session.flush() )
+							.thenAccept( v -> session.detach( guineaPig ) )
+							.thenAccept( v -> context.assertFalse( session.contains( guineaPig ) ) )
+							.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
+							.thenAccept( actualPig -> {
+								assertThatPigsAreEqual( context, guineaPig, actualPig );
+								context.assertTrue( session.contains( actualPig ) );
+								context.assertFalse( session.contains( guineaPig ) );
+								context.assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
+								session.detach( actualPig );
+								context.assertFalse( session.contains( actualPig ) );
+							} )
+							.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
+							.thenCompose( session::remove )
+							.thenCompose( v -> session.flush() )
+							.thenCompose( v -> session.close() ) )
 		);
 	}
 
@@ -183,11 +184,11 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 
 	@Test
 	public void testOpenSessionWithTenant(TestContext context) {
-		Stage.Session t1Session = getSessionFactory().openSession( TENANT_1.name() );
-		test( context, selectCurrentDB( t1Session )
+		test( context, getSessionFactory().openSession( TENANT_1.name() )
+				.thenCompose( t1Session -> selectCurrentDB( t1Session )
 				.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
-				.thenCompose( v -> t1Session.close() )
-				.thenApply( unused -> getSessionFactory().openSession( TENANT_2.name() ) )
+				.thenCompose( v -> t1Session.close() ) )
+				.thenCompose( unused -> getSessionFactory().openSession( TENANT_2.name() ) )
 				.thenCompose( t2Session -> selectCurrentDB( t2Session )
 						.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) )
 						.thenCompose( v -> t2Session.close() ) )
@@ -196,11 +197,11 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 
 	@Test
 	public void testOpenStatelessSessionWithTenant(TestContext context) {
-		Stage.StatelessSession t1Session = getSessionFactory().openStatelessSession( TENANT_1.name() );
-		test( context, selectCurrentDB( t1Session )
+		test( context, getSessionFactory().openStatelessSession( TENANT_1.name() )
+				.thenCompose( t1Session -> selectCurrentDB( t1Session )
 				.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
-				.thenCompose( v -> t1Session.close() )
-				.thenApply( unused -> getSessionFactory().openStatelessSession( TENANT_2.name() ) )
+				.thenCompose( v -> t1Session.close() ) )
+				.thenCompose( unused -> getSessionFactory().openStatelessSession( TENANT_2.name() ) )
 				.thenCompose( t2Session -> selectCurrentDB( t2Session )
 						.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) )
 						.thenCompose( v -> t2Session.close() ) )
@@ -233,14 +234,15 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 
 	@Test
 	public void testOpenSessionWithTenantWithMutiny(TestContext context) {
-		Mutiny.Session t1Session = getMutinySessionFactory().openSession( TENANT_1.name() );
-		test( context, t1Session
-				.createNativeQuery( "select current_database()" )
-				.getSingleResult()
-				.invoke( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
-				.eventually( t1Session::close )
-				.replaceWith( () -> getMutinySessionFactory().openSession( TENANT_2.name() ) )
-				.call( t2Session -> t2Session
+		test( context, getMutinySessionFactory()
+				.openSession( TENANT_1.name() )
+				.chain( t1Session -> t1Session
+						.createNativeQuery( "select current_database()" )
+						.getSingleResult()
+						.invoke( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
+						.chain( t1Session::close ) )
+				.chain( () -> getMutinySessionFactory().openSession( TENANT_2.name() ) )
+				.chain( t2Session -> t2Session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
 						.invoke( result -> context.assertEquals( TENANT_2.getDbName(), result ) )
@@ -250,14 +252,15 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 
 	@Test
 	public void testOpenStatelessSessionWithTenantWithMutiny(TestContext context) {
-		Mutiny.StatelessSession t1Session = getMutinySessionFactory().openStatelessSession( TENANT_1.name() );
-		test( context, t1Session
-				.createNativeQuery( "select current_database()" )
-				.getSingleResult()
-				.invoke( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
-				.eventually( t1Session::close )
-				.replaceWith( () -> getMutinySessionFactory().openStatelessSession( TENANT_2.name() ) )
-				.call( t2Session -> t2Session
+		test( context, getMutinySessionFactory()
+				.openStatelessSession( TENANT_1.name() )
+				.chain( t1Session -> t1Session
+						.createNativeQuery( "select current_database()" )
+						.getSingleResult()
+						.invoke( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
+						.chain( t1Session::close ) )
+				.chain( () -> getMutinySessionFactory().openStatelessSession( TENANT_2.name() ) )
+				.chain( t2Session -> t2Session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
 						.invoke( result -> context.assertEquals( TENANT_2.getDbName(), result ) )

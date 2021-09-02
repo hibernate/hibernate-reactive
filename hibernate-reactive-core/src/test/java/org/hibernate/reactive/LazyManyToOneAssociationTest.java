@@ -5,14 +5,7 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.FetchProfile;
-import org.hibernate.cfg.Configuration;
-
-import org.junit.After;
-import org.junit.Test;
-
+import java.util.Objects;
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import javax.persistence.EntityGraph;
@@ -22,10 +15,17 @@ import javax.persistence.ManyToOne;
 import javax.persistence.NamedAttributeNode;
 import javax.persistence.NamedEntityGraph;
 import javax.persistence.Table;
-import java.util.Objects;
+
+import org.hibernate.annotations.FetchMode;
+import org.hibernate.annotations.FetchProfile;
+import org.hibernate.cfg.Configuration;
+
+import org.junit.After;
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.Hibernate.isInitialized;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 
@@ -185,18 +185,19 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void getFetchWithTwoAuthors(TestContext context) {
+	public void fetchWithTwoAuthorsStateless(TestContext context) {
 		final Book goodOmens = new Book( 72433, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 		final Author neilGaiman = new Author( 21421, "Neil Gaiman", goodOmens );
 		final Author terryPratchett = new Author( 2111, "Terry Pratchett", goodOmens );
 
 		test(
 				context,
-				completedFuture( getSessionFactory().openStatelessSession() )
+				getSessionFactory().openStatelessSession()
 						.thenCompose( s -> s.insert( goodOmens )
 								.thenCompose( v -> s.insert( terryPratchett ) )
-								.thenCompose( v -> s.insert( neilGaiman ) ) )
-						.thenCompose( v -> completedFuture( getSessionFactory().openStatelessSession() )
+								.thenCompose( v -> s.insert( neilGaiman ) )
+								.thenCompose( v -> s.close() ) )
+						.thenCompose( v -> getSessionFactory().openStatelessSession()
 								.thenCompose( s -> s.get( Author.class, neilGaiman.getId() )
 										.thenCompose( optionalAuthor -> {
 											context.assertNotNull( optionalAuthor );
@@ -209,6 +210,7 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 														context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
 													} );
 										} )
+										.thenCompose( vv -> s.close() )
 								) )
 		);
 	}
