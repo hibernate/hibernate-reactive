@@ -29,8 +29,7 @@ final class ProxyConnection implements ReactiveConnection {
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveConnectionPool sqlClientPool;
-	private ReactiveConnection connection;
-	private boolean connected;
+	private CompletionStage<ReactiveConnection> upcomingConnection;
 	private boolean closed;
 	private final String tenantId;
 
@@ -51,22 +50,14 @@ final class ProxyConnection implements ReactiveConnection {
 			ret.completeExceptionally( LOG.sessionIsClosed() );
 			return ret;
 		}
-		if ( !connected ) {
-			connected = true; // we're not allowed to fetch two connections!
-			CompletionStage<ReactiveConnection> connection =
+		if ( upcomingConnection == null ) {
+			upcomingConnection =
 					tenantId == null ? sqlClientPool.getConnection() : sqlClientPool.getConnection( tenantId );
-			return connection.thenApply( newConnection -> this.connection = newConnection )
+			return upcomingConnection
 					.thenCompose( operation );
 		}
 		else {
-			if ( connection == null ) {
-				// we're already in the process of fetching a connection,
-				// so this must be an illegal concurrent call
-				CompletableFuture<T> ret = new CompletableFuture<>();
-				ret.completeExceptionally( LOG.sessionIsConnectingToTheDatabase() );
-				return ret;
-			}
-			return operation.apply( connection );
+			return upcomingConnection.thenCompose( operation );
 		}
 	}
 
@@ -162,14 +153,13 @@ final class ProxyConnection implements ReactiveConnection {
 	@Override
 	public CompletionStage<Void> close() {
 		CompletionStage<Void> stage = CompletionStages.voidFuture();
-		if ( connection != null ) {
-			stage = stage.thenCompose( v -> connection.close() );
-
+		if ( upcomingConnection != null ) {
+			stage = upcomingConnection.thenCompose( connection -> {
+				closed = true;
+				return connection.close();
+			} );
 		}
-		return stage.thenAccept( v -> {
-			connection = null;
-			closed = true;
-		} );
+		return stage;
 	}
 
 }
