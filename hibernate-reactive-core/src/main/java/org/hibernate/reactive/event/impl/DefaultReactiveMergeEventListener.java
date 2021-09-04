@@ -39,17 +39,21 @@ import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingAction;
+import org.hibernate.reactive.engine.impl.EntityTypes;
 import org.hibernate.reactive.event.ReactiveMergeEventListener;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.TypeHelper;
 
+import static org.hibernate.event.internal.EntityState.DETACHED;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.type.ForeignKeyDirection.FROM_PARENT;
+import static org.hibernate.type.ForeignKeyDirection.TO_PARENT;
 
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultMergeEventListener}.
@@ -84,11 +88,11 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		final EntityCopyObserver entityCopyObserver = createEntityCopyObserver( event.getSession().getFactory() );
 		final MergeContext mergeContext = new MergeContext( event.getSession(), entityCopyObserver );
 		return reactiveOnMerge(event, mergeContext)
-				.thenAccept(v -> entityCopyObserver.topLevelMergeComplete(event.getSession()))
-				.whenComplete((v, e) -> {
+				.thenAccept( v -> entityCopyObserver.topLevelMergeComplete( event.getSession() ) )
+				.whenComplete( (v, e) -> {
 					entityCopyObserver.clear();
 					mergeContext.clear();
-				});
+				} );
 	}
 
 	private EntityCopyObserver createEntityCopyObserver(SessionFactoryImplementor sessionFactory) {
@@ -172,7 +176,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 							// have an incoming entity instance which has a corresponding
 							// entry in the current persistence context, but registered
 							// under a different entity instance
-							entityState = EntityState.DETACHED;
+							entityState = DETACHED;
 						}
 					}
 				}
@@ -211,7 +215,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		final EventSource source = event.getSession();
 		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
 
-		copyCache.put( entity, entity, true );  //before cascade!
+		copyCache.put( entity, entity, true );  //before cas‘cade!
 
 		return cascadeOnMerge( source, persister, entity, copyCache )
 				.thenCompose( v -> fetchAndCopyValues( persister, entity, entity, source, copyCache ) )
@@ -249,11 +253,11 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		// copy created before we actually copy
 		//cascadeOnMerge(event, persister, entity, copyCache, Cascades.CASCADE_BEFORE_MERGE);
 		return super.cascadeBeforeSave( session, persister, entity, copyCache )
-				.thenAccept( v -> copyValues( persister, entity, copy, session, copyCache, ForeignKeyDirection.FROM_PARENT ) )
+				.thenAccept( v -> copyValues( persister, entity, copy, session, copyCache, FROM_PARENT ) )
 				.thenCompose( v -> saveTransientEntity( copy, entityName, event.getRequestedId(), session, copyCache ) )
 				.thenCompose( v -> super.cascadeAfterSave( session, persister, entity, copyCache ) )
 				.thenAccept( v -> {
-					copyValues(persister, entity, copy, session, copyCache, ForeignKeyDirection.TO_PARENT);
+					copyValues( persister, entity, copy, session, copyCache, TO_PARENT );
 
 					event.setResult(copy);
 
@@ -261,7 +265,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 						final PersistentAttributeInterceptable interceptable = (PersistentAttributeInterceptable) copy;
 						final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
 						if (interceptor == null) {
-							persister.getBytecodeEnhancementMetadata().injectInterceptor(copy, id, session);
+							persister.getBytecodeEnhancementMetadata().injectInterceptor( copy, id, session );
 						}
 					}
 				});
@@ -323,7 +327,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 						// before cascade!
 						copyCache.put(entity, result, true);
 
-						Object target = unproxyManagedForDetachedMerging(entity, result, persister, source);
+						Object target = unproxyManagedForDetachedMerging( entity, result, persister, source );
 						if (target == entity) {
 							throw new AssertionFailure("entity was not detached");
 						}
@@ -334,7 +338,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 									entityName
 							);
 						}
-						else if ( isVersionChanged(entity, source, persister, target) ) {
+						else if ( isVersionChanged( entity, source, persister, target ) ) {
 							final StatisticsImplementor statistics = source.getFactory().getStatistics();
 							if (statistics.isStatisticsEnabled()) {
 								statistics.optimisticFailure(entityName);
@@ -476,30 +480,28 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			// Cascade-merge mappings do not determine what needs to be fetched.
 			// The value only needs to be fetched if the incoming value (mergeState[i])
 			// is initialized, but its corresponding managed state is not initialized.
-			// Initialization must be done before copyValues executes.
-			stage = CompletionStages.loop(0, mergeState.length,
-										  i -> Hibernate.isInitialized( mergeState[i] ) && !Hibernate.isInitialized( managedState[i] ),
-										  i -> session.reactiveFetch( managedState[i], true ) );
+			// Initialization must be done before copyValues() executes.
+			stage = loop(0, mergeState.length,
+					i -> Hibernate.isInitialized( mergeState[i] ) && !Hibernate.isInitialized( managedState[i] ),
+					i -> session.reactiveFetch( managedState[i], true ) );
 		}
-		return stage.thenAccept( v -> copyValues( persister, entity, target, source, mergeContext ) );
+		return stage.thenCompose( v -> copyValues( persister, entity, target, source, mergeContext ) );
 	}
 
-	protected void copyValues(
+	protected CompletionStage<Void> copyValues(
 			final EntityPersister persister,
 			final Object entity,
 			final Object target,
 			final SessionImplementor source,
 			final MergeContext copyCache) {
-		final Object[] copiedValues = TypeHelper.replace(
+		return EntityTypes.replace(
 				persister.getPropertyValues( entity ),
 				persister.getPropertyValues( target ),
 				persister.getPropertyTypes(),
 				source,
 				target,
 				copyCache
-		);
-
-		persister.setPropertyValues( target, copiedValues );
+		).thenAccept( copiedValues -> persister.setPropertyValues( target, copiedValues ) );
 	}
 
 	protected void copyValues(
@@ -512,7 +514,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 
 		final Object[] copiedValues;
 
-		if ( foreignKeyDirection == ForeignKeyDirection.TO_PARENT ) {
+		if ( foreignKeyDirection == TO_PARENT ) {
 			// this is the second pass through on a merge op, so here we limit the
 			// replacement to associations types (value types were already replaced
 			// during the first pass)
