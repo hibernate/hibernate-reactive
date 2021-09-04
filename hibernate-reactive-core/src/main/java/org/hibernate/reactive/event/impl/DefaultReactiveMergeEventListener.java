@@ -215,7 +215,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		final EventSource source = event.getSession();
 		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
 
-		copyCache.put( entity, entity, true );  //before cas‘cade!
+		copyCache.put( entity, entity, true );  //before cascade!
 
 		return cascadeOnMerge( source, persister, entity, copyCache )
 				.thenCompose( v -> fetchAndCopyValues( persister, entity, entity, source, copyCache ) )
