@@ -16,6 +16,7 @@ import javax.persistence.Table;
 
 import org.hibernate.cfg.Configuration;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -48,10 +49,21 @@ public class ManyToOneMergeTest extends BaseReactiveTest {
 		academicYearDetailsDBO.setRecordStatus( 'F' );
 		academicYearDetailsDBO.setModifiedUsersId( 66 );
 		test( context,
-			  getMutinySessionFactory().withTransaction( (session, transaction) -> session.persistAll(
-					  campusDBO, campusDBO2,
-					  academicYearDetailsDBO
-			  ) )
+				getMutinySessionFactory()
+						.withTransaction( (session, transaction) -> session.persistAll(
+								campusDBO, campusDBO2,
+								academicYearDetailsDBO
+						) )
+		);
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context,
+				getMutinySessionFactory()
+						.withTransaction( (session, transaction) ->
+								session.createQuery("delete from AcademicYearDetailsDBO").executeUpdate()
+										.chain( v -> session.createQuery("delete from CampusDBO").executeUpdate() ) )
 		);
 	}
 
@@ -64,14 +76,40 @@ public class ManyToOneMergeTest extends BaseReactiveTest {
 				.chain( dbo -> {
 					dbo.setRecordStatus( 'A' );
 					System.out.println( dbo.getCampusId().getId() );//for example here campus id is 11
-					CampusDBO campusDBO = new CampusDBO();
-					campusDBO.setId( 5 );
-					dbo.setCampusId( campusDBO ); // need to update as 5
+//					CampusDBO campusDBO = new CampusDBO();
+//					campusDBO.setId( 5 );
+//					dbo.setCampusId( campusDBO ); // need to update as 5
 					return getMutinySessionFactory()
 							.withTransaction( (session, transaction) -> {
 								dbo.setCampusId( session.getReference( CampusDBO.class, 42 ) );
 								return session.merge( dbo );
 							} );
+				} )
+		);
+	}
+
+	@Test
+	public void testTransient(TestContext context) {
+		CampusDBO campusDBO = new CampusDBO();
+		campusDBO.setId( 77 );
+		campusDBO.setCampusName( "Qualunquelandia" );
+
+		AcademicYearDetailsDBO dbo = new AcademicYearDetailsDBO();
+		dbo.setId( 88 );
+		dbo.setCampusId( campusDBO );
+		dbo.setCreatedUsersId( 12 );
+		dbo.setRecordStatus( 'F' );
+		dbo.setModifiedUsersId( 66 );
+
+		test( context, getMutinySessionFactory()
+				.withSession( session -> {
+					dbo.setRecordStatus( 'A' );
+					System.out.println( dbo.getCampusId().getId() );//for example here campus id is 11
+//					CampusDBO cdbo = new CampusDBO();
+//					cdbo.setId( 5 );
+//					dbo.setCampusId( cdbo ); // need to update as 5
+					dbo.setCampusId( session.getReference( CampusDBO.class, 42 ) );
+					return session.merge( dbo );
 				} )
 		);
 	}
