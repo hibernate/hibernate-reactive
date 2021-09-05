@@ -253,12 +253,11 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		// copy created before we actually copy
 		//cascadeOnMerge(event, persister, entity, copyCache, Cascades.CASCADE_BEFORE_MERGE);
 		return super.cascadeBeforeSave( session, persister, entity, copyCache )
-				.thenAccept( v -> copyValues( persister, entity, copy, session, copyCache, FROM_PARENT ) )
+				.thenCompose( v -> copyValues( persister, entity, copy, session, copyCache, FROM_PARENT ) )
 				.thenCompose( v -> saveTransientEntity( copy, entityName, event.getRequestedId(), session, copyCache ) )
 				.thenCompose( v -> super.cascadeAfterSave( session, persister, entity, copyCache ) )
+				.thenCompose( v -> copyValues( persister, entity, copy, session, copyCache, TO_PARENT ) )
 				.thenAccept( v -> {
-					copyValues( persister, entity, copy, session, copyCache, TO_PARENT );
-
 					event.setResult(copy);
 
 					if (copy instanceof PersistentAttributeInterceptable) {
@@ -280,12 +279,9 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		//this bit is only *really* absolutely necessary for handling
 		//requestedId, but is also good if we merge multiple object
 		//graphs, since it helps ensure uniqueness
-		if ( requestedId == null ) {
-			return reactiveSaveWithGeneratedId( entity, entityName, copyCache, source, false );
-		}
-		else {
-			return reactiveSaveWithRequestedId( entity, requestedId, entityName, copyCache, source );
-		}
+		return requestedId == null
+				? reactiveSaveWithGeneratedId( entity, entityName, copyCache, source, false )
+				: reactiveSaveWithRequestedId( entity, requestedId, entityName, copyCache, source );
 	}
 
 	protected CompletionStage<Void> entityIsDetached(MergeEvent event, MergeContext copyCache) {
@@ -414,10 +410,11 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		// for enhanced entities, copy over the dirty attributes
 		if ( entity instanceof SelfDirtinessTracker && target instanceof SelfDirtinessTracker ) {
 			// clear, because setting the embedded attributes dirties them
-			( (SelfDirtinessTracker) target ).$$_hibernate_clearDirtyAttributes();
-
-			for ( String fieldName : ( (SelfDirtinessTracker) entity ).$$_hibernate_getDirtyAttributes() ) {
-				( (SelfDirtinessTracker) target ).$$_hibernate_trackChange( fieldName );
+			SelfDirtinessTracker entityTracker = (SelfDirtinessTracker) entity;
+			SelfDirtinessTracker targetTracker = (SelfDirtinessTracker) target;
+			targetTracker.$$_hibernate_clearDirtyAttributes();
+			for ( String fieldName : entityTracker.$$_hibernate_getDirtyAttributes() ) {
+				targetTracker.$$_hibernate_trackChange( fieldName );
 			}
 		}
 	}
@@ -504,7 +501,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		).thenAccept( copiedValues -> persister.setPropertyValues( target, copiedValues ) );
 	}
 
-	protected void copyValues(
+	protected CompletionStage<Void> copyValues(
 			final EntityPersister persister,
 			final Object entity,
 			final Object target,
@@ -512,13 +509,11 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			final MergeContext copyCache,
 			final ForeignKeyDirection foreignKeyDirection) {
 
-		final Object[] copiedValues;
-
 		if ( foreignKeyDirection == TO_PARENT ) {
 			// this is the second pass through on a merge op, so here we limit the
 			// replacement to associations types (value types were already replaced
 			// during the first pass)
-			copiedValues = TypeHelper.replaceAssociations(
+			Object[] copiedValues = TypeHelper.replaceAssociations(
 					persister.getPropertyValues( entity ),
 					persister.getPropertyValues( target ),
 					persister.getPropertyTypes(),
@@ -527,9 +522,11 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 					copyCache,
 					foreignKeyDirection
 			);
+			persister.setPropertyValues( target, copiedValues );
+			return voidFuture();
 		}
 		else {
-			copiedValues = TypeHelper.replace(
+			return EntityTypes.replace(
 					persister.getPropertyValues( entity ),
 					persister.getPropertyValues( target ),
 					persister.getPropertyTypes(),
@@ -537,10 +534,8 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 					target,
 					copyCache,
 					foreignKeyDirection
-			);
+			).thenAccept( copiedValues -> persister.setPropertyValues( target, copiedValues ) );
 		}
-
-		persister.setPropertyValues( target, copiedValues );
 	}
 
 	/**
@@ -576,8 +571,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	 * Cascade behavior is redefined by this subclass, disable superclass behavior
 	 */
 	@Override
-	protected CompletionStage<Void> cascadeAfterSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything)
-			throws HibernateException {
+	protected CompletionStage<Void> cascadeAfterSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything) {
 		return voidFuture();
 	}
 
@@ -585,8 +579,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	 * Cascade behavior is redefined by this subclass, disable superclass behavior
 	 */
 	@Override
-	protected CompletionStage<Void> cascadeBeforeSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything)
-			throws HibernateException {
+	protected CompletionStage<Void> cascadeBeforeSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything) {
 		return voidFuture();
 	}
 

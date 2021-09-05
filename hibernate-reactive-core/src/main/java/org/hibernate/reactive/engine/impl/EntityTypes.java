@@ -17,6 +17,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.type.EntityType;
+import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.OneToOneType;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
@@ -168,7 +169,71 @@ public class EntityTypes {
                         owner,
                         copyCache
                 ).thenAccept( copy -> copied[i] = copy )
-        ).thenApply(v -> copied );
+        ).thenApply( v -> copied );
+    }
+
+    /**
+     * @see TypeHelper#replace(Object[], Object[], Type[], SharedSessionContractImplementor, Object, Map, ForeignKeyDirection)
+     */
+    public static CompletionStage<Object[]> replace(
+            final Object[] original,
+            final Object[] target,
+            final Type[] types,
+            final SessionImplementor session,
+            final Object owner,
+            final Map copyCache,
+            final ForeignKeyDirection foreignKeyDirection) {
+        Object[] copied = new Object[original.length];
+        for ( int i=0; i<types.length; i++ ) {
+            if ( original[i] == UNFETCHED_PROPERTY || original[i] == UNKNOWN ) {
+                copied[i] = target[i];
+            }
+            else {
+                if ( !(types[i] instanceof EntityType) ) {
+                    copied[i] = types[i].replace(
+                            original[i],
+                            target[i] == UNFETCHED_PROPERTY ? null : target[i],
+                            session,
+                            owner,
+                            copyCache,
+                            foreignKeyDirection
+                    );
+                }
+            }
+        }
+        return loop(0, types.length,
+                i -> original[i] != UNFETCHED_PROPERTY && original[i] != UNKNOWN
+                        && types[i] instanceof EntityType,
+                i -> replace(
+                        (EntityType) types[i],
+                        original[i],
+                        target[i] == UNFETCHED_PROPERTY ? null : target[i],
+                        session,
+                        owner,
+                        copyCache,
+                        foreignKeyDirection
+                ).thenAccept( copy -> copied[i] = copy )
+        ).thenApply( v -> copied );
+    }
+
+    /**
+     * @see org.hibernate.type.AbstractType#replace(Object, Object, SharedSessionContractImplementor, Object, Map, ForeignKeyDirection)
+     */
+    private static CompletionStage<Object> replace(
+            EntityType entityType,
+            Object original,
+            Object target,
+            SessionImplementor session,
+            Object owner,
+            Map copyCache,
+            ForeignKeyDirection foreignKeyDirection)
+            throws HibernateException {
+        boolean include = entityType.isAssociationType()
+                ? entityType.getForeignKeyDirection() == foreignKeyDirection
+                : ForeignKeyDirection.FROM_PARENT == foreignKeyDirection;
+        return include
+                ? replace( entityType, original, target, session, owner, copyCache )
+                : completedFuture(target);
     }
 
     /**
@@ -268,7 +333,7 @@ public class EntityTypes {
 //			// an entity type, in which case we need to resolve its identifier
 //			Type type = entityPersister.getPropertyType( entityType.uniqueKeyPropertyName );
 //			if ( type.isEntityType() ) {
-//				propertyValue = ( (EntityType) type ).getIdentifier( propertyValue, session );
+//				propertyValue = getIdentifier( (EntityType) type, propertyValue, session );
 //			}
 //
 //			return propertyValue;
