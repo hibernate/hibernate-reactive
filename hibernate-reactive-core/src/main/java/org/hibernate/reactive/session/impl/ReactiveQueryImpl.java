@@ -33,6 +33,7 @@ import java.util.concurrent.CompletionStage;
 import static java.util.Collections.emptyMap;
 import static org.hibernate.reactive.session.ReactiveQuery.convertQueryException;
 import static org.hibernate.reactive.session.ReactiveQuery.extractUniqueResult;
+import static org.hibernate.reactive.session.ReactiveQuery.extractUniqueResultOrNull;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
@@ -80,6 +81,14 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 			throw new UnsupportedOperationException("not a select query");
 		}
 		return getReactiveResultList().thenApply( list -> extractUniqueResult( list, this ) );
+	}
+
+	@Override
+	public CompletionStage<R> getReactiveSingleResultOrNull() {
+		if ( type!=null && type!=QueryType.SELECT ) {
+			throw new UnsupportedOperationException("not a select query");
+		}
+		return getReactiveResultList().thenApply( list -> extractUniqueResultOrNull( list, this ) );
 	}
 
 	@Override
