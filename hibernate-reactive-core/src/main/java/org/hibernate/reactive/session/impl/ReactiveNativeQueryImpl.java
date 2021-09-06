@@ -28,6 +28,7 @@ import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.session.ReactiveQuery.convertQueryException;
 import static org.hibernate.reactive.session.ReactiveQuery.extractUniqueResult;
+import static org.hibernate.reactive.session.ReactiveQuery.extractUniqueResultOrNull;
 
 /**
  *  Implementation of {@link ReactiveNativeQuery} by extension of
@@ -78,6 +79,11 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	@Override
 	public CompletionStage<R> getReactiveSingleResult() {
 		return getReactiveResultList().thenApply( list -> extractUniqueResult( list, this ) );
+	}
+
+	@Override
+	public CompletionStage<R> getReactiveSingleResultOrNull() {
+		return getReactiveResultList().thenApply( list -> extractUniqueResultOrNull( list, this ) );
 	}
 
 	@Override
