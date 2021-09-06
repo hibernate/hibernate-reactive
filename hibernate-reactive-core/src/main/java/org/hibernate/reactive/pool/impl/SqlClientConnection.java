@@ -42,6 +42,27 @@ public class SqlClientConnection implements ReactiveConnection {
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private static PropertyKind<Long> mySqlLastInsertedId;
+	private static Class<?> mySqlDriverClass;
+
+	 // Loads MySQLClient.LAST_INSERTED_ID via reflection
+	 // to avoid a hard dependency on the MySQL client
+	static {
+		try {
+			mySqlDriverClass = Class.forName( "io.vertx.mysqlclient.MySQLClient" );
+		}
+		catch (ClassNotFoundException cnfe) {
+			mySqlDriverClass = null;
+		}
+		if ( mySqlDriverClass != null ) {
+			try {
+				mySqlLastInsertedId = (PropertyKind<Long>)
+						mySqlDriverClass.getField("LAST_INSERTED_ID").get(null);
+			}
+			catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | SecurityException e) {
+				throw new RuntimeException("Unable to obtain MySQLClient.LAST_INSERTED_ID field", e);
+			}
+		}
+	}
 
 	private final SqlStatementLogger sqlStatementLogger;
 
@@ -173,7 +194,7 @@ public class SqlClientConnection implements ReactiveConnection {
 					RowIterator<Row> iterator = rows.iterator();
 					return iterator.hasNext() ?
 							iterator.next().getLong(0) :
-							rows.property( getMySqlLastInsertedId() );
+							getLastInsertedId(rows);
 				} );
 	}
 
@@ -239,21 +260,8 @@ public class SqlClientConnection implements ReactiveConnection {
 		return connection.close().toCompletionStage();
 	}
 
-	/**
-	 * Loads MySQLClient.LAST_INSERTED_ID via reflection to avoid a hard
-	 * dependency on the MySQL driver
-	 */
-	@SuppressWarnings("unchecked")
-	private static PropertyKind<Long> getMySqlLastInsertedId() {
-	    if (mySqlLastInsertedId == null) {
-            try {
-                Class<?> MySQLClient = Class.forName( "io.vertx.mysqlclient.MySQLClient" );
-                mySqlLastInsertedId = (PropertyKind<Long>) MySQLClient.getField( "LAST_INSERTED_ID" ).get( null );
-            } catch (ClassNotFoundException | NoSuchFieldException | IllegalArgumentException | IllegalAccessException | SecurityException e) {
-                throw new RuntimeException( "Unable to obtain MySQLClient.LAST_INSERTED_ID field", e );
-            }
-        }
-        return mySqlLastInsertedId;
+	private static Long getLastInsertedId(RowSet<Row> rows) {
+		return mySqlDriverClass == null ? null : rows.property(mySqlLastInsertedId);
     }
 
 	private static class RowSetResult implements Result {
