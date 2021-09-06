@@ -213,7 +213,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			return insertReactive(
 					fields,
 					notNull,
-					delegate().generateInsertString( true, notNull ),
+					//this differs from core, but it's core that should be changed:
+					delegate().generateIdentityInsertString( notNull ),
 					session
 			)
 			.thenCompose(
