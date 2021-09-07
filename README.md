@@ -67,6 +67,9 @@ We recommend you start there!
 The [Vert.x and Hibernate Reactive How-to][vertx-hr] explains how to use
 Hibernate Reactive in Vert.x.
 
+The [Hibernate Reactive with Panache Guide][reactive-panache] introduces
+Panache Reactive, an active record-style API based on Hibernate Reactive.
+
 [introduction]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc
 
 [build]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#including-hibernate-reactive-in-your-project-build
@@ -76,6 +79,7 @@ Hibernate Reactive in Vert.x.
 [performance]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#tuning-and-performance
 
 [vertx-hr]: https://how-to.vertx.io/hibernate-reactive-howto/
+[reactive-panache]: https://quarkus.io/guides/hibernate-reactive-panache
 
 ## Examples
 
@@ -89,11 +93,13 @@ different features of Hibernate Reactive:
 
 ## Quarkus quickstarts
 
-A list of [quickstarts][Quarkus quickstarts] for Quarkus is available on GitHub:
-  - [Hibernate Reactive with RESTEasy Reactive](https://github.com/quarkusio/quarkus-quickstarts/tree/main/hibernate-reactive-quickstart) quickstart
-  - [Hibernate Reactive with Vert.x Web Routes](https://github.com/quarkusio/quarkus-quickstarts/tree/main/hibernate-reactive-routes-quickstart) quickstart
+A collection of [quickstarts][Quarkus quickstarts] for Quarkus is available on GitHub:
 
-Or you can [generate a new Quarks project](https://code.quarkus.io/?g=org.acme&a=code-with-quarkus&v=1.0.0-SNAPSHOT&b=MAVEN&s=r1s&cn=code.quarkus.io)
+  - [Hibernate Reactive with RESTEasy Reactive](https://github.com/quarkusio/quarkus-quickstarts/tree/main/hibernate-reactive-quickstart)
+  - [Hibernate Reactive with Panache](https://github.com/quarkusio/quarkus-quickstarts/tree/main/hibernate-reactive-panache-quickstart)
+  - [Hibernate Reactive with Vert.x Web Routes](https://github.com/quarkusio/quarkus-quickstarts/tree/main/hibernate-reactive-routes-quickstart)
+
+Or you can [generate a new Quarkus project](https://code.quarkus.io/?g=org.acme&a=code-with-quarkus&v=1.0.0-SNAPSHOT&b=MAVEN&s=r1s&cn=code.quarkus.io)
 that uses the Hibernate Reactive extension and start coding right away.
 
 ## Examples using JBang

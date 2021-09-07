@@ -1273,8 +1273,8 @@ or `withTransaction()`.
 
 == Next steps
 
-:Quarkus: https://quarkus.io/
-:Panache: https://quarkus.io/guides/hibernate-orm-panache
+:Quarkus: https://quarkus.io/guides/getting-started-reactive
+:Panache: https://quarkus.io/guides/hibernate-reactive-panache
 
 Hibernate Reactive is now integrated in {Quarkus}[Quarkus] and {Panache}[Panache].
 Configuration works slightly differently in Quarkus, so be sure to check the Quarkus
