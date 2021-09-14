@@ -12,6 +12,7 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
 import org.hibernate.dialect.PostgreSQL10Dialect;
+import org.hibernate.dialect.SQLServer2012Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.resource.transaction.spi.DdlTransactionIsolator;
 import org.hibernate.service.ServiceRegistry;
@@ -66,6 +67,9 @@ public class ReactiveSchemaManagementTool extends HibernateSchemaManagementTool 
 			}
 			else if ( dialect instanceof MySQL8Dialect || dialect instanceof MariaDB103Dialect ) {
 				return new MySqlReactiveInformationExtractorImpl( extractionContext );
+			}
+			else if ( dialect instanceof SQLServer2012Dialect ) {
+				return new SqlServerReactiveInformationExtractorImpl( extractionContext );
 			}
 			else {
 				throw new NotYetImplementedException(
