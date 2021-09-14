@@ -131,6 +131,11 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 	}
 
 	@Override
+	protected String getResultSetTableTypesPhysicalTableConstant() {
+		return "BASE TABLE";
+	}
+
+	@Override
 	protected <T> T processCatalogsResultSet(ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
 		return getExtractionContext().getQueryResults(
 				String.format(
@@ -150,7 +155,7 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 		final StringBuilder sb = new StringBuilder()
 				.append( "select catalog_name as " ).append( getResultSetCatalogLabel() )
 				.append( " , schema_name as "  ).append( getResultSetSchemaLabel() )
-				.append( " from information_schema.schemata where true" );
+				.append( " from information_schema.schemata where 1 = 1" );
 		final List<Object> parameters = new ArrayList<>();
 		appendClauseAndParameterIfNotNullOrEmpty( " and catalog_name = ", catalog, sb, parameters );
 		appendClauseAndParameterIfNotNullOrEmpty( " and schema_name like ", schemaPattern, sb, parameters );
@@ -198,7 +203,7 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 				// Remarks are not available from information_schema.
 				// Hibernate ORM does not currently do anything with remarks,
 				// so just return null for now.
-				.append( " from information_schema.tables where true" );
+				.append( " from information_schema.tables where 1 = 1" );
 		List<Object> parameterValues = new ArrayList<>();
 		appendClauseAndParameterIfNotNullOrEmpty( " and " + catalogColumn + " = ", catalog, sb, parameterValues );
 		appendClauseAndParameterIfNotNullOrEmpty( " and " + schemaColumn + " like ", schemaPattern, sb, parameterValues );
@@ -255,7 +260,7 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 				// Hibernate's metadata for the column. ORM also considers
 				// the same column type name as a match, so the SQL code is
 				// optional. For now, just return null for the SQL type code.
-				.append( " from information_schema.columns where true" );
+				.append( " from information_schema.columns where 1 = 1" );
 
 		final List<Object> parameterValues = new ArrayList<>();
 		final String catalogColumn = getDatabaseCatalogColumnName(
