@@ -20,6 +20,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.GenerationTime;
 import org.hibernate.annotations.GeneratorType;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
@@ -31,6 +32,7 @@ import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.CurrentUser.LoggedUserGenerator;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
 
@@ -41,11 +43,13 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 
 	// It requires native queries so we only test this on Postgres
 	@Rule
-	public DatabaseSelectionRule selectionRule = runOnlyFor( POSTGRESQL, COCKROACHDB );
+	public DatabaseSelectionRule selectionRule = runOnlyFor( POSTGRESQL, COCKROACHDB, MYSQL );
 
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
+		configuration.setProperty(AvailableSettings.HBM2DDL_CREATE_SOURCE, "script-then-metadata");
+		configuration.setProperty(AvailableSettings.HBM2DDL_CREATE_SCRIPT_SOURCE, "/mysql-pipe.sql");
 		configuration.addAnnotatedClass( GeneratedWithIdentity.class );
 		configuration.addAnnotatedClass( GeneratedRegular.class );
 		return configuration;
@@ -148,7 +152,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		public String lastname;
 
 		@Generated(GenerationTime.ALWAYS)
-		@Column(columnDefinition = "varchar(600) GENERATED ALWAYS AS (firstname || ' ' || lastname) STORED")
+		@Column(columnDefinition = "varchar(600) generated always as (firstname || ' ' || lastname) stored")
 		public String fullName;
 
 		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.INSERT)
@@ -167,7 +171,8 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 	static class GeneratedRegular extends GeneratedRegularParent {
 		@Temporal(value = TemporalType.TIMESTAMP)
 		@Generated(GenerationTime.INSERT)
-		@ColumnDefault("CURRENT_TIMESTAMP")
+		@Column(columnDefinition = "timestamp")
+		@ColumnDefault("current_timestamp")
 		public Date createdAt;
 
 		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.ALWAYS)
@@ -196,7 +201,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		public String lastname;
 
 		@Generated(GenerationTime.ALWAYS)
-		@Column(columnDefinition = "varchar(600) GENERATED ALWAYS AS (firstname || ' ' || lastname) STORED")
+		@Column(columnDefinition = "varchar(600) generated always as (firstname || ' ' || lastname) stored")
 		public String fullName;
 
 		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.INSERT)
@@ -215,7 +220,8 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 	static class GeneratedWithIdentity extends GeneratedWithIdentityParent {
 		@Temporal(value = TemporalType.TIMESTAMP)
 		@Generated(GenerationTime.INSERT)
-		@ColumnDefault("CURRENT_TIMESTAMP")
+		@Column(columnDefinition = "timestamp")
+		@ColumnDefault("current_timestamp")
 		public Date createdAt;
 
 		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.ALWAYS)
