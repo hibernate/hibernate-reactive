@@ -22,9 +22,9 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LogCategory;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 
-import com.ibm.asyncutil.iteration.AsyncIterator;
-
-import static com.ibm.asyncutil.iteration.AsyncTrampoline.asyncWhile;
+import static org.hibernate.reactive.util.async.impl.AsyncTrampoline.asyncWhile;
+import static org.hibernate.reactive.util.async.impl.AsyncIterator.range;
+import static org.hibernate.reactive.util.async.impl.AsyncIterator.fromIterator;
 
 public class CompletionStages {
 
@@ -132,7 +132,7 @@ public class CompletionStages {
 	 * </pre>
 	 */
 	public static CompletionStage<Integer> total(int start, int end, IntFunction<CompletionStage<Integer>> consumer) {
-		return AsyncIterator.range( start, end )
+		return range( start, end )
 				.thenCompose( i -> consumer.apply( i.intValue() ) )
 				.fold( 0, Integer::sum );
 	}
@@ -147,7 +147,7 @@ public class CompletionStages {
 	 * </pre>
 	 */
 	public static <T> CompletionStage<Integer> total(Iterator<T> iterator, Function<T,CompletionStage<Integer>> consumer) {
-		return AsyncIterator.fromIterator( iterator )
+		return fromIterator( iterator )
 				.thenCompose( consumer )
 				.fold( 0, Integer::sum );
 	}
@@ -244,7 +244,7 @@ public class CompletionStages {
 	 * This class keeps track of the state of the loop, allowing us to
 	 * use an {@code AsyncTrampoline#asyncWhile} via method reference.
 	 * </p>
-	 * @see com.ibm.asyncutil.iteration.AsyncTrampoline
+	 * @see org.hibernate.reactive.util.async.impl.AsyncTrampoline
 	 * @param <T> the class of the elements in the iterator
 	 */
 	private static class IndexedIteratorLoop<T> {
