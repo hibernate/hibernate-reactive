@@ -24,8 +24,6 @@ dependencies {
     annotationProcessor 'org.jboss.logging:jboss-logging-annotations:2.2.1.Final'
     annotationProcessor 'org.jboss.logging:jboss-logging-processor:2.2.1.Final'
 
-    implementation 'com.ibm.async:asyncutil:0.1.0'
-
     //Specific implementation details of Hibernate Reactive:
     implementation "io.vertx:vertx-sql-client:${vertxVersion}"
 
