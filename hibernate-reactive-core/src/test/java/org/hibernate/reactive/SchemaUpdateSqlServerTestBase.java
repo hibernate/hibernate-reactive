@@ -10,6 +10,7 @@ import java.util.Objects;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
+import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.Index;
@@ -35,10 +36,10 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQL
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 
-public abstract class SchemaUpdateSqlServerNoSequenceTestBase extends BaseReactiveTest {
+public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 
-	public static class IndividuallySchemaUpdateSqlServerNoSequenceTestBase
-			extends SchemaUpdateSqlServerNoSequenceTestBase {
+	public static class IndividuallySchemaUpdateSqlServerTestBase
+			extends SchemaUpdateSqlServerTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -48,7 +49,7 @@ public abstract class SchemaUpdateSqlServerNoSequenceTestBase extends BaseReacti
 		}
 	}
 
-	public static class GroupedSchemaUpdateSqlServerNoSequenceTestBase extends SchemaUpdateSqlServerNoSequenceTestBase {
+	public static class GroupedSchemaUpdateSqlServerTestBase extends SchemaUpdateSqlServerTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -61,17 +62,11 @@ public abstract class SchemaUpdateSqlServerNoSequenceTestBase extends BaseReacti
 	protected Configuration constructConfiguration(String hbm2DdlOption) {
 		Configuration configuration = constructConfiguration();
 		configuration.setProperty( Settings.HBM2DDL_AUTO, hbm2DdlOption );
-		// TODO: Setting DEFAULT_CATALOG causes CREATE SEQUENCE statements to fail
-		//       in Hibernate Reactive. They don't fail with ORM though.
-		//       Error message is:
-		//       io.vertx.mssqlclient.MSSQLException: {
-		//       ... message=''CREATE SEQUENCE' does not allow specifying the database name as a prefix to the object name.' ...
-		//       }
-		//       Maybe JDBC strips off the the catalog (database) name?
 		// DEFAULT_CATALOG needs to be set to something other than an empty string;
 		// otherwise, NullPointerException is thrown.
 		configuration.setProperty( Settings.DEFAULT_CATALOG, "master" );
 		configuration.setProperty( Settings.DEFAULT_SCHEMA, "dbo" );
+		configuration.setProperty( Settings.SHOW_SQL, "true" );
 		return configuration;
 	}
 
@@ -131,23 +126,22 @@ public abstract class SchemaUpdateSqlServerNoSequenceTestBase extends BaseReacti
 	@Test
 	public void testUpdate(TestContext context) {
 		final String indexDefinitionQuery =
-				"SELECT s.name as index_name, c.name column_name FROM sys.stats s " +
-					"INNER JOIN sys.stats_columns sc " +
-						"ON s.object_id = sc.object_id AND s.stats_id = sc.stats_id " +
-					"INNER JOIN sys.columns c " +
-						"ON sc.object_id = c.object_id AND sc.column_id = c.column_id " +
-					"WHERE OBJECT_NAME(s.object_id) = ? and s.name = ?";
+				"select COL_NAME(ic.object_id, ic.column_id), ic.is_descending_key " +
+					"from sys.indexes i inner join sys.index_columns ic " +
+					"on ic.object_id = i.object_id and ic.index_id = i.index_id " +
+					"where OBJECT_NAME(i.object_id) = ? and i.name = ? and i.is_unique = ? " +
+					"order by ic.key_ordinal";
 
 		final String foreignKeyDefinitionQuery =
-				"select table_name, column_name " +
-						"from information_schema.key_column_usage " +
-						"where table_schema = 'dbo' and " +
-						"constraint_name = ? and " +
-						"table_name = ? " +
-						"order by ordinal_position";
+				"select COL_NAME( parent_object_id, parent_column_id ) as col_name, " +
+						"COL_NAME( referenced_object_id, referenced_column_id) as ref_col_name " +
+						"from sys.foreign_key_columns " +
+						"where OBJECT_NAME( constraint_object_id ) = ? " +
+						"and OBJECT_NAME( parent_object_id ) = ? " +
+						"and OBJECT_NAME( referenced_object_id ) = ? " +
+						"order by constraint_column_id";
 
 		final ASimpleNext aSimple = new ASimpleNext();
-		aSimple.id = 2;
 		aSimple.aValue = 9;
 		aSimple.aStringValue = "abc";
 		aSimple.data = "Data";
@@ -158,7 +152,6 @@ public abstract class SchemaUpdateSqlServerNoSequenceTestBase extends BaseReacti
 		aOther.anotherString = "another";
 
 		final AAnother aAnother = new AAnother();
-		aAnother.id = 3;
 		aAnother.description = "description";
 
 		aSimple.aOther = aOther;
@@ -191,46 +184,61 @@ public abstract class SchemaUpdateSqlServerNoSequenceTestBase extends BaseReacti
 										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "ASimple" )
 												.setParameter( 2, "i_asimple_avalue_astringValue" )
+												.setParameter( 3, 0 )
 												.getResultList()
 												.thenAccept( list -> {
 													context.assertEquals( 2, list.size() );
-													context.assertEquals( "i_asimple_avalue_astringValue", ((Object[])list.get(0))[0] );
-													context.assertEquals( "aValue", ((Object[])list.get(0))[1] );
-													context.assertEquals( "i_asimple_avalue_astringValue", ((Object[])list.get(1))[0] );
-													context.assertEquals( "aStringValue", ((Object[])list.get(1))[1] );
+													context.assertEquals( "aValue", ( (Object[]) list.get(0) )[0] );
+													context.assertEquals( false, ( (Object[]) list.get(0) )[1] );
+													context.assertEquals( "aStringValue", ( (Object[]) list.get(1) )[0] );
+													context.assertEquals( true, ( (Object[]) list.get(1) )[1] );
 												} )
 										)
 										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "ASimple" )
 												.setParameter( 2, "i_asimple_avalue_data" )
+												.setParameter( 3, 0 )
 												.getResultList()
 												.thenAccept( list -> {
 													context.assertEquals( 2, list.size() );
-													context.assertEquals( "i_asimple_avalue_data", ((Object[])list.get(0))[0] );
-													context.assertEquals( "aValue", ((Object[])list.get(0))[1] );
-													context.assertEquals( "i_asimple_avalue_data", ((Object[])list.get(1))[0] );
-													context.assertEquals( "data", ((Object[])list.get(1))[1] );
+													context.assertEquals( "aValue", ( (Object[]) list.get(0) )[0] );
+													context.assertEquals( true, ( (Object[]) list.get(0) )[1] );
+													context.assertEquals( "data", ( (Object[]) list.get(1) )[0] );
+													context.assertEquals( false, ( (Object[]) list.get(1) )[1] );
+												} )
+										)
+										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
+												.setParameter( 1, "ASimple" )
+												.setParameter( 2, "u_asimple_astringvalue" )
+												.setParameter( 3, 1 )
+												.getResultList()
+												.thenAccept( list -> {
+													context.assertEquals( 1, list.size() );
+													context.assertEquals( "aStringValue", ( (Object[]) list.get(0) )[0] );
+													context.assertEquals( false, ( (Object[]) list.get(0) )[1] );
 												} )
 										)
 										.thenCompose( v -> s.createNativeQuery( foreignKeyDefinitionQuery )
 												.setParameter( 1, "fk_asimple_aother" )
 												.setParameter( 2, "ASimple" )
+												.setParameter( 3, "AOther" )
 												.getResultList()
 												.thenAccept( results -> {
 													context.assertEquals( 2, results.size() );
-													context.assertEquals( "ASimple", ( (Object[]) results.get( 0 ) )[0] );
+													context.assertEquals( "id1", ( (Object[]) results.get( 0 ) )[0] );
 													context.assertEquals( "id1", ( (Object[]) results.get( 0 ) )[1] );
-													context.assertEquals( "ASimple", ( (Object[]) results.get( 1 ) )[0] );
+													context.assertEquals( "id2", ( (Object[]) results.get( 1 ) )[0] );
 													context.assertEquals( "id2", ( (Object[]) results.get( 1 ) )[1] );
 												} )
 										)
 										.thenCompose( v -> s.createNativeQuery( foreignKeyDefinitionQuery )
 												.setParameter( 1, "fk_asimple_aanother" )
 												.setParameter( 2, "ASimple" )
+												.setParameter( 3, "AAnother" )
 												.getSingleResult()
 												.thenAccept( result -> {
-													context.assertEquals( "ASimple", ( (Object[]) result )[0] );
-													context.assertEquals( "aAnother_id", ( (Object[]) result )[1] );
+													context.assertEquals( "aAnother_id", ( (Object[]) result )[0] );
+													context.assertEquals( "id", ( (Object[]) result )[1] );
 												} )
 										)
 								) )
@@ -245,6 +253,7 @@ public abstract class SchemaUpdateSqlServerNoSequenceTestBase extends BaseReacti
 	))
 	public static class ASimpleFirst {
 		@Id
+		@GeneratedValue
 		private Integer id;
 		private Integer aValue;
 		private String aStringValue;
@@ -265,6 +274,7 @@ public abstract class SchemaUpdateSqlServerNoSequenceTestBase extends BaseReacti
 	)
 	public static class ASimpleNext {
 		@Id
+		@GeneratedValue
 		private Integer id;
 
 		private Integer aValue;
@@ -322,6 +332,7 @@ public abstract class SchemaUpdateSqlServerNoSequenceTestBase extends BaseReacti
 	@Entity(name = "AAnother")
 	public static class AAnother {
 		@Id
+		@GeneratedValue
 		private Integer id;
 
 		private String description;
