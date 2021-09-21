@@ -33,10 +33,6 @@ public class SqlServerReactiveInformationExtractorImpl extends AbstractReactiveI
 	// needed.
 	// (See https://docs.microsoft.com/en-us/sql/relational-databases/system-information-schema-views/schemata-transact-sql?view=sql-server-ver15&viewFallbackFrom=sql-server-ver19)
 
-	protected String getDatabaseSchemaColumnName(String catalogColumnName, String schemaColumnName ) {
-		return schemaColumnName;
-	}
-
 	@Override
 	protected <T> T processTableResultSet(
 			String catalog,
