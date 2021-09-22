@@ -7,6 +7,7 @@ package org.hibernate.reactive;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
@@ -80,8 +81,24 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 		createHbm2ddlConf.addAnnotatedClass( ASimpleFirst.class );
 		createHbm2ddlConf.addAnnotatedClass( AOther.class );
 
-		test( context, setupSessionFactory( createHbm2ddlConf )
-				.thenCompose( v -> factoryManager.stop() ) );
+		test( context, dropSequenceIfExists( createHbm2ddlConf )
+				.thenCompose( ignore -> setupSessionFactory( createHbm2ddlConf )
+				.thenCompose( v -> factoryManager.stop() ) ) );
+	}
+
+	// See HHH-14835: Vert.x throws an exception when the catalog is specified.
+	// Because it happens during schema creation, the error is ignored and the build won't fail
+	// if one of the previous tests has already created the sequence.
+	// This method make sure that the sequence is deleted if it exists, so that these tests
+	// fail consistently when the wrong ORM version is used.
+	private CompletionStage<Void> dropSequenceIfExists(Configuration createHbm2ddlConf) {
+		return setupSessionFactory( createHbm2ddlConf )
+				.thenCompose( v -> getSessionFactory()
+						.withTransaction( (session, transaction) -> session
+								.createNativeQuery( "drop sequence if exists dbo.hibernate_sequence" )
+								.executeUpdate() ) )
+				.handle( (res, err) -> null )
+				.thenCompose( v -> factoryManager.stop() );
 	}
 
 	@After
