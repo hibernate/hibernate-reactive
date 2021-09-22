@@ -99,11 +99,11 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 
 	@Test
 	public void testValidationSucceed(TestContext context) {
-		Configuration createHbm2ddlConf = constructConfiguration( "validate" );
-		createHbm2ddlConf.addAnnotatedClass( ASimpleFirst.class );
-		createHbm2ddlConf.addAnnotatedClass( AOther.class );
+		Configuration configuration = constructConfiguration( "validate" );
+		configuration.addAnnotatedClass( ASimpleFirst.class );
+		configuration.addAnnotatedClass( AOther.class );
 
-		test( context, setupSessionFactory( createHbm2ddlConf ) );
+		test( context, setupSessionFactory( configuration ) );
 	}
 
 	//TODO: I'm just checking that the validation fails because the table is missing, but we need more tests to check that
@@ -111,10 +111,10 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	//      actually checks).
 	@Test
 	public void testValidationFails(TestContext context) {
-		Configuration createHbm2ddlConf = constructConfiguration( "validate" );
-		createHbm2ddlConf.addAnnotatedClass( AAnother.class );
+		Configuration configuration = constructConfiguration( "validate" );
+		configuration.addAnnotatedClass( AAnother.class );
 
-		test( context, setupSessionFactory( createHbm2ddlConf )
+		test( context, setupSessionFactory( configuration )
 				.handle( (unused, throwable) -> {
 					context.assertNotNull( throwable );
 					context.assertEquals( throwable.getClass(), SchemaManagementException.class );
