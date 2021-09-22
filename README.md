@@ -28,7 +28,7 @@ Learn more at <http://hibernate.org/reactive>.
 
 Hibernate Reactive has been tested with:
 
-- Java 8
+- Java 11, 16 and 17
 - PostgreSQL 13
 - MySQL 8
 - MariaDB 10
