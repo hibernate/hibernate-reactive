@@ -65,7 +65,7 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 		configuration.setProperty( Settings.HBM2DDL_AUTO, hbm2DdlOption );
 		// DEFAULT_CATALOG needs to be set to something other than an empty string;
 		// otherwise, NullPointerException is thrown.
-		configuration.setProperty( Settings.DEFAULT_CATALOG, "master" );
+//		configuration.setProperty( Settings.DEFAULT_CATALOG, "master" );
 		configuration.setProperty( Settings.DEFAULT_SCHEMA, "dbo" );
 		configuration.setProperty( Settings.SHOW_SQL, "true" );
 		return configuration;
@@ -135,7 +135,7 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 				.handle( (unused, throwable) -> {
 					context.assertNotNull( throwable );
 					context.assertEquals( throwable.getClass(), SchemaManagementException.class );
-					context.assertEquals( throwable.getMessage(), "Schema-validation: missing table [master.dbo.AAnother]" );
+					context.assertEquals( throwable.getMessage(), "Schema-validation: missing table [dbo.AAnother]" );
 					return null;
 				} ) );
 	}
