@@ -47,7 +47,6 @@ import org.hibernate.param.ParameterSpecification;
 import org.hibernate.persister.collection.AbstractCollectionPersister;
 import org.hibernate.persister.entity.Queryable;
 import org.hibernate.reactive.bulk.StatementsWithParameters;
-import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
@@ -130,11 +129,11 @@ public class ReactiveBulkIdStrategy
 							false
 					);
 			if ( dropIdTables ) {
-				ReactiveConnection connection = serviceRegistry.getService( ReactiveConnectionPool.class )
-						.getProxyConnection();
-				loop( dropGlobalTemporaryTables, connection::execute )
-						.whenComplete( (v, e) -> connection.close() )
-						.handle( CompletionStages::ignoreErrors )
+				serviceRegistry.getService( ReactiveConnectionPool.class ).getConnection()
+						.thenCompose( connection ->
+							  loop( dropGlobalTemporaryTables, connection::execute )
+									  .whenComplete( (v, e) -> connection.close() )
+									  .handle( CompletionStages::ignoreErrors ) )
 						.toCompletableFuture().join();
 			}
 		}

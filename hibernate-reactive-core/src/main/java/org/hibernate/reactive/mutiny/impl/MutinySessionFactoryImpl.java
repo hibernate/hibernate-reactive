@@ -127,13 +127,6 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 				: connectionPool.getConnection( tenantId );
 	}
 
-	private ReactiveConnection proxyConnection(String tenantId) {
-		assertUseOnEventLoop();
-		return tenantId==null
-				? connectionPool.getProxyConnection()
-				: connectionPool.getProxyConnection( tenantId );
-	}
-
 	@Override
 	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );

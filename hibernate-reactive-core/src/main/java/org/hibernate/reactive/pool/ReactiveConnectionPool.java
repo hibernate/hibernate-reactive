@@ -48,21 +48,6 @@ public interface ReactiveConnectionPool extends Service {
 	CompletionStage<ReactiveConnection> getConnection(String tenantId);
 
 	/**
-	 * Obtain a lazily-initializing reactive connection. The
-	 * actual connection might be made when the returned
-	 * instance if {@link ReactiveConnection} is first used.
-	 */
-	ReactiveConnection getProxyConnection();
-
-	/**
-	 * Obtain a lazily-initializing reactive connection for the
-	 * given tenant id. The actual connection might be made when
-	 * the returned instance if {@link ReactiveConnection} is
-	 * first used.
-	 */
-	ReactiveConnection getProxyConnection(String tenantId);
-
-	/**
 	 * The shutdown of the pool is actually asynchronous but the
 	 * core service registry won't return the {@link CompletionStage}.
 	 * If you need to wait for the underlying pool to be closed,
