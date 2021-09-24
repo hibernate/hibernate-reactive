@@ -7,6 +7,7 @@ package org.hibernate.reactive;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
@@ -38,7 +39,12 @@ import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 
 public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 
-	public static class IndividuallySchemaUpdateSqlServerTestBase
+	private static final String DEFAULT_CATALOG_NAME = "master";
+
+	/**
+	 * Test INDIVIDUALLY option without setting the default catalog name
+	 */
+	public static class IndividuallySchemaUpdateSqlServerTest
 			extends SchemaUpdateSqlServerTestBase {
 
 		@Override
@@ -49,13 +55,53 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 		}
 	}
 
-	public static class GroupedSchemaUpdateSqlServerTestBase extends SchemaUpdateSqlServerTestBase {
+	/**
+	 * Test INDIVIDUALLY option when we set the catalog name to the default name
+	 */
+	public static class IndividuallySchemaUpdateWithCatalogTest
+			extends SchemaUpdateSqlServerTestBase {
+
+		@Override
+		protected Configuration constructConfiguration(String hbm2DdlOption) {
+			final Configuration configuration = super.constructConfiguration( hbm2DdlOption );
+			configuration.setProperty( Settings.DEFAULT_CATALOG, DEFAULT_CATALOG_NAME );
+			return configuration;
+		}
+
+		@Override
+		public String addCatalog(String name) {
+			return DEFAULT_CATALOG_NAME + "." + name;
+		}
+	}
+
+	/**
+	 * Test GROUPED option without setting the default catalog name
+	 */
+	public static class GroupedSchemaUpdateSqlServerTest extends SchemaUpdateSqlServerTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
 			final Configuration configuration = super.constructConfiguration( hbm2DdlOption );
 			configuration.setProperty( Settings.HBM2DDL_JDBC_METADATA_EXTRACTOR_STRATEGY, GROUPED.toString() );
 			return configuration;
+		}
+	}
+
+	/**
+	 * Test GROUPED option when we set the catalog name to default name
+	 */
+	public static class GroupedSchemaUpdateWithCatalogNameTest extends SchemaUpdateSqlServerTestBase {
+
+		@Override
+		protected Configuration constructConfiguration(String hbm2DdlOption) {
+			final Configuration configuration = super.constructConfiguration( hbm2DdlOption );
+			configuration.setProperty( Settings.DEFAULT_CATALOG, DEFAULT_CATALOG_NAME );
+			return configuration;
+		}
+
+		@Override
+		public String addCatalog(String name) {
+			return DEFAULT_CATALOG_NAME + "." + name;
 		}
 	}
 
@@ -69,6 +115,10 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	@Rule
 	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( SQLSERVER );
 
+	public String addCatalog(String name) {
+		return name;
+	}
+
 	@Before
 	@Override
 	public void before(TestContext context) {
@@ -76,8 +126,25 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 		createHbm2ddlConf.addAnnotatedClass( ASimpleFirst.class );
 		createHbm2ddlConf.addAnnotatedClass( AOther.class );
 
-		test( context, setupSessionFactory( createHbm2ddlConf )
-				.thenCompose( v -> factoryManager.stop() ) );
+		test( context, dropSequenceIfExists( createHbm2ddlConf )
+				.thenCompose( ignore -> setupSessionFactory( createHbm2ddlConf )
+				.thenCompose( v -> factoryManager.stop() ) ) );
+	}
+
+	// See HHH-14835: Vert.x throws an exception when the catalog is specified.
+	// Because it happens during schema creation, the error is ignored and the build won't fail
+	// if one of the previous tests has already created the sequence.
+	// This method makes sure that the sequence is deleted if it exists, so that these tests
+	// fail consistently when the wrong ORM version is used.
+	private CompletionStage<Void> dropSequenceIfExists(Configuration createHbm2ddlConf) {
+		return setupSessionFactory( createHbm2ddlConf )
+				.thenCompose( v -> getSessionFactory()
+						.withTransaction( (session, transaction) -> session
+								// No need to add the catalog name because MSSQL doesn't support it
+								.createNativeQuery( "drop sequence if exists dbo.hibernate_sequence" )
+								.executeUpdate() ) )
+				.handle( (res, err) -> null )
+				.thenCompose( v -> factoryManager.stop() );
 	}
 
 	@After
@@ -102,19 +169,19 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 		test( context, setupSessionFactory( configuration ) );
 	}
 
-	//TODO: I'm just checking that the validation fails because the table is missing, but we need more tests to check that
-	//      it fails for other scenarios: missing column, wrong type (?) and so on. (I don't know exactly what cases `validate`
-	//      actually checks).
+	//TODO: We need more tests to check that it fails for other scenarios:
+	//      missing column, wrong type (?) and so on. (I don't know exactly what cases `validate` actually checks).
 	@Test
 	public void testValidationFails(TestContext context) {
 		Configuration configuration = constructConfiguration( "validate" );
 		configuration.addAnnotatedClass( AAnother.class );
 
+		final String errorMessage = "Schema-validation: missing table [" + addCatalog( "dbo.AAnother" ) + "]";
 		test( context, setupSessionFactory( configuration )
 				.handle( (unused, throwable) -> {
 					context.assertNotNull( throwable );
 					context.assertEquals( throwable.getClass(), SchemaManagementException.class );
-					context.assertEquals( throwable.getMessage(), "Schema-validation: missing table [dbo.AAnother]" );
+					context.assertEquals( throwable.getMessage(), errorMessage );
 					return null;
 				} ) );
 	}
