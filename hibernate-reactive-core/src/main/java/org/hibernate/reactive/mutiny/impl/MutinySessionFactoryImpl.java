@@ -15,6 +15,8 @@ import javax.persistence.metamodel.Metamodel;
 
 import org.hibernate.Cache;
 import org.hibernate.HibernateException;
+import org.hibernate.SessionFactory;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.context.Context;
@@ -258,5 +260,22 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	@Override
 	public boolean isOpen() {
 		return delegate.isOpen();
+	}
+
+	@Override
+	public <T> T unwrap(Class<T> type) {
+		if ( type.isAssignableFrom( SessionFactory.class ) ) {
+			return type.cast( delegate );
+		}
+
+		if ( type.isAssignableFrom( SessionFactoryImplementor.class ) ) {
+			return type.cast( delegate );
+		}
+
+		if ( type.isAssignableFrom( SessionFactoryImpl.class ) ) {
+			return type.cast( delegate );
+		}
+
+		throw new HibernateException( "Hibernate cannot unwrap as type '" + type.getName() + "'" );
 	}
 }
