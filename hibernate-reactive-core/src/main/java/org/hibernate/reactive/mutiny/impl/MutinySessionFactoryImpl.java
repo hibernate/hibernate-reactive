@@ -15,10 +15,9 @@ import javax.persistence.metamodel.Metamodel;
 
 import org.hibernate.Cache;
 import org.hibernate.HibernateException;
-import org.hibernate.SessionFactory;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.context.impl.BaseKey;
 import org.hibernate.reactive.context.impl.MultitenantKey;
@@ -28,6 +27,7 @@ import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
+import org.hibernate.service.ServiceRegistry;
 
 import io.smallrye.mutiny.Uni;
 
@@ -38,7 +38,7 @@ import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnE
  * <p>
  * Obtained by calling {@link org.hibernate.SessionFactory#unwrap(Class)}.
  */
-public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
+public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implementor {
 
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
@@ -64,6 +64,16 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
 		return Uni.createFrom().completionStage(stageSupplier).runSubscriptionOn( context );
+	}
+
+	@Override
+	public ServiceRegistry getServiceRegistry() {
+		return delegate.getServiceRegistry();
+	}
+
+	@Override
+	public Context getContext() {
+		return context;
 	}
 
 	@Override
@@ -260,22 +270,5 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory {
 	@Override
 	public boolean isOpen() {
 		return delegate.isOpen();
-	}
-
-	@Override
-	public <T> T unwrap(Class<T> type) {
-		if ( type.isAssignableFrom( SessionFactory.class ) ) {
-			return type.cast( delegate );
-		}
-
-		if ( type.isAssignableFrom( SessionFactoryImplementor.class ) ) {
-			return type.cast( delegate );
-		}
-
-		if ( type.isAssignableFrom( SessionFactoryImpl.class ) ) {
-			return type.cast( delegate );
-		}
-
-		throw new HibernateException( "Hibernate cannot unwrap as type '" + type.getName() + "'" );
 	}
 }

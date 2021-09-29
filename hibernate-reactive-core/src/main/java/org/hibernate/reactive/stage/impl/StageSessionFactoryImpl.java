@@ -14,11 +14,9 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.metamodel.Metamodel;
 
 import org.hibernate.Cache;
-import org.hibernate.HibernateException;
-import org.hibernate.SessionFactory;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.context.impl.BaseKey;
 import org.hibernate.reactive.context.impl.MultitenantKey;
@@ -28,6 +26,7 @@ import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.service.ServiceRegistry;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
@@ -38,7 +37,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * <p>
  * Obtained by calling {@link org.hibernate.SessionFactory#unwrap(Class)}.
  */
-public class StageSessionFactoryImpl implements Stage.SessionFactory {
+public class StageSessionFactoryImpl implements Stage.SessionFactory, Implementor {
 
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
@@ -56,6 +55,16 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 
 	<T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stageSupplier) {
 		return voidFuture().thenComposeAsync( stageSupplier, context );
+	}
+
+	@Override
+	public ServiceRegistry getServiceRegistry() {
+		return delegate.getServiceRegistry();
+	}
+
+	@Override
+	public Context getContext() {
+		return context;
 	}
 
 	@Override
@@ -265,23 +274,6 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory {
 	@Override
 	public boolean isOpen() {
 		return delegate.isOpen();
-	}
-
-	@Override
-	public <T> T unwrap(Class<T> type) {
-		if ( type.isAssignableFrom( SessionFactory.class ) ) {
-			return type.cast( delegate );
-		}
-
-		if ( type.isAssignableFrom( SessionFactoryImplementor.class ) ) {
-			return type.cast( delegate );
-		}
-
-		if ( type.isAssignableFrom( SessionFactoryImpl.class ) ) {
-			return type.cast( delegate );
-		}
-
-		throw new HibernateException( "Hibernate cannot unwrap as type '" + type.getName() + "'" );
 	}
 
 }
