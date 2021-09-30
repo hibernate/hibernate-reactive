@@ -5,20 +5,25 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.stage.Stage;
-
-import org.junit.After;
-import org.junit.Test;
-
-import javax.persistence.*;
+import java.util.Objects;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.NamedQuery;
+import javax.persistence.Table;
+import javax.persistence.Version;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Root;
-import java.util.Objects;
+
+import org.hibernate.cfg.Configuration;
+
+import org.junit.After;
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 
 public class ReactiveStatelessSessionTest extends BaseReactiveTest {
@@ -98,10 +103,10 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	@Test
 	public void testStatelessSessionWithNative(TestContext context) {
 		GuineaPig pig = new GuineaPig("Aloi");
-		Stage.StatelessSession ss = getSessionFactory().openStatelessSession();
 		test(
 				context,
-				ss.insert(pig)
+				getSessionFactory().newStatelessSession().thenCompose( ss ->
+					ss.insert(pig)
 						.thenCompose( v -> ss.createNativeQuery("select * from Piggy where name=:n", GuineaPig.class)
 								.setParameter("n", pig.name)
 								.getResultList() )
@@ -125,7 +130,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> ss.delete(pig) )
 						.thenCompose( v -> ss.createNativeQuery("select id from Piggy").getResultList() )
 						.thenAccept( list -> context.assertTrue( list.isEmpty() ) )
-						.thenCompose( v -> ss.close() )
+						.thenCompose( v -> ss.close() ) )
 		);
 	}
 
@@ -146,10 +151,10 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 		CriteriaDelete<GuineaPig> delete = cb.createCriteriaDelete(GuineaPig.class);
 		delete.from(GuineaPig.class);
 
-		Stage.StatelessSession ss = getSessionFactory().openStatelessSession();
 		test(
 				context,
-				ss.insert(pig)
+				getSessionFactory().newStatelessSession().thenCompose( ss ->
+					ss.insert(pig)
 						.thenCompose( v -> ss.createQuery(query)
 								.setParameter("n", pig.name)
 								.getResultList() )
@@ -162,7 +167,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 						.thenAccept( rows -> context.assertEquals(1, rows) )
 						.thenCompose( v -> ss.createQuery(delete).executeUpdate() )
 						.thenAccept( rows -> context.assertEquals(1, rows) )
-						.thenCompose( v -> ss.close() )
+						.thenCompose( v -> ss.close() ) )
 		);
 	}
 

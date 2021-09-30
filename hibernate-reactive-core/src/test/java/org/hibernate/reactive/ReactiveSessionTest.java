@@ -95,10 +95,10 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	@Test
 	public void reactivePersistFindDelete(TestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
-		Stage.Session session = getSessionFactory().openSession();
 		test(
 				context,
-				session.persist( guineaPig )
+				openSession().thenCompose( session -> session
+						.persist( guineaPig )
 						.thenCompose( v -> session.flush() )
 						.thenAccept( v -> session.detach(guineaPig) )
 						.thenAccept( v -> context.assertFalse( session.contains(guineaPig) ) )
@@ -113,7 +113,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						} )
 						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
 						.thenCompose( session::remove )
-						.thenCompose( v -> session.flush() )
+						.thenCompose( v -> session.flush() ) )
 		);
 	}
 
@@ -725,10 +725,10 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	public void testSessionWithNativeAffectedEntities(TestContext context) {
 		GuineaPig pig = new GuineaPig(3,"Rorshach");
 		AffectedEntities affectsPigs = new AffectedEntities(GuineaPig.class);
-		Stage.Session s = getSessionFactory().openSession();
 		test(
 				context,
-				s.persist(pig)
+				openSession().thenCompose( s -> s
+						.persist(pig)
 						.thenCompose( v -> s.createNativeQuery("select * from pig where name=:n", GuineaPig.class, affectsPigs)
 								.setParameter("n", pig.name)
 								.getResultList() )
@@ -750,7 +750,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> s.createNativeQuery("delete from pig where name='Z'", affectsPigs).executeUpdate() )
 						.thenAccept( rows -> context.assertEquals(1, rows) )
 						.thenCompose( v -> s.createNativeQuery("select id from pig").getResultList() )
-						.thenAccept( list -> context.assertTrue( list.isEmpty() ) )
+						.thenAccept( list -> context.assertTrue( list.isEmpty() ) ) )
 		);
 	}
 
