@@ -1682,6 +1682,14 @@ public interface Stage {
 		 * Perform work using a {@link Session reactive session} within an
 		 * associated {@link Transaction transaction}.
 		 * <p>
+		 * <il>
+		 * <li>If there is already a stateless session associated with the
+		 * current reactive stream, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no stateless session associated with the
+		 * current stream, a new stateless session will be created.
+		 * </il>
+		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
 		 * automatically, and the transaction committed automatically.
 		 *
@@ -1696,6 +1704,14 @@ public interface Stage {
 		/**
 		 * Perform work using a {@link Session reactive session} for a
 		 * specified tenant within an associated {@link Transaction transaction}.
+		 * <p>
+		 * <il>
+		 * <li>If there is already a session associated with the
+		 * current reactive stream and the given tenant, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no stateless session associated with the
+		 * current stream and the given tenant, a new stateless session will be created.
+		 * </il>
 		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
 		 * automatically, and the transaction committed automatically.
@@ -1713,6 +1729,14 @@ public interface Stage {
 		 * Perform work using a {@link StatelessSession reactive session} within an
 		 * associated {@link Transaction transaction}.
 		 * <p>
+		 * <il>
+		 * <li>If there is already a stateless session associated with the
+		 * current reactive stream, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no stateless session associated with the
+		 * current stream, a new stateless session will be created.
+		 * </il>
+		 * <p>
 		 * The session will be closed automatically, and the transaction committed automatically.
 		 *
 		 * @param work a function which accepts the stateless session and returns
@@ -1726,6 +1750,14 @@ public interface Stage {
 		/**
 		 * Perform work using a {@link StatelessSession reactive session} within an
 		 * associated {@link Transaction transaction}.
+		 * <p>
+		 * <il>
+		 * <li>If there is already a stateless session associated with the
+		 * current reactive stream and the given tenant, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no stateless session associated with the
+		 * current stream, a new stateless session will be created.
+		 * </il>
 		 * <p>
 		 * The session will be closed automatically, and the transaction committed automatically.
 		 *

@@ -1394,7 +1394,7 @@ public interface Mutiny {
 		 *
 		 * @param association a lazy-loaded association
 		 *
-		 * @return the fetched association, via a {@code CompletionStage}
+		 * @return the fetched association, via a {@code Uni}
 		 *
 		 * @see org.hibernate.Hibernate#initialize(Object)
 		 */
@@ -1688,6 +1688,14 @@ public interface Mutiny {
 		 * Perform work using a {@link Session reactive session} within an
 		 * associated {@link Transaction transaction}.
 		 * <p>
+		 * <il>
+		 * <li>If there is already a session associated with the
+		 * current reactive stream, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no session associated with the
+		 * current stream, a new stateless session will be created.
+		 * </il>
+		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
 		 * automatically, and the transaction committed automatically.
 		 *
@@ -1702,6 +1710,14 @@ public interface Mutiny {
 		/**
 		 * Perform work using a {@link StatelessSession reactive session} within an
 		 * associated {@link Transaction transaction}.
+		 * <p>
+		 * <il>
+		 * <li>If there is already a stateless session associated with the
+		 * current reactive stream, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no stateless session associated with the
+		 * current stream, a new stateless session will be created.
+		 * </il>
 		 * <p>
 		 * The session will be closed automatically and the transaction committed automatically.
 		 *
@@ -1736,10 +1752,10 @@ public interface Mutiny {
 		 * <p>
 		 * <il>
 		 * <li>If there is already a stateless session associated with the
-		 * current reactive stream, then the work will be executed using that
+		 * current reactive stream and given tenant id, then the work will be executed using that
 		 * session.
 		 * <li>Otherwise, if there is no stateless session associated with the
-		 * current stream, a new stateless session will be created.
+		 * current stream and given tenant id, a new stateless session will be created.
 		 * </il>
 		 * <p>
 		 * The session will be closed automatically.
@@ -1753,6 +1769,14 @@ public interface Mutiny {
 		/**
 		 * Perform work using a {@link Session reactive session} for a
 		 * specified tenant within an associated {@link Transaction transaction}.
+		 * <p>
+		 * <il>
+		 * <li>If there is already a session associated with the
+		 * current reactive stream and given tenant id, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no session associated with the
+		 * current stream and given tenant id, a new stateless session will be created.
+		 * </il>
 		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
 		 * automatically, and the transaction committed automatically.
@@ -1769,6 +1793,14 @@ public interface Mutiny {
 		/**
 		 * Perform work using a {@link StatelessSession reactive session} for a
 		 * specified tenant within an associated {@link Transaction transaction}.
+		 * <p>
+		 * <il>
+		 * <li>If there is already a stateless session associated with the
+		 * current reactive stream and given tenant id, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no stateless session associated with the
+		 * current stream and given tenant id, a new stateless session will be created.
+		 * </il>
 		 * <p>
 		 * The session will be closed automatically and the transaction committed automatically.
 		 *
