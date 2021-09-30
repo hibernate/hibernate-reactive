@@ -14,7 +14,6 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.metamodel.Metamodel;
 
 import org.hibernate.Cache;
-import org.hibernate.HibernateException;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.common.spi.Implementor;
@@ -99,14 +98,16 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		);
 	}
 
-	Uni<Mutiny.Session> newSession() throws HibernateException {
+	@Override
+	public Uni<Mutiny.Session> newSession() {
 		SessionCreationOptions options = options();
 		return uni( () -> connection( options.getTenantIdentifier() ) )
 				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveSessionImpl( delegate, options, reactiveConnection ) ) )
 				.map( s -> new MutinySessionImpl(s, this) );
 	}
 
-	Uni<Mutiny.Session> newSession(String tenantId) throws HibernateException {
+	@Override
+	public Uni<Mutiny.Session> newSession(String tenantId) {
 		return uni( () -> connection( tenantId ) )
 				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), reactiveConnection ) ) )
 				.map( s -> new MutinySessionImpl(s, this) );
@@ -129,6 +130,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		);
 	}
 
+	@Override
 	public Mutiny.StatelessSession openStatelessSession(String tenantId) {
 		return new MutinyStatelessSessionImpl(
 				new ReactiveStatelessSessionImpl( delegate, options( tenantId ), proxyConnection( tenantId ) ),
@@ -136,14 +138,16 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		);
 	}
 
-	Uni<Mutiny.StatelessSession> newStatelessSession() throws HibernateException {
+	@Override
+	public Uni<Mutiny.StatelessSession> newStatelessSession() {
 		SessionCreationOptions options = options();
 		return uni( () -> connection( options.getTenantIdentifier() ) )
 				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveStatelessSessionImpl( delegate, options, reactiveConnection ) ) )
 				.map( s -> new MutinyStatelessSessionImpl(s, this) );
 	}
 
-	Uni<Mutiny.StatelessSession> newStatelessSession(String tenantId) {
+	@Override
+	public Uni<Mutiny.StatelessSession> newStatelessSession(String tenantId) {
 		return uni( () -> connection( tenantId ) )
 				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), reactiveConnection ) ) )
 				.map( s -> new MutinyStatelessSessionImpl( s, this ) );

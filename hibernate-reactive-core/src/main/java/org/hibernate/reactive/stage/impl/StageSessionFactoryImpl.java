@@ -105,27 +105,31 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		);
 	}
 
-	CompletionStage<Stage.Session> newSession() {
+	@Override
+	public CompletionStage<Stage.Session> newSession() {
 		SessionCreationOptions options = options();
 		return stage( v -> connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options, connection ) ) )
 				.thenApply( s -> new StageSessionImpl(s, this) ) );
 	}
 
-	CompletionStage<Stage.Session> newSession(String tenantId) {
+	@Override
+	public CompletionStage<Stage.Session> newSession(String tenantId) {
 		return stage( v -> connection( tenantId )
 				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), connection ) ) )
 				.thenApply( s -> new StageSessionImpl(s, this) ) );
 	}
 
-	CompletionStage<Stage.StatelessSession> newStatelessSession() {
+	@Override
+	public CompletionStage<Stage.StatelessSession> newStatelessSession() {
 		SessionCreationOptions options = options();
 		return stage( v -> connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options, connection ) ) )
 				.thenApply( s -> new StageStatelessSessionImpl(s, this) ) );
 	}
 
-	CompletionStage<Stage.StatelessSession> newStatelessSession(String tenantId) {
+	@Override
+	public CompletionStage<Stage.StatelessSession> newStatelessSession(String tenantId) {
 		return stage( v -> connection( tenantId )
 				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) ) )
 				.thenApply( s -> new StageStatelessSessionImpl( s, this ) ) );

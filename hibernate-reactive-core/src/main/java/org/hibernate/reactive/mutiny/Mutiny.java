@@ -1516,6 +1516,63 @@ public interface Mutiny {
 	interface SessionFactory extends AutoCloseable {
 
 		/**
+		 * Obtain a new {@link Session reactive session} {@link Uni}, the main
+		 * interaction point between the user's program and Hibernate
+		 * Reactive.
+		 * <p>
+		 * When the {@link Uni} completes successfully it returns a newly created session.
+		 * <p>
+		 * The client must explicitly close the session by calling
+		 * {@link Session#close()}.
+		 *
+		 * @see #withSession(Function)
+		 */
+		Uni<Session> newSession();
+
+		/**
+		 * Obtain a new {@link Session reactive session} {@link Uni} for a
+		 * specified tenant.
+		 * <p>
+		 * When the {@link Uni} completes successfully it returns a newly created session.
+		 * <p>
+		 * The client must explicitly close the session by calling
+		 * {@link Session#close()}.
+		 *
+		 * @param tenantId the id of the tenant
+		 *
+		 * @see #withSession(Function)
+		 */
+		Uni<Session> newSession(String tenantId);
+
+		/**
+		 * Obtain a {@link StatelessSession reactive stateless session}
+		 *{@link Uni}.
+		 * <p>
+		 * When the {@link Uni} completes successfully it returns a newly created session.
+		 * <p>
+		 * The client must explicitly close the session by calling
+		 * {@link StatelessSession#close()}.
+		 *
+		 * @see #withStatelessSession(Function)
+		 */
+		Uni<StatelessSession> newStatelessSession();
+
+		/**
+		 * Obtain a {@link StatelessSession reactive stateless session}
+		 * {@link Uni}.
+		 * <p>
+		 * When the {@link Uni} completes successfully it returns a newly created session.
+		 * <p>
+		 * The client must explicitly close the session by calling
+		 * {@link StatelessSession#close()}.
+		 *
+		 * @param tenantId the id of the tenant
+		 *
+		 * @see #withStatelessSession(String, Function)
+		 */
+		Uni<StatelessSession> newStatelessSession(String tenantId);
+
+		/**
 		 * Obtain a new {@link Session reactive session}, the main
 		 * interaction point between the user's program and Hibernate
 		 * Reactive.
@@ -1527,7 +1584,10 @@ public interface Mutiny {
 		 * {@link Session#close()}.
 		 *
 		 * @see #withSession(Function)
+		 * @see #newSession()
+		 * @deprecated It will be removed before the final
 		 */
+		@Deprecated
 		Session openSession();
 
 		/**
@@ -1542,8 +1602,12 @@ public interface Mutiny {
 		 *
 		 * @param tenantId the id of the tenant
 		 *
-		 * @see #withSession(Function)
+		 * @see #withSession(String, Function)
+		 * @see #newSession(String)
+		 * @deprecated It will be removed before the final
+		 *
 		 */
+		@Deprecated
 		Session openSession(String tenantId);
 
 		/**
@@ -1555,7 +1619,12 @@ public interface Mutiny {
 		 * <p>
 		 * The client must explicitly close the session by calling
 		 * {@link StatelessSession#close()}.
+		 *
+		 * @deprecated It will be removed before the final
+		 * @see #newStatelessSession()
+		 * @see #withStatelessSession(Function)
 		 */
+		@Deprecated
 		StatelessSession openStatelessSession();
 
 		/**
@@ -1569,7 +1638,11 @@ public interface Mutiny {
 		 * {@link StatelessSession#close()}.
 		 *
 		 * @param tenantId the id of the tenant
+		 * @see #newStatelessSession(String)
+		 * @see #withSession(String, Function)
+		 * @deprecated Will be removed before the final
 		 */
+		@Deprecated
 		StatelessSession openStatelessSession(String tenantId);
 
 		/**
