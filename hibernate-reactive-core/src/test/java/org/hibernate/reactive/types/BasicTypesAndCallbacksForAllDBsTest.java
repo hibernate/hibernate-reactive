@@ -43,23 +43,18 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 	@After
 	public void deleteTable(TestContext context) {
-		test(
-				context,
-				getSessionFactory().withSession( session -> session.createQuery( "delete from Basic" )
-						.executeUpdate() )
-		);
+		test( context, deleteEntities( "Basic" ) );
 	}
 
 	private void testField(TestContext context, Basic original, Consumer<Basic> consumer) {
-		test(
-				context,
-				getSessionFactory().withTransaction( (s, t) -> s.persist( original ) )
-						.thenCompose( v -> openSession() )
-						.thenCompose( s2 -> s2.find( Basic.class, original.id )
-								.thenAccept( found -> {
-									context.assertNotNull( found );
-									consumer.accept( found );
-								} ) )
+		test( context, getSessionFactory()
+				.withTransaction( (s, t) -> s.persist( original ) )
+				.thenCompose( v -> getSessionFactory().withSession( s -> s
+						.find( Basic.class, original.id )
+						.thenAccept( found -> {
+							context.assertNotNull( found );
+							consumer.accept( found );
+						} ) ) )
 		);
 	}
 
