@@ -1517,6 +1517,59 @@ public interface Stage {
 	interface SessionFactory extends AutoCloseable {
 
 		/**
+		 * Obtain a new {@link Session reactive session} {@link CompletionStage}, the main
+		 * interaction point between the user's program and Hibernate
+		 * Reactive.
+		 * <p>
+		 * When the {@link CompletionStage} completes successfully it returns a newly created session.
+		 * <p>
+		 * The client must explicitly close the session by calling
+		 * {@link Mutiny.Session#close()}.
+		 *
+		 * @see #withSession(Function)
+		 */
+		CompletionStage<Session> newSession();
+
+		/**
+		 * Obtain a new {@link Session reactive session} {@link CompletionStage} for a
+		 * specified tenant.
+		 * <p>
+		 * When the {@link CompletionStage} completes successfully it returns a newly created session.
+		 * <p>
+		 * The client must explicitly close the session by calling
+		 * {@link Session#close()}.
+		 *
+		 * @param tenantId the id of the tenant
+		 *
+		 * @see #withSession(Function)
+		 */
+		CompletionStage<Session> newSession(String tenantId);
+
+		/**
+		 * Obtain a {@link StatelessSession reactive stateless session}
+		 *{@link CompletionStage}.
+		 * <p>
+		 * When the {@link CompletionStage} completes successfully it returns a newly created session.
+		 * <p>
+		 * The client must explicitly close the session by calling
+		 * {@link StatelessSession#close()}.
+		 */
+		CompletionStage<StatelessSession> newStatelessSession();
+
+		/**
+		 * Obtain a {@link StatelessSession reactive stateless session}
+		 * {@link CompletionStage}.
+		 * <p>
+		 * When the {@link CompletionStage} completes successfully it returns a newly created session.
+		 * <p>
+		 * The client must explicitly close the session by calling
+		 * {@link StatelessSession#close()}.
+		 *
+		 * @param tenantId the id of the tenant
+		 */
+		CompletionStage<StatelessSession> newStatelessSession(String tenantId);
+
+		/**
 		 * Obtain a new {@link Session reactive session}, the main
 		 * interaction point between the user's program and Hibernate
 		 * Reactive.
@@ -1528,7 +1581,10 @@ public interface Stage {
 		 * {@link Session#close()}.
 		 *
 		 * @see #withSession(Function)
+		 * @see #newSession()
+		 * @deprecated
 		 */
+		@Deprecated
 		Session openSession();
 
 		/**
@@ -1544,7 +1600,10 @@ public interface Stage {
 		 * @param tenantId the id of the tenant
 		 *
 		 * @see #withSession(Function)
+		 * @see #newSession(String)
+		 * @deprecated
 		 */
+		@Deprecated
 		Session openSession(String tenantId);
 
 		/**
@@ -1556,7 +1615,12 @@ public interface Stage {
 		 * <p>
 		 * The client must explicitly close the session by calling
 		 * {@link StatelessSession#close()}.
+		 *
+		 * @see #newStatelessSession()
+		 * @see #withStatelessSession(Function)
+		 * @deprecated
 		 */
+		@Deprecated
 		StatelessSession openStatelessSession();
 
 		/**
@@ -1570,6 +1634,8 @@ public interface Stage {
 		 * {@link StatelessSession#close()}.
 		 *
 		 * @param tenantId the id of the tenant
+		 * @see #newStatelessSession(String
+		 * @see #withStatelessSession(String, Function)
 		 */
 		StatelessSession openStatelessSession(String tenantId);
 
