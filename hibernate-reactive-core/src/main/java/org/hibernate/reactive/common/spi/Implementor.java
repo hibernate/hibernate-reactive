@@ -13,6 +13,8 @@ import org.hibernate.service.ServiceRegistry;
  */
 public interface Implementor {
 
+	String getUuid();
+
 	ServiceRegistry getServiceRegistry();
 
 	Context getContext();

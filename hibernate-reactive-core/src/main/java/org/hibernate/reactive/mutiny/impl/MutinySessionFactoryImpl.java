@@ -67,6 +67,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	}
 
 	@Override
+	public String getUuid() {
+		return delegate.getUuid();
+	}
+
+	@Override
 	public ServiceRegistry getServiceRegistry() {
 		return delegate.getServiceRegistry();
 	}
