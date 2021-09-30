@@ -58,6 +58,11 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
+	public String getUuid() {
+		return delegate.getUuid();
+	}
+
+	@Override
 	public ServiceRegistry getServiceRegistry() {
 		return delegate.getServiceRegistry();
 	}
