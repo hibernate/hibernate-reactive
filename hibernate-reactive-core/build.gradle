@@ -37,6 +37,9 @@ dependencies {
     testImplementation "io.vertx:vertx-db2-client:${vertxVersion}"
     testImplementation "io.vertx:vertx-mssql-client:${vertxVersion}"
 
+    // Optional dependency of vertx-pg-client, essential when connecting via SASL SCRAM
+    testImplementation 'com.ongres.scram:client:2.1'
+
     // JDBC driver to test with ORM and PostgreSQL
     testRuntimeOnly "org.postgresql:postgresql:42.2.23"
 
