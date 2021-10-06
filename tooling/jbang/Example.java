@@ -56,7 +56,7 @@ import static javax.persistence.FetchType.LAZY;
  *             <pre>
  *                 podman run --rm --name HibernateTestingPGSQL \
  *                      -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact \
- *                      -p 5432:5432 postgres:13.3
+ *                      -p 5432:5432 postgres:14
  *              </pre>
  *         </dd>
  *         <dt>3. Run the example with JBang</dt>
