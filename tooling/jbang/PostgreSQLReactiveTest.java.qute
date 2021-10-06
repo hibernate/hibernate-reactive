@@ -58,7 +58,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class {baseName} {
 
 	@ClassRule
-	public final static PostgreSQLContainer<?> database = new PostgreSQLContainer<>( "postgres:13.3" );
+	public final static PostgreSQLContainer<?> database = new PostgreSQLContainer<>( "postgres:14" );
 
 	private Mutiny.SessionFactory sessionFactory;
 
