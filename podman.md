@@ -14,13 +14,13 @@ If you replace `podman` with `sudo docker`, they will also work with [Docker][do
 Example:
 
 ```
-podman run --rm --name HibernateTestingPGSQL postgres:13.0
+podman run --rm --name HibernateTestingPGSQL postgres:14.0
 ```
 
 becomes for Docker:
 
 ```
-sudo docker run --rm --name HibernateTestingPGSQL postgres:13.0
+sudo docker run --rm --name HibernateTestingPGSQL postgres:14.0
 ```
 ---
 
@@ -34,10 +34,11 @@ required credentials and schema to run the tests:
 
 [postgresql]:https://www.postgresql.org
 
+
 ```
 podman run --rm --name HibernateTestingPGSQL \
     -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact \
-    -p 5432:5432 postgres:13.3
+    -p 5432:5432 postgres:14.0
 ```
 
 When the database has started, you can run the tests on PostgreSQL with:
@@ -47,14 +48,13 @@ When the database has started, you can run the tests on PostgreSQL with:
 ```
 
 Optionally, you can connect to the database with the [PostgreSQL interactive terminal][psql](`psql`)
-using:
+using this one-liner:
 
 ```
-podman exec -it HibernateTestingPGSQL psql -U hreact -W -d hreact
+podman exec -e PGPASSWORD=hreact -it HibernateTestingPGSQL psql -U hreact -d hreact
 ```
-When asked for the password, type: `hreact`
 
-[psql]:https://www.postgresql.org/docs/9.6/app-psql.html
+[psql]:https://www.postgresql.org/docs/14/app-psql.html
 
 ## MariaDB
 
