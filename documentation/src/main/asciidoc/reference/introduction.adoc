@@ -88,6 +88,7 @@ Optionally, you might also add any of the following additional features:
 | Hibernate Validator | `org.hibernate.validator:hibernate-validator` and `org.glassfish:jakarta.el`
 | Compile-time checking for your HQL queries | `org.hibernate:query-validator`
 | Second-level cache support via JCache and EHCache | `org.hibernate:hibernate-jcache` along with `org.ehcache:ehcache`
+| SCRAM authentication support for PostgreSQL | `com.ongres.scram:client:2.1`
 |===
 
 You might also add the Hibernate {enhancer}[bytecode enhancer] to your
