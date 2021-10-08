@@ -17,7 +17,6 @@ import org.hibernate.Cache;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.common.spi.Implementor;
-import org.hibernate.reactive.common.spi.StageImplementor;
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.context.impl.BaseKey;
 import org.hibernate.reactive.context.impl.MultitenantKey;
@@ -38,7 +37,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * <p>
  * Obtained by calling {@link org.hibernate.SessionFactory#unwrap(Class)}.
  */
-public class StageSessionFactoryImpl implements Stage.SessionFactory, Implementor, StageImplementor {
+public class StageSessionFactoryImpl implements Stage.SessionFactory, Implementor {
 
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
@@ -71,40 +70,6 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	@Override
 	public Context getContext() {
 		return context;
-	}
-
-	@Override
-	public Stage.Session newSession() {
-		SessionCreationOptions options = options();
-		return new StageSessionImpl(
-				new ReactiveSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) ),
-				this
-		);
-	}
-
-	@Override
-	public Stage.Session newSession(String tenantId) {
-		return new StageSessionImpl(
-				new ReactiveSessionImpl( delegate, options( tenantId ), proxyConnection( tenantId ) ),
-				this
-		);
-	}
-
-	@Override
-	public Stage.StatelessSession newStatelessSession() {
-		SessionCreationOptions options = options();
-		return new StageStatelessSessionImpl(
-				new ReactiveStatelessSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) ),
-				this
-		);
-	}
-
-	@Override
-	public Stage.StatelessSession newStatelessSession(String tenantId) {
-		return new StageStatelessSessionImpl(
-				new ReactiveStatelessSessionImpl( delegate, options( tenantId ), proxyConnection( tenantId ) ),
-				this
-		);
 	}
 
 	@Override
