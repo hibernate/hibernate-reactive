@@ -1528,7 +1528,7 @@ public interface Stage {
 		 *
 		 * @see #withSession(Function)
 		 */
-		CompletionStage<Session> newSession();
+		CompletionStage<Session> openSession();
 
 		/**
 		 * Obtain a new {@link Session reactive session} {@link CompletionStage} for a
@@ -1543,7 +1543,7 @@ public interface Stage {
 		 *
 		 * @see #withSession(Function)
 		 */
-		CompletionStage<Session> newSession(String tenantId);
+		CompletionStage<Session> openSession(String tenantId);
 
 		/**
 		 * Obtain a {@link StatelessSession reactive stateless session}
@@ -1554,7 +1554,7 @@ public interface Stage {
 		 * The client must explicitly close the session by calling
 		 * {@link StatelessSession#close()}.
 		 */
-		CompletionStage<StatelessSession> newStatelessSession();
+		CompletionStage<StatelessSession> openStatelessSession();
 
 		/**
 		 * Obtain a {@link StatelessSession reactive stateless session}
@@ -1567,77 +1567,7 @@ public interface Stage {
 		 *
 		 * @param tenantId the id of the tenant
 		 */
-		CompletionStage<StatelessSession> newStatelessSession(String tenantId);
-
-		/**
-		 * Obtain a new {@link Session reactive session}, the main
-		 * interaction point between the user's program and Hibernate
-		 * Reactive.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link Session} needs to access the database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link Session#close()}.
-		 *
-		 * @see #withSession(Function)
-		 * @see #newSession()
-		 * @deprecated
-		 */
-		@Deprecated
-		Session openSession();
-
-		/**
-		 * Obtain a new {@link Session reactive session} for a
-		 * specified tenant.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link Session} needs to access the database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link Session#close()}.
-		 *
-		 * @param tenantId the id of the tenant
-		 *
-		 * @see #withSession(Function)
-		 * @see #newSession(String)
-		 * @deprecated
-		 */
-		@Deprecated
-		Session openSession(String tenantId);
-
-		/**
-		 * Obtain a {@link StatelessSession reactive stateless session}.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link StatelessSession} needs to access the
-		 * database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link StatelessSession#close()}.
-		 *
-		 * @see #newStatelessSession()
-		 * @see #withStatelessSession(Function)
-		 * @deprecated
-		 */
-		@Deprecated
-		StatelessSession openStatelessSession();
-
-		/**
-		 * Obtain a {@link StatelessSession reactive stateless session}.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link StatelessSession} needs to access the
-		 * database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link StatelessSession#close()}.
-		 *
-		 * @param tenantId the id of the tenant
-		 * @see #newStatelessSession(String
-		 * @see #withStatelessSession(String, Function)
-		 */
-		StatelessSession openStatelessSession(String tenantId);
+		CompletionStage<StatelessSession> openStatelessSession(String tenantId);
 
 		/**
 		 * Perform work using a {@link Session reactive session}.

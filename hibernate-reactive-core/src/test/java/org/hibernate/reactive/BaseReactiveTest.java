@@ -278,7 +278,7 @@ public abstract class BaseReactiveTest {
 	 */
 	protected CompletionStage<Stage.Session> openSession() {
 		return closeSession( session )
-				.thenCompose( v -> getSessionFactory().newSession()
+				.thenCompose( v -> getSessionFactory().openSession()
 						.thenApply( newSession -> {
 							this.session = newSession;
 							return newSession;
@@ -298,7 +298,7 @@ public abstract class BaseReactiveTest {
 	protected Uni<Mutiny.Session> openMutinySession() {
 		return Uni.createFrom().completionStage( closeSession( session ) )
 				.replaceWith(
-					getMutinySessionFactory().newSession().invoke( newSession -> {
+					getMutinySessionFactory().openSession().invoke( newSession -> {
 						this.session = newSession;
 					} )
 				);
