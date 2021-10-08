@@ -68,7 +68,7 @@ public class MultipleContextTest extends BaseReactiveTest {
 	// I don't know why but this test fails on CI because no exception is thrown
 	public void testPersistWithStage(TestContext testContext) {
 		Async async = testContext.async();
-		CompletionStage<Stage.Session> sessionStage = getSessionFactory().newSession();
+		CompletionStage<Stage.Session> sessionStage = getSessionFactory().openSession();
 		currentSession = sessionStage;
 		Context testVertxContext = Vertx.currentContext();
 
@@ -88,7 +88,7 @@ public class MultipleContextTest extends BaseReactiveTest {
 	@Test
 	public void testFindWithStage(TestContext testContext) {
 		Async async = testContext.async();
-		CompletionStage<Stage.Session> sessionStage = getSessionFactory().newSession();
+		CompletionStage<Stage.Session> sessionStage = getSessionFactory().openSession();
 		currentSession = sessionStage;
 		Context testVertxContext = Vertx.currentContext();
 
@@ -108,7 +108,7 @@ public class MultipleContextTest extends BaseReactiveTest {
 	@Test
 	public void testOnPersistWithMutiny(TestContext testContext) {
 		final Async async = testContext.async();
-		Uni<Mutiny.Session> sessionUni = getMutinySessionFactory().newSession();
+		Uni<Mutiny.Session> sessionUni = getMutinySessionFactory().openSession();
 		currentSession = sessionUni;
 		Context testVertxContext = Vertx.currentContext();
 
@@ -129,7 +129,7 @@ public class MultipleContextTest extends BaseReactiveTest {
 	@Test
 	public void testFindWithMutiny(TestContext testContext) {
 		final Async async = testContext.async();
-		Uni<Mutiny.Session> sessionUni = getMutinySessionFactory().newSession();
+		Uni<Mutiny.Session> sessionUni = getMutinySessionFactory().openSession();
 		currentSession = sessionUni;
 		Context testVertxContext = Vertx.currentContext();
 

@@ -1527,7 +1527,7 @@ public interface Mutiny {
 		 *
 		 * @see #withSession(Function)
 		 */
-		Uni<Session> newSession();
+		Uni<Session> openSession();
 
 		/**
 		 * Obtain a new {@link Session reactive session} {@link Uni} for a
@@ -1542,7 +1542,7 @@ public interface Mutiny {
 		 *
 		 * @see #withSession(Function)
 		 */
-		Uni<Session> newSession(String tenantId);
+		Uni<Session> openSession(String tenantId);
 
 		/**
 		 * Obtain a {@link StatelessSession reactive stateless session}
@@ -1555,7 +1555,7 @@ public interface Mutiny {
 		 *
 		 * @see #withStatelessSession(Function)
 		 */
-		Uni<StatelessSession> newStatelessSession();
+		Uni<StatelessSession> openStatelessSession();
 
 		/**
 		 * Obtain a {@link StatelessSession reactive stateless session}
@@ -1570,80 +1570,8 @@ public interface Mutiny {
 		 *
 		 * @see #withStatelessSession(String, Function)
 		 */
-		Uni<StatelessSession> newStatelessSession(String tenantId);
+		Uni<StatelessSession> openStatelessSession(String tenantId);
 
-		/**
-		 * Obtain a new {@link Session reactive session}, the main
-		 * interaction point between the user's program and Hibernate
-		 * Reactive.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link Session} needs to access the database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link Session#close()}.
-		 *
-		 * @see #withSession(Function)
-		 * @see #newSession()
-		 * @deprecated It will be removed before the final
-		 */
-		@Deprecated
-		Session openSession();
-
-		/**
-		 * Obtain a new {@link Session reactive session} for a
-		 * specified tenant.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link Session} needs to access the database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link Session#close()}.
-		 *
-		 * @param tenantId the id of the tenant
-		 *
-		 * @see #withSession(String, Function)
-		 * @see #newSession(String)
-		 * @deprecated It will be removed before the final
-		 *
-		 */
-		@Deprecated
-		Session openSession(String tenantId);
-
-		/**
-		 * Obtain a {@link StatelessSession reactive stateless session}.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link StatelessSession} needs to access the
-		 * database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link StatelessSession#close()}.
-		 *
-		 * @deprecated It will be removed before the final
-		 * @see #newStatelessSession()
-		 * @see #withStatelessSession(Function)
-		 */
-		@Deprecated
-		StatelessSession openStatelessSession();
-
-		/**
-		 * Obtain a {@link StatelessSession reactive stateless session}.
-		 * <p>
-		 * The underlying database connection is obtained lazily when
-		 * the returned {@link StatelessSession} needs to access the
-		 * database.
-		 * <p>
-		 * The client must explicitly close the session by calling
-		 * {@link StatelessSession#close()}.
-		 *
-		 * @param tenantId the id of the tenant
-		 * @see #newStatelessSession(String)
-		 * @see #withSession(String, Function)
-		 * @deprecated Will be removed before the final
-		 */
-		@Deprecated
-		StatelessSession openStatelessSession(String tenantId);
 
 		/**
 		 * Perform work using a {@link Session reactive session}.

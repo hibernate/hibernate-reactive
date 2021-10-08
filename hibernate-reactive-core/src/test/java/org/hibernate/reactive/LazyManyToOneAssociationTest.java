@@ -192,12 +192,12 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 
 		test(
 				context,
-				getSessionFactory().newStatelessSession()
+				getSessionFactory().openStatelessSession()
 						.thenCompose( s -> s.insert( goodOmens )
 								.thenCompose( v -> s.insert( terryPratchett ) )
 								.thenCompose( v -> s.insert( neilGaiman ) )
 								.thenCompose( v -> s.close() ) )
-						.thenCompose( v -> getSessionFactory().newStatelessSession()
+						.thenCompose( v -> getSessionFactory().openStatelessSession()
 								.thenCompose( s -> s.get( Author.class, neilGaiman.getId() )
 										.thenCompose( optionalAuthor -> {
 											context.assertNotNull( optionalAuthor );

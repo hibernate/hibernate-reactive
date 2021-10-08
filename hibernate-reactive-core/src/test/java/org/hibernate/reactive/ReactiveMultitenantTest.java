@@ -61,7 +61,7 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
-				getSessionFactory().newSession().thenCompose( session -> session
+				getSessionFactory().openSession().thenCompose( session -> session
 						.persist( guineaPig )
 						.thenCompose( v -> session.flush() )
 						.thenAccept( v -> session.detach( guineaPig ) )
@@ -101,14 +101,14 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 	@Test
 	public void testTenantSelectionStatelessSession(TestContext context) {
 		TENANT_RESOLVER.setTenantIdentifier( TENANT_1 );
-		test( context, getSessionFactory().newStatelessSession()
+		test( context, getSessionFactory().openStatelessSession()
 				.thenCompose( t1Session -> t1Session
 					.createNativeQuery( "select current_database()" )
 					.getSingleResult()
 					.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
 					.thenCompose( unused -> t1Session.close() ) )
 				.thenAccept( unused -> TENANT_RESOLVER.setTenantIdentifier( TENANT_2 ) )
-				.thenCompose( v -> getSessionFactory().newStatelessSession() )
+				.thenCompose( v -> getSessionFactory().openStatelessSession() )
 				.thenCompose( t2Session -> t2Session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()

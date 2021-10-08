@@ -17,6 +17,7 @@ import org.hibernate.Cache;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.common.spi.Implementor;
+import org.hibernate.reactive.common.spi.StageImplementor;
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.context.impl.BaseKey;
 import org.hibernate.reactive.context.impl.MultitenantKey;
@@ -37,7 +38,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * <p>
  * Obtained by calling {@link org.hibernate.SessionFactory#unwrap(Class)}.
  */
-public class StageSessionFactoryImpl implements Stage.SessionFactory, Implementor {
+public class StageSessionFactoryImpl implements Stage.SessionFactory, Implementor, StageImplementor {
 
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
@@ -73,7 +74,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public Stage.Session openSession() {
+	public Stage.Session newSession() {
 		SessionCreationOptions options = options();
 		return new StageSessionImpl(
 				new ReactiveSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) ),
@@ -82,14 +83,15 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public Stage.Session openSession(String tenantId) {
+	public Stage.Session newSession(String tenantId) {
 		return new StageSessionImpl(
 				new ReactiveSessionImpl( delegate, options( tenantId ), proxyConnection( tenantId ) ),
 				this
 		);
 	}
 
-	public Stage.StatelessSession openStatelessSession() {
+	@Override
+	public Stage.StatelessSession newStatelessSession() {
 		SessionCreationOptions options = options();
 		return new StageStatelessSessionImpl(
 				new ReactiveStatelessSessionImpl( delegate, options, proxyConnection( options.getTenantIdentifier() ) ),
@@ -98,7 +100,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public Stage.StatelessSession openStatelessSession(String tenantId) {
+	public Stage.StatelessSession newStatelessSession(String tenantId) {
 		return new StageStatelessSessionImpl(
 				new ReactiveStatelessSessionImpl( delegate, options( tenantId ), proxyConnection( tenantId ) ),
 				this
@@ -106,7 +108,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> newSession() {
+	public CompletionStage<Stage.Session> openSession() {
 		SessionCreationOptions options = options();
 		return stage( v -> connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options, connection ) ) )
@@ -114,14 +116,14 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> newSession(String tenantId) {
+	public CompletionStage<Stage.Session> openSession(String tenantId) {
 		return stage( v -> connection( tenantId )
 				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), connection ) ) )
 				.thenApply( s -> new StageSessionImpl(s, this) ) );
 	}
 
 	@Override
-	public CompletionStage<Stage.StatelessSession> newStatelessSession() {
+	public CompletionStage<Stage.StatelessSession> openStatelessSession() {
 		SessionCreationOptions options = options();
 		return stage( v -> connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options, connection ) ) )
@@ -129,7 +131,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public CompletionStage<Stage.StatelessSession> newStatelessSession(String tenantId) {
+	public CompletionStage<Stage.StatelessSession> openStatelessSession(String tenantId) {
 		return stage( v -> connection( tenantId )
 				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) ) )
 				.thenApply( s -> new StageStatelessSessionImpl( s, this ) ) );
@@ -179,7 +181,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( newSession(), work, contextKeyForSession );
+		return withSession( openSession(), work, contextKeyForSession );
 	}
 
 	@Override
@@ -191,7 +193,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( newSession( tenantId ), work, key );
+		return withSession( openSession( tenantId ), work, key );
 	}
 
 	@Override
@@ -201,7 +203,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		if ( current!=null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( newStatelessSession(), work, contextKeyForStatelessSession );
+		return withSession( openStatelessSession(), work, contextKeyForStatelessSession );
 	}
 
 	@Override
@@ -213,7 +215,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		if ( current != null && current.isOpen() ) {
 			return work.apply( current );
 		}
-		return withSession( newStatelessSession(tenantId), work, key );
+		return withSession( openStatelessSession( tenantId), work, key );
 	}
 
 	private <S extends Stage.Closeable, T> CompletionStage<T> withSession(

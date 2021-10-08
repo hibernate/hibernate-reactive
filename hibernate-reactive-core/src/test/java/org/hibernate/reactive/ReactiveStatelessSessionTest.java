@@ -105,7 +105,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 		GuineaPig pig = new GuineaPig("Aloi");
 		test(
 				context,
-				getSessionFactory().newStatelessSession().thenCompose( ss ->
+				getSessionFactory().openStatelessSession().thenCompose( ss ->
 					ss.insert(pig)
 						.thenCompose( v -> ss.createNativeQuery("select * from Piggy where name=:n", GuineaPig.class)
 								.setParameter("n", pig.name)
@@ -153,7 +153,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 
 		test(
 				context,
-				getSessionFactory().newStatelessSession().thenCompose( ss ->
+				getSessionFactory().openStatelessSession().thenCompose( ss ->
 					ss.insert(pig)
 						.thenCompose( v -> ss.createQuery(query)
 								.setParameter("n", pig.name)
