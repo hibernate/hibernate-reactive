@@ -670,12 +670,14 @@ the session when you're done.
 
 [source, JAVA, indent=0]
 ----
-Session session = sessionFactory.openSession();
-session.find(Book.class, id)
-       .invoke(
-           book -> ... //do something with the book
-       )
-       .eventually(session::close);
+Uni<Session> sessionUni = sessionFactory.openSession();
+sessionUni.chain(
+        session -> session.find(Book.class, id)
+                .invoke(
+		    book -> ... //do something with the book
+                )
+                .eventually(session::close)
+);
 ----
 
 === Using the reactive session
