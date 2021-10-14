@@ -1101,12 +1101,6 @@ public interface Stage {
 		Transaction currentTransaction();
 
 		/**
-		 * Close the reactive session and release the underlying database
-		 * connection.
-		 */
-		CompletionStage<Void> close();
-
-		/**
 		 * @return false if {@link #close()} has been called
 		 */
 		boolean isOpen();
