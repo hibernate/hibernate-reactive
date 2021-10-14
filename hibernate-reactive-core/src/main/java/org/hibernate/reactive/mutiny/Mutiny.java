@@ -1100,12 +1100,6 @@ public interface Mutiny {
 		Transaction currentTransaction();
 
 		/**
-		 * Close the reactive session and release the underlying database
-		 * connection.
-		 */
-		Uni<Void> close();
-
-		/**
 		 * @return false if {@link #close()} has been called
 		 */
 		boolean isOpen();
