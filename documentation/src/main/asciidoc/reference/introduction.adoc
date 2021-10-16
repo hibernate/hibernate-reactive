@@ -168,14 +168,27 @@ annotation you've specified in your Java code, and export the schema at
 initialization time by specifying one or more of the following configuration
 properties:
 
+[cols="1,1"]
 |===
 | Configuration property name                                | Purpose
 
-| `javax.persistence.schema-generation.database.action`      | If `create`, automatically export tables, sequences, and constraints
-| `javax.persistence.create-database-schemas`                | (Optional) If `true`, automatically create schemas and catalogs
-| `javax.persistence.schema-generation.create-source`        | (Optional) If `metadata-then-script` or `script-then-metadata`,
-                                                               execute an additional SQL script when exported tables and sequences
-| `javax.persistence.schema-generation.create-script-source` | (Optional) The name of the SQL script to be executed
+| `javax.persistence.schema-generation.database.action` 
+a| * If `create`, first drop the schema and then export tables, sequences, and constraints.
+   * If `create-only`, export tables, sequences, and constraints.
+   * If `create-drop`, drop the schema and recreate it on SessionFactory startup.
+     Additionally, drop the schema on SessionFactory shutdown.
+   * If `drop`, drop the schema on SessionFactory shutdown.
+   * If `validate`, validate the database schema without changing it.
+   * If `update`, only export what's missing in the schema.
+
+| `javax.persistence.create-database-schemas`
+| (Optional) If `true`, automatically create schemas and catalogs
+
+| `javax.persistence.schema-generation.create-source`
+| (Optional) If `metadata-then-script` or `script-then-metadata`, execute an additional SQL script when exported tables and sequences
+
+| `javax.persistence.schema-generation.create-script-source`
+| (Optional) The name of the SQL script to be executed
 |===
 
 This feature is extremely useful for testing.
