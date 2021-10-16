@@ -49,14 +49,11 @@ public final class DefaultVertxInstance implements VertxInstance, Stoppable, Sta
 
     @Override
     public void start() {
-        Context currentContext = Vertx.currentContext();
-        // if null, create Vertx instance
-        if ( currentContext != null && currentContext.owner() != null ) {
-            vertx = currentContext.owner();
-        } else {
-            vertx = Vertx.vertx();
-            vertxCreator = true;
-        }
+        final Context context = Vertx.currentContext();
+        vertxCreator = context == null || context.owner() == null;
+        vertx = vertxCreator
+                ? Vertx.vertx() // Create a new one
+                : context.owner(); // Get the existing one
     }
 
 }
