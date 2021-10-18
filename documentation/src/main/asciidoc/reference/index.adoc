@@ -1,5 +1,5 @@
 = Hibernate Reactive {fullVersion} Reference Documentation
-Gavin King <gavin@hibernate.org>
+Davide D'Alto <davide@hibernate.org>; Gavin King <gavin@hibernate.org>
 :toc2:
 :toclevels: 3
 :sectanchors:
