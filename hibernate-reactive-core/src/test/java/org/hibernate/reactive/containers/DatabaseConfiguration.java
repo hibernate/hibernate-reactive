@@ -91,6 +91,14 @@ public class DatabaseConfiguration {
 		return dbType().configuration.getUri();
 	}
 
+	public static String getDatatypeQuery(String tableName, String columnName) {
+		return dbType().configuration.getDatatypeQuery( tableName, columnName );
+	}
+
+	public static String getExpectedDatatype(TestableDatabase.DataType dataType) {
+		return dbType().configuration.getExpectedDatatype( dataType );
+	}
+
 	private DatabaseConfiguration() {
 	}
 

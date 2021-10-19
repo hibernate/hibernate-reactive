@@ -12,7 +12,7 @@ import org.testcontainers.containers.Container;
 
 import static org.testcontainers.shaded.org.apache.commons.lang.StringUtils.isNotBlank;
 
-class CockroachDBDatabase implements TestableDatabase {
+class CockroachDBDatabase extends PostgreSQLDatabase {
 
 	public static CockroachDBDatabase INSTANCE = new CockroachDBDatabase();
 
