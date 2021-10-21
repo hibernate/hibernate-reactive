@@ -150,7 +150,7 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 	 */
 	private QueryParameters makeReactiveQueryParametersForExecution(String hql) {
 		QueryParameters queryParameters = super.makeQueryParametersForExecution( hql );
-		if ( queryParameters.getQueryPlan() != null ) {
+		if ( queryParameters.getQueryPlan() == null ) {
 			HQLQueryPlan plan = new ReactiveHQLQueryPlan<>(
 					hql,
 					false,
