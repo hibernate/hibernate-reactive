@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.schema.validate;
+package org.hibernate.reactive.schema;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
@@ -22,13 +22,7 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-/**
- * This test checks the schema datatypes for a defined entity by querying the information_schema.columns table
- * The TestableDatabase interface contains an enum of potential data types.
- * Implementors of the TestableDatabase (i.e. PostgreSQLDatabase) implements methods to get the specific query that
- * should return the expected schema type on the DB
- */
-public class BasicTypesSchemaValidationTest extends BaseReactiveTest {
+public class BasicTypesTest extends BaseReactiveTest {
 
 	protected Configuration constructConfiguration(String hbm2DdlOption) {
 		Configuration configuration = super.constructConfiguration();
@@ -80,7 +74,7 @@ public class BasicTypesSchemaValidationTest extends BaseReactiveTest {
 
 		BasicTypesTestEntity testEntity = new BasicTypesTestEntity();
 
-		final Configuration configuration = constructConfiguration( "update" );
+		final Configuration configuration = constructConfiguration( "create" );
 		configuration.addAnnotatedClass( BasicTypesTestEntity.class );
 
 		test(
@@ -88,33 +82,17 @@ public class BasicTypesSchemaValidationTest extends BaseReactiveTest {
 				setupSessionFactory( configuration )
 						.thenCompose( v -> getSessionFactory().withTransaction( (session, t) -> session.persist( testEntity ) ) )
 						.thenCompose( v1 -> openSession()
-							.thenCompose( s -> s
-									.find( BasicTypesTestEntity.class, testEntity.id )
-									.thenAccept( result -> context.assertNotNull( result ) )
-							.thenCompose( v -> s
-									.createNativeQuery(
-											getDatatypeQuery( testEntity.getEntityName(), columnName ), String.class )
-									.getSingleResult()
-									.thenAccept( result -> assertDatatype( context, result, datatype ) )
+								.thenCompose( s -> s
+										.find( BasicTypesTestEntity.class, testEntity.id )
+										.thenAccept( result -> context.assertNotNull( result ) )
+										.thenCompose( v -> s
+												.createNativeQuery(
+														getDatatypeQuery( testEntity.getEntityName(), columnName ), String.class )
+												.getSingleResult()
+												.thenAccept( result -> assertDatatype( context, result, datatype ) )
+										)
 								)
-							)
 						)
-		);
-	}
-
-	@Test
-	public void testValidationSucceed(TestContext context) {
-		Configuration configuration = constructConfiguration( "validate" );
-		configuration.addAnnotatedClass( BasicTypesTestEntity.class );
-
-		test(
-				context,
-				setupSessionFactory( configuration )
-						.thenCompose( v -> getSessionFactory()
-								.withTransaction(
-										(session, t) -> session.createQuery( "FROM BasicTypesTestEntity", BasicTypesTestEntity.class )
-												.getResultList() ) )
-						.thenAccept( results -> context.assertTrue( results.isEmpty() ) )
 		);
 	}
 

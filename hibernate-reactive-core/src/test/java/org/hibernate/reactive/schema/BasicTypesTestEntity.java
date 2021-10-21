@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.schema.validate;
+package org.hibernate.reactive.schema;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
