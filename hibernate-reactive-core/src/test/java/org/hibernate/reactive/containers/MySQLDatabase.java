@@ -17,6 +17,9 @@ class MySQLDatabase implements TestableDatabase {
 	String findTypeForColumnBaseQuery =
 					"select data_type from information_schema.columns where table_name = '" + TABLE_PARAM + "'  and column_name = '" + COLUMN_PARAM + "'";
 
+	String selectColumnsOnlyQuery
+			= "select column_name from information_schema.columns where table_name = '" + TABLE_PARAM + "'";
+
 	public static Map<DataType, String> expectedDBTypeForEntityType = new EnumMap<DataType, String>( DataType.class);
 	static {{
 		expectedDBTypeForEntityType.put( DataType.BOOLEAN_PRIMATIVE, "boolean");
@@ -86,14 +89,17 @@ class MySQLDatabase implements TestableDatabase {
 	}
 
 	@Override
-	public String getDatatypeQuery(String tableName, String columnName) {
+	public String getNativeDatatypeQuery(String tableName, String columnName) {
+		if( columnName == null ) {
+			return selectColumnsOnlyQuery.replace(TABLE_PARAM, tableName );
+		}
 		return findTypeForColumnBaseQuery.replace(
 				TABLE_PARAM, tableName).replace(
 				COLUMN_PARAM, columnName);
 	}
 
 	@Override
-	public String getExpectedDatatype(DataType dataType) {
+	public String getExpectedNativeDatatype(DataType dataType) {
 		return expectedDBTypeForEntityType.get(dataType);
 	}
 

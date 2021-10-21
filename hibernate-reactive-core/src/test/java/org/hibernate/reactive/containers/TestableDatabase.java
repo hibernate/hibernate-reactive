@@ -37,8 +37,15 @@ public interface TestableDatabase {
 
 	String getUri();
 
-	String getDatatypeQuery(String tableName, String columnName);
+	/**
+	 * Implementations return an executable query string based on a specific table name and column name
+	 *
+	 * @param tableName
+	 * @param columnName may be null
+	 * @return
+	 */
+	String getNativeDatatypeQuery(String tableName, String columnName);
 
-	String getExpectedDatatype(DataType dataType);
+	String getExpectedNativeDatatype(DataType dataType);
 
 }

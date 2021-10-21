@@ -28,6 +28,8 @@ class MSSQLServerDatabase implements TestableDatabase {
 	String findTypeForColumnBaseQuery =
 			"select data_type from information_schema.columns where table_name = '" + TABLE_PARAM + "' and column_name = '" + COLUMN_PARAM + "'";
 
+	String selectColumnsOnlyQuery
+			= "select column_name from information_schema.columns where table_name = '" + TABLE_PARAM + "'";
 
 	public static Map<DataType, String> expectedDBTypeForEntityType = new EnumMap<DataType, String>( DataType.class);
 	static {{
@@ -95,14 +97,17 @@ class MSSQLServerDatabase implements TestableDatabase {
 	}
 
 	@Override
-	public String getDatatypeQuery(String tableName, String columnName) {
+	public String getNativeDatatypeQuery(String tableName, String columnName) {
+		if( columnName == null ) {
+			return selectColumnsOnlyQuery.replace(TABLE_PARAM, tableName.toLowerCase() );
+		}
 		return findTypeForColumnBaseQuery.replace(
 				TABLE_PARAM, tableName.toLowerCase() ).replace(
 				COLUMN_PARAM, columnName.toLowerCase() );
 	}
 
 	@Override
-	public String getExpectedDatatype(DataType dataType) {
+	public String getExpectedNativeDatatype(DataType dataType) {
 		return expectedDBTypeForEntityType.get(dataType);
 	}
 

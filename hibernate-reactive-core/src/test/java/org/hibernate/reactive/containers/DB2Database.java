@@ -19,6 +19,9 @@ class DB2Database implements TestableDatabase {
 	String findTypeForColumnBaseQuery =
 			"SELECT TYPENAME FROM SYSCAT.COLUMNS where TABNAME = '" + TABLE_PARAM + "' and COLNAME = '" + COLUMN_PARAM + "'";
 
+	String selectColumnsOnlyQuery
+			= "SELECT COLNAME FROM SYSCAT.COLUMNS where TABNAME = '" + TABLE_PARAM + "'";
+
 	public static Map<DataType, String> expectedDBTypeForEntityType = new EnumMap<DataType, String>( DataType.class);
 	static {{
 		expectedDBTypeForEntityType.put( DataType.BOOLEAN_PRIMATIVE, "SMALLINT");
@@ -87,14 +90,17 @@ class DB2Database implements TestableDatabase {
 	}
 
 	@Override
-	public String getDatatypeQuery(String tableName, String columnName) {
+	public String getNativeDatatypeQuery(String tableName, String columnName) {
+		if( columnName == null ) {
+			return selectColumnsOnlyQuery.replace(TABLE_PARAM, tableName.toUpperCase() );
+		}
 		return findTypeForColumnBaseQuery.replace(
 				TABLE_PARAM, tableName.toUpperCase() ).replace(
 				COLUMN_PARAM, columnName.toUpperCase() );
 	}
 
 	@Override
-	public String getExpectedDatatype(DataType dataType) {
+	public String getExpectedNativeDatatype(DataType dataType) {
 		return expectedDBTypeForEntityType.get(dataType);
 	}
 
