@@ -105,9 +105,8 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
                                          ReactiveConnection connection,
                                          PersistenceContext persistenceContext) {
         super(factory, options);
-        Integer batchSize = getConfiguredJdbcBatchSize();
-        reactiveConnection = batchSize==null || batchSize<2 ? connection :
-                new BatchingConnection( connection, batchSize );
+        int batchSize = factory.getSessionFactoryOptions().getJdbcBatchSize();
+		reactiveConnection = batchSize < 2 ? connection : new BatchingConnection( connection, batchSize );
         allowBytecodeProxy = getFactory().getSessionFactoryOptions().isEnhancementAsProxyEnabled();
         this.persistenceContext = persistenceContext;
         batchingHelperSession = this;
