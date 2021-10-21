@@ -240,8 +240,12 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 		final StringBuilder sb = new StringBuilder()
 				.append( "select table_name as " ).append( getResultSetTableNameLabel() )
 				.append( ", column_name as " ).append( getResultSetColumnNameLabel() )
-				.append( ", " ).append( getInformationSchemaColumnsDataTypeColumn() )
-				.append( " as " ).append( getResultSetTypeNameLabel() )
+				.append( ", " ).append( " case when " )
+				.append( getInformationSchemaColumnsDataTypeColumn() )
+				.append( " = 'bpchar' then 'CHAR' else " )
+				.append( getInformationSchemaColumnsDataTypeColumn() )
+				.append( " end as ")
+				.append( getResultSetTypeNameLabel() )
 				.append( ", null as " ).append( getResultSetColumnSizeLabel() )
 				// Column size is fairly complicated to get out of information_schema
 				// and likely to be DB-dependent. Currently, Hibernate ORM does not use
