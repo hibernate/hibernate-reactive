@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive;
+package org.hibernate.reactive.schema;
 
 import java.io.Serializable;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
@@ -22,6 +21,7 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.hibernate.tool.schema.spi.SchemaManagementException;
@@ -33,19 +33,13 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 
-public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
+public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 
-	private static final String DEFAULT_CATALOG_NAME = "master";
-
-	/**
-	 * Test INDIVIDUALLY option without setting the default catalog name
-	 */
-	public static class IndividuallySchemaUpdateSqlServerTest
-			extends SchemaUpdateSqlServerTestBase {
+	public static class IndividuallySchemaUpdateMySqlTestBase extends SchemaUpdateMySqlTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -55,29 +49,7 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 		}
 	}
 
-	/**
-	 * Test INDIVIDUALLY option when we set the catalog name to the default name
-	 */
-	public static class IndividuallySchemaUpdateWithCatalogTest
-			extends SchemaUpdateSqlServerTestBase {
-
-		@Override
-		protected Configuration constructConfiguration(String hbm2DdlOption) {
-			final Configuration configuration = super.constructConfiguration( hbm2DdlOption );
-			configuration.setProperty( Settings.DEFAULT_CATALOG, DEFAULT_CATALOG_NAME );
-			return configuration;
-		}
-
-		@Override
-		public String addCatalog(String name) {
-			return DEFAULT_CATALOG_NAME + "." + name;
-		}
-	}
-
-	/**
-	 * Test GROUPED option without setting the default catalog name
-	 */
-	public static class GroupedSchemaUpdateSqlServerTest extends SchemaUpdateSqlServerTestBase {
+	public static class GroupedSchemaUpdateMySqlTestBase extends SchemaUpdateMySqlTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -87,37 +59,15 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 		}
 	}
 
-	/**
-	 * Test GROUPED option when we set the catalog name to default name
-	 */
-	public static class GroupedSchemaUpdateWithCatalogNameTest extends SchemaUpdateSqlServerTestBase {
-
-		@Override
-		protected Configuration constructConfiguration(String hbm2DdlOption) {
-			final Configuration configuration = super.constructConfiguration( hbm2DdlOption );
-			configuration.setProperty( Settings.DEFAULT_CATALOG, DEFAULT_CATALOG_NAME );
-			return configuration;
-		}
-
-		@Override
-		public String addCatalog(String name) {
-			return DEFAULT_CATALOG_NAME + "." + name;
-		}
-	}
-
 	protected Configuration constructConfiguration(String hbm2DdlOption) {
 		Configuration configuration = constructConfiguration();
 		configuration.setProperty( Settings.HBM2DDL_AUTO, hbm2DdlOption );
-		configuration.setProperty( Settings.DEFAULT_SCHEMA, "dbo" );
+		configuration.setProperty( Settings.DEFAULT_CATALOG, "hreact" );
 		return configuration;
 	}
 
 	@Rule
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( SQLSERVER );
-
-	public String addCatalog(String name) {
-		return name;
-	}
+	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( MYSQL );
 
 	@Before
 	@Override
@@ -126,25 +76,8 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 		createHbm2ddlConf.addAnnotatedClass( ASimpleFirst.class );
 		createHbm2ddlConf.addAnnotatedClass( AOther.class );
 
-		test( context, dropSequenceIfExists( createHbm2ddlConf )
-				.thenCompose( ignore -> setupSessionFactory( createHbm2ddlConf )
-				.thenCompose( v -> factoryManager.stop() ) ) );
-	}
-
-	// See HHH-14835: Vert.x throws an exception when the catalog is specified.
-	// Because it happens during schema creation, the error is ignored and the build won't fail
-	// if one of the previous tests has already created the sequence.
-	// This method makes sure that the sequence is deleted if it exists, so that these tests
-	// fail consistently when the wrong ORM version is used.
-	private CompletionStage<Void> dropSequenceIfExists(Configuration createHbm2ddlConf) {
-		return setupSessionFactory( createHbm2ddlConf )
-				.thenCompose( v -> getSessionFactory()
-						.withTransaction( (session, transaction) -> session
-								// No need to add the catalog name because MSSQL doesn't support it
-								.createNativeQuery( "drop sequence if exists dbo.hibernate_sequence" )
-								.executeUpdate() ) )
-				.handle( (res, err) -> null )
-				.thenCompose( v -> factoryManager.stop() );
+		test( context, setupSessionFactory( createHbm2ddlConf )
+				.thenCompose( v -> factoryManager.stop() ) );
 	}
 
 	@After
@@ -160,28 +93,29 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 				.thenCompose( v -> factoryManager.stop() ) );
 	}
 
+
 	@Test
 	public void testValidationSucceed(TestContext context) {
-		Configuration configuration = constructConfiguration( "validate" );
-		configuration.addAnnotatedClass( ASimpleFirst.class );
-		configuration.addAnnotatedClass( AOther.class );
+		Configuration createHbm2ddlConf = constructConfiguration( "validate" );
+		createHbm2ddlConf.addAnnotatedClass( ASimpleFirst.class );
+		createHbm2ddlConf.addAnnotatedClass( AOther.class );
 
-		test( context, setupSessionFactory( configuration ) );
+		test( context, setupSessionFactory( createHbm2ddlConf ) );
 	}
 
-	//TODO: We need more tests to check that it fails for other scenarios:
-	//      missing column, wrong type (?) and so on. (I don't know exactly what cases `validate` actually checks).
+	//TODO: I'm just checking that the validation fails because the table is missing, but we need more tests to check that
+	//      it fails for other scenarios: missing column, wrong type (?) and so on. (I don't know exactly what cases `validate`
+	//      actually checks).
 	@Test
 	public void testValidationFails(TestContext context) {
-		Configuration configuration = constructConfiguration( "validate" );
-		configuration.addAnnotatedClass( AAnother.class );
+		Configuration createHbm2ddlConf = constructConfiguration( "validate" );
+		createHbm2ddlConf.addAnnotatedClass( AAnother.class );
 
-		final String errorMessage = "Schema-validation: missing table [" + addCatalog( "dbo.AAnother" ) + "]";
-		test( context, setupSessionFactory( configuration )
+		test( context, setupSessionFactory( createHbm2ddlConf )
 				.handle( (unused, throwable) -> {
 					context.assertNotNull( throwable );
 					context.assertEquals( throwable.getClass(), SchemaManagementException.class );
-					context.assertEquals( throwable.getMessage(), errorMessage );
+					context.assertEquals( throwable.getMessage(), "Schema-validation: missing table [hreact.AAnother]" );
 					return null;
 				} ) );
 	}
@@ -189,20 +123,19 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	@Test
 	public void testUpdate(TestContext context) {
 		final String indexDefinitionQuery =
-				"select COL_NAME(ic.object_id, ic.column_id), ic.is_descending_key " +
-					"from sys.indexes i inner join sys.index_columns ic " +
-					"on ic.object_id = i.object_id and ic.index_id = i.index_id " +
-					"where OBJECT_NAME(i.object_id) = ? and i.name = ? and i.is_unique = ? " +
-					"order by ic.key_ordinal";
+				"select column_name, collation from information_schema.statistics " +
+						"where table_schema = 'hreact' " +
+						"and table_name = ? and index_name = ? and non_unique = ? " +
+						"order by seq_in_index";
 
 		final String foreignKeyDefinitionQuery =
-				"select COL_NAME( parent_object_id, parent_column_id ) as col_name, " +
-						"COL_NAME( referenced_object_id, referenced_column_id) as ref_col_name " +
-						"from sys.foreign_key_columns " +
-						"where OBJECT_NAME( constraint_object_id ) = ? " +
-						"and OBJECT_NAME( parent_object_id ) = ? " +
-						"and OBJECT_NAME( referenced_object_id ) = ? " +
-						"order by constraint_column_id";
+				"select column_name, referenced_column_name " +
+						"from information_schema.key_column_usage " +
+						"where table_schema = 'hreact' and " +
+						"constraint_name = ? and " +
+						"table_name = ? and " +
+						"referenced_table_name = ? " +
+						"order by ordinal_position";
 
 		final ASimpleNext aSimple = new ASimpleNext();
 		aSimple.aValue = 9;
@@ -246,42 +179,72 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 										} )
 										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "ASimple" )
+												.setParameter( 2, "PRIMARY" )
+												.setParameter( 3, 0 )
+												.getSingleResult()
+												.thenAccept( result -> {
+													final Object[] resultArray = (Object[]) result;
+													context.assertEquals( "id", resultArray[0] );
+													context.assertEquals( "A", resultArray[1] );
+												} )
+										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
+												.setParameter( 1, "ASimple" )
 												.setParameter( 2, "i_asimple_avalue_astringValue" )
-												.setParameter( 3, 0 )
-												.getResultList()
-												.thenAccept( list -> {
-													context.assertEquals( 2, list.size() );
-													context.assertEquals( "aValue", ( (Object[]) list.get(0) )[0] );
-													context.assertEquals( false, ( (Object[]) list.get(0) )[1] );
-													context.assertEquals( "aStringValue", ( (Object[]) list.get(1) )[0] );
-													context.assertEquals( true, ( (Object[]) list.get(1) )[1] );
-												} )
-										)
-										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
-												.setParameter( 1, "ASimple" )
-												.setParameter( 2, "i_asimple_avalue_data" )
-												.setParameter( 3, 0 )
-												.getResultList()
-												.thenAccept( list -> {
-													context.assertEquals( 2, list.size() );
-													context.assertEquals( "aValue", ( (Object[]) list.get(0) )[0] );
-													context.assertEquals( true, ( (Object[]) list.get(0) )[1] );
-													context.assertEquals( "data", ( (Object[]) list.get(1) )[0] );
-													context.assertEquals( false, ( (Object[]) list.get(1) )[1] );
-												} )
-										)
-										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
-												.setParameter( 1, "ASimple" )
-												.setParameter( 2, "u_asimple_astringvalue" )
 												.setParameter( 3, 1 )
 												.getResultList()
 												.thenAccept( list -> {
-													context.assertEquals( 1, list.size() );
-													context.assertEquals( "aStringValue", ( (Object[]) list.get(0) )[0] );
-													context.assertEquals( false, ( (Object[]) list.get(0) )[1] );
+													context.assertEquals( 2, list.size() );
+													context.assertEquals( "aValue", ( (Object[]) list.get( 0 ) )[0] );
+													context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
+													context.assertEquals( "aStringValue", ( (Object[]) list.get( 1 ) )[0] );
+													context.assertEquals( "D", ( (Object[]) list.get( 1 ) )[1] );
 												} )
-										)
-										.thenCompose( v -> s.createNativeQuery( foreignKeyDefinitionQuery )
+										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
+												.setParameter( 1, "ASimple" )
+												.setParameter( 2, "i_asimple_avalue_data" )
+												.setParameter( 3, 1 )
+												.getResultList()
+												.thenAccept( list -> {
+													context.assertEquals( 2, list.size() );
+													context.assertEquals( "aValue", ( (Object[]) list.get( 0 ) )[0] );
+													context.assertEquals( "D", ( (Object[]) list.get( 0 ) )[1] );
+													context.assertEquals( "data", ( (Object[]) list.get( 1 ) )[0] );
+													context.assertEquals( "A", ( (Object[]) list.get( 1 ) )[1] );
+												} )
+										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
+												.setParameter( 1, "ASimple" )
+												.setParameter( 2, "u_asimple_astringvalue" )
+												.setParameter( 3, 0 )
+												.getResultList()
+												.thenAccept( list -> {
+													context.assertEquals( 1, list.size() );
+													context.assertEquals( "aStringValue", ( (Object[]) list.get( 0 ) )[0] );
+													context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
+												} )
+										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
+												.setParameter( 1, "AOther" )
+												.setParameter( 2, "PRIMARY" )
+												.setParameter( 3, 0 )
+												.getResultList()
+												.thenAccept( list -> {
+													context.assertEquals( 2, list.size() );
+													context.assertEquals( "id1", ( (Object[]) list.get( 0 ) )[0] );
+													context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
+													context.assertEquals( "id2", ( (Object[]) list.get( 1 ) )[0] );
+													context.assertEquals( "A", ( (Object[]) list.get( 1 ) )[1] );
+												} )
+										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
+												.setParameter( 1, "AAnother" )
+												.setParameter( 2, "PRIMARY" )
+												.setParameter( 3, 0 )
+												.getResultList()
+												.thenAccept( list -> {
+													context.assertEquals( 1, list.size() );
+													context.assertEquals( "id", ( (Object[]) list.get( 0 ) )[0] );
+													context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
+												} )
+										// check foreign keys
+										).thenCompose( v -> s.createNativeQuery( foreignKeyDefinitionQuery )
 												.setParameter( 1, "fk_asimple_aother" )
 												.setParameter( 2, "ASimple" )
 												.setParameter( 3, "AOther" )
@@ -304,7 +267,7 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 													context.assertEquals( "id", ( (Object[]) result )[1] );
 												} )
 										)
-								) )
+						) )
 		);
 
 	}

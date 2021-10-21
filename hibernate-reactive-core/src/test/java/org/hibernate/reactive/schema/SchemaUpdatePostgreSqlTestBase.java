@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive;
+package org.hibernate.reactive.schema;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -21,6 +21,7 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.hibernate.tool.schema.spi.SchemaManagementException;
@@ -32,13 +33,13 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 
-public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
+public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 
-	public static class IndividuallySchemaUpdateCockroachTestBase extends SchemaUpdateCockroachDBTestBase {
+	public static class IndividuallySchemaUpdatePostgreSqlTestBase extends SchemaUpdatePostgreSqlTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -48,7 +49,7 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 		}
 	}
 
-	public static class GroupedSchemaUpdateCockroachTestBase extends SchemaUpdateCockroachDBTestBase {
+	public static class GroupedSchemaUpdatePostgreSqlTestBase extends SchemaUpdatePostgreSqlTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -66,7 +67,7 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 	}
 
 	@Rule
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( COCKROACHDB );
+	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
 
 	@Before
 	@Override
@@ -174,19 +175,19 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 												.getResultList()
 												.thenAccept( list -> {
 													context.assertEquals(
-															"CREATE INDEX i_asimple_avalue_astringvalue ON postgres.public.asimple USING btree (avalue ASC, astringvalue DESC)",
+															"CREATE UNIQUE INDEX asimple_pkey ON public.asimple USING btree (id)",
 															list.get( 0 )
 													);
 													context.assertEquals(
-															"CREATE INDEX i_asimple_avalue_data ON postgres.public.asimple USING btree (avalue DESC, data ASC)",
+															"CREATE INDEX i_asimple_avalue_astringvalue ON public.asimple USING btree (avalue, astringvalue DESC)",
 															list.get( 1 )
 													);
 													context.assertEquals(
-															"CREATE UNIQUE INDEX \"primary\" ON postgres.public.asimple USING btree (id ASC)",
+															"CREATE INDEX i_asimple_avalue_data ON public.asimple USING btree (avalue DESC, data)",
 															list.get( 2 )
 													);
 													context.assertEquals(
-															"CREATE UNIQUE INDEX u_asimple_astringvalue ON postgres.public.asimple USING btree (astringvalue ASC)",
+															"CREATE UNIQUE INDEX u_asimple_astringvalue ON public.asimple USING btree (astringvalue)",
 															list.get( 3 )
 													);
 												} )
@@ -196,7 +197,7 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 												.getSingleResult()
 												.thenAccept( result ->
 																	 context.assertEquals(
-																			 "CREATE UNIQUE INDEX \"primary\" ON postgres.public.aother USING btree (id1 ASC, id2 ASC)",
+																			 "CREATE UNIQUE INDEX aother_pkey ON public.aother USING btree (id1, id2)",
 																			 result
 																	 )
 												)
@@ -206,7 +207,7 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 												.getSingleResult()
 												.thenAccept( result ->
 																	 context.assertEquals(
-																			 "CREATE UNIQUE INDEX \"primary\" ON postgres.public.aanother USING btree (id ASC)",
+																			 "CREATE UNIQUE INDEX aanother_pkey ON public.aanother USING btree (id)",
 																			 result
 																	 )
 												)
@@ -266,7 +267,7 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 
 	@Entity(name = "ASimple")
 	@Table(name = "ASimple", indexes = {
-			@Index(name = "i_asimple_avalue_astringValue", columnList = "aValue ASC, aStringValue DESC"),
+			@Index(name = "i_asimple_avalue_astringvalue", columnList = "aValue ASC, aStringValue DESC"),
 			@Index(name = "i_asimple_avalue_data", columnList = "aValue DESC, data ASC")
 	},
 			uniqueConstraints = { @UniqueConstraint(name = "u_asimple_astringvalue", columnNames = "aStringValue") }
