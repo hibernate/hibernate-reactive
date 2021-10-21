@@ -127,15 +127,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	//Lazily initialized
 	private transient ExceptionConverter exceptionConverter;
 
-	public ReactiveSessionImpl(SessionFactoryImpl delegate, SessionCreationOptions options,
-							   ReactiveConnection connection) {
+	public ReactiveSessionImpl(SessionFactoryImpl delegate, SessionCreationOptions options, ReactiveConnection connection) {
 		super( delegate, options );
 		InternalStateAssertions.assertUseOnEventLoop();
 		this.associatedWorkThread = Thread.currentThread();
 		//matches configuration property "hibernate.jdbc.batch_size" :
 		int batchSize = delegate.getSessionFactoryOptions().getJdbcBatchSize();
-		reactiveConnection = batchSize<2 ? connection :
-				new BatchingConnection( connection, batchSize );
+		reactiveConnection = batchSize < 2 ? connection : new BatchingConnection( connection, batchSize );
 	}
 
 	@Override
