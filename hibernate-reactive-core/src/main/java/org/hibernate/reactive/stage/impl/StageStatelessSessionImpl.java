@@ -38,6 +38,10 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 		this.factory = factory;
 	}
 
+	public ReactiveConnection getReactiveConnection() {
+		return delegate.getReactiveConnection();
+	}
+
 	private <T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stage) {
 		return factory.stage( stage );
 	}
