@@ -131,7 +131,7 @@ tasks.addRule( "Pattern testDb<id>" ) { String taskName ->
 }
 
 // The dbs we want to test when running testAll
-def dbs = ["MariaDB", 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB']
+def dbs = ["MariaDB", 'MySQL', 'PostgreSQL', 'CockroachDB', 'SqlServer']
 task testAll( dependsOn: dbs.collect( [] as HashSet ) { db -> "testDb${db}" } ) {
     description = "Run tests for ${dbs}"
 }

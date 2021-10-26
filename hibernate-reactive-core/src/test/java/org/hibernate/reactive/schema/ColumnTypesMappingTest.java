@@ -5,94 +5,51 @@
  */
 package org.hibernate.reactive.schema;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
-
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.TestableDatabase;
-import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-public class BasicTypesTest extends BaseReactiveTest {
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.getDatatypeQuery;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.getExpectedDatatype;
 
-	protected Configuration constructConfiguration(String hbm2DdlOption) {
-		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( Settings.HBM2DDL_JDBC_METADATA_EXTRACTOR_STRATEGY, INDIVIDUALLY.toString() );
-		configuration.setProperty( Settings.HBM2DDL_AUTO, hbm2DdlOption );
-		return configuration;
-	}
+/**
+ * Check that each property is mapped as the expected type in the database.
+ */
+public class ColumnTypesMappingTest extends BaseReactiveTest {
 
 	@Rule
 	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( DB2 );
 
-	@Before
 	@Override
-	public void before(TestContext context) {
-
-		Configuration configuration = constructConfiguration( "create" );
+	protected Configuration constructConfiguration() {
+		Configuration configuration = super.constructConfiguration();
+//		configuration.setProperty( Settings.HBM2DDL_AUTO, "update" );
 		configuration.addAnnotatedClass( BasicTypesTestEntity.class );
-		configuration.setProperty( Settings.SHOW_SQL, System.getProperty(Settings.SHOW_SQL, "true") );
-
-		test( context, setupSessionFactory( configuration )
-				.thenCompose( v -> factoryManager.stop() ) );
-	}
-
-	@After
-	@Override
-	public void after(TestContext context) {
-
-		final Configuration configuration = constructConfiguration( "drop" );
-		configuration.addAnnotatedClass( BasicTypesTestEntity.class );
-
-		test( context, factoryManager.stop()
-				.thenCompose( v -> setupSessionFactory( configuration ) )
-				.thenCompose( v -> factoryManager.stop() ) );
-	}
-
-	private String getDatatypeQuery( String actualTableName, String actualColumnName ) {
-		return DatabaseConfiguration.getDatatypeQuery( actualTableName, actualColumnName );
-	}
-
-	private String getExpectedResult( TestableDatabase.DataType dataType ) {
-		return DatabaseConfiguration.getExpectedDatatype( dataType );
-	}
-
-	private  void assertDatatype(TestContext context, String result, TestableDatabase.DataType datatype) {
-		context.assertTrue( result.equals( DatabaseConfiguration.getExpectedDatatype( datatype ) ) );
+		return configuration;
 	}
 
 	private void testDatatype(TestContext context, String columnName, TestableDatabase.DataType datatype) {
-
-		BasicTypesTestEntity testEntity = new BasicTypesTestEntity();
-
-		final Configuration configuration = constructConfiguration( "create" );
-		configuration.addAnnotatedClass( BasicTypesTestEntity.class );
-
-		test(
-				context,
-				setupSessionFactory( configuration )
-						.thenCompose( v -> getSessionFactory().withTransaction( (session, t) -> session.persist( testEntity ) ) )
-						.thenCompose( v1 -> openSession()
+		BasicTypesTestEntity testEntity = new BasicTypesTestEntity("Testing: " + columnName);
+		test( context, getSessionFactory()
+				.withTransaction( (session, t) -> session.persist( testEntity ) )
+				.thenCompose( v1 -> openSession()
 								.thenCompose( s -> s
 										.find( BasicTypesTestEntity.class, testEntity.id )
-										.thenAccept( result -> context.assertNotNull( result ) )
+										.thenAccept( result -> context.assertEquals( testEntity.name, result.name ) )
 										.thenCompose( v -> s
-												.createNativeQuery(
-														getDatatypeQuery( testEntity.getEntityName(), columnName ), String.class )
+												.createNativeQuery( getDatatypeQuery( BasicTypesTestEntity.TABLE_NAME, columnName ), String.class )
 												.getSingleResult()
-												.thenAccept( result -> assertDatatype( context, result, datatype ) )
+												.thenAccept( result -> context.assertEquals( getExpectedDatatype( datatype ), result ) )
 										)
 								)
-						)
+				)
 		);
 	}
 
@@ -112,8 +69,8 @@ public class BasicTypesTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testIntegerPrimativeType(TestContext context) {
-		testDatatype( context, "primativeInt", TestableDatabase.DataType.INT_PRIMATIVE );
+	public void testIntegerPrimitiveType(TestContext context) {
+		testDatatype( context, "primitiveInt", TestableDatabase.DataType.INT_PRIMITIVE );
 	}
 
 	@Test
@@ -127,8 +84,8 @@ public class BasicTypesTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLongPrimativeType(TestContext context) {
-		testDatatype( context, "primativeLong", TestableDatabase.DataType.LONG_PRIMATIVE );
+	public void testLongPrimitiveType(TestContext context) {
+		testDatatype( context, "primitiveLong", TestableDatabase.DataType.LONG_PRIMITIVE );
 	}
 
 	@Test
@@ -137,8 +94,8 @@ public class BasicTypesTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testFloatPrimativeType(TestContext context) {
-		testDatatype( context, "primativeFloat", TestableDatabase.DataType.FLOAT_PRIMATIVE );
+	public void testFloatPrimitiveType(TestContext context) {
+		testDatatype( context, "primitiveFloat", TestableDatabase.DataType.FLOAT_PRIMITIVE );
 	}
 
 
@@ -148,13 +105,13 @@ public class BasicTypesTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testDoublePrimativeType(TestContext context) {
-		testDatatype( context, "primativeDouble", TestableDatabase.DataType.DOUBLE_PRIMATIVE );
+	public void testDoublePrimitiveType(TestContext context) {
+		testDatatype( context, "primitiveDouble", TestableDatabase.DataType.DOUBLE_PRIMITIVE );
 	}
 
 	@Test
-	public void testBooleanPrimativeType(TestContext context) {
-		testDatatype( context, "primativeBoolean", TestableDatabase.DataType.BOOLEAN_PRIMATIVE );
+	public void testBooleanPrimitiveType(TestContext context) {
+		testDatatype( context, "primitiveBoolean", TestableDatabase.DataType.BOOLEAN_PRIMITIVE );
 	}
 
 	@Test
@@ -178,13 +135,13 @@ public class BasicTypesTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testBytePrimativeType(TestContext context) {
-		testDatatype( context, "primativeByte", TestableDatabase.DataType.BYTE_PRIMATIVE );
+	public void testBytePrimitiveType(TestContext context) {
+		testDatatype( context, "primitiveByte", TestableDatabase.DataType.BYTE_PRIMITIVE );
 	}
 
 	@Test
-	public void testBytesPrimativeType(TestContext context) {
-		testDatatype( context, "primativeBytes", TestableDatabase.DataType.BYTES_PRIMATIVE );
+	public void testBytesPrimitiveType(TestContext context) {
+		testDatatype( context, "primitiveBytes", TestableDatabase.DataType.BYTES_PRIMITIVE );
 	}
 
 	@Test

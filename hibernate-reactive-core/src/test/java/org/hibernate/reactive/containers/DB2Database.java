@@ -24,22 +24,22 @@ class DB2Database implements TestableDatabase {
 
 	public static Map<DataType, String> expectedDBTypeForEntityType = new EnumMap<DataType, String>( DataType.class);
 	static {{
-		expectedDBTypeForEntityType.put( DataType.BOOLEAN_PRIMATIVE, "SMALLINT");
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_PRIMITIVE, "SMALLINT");
 		expectedDBTypeForEntityType.put( DataType.BOOLEAN_FIELD, "SMALLINT");
 		expectedDBTypeForEntityType.put( DataType.BOOLEAN_NUMERIC, "INTEGER");
 		expectedDBTypeForEntityType.put( DataType.BOOLEAN_TRUE_FALSE, "CHARACTER");
 		expectedDBTypeForEntityType.put( DataType.BOOLEAN_YES_NO, "CHARACTER");
-		expectedDBTypeForEntityType.put( DataType.INT_PRIMATIVE, "INTEGER");
+		expectedDBTypeForEntityType.put( DataType.INT_PRIMITIVE, "INTEGER");
 		expectedDBTypeForEntityType.put( DataType.INTEGER_FIELD, "INTEGER");
-		expectedDBTypeForEntityType.put( DataType.LONG_PRIMATIVE, "BIGINT");
+		expectedDBTypeForEntityType.put( DataType.LONG_PRIMITIVE, "BIGINT");
 		expectedDBTypeForEntityType.put( DataType.LONG_FIELD, "BIGINT");
-		expectedDBTypeForEntityType.put( DataType.FLOAT_PRIMATIVE, "DOUBLE");
+		expectedDBTypeForEntityType.put( DataType.FLOAT_PRIMITIVE, "DOUBLE");
 		expectedDBTypeForEntityType.put( DataType.FLOAT_FIELD, "DOUBLE");
-		expectedDBTypeForEntityType.put( DataType.DOUBLE_PRIMATIVE, "DOUBLE");
+		expectedDBTypeForEntityType.put( DataType.DOUBLE_PRIMITIVE, "DOUBLE");
 		expectedDBTypeForEntityType.put( DataType.DOUBLE_FIELD, "DOUBLE");
-		expectedDBTypeForEntityType.put( DataType.BYTE_PRIMATIVE, "SMALLINT");
+		expectedDBTypeForEntityType.put( DataType.BYTE_PRIMITIVE, "SMALLINT");
 		expectedDBTypeForEntityType.put( DataType.BYTE_FIELD, "SMALLINT");
-		expectedDBTypeForEntityType.put( DataType.BYTES_PRIMATIVE, "VARCHAR");
+		expectedDBTypeForEntityType.put( DataType.BYTES_PRIMITIVE, "VARCHAR");
 		expectedDBTypeForEntityType.put( DataType.URL, "VARCHAR");
 		expectedDBTypeForEntityType.put( DataType.TIMEZONE, "VARCHAR");
 		expectedDBTypeForEntityType.put( DataType.DATE_TEMPORAL_TYPE, "DATE");

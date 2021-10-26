@@ -24,7 +24,6 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.hibernate.tool.schema.spi.SchemaManagementException;
 
 import org.junit.After;
 import org.junit.Before;
@@ -93,7 +92,6 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 				.thenCompose( v -> factoryManager.stop() ) );
 	}
 
-
 	@Test
 	public void testValidationSucceed(TestContext context) {
 		Configuration createHbm2ddlConf = constructConfiguration( "validate" );
@@ -101,23 +99,6 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 		createHbm2ddlConf.addAnnotatedClass( AOther.class );
 
 		test( context, setupSessionFactory( createHbm2ddlConf ) );
-	}
-
-	//TODO: I'm just checking that the validation fails because the table is missing, but we need more tests to check that
-	//      it fails for other scenarios: missing column, wrong type (?) and so on. (I don't know exactly what cases `validate`
-	//      actually checks).
-	@Test
-	public void testValidationFails(TestContext context) {
-		Configuration createHbm2ddlConf = constructConfiguration( "validate" );
-		createHbm2ddlConf.addAnnotatedClass( AAnother.class );
-
-		test( context, setupSessionFactory( createHbm2ddlConf )
-				.handle( (unused, throwable) -> {
-					context.assertNotNull( throwable );
-					context.assertEquals( throwable.getClass(), SchemaManagementException.class );
-					context.assertEquals( throwable.getMessage(), "Schema-validation: missing table [public.AAnother]" );
-					return null;
-				} ) );
 	}
 
 	@Test

@@ -10,13 +10,13 @@ package org.hibernate.reactive.containers;
  */
 public interface TestableDatabase {
 	enum DataType {
-		BOOLEAN_PRIMATIVE, BOOLEAN_FIELD, BOOLEAN_TRUE_FALSE, BOOLEAN_YES_NO, BOOLEAN_NUMERIC,
-		INT_PRIMATIVE, INTEGER_FIELD,
-		LONG_PRIMATIVE, LONG_FIELD,
-		FLOAT_PRIMATIVE, FLOAT_FIELD,
-		DOUBLE_PRIMATIVE, DOUBLE_FIELD,
-		BYTE_PRIMATIVE, BYTE_FIELD,
-		BYTES_PRIMATIVE,
+		BOOLEAN_PRIMITIVE, BOOLEAN_FIELD, BOOLEAN_TRUE_FALSE, BOOLEAN_YES_NO, BOOLEAN_NUMERIC,
+		INT_PRIMITIVE, INTEGER_FIELD,
+		LONG_PRIMITIVE, LONG_FIELD,
+		FLOAT_PRIMITIVE, FLOAT_FIELD,
+		DOUBLE_PRIMITIVE, DOUBLE_FIELD,
+		BYTE_PRIMITIVE, BYTE_FIELD,
+		BYTES_PRIMITIVE,
 		URL,
 		TIMEZONE,
 		DATE_TEMPORAL_TYPE, DATE_AS_TIME_TEMPORAL_TYPE, DATE_AS_TIMESTAMP_TEMPORAL_TYPE,
@@ -37,13 +37,6 @@ public interface TestableDatabase {
 
 	String getUri();
 
-	/**
-	 * Implementations return an executable query string based on a specific table name and column name
-	 *
-	 * @param tableName
-	 * @param columnName may be null
-	 * @return
-	 */
 	String getNativeDatatypeQuery(String tableName, String columnName);
 
 	String getExpectedNativeDatatype(DataType dataType);
