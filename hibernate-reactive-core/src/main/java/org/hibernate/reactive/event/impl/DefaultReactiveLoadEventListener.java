@@ -327,10 +327,6 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 
-		final boolean allowBytecodeProxy = factory
-				.getSessionFactoryOptions()
-				.isEnhancementAsProxyEnabled();
-
 		final EntityMetamodel entityMetamodel = persister.getEntityMetamodel();
 		final boolean entityHasHibernateProxyFactory = entityMetamodel
 				.getTuplizer()
@@ -338,7 +334,6 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 
 		// Check for the case where we can use the entity itself as a proxy
 		if ( options.isAllowProxyCreation()
-				&& allowBytecodeProxy
 				&& entityMetamodel.getBytecodeEnhancementMetadata().isEnhancedForLazyLoading() ) {
 			// if there is already a managed entity instance associated with the PC, return it
 			final Object managed = persistenceContext.getEntity( keyToLoad );
