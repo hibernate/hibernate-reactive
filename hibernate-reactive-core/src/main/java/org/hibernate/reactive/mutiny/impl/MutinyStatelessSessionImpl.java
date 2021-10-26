@@ -11,6 +11,7 @@ import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 
@@ -37,6 +38,11 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 		this.delegate = delegate;
 		this.factory = factory;
 	}
+
+	public ReactiveConnection getReactiveConnection() {
+		return delegate.getReactiveConnection();
+	}
+
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
 		return factory.uni( stageSupplier );
