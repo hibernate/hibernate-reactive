@@ -378,8 +378,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		}
 
 		if ( incoming instanceof PersistentAttributeInterceptable
-				&& persister.getBytecodeEnhancementMetadata().isEnhancedForLazyLoading()
-				&& source.getSessionFactory().getSessionFactoryOptions().isEnhancementAsProxyEnabled() ) {
+				&& persister.getBytecodeEnhancementMetadata().isEnhancedForLazyLoading() ) {
 
 			final PersistentAttributeInterceptor incomingInterceptor = ( (PersistentAttributeInterceptable) incoming ).$$_hibernate_getInterceptor();
 			final PersistentAttributeInterceptor managedInterceptor = ( (PersistentAttributeInterceptable) managed ).$$_hibernate_getInterceptor();

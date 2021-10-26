@@ -1068,8 +1068,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	default boolean hasUnenhancedProxy() {
 		// skip proxy instantiation if entity is bytecode enhanced
 		return getEntityMetamodel().isLazy()
-				&& !( getEntityMetamodel().getBytecodeEnhancementMetadata().isEnhancedForLazyLoading()
-					&& getFactory().getSessionFactoryOptions().isEnhancementAsProxyEnabled() );
+				&& !getEntityMetamodel().getBytecodeEnhancementMetadata().isEnhancedForLazyLoading();
 	}
 
 	Object initializeLazyProperty(String fieldName, Object entity, SharedSessionContractImplementor session);

@@ -81,7 +81,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveConnection reactiveConnection;
-	private final boolean allowBytecodeProxy;
 
 	private final ReactiveStatelessSession batchingHelperSession;
 
@@ -93,7 +92,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 			ReactiveConnection connection) {
 		super( factory, options );
 		reactiveConnection = connection;
-		allowBytecodeProxy = getFactory().getSessionFactoryOptions().isEnhancementAsProxyEnabled();
 		persistenceContext = new ReactivePersistenceContextAdapter( this );
 		batchingHelperSession = new ReactiveStatelessSessionImpl( factory, options, connection, persistenceContext );
 	}
@@ -110,7 +108,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 		Integer batchSize = getConfiguredJdbcBatchSize();
 		reactiveConnection = batchSize == null || batchSize < 2 ? connection :
 				new BatchingConnection( connection, batchSize );
-		allowBytecodeProxy = getFactory().getSessionFactoryOptions().isEnhancementAsProxyEnabled();
 		this.persistenceContext = persistenceContext;
 		batchingHelperSession = this;
 	}
@@ -645,7 +642,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
 			EntityMetamodel entityMetamodel = persister.getEntityMetamodel();
 			BytecodeEnhancementMetadata enhancementMetadata = entityMetamodel.getBytecodeEnhancementMetadata();
-			if ( allowBytecodeProxy && enhancementMetadata.isEnhancedForLazyLoading() ) {
+			if ( enhancementMetadata.isEnhancedForLazyLoading() ) {
 
 				// if the entity defines a HibernateProxy factory, see if there is an
 				// existing proxy associated with the PC - and if so, use it
