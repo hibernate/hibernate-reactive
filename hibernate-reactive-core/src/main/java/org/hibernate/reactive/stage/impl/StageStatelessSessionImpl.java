@@ -5,6 +5,14 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import javax.persistence.EntityGraph;
+import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
+
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
@@ -12,14 +20,6 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.stage.Stage;
-
-import javax.persistence.EntityGraph;
-import javax.persistence.criteria.CriteriaDelete;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.CriteriaUpdate;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
@@ -163,6 +163,17 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	@Override
 	public <T> CompletionStage<T> fetch(T association) {
 		return stage( w -> delegate.reactiveFetch( association, false ) );
+	}
+
+	@Override
+	public Stage.StatelessSession setBatchSize(Integer batchSize) {
+		delegate.setBatchSize(batchSize);
+		return this;
+	}
+
+	@Override
+	public Integer getBatchSize() {
+		return delegate.getBatchSize();
 	}
 
 	@Override

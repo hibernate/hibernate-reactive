@@ -75,16 +75,15 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
  * preferred to delegation because there are places where
  * Hibernate core compares the identity of session instances.
  */
-public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
-		implements ReactiveStatelessSession {
+public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implements ReactiveStatelessSession {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-
-	private final ReactiveConnection reactiveConnection;
 
 	private final ReactiveStatelessSession batchingHelperSession;
 
 	private final PersistenceContext persistenceContext;
+
+	private ReactiveConnection reactiveConnection;
 
 	public ReactiveStatelessSessionImpl(
 			SessionFactoryImpl factory,
@@ -843,6 +842,19 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 		catch (RuntimeException e) {
 			throw getExceptionConverter().convert( e );
 		}
+	}
+
+	@Override
+	public void setBatchSize(Integer batchSize) {
+		setJdbcBatchSize( batchSize );
+		reactiveConnection = reactiveConnection instanceof BatchingConnection
+				? new BatchingConnection( (BatchingConnection) reactiveConnection, batchSize )
+				: new BatchingConnection( reactiveConnection, batchSize );
+	}
+
+	@Override
+	public Integer getBatchSize() {
+		return getJdbcBatchSize();
 	}
 
 	@Override

@@ -1032,6 +1032,7 @@ public interface Stage {
 		 * by the configuration property {@code hibernate.jdbc.batch_size}.
 		 */
 		Session setBatchSize(Integer batchSize);
+
 		/**
 		 * The session-level JDBC batch size, or {@code null} if it has not been
 		 * overridden.
@@ -1173,6 +1174,18 @@ public interface Stage {
 		 * @return a detached entity instance, via a {@code CompletionStage}
 		 */
 		<T> CompletionStage<T> get(EntityGraph<T> entityGraph, Object id);
+
+		/**
+		 * Set the session-level JDBC batch size, overriding the batch size set
+		 * by the configuration property {@code hibernate.jdbc.batch_size}.
+		 */
+		StatelessSession setBatchSize(Integer batchSize);
+
+		/**
+		 * The session-level JDBC batch size, or {@code null} if it has not been
+		 * overridden.
+		 */
+		Integer getBatchSize();
 
 		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query

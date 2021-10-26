@@ -5,7 +5,14 @@
  */
 package org.hibernate.reactive.mutiny.impl;
 
-import io.smallrye.mutiny.Uni;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import javax.persistence.EntityGraph;
+import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
 
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
@@ -15,14 +22,7 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 
-import javax.persistence.EntityGraph;
-import javax.persistence.criteria.CriteriaDelete;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.CriteriaUpdate;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Implements the {@link Mutiny.StatelessSession} API. This delegating
@@ -194,6 +194,17 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	@Override
 	public Mutiny.Transaction currentTransaction() {
 		return currentTransaction;
+	}
+
+	@Override
+	public Mutiny.StatelessSession setBatchSize(Integer batchSize) {
+		delegate.setBatchSize( batchSize );
+		return this;
+	}
+
+	@Override
+	public Integer getBatchSize() {
+		return delegate.getBatchSize();
 	}
 
 	private class Transaction<T> implements Mutiny.Transaction {

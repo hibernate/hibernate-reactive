@@ -1449,6 +1449,18 @@ public interface Mutiny {
 		Transaction currentTransaction();
 
 		/**
+		 * Set the session-level JDBC batch size, overriding the batch size set
+		 * by the configuration property {@code hibernate.jdbc.batch_size}.
+		 */
+		StatelessSession setBatchSize(Integer batchSize);
+
+		/**
+		 * The session-level JDBC batch size, or {@code null} if it has not been
+		 * overridden.
+		 */
+		Integer getBatchSize();
+
+		/**
 		 * @return false if {@link #close()} has been called
 		 */
 		boolean isOpen();

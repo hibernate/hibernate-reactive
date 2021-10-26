@@ -37,6 +37,10 @@ public class BatchingConnection implements ReactiveConnection {
 	private Expectation batchedExpectation;
 	private List<Object[]> batchParamValues;
 
+	public BatchingConnection(BatchingConnection connection, int batchSize) {
+		this( connection.delegate, batchSize );
+	}
+
 	public BatchingConnection(ReactiveConnection delegate, int batchSize) {
 		this.delegate = delegate;
 		this.batchSize = batchSize;

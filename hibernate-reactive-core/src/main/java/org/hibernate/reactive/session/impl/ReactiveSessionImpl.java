@@ -121,8 +121,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private static final Log log = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private transient final ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
-	private final ReactiveConnection reactiveConnection;
 	private final Thread associatedWorkThread;
+
+	private ReactiveConnection reactiveConnection;
 
 	//Lazily initialized
 	private transient ExceptionConverter exceptionConverter;
@@ -1520,7 +1521,10 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public void setBatchSize(Integer batchSize) {
-		setJdbcBatchSize(batchSize);
+		setJdbcBatchSize( batchSize );
+		reactiveConnection = reactiveConnection instanceof BatchingConnection
+				? new BatchingConnection( (BatchingConnection) reactiveConnection, batchSize )
+				: new BatchingConnection( reactiveConnection, batchSize );
 	}
 
 	@Override @SuppressWarnings("unchecked")
