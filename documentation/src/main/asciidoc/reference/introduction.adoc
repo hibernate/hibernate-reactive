@@ -193,6 +193,8 @@ a| * If `create`, first drop the schema and then export tables, sequences, and c
 
 This feature is extremely useful for testing.
 
+IMPORTANT: Hibernate Reactive doesn't support `validate` and `update` with Db2.
+
 === Logging the generated SQL
 
 :log4j: https://github.com/hibernate/hibernate-reactive/blob/main/examples/session-example/src/main/resources/log4j2.properties
