@@ -39,113 +39,113 @@ import static java.util.Arrays.stream;
  */
 public class TenantDependentPool extends DefaultSqlClientPool {
 
-    private MultiplePools pools;
+	private MultiplePools pools;
 
-    @Override
-    protected Pool getTenantPool(String tenantId) {
-        return pools.getTenantPool( Tenant.valueOf( tenantId ) );
-    }
+	@Override
+	protected Pool getTenantPool(String tenantId) {
+		return pools.getTenantPool( Tenant.valueOf( tenantId ) );
+	}
 
-    @Override
-    protected Pool createPool(URI uri, SqlConnectOptions connectOptions, PoolOptions poolOptions, Vertx vertx) {
-        Map<Tenant, Pool> poolMap = stream( Tenant.values() )
-                .collect( Collectors.toMap(
-                        tenant -> tenant,
-                        tenant -> createPool( uri, connectOptions, poolOptions, vertx, tenant )
-                ) );
-        pools = new MultiplePools( poolMap );
-        return pools;
-    }
+	@Override
+	protected Pool createPool(URI uri, SqlConnectOptions connectOptions, PoolOptions poolOptions, Vertx vertx) {
+		Map<Tenant, Pool> poolMap = stream( Tenant.values() )
+				.collect( Collectors.toMap(
+						tenant -> tenant,
+						tenant -> createPool( uri, connectOptions, poolOptions, vertx, tenant )
+				) );
+		pools = new MultiplePools( poolMap );
+		return pools;
+	}
 
-    private Pool createPool(URI uri, SqlConnectOptions connectOptions, PoolOptions poolOptions, Vertx vertx, Tenant tenant) {
-        return super.createPool( changeDbName( uri, tenant ), changeDbName( connectOptions, tenant ), poolOptions, vertx );
-    }
+	private Pool createPool(URI uri, SqlConnectOptions connectOptions, PoolOptions poolOptions, Vertx vertx, Tenant tenant) {
+		return super.createPool( changeDbName( uri, tenant ), changeDbName( connectOptions, tenant ), poolOptions, vertx );
+	}
 
-    /**
-     * Replace the database in the connection string for PostgreSQL.
-     * <p>
-     * PostgreSQL connection string example:
-     *
-     * <blockquote>
-     * {@code postgresql://localhost:5432/hreact?loggerLevel=OFF&user=hreact&password=hreact}
-     * </blockquote>
-     * </p>
-     */
-    private static URI changeDbName(URI uri, Tenant tenant) {
-        String uriAsString = uri.toString()
-                .replaceAll( "/[\\w\\d]+\\?", "/" + tenant.getDbName() + "?" );
-        return URI.create( uriAsString );
-    }
+	/**
+	 * Replace the database in the connection string for PostgreSQL.
+	 * <p>
+	 * PostgreSQL connection string example:
+	 *
+	 * <blockquote>
+	 * {@code postgresql://localhost:5432/hreact?loggerLevel=OFF&user=hreact&password=hreact}
+	 * </blockquote>
+	 * </p>
+	 */
+	private static URI changeDbName(URI uri, Tenant tenant) {
+		String uriAsString = uri.toString()
+				.replaceAll( "/[\\w\\d]+\\?", "/" + tenant.getDbName() + "?" );
+		return URI.create( uriAsString );
+	}
 
-    /**
-     * Returns a new {@link SqlConnectOptions} with the correct database name for the tenant identifier.
-     */
-    private SqlConnectOptions changeDbName(SqlConnectOptions connectOptions, Tenant tenantId) {
-        SqlConnectOptions newOptions = new SqlConnectOptions( connectOptions );
-        newOptions.setDatabase( tenantId.getDbName() );
-        return newOptions;
-    }
+	/**
+	 * Returns a new {@link SqlConnectOptions} with the correct database name for the tenant identifier.
+	 */
+	private SqlConnectOptions changeDbName(SqlConnectOptions connectOptions, Tenant tenantId) {
+		SqlConnectOptions newOptions = new SqlConnectOptions( connectOptions );
+		newOptions.setDatabase( tenantId.getDbName() );
+		return newOptions;
+	}
 
-    private static class MultiplePools implements Pool {
-        private final Map<Tenant, Pool> poolMap;
-        private final Tenant defaultTenantId;
+	private static class MultiplePools implements Pool {
+		private final Map<Tenant, Pool> poolMap;
+		private final Tenant defaultTenantId;
 
-        private MultiplePools(Map<Tenant, Pool> poolMap) {
-            this.poolMap = poolMap;
-            this.defaultTenantId = Tenant.DEFAULT;
-        }
+		private MultiplePools(Map<Tenant, Pool> poolMap) {
+			this.poolMap = poolMap;
+			this.defaultTenantId = Tenant.DEFAULT;
+		}
 
-        public Pool getTenantPool(Tenant tenantId) {
-            return poolMap.get( tenantId );
-        }
+		public Pool getTenantPool(Tenant tenantId) {
+			return poolMap.get( tenantId );
+		}
 
-        @Override
-        public void getConnection(Handler<AsyncResult<SqlConnection>> handler) {
-            poolMap.get( defaultTenantId ).getConnection( handler );
-        }
+		@Override
+		public void getConnection(Handler<AsyncResult<SqlConnection>> handler) {
+			poolMap.get( defaultTenantId ).getConnection( handler );
+		}
 
-        @Override
-        public Future<SqlConnection> getConnection() {
-            return poolMap.get( defaultTenantId ).getConnection();
-        }
+		@Override
+		public Future<SqlConnection> getConnection() {
+			return poolMap.get( defaultTenantId ).getConnection();
+		}
 
-        @Override
-        public Query<RowSet<Row>> query(String sql) {
-            return poolMap.get( defaultTenantId ).query( sql );
-        }
+		@Override
+		public Query<RowSet<Row>> query(String sql) {
+			return poolMap.get( defaultTenantId ).query( sql );
+		}
 
-        @Override
-        public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
-            return poolMap.get( defaultTenantId ).preparedQuery( sql );
-        }
+		@Override
+		public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
+			return poolMap.get( defaultTenantId ).preparedQuery( sql );
+		}
 
-        @Override
-        public void close(Handler<AsyncResult<Void>> handler) {
-            poolMap.forEach( (tenant, pool) -> pool.close( handler ) );
-        }
+		@Override
+		public void close(Handler<AsyncResult<Void>> handler) {
+			poolMap.forEach( (tenant, pool) -> pool.close( handler ) );
+		}
 
-        @Override
-        public Pool connectHandler(Handler<SqlConnection> handler) {
-            return poolMap.get( defaultTenantId ).connectHandler( handler );
-        }
+		@Override
+		public Pool connectHandler(Handler<SqlConnection> handler) {
+			return poolMap.get( defaultTenantId ).connectHandler( handler );
+		}
 
-        @Override
-        public Pool connectionProvider(Function<Context, Future<SqlConnection>> provider) {
-            return poolMap.get( defaultTenantId ).connectionProvider( provider );
-        }
+		@Override
+		public Pool connectionProvider(Function<Context, Future<SqlConnection>> provider) {
+			return poolMap.get( defaultTenantId ).connectionProvider( provider );
+		}
 
-        @Override
-        public int size() {
-            return poolMap.get( defaultTenantId ).size();
-        }
+		@Override
+		public int size() {
+			return poolMap.get( defaultTenantId ).size();
+		}
 
-        @Override
-        public Future<Void> close() {
-            Future<Void> close = Future.succeededFuture();
-            for ( Pool pool : poolMap.values() ) {
-                close = close.compose( unused -> pool.close() );
-            }
-            return close;
-        }
-    }
+		@Override
+		public Future<Void> close() {
+			Future<Void> close = Future.succeededFuture();
+			for ( Pool pool : poolMap.values() ) {
+				close = close.compose( unused -> pool.close() );
+			}
+			return close;
+		}
+	}
 }
