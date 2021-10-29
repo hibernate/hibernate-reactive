@@ -114,7 +114,7 @@ public class ReactiveConnectionPoolTest {
 	public void configureWithWrongCredentials(TestContext context) {
 		thrown.expect( CompletionException.class );
 		thrown.expectMessage( "io.vertx.pgclient.PgException:" );
-		thrown.expectMessage( "\\\"bogus\\\"" );
+		thrown.expectMessage( "bogus" );
 
 		String url = DatabaseConfiguration.getJdbcUrl();
 		Map<String,Object> config = new HashMap<>();
