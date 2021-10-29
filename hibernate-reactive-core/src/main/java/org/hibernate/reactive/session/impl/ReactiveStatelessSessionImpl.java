@@ -106,8 +106,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 			PersistenceContext persistenceContext) {
 		super( factory, options );
 		Integer batchSize = getConfiguredJdbcBatchSize();
-		reactiveConnection = batchSize == null || batchSize < 2 ? connection :
-				new BatchingConnection( connection, batchSize );
+		reactiveConnection = batchSize == null || batchSize < 2
+				? connection
+				: new BatchingConnection( connection, batchSize );
 		this.persistenceContext = persistenceContext;
 		batchingHelperSession = this;
 	}
