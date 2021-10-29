@@ -20,6 +20,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.PrepareOptions;
 import io.vertx.sqlclient.PreparedQuery;
 import io.vertx.sqlclient.Query;
 import io.vertx.sqlclient.Row;
@@ -117,6 +118,11 @@ public class TenantDependentPool extends DefaultSqlClientPool {
 		@Override
 		public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
 			return poolMap.get( defaultTenantId ).preparedQuery( sql );
+		}
+
+		@Override
+		public PreparedQuery<RowSet<Row>> preparedQuery(String sql, PrepareOptions options) {
+			return poolMap.get( defaultTenantId ).preparedQuery( sql, options );
 		}
 
 		@Override
