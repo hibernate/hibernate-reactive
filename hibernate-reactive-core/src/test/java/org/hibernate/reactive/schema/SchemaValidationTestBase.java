@@ -15,7 +15,6 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 
-import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
@@ -69,8 +68,6 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 		return configuration;
 	}
 
-	private SessionFactory ormFactory;
-
 	@Before
 	@Override
 	public void before(TestContext context) {
@@ -99,17 +96,10 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 	public void testValidationSucceeds(TestContext context) {
 		Configuration validateConf = constructConfiguration( "validate" );
 		validateConf.addAnnotatedClass( BasicTypesTestEntity.class );
-//		validateConf.addAnnotatedClass( Extra.class );
 
 		StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder()
 				.applySettings( validateConf.getProperties() );
 		test( context, setupSessionFactory( validateConf ) );
-
-//		For testing with ORM:
-//		StandardServiceRegistry registry = builder.build();
-//		try (SessionFactory ormFactory = validateConf.buildSessionFactory( registry ) ) {
-//		}
-
 	}
 
 	@Test

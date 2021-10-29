@@ -5,14 +5,21 @@
  */
 package org.hibernate.reactive.provider.service;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringTokenizer;
 
+import org.hibernate.boot.model.TruthValue;
+import org.hibernate.boot.model.naming.DatabaseIdentifier;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.tool.schema.extract.internal.AbstractInformationExtractorImpl;
+import org.hibernate.tool.schema.extract.internal.ColumnInformationImpl;
+import org.hibernate.tool.schema.extract.spi.ColumnInformation;
 import org.hibernate.tool.schema.extract.spi.ExtractionContext;
 import org.hibernate.tool.schema.extract.spi.InformationExtractor;
+import org.hibernate.tool.schema.extract.spi.TableInformation;
 
 /**
  * An implementation of {@link InformationExtractor} that obtains metadata
@@ -335,5 +342,38 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 	 */
 	protected String getDatabaseSchemaColumnName(String catalogColumnName, String schemaColumnName ) {
 		return schemaColumnName;
+	}
+
+	@Override
+	protected void addExtractedColumnInformation(
+			TableInformation tableInformation, ResultSet resultSet) throws SQLException {
+		final String typeName = new StringTokenizer( resultSet.getString( getResultSetTypeNameLabel() ), "() " ).nextToken();
+		final ColumnInformation columnInformation = new ColumnInformationImpl(
+				tableInformation,
+				DatabaseIdentifier.toIdentifier( resultSet.getString( getResultSetColumnNameLabel() ) ),
+				dataTypeCode( typeName ),
+				typeName,
+				resultSet.getInt( getResultSetColumnSizeLabel() ),
+				resultSet.getInt( getResultSetDecimalDigitsLabel() ),
+				interpretTruthValue( resultSet.getString( getResultSetIsNullableLabel() ) )
+		);
+		tableInformation.addColumn( columnInformation );
+	}
+
+	/**
+	 * Return a JDBC Type code for the given type name
+	 */
+	protected int dataTypeCode(String typeName) {
+		return 0;
+	}
+
+	private TruthValue interpretTruthValue(String nullable) {
+		if ( "yes".equalsIgnoreCase( nullable ) ) {
+			return TruthValue.TRUE;
+		}
+		else if ( "no".equalsIgnoreCase( nullable ) ) {
+			return TruthValue.FALSE;
+		}
+		return TruthValue.UNKNOWN;
 	}
 }

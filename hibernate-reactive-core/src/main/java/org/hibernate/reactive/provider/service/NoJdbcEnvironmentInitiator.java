@@ -143,8 +143,4 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 			return null;
 		}
 	}
-
-	public static class SQLServer2012DialectForReactive extends SQLServer2012Dialect {
-
-	}
 }
