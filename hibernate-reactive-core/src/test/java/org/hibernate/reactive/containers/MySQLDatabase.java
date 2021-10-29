@@ -57,8 +57,6 @@ class MySQLDatabase implements TestableDatabase {
 		expectedDBTypeForEntityType.put( DataType.CHARACTER, "character" );
 		expectedDBTypeForEntityType.put( DataType.TEXT, "text" );
 		expectedDBTypeForEntityType.put( DataType.STRING, "character varying" );
-		expectedDBTypeForEntityType.put( DataType.SERIALIZABLE, "bytea" );
-//		pgExpectedResultsMap.put( DataType.BLOB, "oid");
 	}};
 
 	/**
