@@ -17,14 +17,12 @@ import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import org.assertj.core.api.Assertions;
 
@@ -34,14 +32,10 @@ import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
 /**
  * It's currently considered an error to share a Session between multiple reactive streams,
  * so we should detect that condition and throw an exception.
- * <p>
- * WARNING: Because we are running the code to test inside a function, we must create the {@link Async}
- * in advance. Otherwise the test will end successfully because the async has not been created yet.
- * </p>
  */
 public class MultipleContextTest extends BaseReactiveTest {
 
-	private static final String ERROR_MESSAGE_LOWER_CASED = "Detected use of the reactive Session from a different Thread"
+	private static final String ERROR_MESSAGE_LOWER_CASED = "HR000069: Detected use of the reactive Session from a different Thread"
 			.toLowerCase( Locale.ROOT );
 
 	private Object currentSession;
@@ -64,10 +58,7 @@ public class MultipleContextTest extends BaseReactiveTest {
 	}
 
 	@Test
-	@Ignore
-	// I don't know why but this test fails on CI because no exception is thrown
 	public void testPersistWithStage(TestContext testContext) {
-		Async async = testContext.async();
 		CompletionStage<Stage.Session> sessionStage = getSessionFactory().openSession();
 		currentSession = sessionStage;
 		Context testVertxContext = Vertx.currentContext();
@@ -76,18 +67,22 @@ public class MultipleContextTest extends BaseReactiveTest {
 		Context newContext = Vertx.vertx().getOrCreateContext();
 		Assertions.assertThat( testVertxContext ).isNotEqualTo( newContext );
 
-		test( testContext, sessionStage.thenAccept( session ->
-			// Run test in the new context
-			newContext.runOnContext( event -> test( async, testContext, session
-					.persist( new Competition( "Cheese Rolling" ) )
-					.handle( (v, e) -> assertExceptionThrown( e ).join() ) )
-			)
-		) );
+		CompletableFuture<Throwable> thrown = new CompletableFuture<>();
+
+		sessionStage.thenAccept( session -> newContext
+				// Execute persist in the new context
+				.runOnContext( event -> session
+						.persist( new Competition( "Cheese Rolling" ) )
+						.handle( this::catchException )
+						.thenAccept( thrown::complete )
+				)
+		);
+
+		test( testContext, thrown.thenCompose( MultipleContextTest::assertExceptionThrown ) );
 	}
 
 	@Test
 	public void testFindWithStage(TestContext testContext) {
-		Async async = testContext.async();
 		CompletionStage<Stage.Session> sessionStage = getSessionFactory().openSession();
 		currentSession = sessionStage;
 		Context testVertxContext = Vertx.currentContext();
@@ -96,18 +91,28 @@ public class MultipleContextTest extends BaseReactiveTest {
 		Context newContext = Vertx.vertx().getOrCreateContext();
 		Assertions.assertThat( testVertxContext ).isNotEqualTo( newContext );
 
-		test( testContext, sessionStage.thenAccept( session ->
-			 // Run test in the new context
-			 newContext.runOnContext( event -> test( async, testContext, session
-					 .find( Competition.class, "Chess boxing" )
-					 .handle( (v, e) -> assertExceptionThrown( e ).join() ) )
-			 )
-	  	) );
+		CompletableFuture<Throwable> thrown = new CompletableFuture<>();
+		sessionStage.thenAccept( session -> newContext
+				// Execute find in the new context
+				.runOnContext( event -> session
+						.find( Competition.class, "Chess boxing" )
+						.handle( this::catchException )
+						.thenAccept( thrown::complete )
+				)
+		);
+
+		test( testContext, thrown.thenCompose( MultipleContextTest::assertExceptionThrown ) );
+	}
+
+	/**
+	 * Keep track of the exception thrown (if any) and continue without failures
+	 */
+	private Throwable catchException(Object ignore, Throwable throwable) {
+		return throwable;
 	}
 
 	@Test
 	public void testOnPersistWithMutiny(TestContext testContext) {
-		final Async async = testContext.async();
 		Uni<Mutiny.Session> sessionUni = getMutinySessionFactory().openSession();
 		currentSession = sessionUni;
 		Context testVertxContext = Vertx.currentContext();
@@ -116,19 +121,23 @@ public class MultipleContextTest extends BaseReactiveTest {
 		Context newContext = Vertx.vertx().getOrCreateContext();
 		Assertions.assertThat( testVertxContext ).isNotEqualTo( newContext );
 
-		test( testContext, sessionUni.invoke( session ->
-			// Run test in the new context
-			newContext.runOnContext( event -> test( async, testContext, session
-					.persist( new Competition( "Cheese Rolling" ) )
-					.onItemOrFailure()
-					.transformToUni( (unused, e) -> Uni.createFrom().completionStage( assertExceptionThrown( e ) ) ) )
-			)
-		) );
+		test( testContext, sessionUni
+				.chain( session -> {
+					CompletableFuture<Object> thrown = new CompletableFuture<>();
+					// Execute persist in the new context
+					newContext.runOnContext( event -> session
+							.persist( new Competition( "Cheese Rolling" ) )
+							.subscribe()
+							.with( thrown::complete, thrown::complete )
+					);
+					return Uni.createFrom().completionStage( thrown );
+				} )
+				.chain( MultipleContextTest::assertExceptionThrownAsUni )
+		);
 	}
 
 	@Test
 	public void testFindWithMutiny(TestContext testContext) {
-		final Async async = testContext.async();
 		Uni<Mutiny.Session> sessionUni = getMutinySessionFactory().openSession();
 		currentSession = sessionUni;
 		Context testVertxContext = Vertx.currentContext();
@@ -137,14 +146,23 @@ public class MultipleContextTest extends BaseReactiveTest {
 		Context newContext = Vertx.vertx().getOrCreateContext();
 		Assertions.assertThat( testVertxContext ).isNotEqualTo( newContext );
 
-		test( testContext, sessionUni.invoke( session -> {
-			// Run test in the new context
-			newContext.runOnContext( event -> test( async, testContext, session
-					.find( Competition.class, "Chess boxing" )
-					.onItemOrFailure()
-					.transformToUni( (unused, e) -> Uni.createFrom().completionStage( assertExceptionThrown( e ) ) ) )
-			);
-		} ) );
+		test( testContext, sessionUni
+				.chain( session -> {
+					CompletableFuture<Object> thrown = new CompletableFuture<>();
+					// Execute find in the new context
+					newContext.runOnContext( event -> session
+							.find( Competition.class, "Chess boxing" )
+							.subscribe()
+							.with( thrown::complete, thrown::complete )
+					);
+					return Uni.createFrom().completionStage( thrown );
+				} )
+				.chain( MultipleContextTest::assertExceptionThrownAsUni )
+		);
+	}
+
+	private static Uni<? extends Void> assertExceptionThrownAsUni(Object e) {
+		return Uni.createFrom().completionStage( assertExceptionThrown( (Throwable) e ) );
 	}
 
 	// Check that at least one exception has the expected message
