@@ -7,10 +7,10 @@ on:
   # but only for the main branch
   push:
     branches:
-      - main
+      - 1.0
   pull_request:
     branches:
-      - main
+      - 1.0
   schedule:
     # * is a special character in YAML so you have to quote this string
     # Run every hour at minute 25
