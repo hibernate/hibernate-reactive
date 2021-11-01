@@ -231,7 +231,7 @@ public class ReactiveTest {
 		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:14" ) ),
 		MYSQL( () -> new MySQLContainer( "mysql:8.0.27" ) ),
 		DB2( () -> new Db2Container( "ibmcom/db2:11.5.5.1" ).acceptLicense() ),
-		MARIADB( () -> new MariaDBContainer( "mariadb:10.6.2" ) ),
+		MARIADB( () -> new MariaDBContainer( "mariadb:10.6.4" ) ),
 		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v21.1.5" ) );
 
 		private final Supplier<JdbcDatabaseContainer<?>> containerSupplier;
