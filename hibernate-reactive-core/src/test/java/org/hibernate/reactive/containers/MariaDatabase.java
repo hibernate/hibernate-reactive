@@ -10,7 +10,7 @@ class MariaDatabase implements TestableDatabase {
 
 	static MariaDatabase INSTANCE = new MariaDatabase();
 
-	public final static String IMAGE_NAME = "mariadb:10.6.2";
+	public final static String IMAGE_NAME = "mariadb:10.6.4";
 
 	/**
 	 * Holds configuration for the MariaDB database container. If the build is run with <code>-Pdocker</code> then
