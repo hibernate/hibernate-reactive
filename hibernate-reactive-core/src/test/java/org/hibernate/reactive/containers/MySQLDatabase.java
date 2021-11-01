@@ -15,48 +15,48 @@ class MySQLDatabase implements TestableDatabase {
 	public final static String IMAGE_NAME = "mysql:8.0.27";
 
 	String findTypeForColumnBaseQuery =
-					"select data_type from information_schema.columns where table_name = '" + TABLE_PARAM + "'  and column_name = '" + COLUMN_PARAM + "'";
+					"select DATA_TYPE from information_schema.columns where TABLE_NAME = '" + TABLE_PARAM + "'  and COLUMN_NAME = '" + COLUMN_PARAM + "'";
 
 	String selectColumnsOnlyQuery
-			= "select column_name from information_schema.columns where table_name = '" + TABLE_PARAM + "'";
+			= "select COLUMN_NAME from information_schema.columns where TABLE_NAME = '" + TABLE_PARAM + "'";
 
 	public static Map<DataType, String> expectedDBTypeForEntityType = new EnumMap<DataType, String>( DataType.class);
 	static {{
-		expectedDBTypeForEntityType.put( DataType.BOOLEAN_PRIMITIVE, "boolean" );
-		expectedDBTypeForEntityType.put( DataType.BOOLEAN_FIELD, "boolean" );
-		expectedDBTypeForEntityType.put( DataType.BOOLEAN_NUMERIC, "integer" );
-		expectedDBTypeForEntityType.put( DataType.BOOLEAN_TRUE_FALSE, "character" );
-		expectedDBTypeForEntityType.put( DataType.BOOLEAN_YES_NO, "character" );
-		expectedDBTypeForEntityType.put( DataType.INT_PRIMITIVE, "integer" );
-		expectedDBTypeForEntityType.put( DataType.INTEGER_FIELD, "integer" );
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_PRIMITIVE, "bit" );
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_FIELD, "bit" );
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_NUMERIC, "int" );
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_TRUE_FALSE, "char" );
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_YES_NO, "char" );
+		expectedDBTypeForEntityType.put( DataType.INT_PRIMITIVE, "int" );
+		expectedDBTypeForEntityType.put( DataType.INTEGER_FIELD, "int" );
 		expectedDBTypeForEntityType.put( DataType.LONG_PRIMITIVE, "bigint" );
 		expectedDBTypeForEntityType.put( DataType.LONG_FIELD, "bigint" );
-		expectedDBTypeForEntityType.put( DataType.FLOAT_PRIMITIVE, "real" );
-		expectedDBTypeForEntityType.put( DataType.FLOAT_FIELD, "real" );
-		expectedDBTypeForEntityType.put( DataType.DOUBLE_PRIMITIVE, "double precision" );
-		expectedDBTypeForEntityType.put( DataType.DOUBLE_FIELD, "double precision" );
-		expectedDBTypeForEntityType.put( DataType.BYTE_PRIMITIVE, "smallint" );
-		expectedDBTypeForEntityType.put( DataType.BYTE_FIELD, "smallint" );
-		expectedDBTypeForEntityType.put( DataType.BYTES_PRIMITIVE, "bytea" );
-		expectedDBTypeForEntityType.put( DataType.URL, "character varying" );
-		expectedDBTypeForEntityType.put( DataType.TIMEZONE, "character varying" );
+		expectedDBTypeForEntityType.put( DataType.FLOAT_PRIMITIVE, "float" );
+		expectedDBTypeForEntityType.put( DataType.FLOAT_FIELD, "float" );
+		expectedDBTypeForEntityType.put( DataType.DOUBLE_PRIMITIVE, "double" );
+		expectedDBTypeForEntityType.put( DataType.DOUBLE_FIELD, "double" );
+		expectedDBTypeForEntityType.put( DataType.BYTE_PRIMITIVE, "tinyint" );
+		expectedDBTypeForEntityType.put( DataType.BYTE_FIELD, "tinyint" );
+		expectedDBTypeForEntityType.put( DataType.BYTES_PRIMITIVE, "tinyblob" );
+		expectedDBTypeForEntityType.put( DataType.URL, "varchar" );
+		expectedDBTypeForEntityType.put( DataType.TIMEZONE, "varchar" );
 		expectedDBTypeForEntityType.put( DataType.DATE_TEMPORAL_TYPE, "date" );
-		expectedDBTypeForEntityType.put( DataType.DATE_AS_TIMESTAMP_TEMPORAL_TYPE, "timestamp without time zone" );
-		expectedDBTypeForEntityType.put( DataType.DATE_AS_TIME_TEMPORAL_TYPE, "time without time zone" );
+		expectedDBTypeForEntityType.put( DataType.DATE_AS_TIMESTAMP_TEMPORAL_TYPE, "datetime" );
+		expectedDBTypeForEntityType.put( DataType.DATE_AS_TIME_TEMPORAL_TYPE, "time" );
 		expectedDBTypeForEntityType.put( DataType.CALENDAR_AS_DATE_TEMPORAL_TYPE, "date" );
-		expectedDBTypeForEntityType.put( DataType.CALENDAR_AS_TIMESTAMP_TEMPORAL_TYPE, "timestamp without time zone" );
+		expectedDBTypeForEntityType.put( DataType.CALENDAR_AS_TIMESTAMP_TEMPORAL_TYPE, "datetime" );
 		expectedDBTypeForEntityType.put( DataType.LOCALDATE, "date" );
-		expectedDBTypeForEntityType.put( DataType.LOCALTIME, "time without time zone" );
-		expectedDBTypeForEntityType.put( DataType.LOCALDATETIME, "timestamp without time zone" );
-		expectedDBTypeForEntityType.put( DataType.BIGINTEGER, "numeric" );
-		expectedDBTypeForEntityType.put( DataType.BIGDECIMAL, "numeric" );
-		expectedDBTypeForEntityType.put( DataType.SERIALIZABLE, "bytea" );
-		expectedDBTypeForEntityType.put( DataType.UUID, "uuid" );
-		expectedDBTypeForEntityType.put( DataType.INSTANT, "timestamp without time zone" );
+		expectedDBTypeForEntityType.put( DataType.LOCALTIME, "time" );
+		expectedDBTypeForEntityType.put( DataType.LOCALDATETIME, "datetime" );
+		expectedDBTypeForEntityType.put( DataType.BIGINTEGER, "decimal" );
+		expectedDBTypeForEntityType.put( DataType.BIGDECIMAL, "decimal" );
+		expectedDBTypeForEntityType.put( DataType.SERIALIZABLE, "tinyblob" );
+		expectedDBTypeForEntityType.put( DataType.UUID, "binary" );
+		expectedDBTypeForEntityType.put( DataType.INSTANT, "datetime" );
 		expectedDBTypeForEntityType.put( DataType.DURATION, "bigint" );
-		expectedDBTypeForEntityType.put( DataType.CHARACTER, "character" );
+		expectedDBTypeForEntityType.put( DataType.CHARACTER, "char" );
 		expectedDBTypeForEntityType.put( DataType.TEXT, "text" );
-		expectedDBTypeForEntityType.put( DataType.STRING, "character varying" );
+		expectedDBTypeForEntityType.put( DataType.STRING, "varchar" );
 	}};
 
 	/**
