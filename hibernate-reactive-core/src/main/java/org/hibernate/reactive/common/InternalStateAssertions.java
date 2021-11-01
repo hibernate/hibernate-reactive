@@ -12,6 +12,7 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 
 import io.vertx.core.Context;
+import io.vertx.core.Vertx;
 
 /**
  * Commonly used assertions to verify that the operations
@@ -41,10 +42,20 @@ public final class InternalStateAssertions {
 		}
 	}
 
+	public static void assertStateMatches(Thread expectedThread, Context expectedContext) {
+		assertCurrentContextMatches( expectedContext );
+		assertCurrentThreadMatches( expectedThread );
+	}
+
+	private static void assertCurrentContextMatches(Context expectedContext) {
+		if ( ENFORCE && Vertx.currentContext() != expectedContext ) {
+			throw LOG.detectedUsedOfTheSessionOnTheWrongThread( expectedContext.toString(), Vertx.currentContext().toString() );
+		}
+	}
+
 	public static void assertCurrentThreadMatches(Thread expectedThread) {
 		if ( ENFORCE && ( Thread.currentThread() != expectedThread ) ) {
 			throw LOG.detectedUsedOfTheSessionOnTheWrongThread( expectedThread.getName(), Thread.currentThread().getName() );
 		}
 	}
-
 }

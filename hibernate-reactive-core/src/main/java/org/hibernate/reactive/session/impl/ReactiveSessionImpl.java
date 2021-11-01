@@ -102,6 +102,9 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 
+import io.vertx.core.Context;
+
+import static io.vertx.core.Vertx.currentContext;
 import static org.hibernate.engine.spi.PersistenceContext.NaturalIdHelper.INVALID_NATURAL_ID_REFERENCE;
 import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
@@ -123,6 +126,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private transient final ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
 	private final ReactiveConnection reactiveConnection;
 	private final Thread associatedWorkThread;
+	private final Context associatedContext;
 
 	//Lazily initialized
 	private transient ExceptionConverter exceptionConverter;
@@ -132,6 +136,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		super( delegate, options );
 		InternalStateAssertions.assertUseOnEventLoop();
 		this.associatedWorkThread = Thread.currentThread();
+		this.associatedContext = currentContext();
 		//matches configuration property "hibernate.jdbc.batch_size" :
 		Integer batchSize = getConfiguredJdbcBatchSize();
 		reactiveConnection = batchSize == null || batchSize < 2
@@ -151,7 +156,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	private void threadCheck() {
-		InternalStateAssertions.assertCurrentThreadMatches( associatedWorkThread );
+		InternalStateAssertions.assertStateMatches( associatedWorkThread, associatedContext );
 	}
 
 	@Override
