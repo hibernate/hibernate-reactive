@@ -16,6 +16,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
+import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.OneToOneType;
@@ -32,6 +33,11 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 
+/**
+ * Reactive operations that really belong to {@link EntityType}
+ *
+ * @author Gavin King
+ */
 public class EntityTypes {
 
     /**
@@ -57,6 +63,9 @@ public class EntityTypes {
         }
     }
 
+    /**
+     * @see OneToOneType#isNull(Object, SharedSessionContractImplementor)
+     */
     static boolean isNull(EntityType entityType, Object owner,
                           SharedSessionContractImplementor session) {
         if ( entityType instanceof OneToOneType) {
@@ -300,20 +309,21 @@ public class EntityTypes {
                                         + original.getClass().getName()
                         );
                     }
-                    Object idOrUniqueKey =
-                            entityType.getIdentifierOrUniqueKeyType( session.getFactory() )
-                                    .replace( id, null, session, owner, copyCache);
-                    return resolve( entityType, idOrUniqueKey, owner, session );
+                    return ((ReactiveSessionImpl) session).reactiveFetch( id, true )
+                            .thenCompose( fetched -> {
+                                Object idOrUniqueKey =
+                                        entityType.getIdentifierOrUniqueKeyType( session.getFactory() )
+                                                .replace( fetched, null, session, owner, copyCache);
+                                return resolve( entityType, idOrUniqueKey, owner, session );
+                            } );
                 } );
     }
 
     /**
      * see EntityType#getIdentifier(Object, SharedSessionContractImplementor)
      */
-    private static CompletionStage<Serializable> getIdentifier(EntityType entityType, Object value, SessionImplementor session) {
-        if ( entityType.isReferenceToPrimaryKey()
-            /*|| entityType.uniqueKeyPropertyName == null*/ //TODO: expose this in core
-        ) {
+    private static CompletionStage<Object> getIdentifier(EntityType entityType, Object value, SessionImplementor session) {
+        if ( entityType.isReferenceToIdentifierProperty() ) {
             return ForeignKeys.getEntityIdentifierIfNotUnsaved(
                     entityType.getAssociatedEntityName(),
                     value,
@@ -324,19 +334,17 @@ public class EntityTypes {
             return nullFuture();
         }
         else {
-            throw new UnsupportedOperationException("unique key properties not yet supported in merge()");
-            //TODO: expose stuff in core
-//			EntityPersister entityPersister = entityType.getAssociatedEntityPersister( session.getFactory() );
-//			Object propertyValue = entityPersister.getPropertyValue( value, entityType.uniqueKeyPropertyName );
-//			// We now have the value of the property-ref we reference.  However,
-//			// we need to dig a little deeper, as that property might also be
-//			// an entity type, in which case we need to resolve its identifier
-//			Type type = entityPersister.getPropertyType( entityType.uniqueKeyPropertyName );
-//			if ( type.isEntityType() ) {
-//				propertyValue = getIdentifier( (EntityType) type, propertyValue, session );
-//			}
-//
-//			return propertyValue;
+            EntityPersister entityPersister = entityType.getAssociatedEntityPersister( session.getFactory() );
+            String uniqueKeyPropertyName = entityType.getRHSUniqueKeyPropertyName();
+            Object propertyValue = entityPersister.getPropertyValue( value, uniqueKeyPropertyName );
+            // We now have the value of the property-ref we reference.  However,
+            // we need to dig a little deeper, as that property might also be
+            // an entity type, in which case we need to resolve its identifier
+            Type type = entityPersister.getPropertyType( uniqueKeyPropertyName );
+            if ( type.isEntityType() ) {
+                propertyValue = getIdentifier( (EntityType) type, propertyValue, session );
+            }
+            return completedFuture( propertyValue );
         }
     }
 
