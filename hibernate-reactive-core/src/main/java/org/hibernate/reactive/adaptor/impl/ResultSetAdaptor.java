@@ -721,7 +721,13 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Blob getBlob(String columnLabel) {
-		Buffer buffer = (Buffer) row.getValue( columnLabel );
+		final Object value = row.getValue( columnLabel );
+		// Vertx MySQL client is currently not converting String result set values to Buffer
+		// in Tuple.getBuffer(int pos) : see https://github.com/eclipse-vertx/vertx-sql-client/issues/1061
+		// Adding this temporary fix to be removed when we upgrade vertx to a fixed version
+		Buffer buffer = value instanceof String
+				? Buffer.buffer( (String) value )
+				: (Buffer) value;
 		wasNull = buffer == null;
 		return wasNull ? null : BlobProxy.generateProxy( buffer.getBytes() );
 	}

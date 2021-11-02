@@ -19,6 +19,9 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
 import static org.hibernate.reactive.containers.DatabaseConfiguration.getDatatypeQuery;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.getExpectedDatatype;
 
+import java.sql.Blob;
+import java.sql.SQLException;
+
 /**
  * Check that each property is mapped as the expected type in the database.
  */
@@ -30,27 +33,54 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-//		configuration.setProperty( Settings.HBM2DDL_AUTO, "update" );
 		configuration.addAnnotatedClass( BasicTypesTestEntity.class );
 		return configuration;
 	}
 
 	private void testDatatype(TestContext context, String columnName, TestableDatabase.DataType datatype) {
-		BasicTypesTestEntity testEntity = new BasicTypesTestEntity("Testing: " + columnName);
+		BasicTypesTestEntity testEntity = new BasicTypesTestEntity( "Testing: " + columnName );
 		test( context, getSessionFactory()
 				.withTransaction( (session, t) -> session.persist( testEntity ) )
 				.thenCompose( v1 -> openSession()
-								.thenCompose( s -> s
-										.find( BasicTypesTestEntity.class, testEntity.id )
-										.thenAccept( result -> context.assertEquals( testEntity.name, result.name ) )
-										.thenCompose( v -> s
-												.createNativeQuery( getDatatypeQuery( BasicTypesTestEntity.TABLE_NAME, columnName ), String.class )
-												.getSingleResult()
-												.thenAccept( result -> context.assertEquals( getExpectedDatatype( datatype ), result ) )
-										)
+						.thenCompose( s -> s
+								.find( BasicTypesTestEntity.class, testEntity.id )
+								.thenAccept( result -> context.assertEquals( testEntity.name, result.name ) )
+								.thenCompose( v -> {
+											String query = getDatatypeQuery( BasicTypesTestEntity.TABLE_NAME, columnName );
+											return s.createNativeQuery( query )
+													.getSingleResult()
+													.thenAccept(
+															result -> context.assertEquals( getExpectedDatatype( datatype ),
+																	convertToString( result )
+															) );
+										}
 								)
+						)
 				)
 		);
+	}
+
+	private String convertToString(Object result) {
+		if (result == null) {
+			return null;
+		}
+
+		if ( result instanceof String) {
+			return (String) result;
+		}
+
+		try {
+			// This is needed because of a bug in the Vert.x client
+			if ( result instanceof Blob ) {
+				final Blob blob = (Blob) result;
+				return new String( blob.getBytes( 1l, (int) blob.length() ) );
+			}
+		}
+		catch (SQLException e) {
+			throw new IllegalArgumentException( e );
+		}
+
+		throw new IllegalArgumentException( "Unexpected type: " + result.getClass() );
 	}
 
 	@Test
