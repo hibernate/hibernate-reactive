@@ -328,7 +328,7 @@ public final class ForeignKeys {
 	 *
 	 * @throws TransientObjectException if the entity is transient (does not yet have an identifier)
 	 */
-	public static CompletionStage<Serializable> getEntityIdentifierIfNotUnsaved(
+	public static CompletionStage<Object> getEntityIdentifierIfNotUnsaved(
 			final String entityName,
 			final Object object,
 			final SessionImplementor session) throws TransientObjectException {
