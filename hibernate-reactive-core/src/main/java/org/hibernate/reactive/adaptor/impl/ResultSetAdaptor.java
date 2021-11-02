@@ -142,7 +142,7 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public Date getDate(int columnIndex) {
 		LocalDate localDate = row.getLocalDate( columnIndex - 1 );
-		return (wasNull=localDate==null) ? null : java.sql.Date.valueOf(localDate);
+		return (wasNull=localDate==null) ? null : Date.valueOf(localDate);
 	}
 
 	@Override
@@ -269,7 +269,7 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public Date getDate(String columnLabel) {
 		LocalDate localDate = row.getLocalDate(columnLabel);
-		return (wasNull=localDate==null) ? null : java.sql.Date.valueOf(localDate);
+		return (wasNull=localDate==null) ? null : Date.valueOf(localDate);
 	}
 
 	@Override
@@ -721,7 +721,12 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Blob getBlob(String columnLabel) {
-		Buffer buffer = (Buffer) row.getValue( columnLabel );
+		final Object value = row.getValue( columnLabel );
+		// Vertx MySQL client is currently returning a row value of String
+		// Checking for instanceof String else assume Buffer value
+		Buffer buffer = value instanceof String
+				? Buffer.buffer( (String) value )
+				: (Buffer) value;
 		wasNull = buffer == null;
 		return wasNull ? null : BlobProxy.generateProxy( buffer.getBytes() );
 	}
