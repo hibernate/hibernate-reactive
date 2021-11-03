@@ -1621,13 +1621,38 @@ public interface Mutiny {
 		 * The session will be {@link Session#flush() flushed} and closed
 		 * automatically, and the transaction committed automatically.
 		 *
-		 * @param work a function which accepts the session and returns
-		 *             the result of the work as a {@link Uni}.
+		 * @param work a function which accepts the session and transaction
+		 *             and returns the result of the work as a {@link Uni}.
 		 *
 		 * @see #withSession(Function)
 		 * @see Session#withTransaction(Function)
 		 */
 		<T> Uni<T> withTransaction(BiFunction<Session, Transaction, Uni<T>> work);
+
+		/**
+		 * Perform work using a {@link Session reactive session} within an
+		 * associated transaction.
+		 * <p>
+		 * <il>
+		 * <li>If there is already a session associated with the
+		 * current reactive stream, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no session associated with the
+		 * current stream, a new stateless session will be created.
+		 * </il>
+		 * <p>
+		 * The session will be {@link Session#flush() flushed} and closed
+		 * automatically, and the transaction committed automatically.
+		 *
+		 * @param work a function which accepts the session and returns
+		 *             the result of the work as a {@link Uni}.
+		 *
+		 * @see #withTransaction(BiFunction)
+		 * @see Session#withTransaction(Function)
+		 */
+		default <T> Uni<T> withTransaction(Function<Session, Uni<T>> work) {
+			return withTransaction( (session, transaction) -> work.apply(session) );
+		}
 
 		/**
 		 * Perform work using a {@link StatelessSession reactive session} within an
