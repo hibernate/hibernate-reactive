@@ -309,6 +309,11 @@ public class EntityTypes {
                                         + original.getClass().getName()
                         );
                     }
+                    // For the special case of a @ManyToOne joined on a (non-primary) unique key,
+                    // the "id" class is actually the associated entity object itself, but treated
+                    // as a ComponentType. In the case that the entity is unfetched, we need to
+                    // explicitly fetch it here before calling replace(). (Note that in Hibernate
+                    // ORM this is unnecessary due to transparent lazy fetching.)
                     return ((ReactiveSessionImpl) session).reactiveFetch( id, true )
                             .thenCompose( fetched -> {
                                 Object idOrUniqueKey =
