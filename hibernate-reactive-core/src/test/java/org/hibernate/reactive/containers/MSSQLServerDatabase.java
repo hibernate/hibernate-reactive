@@ -5,6 +5,29 @@
  */
 package org.hibernate.reactive.containers;
 
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.URL;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.UUID;
+
+import org.hibernate.type.NumericBooleanType;
+import org.hibernate.type.TextType;
+import org.hibernate.type.TrueFalseType;
+import org.hibernate.type.YesNoType;
+import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
+
 import org.testcontainers.containers.MSSQLServerContainer;
 
 /**
@@ -21,6 +44,45 @@ class MSSQLServerDatabase implements TestableDatabase {
 	public static final MSSQLServerDatabase INSTANCE = new MSSQLServerDatabase();
 
 	public static final String PASSWORD = "~!HReact!~";
+
+	public static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
+
+	static {{
+		expectedDBTypeForClass.put( boolean.class, "bit" );
+		expectedDBTypeForClass.put( Boolean.class, "bit" );
+		expectedDBTypeForClass.put( NumericBooleanType.class, "int" );
+		expectedDBTypeForClass.put( TrueFalseType.class, "char" );
+		expectedDBTypeForClass.put( YesNoType.class, "char" );
+		expectedDBTypeForClass.put( int.class, "int" );
+		expectedDBTypeForClass.put( Integer.class, "int" );
+		expectedDBTypeForClass.put( long.class, "bigint" );
+		expectedDBTypeForClass.put( Long.class, "bigint" );
+		expectedDBTypeForClass.put( float.class, "float" );
+		expectedDBTypeForClass.put( Float.class, "float" );
+		expectedDBTypeForClass.put( double.class, "float" );
+		expectedDBTypeForClass.put( Double.class, "float" );
+		expectedDBTypeForClass.put( byte.class, "smallint" );
+		expectedDBTypeForClass.put( Byte.class, "smallint" );
+		expectedDBTypeForClass.put( PrimitiveByteArrayTypeDescriptor.class, "varbinary" );
+		expectedDBTypeForClass.put( URL.class, "varchar" );
+		expectedDBTypeForClass.put( TimeZone.class, "varchar" );
+		expectedDBTypeForClass.put( Date.class, "date" );
+		expectedDBTypeForClass.put( Timestamp.class, "datetime2" );
+		expectedDBTypeForClass.put( Time.class, "time" );
+		expectedDBTypeForClass.put( LocalDate.class, "date" );
+		expectedDBTypeForClass.put( LocalTime.class, "time" );
+		expectedDBTypeForClass.put( LocalDateTime.class, "datetime2" );
+		expectedDBTypeForClass.put( BigInteger.class, "numeric" );
+		expectedDBTypeForClass.put( BigDecimal.class, "numeric" );
+		expectedDBTypeForClass.put( Serializable.class, "varbinary" );
+		expectedDBTypeForClass.put( UUID.class, "binary" );
+		expectedDBTypeForClass.put( Instant.class, "datetime2" );
+		expectedDBTypeForClass.put( Duration.class, "bigint" );
+		expectedDBTypeForClass.put( Character.class, "char" );
+		expectedDBTypeForClass.put( char.class, "char" );
+		expectedDBTypeForClass.put( TextType.class, "text" );
+		expectedDBTypeForClass.put( String.class, "varchar" );
+	}}
 
 	/**
 	 * Holds configuration for the Microsoft SQL Server database container. If the build is run with <code>-Pdocker</code> then
@@ -46,6 +108,11 @@ class MSSQLServerDatabase implements TestableDatabase {
 	@Override
 	public String getUri() {
 		return buildUriWithCredentials( address() );
+	}
+
+	@Override
+	public String getExpectedNativeDatatype(Class<?> dataType) {
+		return expectedDBTypeForClass.get( dataType );
 	}
 
 	private String address() {

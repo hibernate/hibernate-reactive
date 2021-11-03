@@ -91,6 +91,14 @@ public class DatabaseConfiguration {
 		return dbType().configuration.getUri();
 	}
 
+	public static String getDatatypeQuery(String tableName, String columnName) {
+		return dbType().configuration.getNativeDatatypeQuery( tableName, columnName );
+	}
+
+	public static String expectedDatatype(Class<?> dataType) {
+		return dbType().configuration.getExpectedNativeDatatype( dataType );
+	}
+
 	private DatabaseConfiguration() {
 	}
 
