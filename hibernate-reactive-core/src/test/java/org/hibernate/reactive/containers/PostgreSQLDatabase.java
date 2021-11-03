@@ -5,6 +5,9 @@
  */
 package org.hibernate.reactive.containers;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 import org.testcontainers.containers.PostgreSQLContainer;
 
 class PostgreSQLDatabase implements TestableDatabase {
@@ -12,6 +15,51 @@ class PostgreSQLDatabase implements TestableDatabase {
 	public static PostgreSQLDatabase INSTANCE = new PostgreSQLDatabase();
 
 	public final static String IMAGE_NAME = "postgres:14";
+
+	String findTypeForColumnBaseQuery
+			= "select data_type from information_schema.columns where table_name = '" + TABLE_PARAM + "' and column_name = '" + COLUMN_PARAM + "'";
+
+	String selectColumnsOnlyQuery
+			= "select column_name from information_schema.columns where table_name = '" + TABLE_PARAM + "'";
+
+	public static Map<DataType, String> expectedDBTypeForEntityType = new EnumMap<DataType, String>( DataType.class);
+	static {{
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_PRIMITIVE, "boolean" );
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_FIELD, "boolean" );
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_NUMERIC, "integer" );
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_TRUE_FALSE, "character" );
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_YES_NO, "character" );
+		expectedDBTypeForEntityType.put( DataType.INT_PRIMITIVE, "integer" );
+		expectedDBTypeForEntityType.put( DataType.INTEGER_FIELD, "integer" );
+		expectedDBTypeForEntityType.put( DataType.LONG_PRIMITIVE, "bigint" );
+		expectedDBTypeForEntityType.put( DataType.LONG_FIELD, "bigint" );
+		expectedDBTypeForEntityType.put( DataType.FLOAT_PRIMITIVE, "real" );
+		expectedDBTypeForEntityType.put( DataType.FLOAT_FIELD, "real" );
+		expectedDBTypeForEntityType.put( DataType.DOUBLE_PRIMITIVE, "double precision" );
+		expectedDBTypeForEntityType.put( DataType.DOUBLE_FIELD, "double precision" );
+		expectedDBTypeForEntityType.put( DataType.BYTE_PRIMITIVE, "smallint" );
+		expectedDBTypeForEntityType.put( DataType.BYTE_FIELD, "smallint" );
+		expectedDBTypeForEntityType.put( DataType.BYTES_PRIMITIVE, "bytea" );
+		expectedDBTypeForEntityType.put( DataType.URL, "character varying" );
+		expectedDBTypeForEntityType.put( DataType.TIMEZONE, "character varying" );
+		expectedDBTypeForEntityType.put( DataType.DATE_TEMPORAL_TYPE, "date" );
+		expectedDBTypeForEntityType.put( DataType.DATE_AS_TIMESTAMP_TEMPORAL_TYPE, "timestamp without time zone" );
+		expectedDBTypeForEntityType.put( DataType.DATE_AS_TIME_TEMPORAL_TYPE, "time without time zone" );
+		expectedDBTypeForEntityType.put( DataType.CALENDAR_AS_DATE_TEMPORAL_TYPE, "date" );
+		expectedDBTypeForEntityType.put( DataType.CALENDAR_AS_TIMESTAMP_TEMPORAL_TYPE, "timestamp without time zone" );
+		expectedDBTypeForEntityType.put( DataType.LOCALDATE, "date" );
+		expectedDBTypeForEntityType.put( DataType.LOCALTIME, "time without time zone" );
+		expectedDBTypeForEntityType.put( DataType.LOCALDATETIME, "timestamp without time zone" );
+		expectedDBTypeForEntityType.put( DataType.BIGINTEGER, "numeric" );
+		expectedDBTypeForEntityType.put( DataType.BIGDECIMAL, "numeric" );
+		expectedDBTypeForEntityType.put( DataType.SERIALIZABLE, "bytea" );
+		expectedDBTypeForEntityType.put( DataType.UUID, "uuid" );
+		expectedDBTypeForEntityType.put( DataType.INSTANT, "timestamp without time zone" );
+		expectedDBTypeForEntityType.put( DataType.DURATION, "bigint" );
+		expectedDBTypeForEntityType.put( DataType.CHARACTER, "character" );
+		expectedDBTypeForEntityType.put( DataType.TEXT, "text" );
+		expectedDBTypeForEntityType.put( DataType.STRING, "character varying" );
+		}}
 
 	/**
 	 * Holds configuration for the PostgreSQL database container. If the build is run with <code>-Pdocker</code> then
@@ -40,6 +88,21 @@ class PostgreSQLDatabase implements TestableDatabase {
 		return buildUriWithCredentials( address() );
 	}
 
+	@Override
+	public String getNativeDatatypeQuery(String tableName, String columnName) {
+		if( columnName == null ) {
+			return selectColumnsOnlyQuery.replace(TABLE_PARAM, tableName.toLowerCase() );
+		}
+		return findTypeForColumnBaseQuery.replace(
+				TABLE_PARAM, tableName.toLowerCase() ).replace(
+				COLUMN_PARAM, columnName.toLowerCase() );
+	}
+
+	@Override
+	public String getExpectedNativeDatatype(DataType dataType) {
+		return expectedDBTypeForEntityType.get(dataType);
+	}
+
 	private String address() {
 		if ( DatabaseConfiguration.USE_DOCKER ) {
 			// Calling start() will start the container (if not already started)
@@ -59,6 +122,6 @@ class PostgreSQLDatabase implements TestableDatabase {
 		return "postgresql://" + postgresql.getUsername() + ":" + postgresql.getPassword() + "@" + jdbcUrl.substring(18);
 	}
 
-	private PostgreSQLDatabase() {
+	protected PostgreSQLDatabase() {
 	}
 }

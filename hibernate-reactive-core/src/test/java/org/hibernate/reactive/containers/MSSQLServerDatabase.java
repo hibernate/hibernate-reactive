@@ -5,6 +5,9 @@
  */
 package org.hibernate.reactive.containers;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 import org.testcontainers.containers.MSSQLServerContainer;
 
 /**
@@ -21,6 +24,49 @@ class MSSQLServerDatabase implements TestableDatabase {
 	public static final MSSQLServerDatabase INSTANCE = new MSSQLServerDatabase();
 
 	public static final String PASSWORD = "~!HReact!~";
+
+	String findTypeForColumnBaseQuery = "select data_type from information_schema.columns where table_name = '" + TABLE_PARAM + "' and column_name = '" + COLUMN_PARAM + "'";
+
+	String selectColumnsOnlyQuery = "select column_name from information_schema.columns where table_name = '" + TABLE_PARAM + "'";
+
+	public static Map<DataType, String> expectedDBTypeForEntityType = new EnumMap<DataType, String>( DataType.class);
+	static {{
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_PRIMITIVE, "bit" );
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_FIELD, "bit" );
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_NUMERIC, "int" );
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_TRUE_FALSE, "char" );
+		expectedDBTypeForEntityType.put( DataType.BOOLEAN_YES_NO, "char" );
+		expectedDBTypeForEntityType.put( DataType.INT_PRIMITIVE, "int" );
+		expectedDBTypeForEntityType.put( DataType.INTEGER_FIELD, "int" );
+		expectedDBTypeForEntityType.put( DataType.LONG_PRIMITIVE, "bigint" );
+		expectedDBTypeForEntityType.put( DataType.LONG_FIELD, "bigint" );
+		expectedDBTypeForEntityType.put( DataType.FLOAT_PRIMITIVE, "float" );
+		expectedDBTypeForEntityType.put( DataType.FLOAT_FIELD, "float" );
+		expectedDBTypeForEntityType.put( DataType.DOUBLE_PRIMITIVE, "float" );
+		expectedDBTypeForEntityType.put( DataType.DOUBLE_FIELD, "float" );
+		expectedDBTypeForEntityType.put( DataType.BYTE_PRIMITIVE, "smallint" );
+		expectedDBTypeForEntityType.put( DataType.BYTE_FIELD, "smallint" );
+		expectedDBTypeForEntityType.put( DataType.BYTES_PRIMITIVE, "varbinary" );
+		expectedDBTypeForEntityType.put( DataType.URL, "varchar" );
+		expectedDBTypeForEntityType.put( DataType.TIMEZONE, "varchar" );
+		expectedDBTypeForEntityType.put( DataType.DATE_TEMPORAL_TYPE, "date" );
+		expectedDBTypeForEntityType.put( DataType.DATE_AS_TIMESTAMP_TEMPORAL_TYPE, "datetime2" );
+		expectedDBTypeForEntityType.put( DataType.DATE_AS_TIME_TEMPORAL_TYPE, "time" );
+		expectedDBTypeForEntityType.put( DataType.CALENDAR_AS_DATE_TEMPORAL_TYPE, "date" );
+		expectedDBTypeForEntityType.put( DataType.CALENDAR_AS_TIMESTAMP_TEMPORAL_TYPE, "datetime2" );
+		expectedDBTypeForEntityType.put( DataType.LOCALDATE, "date" );
+		expectedDBTypeForEntityType.put( DataType.LOCALTIME, "time" );
+		expectedDBTypeForEntityType.put( DataType.LOCALDATETIME, "datetime2" );
+		expectedDBTypeForEntityType.put( DataType.BIGINTEGER, "numeric" );
+		expectedDBTypeForEntityType.put( DataType.BIGDECIMAL, "numeric" );
+		expectedDBTypeForEntityType.put( DataType.SERIALIZABLE, "varbinary" );
+		expectedDBTypeForEntityType.put( DataType.UUID, "binary" );
+		expectedDBTypeForEntityType.put( DataType.INSTANT, "datetime2" );
+		expectedDBTypeForEntityType.put( DataType.DURATION, "bigint" );
+		expectedDBTypeForEntityType.put( DataType.CHARACTER, "char" );
+		expectedDBTypeForEntityType.put( DataType.TEXT, "text" );
+		expectedDBTypeForEntityType.put( DataType.STRING, "varchar" );
+	}}
 
 	/**
 	 * Holds configuration for the Microsoft SQL Server database container. If the build is run with <code>-Pdocker</code> then
@@ -46,6 +92,21 @@ class MSSQLServerDatabase implements TestableDatabase {
 	@Override
 	public String getUri() {
 		return buildUriWithCredentials( address() );
+	}
+
+	@Override
+	public String getNativeDatatypeQuery(String tableName, String columnName) {
+		if ( columnName == null ) {
+			return selectColumnsOnlyQuery.replace( TABLE_PARAM, tableName.toLowerCase() );
+		}
+		return findTypeForColumnBaseQuery.replace(
+				TABLE_PARAM, tableName.toLowerCase() ).replace(
+				COLUMN_PARAM, columnName.toLowerCase() );
+	}
+
+	@Override
+	public String getExpectedNativeDatatype(DataType dataType) {
+		return expectedDBTypeForEntityType.get( dataType );
 	}
 
 	private String address() {
