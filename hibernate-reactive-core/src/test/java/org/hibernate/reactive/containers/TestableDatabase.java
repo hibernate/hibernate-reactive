@@ -14,4 +14,9 @@ public interface TestableDatabase {
 
 	String getUri();
 
+	default String getNativeDatatypeQuery(String tableName, String columnName) {
+		return "select data_type from information_schema.columns where table_name = '" + tableName + "' and column_name = '" + columnName + "'";
+	}
+
+	String getExpectedNativeDatatype(Class<?> dataType);
 }

@@ -5,8 +5,7 @@
  */
 package org.hibernate.reactive.containers;
 
-
-class MariaDatabase implements TestableDatabase {
+class MariaDatabase extends MySQLDatabase {
 
 	static MariaDatabase INSTANCE = new MariaDatabase();
 
