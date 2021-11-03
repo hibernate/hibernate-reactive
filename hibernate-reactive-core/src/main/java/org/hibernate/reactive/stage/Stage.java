@@ -1518,7 +1518,7 @@ public interface Stage {
 		 * When the {@link CompletionStage} completes successfully it returns a newly created session.
 		 * <p>
 		 * The client must explicitly close the session by calling
-		 * {@link Mutiny.Session#close()}.
+		 * {@link Session#close()}.
 		 *
 		 * @see #withSession(Function)
 		 */
@@ -1617,13 +1617,39 @@ public interface Stage {
 		 * The session will be {@link Session#flush() flushed} and closed
 		 * automatically, and the transaction committed automatically.
 		 *
-		 * @param work a function which accepts the session and returns
-		 *             the result of the work as a {@link CompletionStage}.
+		 * @param work a function which accepts the session and transaction
+		 *             and returns the result of the work as a
+		 *             {@link CompletionStage}.
 		 *
 		 * @see #withSession(Function)
 		 * @see Session#withTransaction(Function)
 		 */
 		<T> CompletionStage<T> withTransaction(BiFunction<Session, Transaction, CompletionStage<T>> work);
+
+		/**
+		 * Perform work using a {@link Session reactive session} within an
+		 * associated transaction.
+		 * <p>
+		 * <il>
+		 * <li>If there is already a stateless session associated with the
+		 * current reactive stream, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no stateless session associated with the
+		 * current stream, a new stateless session will be created.
+		 * </il>
+		 * <p>
+		 * The session will be {@link Session#flush() flushed} and closed
+		 * automatically, and the transaction committed automatically.
+		 *
+		 * @param work a function which accepts the session and returns the
+		 *             result of the work as a {@link CompletionStage}.
+		 *
+		 * @see #withTransaction(BiFunction)
+		 * @see Session#withTransaction(Function)
+		 */
+		default <T> CompletionStage<T> withTransaction(Function<Session, CompletionStage<T>> work) {
+			return withTransaction( (session, transaction) -> work.apply(session) );
+		}
 
 		/**
 		 * Perform work using a {@link Session reactive session} for a
