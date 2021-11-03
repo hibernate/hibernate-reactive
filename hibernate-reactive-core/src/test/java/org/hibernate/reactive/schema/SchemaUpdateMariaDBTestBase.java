@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive;
+package org.hibernate.reactive.schema;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -21,9 +21,9 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.hibernate.tool.schema.spi.SchemaManagementException;
 
 import org.junit.After;
 import org.junit.Before;
@@ -32,13 +32,14 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 
-public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
+public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 
-	public static class IndividuallySchemaUpdateMySqlTestBase extends SchemaUpdateMySqlTestBase {
+	public static class IndividuallySchemaUpdateMariaDBTestBase
+			extends SchemaUpdateMariaDBTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -48,7 +49,7 @@ public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 		}
 	}
 
-	public static class GroupedSchemaUpdateMySqlTestBase extends SchemaUpdateMySqlTestBase {
+	public static class GroupedSchemaUpdateMariaDBTestBase extends SchemaUpdateMariaDBTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -66,7 +67,7 @@ public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 	}
 
 	@Rule
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( MYSQL );
+	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( MARIA );
 
 	@Before
 	@Override
@@ -102,25 +103,20 @@ public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 		test( context, setupSessionFactory( createHbm2ddlConf ) );
 	}
 
-	//TODO: I'm just checking that the validation fails because the table is missing, but we need more tests to check that
-	//      it fails for other scenarios: missing column, wrong type (?) and so on. (I don't know exactly what cases `validate`
-	//      actually checks).
-	@Test
-	public void testValidationFails(TestContext context) {
-		Configuration createHbm2ddlConf = constructConfiguration( "validate" );
-		createHbm2ddlConf.addAnnotatedClass( AAnother.class );
-
-		test( context, setupSessionFactory( createHbm2ddlConf )
-				.handle( (unused, throwable) -> {
-					context.assertNotNull( throwable );
-					context.assertEquals( throwable.getClass(), SchemaManagementException.class );
-					context.assertEquals( throwable.getMessage(), "Schema-validation: missing table [hreact.AAnother]" );
-					return null;
-				} ) );
-	}
-
 	@Test
 	public void testUpdate(TestContext context) {
+
+		// NOTE: MariaDB returns 'A' for ascending columns sorted in ascending order
+		//       for the collation column using this query:
+		//           select * from information_schema.statistics.
+		//       For some reason, it returns null for collation when explicitly
+		//       listed, as in:
+		//           select column_name, collation from information_schema.statistics
+		//       In addition, MariaDB does not support descending indexes currently
+		//       (https://jira.mariadb.org/browse/MDEV-13756)
+
+		// For now, collation will remain in the query, but checks on results
+		// returned for that column will be commented out.
 		final String indexDefinitionQuery =
 				"select column_name, collation from information_schema.statistics " +
 						"where table_schema = 'hreact' " +
@@ -184,7 +180,7 @@ public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 												.thenAccept( result -> {
 													final Object[] resultArray = (Object[]) result;
 													context.assertEquals( "id", resultArray[0] );
-													context.assertEquals( "A", resultArray[1] );
+													//context.assertEquals( "A", resultArray[1] );
 												} )
 										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "ASimple" )
@@ -194,9 +190,9 @@ public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 												.thenAccept( list -> {
 													context.assertEquals( 2, list.size() );
 													context.assertEquals( "aValue", ( (Object[]) list.get( 0 ) )[0] );
-													context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
+													//context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
 													context.assertEquals( "aStringValue", ( (Object[]) list.get( 1 ) )[0] );
-													context.assertEquals( "D", ( (Object[]) list.get( 1 ) )[1] );
+													//context.assertEquals( "D", ( (Object[]) list.get( 1 ) )[1] );
 												} )
 										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "ASimple" )
@@ -206,9 +202,9 @@ public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 												.thenAccept( list -> {
 													context.assertEquals( 2, list.size() );
 													context.assertEquals( "aValue", ( (Object[]) list.get( 0 ) )[0] );
-													context.assertEquals( "D", ( (Object[]) list.get( 0 ) )[1] );
+													//context.assertEquals( "D", ( (Object[]) list.get( 0 ) )[1] );
 													context.assertEquals( "data", ( (Object[]) list.get( 1 ) )[0] );
-													context.assertEquals( "A", ( (Object[]) list.get( 1 ) )[1] );
+													//context.assertEquals( "A", ( (Object[]) list.get( 1 ) )[1] );
 												} )
 										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "ASimple" )
@@ -218,7 +214,7 @@ public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 												.thenAccept( list -> {
 													context.assertEquals( 1, list.size() );
 													context.assertEquals( "aStringValue", ( (Object[]) list.get( 0 ) )[0] );
-													context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
+													//context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
 												} )
 										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "AOther" )
@@ -228,9 +224,9 @@ public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 												.thenAccept( list -> {
 													context.assertEquals( 2, list.size() );
 													context.assertEquals( "id1", ( (Object[]) list.get( 0 ) )[0] );
-													context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
+													//context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
 													context.assertEquals( "id2", ( (Object[]) list.get( 1 ) )[0] );
-													context.assertEquals( "A", ( (Object[]) list.get( 1 ) )[1] );
+													//context.assertEquals( "A", ( (Object[]) list.get( 1 ) )[1] );
 												} )
 										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "AAnother" )
@@ -240,7 +236,7 @@ public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 												.thenAccept( list -> {
 													context.assertEquals( 1, list.size() );
 													context.assertEquals( "id", ( (Object[]) list.get( 0 ) )[0] );
-													context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
+													//context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
 												} )
 										// check foreign keys
 										).thenCompose( v -> s.createNativeQuery( foreignKeyDefinitionQuery )

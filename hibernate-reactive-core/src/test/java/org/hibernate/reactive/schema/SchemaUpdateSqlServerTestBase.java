@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive;
+package org.hibernate.reactive.schema;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -22,9 +22,9 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.hibernate.tool.schema.spi.SchemaManagementException;
 
 import org.junit.After;
 import org.junit.Before;
@@ -167,23 +167,6 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 		configuration.addAnnotatedClass( AOther.class );
 
 		test( context, setupSessionFactory( configuration ) );
-	}
-
-	//TODO: We need more tests to check that it fails for other scenarios:
-	//      missing column, wrong type (?) and so on. (I don't know exactly what cases `validate` actually checks).
-	@Test
-	public void testValidationFails(TestContext context) {
-		Configuration configuration = constructConfiguration( "validate" );
-		configuration.addAnnotatedClass( AAnother.class );
-
-		final String errorMessage = "Schema-validation: missing table [" + addCatalog( "dbo.AAnother" ) + "]";
-		test( context, setupSessionFactory( configuration )
-				.handle( (unused, throwable) -> {
-					context.assertNotNull( throwable );
-					context.assertEquals( throwable.getClass(), SchemaManagementException.class );
-					context.assertEquals( throwable.getMessage(), errorMessage );
-					return null;
-				} ) );
 	}
 
 	@Test
