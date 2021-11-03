@@ -47,6 +47,30 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
                 ) );
     }
 
+    @Test
+    public void testMergeDetached(TestContext context) {
+        Bar bar = new Bar("unique2");
+        test(context, getSessionFactory()
+                .withTransaction( (session, tx) -> session.persist(bar) )
+                .thenCompose( i -> getSessionFactory().withTransaction( (session, transaction)
+                        -> session.merge( new Foo(bar) ) ) )
+                .thenCompose( result -> getSessionFactory().withTransaction( (session, transaction)
+                        -> session.fetch(result.bar).thenAccept( b -> context.assertEquals("unique2", b.key ) )
+                ) ) );
+    }
+
+    @Test
+    public void testMergeReference(TestContext context) {
+        Bar bar = new Bar("unique3");
+        test(context, getSessionFactory()
+                .withTransaction( (session, tx) -> session.persist(bar) )
+                .thenCompose( i -> getSessionFactory().withTransaction( (session, transaction)
+                        -> session.merge( new Foo( session.getReference(Bar.class, bar.id) ) ) ) )
+                .thenCompose( result -> getSessionFactory().withTransaction( (session, transaction)
+                        -> session.fetch(result.bar).thenAccept( b -> context.assertEquals("unique3", b.key ) )
+                ) ) );
+    }
+
     @Entity(name="Foo")
     static class Foo {
         Foo(Bar bar) {
