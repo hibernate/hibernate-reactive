@@ -5,13 +5,75 @@
  */
 package org.hibernate.reactive.containers;
 
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.URL;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.UUID;
+
+import org.hibernate.type.NumericBooleanType;
+import org.hibernate.type.TextType;
+import org.hibernate.type.TrueFalseType;
+import org.hibernate.type.YesNoType;
+import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
+
 import org.testcontainers.containers.Db2Container;
 
 class DB2Database implements TestableDatabase {
 
 	public static DB2Database INSTANCE = new DB2Database();
 
-	public final static String IMAGE_NAME = "ibmcom/db2:11.5.5.1";
+	public static final String IMAGE_NAME = "ibmcom/db2:11.5.5.1";
+
+	public static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
+
+	static {{
+		expectedDBTypeForClass.put( boolean.class, "SMALLINT" );
+		expectedDBTypeForClass.put( Boolean.class, "SMALLINT" );
+		expectedDBTypeForClass.put( NumericBooleanType.class, "INTEGER" );
+		expectedDBTypeForClass.put( TrueFalseType.class, "CHARACTER" );
+		expectedDBTypeForClass.put( YesNoType.class, "CHARACTER" );
+		expectedDBTypeForClass.put( int.class, "INTEGER" );
+		expectedDBTypeForClass.put( Integer.class, "INTEGER" );
+		expectedDBTypeForClass.put( long.class, "BIGINT" );
+		expectedDBTypeForClass.put( Long.class, "BIGINT" );
+		expectedDBTypeForClass.put( float.class, "DOUBLE" );
+		expectedDBTypeForClass.put( Float.class, "DOUBLE" );
+		expectedDBTypeForClass.put( double.class, "DOUBLE" );
+		expectedDBTypeForClass.put( Double.class, "DOUBLE" );
+		expectedDBTypeForClass.put( byte.class, "SMALLINT" );
+		expectedDBTypeForClass.put( Byte.class, "SMALLINT" );
+		expectedDBTypeForClass.put( PrimitiveByteArrayTypeDescriptor.class, "VARCHAR" );
+		expectedDBTypeForClass.put( URL.class, "VARCHAR" );
+		expectedDBTypeForClass.put( TimeZone.class, "VARCHAR" );
+		expectedDBTypeForClass.put( Date.class, "DATE" );
+		expectedDBTypeForClass.put( Timestamp.class, "TIMESTAMP" );
+		expectedDBTypeForClass.put( Time.class, "TIME" );
+		expectedDBTypeForClass.put( LocalDate.class, "DATE" );
+		expectedDBTypeForClass.put( LocalTime.class, "TIME" );
+		expectedDBTypeForClass.put( LocalDateTime.class, "TIMESTAMP" );
+		expectedDBTypeForClass.put( BigInteger.class, "DECIMAL" );
+		expectedDBTypeForClass.put( BigDecimal.class, "DECIMAL" );
+		expectedDBTypeForClass.put( Serializable.class, "VARCHAR" );
+		expectedDBTypeForClass.put( UUID.class, "VARCHAR" );
+		expectedDBTypeForClass.put( Instant.class, "TIMESTAMP" );
+		expectedDBTypeForClass.put( Duration.class, "BIGINT" );
+		expectedDBTypeForClass.put( Character.class, "CHARACTER" );
+		expectedDBTypeForClass.put( char.class, "CHARACTER" );
+		expectedDBTypeForClass.put( TextType.class, "VARCHAR" );
+		expectedDBTypeForClass.put( String.class, "VARCHAR" );
+	}};
 
 	/**
 	 * Holds configuration for the DB2 database container. If the build is run with <code>-Pdocker</code> then
@@ -39,6 +101,16 @@ class DB2Database implements TestableDatabase {
 	@Override
 	public String getUri() {
 		return buildUriWithCredentials( address() );
+	}
+
+	@Override
+	public String getNativeDatatypeQuery(String tableName, String columnName) {
+		return "SELECT TYPENAME FROM SYSCAT.COLUMNS where TABNAME = '" + tableName.toUpperCase() + "' and COLNAME = '" + columnName.toUpperCase() + "'";
+	}
+
+	@Override
+	public String getExpectedNativeDatatype(Class<?> dataType) {
+		return expectedDBTypeForClass.get( dataType );
 	}
 
 	private String address() {

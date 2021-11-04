@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive;
+package org.hibernate.reactive.schema;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -21,9 +21,9 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.hibernate.tool.schema.spi.SchemaManagementException;
 
 import org.junit.After;
 import org.junit.Before;
@@ -32,13 +32,13 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 
-public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
+public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 
-	public static class IndividuallySchemaUpdatePostgreSqlTestBase extends SchemaUpdatePostgreSqlTestBase {
+	public static class IndividuallySchemaUpdateCockroachTestBase extends SchemaUpdateCockroachDBTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -48,7 +48,7 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 		}
 	}
 
-	public static class GroupedSchemaUpdatePostgreSqlTestBase extends SchemaUpdatePostgreSqlTestBase {
+	public static class GroupedSchemaUpdateCockroachTestBase extends SchemaUpdateCockroachDBTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -66,7 +66,7 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 	}
 
 	@Rule
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
+	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( COCKROACHDB );
 
 	@Before
 	@Override
@@ -92,7 +92,6 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 				.thenCompose( v -> factoryManager.stop() ) );
 	}
 
-
 	@Test
 	public void testValidationSucceed(TestContext context) {
 		Configuration createHbm2ddlConf = constructConfiguration( "validate" );
@@ -100,23 +99,6 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 		createHbm2ddlConf.addAnnotatedClass( AOther.class );
 
 		test( context, setupSessionFactory( createHbm2ddlConf ) );
-	}
-
-	//TODO: I'm just checking that the validation fails because the table is missing, but we need more tests to check that
-	//      it fails for other scenarios: missing column, wrong type (?) and so on. (I don't know exactly what cases `validate`
-	//      actually checks).
-	@Test
-	public void testValidationFails(TestContext context) {
-		Configuration createHbm2ddlConf = constructConfiguration( "validate" );
-		createHbm2ddlConf.addAnnotatedClass( AAnother.class );
-
-		test( context, setupSessionFactory( createHbm2ddlConf )
-				.handle( (unused, throwable) -> {
-					context.assertNotNull( throwable );
-					context.assertEquals( throwable.getClass(), SchemaManagementException.class );
-					context.assertEquals( throwable.getMessage(), "Schema-validation: missing table [public.AAnother]" );
-					return null;
-				} ) );
 	}
 
 	@Test
@@ -174,19 +156,19 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 												.getResultList()
 												.thenAccept( list -> {
 													context.assertEquals(
-															"CREATE UNIQUE INDEX asimple_pkey ON public.asimple USING btree (id)",
+															"CREATE INDEX i_asimple_avalue_astringvalue ON postgres.public.asimple USING btree (avalue ASC, astringvalue DESC)",
 															list.get( 0 )
 													);
 													context.assertEquals(
-															"CREATE INDEX i_asimple_avalue_astringvalue ON public.asimple USING btree (avalue, astringvalue DESC)",
+															"CREATE INDEX i_asimple_avalue_data ON postgres.public.asimple USING btree (avalue DESC, data ASC)",
 															list.get( 1 )
 													);
 													context.assertEquals(
-															"CREATE INDEX i_asimple_avalue_data ON public.asimple USING btree (avalue DESC, data)",
+															"CREATE UNIQUE INDEX \"primary\" ON postgres.public.asimple USING btree (id ASC)",
 															list.get( 2 )
 													);
 													context.assertEquals(
-															"CREATE UNIQUE INDEX u_asimple_astringvalue ON public.asimple USING btree (astringvalue)",
+															"CREATE UNIQUE INDEX u_asimple_astringvalue ON postgres.public.asimple USING btree (astringvalue ASC)",
 															list.get( 3 )
 													);
 												} )
@@ -196,7 +178,7 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 												.getSingleResult()
 												.thenAccept( result ->
 																	 context.assertEquals(
-																			 "CREATE UNIQUE INDEX aother_pkey ON public.aother USING btree (id1, id2)",
+																			 "CREATE UNIQUE INDEX \"primary\" ON postgres.public.aother USING btree (id1 ASC, id2 ASC)",
 																			 result
 																	 )
 												)
@@ -206,7 +188,7 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 												.getSingleResult()
 												.thenAccept( result ->
 																	 context.assertEquals(
-																			 "CREATE UNIQUE INDEX aanother_pkey ON public.aanother USING btree (id)",
+																			 "CREATE UNIQUE INDEX \"primary\" ON postgres.public.aanother USING btree (id ASC)",
 																			 result
 																	 )
 												)
@@ -266,7 +248,7 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 
 	@Entity(name = "ASimple")
 	@Table(name = "ASimple", indexes = {
-			@Index(name = "i_asimple_avalue_astringvalue", columnList = "aValue ASC, aStringValue DESC"),
+			@Index(name = "i_asimple_avalue_astringValue", columnList = "aValue ASC, aStringValue DESC"),
 			@Index(name = "i_asimple_avalue_data", columnList = "aValue DESC, data ASC")
 	},
 			uniqueConstraints = { @UniqueConstraint(name = "u_asimple_astringvalue", columnNames = "aStringValue") }

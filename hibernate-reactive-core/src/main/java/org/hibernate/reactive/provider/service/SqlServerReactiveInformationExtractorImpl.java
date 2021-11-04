@@ -6,6 +6,7 @@
 package org.hibernate.reactive.provider.service;
 
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -249,4 +250,16 @@ public class SqlServerReactiveInformationExtractorImpl extends AbstractReactiveI
 
 		return getExtractionContext().getQueryResults( sb.toString(), parameters.toArray(), processor );
 	}
+
+	@Override
+	protected int dataTypeCode(String typeName) {
+		// SQL Server only supports "float" sql type for double precision
+		// so return code for double for both double and float column types
+		if ( typeName.equalsIgnoreCase( "float" ) ||
+				typeName.toLowerCase().startsWith( "double" ) ) {
+			return Types.DOUBLE;
+		}
+		return super.dataTypeCode( typeName );
+	}
+
 }

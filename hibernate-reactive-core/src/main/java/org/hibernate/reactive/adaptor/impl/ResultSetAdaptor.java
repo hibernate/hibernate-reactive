@@ -142,7 +142,7 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public Date getDate(int columnIndex) {
 		LocalDate localDate = row.getLocalDate( columnIndex - 1 );
-		return (wasNull=localDate==null) ? null : java.sql.Date.valueOf(localDate);
+		return (wasNull=localDate==null) ? null : Date.valueOf(localDate);
 	}
 
 	@Override
@@ -269,7 +269,7 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public Date getDate(String columnLabel) {
 		LocalDate localDate = row.getLocalDate(columnLabel);
-		return (wasNull=localDate==null) ? null : java.sql.Date.valueOf(localDate);
+		return (wasNull=localDate==null) ? null : Date.valueOf(localDate);
 	}
 
 	@Override
@@ -721,9 +721,16 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Blob getBlob(String columnLabel) {
-		Buffer buffer = (Buffer) row.getValue( columnLabel );
-		wasNull = buffer == null;
-		return wasNull ? null : BlobProxy.generateProxy( buffer.getBytes() );
+		final Object value = row.getValue( columnLabel );
+		wasNull = value == null;
+		if ( wasNull ) {
+			return null;
+		}
+
+		byte[] bytes = value instanceof String
+				? ( (String) value ).getBytes()
+				: ( (Buffer) value ).getBytes();
+		return BlobProxy.generateProxy( bytes );
 	}
 
 	@Override
