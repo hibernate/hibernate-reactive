@@ -93,6 +93,28 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void reactiveWithTransactionSession(TestContext context) {
+		final GuineaPig guineaPig = new GuineaPig( 61, "Mr. Peanutbutter" );
+		test( context, getSessionFactory()
+				.withTransaction( session -> session.persist( guineaPig ) )
+				.thenCompose( v -> getSessionFactory()
+						.withSession( session -> session.find( GuineaPig.class, guineaPig.getId() ) ) )
+				.thenAccept( result -> assertThatPigsAreEqual( context, guineaPig, result ) )
+		);
+	}
+
+	@Test
+	public void reactiveWithTransactionStatelessSession(TestContext context) {
+		final GuineaPig guineaPig = new GuineaPig( 61, "Mr. Peanutbutter" );
+		test( context, getSessionFactory()
+				.withStatelessTransaction( session -> session.insert( guineaPig ) )
+				.thenCompose( v -> getSessionFactory()
+						.withSession( session -> session.find( GuineaPig.class, guineaPig.getId() ) ) )
+				.thenAccept( result -> assertThatPigsAreEqual( context, guineaPig, result ) )
+		);
+	}
+
+	@Test
 	public void reactivePersistFindDelete(TestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
 		test(
