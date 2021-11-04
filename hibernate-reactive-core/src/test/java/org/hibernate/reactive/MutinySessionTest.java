@@ -67,6 +67,28 @@ public class MutinySessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void reactiveWithTransactionStatelessSession(TestContext context) {
+		final GuineaPig guineaPig = new GuineaPig( 61, "Mr. Peanutbutter" );
+		test( context, getMutinySessionFactory()
+				.withStatelessTransaction( s -> s.insert( guineaPig ) )
+				.chain( () -> getMutinySessionFactory()
+						.withSession( s -> s.find( GuineaPig.class, guineaPig.getId() ) ) )
+				.invoke( result -> assertThatPigsAreEqual( context, guineaPig, result ) )
+		);
+	}
+
+	@Test
+	public void reactiveWithTransactionSession(TestContext context) {
+		final GuineaPig guineaPig = new GuineaPig( 61, "Mr. Peanutbutter" );
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s.persist( guineaPig ) )
+				.chain( () -> getMutinySessionFactory()
+						.withSession( s -> s.find( GuineaPig.class, guineaPig.getId() ) ) )
+				.invoke( result -> assertThatPigsAreEqual( context, guineaPig, result ) )
+		);
+	}
+
+	@Test
 	public void reactiveFind1(TestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
