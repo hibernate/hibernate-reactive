@@ -78,7 +78,9 @@ public interface ReactiveConnection {
 	CompletionStage<Void> commitTransaction();
 	CompletionStage<Void> rollbackTransaction();
 
-	CompletionStage<Void> executeBatch();
+    ReactiveConnection withBatchSize(int batchSize);
+
+    CompletionStage<Void> executeBatch();
 
 	CompletionStage<Void> close();
 }
