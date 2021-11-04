@@ -1631,7 +1631,7 @@ public interface Stage {
 		 * associated transaction.
 		 * <p>
 		 * <il>
-		 * <li>If there is already a stateless session associated with the
+		 * <li>If there is already a session associated with the
 		 * current reactive stream, then the work will be executed using that
 		 * session.
 		 * <li>Otherwise, if there is no stateless session associated with the
@@ -1648,7 +1648,7 @@ public interface Stage {
 		 * @see Session#withTransaction(Function)
 		 */
 		default <T> CompletionStage<T> withTransaction(Function<Session, CompletionStage<T>> work) {
-			return withTransaction( (session, transaction) -> work.apply(session) );
+			return withTransaction( (session, transaction) -> work.apply( session ) );
 		}
 
 		/**
@@ -1674,6 +1674,30 @@ public interface Stage {
 		 * @see Session#withTransaction(Function)
 		 */
 		<T> CompletionStage<T> withTransaction(String tenantId, BiFunction<Session, Transaction, CompletionStage<T>> work);
+
+		/**
+		 * Perform work using a {@link StatelessSession reactive session} within an
+		 * associated {@link Transaction transaction}.
+		 * <p>
+		 * <il>
+		 * <li>If there is already a stateless session associated with the
+		 * current reactive stream, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no stateless session associated with the
+		 * current stream, a new stateless session will be created.
+		 * </il>
+		 * <p>
+		 * The session will be closed automatically, and the transaction committed automatically.
+		 *
+		 * @param work a function which accepts the stateless session and returns
+		 *             the result of the work as a {@link CompletionStage}.
+		 *
+		 * @see #withStatelessSession(Function)
+		 * @see StatelessSession#withTransaction(Function)
+		 */
+		default <T> CompletionStage<T> withStatelessTransaction(Function<StatelessSession, CompletionStage<T>> work) {
+			return withStatelessTransaction( ( (statelessSession, transaction) -> work.apply( statelessSession ) ) );
+		}
 
 		/**
 		 * Perform work using a {@link StatelessSession reactive session} within an

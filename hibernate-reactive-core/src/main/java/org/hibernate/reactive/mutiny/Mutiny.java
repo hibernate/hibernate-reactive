@@ -1651,7 +1651,31 @@ public interface Mutiny {
 		 * @see Session#withTransaction(Function)
 		 */
 		default <T> Uni<T> withTransaction(Function<Session, Uni<T>> work) {
-			return withTransaction( (session, transaction) -> work.apply(session) );
+			return withTransaction( (session, transaction) -> work.apply( session ) );
+		}
+
+		/**
+		 * Perform work using a {@link StatelessSession reactive session} within an
+		 * associated {@link Transaction transaction}.
+		 * <p>
+		 * <il>
+		 * <li>If there is already a stateless session associated with the
+		 * current reactive stream, then the work will be executed using that
+		 * session.
+		 * <li>Otherwise, if there is no stateless session associated with the
+		 * current stream, a new stateless session will be created.
+		 * </il>
+		 * <p>
+		 * The session will be closed automatically and the transaction committed automatically.
+		 *
+		 * @param work a function which accepts the stateless session and returns
+		 *             the result of the work as a {@link Uni}.
+		 *
+		 * @see #withStatelessSession(Function)
+		 * @see StatelessSession#withTransaction(Function)
+		 */
+		default <T> Uni<T> withStatelessTransaction(Function<StatelessSession, Uni<T>> work) {
+			return withStatelessTransaction( (statelessSession, transaction) -> work.apply( statelessSession ) );
 		}
 
 		/**
