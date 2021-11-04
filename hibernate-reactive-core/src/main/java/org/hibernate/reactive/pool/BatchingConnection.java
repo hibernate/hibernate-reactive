@@ -31,7 +31,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 public class BatchingConnection implements ReactiveConnection {
 
     private final ReactiveConnection delegate;
-    private final int batchSize;
+    private int batchSize;
 
     private String batchedSql;
     private Expectation batchedExpectation;
@@ -40,6 +40,17 @@ public class BatchingConnection implements ReactiveConnection {
     public BatchingConnection(ReactiveConnection delegate, int batchSize) {
         this.delegate = delegate;
         this.batchSize = batchSize;
+    }
+
+    @Override
+    public ReactiveConnection withBatchSize(int batchSize) {
+        if (batchSize<=1) {
+            return delegate;
+        }
+        else {
+            this.batchSize = batchSize;
+            return this;
+        }
     }
 
     @Override

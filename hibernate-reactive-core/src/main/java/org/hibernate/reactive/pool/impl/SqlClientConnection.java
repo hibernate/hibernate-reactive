@@ -18,6 +18,7 @@ import org.hibernate.reactive.adaptor.impl.JdbcNull;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
@@ -292,6 +293,13 @@ public class SqlClientConnection implements ReactiveConnection {
 			}
 			return result;
 		}
+	}
+
+	@Override
+	public ReactiveConnection withBatchSize(int batchSize) {
+		return batchSize <= 1
+				? this
+				: new BatchingConnection(this, batchSize);
 	}
 
 	@Override
