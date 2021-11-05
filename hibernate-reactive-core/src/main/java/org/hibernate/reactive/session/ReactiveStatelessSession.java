@@ -19,38 +19,38 @@ import java.util.concurrent.CompletionStage;
  * This is primarily an internal contract between the various subsystems
  * of Hibernate Reactive.
  *
- *  @see org.hibernate.reactive.stage.Stage.Session
- *  @see org.hibernate.reactive.mutiny.Mutiny.Session
+ * @see org.hibernate.reactive.stage.Stage.Session
+ * @see org.hibernate.reactive.mutiny.Mutiny.Session
  */
 @Incubating
 public interface ReactiveStatelessSession extends ReactiveQueryExecutor {
 
-    <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id);
+	<T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id);
 
-    <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph);
+	<T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph);
 
-    CompletionStage<Void> reactiveInsert(Object entity);
+	CompletionStage<Void> reactiveInsert(Object entity);
 
-    CompletionStage<Void> reactiveDelete(Object entity);
+	CompletionStage<Void> reactiveDelete(Object entity);
 
-    CompletionStage<Void> reactiveUpdate(Object entity);
+	CompletionStage<Void> reactiveUpdate(Object entity);
 
-    CompletionStage<Void> reactiveRefresh(Object entity);
+	CompletionStage<Void> reactiveRefresh(Object entity);
 
-    CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode);
+	CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode);
 
-    CompletionStage<Void> reactiveInsertAll(Object... entities);
+	CompletionStage<Void> reactiveInsertAll(Object... entities);
 
-    CompletionStage<Void> reactiveUpdateAll(Object... entities);
+	CompletionStage<Void> reactiveUpdateAll(Object... entities);
 
-    CompletionStage<Void> reactiveDeleteAll(Object... entities);
+	CompletionStage<Void> reactiveDeleteAll(Object... entities);
 
-    CompletionStage<Void> reactiveRefreshAll(Object... entities);
+	CompletionStage<Void> reactiveRefreshAll(Object... entities);
 
-    <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
+	<T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
 
-    boolean isOpen();
+	boolean isOpen();
 
-    void close(CompletableFuture<Void> closing);
+	void close(CompletableFuture<Void> closing);
 
 }

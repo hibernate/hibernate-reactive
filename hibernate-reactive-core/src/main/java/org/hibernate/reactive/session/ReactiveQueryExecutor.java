@@ -29,45 +29,47 @@ import java.util.concurrent.CompletionStage;
 @Incubating
 public interface ReactiveQueryExecutor extends ReactiveConnectionSupplier {
 
-    SessionFactoryImplementor getFactory();
-    SharedSessionContractImplementor getSharedContract();
-    Dialect getDialect();
+	SessionFactoryImplementor getFactory();
 
-    <T> CompletionStage<List<T>> reactiveList(String query, QueryParameters parameters);
-    <T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters parameters);
+	SharedSessionContractImplementor getSharedContract();
 
-    CompletionStage<Integer> executeReactiveUpdate(String expandedQuery, QueryParameters parameters);
-    CompletionStage<Integer> executeReactiveUpdate(NativeSQLQuerySpecification specification,
-                                                   QueryParameters parameters);
+	Dialect getDialect();
 
-    <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
+	<T> CompletionStage<List<T>> reactiveList(String query, QueryParameters parameters);
 
-    void addBulkCleanupAction(BulkOperationCleanupAction action);
+	<T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters parameters);
 
-    CompletionStage<Object> reactiveInternalLoad(String entityName, Serializable id, boolean eager, boolean nullable);
+	CompletionStage<Integer> executeReactiveUpdate(String expandedQuery, QueryParameters parameters);
 
-    <R> ReactiveQuery<R> createReactiveQuery(Criteria<R> criteria);
+	CompletionStage<Integer> executeReactiveUpdate(NativeSQLQuerySpecification specification, QueryParameters parameters);
 
-    <T> ReactiveQuery<T> createReactiveCriteriaQuery(
-            String jpaqlString,
-            Class<T> resultClass,
-            CriteriaQueryOptions queryOptions);
+	<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
 
-    <T> EntityGraph<T> createEntityGraph(Class<T> entity);
-    <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name);
-    <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name);
+	void addBulkCleanupAction(BulkOperationCleanupAction action);
 
-    <R> ReactiveQuery<R> createReactiveQuery(String queryString);
+	CompletionStage<Object> reactiveInternalLoad(String entityName, Serializable id, boolean eager, boolean nullable);
 
-    <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType);
+	<R> ReactiveQuery<R> createReactiveQuery(Criteria<R> criteria);
 
-    <R> ReactiveQuery<R> createReactiveNamedQuery(String name);
+	<T> ReactiveQuery<T> createReactiveCriteriaQuery(String jpaqlString, Class<T> resultClass, CriteriaQueryOptions queryOptions);
 
-    <R> ReactiveQuery<R> createReactiveNamedQuery(String name, Class<R> resultClass);
+	<T> EntityGraph<T> createEntityGraph(Class<T> entity);
 
-    <T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString);
+	<T> EntityGraph<T> createEntityGraph(Class<T> entity, String name);
 
-    <T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultType);
+	<T> EntityGraph<T> getEntityGraph(Class<T> entity, String name);
 
-    <T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping);
+	<R> ReactiveQuery<R> createReactiveQuery(String queryString);
+
+	<R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType);
+
+	<R> ReactiveQuery<R> createReactiveNamedQuery(String name);
+
+	<R> ReactiveQuery<R> createReactiveNamedQuery(String name, Class<R> resultClass);
+
+	<T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString);
+
+	<T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultType);
+
+	<T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping);
 }

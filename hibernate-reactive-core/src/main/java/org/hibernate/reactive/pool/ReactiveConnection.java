@@ -35,6 +35,7 @@ public interface ReactiveConnection {
 	}
 
 	CompletionStage<Void> execute(String sql);
+
 	CompletionStage<Void> executeOutsideTransaction(String sql);
 
 	/**
@@ -43,12 +44,17 @@ public interface ReactiveConnection {
 	CompletionStage<Void> executeUnprepared(String sql);
 
 	CompletionStage<Integer> update(String sql);
+
 	CompletionStage<Integer> update(String sql, Object[] paramValues);
+
 	CompletionStage<Void> update(String sql, Object[] paramValues, boolean allowBatching, Expectation expectation);
+
 	CompletionStage<int[]> update(String sql, List<Object[]> paramValues);
 
 	CompletionStage<Result> select(String sql);
+
 	CompletionStage<Result> select(String sql, Object[] paramValues);
+
 	CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues);
 
 	/**
@@ -63,11 +69,13 @@ public interface ReactiveConnection {
 	 *
 	 * @param sql - the query to execute outside of a transaction
 	 * @param paramValues - a non-null array of parameter values
+	 *
 	 * @return the CompletionStage<ResultSet> from executing the query.
 	 */
 	CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues);
 
 	CompletionStage<Long> insertAndSelectIdentifier(String sql, Object[] paramValues);
+
 	CompletionStage<Long> selectIdentifier(String sql, Object[] paramValues);
 
 	interface Result extends Iterator<Object[]> {
@@ -75,12 +83,14 @@ public interface ReactiveConnection {
 	}
 
 	CompletionStage<Void> beginTransaction();
+
 	CompletionStage<Void> commitTransaction();
+
 	CompletionStage<Void> rollbackTransaction();
 
-    ReactiveConnection withBatchSize(int batchSize);
+	ReactiveConnection withBatchSize(int batchSize);
 
-    CompletionStage<Void> executeBatch();
+	CompletionStage<Void> executeBatch();
 
 	CompletionStage<Void> close();
 }
