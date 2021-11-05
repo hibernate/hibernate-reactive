@@ -156,7 +156,7 @@ final class ProxyConnection implements ReactiveConnection {
 
 	@Override
 	public ReactiveConnection withBatchSize(int batchSize) {
-		connection = connection.withBatchSize(batchSize);
+		connection = connection.withBatchSize( batchSize );
 		return this;
 	}
 
