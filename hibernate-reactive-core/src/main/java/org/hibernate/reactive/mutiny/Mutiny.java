@@ -1313,6 +1313,16 @@ public interface Mutiny {
 		Uni<Void> insertAll(Object... entities);
 
 		/**
+		 * Insert multiple rows using the specified batch size.
+		 *
+		 * @param batchSize the batch size
+		 * @param entities new transient instances
+		 *
+		 * @see org.hibernate.StatelessSession#insert(Object)
+		 */
+		Uni<Void> insertAll(int batchSize, Object... entities);
+
+		/**
 		 * Delete a row.
 		 *
 		 * @param entity a detached entity instance
@@ -1329,6 +1339,16 @@ public interface Mutiny {
 		 * @see org.hibernate.StatelessSession#delete(Object)
 		 */
 		Uni<Void> deleteAll(Object... entities);
+
+		/**
+		 * Delete multiple rows.
+		 *
+		 * @param batchSize the batch size
+		 * @param entities detached entity instances
+		 *
+		 * @see org.hibernate.StatelessSession#delete(Object)
+		 */
+		Uni<Void> deleteAll(int batchSize, Object... entities);
 
 		/**
 		 * Update a row.
@@ -1349,6 +1369,16 @@ public interface Mutiny {
 		Uni<Void> updateAll(Object... entities);
 
 		/**
+		 * Update multiple rows.
+		 *
+		 * @param batchSize the batch size
+		 * @param entities detached entity instances
+		 *
+		 * @see org.hibernate.StatelessSession#update(Object)
+		 */
+		Uni<Void> updateAll(int batchSize, Object... entities);
+
+		/**
 		 * Refresh the entity instance state from the database.
 		 *
 		 * @param entity The entity to be refreshed.
@@ -1365,6 +1395,17 @@ public interface Mutiny {
 		 * @see org.hibernate.StatelessSession#refresh(Object)
 		 */
 		Uni<Void> refreshAll(Object... entities);
+
+		/**
+		 * Refresh the entity instance state from the database
+		 * using the selected batch size.
+		 *
+		 * @param batchSize the batch size
+		 * @param entities The entities to be refreshed.
+		 *
+		 * @see org.hibernate.StatelessSession#refresh(Object)
+		 */
+		Uni<Void> refreshAll(int batchSize, Object... entities);
 
 		/**
 		 * Refresh the entity instance state from the database.

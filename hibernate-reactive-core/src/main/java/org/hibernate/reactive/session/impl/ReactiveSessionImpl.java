@@ -1521,8 +1521,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public void setBatchSize(Integer batchSize) {
-		setJdbcBatchSize(batchSize);
-		reactiveConnection = reactiveConnection.withBatchSize(batchSize);
+		setJdbcBatchSize( batchSize );
+		reactiveConnection = reactiveConnection.withBatchSize( batchSize );
 	}
 
 	@Override @SuppressWarnings("unchecked")

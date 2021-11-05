@@ -126,6 +126,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
+	public CompletionStage<Void> insert(int batchSize, Object... entities) {
+		return stage( w -> delegate.reactiveInsertAll( batchSize, entities ) );
+	}
+
+	@Override
 	public CompletionStage<Void> delete(Object entity) {
 		return stage( w -> delegate.reactiveDelete( entity ) );
 	}
@@ -133,6 +138,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	@Override
 	public CompletionStage<Void> delete(Object... entities) {
 		return stage( w -> delegate.reactiveDeleteAll( entities ) );
+	}
+
+	@Override
+	public CompletionStage<Void> delete(int batchSize, Object... entities) {
+		return stage( w -> delegate.reactiveDeleteAll( batchSize, entities ) );
 	}
 
 	@Override
@@ -146,6 +156,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
+	public CompletionStage<Void> update(int batchSize, Object... entities) {
+		return stage( w -> delegate.reactiveUpdateAll( batchSize, entities ) );
+	}
+
+	@Override
 	public CompletionStage<Void> refresh(Object entity) {
 		return stage( w -> delegate.reactiveRefresh( entity ) );
 	}
@@ -153,6 +168,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	@Override
 	public CompletionStage<Void> refresh(Object... entities) {
 		return stage( w -> delegate.reactiveRefreshAll( entities ) );
+	}
+
+	@Override
+	public CompletionStage<Void> refresh(int batchSize, Object... entities) {
+		return stage( w -> delegate.reactiveRefreshAll( batchSize, entities ) );
 	}
 
 	@Override

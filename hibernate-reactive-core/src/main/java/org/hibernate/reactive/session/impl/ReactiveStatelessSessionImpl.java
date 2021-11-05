@@ -80,7 +80,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	private final ReactiveConnection reactiveConnection;
+	private ReactiveConnection reactiveConnection;
 
 	private final ReactiveStatelessSession batchingHelperSession;
 
@@ -93,7 +93,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 		super( factory, options );
 		reactiveConnection = connection;
 		persistenceContext = new ReactivePersistenceContextAdapter( this );
-		batchingHelperSession = new ReactiveStatelessSessionImpl( factory, options, connection, persistenceContext );
+		batchingHelperSession = new ReactiveStatelessSessionImpl( factory, options, reactiveConnection, persistenceContext );
 	}
 
 	/**
@@ -105,11 +105,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 			ReactiveConnection connection,
 			PersistenceContext persistenceContext) {
 		super( factory, options );
+		this.persistenceContext = persistenceContext;
 		Integer batchSize = getConfiguredJdbcBatchSize();
 		reactiveConnection = batchSize == null || batchSize < 2
 				? connection
 				: new BatchingConnection( connection, batchSize );
-		this.persistenceContext = persistenceContext;
+		reactiveConnection = connection;
 		batchingHelperSession = this;
 	}
 
@@ -304,9 +305,23 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 	}
 
 	@Override
+	public CompletionStage<Void> reactiveInsertAll(int batchSize, Object... entities) {
+		final ReactiveConnection connection = batchingConnection( batchSize );
+		return loop( entities, batchingHelperSession::reactiveInsert )
+				.thenCompose( v -> connection.executeBatch() );
+	}
+
+	@Override
 	public CompletionStage<Void> reactiveUpdateAll(Object... entities) {
 		return loop( entities, batchingHelperSession::reactiveUpdate )
 				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
+	}
+
+	@Override
+	public CompletionStage<Void> reactiveUpdateAll(int batchSize, Object... entities) {
+		final ReactiveConnection connection = batchingConnection( batchSize );
+		return loop( entities, batchingHelperSession::reactiveUpdate )
+				.thenCompose( v -> connection.executeBatch() );
 	}
 
 	@Override
@@ -316,9 +331,29 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 	}
 
 	@Override
+	public CompletionStage<Void> reactiveDeleteAll(int batchSize, Object... entities) {
+		final ReactiveConnection connection = batchingConnection( batchSize );
+		return loop( entities, batchingHelperSession::reactiveDelete )
+				.thenCompose( v -> connection.executeBatch() );
+	}
+
+
+	@Override
 	public CompletionStage<Void> reactiveRefreshAll(Object... entities) {
 		return loop( entities, batchingHelperSession::reactiveRefresh )
 				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
+	}
+
+	@Override
+	public CompletionStage<Void> reactiveRefreshAll(int batchSize, Object... entities) {
+		final ReactiveConnection connection = batchingConnection( batchSize );
+		return loop( entities, batchingHelperSession::reactiveRefresh )
+				.thenCompose( v -> connection.executeBatch() );
+	}
+
+	private ReactiveConnection batchingConnection(int batchSize) {
+		return batchingHelperSession.getReactiveConnection()
+				.withBatchSize( batchSize );
 	}
 
 	@Override
