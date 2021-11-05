@@ -1028,12 +1028,13 @@ public interface Stage {
 		CacheMode getCacheMode();
 
 		/**
-		 * Set the session-level JDBC batch size, overriding the batch size set
+		 * Set the session-level batch size, overriding the batch size set
 		 * by the configuration property {@code hibernate.jdbc.batch_size}.
 		 */
 		Session setBatchSize(Integer batchSize);
+
 		/**
-		 * The session-level JDBC batch size, or {@code null} if it has not been
+		 * The session-level batch size, or {@code null} if it has not been
 		 * overridden.
 		 */
 		Integer getBatchSize();
@@ -1314,6 +1315,16 @@ public interface Stage {
 		CompletionStage<Void> insert(Object... entities);
 
 		/**
+		 * Insert multiple rows.
+		 *
+		 * @param batchSize the batch size
+		 * @param entities new transient instances
+		 *
+		 * @see org.hibernate.StatelessSession#insert(Object)
+		 */
+		CompletionStage<Void> insert(int batchSize, Object... entities);
+
+		/**
 		 * Delete a row.
 		 *
 		 * @param entity a detached entity instance
@@ -1330,6 +1341,16 @@ public interface Stage {
 		 * @see org.hibernate.StatelessSession#delete(Object)
 		 */
 		CompletionStage<Void> delete(Object... entities);
+
+		/**
+		 * Delete multiple rows.
+		 *
+		 * @param batchSize the batch size
+		 * @param entities detached entity instances
+		 *
+		 * @see org.hibernate.StatelessSession#delete(Object)
+		 */
+		CompletionStage<Void> delete(int batchSize, Object... entities);
 
 		/**
 		 * Update a row.
@@ -1350,6 +1371,16 @@ public interface Stage {
 		CompletionStage<Void> update(Object... entities);
 
 		/**
+		 * Update multiple rows.
+		 *
+		 * @param batchSize the batch size
+		 * @param entities a detached entity instance
+		 *
+		 * @see org.hibernate.StatelessSession#update(Object)
+		 */
+		CompletionStage<Void> update(int batchSize, Object... entities);
+
+		/**
 		 * Refresh the entity instance state from the database.
 		 *
 		 * @param entity The entity to be refreshed.
@@ -1366,6 +1397,16 @@ public interface Stage {
 		 * @see org.hibernate.StatelessSession#refresh(Object)
 		 */
 		CompletionStage<Void> refresh(Object... entities);
+
+		/**
+		 * Refresh the entity instance state from the database.
+		 *
+		 * @param batchSize the batch size
+		 * @param entities The entities to be refreshed.
+		 *
+		 * @see org.hibernate.StatelessSession#refresh(Object)
+		 */
+		CompletionStage<Void> refresh(int batchSize, Object... entities);
 
 		/**
 		 * Refresh the entity instance state from the database.

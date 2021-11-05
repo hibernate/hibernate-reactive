@@ -5,33 +5,26 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-
-import org.hibernate.LockMode;
-import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.common.AffectedEntities;
-import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
-import org.hibernate.reactive.pool.BatchingConnection;
-import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.stage.impl.StageSessionImpl;
-
-import org.junit.After;
-import org.junit.Test;
-
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.PersistenceException;
 import javax.persistence.Table;
 import javax.persistence.Version;
 import javax.persistence.metamodel.EntityType;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import org.hibernate.LockMode;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.common.AffectedEntities;
+import org.hibernate.reactive.stage.Stage;
+
+import org.junit.After;
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 public class ReactiveSessionTest extends BaseReactiveTest {
 
@@ -39,7 +32,6 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( GuineaPig.class );
-		configuration.setProperty(AvailableSettings.STATEMENT_BATCH_SIZE, "5");
 		return configuration;
 	}
 
@@ -690,56 +682,6 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 					return session.close()
 							.thenAccept( v -> context.assertFalse( session.isOpen() ) );
 				} )
-		);
-	}
-
-	@Test
-	public void testBatching(TestContext context) {
-		test(
-				context,
-				openSession()
-						.thenCompose( s -> voidFuture()
-								.thenCompose( v -> s.persist( new GuineaPig(11, "One") ) )
-								.thenCompose( v -> s.persist( new GuineaPig(22, "Two") ) )
-								.thenCompose( v -> s.persist( new GuineaPig(33, "Three") ) )
-								.thenCompose( v -> s.createQuery("select count(*) from GuineaPig")
-										.getSingleResult()
-										.thenAccept( count -> context.assertEquals( 3L, count) )
-								)
-						)
-						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.<GuineaPig>createQuery("from GuineaPig")
-								.getResultList()
-								.thenAccept( list -> list.forEach( pig -> pig.setName("Zero") ) )
-								.thenCompose( v -> s.<Long>createQuery("select count(*) from GuineaPig where name='Zero'")
-										.getSingleResult()
-										.thenAccept( count -> context.assertEquals( 3L, count) )
-								) )
-						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.<GuineaPig>createQuery("from GuineaPig")
-								.getResultList()
-								.thenAccept( list -> list.forEach(s::remove) )
-								.thenCompose( v -> s.<Long>createQuery("select count(*) from GuineaPig")
-										.getSingleResult()
-										.thenAccept( count -> context.assertEquals( 0L, count) )
-								)
-						)
-		);
-	}
-
-	@Test
-	public void testBatchingConnection(TestContext context) {
-		test( context, openSession()
-				.thenAccept( session -> assertThat( ( (StageSessionImpl) session ).getReactiveConnection() )
-						.isInstanceOf( BatchingConnection.class ) )
-		);
-	}
-
-	@Test
-	public void testBatchingConnectionMutiny(TestContext context) {
-		test( context, openMutinySession()
-				.invoke( session -> assertThat( ( (MutinySessionImpl) session ).getReactiveConnection() )
-						.isInstanceOf( BatchingConnection.class ) )
 		);
 	}
 

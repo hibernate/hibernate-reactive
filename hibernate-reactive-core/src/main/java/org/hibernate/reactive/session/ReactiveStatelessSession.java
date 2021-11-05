@@ -12,7 +12,7 @@ import javax.persistence.EntityGraph;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-/**
+/**Mutiny
  * A contract with the Hibernate stateless session backing the user-visible
  * {@link org.hibernate.reactive.stage.Stage.StatelessSession reactive session}.
  * <p>
@@ -41,11 +41,19 @@ public interface ReactiveStatelessSession extends ReactiveQueryExecutor {
 
 	CompletionStage<Void> reactiveInsertAll(Object... entities);
 
+	CompletionStage<Void> reactiveInsertAll(int batchSize, Object... entities);
+
 	CompletionStage<Void> reactiveUpdateAll(Object... entities);
+
+	CompletionStage<Void> reactiveUpdateAll(int batchSize, Object... entities);
 
 	CompletionStage<Void> reactiveDeleteAll(Object... entities);
 
+	CompletionStage<Void> reactiveDeleteAll(int batchSize, Object... entities);
+
 	CompletionStage<Void> reactiveRefreshAll(Object... entities);
+
+	CompletionStage<Void> reactiveRefreshAll(int batchSize, Object... entities);
 
 	<T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
 
