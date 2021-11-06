@@ -46,7 +46,8 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 		return JdbcEnvironment.class;
 	}
 
-	@Override @SuppressWarnings("unchecked")
+	@Override
+	@SuppressWarnings("unchecked")
 	public JdbcEnvironment initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
 		DialectFactory dialectFactory = registry.getService( DialectFactory.class );
 
@@ -86,22 +87,25 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 								try {
 									return new DatabaseMetaDataDialectResolutionInfoAdapter( connection.getMetaData() );
 								}
-								catch ( SQLException sqlException ) {
+								catch (SQLException sqlException) {
 									return null;
 								}
 							}
 					);
 					return new JdbcEnvironmentImpl( registry, dialect, connection.getMetaData() );
 				}
-				catch (SQLException e) {}
+				catch (SQLException e) {
+				}
 				finally {
 					try {
 						jdbcConnectionAccess.releaseConnection( connection );
 					}
-					catch (SQLException ignore) {}
+					catch (SQLException ignore) {
+					}
 				}
 			}
-			catch (Exception e) {}
+			catch (Exception e) {
+			}
 		}
 
 		// if we get here, either we were asked to not use JDBC metadata or accessing the JDBC metadata failed.
@@ -112,32 +116,32 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 			throw LOG.couldNotDetermineDialectFromJdbcDriverMetadata();
 		}
 		else {
-			throw LOG.couldNotDetermineDialectFromConnectionURI(url);
+			throw LOG.couldNotDetermineDialectFromConnectionURI( url );
 		}
 	}
 
 	protected Class<? extends Dialect> guessDialect(String url) {
-		if ( url.startsWith("jdbc:") ) {
-			url = url.substring(5);
+		if ( url.startsWith( "jdbc:" ) ) {
+			url = url.substring( 5 );
 		}
 
-		if ( url.startsWith("mysql:") ) {
+		if ( url.startsWith( "mysql:" ) ) {
 			return MySQL8Dialect.class;
 		}
-		else if ( url.startsWith("mariadb:") ) {
+		else if ( url.startsWith( "mariadb:" ) ) {
 			return MariaDB103Dialect.class;
 		}
-		else if ( url.startsWith("postgresql:") || url.startsWith("postgres:") ) {
+		else if ( url.startsWith( "postgresql:" ) || url.startsWith( "postgres:" ) ) {
 			return PostgreSQL10Dialect.class;
 		}
-		else if ( url.startsWith("db2:") ) {
-			return  DB297Dialect.class;
+		else if ( url.startsWith( "db2:" ) ) {
+			return DB297Dialect.class;
 		}
-		else if ( url.startsWith("cockroachdb:") ) {
-			return  CockroachDB201Dialect.class;
+		else if ( url.startsWith( "cockroachdb:" ) ) {
+			return CockroachDB201Dialect.class;
 		}
-		else if ( url.startsWith("sqlserver:") ) {
-			return  SQLServer2012Dialect.class;
+		else if ( url.startsWith( "sqlserver:" ) ) {
+			return SQLServer2012Dialect.class;
 		}
 		else {
 			return null;
