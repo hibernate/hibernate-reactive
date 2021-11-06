@@ -179,6 +179,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 		}
 
 		if ( username == null ) {
+			// TODO: add this error to org.hibernate.reactive.logging.impl.Log
 			throw new HibernateError(
 					"database username not specified (set the property 'javax.persistence.jdbc.user', or include it as a parameter in the connection URL)" );
 		}
@@ -230,6 +231,8 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 				return 26257;
 			case "sqlserver":
 				return 1433;
+			case "oracle":
+				return 1521;
 			default:
 				throw new IllegalArgumentException( "Unknown default port for scheme: " + scheme );
 		}
