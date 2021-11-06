@@ -36,6 +36,7 @@ dependencies {
     testImplementation "io.vertx:vertx-mysql-client:${vertxVersion}"
     testImplementation "io.vertx:vertx-db2-client:${vertxVersion}"
     testImplementation "io.vertx:vertx-mssql-client:${vertxVersion}"
+	testImplementation "io.vertx:vertx-oracle-client:${vertxVersion}"
 
     // Optional dependency of vertx-pg-client, essential when connecting via SASL SCRAM
     testImplementation 'com.ongres.scram:client:2.1'
@@ -64,6 +65,7 @@ dependencies {
     testImplementation "org.testcontainers:db2:${testcontainersVersion}"
     testImplementation "org.testcontainers:cockroachdb:${testcontainersVersion}"
     testImplementation "org.testcontainers:mssqlserver:${testcontainersVersion}"
+	testImplementation "org.testcontainers:oracle-xe:${testcontainersVersion}"
 }
 
 // Print a summary of the results of the tests (number of failures, successes and skipped)
@@ -131,7 +133,7 @@ tasks.addRule( "Pattern testDb<id>" ) { String taskName ->
 }
 
 // The dbs we want to test when running testAll
-def dbs = ['MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer']
+def dbs = ['MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer', 'Oracle']
 task testAll( dependsOn: dbs.collect( [] as HashSet ) { db -> "testDb${db}" } ) {
     description = "Run tests for ${dbs}"
 }

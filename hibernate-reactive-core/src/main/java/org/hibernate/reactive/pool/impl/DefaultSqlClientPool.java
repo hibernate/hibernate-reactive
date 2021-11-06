@@ -64,7 +64,8 @@ public class DefaultSqlClientPool extends SqlClientPool
 		DB2( "io.vertx.db2client.spi.DB2Driver", "db2" ),
 		MYSQL( "io.vertx.mysqlclient.spi.MySQLDriver", "mysql", "mariadb" ),
 		POSTGRES( "io.vertx.pgclient.spi.PgDriver", "postgres", "postgre", "postgresql", "cockroachdb" ),
-		MSSQL( "io.vertx.mssqlclient.spi.MSSQLDriver", "sqlserver" );
+		MSSQL( "io.vertx.mssqlclient.spi.MSSQLDriver", "sqlserver" ),
+		ORACLE( "io.vertx.oracleclient.spi.OracleDriver", "oracle" );
 
 		private final String className;
 		private final String[] schemas;
@@ -223,6 +224,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 				return d;
 			}
 		}
+		// TODO: add this error to org.hibernate.reactive.logging.impl.Log
 		throw new ConfigurationException( "No suitable drivers found for URI scheme: " + uri.getScheme(), originalError );
 	}
 
@@ -241,6 +243,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 	public static URI parse(String url) {
 
 		if ( url == null || url.trim().isEmpty() ) {
+			// TODO: add this error to org.hibernate.reactive.logging.impl.Log
 			throw new HibernateError( "The configuration property '" + Settings.URL + "' was not provided, or is in invalid format. This is required when using the default DefaultSqlClientPool: " +
 											  "either provide the configuration setting or integrate with a different SqlClientPool implementation" );
 		}

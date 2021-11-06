@@ -23,7 +23,8 @@ public class DatabaseConfiguration {
 		MARIA( MariaDatabase.INSTANCE, 3306, "mariadb" ),
 		POSTGRESQL( PostgreSQLDatabase.INSTANCE, 5432, "POSTGRES", "PG" ),
 		COCKROACHDB( CockroachDBDatabase.INSTANCE, 26257, "COCKROACH" ),
-		SQLSERVER( MSSQLServerDatabase.INSTANCE, 1433, "MSSQL", "MSSQLSERVER" );
+		SQLSERVER( MSSQLServerDatabase.INSTANCE, 1433, "MSSQL", "MSSQLSERVER" ),
+		ORACLE( OracleDatabase.INSTANCE, 1521 );
 
 		private final TestableDatabase configuration;
 		private final int defaultPort;
