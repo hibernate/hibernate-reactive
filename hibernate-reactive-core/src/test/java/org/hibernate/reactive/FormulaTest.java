@@ -6,9 +6,11 @@
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
+
 import org.hibernate.annotations.Formula;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
+
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -24,36 +26,41 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYS
 
 public class FormulaTest extends BaseReactiveTest {
 
-    @Rule
-    public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( MARIA, MYSQL );
+	@Rule
+	public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( MARIA, MYSQL );
 
-    @Override
-    protected Configuration constructConfiguration() {
-        Configuration configuration = super.constructConfiguration();
-        configuration.addAnnotatedClass(Record.class);
-        return configuration;
-    }
+	@Override
+	protected Configuration constructConfiguration() {
+		Configuration configuration = super.constructConfiguration();
+		configuration.addAnnotatedClass( Record.class );
+		return configuration;
+	}
 
-    @Test
-    public void test(TestContext context) {
-        Record record = new Record();
-        record.text = "initial text";
-        test(context,
-                getMutinySessionFactory()
-                        .withSession( session -> session.persist(record)
-                                .chain(session::flush)
-                        )
-                        .chain( () -> getMutinySessionFactory()
-                                .withSession( session -> session.find(Record.class, record.id) ) )
-                        .invoke( (r) -> context.assertNotNull(r.current) )
-        );
-    }
+	@Test
+	public void test(TestContext context) {
+		Record record = new Record();
+		record.text = "initial text";
+		test(
+				context,
+				getMutinySessionFactory()
+						.withSession( session -> session.persist( record )
+								.chain( session::flush )
+						)
+						.chain( () -> getMutinySessionFactory()
+								.withSession( session -> session.find( Record.class, record.id ) ) )
+						.invoke( (r) -> context.assertNotNull( r.current ) )
+		);
+	}
 
-    @Entity(name="Record")
-    @Table(name="FRecord")
-    static class Record {
-        @GeneratedValue @Id long id;
-        @Basic(optional = false) String text;
-        @Formula("current_timestamp") Instant current;
-    }
+	@Entity(name = "Record")
+	@Table(name = "FRecord")
+	static class Record {
+		@GeneratedValue
+		@Id
+		long id;
+		@Basic(optional = false)
+		String text;
+		@Formula("current_timestamp")
+		Instant current;
+	}
 }
