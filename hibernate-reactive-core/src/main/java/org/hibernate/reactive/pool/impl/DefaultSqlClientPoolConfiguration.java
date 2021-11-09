@@ -91,7 +91,9 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 	@Override
 	public SqlConnectOptions connectOptions(URI uri) {
 		String scheme = uri.getScheme();
-		String path = uri.getPath();
+		String path = scheme.equals( "oracle" )
+				? oraclePath( uri )
+				: uri.getPath();
 
 		String database = path.length() > 0
 				? path.substring( 1 )
@@ -103,8 +105,13 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 			database = database.substring( 0, database.indexOf( ':' ) );
 		}
 
-		String host = uri.getHost();
-		int port = uri.getPort();
+		String host = scheme.equals( "oracle" )
+				? oracleHost( uri )
+				: uri.getHost();
+
+		int port = scheme.equals( "oracle" )
+				? oraclePort( uri )
+				: uri.getPort();
 		int index = uri.toString().indexOf( ';' );
 		if ( scheme.equals( "sqlserver" ) && index > 0 ) {
 			// SQL Server separates parameters in the url with a semicolon (';')
@@ -156,9 +163,11 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 					}
 				}
 				else {
-					final String query = uri.getQuery();
+					final String query = scheme.equals( "oracle" )
+							? oracleQuery( uri )
+							: uri.getQuery();
 					if ( query != null ) {
-						params = uri.getQuery().split( "&" );
+						params = query.split( "&" );
 					}
 				}
 				for ( String param : params ) {
@@ -215,6 +224,53 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 		}
 
 		return connectOptions;
+	}
+
+	private int oraclePort(URI uri) {
+		String s = uri.toString().substring( "oracle:thin:@".length() );
+		if ( s.indexOf( ':' ) > -1 ) {
+			s = s.substring( s.indexOf( ':' ) + 1 );
+			if ( s.indexOf( '/' ) != -1 ) {
+				s = s.substring( 0, s.indexOf( '/' ) );
+				return Integer.valueOf( s );
+			}
+			if ( s.indexOf( '?' ) != -1 ) {
+				s = s.substring( 0, s.indexOf( '?' ) );
+				return Integer.valueOf( s );
+			}
+		}
+		return -1;
+	}
+
+	private String oracleHost(URI uri) {
+		String s = uri.toString();
+		// TODO: Rethink this
+		String host = s.substring( "oracle:thin:@".length() );
+		int end = host.indexOf( ':' ) == -1 ? host.length() : host.indexOf( ':' );
+		host = host.substring( 0, end );
+		return host;
+	}
+
+	private String oracleQuery(URI uri) {
+		// TODO: First POC. We need to revisit all this part
+		String string = uri.toString();
+		int start = string.indexOf( '?' );
+		return start == -1
+				? null
+				: string.substring( start + 1 );
+	}
+
+	private String oraclePath(URI uri) {
+		// TODO: First POC. We need to revisit all this part
+		String string = uri.toString();
+		int start = string.indexOf( '/' );
+		if ( start == -1) {
+			return "";
+		}
+		int end = string.indexOf( '?' ) == -1
+				? string.length()
+				: string.indexOf( '?' );
+		return string.substring( start, end );
 	}
 
 	private int defaultPort(String scheme) {
