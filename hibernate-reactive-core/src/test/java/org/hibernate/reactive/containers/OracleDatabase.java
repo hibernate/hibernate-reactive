@@ -7,9 +7,14 @@ package org.hibernate.reactive.containers;
 
 import org.testcontainers.containers.OracleContainer;
 
+/**
+ * Connection string for Oracle thin should be something like:
+ *
+ * jdbc:oracle:thin:[<user>/<password>]@<host>[:<port>]:<SID>
+ */
 class OracleDatabase implements TestableDatabase {
 
-	public static final String IMAGE_NAME = "gvenzl/oracle-xe:21.3.0-full";
+	public static final String IMAGE_NAME = "gvenzl/oracle-xe:18-slim";
 
 	public static final OracleDatabase INSTANCE = new OracleDatabase();
 
@@ -17,15 +22,17 @@ class OracleDatabase implements TestableDatabase {
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
+			.withLogConsumer( of -> System.out.println( of.getUtf8String() ) )
 			.withReuse( true );
 
 	@Override
 	public String getJdbcUrl() {
-		return buildJdbcUrlWithCredentials( address() );
+		return addCredentials( address() );
 	}
 
 	private String getRegularJdbcUrl() {
-		return "jdbc:oracle:thin:@//localhost:1521";
+		// This should be jdbc:oracle:thin:[<user>/<password>]@<host>[:<port>]:<SID>
+		return "jdbc:oracle:thin:@localhost:1521/hreact";
 	}
 
 	@Override
@@ -49,12 +56,17 @@ class OracleDatabase implements TestableDatabase {
 		return getRegularJdbcUrl();
 	}
 
-	private String buildJdbcUrlWithCredentials(String jdbcUrl) {
-		return jdbcUrl + ";user=" + oracle.getUsername() + ";password=" + oracle.getPassword();
+	private static String addCredentials(String jdbcUrl) {
+		// Note that this is not supported by the Oracle JDBC Driver
+		return jdbcUrl + "?user=" + oracle.getUsername() + "&password=" + oracle.getPassword();
 	}
 
 	private static String buildUriWithCredentials(String jdbcUrl) {
-		return "oracle://" + oracle.getUsername() + ":" + oracle.getPassword() + "@" + jdbcUrl.substring( "jdbc:oracle://".length() );
+		final String url = addCredentials( jdbcUrl );
+		if ( url.startsWith( "jdbc:" ) ) {
+			return jdbcUrl.substring( "jdbc:".length() );
+		}
+		return jdbcUrl;
 	}
 
 	private OracleDatabase() {
