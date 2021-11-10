@@ -8,7 +8,6 @@ package org.hibernate.reactive.pool.impl;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
-import org.hibernate.reactive.common.InternalStateAssertions;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -62,8 +61,6 @@ public final class ExternalSqlClientPool extends SqlClientPool {
 
 	@Override
 	protected Pool getPool() {
-		//First, check that the requester is running within the EventLoop:
-		InternalStateAssertions.assertUseOnEventLoop();
 		return pool;
 	}
 
