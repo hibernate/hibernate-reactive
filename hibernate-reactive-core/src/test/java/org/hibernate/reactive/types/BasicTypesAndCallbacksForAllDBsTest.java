@@ -540,6 +540,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		TimeZone timeZone;
 
 		@Temporal(TemporalType.DATE)
+		@Column(name = "`date`")
 		Date date;
 		@Temporal(TemporalType.TIMESTAMP)
 		Date dateAsTimestamp;

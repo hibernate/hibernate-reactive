@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
+import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 import javax.persistence.Entity;
@@ -689,6 +690,7 @@ public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiv
 	@Embeddable
 	public static class Phone {
 
+		@Column(name = "`number`")
 		private String number;
 
 		private String country;

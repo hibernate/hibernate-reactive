@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
+import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 import javax.persistence.Entity;
@@ -351,6 +352,7 @@ public class EagerElementCollectionForEmbeddableEntityTypeMapTest extends BaseRe
 	@Embeddable
 	public static class Phone {
 
+		@Column(name = "`number`")
 		private String number;
 
 		private String country;
