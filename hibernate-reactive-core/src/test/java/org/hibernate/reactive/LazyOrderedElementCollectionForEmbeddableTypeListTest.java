@@ -106,7 +106,7 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 	private static void assertPhones(TestContext context, List<Phone> list, String... phones) {
 		context.assertEquals( phones.length, list.size() );
 		for (int i=0; i<phones.length; i++) {
-			context.assertEquals( phones[i], list.get(i).getNumber() );
+			context.assertEquals( phones[i], list.get(i).getAnumber() );
 		}
 	}
 
@@ -119,7 +119,7 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 		private String name;
 
 		@ElementCollection
-		@OrderBy("country, number")
+		@OrderBy("country, anumber")
 		private List<Phone> phones = new ArrayList<>();
 
 		public Person() {
@@ -147,9 +147,9 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 			this.name = name;
 		}
 
-		public Phone getPhone(String number) {
+		public Phone getPhone(String anumber) {
 			for( Phone phone : getPhones() ) {
-				if( phone.getNumber().equals( number ) ) {
+				if( phone.getAnumber().equals( anumber ) ) {
 					return phone;
 				}
 			}
@@ -168,20 +168,20 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 	@Embeddable
 	public static class Phone {
 
-		private String number;
+		private String anumber;
 
 		private String country;
 
 		public Phone() {
 		}
 
-		public Phone(String number) {
-			this( "UK", number );
+		public Phone(String anumber) {
+			this( "UK", anumber );
 		}
 
-		public Phone(String country, String number) {
+		public Phone(String country, String anumber) {
 			this.country = country;
-			this.number = number;
+			this.anumber = anumber;
 		}
 
 		public String getCountry() {
@@ -192,12 +192,12 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 			this.country = country;
 		}
 
-		public String getNumber() {
-			return number;
+		public String getAnumber() {
+			return anumber;
 		}
 
-		public void setNumber(String number) {
-			this.number = number;
+		public void setNumber(String anumber) {
+			this.anumber = anumber;
 		}
 
 		@Override
@@ -209,12 +209,12 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 				return false;
 			}
 			Phone phone = (Phone) o;
-			return Objects.equals( number, phone.number );
+			return Objects.equals( anumber, phone.anumber );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash( number );
+			return Objects.hash( anumber );
 		}
 	}
 }
