@@ -13,6 +13,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 import javax.persistence.Entity;
@@ -106,7 +107,7 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 	private static void assertPhones(TestContext context, List<Phone> list, String... phones) {
 		context.assertEquals( phones.length, list.size() );
 		for (int i=0; i<phones.length; i++) {
-			context.assertEquals( phones[i], list.get(i).getAnumber() );
+			context.assertEquals( phones[i], list.get(i).getNumber() );
 		}
 	}
 
@@ -119,7 +120,7 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 		private String name;
 
 		@ElementCollection
-		@OrderBy("country, anumber")
+		@OrderBy("country, number")
 		private List<Phone> phones = new ArrayList<>();
 
 		public Person() {
@@ -147,9 +148,9 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 			this.name = name;
 		}
 
-		public Phone getPhone(String anumber) {
+		public Phone getPhone(String number) {
 			for( Phone phone : getPhones() ) {
-				if( phone.getAnumber().equals( anumber ) ) {
+				if( phone.getNumber().equals( number ) ) {
 					return phone;
 				}
 			}
@@ -168,20 +169,21 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 	@Embeddable
 	public static class Phone {
 
-		private String anumber;
+		@Column(name = "`number`")
+		private String number;
 
 		private String country;
 
 		public Phone() {
 		}
 
-		public Phone(String anumber) {
-			this( "UK", anumber );
+		public Phone(String number) {
+			this( "UK", number );
 		}
 
-		public Phone(String country, String anumber) {
+		public Phone(String country, String number) {
 			this.country = country;
-			this.anumber = anumber;
+			this.number = number;
 		}
 
 		public String getCountry() {
@@ -192,12 +194,12 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 			this.country = country;
 		}
 
-		public String getAnumber() {
-			return anumber;
+		public String getNumber() {
+			return number;
 		}
 
-		public void setNumber(String anumber) {
-			this.anumber = anumber;
+		public void setNumber(String number) {
+			this.number = number;
 		}
 
 		@Override
@@ -209,12 +211,12 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 				return false;
 			}
 			Phone phone = (Phone) o;
-			return Objects.equals( anumber, phone.anumber );
+			return Objects.equals( number, phone.number );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash( anumber );
+			return Objects.hash( number );
 		}
 	}
 }
