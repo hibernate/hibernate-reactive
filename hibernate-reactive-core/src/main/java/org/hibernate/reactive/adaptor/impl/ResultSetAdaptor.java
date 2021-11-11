@@ -16,6 +16,7 @@ import org.hibernate.engine.jdbc.BlobProxy;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URL;
 import java.sql.Array;
 import java.sql.Blob;
@@ -186,6 +187,16 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public boolean getBoolean(String columnLabel) {
+		final Object value = row.getValue( columnLabel );
+		wasNull = value == null;
+		if ( wasNull ) {
+			return false;
+		}
+
+		if( value instanceof BigInteger ) {
+			return ((BigInteger)value).intValue() > 0;
+		}
+
 		Boolean bool = row.getBoolean( columnLabel );
 		wasNull = bool == null;
 		return !wasNull && bool;
@@ -375,6 +386,7 @@ public class ResultSetAdaptor implements ResultSet {
 
 			@Override
 			public int getColumnType(int column) {
+//				if( rows.columnDescriptors().isEmpty() ) return 0;
 				ColumnDescriptor descriptor = rows.columnDescriptors().get(column-1);
 				return descriptor.isArray() ? Types.ARRAY : descriptor.jdbcType().getVendorTypeNumber();
 			}
