@@ -1027,12 +1027,13 @@ public interface Mutiny {
 		CacheMode getCacheMode();
 
 		/**
-		 * Set the session-level JDBC batch size, overriding the batch size set
+		 * Set the session-level batch size, overriding the batch size set
 		 * by the configuration property {@code hibernate.jdbc.batch_size}.
 		 */
 		Session setBatchSize(Integer batchSize);
+
 		/**
-		 * The session-level JDBC batch size, or {@code null} if it has not been
+		 * The session-level batch size, or {@code null} if it has not been
 		 * overridden.
 		 */
 		Integer getBatchSize();
