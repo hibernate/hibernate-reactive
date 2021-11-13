@@ -24,9 +24,9 @@ import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
@@ -52,9 +52,6 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 	// To check if we are using the right database we run native queries for PostgreSQL
 	@Rule
 	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	@Override
 	protected Configuration constructConfiguration() {
@@ -270,74 +267,82 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 
 	@Test
 	public void testOpenSessionThrowsExceptionWithoutTenant(TestContext context) {
-		thrown.expectCause( isA( HibernateException.class ) );
-		thrown.expectMessage( "no tenant identifier" );
+		Exception thrown = Assert.assertThrows( Exception.class, () -> test( context, openSession().thenCompose( this::selectCurrentDB ) ) );
 
-		test( context, openSession().thenCompose( this::selectCurrentDB ) );
+		Assert.assertEquals( HibernateException.class, thrown.getCause().getClass() );
+		Assert.assertTrue( thrown.getMessage().contains( "no tenant identifier" ) );
 	}
 
 	@Test
 	public void testWithSessionThrowsExceptionWithoutTenant(TestContext context) {
-		thrown.expectCause( isA( HibernateException.class ) );
-		thrown.expectMessage( "no tenant identifier" );
+		Exception thrown = Assert.assertThrows( Exception.class, () ->
+				test( context, getSessionFactory().withSession( this::selectCurrentDB ) ) );
 
-		test( context, getSessionFactory().withSession( this::selectCurrentDB ) );
+		Assert.assertEquals( HibernateException.class, thrown.getCause().getClass() );
+		Assert.assertTrue( thrown.getMessage().contains( "no tenant identifier" ) );
 	}
 
 	@Test
 	public void testWithTransactionThrowsExceptionWithoutTenant(TestContext context) {
-		thrown.expectCause( isA( HibernateException.class ) );
-		thrown.expectMessage( "no tenant identifier" );
+		Exception thrown = Assert.assertThrows( Exception.class, () ->
+				test( context, getSessionFactory().withTransaction( (s, t) -> selectCurrentDB( s ) ) ) );
 
-		test( context, getSessionFactory().withTransaction( (s, t) -> selectCurrentDB( s ) ) );
+		Assert.assertEquals( HibernateException.class, thrown.getCause().getClass() );
+		Assert.assertTrue( thrown.getMessage().contains( "no tenant identifier" ) );
 	}
 
 	@Test
 	public void testWithStatelessTransactionThrowsExceptionWithoutTenant(TestContext context) {
-		thrown.expectCause( isA( HibernateException.class ) );
-		thrown.expectMessage( "no tenant identifier" );
+		Exception thrown = Assert.assertThrows( Exception.class, () ->
+				test( context, getSessionFactory().withStatelessTransaction( (s, t) -> selectCurrentDB( s ) ) ) );
 
-		test( context, getSessionFactory().withStatelessTransaction( (s, t) -> selectCurrentDB( s ) ) );
+		Assert.assertEquals( HibernateException.class, thrown.getCause().getClass() );
+		Assert.assertTrue( thrown.getMessage().contains( "no tenant identifier" ) );
 	}
 
 	@Test
 	public void testOpenSessionThrowsExceptionWithoutTenantWithMutiny(TestContext context) {
-		thrown.expect( HibernateException.class );
-		thrown.expectMessage( "no tenant identifier" );
+		Exception thrown = Assert.assertThrows( Exception.class, () ->
+				test( context, openMutinySession().call( this::selectCurrentDB ) ) );
 
-		test( context, openMutinySession().call( this::selectCurrentDB ) );
+		Assert.assertEquals( HibernateException.class, thrown.getCause().getClass() );
+		Assert.assertTrue( thrown.getMessage().contains( "no tenant identifier" ) );
 	}
 
 	@Test
 	public void testWithSessionThrowsExceptionWithoutTenantWithMutiny(TestContext context) {
-		thrown.expect( HibernateException.class );
-		thrown.expectMessage( "no tenant identifier" );
+		Exception thrown = Assert.assertThrows( Exception.class, () ->
+				test( context, getMutinySessionFactory().withSession( this::selectCurrentDB ) ) );
 
-		test( context, getMutinySessionFactory().withSession( this::selectCurrentDB ) );
+		Assert.assertEquals( HibernateException.class, thrown.getCause().getClass() );
+		Assert.assertTrue( thrown.getMessage().contains( "no tenant identifier" ) );
 	}
 
 	@Test
 	public void testWithTransactionThrowsExceptionWithoutTenantWithMutiny(TestContext context) {
-		thrown.expect( HibernateException.class );
-		thrown.expectMessage( "no tenant identifier" );
+		Exception thrown = Assert.assertThrows( Exception.class, () ->
+				test( context, getMutinySessionFactory().withTransaction( (s, t) -> selectCurrentDB( s ) ) ) );
 
-		test( context, getMutinySessionFactory().withTransaction( (s, t) -> selectCurrentDB( s ) ) );
+		Assert.assertEquals( HibernateException.class, thrown.getCause().getClass() );
+		Assert.assertTrue( thrown.getMessage().contains( "no tenant identifier" ) );
 	}
 
 	@Test
 	public void testWithStatelessSessionThrowsExceptionWithoutTenant(TestContext context) {
-		thrown.expectCause( isA( HibernateException.class ) );
-		thrown.expectMessage( "no tenant identifier" );
+		Exception thrown = Assert.assertThrows( Exception.class, () ->
+				test( context, getSessionFactory().withStatelessSession( this::selectCurrentDB ) ) );
 
-		test( context, getSessionFactory().withStatelessSession( this::selectCurrentDB ) );
+		Assert.assertEquals( HibernateException.class, thrown.getCause().getClass() );
+		Assert.assertTrue( thrown.getMessage().contains( "no tenant identifier" ) );
 	}
 
 	@Test
 	public void testWithStatelessSessionThrowsExceptionWithoutTenantWithMutiny(TestContext context) {
-		thrown.expect( isA( HibernateException.class ) );
-		thrown.expectMessage( "no tenant identifier" );
+		Exception thrown = Assert.assertThrows( Exception.class, () ->
+				test( context, getMutinySessionFactory().withStatelessSession( this::selectCurrentDB ) ) );
 
-		test( context, getMutinySessionFactory().withStatelessSession( this::selectCurrentDB ) );
+		Assert.assertEquals( HibernateException.class, thrown.getCause().getClass() );
+		Assert.assertTrue( thrown.getMessage().contains( "no tenant identifier" ) );
 	}
 
 	@AfterClass

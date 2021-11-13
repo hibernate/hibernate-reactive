@@ -15,9 +15,9 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import io.vertx.ext.unit.TestContext;
 
@@ -34,9 +34,6 @@ public class IdentityGeneratorTypeForCockroachDBTest extends BaseReactiveTest {
 
 	@Rule
 	public DatabaseSelectionRule runOnly = runOnlyFor( COCKROACHDB );
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	/**
 	 * When {@link AvailableSettings#USE_GET_GENERATED_KEYS} is enabled, different
@@ -78,22 +75,24 @@ public class IdentityGeneratorTypeForCockroachDBTest extends BaseReactiveTest {
 
 	@Test
 	public void integerIdentityType(TestContext context) {
-		thrown.expectMessage( "too big" );
-		thrown.expectMessage( "Integer" );
+		Exception thrown = Assert.assertThrows(Exception.class, () ->
+				test( context, getMutinySessionFactory()
+					.withTransaction( (s, tx) -> s.persist( new IntegerTypeEntity() ) )
+		) );
 
-		test( context, getMutinySessionFactory()
-				.withTransaction( (s, tx) -> s.persist( new IntegerTypeEntity() ) )
-		);
+		Assert.assertTrue( thrown.getMessage().contains( "too big" ) );
+		Assert.assertTrue( thrown.getMessage().contains( "Integer" ) );
 	}
 
 	@Test
 	public void shortIdentityType(TestContext context) {
-		thrown.expectMessage( "too big" );
-		thrown.expectMessage( "Short" );
+		Exception thrown = Assert.assertThrows(Exception.class, () ->
+				test( context, getMutinySessionFactory()
+					.withTransaction( (s, tx) -> s.persist( new ShortTypeEntity() ) )
+		) );
 
-		test( context, getMutinySessionFactory()
-				.withTransaction( (s, tx) -> s.persist( new ShortTypeEntity() ) )
-		);
+		Assert.assertTrue( thrown.getMessage().contains( "too big" ) );
+		Assert.assertTrue( thrown.getMessage().contains( "Short" ) );
 	}
 
 	interface TypeIdentity<T extends Number> {

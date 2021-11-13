@@ -21,9 +21,8 @@ import org.hibernate.LazyInitializationException;
 import org.hibernate.cfg.Configuration;
 
 import org.junit.After;
-import org.junit.Rule;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import io.vertx.ext.unit.TestContext;
 
@@ -38,9 +37,6 @@ import io.vertx.ext.unit.TestContext;
  * @see ReactiveStatelessSessionTest
  */
 public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	@Override
 	protected Configuration constructConfiguration() {
@@ -57,62 +53,61 @@ public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 
 	@Test
 	public void testUnfetchedEntityException(TestContext context) {
-		thrown.expect( HibernateException.class );
-		thrown.expectMessage( "HR000072" );
-
 		SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.sampleField = "test";
 
 		SampleJoinEntity sampleJoinEntity = new SampleJoinEntity();
 		sampleJoinEntity.sampleEntity = sampleEntity;
 
-		test( context, getMutinySessionFactory()
-				.withTransaction( (s, t) -> s.persistAll( sampleEntity, sampleJoinEntity ) )
+		HibernateException thrown = Assert.assertThrows( HibernateException.class, () -> {
+			test( context, getMutinySessionFactory()
+					.withTransaction( (s, t) -> s.persistAll( sampleEntity, sampleJoinEntity ) )
 
-				.chain( targetId -> getMutinySessionFactory()
-						.withTransaction( (session, transaction) -> session
-								.find( SampleJoinEntity.class, sampleJoinEntity.getId() ) )
-				)
+					.chain( targetId -> getMutinySessionFactory()
+							.withTransaction( (session, transaction) -> session
+									.find( SampleJoinEntity.class, sampleJoinEntity.getId() ) )
+					)
 
-				.chain( joinEntityFromDatabase -> getMutinySessionFactory().withStatelessTransaction(
-						(s, t) -> {
-							SampleEntity entityFromDb = joinEntityFromDatabase.sampleEntity;
-							entityFromDb.sampleField = "updated field";
-							// We expect the update to fail because we haven't fetched the entity
-							// and therefore the proxy is uninitialized
-							return s.update( entityFromDb );
-						} )
-				)
-		);
+					.chain( joinEntityFromDatabase -> getMutinySessionFactory().withStatelessTransaction(
+							(s, t) -> {
+								SampleEntity entityFromDb = joinEntityFromDatabase.sampleEntity;
+								entityFromDb.sampleField = "updated field";
+								// We expect the update to fail because we haven't fetched the entity
+								// and therefore the proxy is uninitialized
+								return s.update( entityFromDb );
+							} )
+					)
+			);
+		} );
+
+		Assert.assertTrue( thrown.getMessage().contains( "HR000072" ) );
 	}
 
 	@Test
 	public void testLazyInitializationException(TestContext context) {
-		thrown.expect( LazyInitializationException.class );
-
 		SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.sampleField = "test";
 
 		SampleJoinEntity sampleJoinEntity = new SampleJoinEntity();
 		sampleJoinEntity.sampleEntity = sampleEntity;
 
-		test( context, getMutinySessionFactory()
-				.withTransaction( (s, t) -> s.persistAll( sampleEntity, sampleJoinEntity ) )
+		Assert.assertThrows( LazyInitializationException.class, () ->
+				test( context, getMutinySessionFactory()
+						.withTransaction( (s, t) -> s.persistAll( sampleEntity, sampleJoinEntity ) )
+						.chain( targetId -> getMutinySessionFactory()
+								.withTransaction( (session, transaction) -> session
+										.find( SampleJoinEntity.class, sampleJoinEntity.getId() ) )
+						)
 
-				.chain( targetId -> getMutinySessionFactory()
-						.withTransaction( (session, transaction) -> session
-								.find( SampleJoinEntity.class, sampleJoinEntity.getId() ) )
-				)
-
-				.chain( joinEntityFromDatabase -> getMutinySessionFactory().withStatelessTransaction(
-						(s, t) -> {
-							// LazyInitializationException here because we haven't fetched the entity
-							SampleEntity entityFromDb = joinEntityFromDatabase.getSampleEntity();
-							entityFromDb.setSampleField( "updated field" );
-							return s.update( entityFromDb );
-						} )
-				)
-		);
+						.chain( joinEntityFromDatabase -> getMutinySessionFactory().withStatelessTransaction(
+								(s, t) -> {
+									// LazyInitializationException here because we haven't fetched the entity
+									SampleEntity entityFromDb = joinEntityFromDatabase.getSampleEntity();
+									entityFromDb.setSampleField( "updated field" );
+									return s.update( entityFromDb );
+								} )
+						)
+		) );
 	}
 
 	@Test

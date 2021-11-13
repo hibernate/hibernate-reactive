@@ -15,16 +15,16 @@ import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
+import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.hibernate.reactive.testing.TestingRegistryRule;
 
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import io.vertx.ext.unit.Async;
@@ -43,9 +43,6 @@ public class ReactiveConnectionPoolTest {
 
 	@Rule
 	public Timeout rule = Timeout.seconds( 3600 );
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	@Rule
 	public TestingRegistryRule registryRule = new TestingRegistryRule();
@@ -112,17 +109,18 @@ public class ReactiveConnectionPoolTest {
 
 	@Test
 	public void configureWithWrongCredentials(TestContext context) {
-		thrown.expect( CompletionException.class );
-		thrown.expectMessage( "io.vertx.pgclient.PgException:" );
-		thrown.expectMessage( "bogus" );
+		CompletionException thrown = Assert.assertThrows(CompletionException.class, () -> {
+			String url = DatabaseConfiguration.getJdbcUrl();
+			Map<String,Object> config = new HashMap<>();
+			config.put( Settings.URL, url );
+			config.put( Settings.USER, "bogus" );
+			config.put( Settings.PASS, "bogus" );
+			ReactiveConnectionPool reactivePool = configureAndStartPool( config );
+			verifyConnectivity( context, reactivePool );
+		});
 
-		String url = DatabaseConfiguration.getJdbcUrl();
-		Map<String,Object> config = new HashMap<>();
-		config.put( Settings.URL, url );
-		config.put( Settings.USER, "bogus" );
-		config.put( Settings.PASS, "bogus" );
-		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
-		verifyConnectivity( context, reactivePool );
+		Assert.assertTrue( thrown.getMessage().contains( "io.vertx.pgclient.PgException:" ) );
+		Assert.assertTrue( thrown.getMessage().contains( "bogus" ) );
 	}
 
 	private void verifyConnectivity(TestContext context, ReactiveConnectionPool reactivePool) {
