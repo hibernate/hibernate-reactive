@@ -23,6 +23,7 @@ import io.vertx.ext.unit.TestContext;
 import static java.util.Arrays.asList;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
 import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
 
@@ -105,7 +106,7 @@ public abstract class UUIDAsBinaryType extends BaseReactiveTest {
 	public static class ForOtherDbsTest extends UUIDAsBinaryType {
 
 		@Rule
-		public DatabaseSelectionRule rule = skipTestsFor( MYSQL, MARIA );
+		public DatabaseSelectionRule rule = skipTestsFor( MYSQL, MARIA, ORACLE );
 
 		@Override
 		protected Configuration constructConfiguration() {
