@@ -16,7 +16,6 @@ import org.hibernate.engine.jdbc.BlobProxy;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.net.URL;
 import java.sql.Array;
 import java.sql.Blob;
@@ -187,19 +186,25 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public boolean getBoolean(String columnLabel) {
-		final Object value = row.getValue( columnLabel );
-		wasNull = value == null;
-		if ( wasNull ) {
-			return false;
+		try {
+			Boolean bool = row.getBoolean( columnLabel );
+			wasNull = bool == null;
+			return !wasNull && bool;
 		}
-
-		if( value instanceof BigInteger ) {
-			return ((BigInteger)value).intValue() > 0;
+		catch (ClassCastException cce) {
+			// Since Oracle doesn't support an actual boolean/Boolean datatype
+			// Oracle8iDialect in ORM registers the BOOLEAN type as a 'number( 1, 0 )'
+			// get the int value and convert to expected boolean type for reactive
+			try {
+				int value = getInt( columnLabel );
+				boolean returnValue = BigDecimal.ZERO.intValue() == value ? false : true;
+				return returnValue;
+			}
+			catch (Exception e) {
+				// ignore second exception and throw first cce
+				throw cce;
+			}
 		}
-
-		Boolean bool = row.getBoolean( columnLabel );
-		wasNull = bool == null;
-		return !wasNull && bool;
 	}
 
 	@Override
@@ -739,9 +744,8 @@ public class ResultSetAdaptor implements ResultSet {
 			return null;
 		}
 
-		byte[] bytes = value instanceof String
-				? ( (String) value ).getBytes()
-				: ( (Buffer) value ).getBytes();
+		byte[] bytes = value instanceof String ? ( (String) value ).getBytes()
+				: value instanceof byte[] ? (byte[]) value : ( (Buffer) value ).getBytes();
 		return BlobProxy.generateProxy( bytes );
 	}
 
