@@ -1035,7 +1035,7 @@ share a session. Each stream must have its own session.
 
 What if you need to run a block of code within the scope of a Vert.x context, but
 the current thread isn't associated with a `Context`? One solution is to obtain a
-Vert.x `Context` object using {vertx-current-context}[`getOrCreateContext()`] and
+Vert.x `Context` object using {vertx-get-context}[`getOrCreateContext()`] and
 then call {vertx-runon-context}[`runOnContext()`] to execute the code in that
 context.
 
