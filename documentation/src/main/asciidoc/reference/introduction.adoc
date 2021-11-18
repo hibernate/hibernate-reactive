@@ -1005,7 +1005,6 @@ as mentioned above in <<_obtaining_a_reactive_session>>. And you're only
 allowed to use the session from the thread that owns this local context. If
 you screw up, and use it from a different thread, you might see this error:
 
-[source, JAVA, indent=0]
 ----
 HR000068: This method should exclusively be invoked from a Vert.x EventLoop thread; ...
 ----
@@ -1017,6 +1016,20 @@ straightforward, but you'd be surprised how often people mess up.
 IMPORTANT: The session is not thread-safe (or "stream-safe"), so using it across
 different threads (or reactive streams) may cause bugs that are _extremely_ hard
 to detect. Don't say we didn't warn you!
+
+For example, I bet you would like to be able to write code like this:
+
+[source, JAVA, indent=0]
+----
+List<CompletionStage> list = ...
+for (Entity entity : entities) {
+    list.add(session.persist(entity));
+}
+CompletableFuture.allOf(list).thenCompose(session::flush);
+----
+
+Well, we're sorry, but that's just not allowed. Parallel reactive streams may not
+share a session. Each stream must have its own session.
 
 === Executing code in a Vert.x context
 
@@ -1030,7 +1043,7 @@ context.
 ----
 Context currentContext = Vertx.currentContext();
 currentContext.runOnContext( event -> {
-   // Here you will be able to use the session
+    // Here you will be able to use the session
 });
 ----
 
