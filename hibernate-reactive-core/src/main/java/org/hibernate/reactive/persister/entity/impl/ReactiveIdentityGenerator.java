@@ -83,7 +83,7 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 		 */
 		@Override
 		public String toStatementString() {
-			return "select " + identityColumnName + " from NEW TABLE (" + super.toStatementString() + ")";
+			return "select " + identityColumnName + " from new table (" + super.toStatementString() + ")";
 		}
 	}
 
