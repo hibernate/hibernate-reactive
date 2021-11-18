@@ -362,19 +362,11 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			delegate().dehydrate( null, fields, notNull, insertable, 0, insert, session, false );
 		} );
 
-		ReactiveConnection connection = getReactiveConnection( session );
-		CompletionStage<? extends Serializable> generatedIdStage;
-		// Ignoring it for now because it's always false and we have ways to get the id without
-		// the extra round trip for all supported databases
-//		if ( getFactory().getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
-			generatedIdStage = connection.insertAndSelectIdentifier( sql, params );
-//		}
-//		else {
-//			//use an extra round trip to fetch the id
-//			generatedIdStage =  connection.update( sql, params )
-//					.thenCompose( v -> connection.selectIdentifier( delegate().getIdentitySelectString(), EMPTY_OBJECT_ARRAY ) );
-//		}
-		return generatedIdStage
+		return getReactiveConnection( session )
+				//Note: in ORM core there are other ways to fetch the generated identity:
+				//      getGeneratedKeys(), or an extra round select statement. But we
+				//      don't need these extra options.
+				.insertAndSelectIdentifier( sql, params )
 				.thenApply( generatedId -> {
 					log.debugf( "Natively generated identity: %s", generatedId );
 					if ( generatedId == null ) {
