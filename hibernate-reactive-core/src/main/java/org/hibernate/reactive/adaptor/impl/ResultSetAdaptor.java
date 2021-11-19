@@ -197,8 +197,7 @@ public class ResultSetAdaptor implements ResultSet {
 			// get the int value and convert to expected boolean type for reactive
 			try {
 				int value = getInt( columnLabel );
-				boolean returnValue = BigDecimal.ZERO.intValue() == value ? false : true;
-				return returnValue;
+				return value!=0;
 			}
 			catch (Exception e) {
 				// ignore second exception and throw first cce
@@ -744,9 +743,15 @@ public class ResultSetAdaptor implements ResultSet {
 			return null;
 		}
 
-		byte[] bytes = value instanceof String ? ( (String) value ).getBytes()
-				: value instanceof byte[] ? (byte[]) value : ( (Buffer) value ).getBytes();
-		return BlobProxy.generateProxy( bytes );
+		if( value instanceof Buffer ) {
+			return BlobProxy.generateProxy( ( (Buffer) value ).getBytes() );
+		} else if( value instanceof String ) {
+			return BlobProxy.generateProxy( ( (String) value ).getBytes() );
+		} else if ( value instanceof byte[] ) {
+			return BlobProxy.generateProxy( (byte[]) value );
+		}
+
+		throw new IllegalArgumentException( "Unexpected type: " + value.getClass() );
 	}
 
 	@Override
