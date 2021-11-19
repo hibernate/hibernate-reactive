@@ -73,7 +73,7 @@ public class BasicTypesTestEntity {
 	TimeZone timeZone;
 
 	@Temporal(TemporalType.DATE)
-	Date date;
+	Date someDate;
 	@Temporal(TemporalType.TIME)
 	Date dateAsTime;
 	@Temporal(TemporalType.TIMESTAMP)
