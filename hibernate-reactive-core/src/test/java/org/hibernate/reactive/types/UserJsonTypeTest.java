@@ -27,6 +27,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 
 /**
@@ -35,7 +36,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQL
 public class UserJsonTypeTest extends BaseReactiveTest {
 
 	@Rule
-	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, SQLSERVER );
+	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, SQLSERVER, ORACLE );
 
 	@Override
 	protected Configuration constructConfiguration() {
