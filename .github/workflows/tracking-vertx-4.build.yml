@@ -5,14 +5,10 @@ on:
   # but only for the main branch
   push:
     branches:
-      - main
+      - wip/oracle
   pull_request:
     branches:
-      - main
-  schedule:
-    # * is a special character in YAML so you have to quote this string
-    # Run every hour at minute 25
-    - cron: '25 * * * *'
+      - wip/oracle
 
 jobs:
   # The examples test the Hibernate ORM Gradle plugin. We use it for bytecode enhancements.
