@@ -16,14 +16,20 @@ import org.hibernate.dialect.PostgreSQL10Dialect;
 import org.hibernate.dialect.SQLServer2012Dialect;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 public class UriConfigTest extends BaseReactiveTest {
+
+    @Rule // Oracle doesn't have a fromUri method at the moment
+    public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( ORACLE );
 
     @Override
     protected Configuration constructConfiguration() {
