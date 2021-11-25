@@ -541,17 +541,17 @@ public class MutinySessionTest extends BaseReactiveTest {
 
 	@Test
 	public void testDupeException(TestContext context) {
-		test(
-				context,
-				getMutinySessionFactory()
-						.withTransaction((s, t) -> s.persist( new GuineaPig( 10, "Tulip" ) ))
-				.chain(() -> getMutinySessionFactory()
-						.withTransaction((s, t) -> s.persist( new GuineaPig( 10, "Tulip" ) ))
-				).onItemOrFailure().invoke((i, t) -> {
-					context.assertNotNull(t);
-					context.assertTrue(t instanceof PersistenceException);
-				})
-				.onFailure().recoverWithNull()
+		test( context, getMutinySessionFactory()
+			.withTransaction( s -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
+			.chain( () -> getMutinySessionFactory()
+					.withTransaction( s -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
+			).onItemOrFailure().invoke( (i, t) -> {
+					context.assertTrue(
+							t instanceof PersistenceException,
+							"Expected instance of PersistenceException but was " + t
+					);
+			} )
+			.onFailure().recoverWithNull()
 		);
 	}
 
