@@ -83,16 +83,14 @@ public class LobTypeTest extends BaseReactiveTest {
 	 * Persist the entity, find it and execute the assertions
 	 */
 	private void testField(TestContext context, Basic original, Consumer<Basic> consumer) {
-		test(
-				context,
-				getSessionFactory().withTransaction( (s, t) -> s.persist( original ) )
-						.thenCompose( v -> openSession() )
-						.thenCompose( s2 -> s2.find( Basic.class,  original.id )
-								.thenAccept( found -> {
-									context.assertNotNull( found );
-									context.assertEquals( original, found );
-									consumer.accept( found );
-								} ) )
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.persist( original ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( s2 -> s2.find( Basic.class, original.id )
+						.thenAccept( found -> {
+							context.assertEquals( original, found );
+							consumer.accept( found );
+						} ) )
 		);
 	}
 
