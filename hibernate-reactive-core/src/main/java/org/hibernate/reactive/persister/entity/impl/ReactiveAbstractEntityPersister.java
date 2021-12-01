@@ -331,8 +331,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		Object[] params = PreparedStatementAdaptor.bind( insert -> {
 			boolean[][] insertable = delegate().getPropertyColumnInsertable();
-			int index = delegate().dehydrate( null, fields, notNull, insertable, j, insert, session, false );
-			delegate().getIdentifierType().nullSafeSet( insert, id, index, session );
+			int index = delegate().dehydrate( id, fields, notNull, insertable, j, insert, session, false );
+//			delegate().getIdentifierType().nullSafeSet( insert, id, index, session );
 		} );
 
 		return getReactiveConnection( session )
