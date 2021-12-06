@@ -42,28 +42,8 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	private static PropertyKind<Long> mySqlLastInsertedId;
-	private static Class<?> mySqlDriverClass;
-
-	 // Loads MySQLClient.LAST_INSERTED_ID via reflection
-	 // to avoid a hard dependency on the MySQL client
-	static {
-		try {
-			mySqlDriverClass = Class.forName( "io.vertx.mysqlclient.MySQLClient" );
-		}
-		catch (ClassNotFoundException cnfe) {
-			mySqlDriverClass = null;
-		}
-		if ( mySqlDriverClass != null ) {
-			try {
-				mySqlLastInsertedId = (PropertyKind<Long>)
-						mySqlDriverClass.getField("LAST_INSERTED_ID").get(null);
-			}
-			catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | SecurityException e) {
-				throw new RuntimeException("Unable to obtain MySQLClient.LAST_INSERTED_ID field", e);
-			}
-		}
-	}
+	private final static PropertyKind<Long> mySqlLastInsertedId
+			= PropertyKind.create("last-inserted-id", Long.class);
 
 	private final SqlStatementLogger sqlStatementLogger;
 
@@ -262,7 +242,7 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	private static Long getLastInsertedId(RowSet<Row> rows) {
-		return mySqlDriverClass == null ? null : rows.property(mySqlLastInsertedId);
+		return rows.property(mySqlLastInsertedId);
     }
 
 	private static class RowSetResult implements Result {
