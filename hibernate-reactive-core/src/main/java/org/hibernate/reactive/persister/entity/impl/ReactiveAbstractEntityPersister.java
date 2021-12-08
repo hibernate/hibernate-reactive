@@ -214,7 +214,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					fields,
 					notNull,
 					//this differs from core, but it's core that should be changed:
-					delegate().generateIdentityInsertString( notNull ),
+					delegate().generateIdentityInsertString( getFactory().getSqlStringGenerationContext(), notNull ),
 					session
 			)
 			.thenCompose(

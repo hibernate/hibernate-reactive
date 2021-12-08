@@ -9,6 +9,7 @@ import java.util.Iterator;
 
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
+import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.dialect.CockroachDB192Dialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
@@ -44,13 +45,13 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 		}
 
 		@Override
-		public IdentifierGeneratingInsert prepareIdentifierGeneratingInsert() {
-			IdentifierGeneratingInsert insert = createInsert();
+		public IdentifierGeneratingInsert prepareIdentifierGeneratingInsert(SqlStringGenerationContext context) {
+			IdentifierGeneratingInsert insert = createInsert( context );
 			insert.addIdentityColumn( persister.getRootTableKeyColumnNames()[0] );
 			return insert;
 		}
 
-		private IdentifierGeneratingInsert createInsert() {
+		private IdentifierGeneratingInsert createInsert(SqlStringGenerationContext context) {
 			if ( dialect instanceof PostgreSQL81Dialect || dialect instanceof CockroachDB192Dialect ) {
 				return new PostgresIdentifierGeneratingInsert( dialect );
 			}
@@ -60,7 +61,7 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 			if ( dialect instanceof DB2Dialect ) {
 				return new Db2IdentifierGeneratingInsert( dialect );
 			}
-			return super.prepareIdentifierGeneratingInsert();
+			return super.prepareIdentifierGeneratingInsert( context );
 		}
 	}
 
