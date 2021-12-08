@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.provider.service;
 
-import org.hibernate.boot.model.naming.Identifier;
+import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.dialect.CockroachDB201Dialect;
 import org.hibernate.dialect.Dialect;
@@ -42,17 +42,16 @@ public class ReactiveSchemaManagementTool extends HibernateSchemaManagementTool 
 		private ReactiveExtractionTool() {
 		}
 
+		@Override
 		public ExtractionContext createExtractionContext(
 				ServiceRegistry serviceRegistry,
 				JdbcEnvironment jdbcEnvironment,
+				SqlStringGenerationContext sqlStringGenerationContext,
 				DdlTransactionIsolator ddlTransactionIsolator,
-				Identifier defaultCatalog,
-				Identifier defaultSchema,
 				ExtractionContext.DatabaseObjectAccess databaseObjectAccess) {
 			return new ReactiveImprovedExtractionContextImpl(
 					serviceRegistry,
-					defaultCatalog,
-					defaultSchema,
+					sqlStringGenerationContext,
 					databaseObjectAccess
 			);
 		}

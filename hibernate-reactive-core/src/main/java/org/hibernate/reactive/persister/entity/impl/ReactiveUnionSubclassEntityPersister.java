@@ -13,6 +13,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
+import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.CascadingActions;
@@ -111,8 +112,8 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	public String generateIdentityInsertString(boolean[] includeProperty) {
-		String sql =  super.generateIdentityInsertString( includeProperty );
+	public String generateIdentityInsertString(SqlStringGenerationContext context, boolean[] includeProperty) {
+		String sql =  super.generateIdentityInsertString( context, includeProperty );
 		return parameters().process( sql, includeProperty.length );
 	}
 

@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
+import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.spi.MetadataBuildingOptions;
 import org.hibernate.boot.spi.MetadataImplementor;
@@ -109,14 +110,15 @@ public class ReactiveBulkIdStrategy
 			Table idTable,
 			JdbcServices jdbcServices,
 			MetadataImplementor metadata,
-			PreparationContext context) {
+			PreparationContext context,
+			SqlStringGenerationContext sqlStringGenerationContext) {
 		return new IdTableInfoImpl(
 				jdbcServices.getJdbcEnvironment().getQualifiedObjectNameFormatter().format(
 						idTable.getQualifiedTableName(),
 						jdbcServices.getJdbcEnvironment().getDialect()
 				),
-				buildIdTableCreateStatement( idTable, jdbcServices, metadata ),
-				buildIdTableDropStatement( idTable, jdbcServices )
+				buildIdTableCreateStatement( idTable, metadata, sqlStringGenerationContext ),
+				buildIdTableDropStatement( idTable, sqlStringGenerationContext )
 		);
 	}
 
