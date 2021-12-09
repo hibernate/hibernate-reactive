@@ -68,9 +68,7 @@ public class ReactiveIdentifierGeneratorFactory extends DefaultIdentifierGenerat
 			throw new MappingException( String.format( "Not an id generator [entity-name=%s]", entityName ) );
 		}
 
-		if ( result instanceof Configurable) {
-			( (Configurable) result ).configure( type, config, serviceRegistry );
-		}
+		result.configure( type, config, serviceRegistry );
 
 		return result;
 	}

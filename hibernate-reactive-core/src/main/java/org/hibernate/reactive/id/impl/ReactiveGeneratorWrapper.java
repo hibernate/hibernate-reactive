@@ -48,8 +48,8 @@ public class ReactiveGeneratorWrapper<T> implements
 
 	@Override
 	public void registerExportables(Database database) {
-		if (generator instanceof ExportableProducer) {
-			((ExportableProducer) generator).registerExportables( database );
+		if ( generator != null ) {
+			generator.registerExportables( database );
 		}
 		if (reactiveGenerator instanceof ExportableProducer) {
 			((ExportableProducer) reactiveGenerator).registerExportables( database );
