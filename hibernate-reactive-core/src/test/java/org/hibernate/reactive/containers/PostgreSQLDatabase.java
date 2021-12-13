@@ -34,7 +34,7 @@ class PostgreSQLDatabase implements TestableDatabase {
 
 	public static PostgreSQLDatabase INSTANCE = new PostgreSQLDatabase();
 
-	public final static String IMAGE_NAME = "postgres:14";
+	public final static String IMAGE_NAME = "postgres:14.1";
 
 	private static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
 
