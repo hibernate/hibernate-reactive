@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - 1.0
-    tags: '*'
+    tags: '1.0.*'
   pull_request:
     branches: 1.0
 
