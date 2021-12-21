@@ -39,6 +39,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.entity.UniqueEntityLoader;
@@ -51,16 +52,25 @@ import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLo
 import org.hibernate.reactive.loader.entity.impl.ReactiveEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
+import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.stage.impl.StageSessionFactoryImpl;
+import org.hibernate.reactive.stage.impl.StageSessionImpl;
+import org.hibernate.reactive.tuple.MutinyValueGenerator;
+import org.hibernate.reactive.tuple.StageValueGenerator;
 import org.hibernate.sql.Delete;
 import org.hibernate.sql.SimpleSelect;
 import org.hibernate.sql.Update;
 import org.hibernate.tuple.GenerationTiming;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.tuple.NonIdentifierAttribute;
+import org.hibernate.tuple.ValueGenerator;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
 import org.hibernate.type.VersionType;
@@ -201,62 +211,78 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	@Override
-	default CompletionStage<Serializable> insertReactive(Object[] fields, Object object,
-														 SharedSessionContractImplementor session) {
+	default CompletionStage<Serializable> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
 		// apply any pre-insert in-memory value generation
-		preInsertInMemoryValueGeneration( fields, object, session );
-
-		final int span = delegate().getTableSpan();
-		if ( delegate().getEntityMetamodel().isDynamicInsert() ) {
-			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
-			boolean[] notNull = delegate().getPropertiesToInsert( fields );
-			return insertReactive(
-					fields,
-					notNull,
-					//this differs from core, but it's core that should be changed:
-					delegate().generateIdentityInsertString( getFactory().getSqlStringGenerationContext(), notNull ),
-					session
-			)
-			.thenCompose(
-					id -> loop(
-							1, span,
-							table -> insertReactive(
-									id,
-									fields,
-									notNull,
-									table,
-									delegate().generateInsertString( notNull, table ),
-									session
-							)
-					).thenApply( v -> id )
-			);
-		}
-		else {
-			// For the case of dynamic-insert="false", use the static SQL
-			return insertReactive(
-					fields,
-					delegate().getPropertyInsertability(),
-					delegate().getSQLIdentityInsertString(),
-					session
-			)
-			.thenCompose(
-					id -> loop(
-							1, span,
-							table -> insertReactive(
-									id,
-									fields,
-									delegate().getPropertyInsertability(),
-									table,
-									delegate().getSQLInsertStrings()[table],
-									session
-							)
-					).thenApply( v -> id )
-			);
-		}
+		return reactivePreInsertInMemoryValueGeneration( fields, object, session )
+				.thenCompose( unused -> {
+					final int span = delegate().getTableSpan();
+					if ( delegate().getEntityMetamodel().isDynamicInsert() ) {
+						// For the case of dynamic-insert="true", we need to generate the INSERT SQL
+						boolean[] notNull = delegate().getPropertiesToInsert( fields );
+						return insertReactive(
+								fields,
+								notNull,
+								//this differs from core, but it's core that should be changed:
+								delegate().generateIdentityInsertString( getFactory().getSqlStringGenerationContext(), notNull ),
+								session
+						)
+						.thenCompose(
+								id -> loop(
+										1, span,
+										table -> insertReactive(
+												id,
+												fields,
+												notNull,
+												table,
+												delegate().generateInsertString( notNull, table ),
+												session
+										)
+								).thenApply( v -> id )
+						);
+					}
+					else {
+						// For the case of dynamic-insert="false", use the static SQL
+						return insertReactive(
+								fields,
+								delegate().getPropertyInsertability(),
+								delegate().getSQLIdentityInsertString(),
+								session
+						)
+						.thenCompose(
+								id -> loop(
+										1, span,
+										table -> insertReactive(
+												id,
+												fields,
+												delegate().getPropertyInsertability(),
+												table,
+												delegate().getSQLInsertStrings()[table],
+												session
+										)
+								).thenApply( v -> id )
+						);
+					}
+		} );
 	}
 
-	void preInsertInMemoryValueGeneration(Object[] fields, Object object,
-										  SharedSessionContractImplementor session);
+	default CompletionStage<Void> reactivePreInsertInMemoryValueGeneration(Object[] fields, Object object, SharedSessionContractImplementor session) {
+		CompletionStage<Void> stage = voidFuture();
+		if ( getEntityMetamodel().hasPreInsertGeneratedValues() ) {
+			final InMemoryValueGenerationStrategy[] strategies = getEntityMetamodel().getInMemoryValueGenerationStrategies();
+			for ( int i = 0; i < strategies.length; i++ ) {
+				final int index = i;
+				final InMemoryValueGenerationStrategy strategy = strategies[i];
+				if ( strategy != null && strategy.getGenerationTiming().includesInsert() ) {
+					stage = stage.thenCompose( v -> generateValue( object, session, strategy )
+							.thenAccept( value -> {
+								fields[index] = value;
+								setPropertyValue( object, index, value );
+							} ) );
+				}
+			}
+		}
+		return stage;
+	}
 
 	@Override
 	default CompletionStage<Void> insertReactive(
@@ -265,38 +291,39 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Object object,
 			SharedSessionContractImplementor session) {
 		// apply any pre-insert in-memory value generation
-		preInsertInMemoryValueGeneration( fields, object, session );
-
-		final int span = delegate().getTableSpan();
-		if ( delegate().getEntityMetamodel().isDynamicInsert() ) {
-			// For the case of dynamic-insert="true", we need to generate the INSERT SQL
-			boolean[] notNull = delegate().getPropertiesToInsert( fields );
-			return loop(
-					0, span,
-					table -> insertReactive(
-							id,
-							fields,
-							notNull,
-							table,
-							delegate().generateInsertString( notNull, table ),
-							session
-					)
-			);
-		}
-		else {
-			// For the case of dynamic-insert="false", use the static SQL
-			return loop(
-					0, span,
-					table -> insertReactive(
-							id,
-							fields,
-							delegate().getPropertyInsertability(),
-							table,
-							delegate().getSQLInsertStrings()[table],
-							session
-					)
-			);
-		}
+		return reactivePreInsertInMemoryValueGeneration( fields, object, session )
+				.thenCompose( v -> {
+					final int span = delegate().getTableSpan();
+					if ( delegate().getEntityMetamodel().isDynamicInsert() ) {
+						// For the case of dynamic-insert="true", we need to generate the INSERT SQL
+						boolean[] notNull = delegate().getPropertiesToInsert( fields );
+						return loop(
+								0, span,
+								table -> insertReactive(
+										id,
+										fields,
+										notNull,
+										table,
+										delegate().generateInsertString( notNull, table ),
+										session
+								)
+						);
+					}
+					else {
+						// For the case of dynamic-insert="false", use the static SQL
+						return loop(
+								0, span,
+								table -> insertReactive(
+										id,
+										fields,
+										delegate().getPropertyInsertability(),
+										table,
+										delegate().getSQLInsertStrings()[table],
+										session
+								)
+						);
+					}
+				} );
 	}
 
 	default CompletionStage<Void> insertReactive(
@@ -615,7 +642,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	default CompletionStage<Void> updateReactive(
 			final Serializable id,
 			final Object[] fields,
-			int[] dirtyFields,
+			int[] paramDirtyFields,
 			final boolean hasDirtyCollection,
 			final Object[] oldFields,
 			final Object oldVersion,
@@ -623,96 +650,133 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			final Object rowId,
 			final SharedSessionContractImplementor session) {
 
+		CompletionStage<Void> stage = voidFuture();
+		CompletionStage<int[]> dirtyFieldsStage = completedFuture( paramDirtyFields );
+
 		// apply any pre-update in-memory value generation
 		if ( delegate().getEntityMetamodel().hasPreUpdateGeneratedValues() ) {
-			final InMemoryValueGenerationStrategy[] valueGenerationStrategies =
-					delegate().getEntityMetamodel().getInMemoryValueGenerationStrategies();
+			final InMemoryValueGenerationStrategy[] valueGenerationStrategies = delegate().getEntityMetamodel().getInMemoryValueGenerationStrategies();
 			int valueGenerationStrategiesSize = valueGenerationStrategies.length;
 			if ( valueGenerationStrategiesSize != 0 ) {
 				int[] fieldsPreUpdateNeeded = new int[valueGenerationStrategiesSize];
 				int count = 0;
 				for ( int i = 0; i < valueGenerationStrategiesSize; i++ ) {
-					if ( valueGenerationStrategies[i] != null
-							&& valueGenerationStrategies[i].getGenerationTiming().includesUpdate() ) {
-						fields[i] = valueGenerationStrategies[i].getValueGenerator()
-								.generateValue( (Session) session, object );
-						delegate().setPropertyValue( object, i, fields[i] );
+					final int index = i;
+					if ( valueGenerationStrategies[i] != null && valueGenerationStrategies[i].getGenerationTiming().includesUpdate() ) {
+						stage = stage.thenCompose( v -> generateValue( object, session, valueGenerationStrategies[index] )
+									.thenAccept( value -> setFieldValue( fields, object, index, value ) ) );
 						fieldsPreUpdateNeeded[count++] = i;
 					}
 				}
-				if ( dirtyFields != null ) {
-					dirtyFields = join( dirtyFields, trim( fieldsPreUpdateNeeded, count ) );
-				}
+				final int finalCount = count;
+				dirtyFieldsStage = stage.thenApply( v -> paramDirtyFields != null
+						? join( paramDirtyFields, trim( fieldsPreUpdateNeeded, finalCount ) )
+						: null
+				);
 			}
 		}
 
-		//note: dirtyFields==null means we had no snapshot, and we couldn't get one using select-before-update
-		//	  oldFields==null just means we had no snapshot to begin with (we might have used select-before-update to get the dirtyFields)
+		return dirtyFieldsStage
+				.thenCompose( dirtyFields -> {
+					// note: dirtyFields==null means we had no snapshot, and we couldn't get one using select-before-update
+					// oldFields==null just means we had no snapshot to begin with (we might have used select-before-update to get the dirtyFields)
 
-		final boolean[] tableUpdateNeeded = delegate().getTableUpdateNeeded( dirtyFields, hasDirtyCollection );
-		final int span = delegate().getTableSpan();
+					final boolean[] tableUpdateNeeded = delegate().getTableUpdateNeeded( dirtyFields, hasDirtyCollection );
+					final int span = delegate().getTableSpan();
 
-		final boolean[] propsToUpdate;
-		final String[] updateStrings;
-		EntityEntry entry = session.getPersistenceContextInternal().getEntry( object );
+					final boolean[] propsToUpdate;
+					final String[] updateStrings;
+					EntityEntry entry = session.getPersistenceContextInternal().getEntry( object );
 
-		// Ensure that an immutable or non-modifiable entity is not being updated unless it is
-		// in the process of being deleted.
-		if ( entry == null && !delegate().isMutable() ) {
-			throw log.updatingImmutableEntityThatsNotInTheSession();
-		}
-		if ( ( delegate().getEntityMetamodel().isDynamicUpdate() && dirtyFields != null ) ) {
-			// We need to generate the UPDATE SQL when dynamic-update="true"
-			propsToUpdate = delegate().getPropertiesToUpdate( dirtyFields, hasDirtyCollection );
-			// don't need to check laziness (dirty checking algorithm handles that)
-			updateStrings = new String[span];
-			for ( int j = 0; j < span; j++ ) {
-				updateStrings[j] = tableUpdateNeeded[j]
-						? delegate().generateUpdateString( propsToUpdate, j, oldFields, j == 0 && rowId != null )
-						: null;
-			}
-		}
-		else if ( !delegate().isModifiableEntity( entry ) ) {
-			// We need to generate UPDATE SQL when a non-modifiable entity (e.g., read-only or immutable)
-			// needs:
-			// - to have references to transient entities set to null before being deleted
-			// - to have version incremented do to a "dirty" association
-			// If dirtyFields == null, then that means that there are no dirty properties to
-			// to be updated; an empty array for the dirty fields needs to be passed to
-			// getPropertiesToUpdate() instead of null.
-			propsToUpdate = delegate().getPropertiesToUpdate(
-					dirtyFields == null ? ArrayHelper.EMPTY_INT_ARRAY : dirtyFields,
-					hasDirtyCollection
-			);
-			// don't need to check laziness (dirty checking algorithm handles that)
-			updateStrings = new String[span];
-			for ( int j = 0; j < span; j++ ) {
-				updateStrings[j] = tableUpdateNeeded[j]
-						? delegate().generateUpdateString( propsToUpdate, j, oldFields, j == 0 && rowId != null )
-						: null;
-			}
-		}
-		else {
-			// For the case of dynamic-update="false", or no snapshot, we use the static SQL
-			boolean hasUninitializedLazy = delegate().hasUninitializedLazyProperties( object );
-			updateStrings = getUpdateStrings( rowId != null, hasUninitializedLazy );
-			propsToUpdate = delegate().getPropertyUpdateability( object );
+					// Ensure that an immutable or non-modifiable entity is not being updated unless it is
+					// in the process of being deleted.
+					if ( entry == null && !delegate().isMutable() ) {
+						throw log.updatingImmutableEntityThatsNotInTheSession();
+					}
+					if ( ( delegate().getEntityMetamodel().isDynamicUpdate() && dirtyFields != null ) ) {
+						// We need to generate the UPDATE SQL when dynamic-update="true"
+						propsToUpdate = delegate().getPropertiesToUpdate( dirtyFields, hasDirtyCollection );
+						// don't need to check laziness (dirty checking algorithm handles that)
+						updateStrings = new String[span];
+						for ( int j = 0; j < span; j++ ) {
+							final boolean useRowId = j == 0 && rowId != null;
+							updateStrings[j] = tableUpdateNeeded[j]
+									? delegate().generateUpdateString( propsToUpdate, j, oldFields, useRowId )
+									: null;
+						}
+					}
+					else if ( !delegate().isModifiableEntity( entry ) ) {
+						// We need to generate UPDATE SQL when a non-modifiable entity (e.g., read-only or immutable)
+						// needs:
+						// - to have references to transient entities set to null before being deleted
+						// - to have version incremented do to a "dirty" association
+						// If dirtyFields == null, then that means that there are no dirty properties to
+						// to be updated; an empty array for the dirty fields needs to be passed to
+						// getPropertiesToUpdate() instead of null.
+						propsToUpdate = delegate().getPropertiesToUpdate(
+								dirtyFields == null ? ArrayHelper.EMPTY_INT_ARRAY : dirtyFields,
+								hasDirtyCollection
+						);
+						// don't need to check laziness (dirty checking algorithm handles that)
+						updateStrings = new String[span];
+						for ( int j = 0; j < span; j++ ) {
+							final boolean useRowId = j == 0 && rowId != null;
+							updateStrings[j] = tableUpdateNeeded[j]
+									? delegate().generateUpdateString( propsToUpdate, j, oldFields, useRowId )
+									: null;
+						}
+					}
+					else {
+						// For the case of dynamic-update="false", or no snapshot, we use the static SQL
+						boolean hasUninitializedLazy = delegate().hasUninitializedLazyProperties( object );
+						updateStrings = getUpdateStrings( rowId != null, hasUninitializedLazy );
+						propsToUpdate = delegate().getPropertyUpdateability( object );
+					}
+
+					// Now update only the tables with dirty properties (and the table with the version number)
+					return loop( 0, span, i -> tableUpdateNeeded[i], table ->
+							updateOrInsertReactive(
+									id,
+									fields,
+									oldFields,
+									table == 0 ? rowId : null,
+									propsToUpdate,
+									table,
+									oldVersion,
+									updateStrings[table],
+									session
+							)
+					);
+				} );
+	}
+
+	default CompletionStage<?> generateValue(
+			Object owner,
+			SharedSessionContractImplementor session,
+			InMemoryValueGenerationStrategy valueGenerationStrategy) {
+		final ValueGenerator valueGenerator = valueGenerationStrategy.getValueGenerator();
+		if ( valueGenerator instanceof StageValueGenerator ) {
+			final StageSessionFactoryImpl stageFactory = new StageSessionFactoryImpl( (SessionFactoryImpl) session.getFactory() );
+			final Stage.Session stageSession = new StageSessionImpl( (ReactiveSession) session, stageFactory );
+			return ( (StageValueGenerator) valueGenerator )
+					.generateValue( stageSession, owner );
 		}
 
-		// Now update only the tables with dirty properties (and the table with the version number)
-		return loop( 0, span, i-> tableUpdateNeeded[i],
-				table -> updateOrInsertReactive(
-						id,
-						fields,
-						oldFields,
-						table == 0 ? rowId : null,
-						propsToUpdate,
-						table,
-						oldVersion,
-						updateStrings[table],
-						session
-				)
-		);
+		if ( valueGenerator instanceof MutinyValueGenerator ) {
+			MutinySessionFactoryImpl mutinyFactory = new MutinySessionFactoryImpl( (SessionFactoryImpl) session.getFactory() );
+			Mutiny.Session mutinySession = new MutinySessionImpl( (ReactiveSession) session, mutinyFactory );
+			return ( (MutinyValueGenerator) valueGenerator ).generateValue( mutinySession, owner )
+					.subscribeAsCompletionStage();
+		}
+
+		// We should throw an exception, but I don't want to break things for people using @CreationTimestamp or similar
+		// annotations. We need an alternative for Hibernate Reactive.
+		return completedFuture( valueGenerationStrategy.getValueGenerator().generateValue( (Session) session, owner ) );
+	}
+
+	default void setFieldValue(Object[] fields, Object object, int index, Object value) {
+		fields[index] = value;
+		delegate().setPropertyValue( object, index, fields[index] );
 	}
 
 	String[] getUpdateStrings(boolean byRowId, boolean hasUninitializedLazyProperties);
