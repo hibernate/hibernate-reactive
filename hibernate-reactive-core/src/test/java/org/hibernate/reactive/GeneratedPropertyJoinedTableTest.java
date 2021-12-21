@@ -30,7 +30,6 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.CurrentUser.LoggedUserGenerator;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
@@ -41,7 +40,7 @@ import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
  */
 public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 
-	// It requires native queries so we only test this on Postgres
+	// It requires native queries, so it won't work for every db
 	@Rule
 	public DatabaseSelectionRule selectionRule = runOnlyFor( POSTGRESQL, COCKROACHDB, MYSQL );
 
@@ -155,7 +154,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		@Column(columnDefinition = "varchar(600) generated always as (firstname || ' ' || lastname) stored")
 		public String fullName;
 
-		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.INSERT)
+		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithStage.class, when = GenerationTime.INSERT)
 		public String createdBy;
 
 		public GeneratedRegularParent() {
@@ -175,7 +174,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		@ColumnDefault("current_timestamp")
 		public Date createdAt;
 
-		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.ALWAYS)
+		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithMutiny.class, when = GenerationTime.ALWAYS)
 		public String updatedBy;
 
 		@Generated(GenerationTime.NEVER)
@@ -204,7 +203,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		@Column(columnDefinition = "varchar(600) generated always as (firstname || ' ' || lastname) stored")
 		public String fullName;
 
-		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.INSERT)
+		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithMutiny.class, when = GenerationTime.INSERT)
 		public String createdBy;
 
 		public GeneratedWithIdentityParent() {
@@ -224,7 +223,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		@ColumnDefault("current_timestamp")
 		public Date createdAt;
 
-		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.ALWAYS)
+		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithStage.class, when = GenerationTime.ALWAYS)
 		public String updatedBy;
 
 		@Generated(GenerationTime.NEVER)

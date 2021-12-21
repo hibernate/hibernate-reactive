@@ -29,7 +29,6 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.CurrentUser.LoggedUserGenerator;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
@@ -40,7 +39,9 @@ import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
  */
 public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 
-	@Rule // Because it uses native queries
+
+	// It requires native queries, so it won't work for every db
+	@Rule
 	public DatabaseSelectionRule selectionRule = runOnlyFor( POSTGRESQL, COCKROACHDB, MYSQL );
 
 	@Override
@@ -161,10 +162,10 @@ public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 		@ColumnDefault("current_timestamp")
 		public Date createdAt;
 
-		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.INSERT)
+		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithMutiny.class, when = GenerationTime.INSERT)
 		public String createdBy;
 
-		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.ALWAYS)
+		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithStage.class, when = GenerationTime.ALWAYS)
 		public String updatedBy;
 
 		@Generated(GenerationTime.NEVER)
@@ -200,10 +201,10 @@ public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 		@ColumnDefault("current_timestamp")
 		public Date createdAt;
 
-		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.INSERT)
+		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithMutiny.class, when = GenerationTime.INSERT)
 		public String createdBy;
 
-		@GeneratorType(type = LoggedUserGenerator.class, when = GenerationTime.ALWAYS)
+		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithStage.class, when = GenerationTime.ALWAYS)
 		public String updatedBy;
 
 		@Generated(GenerationTime.NEVER)
