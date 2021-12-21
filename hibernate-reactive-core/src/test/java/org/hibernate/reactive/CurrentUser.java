@@ -5,8 +5,17 @@
  */
 package org.hibernate.reactive;
 
-import org.hibernate.Session;
-import org.hibernate.tuple.ValueGenerator;
+import java.util.Objects;
+import java.util.concurrent.CompletionStage;
+
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.tuple.MutinyValueGenerator;
+import org.hibernate.reactive.tuple.StageValueGenerator;
+
+import io.smallrye.mutiny.Uni;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
  * An example from the Hibernate ORM documentation that we use for testing of
@@ -34,11 +43,24 @@ public class CurrentUser {
 		return storage.get();
 	}
 
-	public static class LoggedUserGenerator implements ValueGenerator<String> {
+	public static class LoggedUserGeneratorWithStage implements StageValueGenerator<String> {
 
 		@Override
-		public String generateValue(Session session, Object owner) {
-			return CurrentUser.INSTANCE.get();
+		public CompletionStage<String> generateValue(Stage.Session session, Object owner) {
+			Objects.nonNull( session );
+			String value = CurrentUser.INSTANCE.get();
+			return completedFuture( value );
 		}
 	}
+
+	public static class LoggedUserGeneratorWithMutiny implements MutinyValueGenerator<String> {
+
+		@Override
+		public Uni<String> generateValue(Mutiny.Session session, Object owner) {
+			Objects.nonNull( session );
+			String value = CurrentUser.INSTANCE.get();
+			return Uni.createFrom().item( value );
+		}
+	}
+
 }
