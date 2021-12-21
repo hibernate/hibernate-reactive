@@ -291,9 +291,8 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public void preInsertInMemoryValueGeneration(Object[] fields, Object object,
-												 SharedSessionContractImplementor session) {
-		super.preInsertInMemoryValueGeneration(fields, object, session);
+	public void preInsertInMemoryValueGeneration(Object[] fields, Object object, SharedSessionContractImplementor session) {
+		throw new UnsupportedOperationException("Use reactivePreInsertInMemoryValueGeneration instead");
 	}
 
 	@Override
