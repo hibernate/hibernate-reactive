@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import javax.persistence.Entity;
@@ -21,9 +20,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
-import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -35,7 +32,6 @@ import static org.hamcrest.CoreMatchers.isA;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DEFAULT;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_1;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_2;
-import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.values;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 
 /**
@@ -338,25 +334,6 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 		thrown.expectMessage( "no tenant identifier" );
 
 		test( context, getMutinySessionFactory().withStatelessSession( this::selectCurrentDB ) );
-	}
-
-	@AfterClass
-	public static void dropDatabases(TestContext context) {
-		if ( factoryManager.isStarted() ) {
-			test( context, getSessionFactory()
-					.withSession( DEFAULT.name(), session -> Arrays
-							.stream( values() )
-							.filter( tenant -> tenant != DEFAULT )
-							.collect(
-									CompletionStages::voidFuture,
-									(stage, tenant) -> session
-											.createNativeQuery( "drop database if exists " + tenant.getDbName() + ";" )
-											.executeUpdate()
-											.thenCompose( CompletionStages::voidFuture ),
-									(stage, stage2) -> stage.thenCompose( v -> stage2 )
-							)
-					) );
-		}
 	}
 
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
