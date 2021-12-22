@@ -43,7 +43,7 @@ public class CurrentUser {
 		return storage.get();
 	}
 
-	public static class LoggedUserGeneratorWithStage implements StageValueGenerator<String> {
+	public static class LoggedUserGeneratorWithStage extends StageValueGenerator<String> {
 
 		@Override
 		public CompletionStage<String> generateValue(Stage.Session session, Object owner) {
@@ -53,7 +53,7 @@ public class CurrentUser {
 		}
 	}
 
-	public static class LoggedUserGeneratorWithMutiny implements MutinyValueGenerator<String> {
+	public static class LoggedUserGeneratorWithMutiny extends MutinyValueGenerator<String> {
 
 		@Override
 		public Uni<String> generateValue(Mutiny.Session session, Object owner) {
