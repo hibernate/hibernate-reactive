@@ -7,6 +7,7 @@ package org.hibernate.reactive.tuple;
 
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.Incubating;
 import org.hibernate.Session;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.tuple.ValueGenerator;
@@ -20,6 +21,7 @@ import org.hibernate.tuple.ValueGenerator;
  *
  * @see MutinyValueGenerator
  */
+@Incubating
 public abstract class StageValueGenerator<T> implements ValueGenerator<T> {
 
 	@Override
