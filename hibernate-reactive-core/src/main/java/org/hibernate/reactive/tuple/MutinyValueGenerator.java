@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.tuple;
 
+import org.hibernate.Incubating;
 import org.hibernate.Session;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.tuple.ValueGenerator;
@@ -20,6 +21,7 @@ import io.smallrye.mutiny.Uni;
  *
  * @see StageValueGenerator
  */
+@Incubating
 public abstract class MutinyValueGenerator<T> implements ValueGenerator<T> {
 
 	@Override
