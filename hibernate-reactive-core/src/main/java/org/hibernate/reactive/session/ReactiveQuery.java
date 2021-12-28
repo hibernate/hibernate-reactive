@@ -103,7 +103,7 @@ public interface ReactiveQuery<R> {
 
 	static <R> R extractUniqueResult(List<R> list, AbstractProducedQuery<R> query) {
 		try {
-			if ( list.size() == 0 ) {
+			if ( list.isEmpty() ) {
 				throw new NoResultException( "No entity found for query" );
 			}
 			return AbstractProducedQuery.uniqueElement( list );
@@ -116,7 +116,7 @@ public interface ReactiveQuery<R> {
 
 	static <R> R extractUniqueResultOrNull(List<R> list, AbstractProducedQuery<R> query) {
 		try {
-			if ( list.size() == 0 ) {
+			if ( list.isEmpty() ) {
 				return null;
 			}
 			return AbstractProducedQuery.uniqueElement( list );
