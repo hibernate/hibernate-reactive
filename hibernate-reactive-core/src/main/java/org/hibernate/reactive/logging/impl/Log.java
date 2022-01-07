@@ -29,7 +29,7 @@ import static org.jboss.logging.Logger.Level.WARN;
 public interface Log extends BasicLogger {
 
 	@LogMessage(level = INFO)
-	@Message(id = 1, value = "Hibernate Reactive Preview")
+	@Message(id = 1, value = "Hibernate Reactive")
 	void startHibernateReactive();
 
 	@LogMessage(level = INFO)
