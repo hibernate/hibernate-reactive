@@ -1173,12 +1173,13 @@ following configuration properties:
 |===
 
 Finally, for more advanced cases, you can write your own code to configure
-the Vert.x client by implementing `SqlClientPoolConfiguration`.
+the Vert.x client by implementing `SqlClientPoolConfiguration` or `ReactiveConnectionPool`.
 
 |===
-| Configuration property name      | Purpose
+| Configuration property name                | Purpose
 
 | `hibernate.vertx.pool.configuration_class` | A class implementing `SqlClientPoolConfiguration`
+| `hibernate.vertx.pool.class`               | A class implementing `ReactiveConnectionPool`
 |===
 
 === Enabling statement batching
