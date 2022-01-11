@@ -35,7 +35,7 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
     public <T> void put(Key<T> key, T instance) {
         final io.vertx.core.Context context = Vertx.currentContext();
         if ( context != null ) {
-            context.put( key, instance );
+            context.putLocal( key, instance );
         }
         else {
             throw LOG.notVertxContextActive();
@@ -47,7 +47,7 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
     public <T> T get(Key<T> key) {
         final io.vertx.core.Context context = Vertx.currentContext();
         if ( context != null ) {
-            return (T) context.get( key );
+            return (T) context.getLocal( key );
         }
         else {
             return null;
@@ -58,7 +58,7 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
     public void remove(Key<?> key) {
         final io.vertx.core.Context context = Vertx.currentContext();
         if ( context != null ) {
-            context.remove( key );
+            context.removeLocal( key );
         }
     }
 
