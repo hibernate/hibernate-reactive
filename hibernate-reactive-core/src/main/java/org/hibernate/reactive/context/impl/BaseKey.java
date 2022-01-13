@@ -11,8 +11,9 @@ import org.hibernate.reactive.context.Context;
 
 /**
  * Implementation of {@link Context.Key} suitable for storing
- * Session, StatelessSession or other type instances in the
- * Vert.x context.
+ * instances of {@code Session} or {@code StatelessSession},
+ * or really anything at all, in the Vert.x context.
+ *
  * @param <T> the type of object being stored in the Context.
  */
 public final class BaseKey<T> implements Context.Key<T> {
