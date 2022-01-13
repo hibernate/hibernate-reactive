@@ -10,10 +10,14 @@ import java.util.Objects;
 import org.hibernate.reactive.context.Context;
 
 /**
- * Implementation of {@link Context.Key} suitable for the
- * use case with multi-tenancy.
- * This wraps the {@link BaseKey} of the same type, allowing
- * instance reuse for efficiency.
+ * Implementation of {@link Context.Key} suitable for use with
+ * multi-tenancy. In a multi-tenant environment, anything we
+ * store in the Vert.x context is keyed not only by its type,
+ * but also by the tenant id.
+ * <p>
+ * An instance of this class wraps a {@link BaseKey} of the same
+ * type, allowing instance reuse for efficiency.
+ *
  * @param <T> the type of object being stored in the Context.
  */
 public final class MultitenantKey<T> implements Context.Key<T> {

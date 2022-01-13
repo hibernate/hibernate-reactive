@@ -44,8 +44,12 @@ public interface Context extends Executor, Service {
     @Override
     void execute(Runnable runnable);
 
-    interface Key<T> {
-
-    }
-
+    /**
+     * An object that identifies something we store in the Vert.x
+     * local context, usually a {@code Session} or
+     * {@code StatelessSession}, but in principle anything at all.
+     *
+     * @param <T> the type of thing we're storing in the context
+     */
+    interface Key<T> {}
 }
