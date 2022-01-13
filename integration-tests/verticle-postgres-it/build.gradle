@@ -1,0 +1,88 @@
+description = 'Hibernate Reactive Verticle Integration Tests'
+
+ext {
+    smallryeMutinyVertxVersion = '2.17.0'
+    jacksonDatabindVersion = '2.13.0'
+}
+
+dependencies {
+    implementation project(':hibernate-reactive-core')
+
+    implementation "io.smallrye.reactive:smallrye-mutiny-vertx-core:${smallryeMutinyVertxVersion}"
+    implementation "io.smallrye.reactive:smallrye-mutiny-vertx-web:${smallryeMutinyVertxVersion}"
+    implementation "io.vertx:vertx-web-client:${vertxVersion}"
+
+    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
+    runtimeOnly "io.smallrye.reactive:smallrye-mutiny-vertx-pg-client:${smallryeMutinyVertxVersion}"
+    runtimeOnly "io.smallrye.reactive:smallrye-mutiny-vertx-mysql-client:${smallryeMutinyVertxVersion}"
+
+    // logging
+    implementation 'org.jboss.logging:jboss-logging:3.4.2.Final'
+    runtimeOnly "org.apache.logging.log4j:log4j-core:2.17.1"
+
+    // Testing
+    testImplementation 'org.assertj:assertj-core:3.20.2'
+    testImplementation "io.vertx:vertx-unit:${vertxVersion}"
+    testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
+}
+
+// Print a summary of the results of the tests (number of failures, successes and skipped)
+// This is the same as the one in hibernate-reactive-core
+def loggingSummary(db, result, desc) {
+    if ( !desc.parent ) { // will match the outermost suite
+        def output = "${db} results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
+        def repeatLength = output.length() + 1
+        logger.lifecycle '\n' + ('-' * repeatLength) + '\n' + output + '\n' + ('-' * repeatLength)
+    }
+}
+
+// Configuration for the tests
+// This is the same as the one in hibernate-reactive-core
+tasks.withType(Test) {
+    defaultCharacterEncoding = "UTF-8"
+    testLogging {
+        displayGranularity 1
+        showStandardStreams = project.hasProperty('showStandardOutput')
+        showStackTraces = true
+        exceptionFormat = 'full'
+        events 'PASSED', 'FAILED', 'SKIPPED'
+    }
+    systemProperty 'docker', project.hasProperty( 'docker' ) ? 'true' : 'false'
+    systemProperty 'org.hibernate.reactive.common.InternalStateAssertions.ENFORCE', 'true'
+
+    if ( project.hasProperty( 'includeTests' ) ) {
+        // Example: ./gradlew testAll -PincludeTests=DefaultPortTest
+        filter {
+            includeTestsMatching project.getProperty( 'includeTests' ) ?: '*'
+        }
+    }
+}
+
+test {
+    def selectedDb = project.hasProperty( 'db' )
+            ? project.getProperty( 'db' )
+            : 'PostgreSQL'
+
+    // We only want to test this on Postgres
+    onlyIf { selectedDb.toLowerCase().startsWith( 'p' ) }
+    afterSuite { desc, result ->
+        loggingSummary( 'PostgreSQL', result, desc )
+    }
+    doFirst {
+        systemProperty 'db', selectedDb
+    }
+}
+
+spotless {
+    //Don't fail during the check: rather than enforcing guidelines, we use this plugin to fix mistakes automatically.
+    enforceCheck false
+    java {
+        licenseHeaderFile 'spotless.license.java'
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+tasks.compileJava.dependsOn(spotlessApply)
+
