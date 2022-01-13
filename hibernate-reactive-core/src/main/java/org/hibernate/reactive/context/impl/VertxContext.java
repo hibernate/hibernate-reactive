@@ -43,11 +43,10 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> T get(Key<T> key) {
         final io.vertx.core.Context context = Vertx.currentContext();
         if ( context != null ) {
-            return (T) context.getLocal( key );
+            return context.getLocal( key );
         }
         else {
             return null;
