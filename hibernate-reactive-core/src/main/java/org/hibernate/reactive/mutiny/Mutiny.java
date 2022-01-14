@@ -70,18 +70,24 @@ public interface Mutiny {
 	interface Query<R> {
 
 		/**
-		 * Set the value of a positional parameter. Positional parameters
+		 * Set the value of an ordinal parameter. Ordinal parameters
 		 * are numbered from 1, and are specified in the query using
 		 * placeholder tokens of form {@code ?1}, {@code ?2}, etc.
+		 *
+		 * @param parameter an integer identifying the ordinal parameter
+		 * @param argument the argument to set
 		 */
-		Query<R> setParameter(int position, Object value);
+		Query<R> setParameter(int parameter, Object argument);
 
 		/**
 		 * Set the value of a named parameter. Named parameters are
 		 * specified in the query using placeholder tokens of form
 		 * {@code :name}.
+		 *
+		 * @param parameter the name of the parameter
+		 * @param argument the argument to set
 		 */
-		Query<R> setParameter(String name, Object value);
+		Query<R> setParameter(String parameter, Object argument);
 
 		/**
 		 * Set the value of a typed parameter. Typed parameters are
@@ -89,9 +95,12 @@ public interface Mutiny {
 		 * itself be obtained by calling
 		 * {@link SessionFactory#getCriteriaBuilder()}.
 		 *
+		 * @param parameter the parameter
+		 * @param argument the argument to set
+		 *
 		 * @see CriteriaBuilder#parameter(Class)
 		 */
-		<T> Query<R> setParameter(Parameter<T> name, T value);
+		<T> Query<R> setParameter(Parameter<T> parameter, T argument);
 
 		/**
 		 * Set the maximum number of results that may be returned by this
