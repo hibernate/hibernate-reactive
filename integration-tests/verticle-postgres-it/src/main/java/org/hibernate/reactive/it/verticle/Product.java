@@ -76,7 +76,7 @@ public class Product {
 
 	@Override
 	public String toString() {
-		final StringBuilder sb = new StringBuilder( "Product{" );
+		final StringBuilder sb = new StringBuilder( "{" );
 		sb.append( id );
 		sb.append( ", " ).append( name );
 		sb.append( ", " ).append( price );
