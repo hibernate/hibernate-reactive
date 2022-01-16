@@ -17,13 +17,14 @@ dependencies {
     runtimeOnly "io.smallrye.reactive:smallrye-mutiny-vertx-mysql-client:${smallryeMutinyVertxVersion}"
 
     // logging
-    implementation 'org.jboss.logging:jboss-logging:3.4.3.Final'
     runtimeOnly "org.apache.logging.log4j:log4j-core:2.17.1"
+
+    // Testcontainers
+    implementation "org.testcontainers:postgresql:${testcontainersVersion}"
 
     // Testing
     testImplementation 'org.assertj:assertj-core:3.20.2'
     testImplementation "io.vertx:vertx-unit:${vertxVersion}"
-    testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
 }
 
 // Print a summary of the results of the tests (number of failures, successes and skipped)
@@ -70,6 +71,26 @@ test {
     }
     doFirst {
         systemProperty 'db', selectedDb
+    }
+}
+
+// Rule to recognize calls to testDb<dbName>
+// and run the tests on the selected db
+// Example:
+// gradle testDbMySQL testDbDB2
+tasks.addRule( "Pattern testDb<id>" ) { String taskName ->
+    if ( taskName.startsWith( "testDb" ) ) {
+        task( type: Test, taskName ) {
+            def dbName = taskName.substring( "testDb".length() )
+            description = "Run tests for ${dbName}"
+
+            afterSuite { desc, result ->
+                loggingSummary( dbName, result, desc )
+            }
+            doFirst() {
+                systemProperty 'db', dbName
+            }
+        }
     }
 }
 
