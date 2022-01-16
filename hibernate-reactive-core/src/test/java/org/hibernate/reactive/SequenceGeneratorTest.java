@@ -7,10 +7,15 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import javax.persistence.*;
 import java.util.Objects;
+
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 
 
 public class SequenceGeneratorTest extends BaseReactiveTest {
@@ -54,6 +59,21 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 					context.assertEquals(bb.string, "Goodbye");
 				})
 		);
+	}
+
+
+	public static class SequenceGeneratorDefaultSchemaTest extends SequenceGeneratorTest {
+
+		@Rule //only because we don't have permission to create schema in the CI!
+		public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( COCKROACHDB );
+
+		@Override
+		protected Configuration constructConfiguration() {
+			Configuration configuration = super.constructConfiguration();
+			configuration.setProperty( Settings.DEFAULT_SCHEMA, "hr" );
+			configuration.setProperty( Settings.HBM2DDL_CREATE_SCHEMAS, "true" );
+			return configuration;
+		}
 	}
 
 	@Entity
