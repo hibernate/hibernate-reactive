@@ -6,8 +6,11 @@
 package org.hibernate.reactive.id.impl;
 
 import org.hibernate.MappingException;
+import org.hibernate.engine.config.spi.ConfigurationService;
+import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.id.Configurable;
 import org.hibernate.id.IdentifierGenerator;
+import org.hibernate.id.PersistentIdentifierGenerator;
 import org.hibernate.id.SelectGenerator;
 import org.hibernate.id.SequenceGenerator;
 import org.hibernate.id.enhanced.DatabaseStructure;
@@ -19,6 +22,7 @@ import org.hibernate.id.factory.internal.DefaultIdentifierGeneratorFactory;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.provider.Settings;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.type.Type;
 
@@ -102,6 +106,22 @@ public class ReactiveIdentifierGeneratorFactory extends DefaultIdentifierGenerat
 		else {
 			//nothing to do
 			return generator;
+		}
+
+		//this is not the way ORM does this: instead it passes a
+		//SqlStringGenerationContext to IdentifierGenerator.initialize()
+		ConfigurationService cs = serviceRegistry.getService(ConfigurationService.class);
+		if ( !params.containsKey(PersistentIdentifierGenerator.SCHEMA) ) {
+			String schema = cs.getSetting(Settings.DEFAULT_SCHEMA, StandardConverters.STRING);
+			if ( schema!=null ) {
+				params.put( PersistentIdentifierGenerator.SCHEMA, schema );
+			}
+		}
+		if ( !params.containsKey(PersistentIdentifierGenerator.CATALOG) ) {
+			String catalog = cs.getSetting(Settings.DEFAULT_CATALOG, StandardConverters.STRING);
+			if ( catalog!=null ) {
+				params.put( PersistentIdentifierGenerator.CATALOG, catalog );
+			}
 		}
 
 		((Configurable) reactiveGenerator).configure( type, params, serviceRegistry );
