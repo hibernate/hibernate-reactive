@@ -90,123 +90,57 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
     @Override
     public SqlConnectOptions connectOptions(URI uri) {
-        String scheme = uri.getScheme();
-        String path = uri.getPath();
+        SqlConnectOptions connectOptions;
+        String originalScheme = uri.getScheme();
+        URI convertedURI = ReactiveToVertxUriConverter.convertUriToVertx( uri );
 
-        String database = path.length() > 0
-                ? path.substring( 1 )
-                : "";
+        // if scheme is unsupported then vertx will throw an error
+        // capture and re-throw as IllegalArgumentException
 
-        if ( scheme.equals("db2") && database.indexOf( ':' ) > 0 ) {
-            // DB2 URLs are a bit odd and have the format:
-            // jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
-            database = database.substring( 0, database.indexOf( ':' ) );
+        try {
+            connectOptions = SqlConnectOptions.fromUri( convertedURI.toString() );
+        }
+        catch (java.util.ServiceConfigurationError ex) {
+            throw new IllegalArgumentException( ex );
         }
 
-        String host = uri.getHost();
-        int port = uri.getPort();
-        int index = uri.toString().indexOf( ';' );
-        if ( scheme.equals( "sqlserver" ) && index > 0 ) {
-            // SQL Server separates parameters in the url with a semicolon (';')
-            // and the URI class doesn't get the right value for host and port when the url
-            // contains parameters
-            URI uriWithoutParams = URI.create( uri.toString().substring( 0, index ) );
-            host = uriWithoutParams.getHost();
-            port = uriWithoutParams.getPort();
+        // user property can be overridden. Check and override if necessary
+        if ( user != null ) {
+            connectOptions.setUser( user );
+        }
+        else if ( connectOptions.getUser() == null ) {
+            throw new HibernateError(
+                    "database username not specified (set the property 'javax.persistence.jdbc.user', or include it as a parameter in the connection URL)" );
         }
 
-        if ( port == -1 ) {
-            port = defaultPort( scheme );
+        // password property can be overridden. Check and override if necessary
+        if ( pass != null ) {
+            connectOptions.setPassword( user );
         }
 
-        //see if the credentials were specified via properties
-        String username = user;
-        String password = pass;
-        if (username==null || password==null) {
-            //if not, look for URI-style user info first
-            String userInfo = uri.getUserInfo();
-            if (userInfo!=null) {
-                String[] bits = userInfo.split(":");
-                username = bits[0];
-                if (bits.length>1) {
-                    password = bits[1];
-                }
-            }
-            else {
-                //check the query for named parameters
-                //in case it's a JDBC-style URL
-                String[] params = {};
-                // DB2 URLs are a bit odd and have the format:
-                // jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
-                if ( scheme.equals("db2") ) {
-                    int queryIndex = uri.getPath().indexOf(':') + 1;
-                    if (queryIndex > 0) {
-                        params = uri.getPath().substring(queryIndex).split(";");
-                    }
-                }
-                else if ( scheme.contains( "sqlserver" ) ) {
-                    // SQL Server separates parameters in the url with a semicolon (';')
-                    // Ex: jdbc:sqlserver://<server>:<port>;<database>=AdventureWorks;user=<user>;password=<password>
-                    String query = uri.getQuery();
-                    String rawQuery = uri.getRawQuery();
-                    String s = uri.toString();
-                    int queryIndex = s.indexOf(';') + 1;
-                    if (queryIndex > 0) {
-                        params = s.substring(queryIndex).split(";");
-                    }
-                }
-                else {
-                    final String query = uri.getQuery();
-                    if ( query != null ) {
-                        params = uri.getQuery().split( "&" );
-                    }
-                }
-                for (String param : params) {
-                    if ( param.startsWith("user=") ) {
-                        username = param.substring(5);
-                    } else if ( param.startsWith("pass=") ) {
-                        password = param.substring(5);
-                    } else if ( param.startsWith("password=") ) {
-                        password = param.substring(9);
-                    } else if ( param.startsWith("database=") ) {
-                        database = param.substring(9);
-                    }
-                }
-            }
-        }
-
-        if ( username == null ) {
-            throw new HibernateError( "database username not specified (set the property 'javax.persistence.jdbc.user', or include it as a parameter in the connection URL)" );
-        }
-
-        SqlConnectOptions connectOptions = new SqlConnectOptions()
-                .setHost( host )
-                .setPort( port )
-                .setDatabase( database )
-                .setUser( username );
-
-        if (password != null) {
-            connectOptions.setPassword( password );
+        // port may be empty. Check and set default port if necessary based on scheme
+        if ( connectOptions.getPort() == -1 ) {
+            connectOptions.setPort( defaultPort( originalScheme ) );
         }
 
         //enable the prepared statement cache by default
-        connectOptions.setCachePreparedStatements(true);
+        connectOptions.setCachePreparedStatements( true );
 
-        if (cacheMaxSize!=null) {
-            if (cacheMaxSize <= 0) {
+        if ( cacheMaxSize != null ) {
+            if ( cacheMaxSize <= 0 ) {
                 LOG.preparedStatementCacheDisabled();
-                connectOptions.setCachePreparedStatements(false);
+                connectOptions.setCachePreparedStatements( false );
             }
             else {
                 LOG.preparedStatementCacheMaxSize( cacheMaxSize );
-                connectOptions.setCachePreparedStatements(true);
-                connectOptions.setPreparedStatementCacheMaxSize(cacheMaxSize);
+                connectOptions.setCachePreparedStatements( true );
+                connectOptions.setPreparedStatementCacheMaxSize( cacheMaxSize );
             }
         }
 
-        if (sqlLimit!=null) {
+        if ( sqlLimit != null ) {
             LOG.preparedStatementCacheSQLLimit( sqlLimit );
-            connectOptions.setPreparedStatementCacheSqlLimit(sqlLimit);
+            connectOptions.setPreparedStatementCacheSqlLimit( sqlLimit );
         }
 
         return connectOptions;
