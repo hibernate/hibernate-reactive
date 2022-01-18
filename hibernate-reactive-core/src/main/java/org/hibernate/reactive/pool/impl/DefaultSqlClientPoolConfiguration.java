@@ -119,7 +119,8 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
         }
 
         // port may be empty. Check and set default port if necessary based on scheme
-        if ( connectOptions.getPort() == -1 ) {
+        if ( connectOptions.getPort() == -1 ||
+                ( originalScheme.equalsIgnoreCase( "cockroachdb" ) && connectOptions.getPort() == 5432 ) ) {
             connectOptions.setPort( defaultPort( originalScheme ) );
         }
 
