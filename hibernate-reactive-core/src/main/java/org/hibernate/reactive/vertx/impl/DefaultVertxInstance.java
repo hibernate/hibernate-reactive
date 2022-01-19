@@ -21,39 +21,39 @@ import org.hibernate.service.spi.Stoppable;
  * demand and destroyed automatically along with the Hibernate
  * {@link org.hibernate.SessionFactory#close() session factory}.
  *
- * @see ProvidedVertxInstance if you need to a different instance
- *
  * @author Sanne Grinovero <sanne@hibernate.org>
+ * @see ProvidedVertxInstance if you need to a different instance
  */
 public final class DefaultVertxInstance implements VertxInstance, Stoppable, Startable {
 
-    private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-    private Vertx vertx;
-    private boolean vertxCreator;
+	private Vertx vertx;
+	private boolean vertxCreator;
 
-    @Override
-    public Vertx getVertx() {
-        if ( vertx == null ) {
-            throw LOG.serviceNotInitialized();
-        }
-        return vertx;
-    }
+	@Override
+	public Vertx getVertx() {
+		if ( vertx == null ) {
+			throw LOG.serviceNotInitialized();
+		}
+		return vertx;
+	}
 
-    @Override
-    public void stop() {
-        if ( vertxCreator && vertx != null ) {
-            vertx.close().toCompletionStage().toCompletableFuture().join();
-        }
-    }
+	@Override
+	public void stop() {
+		if ( vertxCreator && vertx != null ) {
+			vertx.close().toCompletionStage().toCompletableFuture().join();
+		}
+	}
 
-    @Override
-    public void start() {
-        final Context context = Vertx.currentContext();
-        vertxCreator = context == null || context.owner() == null;
-        vertx = vertxCreator
-                ? Vertx.vertx() // Create a new one
-                : context.owner(); // Get the existing one
-    }
+	@Override
+	public void start() {
+		final Context context = Vertx.currentContext();
+		vertxCreator = context == null || context.owner() == null;
+		vertx = vertxCreator
+				? Vertx.vertx() // Create a new one
+				: context.owner(); // Get the existing one
+
+	}
 
 }
