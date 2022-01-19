@@ -20,9 +20,15 @@ import org.hibernate.service.spi.Stoppable;
  * A singleton instance of {@link Vertx} that is created on
  * demand and destroyed automatically along with the Hibernate
  * {@link org.hibernate.SessionFactory#close() session factory}.
+ * <p>
+ * Programs which require Hibernate reactive to use an instance
+ * of {@code Vertx} whose lifecycle is managed externally to
+ * Hibernate Reactive should use {@link ProvidedVertxInstance}
+ * instead.
  *
  * @author Sanne Grinovero <sanne@hibernate.org>
- * @see ProvidedVertxInstance if you need to a different instance
+ *
+ * @see ProvidedVertxInstance
  */
 public final class DefaultVertxInstance implements VertxInstance, Stoppable, Startable {
 
