@@ -33,6 +33,10 @@ public interface Log extends BasicLogger {
 	void startHibernateReactive();
 
 	@LogMessage(level = INFO)
+	@Message(id = 2, value = "Vert.x not detected, creating a new instance")
+	void creatingVertxInstance();
+
+	@LogMessage(level = INFO)
 	@Message(id = 11, value = "SQL Client URL [%1$s]")
 	void sqlClientUrl(String url);
 

@@ -50,10 +50,14 @@ public final class DefaultVertxInstance implements VertxInstance, Stoppable, Sta
 	public void start() {
 		final Context context = Vertx.currentContext();
 		vertxCreator = context == null || context.owner() == null;
-		vertx = vertxCreator
-				? Vertx.vertx() // Create a new one
-				: context.owner(); // Get the existing one
-
+		if ( vertxCreator ) {
+			LOG.creatingVertxInstance();
+			vertx = Vertx.vertx();
+		}
+		else {
+			LOG.debugf( "Vert.x instance detected" );
+			vertx = context.owner();
+		}
 	}
 
 }
