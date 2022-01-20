@@ -4,8 +4,8 @@ dependencies {
     implementation project(':hibernate-reactive-core')
 
     // Hibernate Validator (optional)
-    implementation 'org.hibernate.validator:hibernate-validator:6.2.0.Final'
-    runtimeOnly 'org.glassfish:jakarta.el:4.0.1'
+    implementation 'org.hibernate.validator:hibernate-validator:6.2.1.Final'
+    runtimeOnly 'org.glassfish:jakarta.el:3.0.3'
 
     // JPA metamodel generation for criteria queries (optional)
     annotationProcessor "org.hibernate:hibernate-jpamodelgen:${hibernateOrmVersion}"
