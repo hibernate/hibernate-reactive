@@ -10,7 +10,6 @@ import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.hibernate.HibernateError;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.provider.Settings;
@@ -34,7 +33,7 @@ import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
  */
 public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfiguration, Configurable {
 
-    private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+    private static final Log log = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
     private static final int DEFAULT_POOL_SIZE = 5;
 
@@ -65,24 +64,24 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
     public PoolOptions poolOptions() {
         PoolOptions poolOptions = new PoolOptions();
 
-        LOG.connectionPoolSize( poolSize );
+        log.connectionPoolSize( poolSize );
         poolOptions.setMaxSize( poolSize );
         if (maxWaitQueueSize!=null) {
-            LOG.connectionPoolMaxWaitSize( maxWaitQueueSize );
+            log.connectionPoolMaxWaitSize( maxWaitQueueSize );
             poolOptions.setMaxWaitQueueSize(maxWaitQueueSize );
         }
         if (idleTimeout!=null) {
-            LOG.connectionPoolIdleTimeout( idleTimeout );
+            log.connectionPoolIdleTimeout( idleTimeout );
             poolOptions.setIdleTimeout(idleTimeout);
             poolOptions.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
         }
         if (connectTimeout!=null) {
-            LOG.connectionPoolTimeout( connectTimeout );
+            log.connectionPoolTimeout( connectTimeout );
             poolOptions.setConnectionTimeout(connectTimeout);
             poolOptions.setConnectionTimeoutUnit(TimeUnit.MILLISECONDS);
         }
         if (poolCleanerPeriod!=null) {
-            LOG.connectionPoolCleanerPeriod( poolCleanerPeriod );
+            log.connectionPoolCleanerPeriod( poolCleanerPeriod );
             poolOptions.setPoolCleanerPeriod(poolCleanerPeriod);
         }
         return poolOptions;
@@ -109,8 +108,12 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
             connectOptions.setUser( user );
         }
         else if ( connectOptions.getUser() == null ) {
-            throw new HibernateError(
-                    "database username not specified (set the property 'javax.persistence.jdbc.user', or include it as a parameter in the connection URL)" );
+            throw log.databaseUsernameNotSpecifiedOnUrl();
+        } else if( connectOptions.getUser().equals("user") &&
+                !ReactiveToVertxUriConverter.uriContains("user=", convertedURI.toString() ) ) {
+            // catches the case where user is NOT specificed in the URL, but is set by default as "user" in the
+            // individual DB SqlConnectOptions (i.e. see PgConnectionOptions.init() method)
+            throw log.databaseUsernameNotSpecifiedOnUrl();
         }
 
         // password property can be overridden. Check and override if necessary
@@ -129,18 +132,18 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
         if ( cacheMaxSize != null ) {
             if ( cacheMaxSize <= 0 ) {
-                LOG.preparedStatementCacheDisabled();
+                log.preparedStatementCacheDisabled();
                 connectOptions.setCachePreparedStatements( false );
             }
             else {
-                LOG.preparedStatementCacheMaxSize( cacheMaxSize );
+                log.preparedStatementCacheMaxSize( cacheMaxSize );
                 connectOptions.setCachePreparedStatements( true );
                 connectOptions.setPreparedStatementCacheMaxSize( cacheMaxSize );
             }
         }
 
         if ( sqlLimit != null ) {
-            LOG.preparedStatementCacheSQLLimit( sqlLimit );
+            log.preparedStatementCacheSQLLimit( sqlLimit );
             connectOptions.setPreparedStatementCacheSqlLimit( sqlLimit );
         }
 

@@ -216,6 +216,12 @@ public interface Log extends BasicLogger {
 	@Message(id = 72, value= "Cannot update an uninitialized proxy. Make sure to fetch the value before trying to update it: %1$s")
 	HibernateException uninitializedProxyUpdate(Object entity);
 
+	@Message(id = 73, value= "Database username not specified (set the property 'javax.persistence.jdbc.user', or include it as a parameter in the connection URL)")
+	HibernateException databaseUsernameNotSpecifiedOnUrl();
+
+	@Message(id = 74, value = "URI parsing found duplicate property '%s=%s' found. URI = [%s]" )
+	HibernateException  duplicateUriProperty(String key, String value, String uri);
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )

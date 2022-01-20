@@ -5,19 +5,31 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
+
 /**
- * Vertx JDBC URI parsers expect a PostgreSQL-like structure which is not neccessarily
+ * <p>
+ * Vertx JDBC URI parsers expect a PostgreSQL-like structure which is not necessarily
  * supported by all DB's. This utility class provides logic that will
  * check a URI and convert it, if necessary, to adhere to the parser REGEX.
+ *  </p>
+ *  <br>
  * <p>
+ * the Vert.x SQL client syntax is:
+ *     sqlserver://[user[:[password]]@]host[:port][/database][?attribute1=value1&attribute2=value2…​]
+ * </p>
+ * <br>
  * DB2 and SQL Server URI's may require replacement of separator characters in order to
  * correctly use the SqlConnectOptions.fromUri() and a specific DB driver and parser.
  */
 public class ReactiveToVertxUriConverter {
+	private static final Log log = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	static public URI convertUriToVertx(URI uri) {
 		String scheme = uri.getScheme();
@@ -33,21 +45,12 @@ public class ReactiveToVertxUriConverter {
 		else if ( scheme.equals( "sqlserver" ) ) {
 			return convertUriToVertxIfSqlServer( uri );
 		}
-		else if ( uri.toString().contains( "cockroachdb" ) ) {
-			return URI.create( uri.toString().replaceAll( "^cockroachdb:", "postgres:" ) );
-		}
 
 		return uri;
 	}
 
 	/**
-	 * This utility method provides URI conversion to replace  the URI : and ; separators for DB2 with vertx's ? and &.
-	 * Vertx manages a common URL syntax rather than multiple DB syntax's for their SqlConnectOptions.fromUri()
-	 * implementations.
-	 *
-	 * @param uri
-	 *
-	 * @return uri
+	 * Replace the JDBC URI for Db2 to the one accepted by the Vert.x reactive client
 	 */
 	static public URI convertUriToVertxIfDb2(URI uri) {
 		String scheme = uri.getScheme();
@@ -57,7 +60,7 @@ public class ReactiveToVertxUriConverter {
 				? path.substring( 1 )
 				: "";
 
-		if ( scheme.equals( "db2" ) && database.indexOf( ':' ) > 0 ) {
+		if ( database.indexOf( ':' ) > 0 ) {
 			// DB2 URLs are a bit odd and have the format:
 			// jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
 			database = database.substring( 0, database.indexOf( ':' ) );
@@ -74,67 +77,34 @@ public class ReactiveToVertxUriConverter {
 		}
 
 		//see if the credentials were specified via properties
-		String username = null;
-		String password = null;
 		Map<String, String> extraProperties = new HashMap<>();
 
-		//if not, look for URI-style user info first
-		String userInfo = uri.getUserInfo();
-		if ( userInfo != null ) {
-			String[] bits = userInfo.split( ":" );
-			username = bits[0];
-			if ( bits.length > 1 ) {
-				password = bits[1];
-			}
+		if ( database != null && database.length() > 0 ) {
+			extraProperties.put( "database", database );
 		}
-		else {
-			//check the query for named parameters
-			//in case it's a JDBC-style URL
-			String[] params = {};
-			// DB2 URLs are a bit odd and have the format:
-			// jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
-			if ( scheme.equals( "db2" ) ) {
-				int queryIndex = uri.getPath().indexOf( ':' ) + 1;
-				if ( queryIndex > 0 ) {
-					params = uri.getPath().substring( queryIndex ).split( ";" );
-				}
-			}
-
-			for ( String param : params ) {
-				if ( param.startsWith( "user=" ) ) {
-					username = param.substring( 5 );
-				}
-				else if ( param.startsWith( "pass=" ) ) {
-					password = param.substring( 5 );
-				}
-				else if ( param.startsWith( "password=" ) ) {
-					password = param.substring( 9 );
-				}
-				else if ( param.startsWith( "database=" ) ) {
-					database = param.substring( 9 );
-				}
-				else {
-					String[] keyValuePair = param.split( "=" );
-					extraProperties.put( keyValuePair[0].trim(), keyValuePair[1].trim() );
-				}
+		//check the query for named parameters
+		//in case it's a JDBC-style URL
+		String[] params = {};
+		// DB2 URLs are a bit odd and have the format:
+		// jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
+		if ( scheme.equals( "db2" ) ) {
+			int queryIndex = uri.getPath().indexOf( ':' ) + 1;
+			if ( queryIndex > 0 ) {
+				params = uri.getPath().substring( queryIndex ).split( ";" );
 			}
 		}
 
-		// build new URI string like:
-		// db2://localhost:44444/hreact?user=hreact&password=hreact
-		return rebuildURI( "db2", host, port, database, username, password, extraProperties );
+		parseProperties( uri, params, extraProperties );
+
+		// build new URI string like ==>>  db2://localhost:44444/hreact?user=hreact&password=hreact
+		return rebuildURI( "db2", host, port, database, extraProperties );
 	}
 
 	/**
-	 * This method provides URI conversion to replace  the URI : and ; separators for MSSQL with vertx's ? and &.
-	 * Vertx manages a common URL syntax rather than multiple DB syntax's for their SqlConnectOptions.fromUri()
-	 * implementations.
-	 *
-	 * @param uri
-	 *
-	 * @return uri
+	 * Replace the JDBC URI for MS SQLServer to the one accepted by the Vert.x reactive client
 	 */
 	static public URI convertUriToVertxIfSqlServer(URI uri) {
+		String propertySeparator = ";";
 		// EXAMPLE URL
 		//  sqlserver://localhost:52618;user=SA;password=~!HReact!~
 		String scheme = uri.getScheme();
@@ -166,65 +136,85 @@ public class ReactiveToVertxUriConverter {
 		}
 
 		//see if the credentials were specified via properties
-		String username = null;
-		String password = null;
 		Map<String, String> extraProperties = new HashMap<>();
 
-		//if not, look for URI-style user info first
-		String userInfo = uri.getUserInfo();
-		if ( userInfo != null ) {
-			String[] bits = userInfo.split( ":" );
-			username = bits[0];
-			if ( bits.length > 1 ) {
-				password = bits[1];
+		//check the query for named parameters
+		//in case it's a JDBC-style URL
+		String[] params = {};
+		// SQL Server separates parameters in the url with a semicolon (';')
+		// Ex: jdbc:sqlserver://<server>:<port>;<database>=AdventureWorks;user=<user>;password=<password>
+		// jdbc:sqlserver://localhost:33333:database=hreact;user=testuser;password=testpassword;prop1=value1
+		String s = uri.toString();
+		String query = uri.getQuery();
+		// separator may be either a ';' or '&'
+		if ( query != null ) {
+			int queryIndex = s.indexOf( '?' ) + 1;
+			if ( queryIndex > 0 ) {
+				params = s.substring( queryIndex ).split( "&" );
 			}
 		}
 		else {
-			//check the query for named parameters
-			//in case it's a JDBC-style URL
-			String[] params = {};
-			// SQL Server separates parameters in the url with a semicolon (';')
-			// Ex: jdbc:sqlserver://<server>:<port>;<database>=AdventureWorks;user=<user>;password=<password>
-			String query = uri.getQuery();
-			String rawQuery = uri.getRawQuery();
-			String s = uri.toString();
 			int queryIndex = s.indexOf( ';' ) + 1;
 			if ( queryIndex > 0 ) {
 				params = s.substring( queryIndex ).split( ";" );
 			}
+		}
 
-			for ( String param : params ) {
-				if ( param.startsWith( "user=" ) ) {
-					username = param.substring( 5 );
-				}
-				else if ( param.startsWith( "pass=" ) ) {
-					password = param.substring( 5 );
-				}
-				else if ( param.startsWith( "password=" ) ) {
-					password = param.substring( 9 );
-				}
-				else if ( param.startsWith( "database=" ) ) {
-					database = param.substring( 9 );
-				}
-				else {
-					String[] keyValuePair = param.split( "=" );
-					extraProperties.put( keyValuePair[0].trim(), keyValuePair[1].trim() );
-				}
+		String databaseAsProperty = parseProperties( uri, params, extraProperties );
+
+		// Database may be set as property, so check if NULL then set
+		if ( ( database == null || database.length() == 0 ) && databaseAsProperty != null ) {
+			database = databaseAsProperty;
+		}
+		// build new URI string like ===>>  sqlserver://localhost:44444/hreact?user=hreact&password=hreact
+		return rebuildURI( "sqlserver", host, port, database, extraProperties );
+	}
+
+	private static String parseProperties(URI uri, String[] params, Map<String, String> extraProperties) {
+		String databaseAsProperty = null;
+		//if not, look for URI-style user info first
+		String userInfo = uri.getUserInfo();
+		if ( userInfo != null ) {
+			String[] bits = userInfo.split( ":" );
+			extraProperties.put( "user", bits[0] );
+			if ( bits.length > 1 ) {
+				extraProperties.put( "password", bits[1] );
 			}
 		}
 
-		// build new URI string like:
-		// sqlserver://localhost:44444/hreact?user=hreact&password=hreact
-		return rebuildURI( "sqlserver", host, port, database, username, password, extraProperties );
+		for ( String param : params ) {
+			String[] keyValue = param.split( "=" );
+			if ( keyValue[0].equals( "database" ) ) {
+				databaseAsProperty = keyValue[1];
+			}
+			else {
+				checkAndAddProperty( uri, keyValue[0], keyValue[1], extraProperties );
+			}
+		}
+		return databaseAsProperty;
 	}
 
-	private static URI rebuildURI(String dbName, String host, int port, String database, String username,
-			String password, Map<String, String> extraProperties) {
+	private static void checkAndAddProperty(URI uri, String key, String value, Map<String, String> properties) {
+		// Check for general property duplicating user or password since they may already be properties from userInfo
+		if ( properties.containsKey( key ) ) {
+			throw log.duplicateUriProperty(key, value, uri.toString() );
+		}
+		else {
+			properties.put( key, value );
+		}
+	}
+
+	private static URI rebuildURI(String dbName, String host, int port,
+			String database, //String username, String password,
+			Map<String, String> extraProperties) {
 		StringBuilder sb = new StringBuilder( dbName + "://" );
 		sb.append( host ).append( ":" ).append( port );
+
 		if ( database != null && !database.isEmpty() ) {
 			sb.append( "/" ).append( database );
 		}
+		String username = extraProperties.get( "user" );
+		String password = extraProperties.get( "password" );
 		if ( username != null || password != null || !extraProperties.isEmpty() ) {
 			sb.append( "?" );
 		}
@@ -239,10 +229,16 @@ public class ReactiveToVertxUriConverter {
 			sb.append( "password=" ).append( password );
 		}
 		for ( Object key : extraProperties.keySet() ) {
-			String value = extraProperties.get( key );
-			sb.append( "&" ).append( (String) key ).append( "=" ).append( value );
+			if ( !key.equals( "user" ) && !key.equals( "password" ) ) {
+				String value = extraProperties.get( key );
+				sb.append( "&" ).append( (String) key ).append( "=" ).append( value );
+			}
 		}
 
 		return URI.create( sb.toString() );
+	}
+
+	public static boolean uriContains(String value, String uri) {
+		return uri.contains( value );
 	}
 }

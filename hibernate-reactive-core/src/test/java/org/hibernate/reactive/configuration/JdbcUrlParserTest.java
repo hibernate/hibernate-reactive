@@ -6,6 +6,7 @@
 package org.hibernate.reactive.configuration;
 
 import org.hibernate.HibernateError;
+import org.hibernate.HibernateException;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 
@@ -124,32 +125,46 @@ public class JdbcUrlParserTest {
 
 	// Example format from https://vertx.io/docs/vertx-pg-client/java/#_configuration
 	@Test
-	public void testPG() {
+	public void testPGWithUserInfo() {
 		String url = "jdbc:postgresql://testuser:testpassword@localhost:11111/hreact";
 		verifyURLWithPort( 11111, url, PgConnectOptions.DEFAULT_PROPERTIES );
 	}
 
 	@Test
-	public void testPG_2() {
+	public void testPGWithHostPortUnsupportedProperties() {
+		String url = "jdbc:postgresql://testuser:testpassword@localhost:11111/hreact?prop_1=value_1";
+		SqlConnectOptions connectOptions = verifyURLWithPort( 11111, url, PgConnectOptions.DEFAULT_PROPERTIES );
+		assertThat(connectOptions.getProperties().keySet().contains( "prop1" )).isFalse();
+	}
+
+	@Test
+	public void testPGWithHostPort() {
 		String url = "jdbc:postgresql://localhost:11111/hreact?loggerLevel=OFF&user=testuser&password=testpassword";
 		verifyURLWithPort( 11111, url, PgConnectOptions.DEFAULT_PROPERTIES );
 	}
 
 	@Test
-	public void testPGNoPort() {
+	public void testPGWithUserInfoNoPort() {
 		// DefaultSqlClientPoolConfiguration should check for port and apply a default if none found on URL
 		String url = "jdbc:postgresql://testuser:testpassword@localhost/hreact";
 		verifyURLWithPort( 5432, url, PgConnectOptions.DEFAULT_PROPERTIES );
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testPGInvalidUrl() {
+	public void testPGWithUserInfoInvalidUrl() {
 		String url = "jdbc:postgresql://testuser:testpassword@localhost/hreact%%%%xxxx=yyyyy";
 		verifyURLWithPort( 5432, url, PgConnectOptions.DEFAULT_PROPERTIES );
 	}
 
+	@Test(expected = HibernateException.class)
+	public void testPGWithHostPortNoUser() {
+		// DefaultSqlClientPoolConfiguration should check for username and throw hibernate error of null
+		String url = "jdbc:postgresql://localhost:11111/hreact?loggerLevel=OFF&password=testpassword";
+		verifyURLWithPort( 11111, url, PgConnectOptions.DEFAULT_PROPERTIES );
+	}
+
 	@Test
-	public void testPGUnsupportedProperties() {
+	public void testPGWithUserInfoUnsupportedProperties() {
 		String url = "jdbc:postgresql://testuser:testpassword@localhost/hreact?loggerLevel=OFF";
 		SqlConnectOptions connectOptions = verifyURLWithPort( 5432, url, PgConnectOptions.DEFAULT_PROPERTIES );
 		assertThat(connectOptions.getProperties().keySet().contains( "loggerLevel" )).isFalse();
@@ -175,15 +190,29 @@ public class JdbcUrlParserTest {
 		assertThat( connectOptions.getPassword() ).isEqualTo( "~!HReact!~" );
 	}
 
-	// Example format https://vertx.io/docs/vertx-mysql-client/java/#_configuration
+	// Example format at https://vertx.io/docs/vertx-mysql-client/java/#_configuration
+
 	@Test
-	public void testMYSQL() {
+	public void testMYSQLWithUserInfo() {
+		String url = "jdbc:mysql://testuser:testpassword@localhost:22222/hreact";
+		verifyURLWithPort( 22222, url, MySQLConnectOptions.DEFAULT_CONNECTION_ATTRIBUTES );
+	}
+
+	@Test
+	public void testMYSQLWithUserInfoUnsupportedProperties() {
+		String url = "jdbc:mysql://testuser:testpassword@localhost:22222/hreact?prop_1=value_1";
+		SqlConnectOptions connectOptions = verifyURLWithPort( 22222, url, MySQLConnectOptions.DEFAULT_CONNECTION_ATTRIBUTES );
+		assertThat(connectOptions.getProperties().keySet().contains( "prop_1" )).isFalse();
+	}
+
+	@Test
+	public void testMYSQLWithHostPort() {
 		String url = "jdbc:mysql://localhost:22222/hreact?user=testuser&password=testpassword";
 		verifyURLWithPort( 22222, url, MySQLConnectOptions.DEFAULT_CONNECTION_ATTRIBUTES );
 	}
 
 	@Test
-	public void testMYSQLUnsupportedProperties() {
+	public void testMYSQLWithHostPortUnsupportedProperties() {
 		String url = "jdbc:mysql://localhost:22222/hreact?user=testuser&password=testpassword&prop_1=value_1";
 		SqlConnectOptions connectOptions = verifyURLWithPort( 22222, url, MySQLConnectOptions.DEFAULT_CONNECTION_ATTRIBUTES );
 		assertThat(connectOptions.getProperties().keySet().contains( "prop_1" )).isFalse();
@@ -197,7 +226,7 @@ public class JdbcUrlParserTest {
 	}
 
 	@Test
-	public void testMARIADB() {
+	public void testMARIADBWithUserInfo() {
 		String url = "jdbc:mariadb://localhost:3306/hreact?user=testuser&password=testpassword";
 		verifyURLWithPort( 3306, url, MySQLConnectOptions.DEFAULT_CONNECTION_ATTRIBUTES );
 	}
@@ -209,7 +238,26 @@ public class JdbcUrlParserTest {
 	}
 
 	@Test
-	public void testMARIADBUnsupportedProperties() {
+	public void testMARIADBWithUserInfoUnsupportedProperties() {
+		String url = "jdbc:mariadb://localhost:3306/hreact?user=testuser&password=testpassword&prop_1=value_1";
+		SqlConnectOptions connectOptions = verifyURLWithPort( 3306, url, MySQLConnectOptions.DEFAULT_CONNECTION_ATTRIBUTES );
+		assertThat(connectOptions.getProperties().keySet().contains( "prop_1" )).isFalse();
+	}
+
+	@Test
+	public void testMARIADBWithHostPort() {
+		String url = "jdbc:mariadb://testuser:testpassword@localhost:3306/hreact";
+		verifyURLWithPort( 3306, url, MySQLConnectOptions.DEFAULT_CONNECTION_ATTRIBUTES );
+	}
+
+	@Test
+	public void testMARIADBHostPortNonDefaultPort() {
+		String url = "jdbc:mariadb://testuser:testpassword@localhost:22222/hreact";
+		verifyURLWithPort( 22222, url, MySQLConnectOptions.DEFAULT_CONNECTION_ATTRIBUTES );
+	}
+
+	@Test
+	public void testMARIADBWithHostPortUnsupportedProperties() {
 		String url = "jdbc:mariadb://localhost:3306/hreact?user=testuser&password=testpassword&prop_1=value_1";
 		SqlConnectOptions connectOptions = verifyURLWithPort( 3306, url, MySQLConnectOptions.DEFAULT_CONNECTION_ATTRIBUTES );
 		assertThat(connectOptions.getProperties().keySet().contains( "prop_1" )).isFalse();
@@ -232,16 +280,39 @@ public class JdbcUrlParserTest {
 		assertThat( connectOptions.getPassword() ).isEqualTo( "~!HReact!~" );
 	}
 
-	// Example format https://vertx.io/docs/vertx-mssql-client/java/#_configuration
+	/*
+	 * Example format https://vertx.io/docs/vertx-mssql-client/java/#_configuration
+	 *
+	 * jdbc:sqlserver://[user[:[password]]@]host[:port][/database][?attribute1=value1&attribute2=value2…​]
+	 */
+
 	@Test
-	public void testMSSQL() {
+	public void testMSSQLWithUserInfo() {
 		String url = "jdbc:sqlserver://testuser:testpassword@localhost:33333/hreact";
 		verifyURLWithPort( 33333, url, MSSQLConnectOptions.DEFAULT_PROPERTIES );
 	}
 
 	@Test
-	public void testMSSQLUnsupportedProperties() {
-		String url = "jdbc:sqlserver://testuser:testpassword@localhost:33333/hreact?prop_1=value_1";
+	public void testMSSQLWithUserInfoUnsupportedProperties() {
+		String url = "jdbc:sqlserver://testuser:testpassword@localhost:33333/hreact?prop1=value1";
+		SqlConnectOptions connectOptions = verifyURLWithPort( 33333, url, MSSQLConnectOptions.DEFAULT_PROPERTIES);
+		assertThat(connectOptions.getProperties().keySet().contains( "prop1" )).isFalse();
+	}
+
+	/*
+	 * Example format
+	 * jdbc:sqlserver://[serverName[\instanceName][:portNumber]][;property=value[;property=value]]
+	 */
+
+	@Test
+	public void testMSSQLWithHostPort() {
+		String url = "jdbc:sqlserver://localhost:33333;database=hreact;user=testuser;password=testpassword";
+		verifyURLWithPort( 33333, url, MSSQLConnectOptions.DEFAULT_PROPERTIES );
+	}
+
+	@Test
+	public void testMSSQLWithHostPortUnsupportedProperties() {
+		String url = "jdbc:sqlserver://localhost:33333;database=hreact;user=testuser;password=testpassword;prop_1=value_1";
 		SqlConnectOptions connectOptions = verifyURLWithPort( 33333, url, MSSQLConnectOptions.DEFAULT_PROPERTIES );
 		assertThat(connectOptions.getProperties().keySet().contains( "prop_1" )).isFalse();
 	}
@@ -266,23 +337,36 @@ public class JdbcUrlParserTest {
 		assertThat( connectOptions.getPassword() ).isEqualTo( "~!HReact!~" );
 	}
 
+	@Test(expected = HibernateException.class)
+	public void testMSSQLWithHostPortDuplicatePassword() {
+		String url = "jdbc:sqlserver://testuser:testpassword@localhost:33333/hreact?password=otherpassword&prop1=value1";
+		SqlConnectOptions connectOptions = verifyURLWithPort( 33333, url, MSSQLConnectOptions.DEFAULT_PROPERTIES );
+	}
+
 	// Example format https://vertx.io/docs/vertx-db2-client/java/#_configuration
 	@Test
 	public void testDB2WithUserInfo() {
-		String url = "jdbc:db2://testuser:testpassword@localhost:44444/hreact:prop1=value1;";
+		String url = "jdbc:db2://testuser:testpassword@localhost:44444/hreact";
 		verifyURLWithPort( 44444, url, DB2ConnectOptions.DEFAULT_CONNECTION_ATTRIBUTES );
+	}
+
+	@Test
+	public void testDB2WithUserInfoUnsupportedProperties() {
+		String url = "jdbc:db2://testuser:testpassword@localhost:44444/hreact?prop_1=value_1";
+		SqlConnectOptions connectOptions = verifyURLWithPort( 44444, url, DB2ConnectOptions.DEFAULT_CONNECTION_ATTRIBUTES );
+		assertThat(connectOptions.getProperties().keySet().contains( "prop_1" )).isFalse();
 	}
 
 	@Test
 	public void testDB2WithHostPort() {
 		//jdbc:postgresql://localhost:49219/hreact?loggerLevel=OFF&user=hreact&password=hreact
-		String url = "jdbc:db2://localhost:44444/hreact:user=testuser;password=testpassword;prop1=value1;";
+		String url = "jdbc:db2://localhost:44444/hreact:user=testuser;password=testpassword;";
 		verifyURLWithPort( 44444, url, DB2ConnectOptions.DEFAULT_CONNECTION_ATTRIBUTES );
 	}
 
 	@Test
-	public void testDB2UnsupportedProperties() {
-		String url = "jdbc:db2://testuser:testpassword@localhost:44444/hreact?prop_1=value_1";
+	public void testDB2WithHostPortUnsupportedProperties() {
+		String url = "jdbc:db2://localhost:44444/hreact:user=testuser;password=testpassword;prop1=value1;";
 		SqlConnectOptions connectOptions = verifyURLWithPort( 44444, url, DB2ConnectOptions.DEFAULT_CONNECTION_ATTRIBUTES );
 		assertThat(connectOptions.getProperties().keySet().contains( "prop_1" )).isFalse();
 	}
