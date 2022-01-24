@@ -100,6 +100,9 @@ public interface Log extends BasicLogger {
 	@Message(id = 34, value = "The database returned no natively generated identity value")
 	HibernateException noNativelyGeneratedValueReturned();
 
+	@Message(id = 35, value = "The database can only generate identifiers of type Long")
+	HibernateException nativelyGeneratedValueMustBeLong();
+
 	@Message(id = 356, value = "Wrong entity type!")
 	HibernateException wrongEntityType();
 
