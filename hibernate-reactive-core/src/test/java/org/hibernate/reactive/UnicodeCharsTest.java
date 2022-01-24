@@ -5,21 +5,18 @@
  */
 package org.hibernate.reactive;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
 
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
-
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.*;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 /**
  * Test non ASCII Chars
@@ -35,22 +32,15 @@ public class UnicodeCharsTest extends BaseReactiveTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		final Configuration configuration = super.constructConfiguration();
-		switch ( dbType() ) {
-			case SQLSERVER:
-				configuration.addAnnotatedClass( UnicodeStringMSSQL.class );
-				break;
-			default:
-				configuration.addAnnotatedClass( UnicodeString.class );
-		}
+		configuration.setProperty(AvailableSettings.USE_NATIONALIZED_CHARACTER_DATA, "true");
+		configuration.addAnnotatedClass(UnicodeString.class);
 		return configuration;
 	}
 
 	@Test
 	public void testStringTypeWithUnicode(TestContext context) {
 		final String expected = "\uD83D\uDD02 ﷽ 雲  (͡° ͜ʖ ͡ °) Č";
-		Object original = dbType() == SQLSERVER
-				? new UnicodeStringMSSQL( expected )
-				: new UnicodeString( expected );
+		Object original = new UnicodeString( expected );
 
 		test( context, getSessionFactory()
 				.withTransaction( s -> s.persist( original ) )
@@ -77,25 +67,5 @@ public class UnicodeCharsTest extends BaseReactiveTest {
 			this.unicodeString = unicodeString;
 		}
 
-	}
-
-	@Entity(name = "UnicodeString")
-	@Table(name = "UnicodeString")
-	private static class UnicodeStringMSSQL {
-
-		@Id
-		@GeneratedValue
-		public Integer id;
-
-		// The default column type won't work with Sql Server
-		@Column(columnDefinition = "nvarchar(40)")
-		public String unicodeString;
-
-		public UnicodeStringMSSQL() {
-		}
-
-		public UnicodeStringMSSQL(String unicodeString) {
-			this.unicodeString = unicodeString;
-		}
 	}
 }
