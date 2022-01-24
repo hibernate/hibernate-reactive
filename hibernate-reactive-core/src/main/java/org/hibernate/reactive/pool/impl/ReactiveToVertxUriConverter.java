@@ -31,6 +31,13 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 public class ReactiveToVertxUriConverter {
 	private static final Log log = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
+	public static int DEFAULT_PORT_PG = 5432;
+	public static int DEFAULT_PORT_MYSQL = 3306;
+	public static int DEFAULT_PORT_MARIADB = 3306;
+	public static int DEFAULT_PORT_MSSQL = 1433;
+	public static int DEFAULT_PORT_COCKROACHDB = 26257;
+	public static int DEFAULT_PORT_DB2 = 50000;
+
 	static public URI convertUriToVertx(URI uri) {
 		String scheme = uri.getScheme();
 		String path = uri.getPath();
@@ -41,9 +48,10 @@ public class ReactiveToVertxUriConverter {
 
 		if ( scheme.equals( "db2" ) && database.indexOf( ':' ) > 0 ) {
 			return convertUriToVertxIfDb2( uri );
-		}
-		else if ( scheme.equals( "sqlserver" ) ) {
+		} else if ( scheme.equals( "sqlserver" ) ) {
 			return convertUriToVertxIfSqlServer( uri );
+		} else if( scheme.equals( "cockroachdb" ) ) {
+			return convertUriToVertxIfCockroachDB( uri );
 		}
 
 		return uri;
@@ -72,8 +80,9 @@ public class ReactiveToVertxUriConverter {
 		String host = uri.getHost();
 		int port = uri.getPort();
 
+		// port may be empty. Check and set default port if necessary based on scheme
 		if ( port == -1 ) {
-			port = 50000;
+			port = defaultPort( scheme );;
 		}
 
 		//see if the credentials were specified via properties
@@ -132,7 +141,7 @@ public class ReactiveToVertxUriConverter {
 		}
 
 		if ( port == -1 ) {
-			port = 1433;
+			port = defaultPort( scheme );
 		}
 
 		//see if the credentials were specified via properties
@@ -168,6 +177,66 @@ public class ReactiveToVertxUriConverter {
 		}
 		// build new URI string like ===>>  sqlserver://localhost:44444/hreact?user=hreact&password=hreact
 		return rebuildURI( "sqlserver", host, port, database, extraProperties );
+	}
+
+	/**
+	 * Replace the JDBC URI for CockroachDB to the one accepted by the Vert.x reactive client
+	 *
+	 */
+	static public URI convertUriToVertxIfCockroachDB(URI uri) {
+		String scheme = uri.getScheme();
+		String path = uri.getPath();
+
+		String database = path.length() > 0
+				? path.substring( 1 )
+				: "";
+
+		String host = uri.getHost();
+		int port = uri.getPort();
+
+		// port may be empty. Check and set default port if necessary based on scheme
+		if ( port == -1 ) {
+			port = defaultPort( scheme );
+		}
+
+		// now set scheme() to postgres
+		scheme = "postgres";
+
+		if ( database.indexOf( ':' ) > 0 ) {
+			database = database.substring( 0, database.indexOf( ':' ) );
+		}
+
+		String userInfo = uri.getUserInfo();
+		String username = null;
+		String password = null;
+		if (userInfo!=null) {
+			String[] bits = userInfo.split(":");
+			username = bits[0];
+			if (bits.length>1) {
+				password = bits[1];
+			}
+		}
+
+		String[] params = {};
+		String s = uri.toString();
+		String query = uri.getQuery();
+		if ( query != null ) {
+			int queryIndex = s.indexOf( '?' ) + 1;
+			if ( queryIndex > 0 ) {
+				params = s.substring( queryIndex ).split( "&" );
+			}
+		}
+		//see if the credentials were specified via properties
+		Map<String, String> extraProperties = new HashMap<>();
+
+		String databaseAsProperty = parseProperties( uri, params, extraProperties );
+
+		// Database may be set as property, so check if NULL then set
+		if ( ( database == null || database.length() == 0 ) && databaseAsProperty != null ) {
+			database = databaseAsProperty;
+		}
+		// build new URI string like ===>>  sqlserver://localhost:44444/hreact?user=hreact&password=hreact
+		return rebuildURI( "postgres", host, port, database, extraProperties );
 	}
 
 	private static String parseProperties(URI uri, String[] params, Map<String, String> extraProperties) {
@@ -241,4 +310,27 @@ public class ReactiveToVertxUriConverter {
 	public static boolean uriContains(String value, String uri) {
 		return uri.contains( value );
 	}
+
+
+
+
+	public static int defaultPort(String scheme) {
+		switch ( scheme ) {
+			case "postgresql":
+			case "postgres":
+				return DEFAULT_PORT_PG;
+			case "mariadb":
+			case "mysql":
+				return DEFAULT_PORT_MYSQL;
+			case "db2":
+				return DEFAULT_PORT_DB2;
+			case "cockroachdb":
+				return DEFAULT_PORT_COCKROACHDB;
+			case "sqlserver":
+				return DEFAULT_PORT_MSSQL;
+			default:
+				throw new IllegalArgumentException( "Unknown default port for scheme: " + scheme );
+		}
+	}
+
 }

@@ -200,7 +200,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 	protected URI jdbcUrl(Map<?,?> configurationValues) {
 		String url = ConfigurationHelper.getString( Settings.URL, configurationValues );
 		LOG.sqlClientUrl( url);
-		return parse( url );
+		return parse( url, true );
 	}
 
 	/**
@@ -239,6 +239,10 @@ public class DefaultSqlClientPool extends SqlClientPool
 	}
 
 	public static URI parse(String url) {
+		return parse( url, true );
+	}
+
+	public static URI parse(String url, boolean checkDbType) {
 
 		if ( url == null || url.trim().isEmpty() ) {
 			throw new HibernateError( "The configuration property '" + Settings.URL + "' was not provided, or is in invalid format. This is required when using the default DefaultSqlClientPool: " +
@@ -246,10 +250,17 @@ public class DefaultSqlClientPool extends SqlClientPool
 		}
 
 		if ( url.startsWith( "jdbc:" ) ) {
-			return URI.create( updateUrl( url.substring( 5 ) ) );
+			if( checkDbType ) {
+				return URI.create( updateUrl( url.substring( 5 ) ) );
+			}
+			return URI.create( url.substring( 5 ) );
 		}
 
-		return URI.create( updateUrl( url ) );
+		if( checkDbType ) {
+			return URI.create( updateUrl( url ) );
+		}
+
+		return URI.create( url );
 	}
 
 	private static String updateUrl(String url) {

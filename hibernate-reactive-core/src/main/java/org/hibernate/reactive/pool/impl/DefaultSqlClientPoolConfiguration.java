@@ -90,7 +90,6 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
     @Override
     public SqlConnectOptions connectOptions(URI uri) {
         SqlConnectOptions connectOptions;
-        String originalScheme = uri.getScheme();
         URI convertedURI = ReactiveToVertxUriConverter.convertUriToVertx( uri );
 
         // if scheme is unsupported then vertx will throw an error
@@ -118,13 +117,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
         // password property can be overridden. Check and override if necessary
         if ( pass != null ) {
-            connectOptions.setPassword( user );
-        }
-
-        // port may be empty. Check and set default port if necessary based on scheme
-        if ( connectOptions.getPort() == -1 ||
-                ( originalScheme.equalsIgnoreCase( "cockroachdb" ) && connectOptions.getPort() == 5432 ) ) {
-            connectOptions.setPort( defaultPort( originalScheme ) );
+            connectOptions.setPassword( pass );
         }
 
         //enable the prepared statement cache by default
@@ -149,24 +142,4 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
         return connectOptions;
     }
-
-    private int defaultPort(String scheme) {
-        switch ( scheme ) {
-            case "postgresql":
-            case "postgres":
-                return 5432;
-            case "mariadb":
-            case "mysql":
-                return 3306;
-            case "db2":
-                return 50000;
-            case "cockroachdb":
-                return 26257;
-            case "sqlserver":
-                return 1433;
-            default:
-                throw new IllegalArgumentException( "Unknown default port for scheme: " + scheme );
-        }
-    }
-
 }
