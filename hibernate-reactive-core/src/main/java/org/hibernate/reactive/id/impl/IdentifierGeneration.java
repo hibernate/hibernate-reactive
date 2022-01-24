@@ -27,6 +27,7 @@ import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.IntegerType;
 import org.hibernate.type.LongType;
 import org.hibernate.type.ShortType;
+import org.hibernate.type.StringType;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
@@ -176,6 +177,9 @@ public class IdentifierGeneration {
 			else if ( identifierType == ShortType.INSTANCE ) {
 				validateMaxValue( persister, longId, Short.MAX_VALUE );
 				return longId.shortValue();
+			}
+			else if ( identifierType == StringType.INSTANCE ) {
+				return longId.toString();
 			}
 			else {
 				throw LOG.cannotGenerateIdentifiersOfType(identifierType.getReturnedClass().getSimpleName(),persister.getEntityName() );
