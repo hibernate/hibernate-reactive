@@ -389,11 +389,17 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			delegate().dehydrate( null, fields, notNull, insertable, 0, insert, session, false );
 		} );
 
+		Class<?> idClass = delegate().getIdentifierType().getReturnedClass();
+		if ( idClass.equals(Integer.class) || idClass.equals(Short.class) ) {
+			// since on MySQL we can only retrieve Long values, adjust to Long
+			// id will be cast back to the right type by castToIdentifierType()
+			idClass = Long.class;
+		}
 		return getReactiveConnection( session )
 				//Note: in ORM core there are other ways to fetch the generated identity:
 				//      getGeneratedKeys(), or an extra round select statement. But we
 				//      don't need these extra options.
-				.insertAndSelectIdentifier( sql, params )
+				.insertAndSelectIdentifier( sql, params, idClass )
 				.thenApply( generatedId -> {
 					log.debugf( "Natively generated identity: %s", generatedId );
 					if ( generatedId == null ) {
@@ -517,7 +523,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		OptimisticLockStyle optimisticLockStyle =
 				delegate().getEntityMetamodel().getOptimisticLockStyle();
 		return optimisticLockStyle == OptimisticLockStyle.DIRTY
-				|| optimisticLockStyle == OptimisticLockStyle.ALL;
+			|| optimisticLockStyle == OptimisticLockStyle.ALL;
 	}
 
 	default String[] generateDynamicSQLDeleteStrings(Object[] loadedState) {
@@ -754,18 +760,18 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Object owner,
 			SharedSessionContractImplementor session,
 			InMemoryValueGenerationStrategy valueGenerationStrategy) {
-		final ValueGenerator valueGenerator = valueGenerationStrategy.getValueGenerator();
+		final ValueGenerator<?> valueGenerator = valueGenerationStrategy.getValueGenerator();
 		if ( valueGenerator instanceof StageValueGenerator ) {
 			final StageSessionFactoryImpl stageFactory = new StageSessionFactoryImpl( (SessionFactoryImpl) session.getFactory() );
 			final Stage.Session stageSession = new StageSessionImpl( (ReactiveSession) session, stageFactory );
-			return ( (StageValueGenerator) valueGenerator )
+			return ( (StageValueGenerator<?>) valueGenerator )
 					.generateValue( stageSession, owner );
 		}
 
 		if ( valueGenerator instanceof MutinyValueGenerator ) {
 			MutinySessionFactoryImpl mutinyFactory = new MutinySessionFactoryImpl( (SessionFactoryImpl) session.getFactory() );
 			Mutiny.Session mutinySession = new MutinySessionImpl( (ReactiveSession) session, mutinyFactory );
-			return ( (MutinyValueGenerator) valueGenerator ).generateValue( mutinySession, owner )
+			return ( (MutinyValueGenerator<?>) valueGenerator ).generateValue( mutinySession, owner )
 					.subscribeAsCompletionStage();
 		}
 

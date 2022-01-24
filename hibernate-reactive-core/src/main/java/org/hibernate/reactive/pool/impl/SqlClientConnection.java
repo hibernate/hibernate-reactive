@@ -82,18 +82,18 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	@Override
-	public CompletionStage<Long> insertAndSelectIdentifier(String sql, Object[] paramValues) {
+	public <T> CompletionStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
 		translateNulls( paramValues );
-		return insertAndSelectIdentifier( sql, Tuple.wrap( paramValues ) );
+		return insertAndSelectIdentifier( sql, Tuple.wrap( paramValues ) , idClass);
 	}
 
 	@Override
-	public CompletionStage<Long> selectIdentifier(String sql, Object[] paramValues) {
+	public <T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
 		translateNulls( paramValues );
 		return preparedQuery( sql, Tuple.wrap( paramValues ) )
 				.thenApply( rowSet -> {
 					for (Row row: rowSet) {
-						return row.getLong(0);
+						return row.get(idClass, 0);
 					}
 					return null;
 				} );
@@ -169,13 +169,13 @@ public class SqlClientConnection implements ReactiveConnection {
 		});
 	}
 
-	public CompletionStage<Long> insertAndSelectIdentifier(String sql, Tuple parameters) {
+	public <T> CompletionStage<T> insertAndSelectIdentifier(String sql, Tuple parameters, Class<T> idClass) {
 		return preparedQuery( sql, parameters )
 				.thenApply( rows -> {
 					RowIterator<Row> iterator = rows.iterator();
-					return iterator.hasNext() ?
-							iterator.next().getLong(0) :
-							getLastInsertedId(rows);
+					return iterator.hasNext()
+							? iterator.next().get(idClass, 0)
+							: getLastInsertedId(rows, idClass);
 				} );
 	}
 
@@ -241,8 +241,14 @@ public class SqlClientConnection implements ReactiveConnection {
 		return connection.close().toCompletionStage();
 	}
 
-	private static Long getLastInsertedId(RowSet<Row> rows) {
-		return rows.property(mySqlLastInsertedId);
+	@SuppressWarnings("unchecked")
+	private static <T> T getLastInsertedId(RowSet<Row> rows, Class<T> idClass) {
+		if ( Long.class.equals(idClass) ) {
+			return (T) rows.property(mySqlLastInsertedId);
+		}
+		else {
+			throw LOG.nativelyGeneratedValueMustBeLong();
+		}
     }
 
 	private static class RowSetResult implements Result {

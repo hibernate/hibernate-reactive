@@ -148,10 +148,10 @@ public class BatchingConnection implements ReactiveConnection {
 				delegate.update( sql, paramValues );
 	}
 
-	public CompletionStage<Long> insertAndSelectIdentifier(String sql, Object[] paramValues) {
+	public <T> CompletionStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
 		return hasBatch() ?
-				executeBatch().thenCompose( v -> delegate.insertAndSelectIdentifier( sql, paramValues ) ) :
-				delegate.insertAndSelectIdentifier( sql, paramValues );
+				executeBatch().thenCompose( v -> delegate.insertAndSelectIdentifier( sql, paramValues, idClass ) ) :
+				delegate.insertAndSelectIdentifier( sql, paramValues, idClass );
 	}
 
 	public CompletionStage<ReactiveConnection.Result> select(String sql) {
@@ -177,12 +177,12 @@ public class BatchingConnection implements ReactiveConnection {
 		return delegate.selectJdbcOutsideTransaction( sql, paramValues );
 	}
 
-	public CompletionStage<Long> selectIdentifier(String sql, Object[] paramValues) {
+	public <T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
 		// Do not want to execute the batch here
 		// because we want to be able to select
 		// multiple ids before sending off a batch
 		// of insert statements
-		return delegate.selectIdentifier( sql, paramValues );
+		return delegate.selectIdentifier( sql, paramValues, idClass );
 	}
 
 	public CompletionStage<Void> beginTransaction() {
