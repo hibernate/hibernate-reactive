@@ -749,12 +749,12 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public String getNString(int columnIndex) {
-		throw new UnsupportedOperationException();
+		return getString(columnIndex);
 	}
 
 	@Override
 	public String getNString(String columnLabel) {
-		throw new UnsupportedOperationException();
+		return getString(columnLabel);
 	}
 
 	@Override

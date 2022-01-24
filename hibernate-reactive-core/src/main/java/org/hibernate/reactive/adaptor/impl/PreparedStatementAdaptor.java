@@ -268,7 +268,7 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setNString(int parameterIndex, String value) {
-		throw new UnsupportedOperationException();
+		setString( parameterIndex, value );
 	}
 
 	@Override
