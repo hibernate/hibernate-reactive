@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import javax.persistence.Table;
 
 import org.hibernate.cfg.AvailableSettings;
@@ -20,14 +22,13 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-
 /**
  * Test importing a SQL script which is using the multi-line format
  */
 public class MultilineImportsTest extends BaseReactiveTest {
 
 	private static CompletionStage<List<Object>> runQuery(Stage.Session s) {
-		return s.createQuery( "from Hero h where h.name = :name" )
+		return s.createQuery( "from Hero h where h.heroName = :name" )
 				.setParameter( "name", "Galadriel" )
 				.getResultList();
 	}
@@ -58,16 +59,16 @@ public class MultilineImportsTest extends BaseReactiveTest {
 	@Table(name = "hero")
 	public static class Hero {
 
-		@javax.persistence.Id
-		@javax.persistence.GeneratedValue
-		public java.lang.Long id;
+		@Id
+		@GeneratedValue
+		public Integer id;
 
 		@Column(unique = true)
-		public String name;
+		public String heroName;
 
 		public String otherName;
 
-		public int level;
+		public int powerLevel;
 
 		public String picture;
 

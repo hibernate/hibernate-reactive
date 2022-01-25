@@ -170,7 +170,7 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 
 	@Test
 	public void testDateType(TestContext context) {
-		testDatatype( context, "date", Date.class );
+		testDatatype( context, "someDate", Date.class );
 	}
 
 	@Test
