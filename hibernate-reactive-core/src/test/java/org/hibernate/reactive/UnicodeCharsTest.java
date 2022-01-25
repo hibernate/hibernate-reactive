@@ -10,13 +10,15 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-
-import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+
+import static org.hibernate.cfg.AvailableSettings.USE_NATIONALIZED_CHARACTER_DATA;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 /**
  * Test non ASCII Chars
@@ -25,15 +27,14 @@ import io.vertx.ext.unit.TestContext;
  *     The default type won't work, so we need a different entity with a column
  *     definition.
  * </p>
- *
  */
 public class UnicodeCharsTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {
 		final Configuration configuration = super.constructConfiguration();
-		configuration.setProperty(AvailableSettings.USE_NATIONALIZED_CHARACTER_DATA, "true");
-		configuration.addAnnotatedClass(UnicodeString.class);
+		configuration.getProperties().put( USE_NATIONALIZED_CHARACTER_DATA, dbType() != MARIA );
+		configuration.addAnnotatedClass( UnicodeString.class );
 		return configuration;
 	}
 
