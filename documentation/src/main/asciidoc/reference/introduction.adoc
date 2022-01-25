@@ -271,6 +271,21 @@ TIP: Writing your own `PhysicalNamingStrategy` is an especially good
 way to reduce the clutter of annotations on your entity classes, and
 we think you should do it for any nontrivial data model.
 
+=== Nationalized character data in SQL Server
+
+_By default,_ SQL Server's `char` and `varchar` types don't accommodate
+Unicode data. So, if you're working with SQL Server, you might need to
+force Hibernate to use the `nchar` and `nvarchar` types.
+
+|===
+| Configuration property name                 | Purpose
+
+| `hibernate.use_nationalized_character_data` | Use `nchar` and `nvarchar` instead of `char` and `varchar`
+|===
+
+TIP: Alternatively, you can configure SQL Server to use the UTF-8 enabled
+collation `_UTF8`.
+
 == Writing the Java code
 
 With that out of the way, we're all set to write some Java code!
@@ -425,6 +440,8 @@ These Hibernate annotations are also quite useful to know about:
 | `@SqlInsert`, `@SqlUpdate`, `@SqlDelete` | Specify custom DML for entity operations
 | `@NaturalId`                             | Marks a field or fields as an alternative "natural"
                                              identifier (unique key) of the entity
+| `@Nationalized`                          | Use `nchar`, `nvarchar`, or `nclob` selectively
+                                             for one particular column.
 |===
 
 ==== Bean Validation annotations
@@ -1176,7 +1193,7 @@ Finally, for more advanced cases, you can write your own code to configure
 the Vert.x client by implementing `SqlClientPoolConfiguration`.
 
 |===
-| Configuration property name      | Purpose
+| Configuration property name                | Purpose
 
 | `hibernate.vertx.pool.configuration_class` | A class implementing `SqlClientPoolConfiguration`
 |===
@@ -1191,9 +1208,9 @@ deletes against the same table in a single transaction.
 All you need to do is set a single property:
 
 |===
-| Configuration property name                                         | Purpose
+| Configuration property name | Purpose
 
-| `hibernate.jdbc.batch_size`                                         | Maximum batch size for SQL statement batching
+| `hibernate.jdbc.batch_size` | Maximum batch size for SQL statement batching
 |===
 
 (Again, this property has `jdbc` in its name, but Hibernate Reactive
