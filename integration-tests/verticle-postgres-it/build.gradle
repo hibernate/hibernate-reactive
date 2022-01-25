@@ -84,6 +84,8 @@ tasks.addRule( "Pattern testDb<id>" ) { String taskName ->
             def dbName = taskName.substring( "testDb".length() )
             description = "Run tests for ${dbName}"
 
+            // We only want to test this on Postgres
+            onlyIf { dbName.toLowerCase().startsWith( 'p' ) }
             afterSuite { desc, result ->
                 loggingSummary( dbName, result, desc )
             }
