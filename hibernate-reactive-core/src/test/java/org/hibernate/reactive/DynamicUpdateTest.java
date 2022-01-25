@@ -15,6 +15,7 @@ import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
 import javax.persistence.Basic;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -69,8 +70,10 @@ public class DynamicUpdateTest extends BaseReactiveTest {
 		@Id
 		long id;
 		@Basic(optional = false)
+		@Column(name = "`text`")
 		String text;
 		String moreText;
+		@Column(name = "`number`")
 		Double number;
 		String evenMoreText;
 	}

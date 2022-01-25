@@ -13,6 +13,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 import javax.persistence.Entity;
@@ -168,6 +169,7 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 	@Embeddable
 	public static class Phone {
 
+		@Column(name = "`number`")
 		private String number;
 
 		private String country;
