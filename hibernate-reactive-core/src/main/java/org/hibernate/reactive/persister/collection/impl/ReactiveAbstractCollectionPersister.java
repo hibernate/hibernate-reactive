@@ -184,7 +184,7 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
 
             if ( LOG.isDebugEnabled() ) {
                 LOG.debugf(
-                        "Updating rows of collection: %s#%s",
+                        "Updating rows of collection: %s",
                         collectionInfoString( this, collection, id, session )
                 );
             }
