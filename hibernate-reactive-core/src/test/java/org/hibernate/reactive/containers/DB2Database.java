@@ -83,11 +83,12 @@ class DB2Database implements TestableDatabase {
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
 	static final Db2Container db2 = new Db2Container( IMAGE_NAME )
-		      .withUsername(DatabaseConfiguration.USERNAME)
-		      .withPassword(DatabaseConfiguration.PASSWORD)
-		      .withDatabaseName(DatabaseConfiguration.DB_NAME)
-		      .acceptLicense()
-		      .withReuse(true);
+			.withUsername( DatabaseConfiguration.USERNAME )
+			.withPassword( DatabaseConfiguration.PASSWORD )
+			.withDatabaseName( DatabaseConfiguration.DB_NAME )
+			.withLogConsumer( of -> System.out.println( of.getUtf8String() ) )
+			.acceptLicense()
+			.withReuse( true );
 
 	private String getRegularJdbcUrl() {
 		return "jdbc:db2://localhost:50000/" + db2.getDatabaseName();
