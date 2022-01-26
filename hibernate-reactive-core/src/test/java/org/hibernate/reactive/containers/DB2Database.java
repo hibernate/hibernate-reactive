@@ -34,7 +34,7 @@ class DB2Database implements TestableDatabase {
 
 	public static DB2Database INSTANCE = new DB2Database();
 
-	public static final String IMAGE_NAME = "ibmcom/db2:11.5.5.1";
+	public static final String IMAGE_NAME = "ibmcom/db2:11.5.7.0";
 
 	public static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
 
