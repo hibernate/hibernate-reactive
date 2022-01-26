@@ -17,8 +17,6 @@ import org.junit.Test;
 import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.cfg.AvailableSettings.USE_NATIONALIZED_CHARACTER_DATA;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 /**
  * Test non ASCII Chars
@@ -33,14 +31,14 @@ public class UnicodeCharsTest extends BaseReactiveTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		final Configuration configuration = super.constructConfiguration();
-		configuration.getProperties().put( USE_NATIONALIZED_CHARACTER_DATA, dbType() != MARIA );
+		configuration.getProperties().put( USE_NATIONALIZED_CHARACTER_DATA, true );
 		configuration.addAnnotatedClass( UnicodeString.class );
 		return configuration;
 	}
 
 	@Test
 	public void testStringTypeWithUnicode(TestContext context) {
-		final String expected = "\uD83D\uDD02 ﷽ 雲  (͡° ͜ʖ ͡ °) Č";
+		final String expected = "﷽ 雲  (͡° ͜ʖ ͡ °) Č";
 		Object original = new UnicodeString( expected );
 
 		test( context, getSessionFactory()
