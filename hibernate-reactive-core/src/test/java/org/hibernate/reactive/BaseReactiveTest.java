@@ -32,7 +32,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 import io.smallrye.mutiny.Uni;
@@ -67,8 +66,8 @@ public abstract class BaseReactiveTest {
 
 	public static SessionFactoryManager factoryManager = new SessionFactoryManager();
 
-	@Rule
-	public Timeout rule = Timeout.seconds( 5 * 60 );
+	@ClassRule
+	public static Timeout rule = Timeout.seconds( 10 * 60 );
 
 	@ClassRule
 	public static RunTestOnContext vertxContextRule = new RunTestOnContext( () -> {
