@@ -88,8 +88,7 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 
 	@Test
 	public void testInsertQuery(TestContext context) {
-		Flour chestnut = new Flour( 777, "Chetnut", "The orginal ingredient for polenta", "gluten-free" );
-		String updatedDescription =  "Most rye breads use a mix of rye and wheat flours";
+		Flour chestnut = new Flour( 777, "Chestnut", "The original ingredient for polenta", "gluten-free" );
 		StringBuilder insertQueryBuilder = new StringBuilder( "insert into Flour(id, name, description, type) select " );
 		insertQueryBuilder.append( chestnut.getId() ).append( ", " );
 		insertQueryBuilder.append( "'" ).append( chestnut.getName() ).append( "', " );
@@ -104,8 +103,8 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 							context.assertNotNull( qr );
 							return qr.executeUpdate();
 						} )
-						.thenAccept( resultCount -> context.assertEquals( 1, resultCount ))
-						// Check if it's really be inserted
+						.thenAccept( resultCount -> context.assertEquals( 1, resultCount ) )
+						// Check if it's really been inserted
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Flour.class, chestnut.getId() ) )
 						.thenAccept( result -> context.assertEquals( chestnut, result ) )
@@ -125,7 +124,7 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 							context.assertNotNull( qr );
 							return qr.executeUpdate();
 						} )
-						.thenAccept( resoultCount -> context.assertEquals( 1, resoultCount ) )
+						.thenAccept( resultCount -> context.assertEquals( 1, resultCount ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Flour.class, rye.getId() ) )
 						.thenAccept( context::assertNull )
