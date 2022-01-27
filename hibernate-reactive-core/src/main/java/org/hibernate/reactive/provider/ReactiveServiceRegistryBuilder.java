@@ -41,8 +41,7 @@ import java.util.Map;
  */
 public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistryBuilder {
 
-    @SuppressWarnings("rawtypes")
-    private final Map settings;
+    private final Map<Object,Object> settings;
 
     @SuppressWarnings("rawtypes")
     private final List<StandardServiceInitiator> initiators;
@@ -101,9 +100,9 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
      *
      * @see #forJpa
      */
-    protected ReactiveServiceRegistryBuilder(
+    ReactiveServiceRegistryBuilder(
             BootstrapServiceRegistry bootstrapServiceRegistry,
-            Map settings,
+            Map<Object,Object> settings,
             LoadedConfig loadedConfig) {
         this.bootstrapServiceRegistry = bootstrapServiceRegistry;
         this.configLoader = new ConfigLoader( bootstrapServiceRegistry );
@@ -117,9 +116,9 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
      * this class which need to override the standard ServiceInitiator list.
      * Consider this an SPI.
      */
-    protected ReactiveServiceRegistryBuilder(
+    ReactiveServiceRegistryBuilder(
             BootstrapServiceRegistry bootstrapServiceRegistry,
-            Map settings,
+            Map<Object,Object> settings,
             LoadedConfig loadedConfig,
             @SuppressWarnings("rawtypes")
             List<StandardServiceInitiator> initiators) {
@@ -156,7 +155,6 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
         return aggregatedCfgXml;
     }
 
-    @SuppressWarnings("unused")
     public BootstrapServiceRegistry getBootstrapServiceRegistry() {
         return bootstrapServiceRegistry;
     }
@@ -174,7 +172,6 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
      * @see #configure()
      * @see #configure(String)
      */
-    @SuppressWarnings({"unchecked"})
     public StandardServiceRegistryBuilder loadProperties(String resourceName) {
         settings.putAll( configLoader.loadProperties( resourceName ) );
         return this;
@@ -193,7 +190,6 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
      * @see #configure()
      * @see #configure(String)
      */
-    @SuppressWarnings({"unchecked"})
     public StandardServiceRegistryBuilder loadProperties(File file) {
         settings.putAll( configLoader.loadProperties( file ) );
         return this;
@@ -231,7 +227,6 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
         return configure( configLoader.loadConfigXmlUrl( url ) );
     }
 
-    @SuppressWarnings({"unchecked"})
     public StandardServiceRegistryBuilder configure(LoadedConfig loadedConfig) {
         aggregatedCfgXml.merge( loadedConfig );
         settings.putAll( loadedConfig.getConfigurationValues() );
@@ -247,7 +242,6 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
      *
      * @return this, for method chaining
      */
-    @SuppressWarnings({"unchecked", "UnusedDeclaration"})
     public StandardServiceRegistryBuilder applySetting(String settingName, Object value) {
         settings.put( settingName, value );
         return this;
@@ -260,7 +254,6 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
      *
      * @return this, for method chaining
      */
-    @SuppressWarnings({"unchecked", "UnusedDeclaration"})
     public StandardServiceRegistryBuilder applySettings(Map settings) {
         this.settings.putAll( settings );
         return this;
@@ -277,7 +270,6 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
      *
      * @return this, for method chaining
      */
-    @SuppressWarnings({"UnusedDeclaration"})
     public StandardServiceRegistryBuilder addInitiator(StandardServiceInitiator initiator) {
         initiators.add( initiator );
         return this;
@@ -293,7 +285,7 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     public StandardServiceRegistryBuilder addService(final Class serviceRole, final Service service) {
-        providedServices.add( new ProvidedService( serviceRole, service ) );
+        providedServices.add( new ProvidedService<>( serviceRole, service ) );
         return this;
     }
 
@@ -331,13 +323,11 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
      *
      * @return The StandardServiceRegistry.
      */
-    @SuppressWarnings("unchecked")
     public StandardServiceRegistry build() {
         applyServiceContributingIntegrators();
         applyServiceContributors();
 
-        @SuppressWarnings("rawtypes")
-        final Map settingsCopy = new HashMap( settings );
+        final Map<Object,Object> settingsCopy = new HashMap<>( settings );
         settingsCopy.put( org.hibernate.boot.cfgxml.spi.CfgXmlAccessService.LOADED_CONFIG_KEY, aggregatedCfgXml );
         ConfigurationHelper.resolvePlaceHolders( settingsCopy );
 
