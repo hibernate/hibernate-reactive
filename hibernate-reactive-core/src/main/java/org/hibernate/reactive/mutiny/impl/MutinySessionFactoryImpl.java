@@ -30,6 +30,7 @@ import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 import org.hibernate.service.ServiceRegistry;
 
 import io.smallrye.mutiny.Uni;
+import org.hibernate.stat.Statistics;
 
 import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
 
@@ -270,6 +271,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	@Override
 	public Cache getCache() {
 		return delegate.getCache();
+	}
+
+	@Override
+	public Statistics getStatistics() {
+		return delegate.getStatistics();
 	}
 
 	@Override
