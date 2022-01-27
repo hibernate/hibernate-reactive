@@ -91,7 +91,9 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 	@Override
 	public SqlConnectOptions connectOptions(URI uri) {
 		String scheme = uri.getScheme();
-		String path = uri.getPath();
+		String path = scheme.equals( "oracle" )
+				? oraclePath( uri )
+				: uri.getPath();
 
 		String database = path.length() > 0
 				? path.substring( 1 )
@@ -103,8 +105,14 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 			database = database.substring( 0, database.indexOf( ':' ) );
 		}
 
-		String host = uri.getHost();
-		int port = uri.getPort();
+		String host = scheme.equals( "oracle" )
+				? oracleHost( uri )
+				: uri.getHost();
+
+		int port = scheme.equals( "oracle" )
+				? oraclePort( uri )
+				: uri.getPort();
+
 		int index = uri.toString().indexOf( ';' );
 		if ( scheme.equals( "sqlserver" ) && index > 0 ) {
 			// SQL Server separates parameters in the url with a semicolon (';')
@@ -156,9 +164,11 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 					}
 				}
 				else {
-					final String query = uri.getQuery();
+					final String query = scheme.equals( "oracle" )
+							? oracleQuery( uri )
+							: uri.getQuery();
 					if ( query != null ) {
-						params = uri.getQuery().split( "&" );
+						params = query.split( "&" );
 					}
 				}
 				for ( String param : params ) {
@@ -216,6 +226,66 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 		return connectOptions;
 	}
 
+	private int oraclePort(URI uri) {
+		String s = uri.toString().substring( "oracle:thin:".length() );
+		if ( s.indexOf( ':' ) > -1 ) {
+			// Example: localhost:1234...
+			s = s.substring( s.indexOf( ':' ) + 1 );
+			if ( s.indexOf( '/' ) != -1 ) {
+				// Example: 1234/
+				s = s.substring( 0, s.indexOf( '/' ) );
+				return Integer.valueOf( s );
+			}
+			if ( s.indexOf( '?' ) != -1 ) {
+				// Example: 1234?param=value
+				s = s.substring( 0, s.indexOf( '?' ) );
+				return Integer.valueOf( s );
+			}
+			// Example: 1234
+			return Integer.valueOf( s );
+		}
+		return -1;
+	}
+
+	// For Oracle the host part starts with a '@'
+	// Example oracle:thin:[username/password]@localhost:1234/database?param=value
+	private String oracleHost(URI uri) {
+		String s = uri.toString();
+		String host = s.substring( s.indexOf( '@' ) + 1 );
+		int end = host.indexOf( ':' );
+		if ( end == -1 ) {
+			end = host.indexOf( '/' );
+			if ( end == -1) {
+				end = host.indexOf( '?' );
+			}
+		}
+		return host.substring( 0, end );
+	}
+
+	private String oracleQuery(URI uri) {
+		String string = uri.toString();
+		int start = string.indexOf( '?' );
+		return start == -1
+				? null
+				: string.substring( start + 1 );
+	}
+
+	private String oraclePath(URI uri) {
+		String string = uri.toString();
+		// Remove everything before localhost:port
+		final int i = string.indexOf( '@' );
+		string = string.substring( i + 1 );
+		// Check the start of the path
+		int start = string.indexOf( '/' );
+		if ( start == -1) {
+			return "";
+		}
+		int end = string.indexOf( '?' ) == -1
+				? string.length()
+				: string.indexOf( '?' );
+		return string.substring( start, end );
+	}
+
 	private int defaultPort(String scheme) {
 		switch ( scheme ) {
 			case "postgresql":
@@ -230,6 +300,8 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 				return 26257;
 			case "sqlserver":
 				return 1433;
+			case "oracle":
+				return 1521;
 			default:
 				throw new IllegalArgumentException( "Unknown default port for scheme: " + scheme );
 		}

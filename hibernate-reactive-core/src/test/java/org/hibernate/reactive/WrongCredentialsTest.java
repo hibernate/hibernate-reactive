@@ -59,8 +59,10 @@ public class WrongCredentialsTest extends BaseReactiveTest {
 		// MySQL and PostgreSQL will contain the invalid credential value
 		// Cockroach will be lower case version of the wrong user
 		// Db2 will just state it
-		return msg.toLowerCase().contains( BOGUS_USER.toLowerCase() ) ||
-				msg.contains( "Invalid credentials");
+		return msg.toLowerCase().contains( BOGUS_USER.toLowerCase() )
+				|| msg.contains( "Invalid credentials")
+				// Oracle invalid username/password code
+				|| msg.contains( "ORA-01017" );
 	}
 
 	static class Artist {

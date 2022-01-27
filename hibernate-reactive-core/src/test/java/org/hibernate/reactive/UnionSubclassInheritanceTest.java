@@ -7,15 +7,22 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 
 import javax.persistence.*;
 import java.util.Date;
 import java.util.Objects;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
+
 public class UnionSubclassInheritanceTest extends BaseReactiveTest {
+
+	@Rule // We cannot read a generated id in Oracle
+	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( ORACLE );
 
 	@Override
 	protected Configuration constructConfiguration() {

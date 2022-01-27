@@ -11,6 +11,7 @@ import org.hibernate.dialect.CockroachDB201Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
+import org.hibernate.dialect.Oracle12cDialect;
 import org.hibernate.dialect.PostgreSQL10Dialect;
 import org.hibernate.dialect.SQLServer2012Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
@@ -69,6 +70,9 @@ public class ReactiveSchemaManagementTool extends HibernateSchemaManagementTool 
 			}
 			else if ( dialect instanceof SQLServer2012Dialect ) {
 				return new SqlServerReactiveInformationExtractorImpl( extractionContext );
+			}
+			else if ( dialect instanceof Oracle12cDialect ) {
+				return new OracleSqlReactiveInformationExtractorImpl( extractionContext );
 			}
 			else {
 				throw new NotYetImplementedException(

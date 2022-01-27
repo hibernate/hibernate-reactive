@@ -74,7 +74,7 @@ public interface ReactiveConnection {
 	 */
 	CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues);
 
-	<T> CompletionStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass);
+	<T> CompletionStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass, String idColumnName);
 
 	<T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass);
 

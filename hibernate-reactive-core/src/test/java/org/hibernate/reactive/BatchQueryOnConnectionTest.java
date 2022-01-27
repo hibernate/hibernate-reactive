@@ -15,6 +15,7 @@ import javax.persistence.Id;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.pool.impl.OracleParameters;
 import org.hibernate.reactive.pool.impl.PostgresParameters;
 import org.hibernate.reactive.pool.impl.SQLServerParameters;
 
@@ -124,6 +125,8 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 				return PostgresParameters.INSTANCE.process( sql );
 			case SQLSERVER:
 				return SQLServerParameters.INSTANCE.process( sql );
+			case ORACLE:
+				return OracleParameters.INSTANCE.process( sql );
 			default:
 				return sql;
 		}

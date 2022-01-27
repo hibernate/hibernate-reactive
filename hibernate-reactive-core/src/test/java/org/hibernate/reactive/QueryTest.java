@@ -5,13 +5,10 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
-
-import org.junit.After;
-import org.junit.Test;
-
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import javax.persistence.ColumnResult;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -32,13 +29,17 @@ import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Root;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
+
+import org.hibernate.cfg.Configuration;
+
+import org.junit.After;
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 import static javax.persistence.CascadeType.PERSIST;
 import static javax.persistence.FetchType.LAZY;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 public class QueryTest extends BaseReactiveTest {
 
@@ -509,18 +510,21 @@ public class QueryTest extends BaseReactiveTest {
 
 	@Test
 	public void testScalarQuery(TestContext context) {
-		String sql = DatabaseConfiguration.dbType() == DatabaseConfiguration.DBType.DB2
-				? "select current_timestamp from sysibm.dual"
-				: "select current_timestamp";
-
-		test(context,
-				openSession()
-						.thenCompose(s -> s.createNativeQuery(sql).getSingleResult())
-						.thenAccept(r -> {
-							context.assertNotNull(r);
-							context.assertTrue(r instanceof OffsetDateTime || r instanceof LocalDateTime);
-						})
+		test(context, openSession()
+				.thenCompose( s -> s.createNativeQuery( selectCurrentTimestampQuery() ).getSingleResult() )
+				.thenAccept( r -> context.assertTrue( r instanceof OffsetDateTime || r instanceof LocalDateTime ) )
 		);
+	}
+
+	private String selectCurrentTimestampQuery() {
+		switch ( dbType() ) {
+			case DB2:
+				return "select current_timestamp from sysibm.dual";
+			case ORACLE:
+				return "select current_date from dual";
+			default:
+				return "select current_timestamp";
+		}
 	}
 
 	@Test
