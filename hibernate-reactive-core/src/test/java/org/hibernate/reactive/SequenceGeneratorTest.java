@@ -16,6 +16,7 @@ import javax.persistence.*;
 import java.util.Objects;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 
 
 public class SequenceGeneratorTest extends BaseReactiveTest {
@@ -61,11 +62,12 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 		);
 	}
 
-
 	public static class SequenceGeneratorDefaultSchemaTest extends SequenceGeneratorTest {
 
-		@Rule //only because we don't have permission to create schema in the CI!
-		public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( COCKROACHDB );
+		// COCKROACHDB: we don't have permission to create schema in the CI!
+		// ORACLE: I don't know how to create one with docker
+		@Rule
+		public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( COCKROACHDB, ORACLE );
 
 		@Override
 		protected Configuration constructConfiguration() {

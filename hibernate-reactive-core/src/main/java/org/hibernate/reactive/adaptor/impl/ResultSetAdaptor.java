@@ -186,9 +186,23 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public boolean getBoolean(String columnLabel) {
-		Boolean bool = row.getBoolean( columnLabel );
-		wasNull = bool == null;
-		return !wasNull && bool;
+		try {
+			Boolean bool = row.getBoolean( columnLabel );
+			wasNull = bool == null;
+			return !wasNull && bool;
+		}
+		catch (ClassCastException cce) {
+			// Oracle doesn't support an actual boolean/Boolean datatype.
+			// Oracle8iDialect in ORM registers the BOOLEAN type as a 'number( 1, 0 )'
+			// so we need to convert the int to a boolean
+			try {
+				return getInt( columnLabel ) != 0;
+			}
+			catch (Exception e) {
+				// ignore second exception and throw first cce
+				throw cce;
+			}
+		}
 	}
 
 	@Override
@@ -354,7 +368,7 @@ public class ResultSetAdaptor implements ResultSet {
 
 			@Override
 			public int getColumnType(int column) {
-				ColumnDescriptor descriptor = rows.columnDescriptors().get(column-1);
+				ColumnDescriptor descriptor = rows.columnDescriptors().get( column - 1 );
 				return descriptor.isArray() ? Types.ARRAY : descriptor.jdbcType().getVendorTypeNumber();
 			}
 
@@ -706,10 +720,17 @@ public class ResultSetAdaptor implements ResultSet {
 			return null;
 		}
 
-		byte[] bytes = value instanceof String
-				? ( (String) value ).getBytes()
-				: ( (Buffer) value ).getBytes();
-		return BlobProxy.generateProxy( bytes );
+		if ( value instanceof Buffer ) {
+			return BlobProxy.generateProxy( ( (Buffer) value ).getBytes() );
+		}
+		else if ( value instanceof String ) {
+			return BlobProxy.generateProxy( ( (String) value ).getBytes() );
+		}
+		else if ( value instanceof byte[] ) {
+			return BlobProxy.generateProxy( (byte[]) value );
+		}
+
+		throw new IllegalArgumentException( "Unexpected type: " + value.getClass() );
 	}
 
 	@Override

@@ -64,7 +64,8 @@ public class DefaultSqlClientPool extends SqlClientPool
 		DB2( "io.vertx.db2client.spi.DB2Driver", "db2" ),
 		MYSQL( "io.vertx.mysqlclient.spi.MySQLDriver", "mysql", "mariadb" ),
 		POSTGRES( "io.vertx.pgclient.spi.PgDriver", "postgres", "postgre", "postgresql", "cockroachdb" ),
-		MSSQL( "io.vertx.mssqlclient.spi.MSSQLDriver", "sqlserver" );
+		MSSQL( "io.vertx.mssqlclient.spi.MSSQLDriver", "sqlserver" ),
+		ORACLE( "io.vertx.oracleclient.spi.OracleDriver", "oracle" );
 
 		private final String className;
 		private final String[] schemas;

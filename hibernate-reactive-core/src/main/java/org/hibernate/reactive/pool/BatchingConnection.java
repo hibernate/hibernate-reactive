@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -148,10 +149,10 @@ public class BatchingConnection implements ReactiveConnection {
 				delegate.update( sql, paramValues );
 	}
 
-	public <T> CompletionStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
-		return hasBatch() ?
-				executeBatch().thenCompose( v -> delegate.insertAndSelectIdentifier( sql, paramValues, idClass ) ) :
-				delegate.insertAndSelectIdentifier( sql, paramValues, idClass );
+	public <T> CompletionStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass, String idColumnName) {
+		return hasBatch()
+				? executeBatch().thenCompose( v -> delegate.insertAndSelectIdentifier( sql, paramValues, idClass, idColumnName ) )
+				: delegate.insertAndSelectIdentifier( sql, paramValues, idClass, idColumnName );
 	}
 
 	public CompletionStage<ReactiveConnection.Result> select(String sql) {

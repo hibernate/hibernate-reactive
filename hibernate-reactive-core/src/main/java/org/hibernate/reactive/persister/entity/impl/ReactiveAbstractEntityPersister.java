@@ -358,8 +358,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		Object[] params = PreparedStatementAdaptor.bind( insert -> {
 			boolean[][] insertable = delegate().getPropertyColumnInsertable();
-			int index = delegate().dehydrate( null, fields, notNull, insertable, j, insert, session, false );
-			delegate().getIdentifierType().nullSafeSet( insert, id, index, session );
+			int index = delegate().dehydrate( id, fields, notNull, insertable, j, insert, session, false );
 		} );
 
 		return getReactiveConnection( session )
@@ -399,7 +398,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				//Note: in ORM core there are other ways to fetch the generated identity:
 				//      getGeneratedKeys(), or an extra round select statement. But we
 				//      don't need these extra options.
-				.insertAndSelectIdentifier( sql, params, idClass )
+				.insertAndSelectIdentifier( sql, params, idClass, delegate().getIdentifierColumnNames()[0] )
 				.thenApply( generatedId -> {
 					log.debugf( "Natively generated identity: %s", generatedId );
 					if ( generatedId == null ) {
