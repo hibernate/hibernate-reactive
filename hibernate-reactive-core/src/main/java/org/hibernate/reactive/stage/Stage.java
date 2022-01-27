@@ -37,6 +37,7 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.stat.Statistics;
 
 /**
  * An API for Hibernate Reactive where non-blocking operations are
@@ -1847,6 +1848,12 @@ public interface Stage {
 		 * cache.
 		 */
 		Cache getCache();
+
+		/**
+		 * Obtain the {@link Statistics} object exposing factory-level
+		 * metrics.
+		 */
+		Statistics getStatistics();
 
 		/**
 		 * Destroy the session factory and clean up its connection pool.

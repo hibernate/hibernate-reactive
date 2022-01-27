@@ -27,6 +27,7 @@ import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.service.ServiceRegistry;
+import org.hibernate.stat.Statistics;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
@@ -240,6 +241,11 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	@Override
 	public Cache getCache() {
 		return delegate.getCache();
+	}
+
+	@Override
+	public Statistics getStatistics() {
+		return delegate.getStatistics();
 	}
 
 	@Override
