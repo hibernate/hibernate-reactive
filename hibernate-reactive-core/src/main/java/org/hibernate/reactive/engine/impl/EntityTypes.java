@@ -21,7 +21,6 @@ import org.hibernate.type.EntityType;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.OneToOneType;
 import org.hibernate.type.Type;
-import org.hibernate.type.TypeHelper;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -141,7 +140,7 @@ public class EntityTypes {
     }
 
     /**
-     * @see TypeHelper#replace(Object[], Object[], Type[], SharedSessionContractImplementor, Object, Map)
+     * @see org.hibernate.type.TypeHelper#replace(Object[], Object[], Type[], SharedSessionContractImplementor, Object, Map)
      */
     public static CompletionStage<Object[]> replace(
             final Object[] original,
@@ -182,7 +181,7 @@ public class EntityTypes {
     }
 
     /**
-     * @see TypeHelper#replace(Object[], Object[], Type[], SharedSessionContractImplementor, Object, Map, ForeignKeyDirection)
+     * @see org.hibernate.type.TypeHelper#replace(Object[], Object[], Type[], SharedSessionContractImplementor, Object, Map, ForeignKeyDirection)
      */
     public static CompletionStage<Object[]> replace(
             final Object[] original,
