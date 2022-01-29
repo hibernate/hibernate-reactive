@@ -13,6 +13,7 @@ import org.hibernate.LockOptions;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.ReactiveQuery;
 
+import javax.persistence.EntityGraph;
 import javax.persistence.Parameter;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -165,11 +166,11 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 		return delegate.getHibernateFlushMode();
 	}
 
-//	@Override
-//	public Mutiny.Query<R> setPlan(EntityGraph<R> entityGraph) {
-//		delegate.setPlan(entityGraph);
-//		return this;
-//	}
+	@Override
+	public Mutiny.Query<R> setPlan(EntityGraph<R> entityGraph) {
+		delegate.setPlan(entityGraph);
+		return this;
+	}
 
 	@Override
 	public Uni<Integer> executeUpdate() {

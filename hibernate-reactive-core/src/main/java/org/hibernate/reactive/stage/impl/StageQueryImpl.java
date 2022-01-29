@@ -12,6 +12,7 @@ import org.hibernate.LockOptions;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.stage.Stage;
 
+import javax.persistence.EntityGraph;
 import javax.persistence.Parameter;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -164,11 +165,11 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 		return delegate.getHibernateFlushMode();
 	}
 
-//	@Override
-//	public Stage.Query<R> setPlan(EntityGraph<R> entityGraph) {
-//		delegate.setPlan(entityGraph);
-//		return this;
-//	}
+	@Override
+	public Stage.Query<R> setPlan(EntityGraph<R> entityGraph) {
+		delegate.setPlan(entityGraph);
+		return this;
+	}
 
 	@Override
 	public CompletionStage<Integer> executeUpdate() {
