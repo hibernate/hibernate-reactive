@@ -164,7 +164,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 
 	}
 
-	/*@Test
+	@Test
 	public void queryBookWithNamedEntityGraphFetchAuthors(TestContext context) {
 		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
 		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
@@ -175,10 +175,10 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 		test(
 				context,
 				openSession()
-						.thenCompose(s -> s.persist(goodOmens))
-						.thenCompose(s -> s.persist(neilGaiman))
-						.thenCompose(s -> s.persist(terryPratchett))
-						.thenCompose(s -> s.flush())
+						.thenCompose(s -> s.persist(goodOmens)
+								.thenCompose(v -> s.persist(neilGaiman))
+								.thenCompose(v -> s.persist(terryPratchett))
+								.thenCompose(v -> s.flush()))
 						.thenCompose(v -> openSession())
 						.thenCompose( s -> s.createQuery( "from Tome b where b.id=?1", Book.class)
 								.setPlan( s.getEntityGraph(Book.class, "withAuthors") )
@@ -203,7 +203,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 						.thenAccept(author -> context.assertTrue( Hibernate.isInitialized(author.book) ) )
 		);
 
-	}*/
+	}
 
 	@Test
 	public void findBookWithFetchProfileAuthors(TestContext context) {

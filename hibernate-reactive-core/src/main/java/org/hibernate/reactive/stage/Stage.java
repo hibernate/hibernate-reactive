@@ -286,11 +286,11 @@ public interface Stage {
 //		 */
 //		Query<R> setLockOptions(LockOptions lockOptions);
 
-//		/**
-//		 * Set the {@link EntityGraph} that will be used as a fetch plan for
-//		 * the root entity returned by this query.
-//		 */
-//		Query<R> setPlan(EntityGraph<R> entityGraph);
+		/**
+		 * Set the {@link EntityGraph} that will be used as a fetch plan for
+		 * the root entity returned by this query.
+		 */
+		Query<R> setPlan(EntityGraph<R> entityGraph);
 
 	}
 

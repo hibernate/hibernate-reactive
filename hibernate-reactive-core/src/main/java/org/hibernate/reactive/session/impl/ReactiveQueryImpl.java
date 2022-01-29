@@ -54,8 +54,8 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 	private static QueryType queryType(String queryString) {
 		queryString = queryString.trim().toLowerCase();
 		return queryString.startsWith("insert")
-				|| queryString.startsWith("update")
-				|| queryString.startsWith("delete")
+			|| queryString.startsWith("update")
+			|| queryString.startsWith("delete")
 				? QueryType.INSERT_UPDATE_DELETE
 				: QueryType.SELECT;
 	}
@@ -150,7 +150,7 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 	 */
 	private QueryParameters makeReactiveQueryParametersForExecution(String hql) {
 		QueryParameters queryParameters = super.makeQueryParametersForExecution( hql );
-		if ( queryParameters.getQueryPlan() == null ) {
+//		if ( queryParameters.getQueryPlan() == null ) {
 			HQLQueryPlan plan = new ReactiveHQLQueryPlan<>(
 					hql,
 					false,
@@ -159,8 +159,14 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 					entityGraphQueryHint
 			);
 			queryParameters.setQueryPlan( plan );
-		}
+//		}
 		return queryParameters;
+	}
+
+	@Override
+	public void applyEntityGraphQueryHint(EntityGraphQueryHint entityGraphQueryHint) {
+		super.applyEntityGraphQueryHint(entityGraphQueryHint);
+		this.entityGraphQueryHint = entityGraphQueryHint;
 	}
 
 	@Override
