@@ -69,11 +69,12 @@ public interface ReactiveResultSetProcessor {
 		final Object[] hydratedState = entityEntry.getLoadedState();
 		CompletionStage<Void> loop = voidFuture();
 		for ( int i = 0; i < hydratedState.length; i++ ) {
-			final Object o = hydratedState[i];
-			if ( o instanceof CompletionStage ) {
-				final CompletionStage<?> c = (CompletionStage<?>) o;
+			final Object state = hydratedState[i];
+			if ( state instanceof CompletionStage ) {
 				final int currentIndex = i;
-				loop = loop.thenCompose( v -> c.thenAccept( initializedEntity -> hydratedState[ currentIndex ] = initializedEntity ) );
+				loop = loop
+						.thenCompose( v -> (CompletionStage<?>) state )
+						.thenAccept( initializedEntity -> hydratedState[currentIndex] = initializedEntity );
 			}
 		}
 		return loop.thenAccept(
