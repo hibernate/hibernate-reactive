@@ -79,11 +79,11 @@ jobs:
           .gradle/wrapper
         # refresh cache every month to avoid unlimited growth
         key: gradle-examples-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
-    - name: Set up JDK 1.8
+    - name: Set up JDK 11
       uses: actions/setup-java@v2.2.0
       with:
         distribution: 'temurin'
-        java-version: 8
+        java-version: 11
     - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
       run: ./gradlew :${{ matrix.example }}:runAllExamplesOn${{ matrix.db }}
     - name: Upload reports (if build failed)
@@ -116,11 +116,11 @@ jobs:
           .gradle/wrapper
         # refresh cache every month to avoid unlimited growth
         key: gradle-db-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
-    - name: Set up JDK 1.8
+    - name: Set up JDK 11
       uses: actions/setup-java@v2.2.0
       with:
         distribution: 'temurin'
-        java-version: 8
+        java-version: 11
     - name: Build and Test with ${{ matrix.db }}
       run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
     - name: Upload reports (if build failed)
@@ -141,7 +141,6 @@ jobs:
         # To list the available releases for a given "feature version" (example for 16):
         # https://api.adoptium.net/v3/assets/latest/16/hotspot
         java:
-          - { name: "8", java_version_numeric: 8 }
           - { name: "11", java_version_numeric: 11 }
           - { name: "16", java_version_numeric: 16 }
           - { name: "17", java_version_numeric: 17 }
@@ -185,14 +184,14 @@ jobs:
     - name: Export path to JDK ${{ matrix.java.name }}
       id: testjdk-exportpath
       run: echo "::set-output name=path::${JAVA_HOME}"
-    # Always use JDK 8 to build the main code: that's what we use for releases.
-    - name: Set up JDK 8
+    # Always use JDK 11 to build the main code: that's what we use for releases.
+    - name: Set up JDK 11
       uses: actions/setup-java@v2.2.0
       with:
         distribution: 'temurin'
-        java-version: 8
+        java-version: 11
         check-latest: true
-    - name: Export path to JDK 8
+    - name: Export path to JDK 11
       id: mainjdk-exportpath
       run: echo "::set-output name=path::${JAVA_HOME}"
     - name: Display exact version of JDK ${{ matrix.java.name }}
@@ -215,11 +214,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Set up JDK 1.8
+    - name: Set up JDK 11
       uses: actions/setup-java@v2.2.0
       with:
         distribution: 'temurin'
-        java-version: 8
+        java-version: 11
     - name: Create artifacts
       run: ./gradlew assemble
     - name: Detect the version of Hibernate Reactive
@@ -239,11 +238,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Set up JDK 1.8
+    - name: Set up JDK 11
       uses: actions/setup-java@v2.2.0
       with:
         distribution: 'temurin'
-        java-version: 8
+        java-version: 11
     - name: Create artifacts
       run: ./gradlew assemble
     - name: Install SSH key
