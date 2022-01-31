@@ -142,7 +142,6 @@ jobs:
         # https://api.adoptium.net/v3/assets/latest/16/hotspot
         java:
           - { name: "11", java_version_numeric: 11 }
-          - { name: "16", java_version_numeric: 16 }
           - { name: "17", java_version_numeric: 17 }
           - { name: "18-ea", java_version_numeric: 18,
               download_url: "https://download.java.net/java/early_access/jdk18/33/GPL/openjdk-18-ea+33_linux-x64_bin.tar.gz" }
