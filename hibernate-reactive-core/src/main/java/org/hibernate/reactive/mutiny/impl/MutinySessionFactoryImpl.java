@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.mutiny.impl;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
@@ -21,6 +22,8 @@ import org.hibernate.reactive.common.spi.MutinyImplementor;
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.context.impl.BaseKey;
 import org.hibernate.reactive.context.impl.MultitenantKey;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
@@ -40,6 +43,8 @@ import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnE
  * Obtained by calling {@link org.hibernate.SessionFactory#unwrap(Class)}.
  */
 public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implementor, MutinyImplementor {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
@@ -183,9 +188,13 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Mutiny.Session current = context.get( contextKeyForSession );
 		if ( current != null && current.isOpen() ) {
+			LOG.debug( "Reusing existing open Mutiny.Session which was found in the current Vert.x context" );
 			return work.apply( current );
 		}
-		return withSession( openSession(), work, contextKeyForSession );
+		else {
+			LOG.debug( "No existing open Mutiny.Session was found in the current Vert.x context: opening a new instance" );
+			return withSession( openSession(), work, contextKeyForSession );
+		}
 	}
 
 	@Override
@@ -195,9 +204,13 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		Context.Key<Mutiny.Session> key = new MultitenantKey( contextKeyForSession, tenantId );
 		Mutiny.Session current = context.get(key);
 		if ( current!=null && current.isOpen() ) {
+			LOG.debugf( "Reusing existing open Mutiny.Session which was found in the current Vert.x context for current tenant '%s'", tenantId );
 			return work.apply( current );
 		}
-		return withSession( openSession( tenantId ), work, key );
+		else {
+			LOG.debugf( "No existing open Mutiny.Session was found in the current Vert.x context for current tenant '%s': opening a new instance", tenantId );
+			return withSession( openSession( tenantId ), work, key );
+		}
 	}
 
 	@Override
@@ -205,9 +218,13 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Mutiny.StatelessSession current = context.get( contextKeyForStatelessSession );
 		if ( current != null && current.isOpen() ) {
+			LOG.debug( "Reusing existing open Mutiny.StatelessSession which was found in the current Vert.x context" );
 			return work.apply( current );
 		}
-		return withSession( openStatelessSession(), work, contextKeyForStatelessSession );
+		else {
+			LOG.debug( "No existing open Mutiny.StatelessSession was found in the current Vert.x context: opening a new instance" );
+			return withSession( openStatelessSession(), work, contextKeyForStatelessSession );
+		}
 	}
 
 	@Override
@@ -217,9 +234,13 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		Context.Key<Mutiny.StatelessSession> key = new MultitenantKey<>( this.contextKeyForStatelessSession, tenantId );
 		Mutiny.StatelessSession current = context.get( key );
 		if ( current != null && current.isOpen() ) {
+			LOG.debugf( "Reusing existing open Mutiny.StatelessSession which was found in the current Vert.x context for current tenant '%s'", tenantId );
 			return work.apply( current );
 		}
-		return withSession( openStatelessSession( tenantId), work, key );
+		else {
+			LOG.debugf( "No existing open Mutiny.StatelessSession was found in the current Vert.x context for current tenant '%s': opening a new instance", tenantId );
+			return withSession( openStatelessSession( tenantId), work, key );
+		}
 	}
 
 	private<S extends Mutiny.Closeable, T> Uni<T> withSession(
