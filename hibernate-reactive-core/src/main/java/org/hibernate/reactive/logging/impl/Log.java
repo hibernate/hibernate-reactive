@@ -207,8 +207,8 @@ public interface Log extends BasicLogger {
 	IllegalStateException shouldBeInvokedInVertxEventLoopThread(String name);
 
 	@Message(id = 69, value = "Detected use of the reactive Session from a different Thread than the one which was used to open the reactive Session - this suggests an invalid integration; "
-			+ "original thread: '%1$s' current Thread: '%2$s'")
-	IllegalStateException detectedUsedOfTheSessionOnTheWrongThread(String expectedThreadName, String currentThreadName);
+			+ "original thread [%1$s]: '%2$s' current Thread [%3$s]: '%4$s'")
+	IllegalStateException detectedUsedOfTheSessionOnTheWrongThread(long expectedThreadId, String expectedThreadName, long currentThreadId, String currentThreadName);
 
 	@Message(id = 70, value = "Unable to locate persistence units")
 	PersistenceException unableToLocatePersistenceUnits(@Cause Throwable e);
