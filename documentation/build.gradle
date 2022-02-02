@@ -1,8 +1,7 @@
-import org.asciidoctor.gradle.AsciidoctorTask
-
+import org.asciidoctor.gradle.jvm.AsciidoctorTask
 import java.time.Year
 
-apply plugin: 'org.asciidoctor.convert'
+apply plugin: 'org.asciidoctor.jvm.convert'
 
 ext {
 	projectsToSkipWhenAggregatingJavadocs = [
@@ -114,9 +113,8 @@ task renderReferenceDocumentation(type: AsciidoctorTask, group: 'Documentation')
     sources {
         include 'index.adoc'
     }
+
     outputDir = new File("$buildDir/asciidoc/reference/html_single")
-    backends "html5"
-    separateOutputDirs false
     options logDocuments: true
 	attributes icons: 'font', experimental: true,
 			   'source-highlighter': 'prettify',

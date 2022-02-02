@@ -4,14 +4,15 @@ Davide D'Alto <davide@hibernate.org>; Gavin King <gavin@hibernate.org>
 :toclevels: 3
 :sectanchors:
 :source-highlighter: pygments
+:sourcedir: src/main/asciidoc/reference
 
 :leveloffset: +1
 
-include::preface.adoc[]
+include::{sourcedir}/preface.adoc[]
 
 :numbered:
 
-include::introduction.adoc[]
+include::{sourcedir}/introduction.adoc[]
 
 :leveloffset: -1
 
