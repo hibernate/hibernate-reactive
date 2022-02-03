@@ -87,4 +87,8 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable {
 						isVersionIncrementDisabled()
 				));
 	}
+
+	default CompletionStage<NonNullableTransientDependencies> reactiveFindNonNullableTransientEntities() {
+		return ForeignKeys.findNonNullableTransientEntities( getPersister().getEntityName(), getInstance(), getState(), isEarlyInsert(), getSession() );
+	}
 }
