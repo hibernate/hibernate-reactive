@@ -15,7 +15,7 @@
 
 //// Testcontainer needs the JDBC drivers to start the container
 //// Hibernate Reactive doesn't need it
-//DEPS mysql:mysql-connector-java:8.0.27
+//DEPS mysql:mysql-connector-java:8.0.28
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -65,7 +65,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class {baseName} {
 
 	@ClassRule
-	public static MySQLContainer<?> database = new MySQLContainer<>( "mysql:8.0.27" );
+	public static MySQLContainer<?> database = new MySQLContainer<>( "mysql:8.0.28" );
 
 	private Mutiny.SessionFactory sessionFactory;
 
