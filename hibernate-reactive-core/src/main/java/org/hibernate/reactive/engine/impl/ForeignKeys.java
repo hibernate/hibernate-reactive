@@ -9,9 +9,11 @@ import org.hibernate.EntityMode;
 import org.hibernate.HibernateException;
 import org.hibernate.TransientObjectException;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
+import org.hibernate.engine.internal.NonNullableTransientDependencies;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
@@ -359,6 +361,92 @@ public final class ForeignKeys {
 		}
 	}
 
+	public static CompletionStage<NonNullableTransientDependencies> findNonNullableTransientEntities(
+			String entityName,
+			Object entity,
+			Object[] values,
+			boolean isEarlyInsert,
+			SharedSessionContractImplementor session) {
+
+		final EntityPersister persister = session.getEntityPersister( entityName, entity );
+		final Type[] types = persister.getPropertyTypes();
+		final Nullifier nullifier = new Nullifier( entity, false, isEarlyInsert, (SessionImplementor) session, persister );
+		final String[] propertyNames = persister.getPropertyNames();
+		final boolean[] nullability = persister.getPropertyNullability();
+		final NonNullableTransientDependencies nonNullableTransientEntities = new NonNullableTransientDependencies();
+
+		return loop( 0, types.length,
+				i -> collectNonNullableTransientEntities(
+						nullifier,
+						values[i],
+						propertyNames[i],
+						types[i],
+						nullability[i],
+						session,
+						nonNullableTransientEntities
+				)
+		).thenApply( r -> nonNullableTransientEntities.isEmpty() ? null : nonNullableTransientEntities );
+	}
+
+	private static CompletionStage<Void> collectNonNullableTransientEntities(
+			Nullifier nullifier,
+			Object value,
+			String propertyName,
+			Type type,
+			boolean isNullable,
+			SharedSessionContractImplementor session,
+			NonNullableTransientDependencies nonNullableTransientEntities) {
+
+		if ( value == null ) {
+			return voidFuture();
+		}
+
+		if ( type.isEntityType() ) {
+			final EntityType entityType = (EntityType) type;
+			if ( !isNullable && !entityType.isOneToOne() ) {
+				return nullifier
+						.isNullifiable( entityType.getAssociatedEntityName(), value )
+						.thenAccept( isNullifiable -> {
+							if ( isNullifiable ) {
+								nonNullableTransientEntities.add( propertyName, value );
+							}
+						} );
+			}
+		}
+		else if ( type.isAnyType() ) {
+			if ( !isNullable ) {
+				return nullifier
+						.isNullifiable( null, value )
+						.thenAccept( isNullifiable -> {
+							if ( isNullifiable ) {
+								nonNullableTransientEntities.add( propertyName, value );
+							}
+						} );
+			};
+		}
+		else if ( type.isComponentType() ) {
+			final CompositeType actype = (CompositeType) type;
+			final boolean[] subValueNullability = actype.getPropertyNullability();
+			if ( subValueNullability != null ) {
+				final String[] subPropertyNames = actype.getPropertyNames();
+				final Object[] subvalues = actype.getPropertyValues( value, session );
+				final Type[] subtypes = actype.getSubtypes();
+				return loop( 0, subtypes.length,
+						i -> collectNonNullableTransientEntities(
+								nullifier,
+								subvalues[i],
+								subPropertyNames[i],
+								subtypes[i],
+								subValueNullability[i],
+								session,
+								nonNullableTransientEntities
+						)
+				);
+			}
+		}
+
+		return voidFuture();
+	}
 
 	/**
 	 * Disallow instantiation
