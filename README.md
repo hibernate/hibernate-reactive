@@ -33,7 +33,7 @@ Hibernate Reactive has been tested with:
 - MySQL 8
 - MariaDB 10
 - Db2 11.5
-- CockroachDB 21.1
+- CockroachDB 21.2
 - MS SQL Server 2019
 - [Hibernate ORM][] 5.6.5.Final
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 4.2.4

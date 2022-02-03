@@ -16,7 +16,7 @@ class CockroachDBDatabase extends PostgreSQLDatabase {
 
 	public static CockroachDBDatabase INSTANCE = new CockroachDBDatabase();
 
-	public final static String IMAGE_NAME = "cockroachdb/cockroach:v21.1.11";
+	public final static String IMAGE_NAME = "cockroachdb/cockroach:v21.2.4";
 
 	/**
 	 * Holds configuration for the CockroachDB database container. If the build is run with <code>-Pdocker</code> then
