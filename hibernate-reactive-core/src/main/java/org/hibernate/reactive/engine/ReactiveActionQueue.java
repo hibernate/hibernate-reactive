@@ -34,7 +34,6 @@ import org.hibernate.action.spi.AfterTransactionCompletionProcess;
 import org.hibernate.action.spi.BeforeTransactionCompletionProcess;
 import org.hibernate.action.spi.Executable;
 import org.hibernate.cache.CacheException;
-import org.hibernate.engine.internal.NonNullableTransientDependencies;
 import org.hibernate.engine.spi.ActionQueue;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.ExecutableList;
@@ -343,24 +342,25 @@ public class ReactiveActionQueue {
 			ret = ret.thenCompose( v -> executeInserts() );
 		}
 
-		NonNullableTransientDependencies nonNullableTransientDependencies = insert.findNonNullableTransientEntities();
-		if ( nonNullableTransientDependencies == null ) {
-			LOG.tracev( "Adding insert with no non-nullable, transient entities: [{0}]", insert );
-			ret = ret.thenCompose( v -> addResolvedEntityInsertAction( insert ) );
-		}
-		else {
-			if ( LOG.isTraceEnabled() ) {
-				LOG.tracev( "Adding insert with non-nullable, transient entities; insert=[{0}], dependencies=[{1}]",
-							insert,
-							nonNullableTransientDependencies.toLoggableString( insert.getSession() )
-				);
-			}
-			if ( unresolvedInsertions == null ) {
-				unresolvedInsertions = new UnresolvedEntityInsertActions();
-			}
-			unresolvedInsertions.addUnresolvedEntityInsertAction( (AbstractEntityInsertAction) insert, nonNullableTransientDependencies );
-		}
-		return ret;
+		return ret
+				.thenCompose( v -> insert.reactiveFindNonNullableTransientEntities() )
+				.thenCompose( nonNullables -> {
+					if ( nonNullables == null ) {
+						LOG.tracev( "Adding insert with no non-nullable, transient entities: [{0}]", insert );
+						return addResolvedEntityInsertAction( insert );
+					}
+					else {
+						if ( LOG.isTraceEnabled() ) {
+							LOG.tracev( "Adding insert with non-nullable, transient entities; insert=[{0}], dependencies=[{1}]", insert, nonNullables.toLoggableString( insert.getSession() ) );
+						}
+						if ( unresolvedInsertions == null ) {
+							unresolvedInsertions = new UnresolvedEntityInsertActions();
+						}
+						unresolvedInsertions
+								.addUnresolvedEntityInsertAction( (AbstractEntityInsertAction) insert, nonNullables );
+						return voidFuture();
+					}
+				} );
 	}
 
 	private CompletionStage<Void> addResolvedEntityInsertAction(ReactiveEntityInsertAction insert) {
