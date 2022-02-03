@@ -32,7 +32,7 @@ class MySQLDatabase implements TestableDatabase {
 
 	static MySQLDatabase INSTANCE = new MySQLDatabase();
 
-	public final static String IMAGE_NAME = "mysql:8.0.27";
+	public final static String IMAGE_NAME = "mysql:8.0.28";
 
 	private static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
 
