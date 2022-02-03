@@ -9,7 +9,7 @@ class MariaDatabase extends MySQLDatabase {
 
 	static MariaDatabase INSTANCE = new MariaDatabase();
 
-	public final static String IMAGE_NAME = "mariadb:10.6.4";
+	public final static String IMAGE_NAME = "mariadb:10.7.1";
 
 	/**
 	 * Holds configuration for the MariaDB database container. If the build is run with <code>-Pdocker</code> then
