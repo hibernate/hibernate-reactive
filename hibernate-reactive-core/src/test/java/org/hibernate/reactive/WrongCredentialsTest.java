@@ -5,18 +5,17 @@
  */
 package org.hibernate.reactive;
 
+import javax.persistence.Entity;
 import javax.persistence.Id;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Check that the right exception is thrown when there is an error with the credentials.
@@ -31,12 +30,10 @@ public class WrongCredentialsTest extends BaseReactiveTest {
 	private static final String BOGUS_USER = "BogusBogus";
 	private static final String BOGUS_PASSWORD = "BogusBogus";
 
-	@Rule // Sometimes, MySQL throws UnsupportedOperationException. We are not sure why.
-	public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( MYSQL );
-
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
+		configuration.addAnnotatedClass( Artist.class );
 		configuration.setProperty( Settings.USER, BOGUS_USER );
 		configuration.setProperty( Settings.PASS, BOGUS_PASSWORD );
 		return configuration;
@@ -46,16 +43,20 @@ public class WrongCredentialsTest extends BaseReactiveTest {
 	public void testWithTransaction(TestContext context) {
 		test( context, getSessionFactory()
 				// The error will occur before the find even get executed
-				.withTransaction( (s, t) -> s
-						.find( Artist.class, "Banksy" ) )
-				.handle( (v, e) -> {
-					context.assertNotNull( e );
-					context.assertTrue( isWrongCredentialsMessage( e.getMessage() ), "Error message: " + e.getMessage() );
-					return null;
-				} ) );
+				.withTransaction( s -> s.find( Artist.class, "Banksy" ) )
+				.handle( (v, e) -> e )
+				.thenAccept( WrongCredentialsTest::assertException )
+		);
 	}
 
-	private boolean isWrongCredentialsMessage(String msg ) {
+	private static void assertException(Throwable throwable) {
+		assertThat( throwable ).as( "We were expecting an exception" ).isNotNull();
+		assertThat( expectedMessage( throwable.getMessage() ) )
+				.as( "Unexpected error message: " + throwable.getMessage() )
+				.isTrue();
+	}
+
+	private static boolean expectedMessage(String msg) {
 		// MySQL and PostgreSQL will contain the invalid credential value
 		// Cockroach will be lower case version of the wrong user
 		// Db2 will just state it
@@ -65,6 +66,7 @@ public class WrongCredentialsTest extends BaseReactiveTest {
 				|| msg.contains( "ORA-01017" );
 	}
 
+	@Entity
 	static class Artist {
 		@Id
 		String name;
