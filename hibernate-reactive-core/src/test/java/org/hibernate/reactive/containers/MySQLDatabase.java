@@ -84,6 +84,7 @@ class MySQLDatabase implements TestableDatabase {
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
+			.withCommand( "--default-authentication-plugin=mysql_native_password" )
 			.withReuse( true );
 
 	private String getRegularJdbcUrl() {
