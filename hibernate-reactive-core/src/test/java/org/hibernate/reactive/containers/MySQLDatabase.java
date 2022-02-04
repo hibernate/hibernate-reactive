@@ -84,6 +84,7 @@ class MySQLDatabase implements TestableDatabase {
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
+			.withCommand( "--authentication-policy=caching_sha2_password" )
 			.withReuse( true );
 
 	private String getRegularJdbcUrl() {
