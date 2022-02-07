@@ -10,7 +10,7 @@ on:
     branches:
       - main
   schedule:
-    # * is a special character in YAML so you have to quote this string
+    # * is a special character in YAML, so you have to quote this string
     # Run every hour at minute 25
     - cron: '25 * * * *'
 
