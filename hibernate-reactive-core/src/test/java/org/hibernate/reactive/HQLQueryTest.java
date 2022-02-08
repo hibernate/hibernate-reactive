@@ -81,6 +81,12 @@ public class HQLQueryTest extends BaseReactiveTest {
 				  return qr.getSingleResult();
 			  } ).thenAccept( found -> context.assertEquals( "Prova", found ) )
 		);
+		test( context, getSessionFactory().withSession( s -> {
+					Stage.Query<Long> qr = s.createQuery( "SELECT count(*) FROM Flour", Long.class );
+					context.assertNotNull( qr );
+					return qr.getSingleResult();
+				} ).thenAccept( found -> context.assertEquals(3L, found ) )
+		);
 	}
 
 	@Test
