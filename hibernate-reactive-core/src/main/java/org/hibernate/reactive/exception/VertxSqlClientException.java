@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import org.hibernate.HibernateException;
 
 /**
- * Wraps a {@link SQLException}.  Indicates that an exception occurred during a JDBC call.
+ * Wraps a {@link SQLException}.  Indicates that an exception occurred during a Vert.x SQL client call.
  *
  * @author Gavin King
  *
