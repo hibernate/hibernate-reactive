@@ -26,6 +26,8 @@ import org.junit.Test;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * Test what happens when the query is cached but the result entries aren't.
  * <p>
@@ -33,17 +35,15 @@ import io.vertx.ext.unit.TestContext;
  * dependency on the classpath at runtime.
  * </p>
  * <p>
- * When a query is cachable, hibernate will cache the entity ids returned by the query.
+ * When a query is cacheable, hibernate will cache the entity ids returned by the query.
  * When the query runs a second time, it will load the entities using the cached ids.
  * If the entities aren't in the cache it will load them from the db.
  * </p>
  */
 public class CachedQueryResultsTest extends BaseReactiveTest {
 
-	private static final Object[] FRUITS = {
-			new Fruit( "Banana" ),
-			new Fruit( "Pineapple" ),
-			new Fruit( "Tomato" )
+	private static final Fruit[] FRUITS = {
+			new Fruit( "Banana" ), new Fruit( "Pineapple" ), new Fruit( "Tomato" )
 	};
 
 	@Override
@@ -59,93 +59,60 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 		return configuration;
 	}
 
-	private Uni<?> populateDB() {
-		return getMutinySessionFactory()
-				.withTransaction( (session, tx) -> session.persist( FRUITS ) );
-	}
-
-	private static Uni<List<Fruit>> findall(Mutiny.Session session) {
-		return session.createNamedQuery( Fruit.FIND_ALL, Fruit.class )
-				.getResultList();
-	}
-
 	@Test
-	public void testLoadFromCachedQueryResult(TestContext context) {
-		test( context, getMutinySessionFactory().withSession( CachedQueryResultsTest::findall )
+	public void testLoadFromSecondLevelCacheAndNamedQuery(TestContext context) {
+		test( context, getMutinySessionFactory()
+				.withSession( CachedQueryResultsTest::findAllWithNamedQuery )
 				// We need to close the session between the two findAll or the results will come from the
 				// first-level cache
-				.call( () -> getMutinySessionFactory().withSession( CachedQueryResultsTest::findall ) )
-				.invoke( list -> {
-					context.assertNotNull( list );
-					context.assertEquals( 3, list.size() );
-					int i = 0;
-					for ( Fruit entity : list ) {
-						context.assertEquals( entity, FRUITS[i++] );
-					}
-				} )
+				.chain( () -> getMutinySessionFactory().withSession( CachedQueryResultsTest::findAllWithNamedQuery ) )
+				.invoke( list -> assertThat( list ).containsExactly( FRUITS ) )
 		);
 	}
 
 	@Test
-	public void testLoadFromCachedQueryResultFromCache(TestContext context) {
+	public void testLoadFromCachedQueryResultAndNamedQuery(TestContext context) {
 		test( context, getMutinySessionFactory()
-				.withSession( s -> CachedQueryResultsTest.findall(s)
-						.call( () -> CachedQueryResultsTest.findall(s) ) )
-				.invoke( list -> {
-					context.assertNotNull( list );
-					context.assertEquals( 3, list.size() );
-					int i = 0;
-					for ( Fruit entity : list ) {
-						context.assertEquals( entity, FRUITS[i++] );
-					}
-				} )
+				.withSession( s -> findAllWithNamedQuery( s ).chain( () -> findAllWithNamedQuery( s ) ) )
+				.invoke( list -> assertThat( list ).containsExactly( FRUITS ) )
 		);
 	}
 
-	private static Uni<List<Fruit>> findall2(Mutiny.Session session) {
+	private static Uni<List<Fruit>> findAllWithNamedQuery(Mutiny.Session session) {
+		return session.createNamedQuery( Fruit.FIND_ALL, Fruit.class ).getResultList();
+	}
+
+	@Test
+	public void testLoadFromSecondLevelCacheAndRegularQuery(TestContext context) {
+		test( context, getMutinySessionFactory()
+				.withSession( CachedQueryResultsTest::findAllWithCacheableQuery )
+				// We need to close the session between the two findAll or the results will come from the
+				// first-level cache
+				.chain( () -> getMutinySessionFactory().withSession( CachedQueryResultsTest::findAllWithCacheableQuery ) )
+				.invoke( list -> assertThat( list ).containsExactly( FRUITS ) )
+		);
+	}
+
+	@Test
+	public void testLoadFromCachedQueryResultAndRegularQuery(TestContext context) {
+		test( context, getMutinySessionFactory()
+				.withSession( s -> findAllWithCacheableQuery( s ).chain( () -> findAllWithCacheableQuery( s ) ) )
+				.invoke( list -> assertThat( list ).containsExactly( FRUITS ) )
+		);
+	}
+
+	private static Uni<List<Fruit>> findAllWithCacheableQuery(Mutiny.Session session) {
 		return session.createQuery( "FROM Fruit f ORDER BY f.name ASC", Fruit.class )
-				.setCacheable(true)
+				.setCacheable( true )
 				.getResultList();
-	}
-
-	@Test
-	public void testLoadFromCachedQueryResult2(TestContext context) {
-		test( context, getMutinySessionFactory().withSession( CachedQueryResultsTest::findall2 )
-				// We need to close the session between the two findAll or the results will come from the
-				// first-level cache
-				.call( () -> getMutinySessionFactory().withSession( CachedQueryResultsTest::findall2 ) )
-				.invoke( list -> {
-					context.assertNotNull( list );
-					context.assertEquals( 3, list.size() );
-					int i = 0;
-					for ( Fruit entity : list ) {
-						context.assertEquals( entity, FRUITS[i++] );
-					}
-				} )
-		);
-	}
-
-	@Test
-	public void testLoadFromCachedQueryResultFromCache2(TestContext context) {
-		test( context, getMutinySessionFactory()
-				.withSession( s -> CachedQueryResultsTest.findall2(s)
-						.call( () -> CachedQueryResultsTest.findall2(s) ) )
-				.invoke( list -> {
-					context.assertNotNull( list );
-					context.assertEquals( 3, list.size() );
-					int i = 0;
-					for ( Fruit entity : list ) {
-						context.assertEquals( entity, FRUITS[i++] );
-					}
-				} )
-		);
 	}
 
 	@Entity(name = "Fruit")
 	@Table(name = "known_fruits")
-	@NamedQuery(name = Fruit.FIND_ALL
-			, query = "FROM Fruit f ORDER BY f.name ASC"
-			, hints = @QueryHint(name = "org.hibernate.cacheable", value = "true"))
+	@NamedQuery(
+			name = Fruit.FIND_ALL,
+			query = "FROM Fruit f ORDER BY f.name ASC",
+			hints = @QueryHint(name = "org.hibernate.cacheable", value = "true"))
 	public static class Fruit {
 		public static final String FIND_ALL = "Fruits.findAll";
 
