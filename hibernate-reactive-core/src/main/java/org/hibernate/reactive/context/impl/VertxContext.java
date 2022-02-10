@@ -8,6 +8,8 @@ package org.hibernate.reactive.context.impl;
 import java.lang.invoke.MethodHandles;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.ContextInternal;
+
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -61,14 +63,20 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
         }
     }
 
-    @Override
-    public void execute(Runnable runnable) {
-        io.vertx.core.Context context = vertxInstance.getVertx().getOrCreateContext();
-        if ( Vertx.currentContext() == context ) {
-            runnable.run();
-        }
-        else {
-            context.runOnContext( x -> runnable.run() );
-        }
-    }
+	@Override
+	public void execute(Runnable runnable) {
+		final io.vertx.core.Context currentContext = Vertx.currentContext();
+		if ( currentContext == null ) {
+			final io.vertx.core.Context newContext = vertxInstance.getVertx().getOrCreateContext();
+			// Ensure we don't run on the root context, which is globally scoped:
+			// that could lead to unintentionally share the same session with other streams.
+			ContextInternal newContextInternal = (ContextInternal) newContext;
+			final ContextInternal duplicate = newContextInternal.duplicate();
+			duplicate.runOnContext( x -> runnable.run() );
+		}
+		else {
+			runnable.run();
+		}
+	}
+
 }

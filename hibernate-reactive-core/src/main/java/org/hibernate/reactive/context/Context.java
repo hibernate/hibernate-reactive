@@ -40,6 +40,8 @@ public interface Context extends Executor, Service {
      * If there is a context already associated with the call, use
      * that one. Otherwise, create a new context and execute the
      * command in the new context.
+     * In case a new context is created, it will ensure a local
+     * context is created.
      */
     @Override
     void execute(Runnable runnable);
