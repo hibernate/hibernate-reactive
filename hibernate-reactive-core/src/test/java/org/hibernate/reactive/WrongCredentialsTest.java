@@ -9,6 +9,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.provider.Settings;
 
 import org.junit.Test;
@@ -27,15 +28,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class WrongCredentialsTest extends BaseReactiveTest {
 
-	private static final String BOGUS_USER = "BogusBogus";
-	private static final String BOGUS_PASSWORD = "BogusBogus";
-
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( Artist.class );
-		configuration.setProperty( Settings.USER, BOGUS_USER );
-		configuration.setProperty( Settings.PASS, BOGUS_PASSWORD );
+		configuration.setProperty( Settings.USER, DatabaseConfiguration.USERNAME );
+		configuration.setProperty( Settings.PASS, "BogusBogus" );
 		return configuration;
 	}
 
@@ -57,11 +55,11 @@ public class WrongCredentialsTest extends BaseReactiveTest {
 	}
 
 	private static boolean expectedMessage(String msg) {
-		// MySQL and PostgreSQL will contain the invalid credential value
-		// Cockroach will be lower case version of the wrong user
-		// Db2 will just state it
-		return msg.toLowerCase().contains( BOGUS_USER.toLowerCase() )
-				|| msg.contains( "Invalid credentials")
+		final String lowerCaseMsg = msg.toLowerCase();
+		return lowerCaseMsg.contains( "password authentication failed" )
+				|| lowerCaseMsg.contains( "login failed" )
+				|| lowerCaseMsg.contains( "access denied" )
+				|| lowerCaseMsg.contains( "invalid credentials")
 				// Oracle invalid username/password code
 				|| msg.contains( "ORA-01017" );
 	}
