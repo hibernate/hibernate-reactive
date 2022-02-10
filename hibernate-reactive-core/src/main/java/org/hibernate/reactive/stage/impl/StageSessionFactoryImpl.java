@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
@@ -20,6 +21,8 @@ import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.context.impl.BaseKey;
 import org.hibernate.reactive.context.impl.MultitenantKey;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
@@ -39,6 +42,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * Obtained by calling {@link org.hibernate.SessionFactory#unwrap(Class)}.
  */
 public class StageSessionFactoryImpl implements Stage.SessionFactory, Implementor {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
@@ -145,9 +150,13 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Stage.Session current = context.get( contextKeyForSession );
 		if ( current!=null && current.isOpen() ) {
+			LOG.debug( "Reusing existing open Stage.Session which was found in the current Vert.x context" );
 			return work.apply( current );
 		}
-		return withSession( openSession(), work, contextKeyForSession );
+		else {
+			LOG.debug( "No existing open Stage.Session was found in the current Vert.x context: opening a new instance" );
+			return withSession( openSession(), work, contextKeyForSession );
+		}
 	}
 
 	@Override
@@ -157,9 +166,13 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		Context.Key<Stage.Session> key = new MultitenantKey<>( this.contextKeyForSession, tenantId );
 		Stage.Session current = context.get( key );
 		if ( current!=null && current.isOpen() ) {
+			LOG.debugf( "Reusing existing open Stage.Session which was found in the current Vert.x context for current tenant '%s'", tenantId );
 			return work.apply( current );
 		}
-		return withSession( openSession( tenantId ), work, key );
+		else {
+			LOG.debugf( "No existing open Stage.Session was found in the current Vert.x context for current tenant '%s': opening a new instance", tenantId );
+			return withSession( openSession( tenantId ), work, key );
+		}
 	}
 
 	@Override
@@ -167,9 +180,13 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Stage.StatelessSession current = context.get( contextKeyForStatelessSession );
 		if ( current!=null && current.isOpen() ) {
+			LOG.debug( "Reusing existing open Stage.StatelessSession which was found in the current Vert.x context" );
 			return work.apply( current );
 		}
-		return withSession( openStatelessSession(), work, contextKeyForStatelessSession );
+		else {
+			LOG.debug( "No existing open Stage.StatelessSession was found in the current Vert.x context: opening a new instance" );
+			return withSession( openStatelessSession(), work, contextKeyForStatelessSession );
+		}
 	}
 
 	@Override
@@ -179,9 +196,13 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		Context.Key<Stage.StatelessSession> key = new MultitenantKey<>( this.contextKeyForStatelessSession, tenantId );
 		Stage.StatelessSession current = context.get( key );
 		if ( current != null && current.isOpen() ) {
+			LOG.debugf( "Reusing existing open Stage.StatelessSession which was found in the current Vert.x context for current tenant '%s'", tenantId );
 			return work.apply( current );
 		}
-		return withSession( openStatelessSession( tenantId), work, key );
+		else {
+			LOG.debugf( "No existing open Stage.StatelessSession was found in the current Vert.x context for current tenant '%s': opening a new instance", tenantId );
+			return withSession( openStatelessSession( tenantId), work, key );
+		}
 	}
 
 	private <S extends Stage.Closeable, T> CompletionStage<T> withSession(
