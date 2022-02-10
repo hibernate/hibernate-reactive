@@ -130,7 +130,7 @@ public class LocalContextTest {
 		return Uni.createFrom().completionStage( CompositeFuture.all( getRequests ).toCompletionStage() );
 	}
 
-	/**	/**
+	/**
 	 * Check that the expected product is returned by the response.
 	 */
 	private Future<Void> handle(Product expected, HttpResponse<Buffer> response) {
