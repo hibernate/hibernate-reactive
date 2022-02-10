@@ -24,44 +24,44 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
  */
 public class VertxContext implements Context, ServiceRegistryAwareService {
 
-    private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-    private VertxInstance vertxInstance;
+	private VertxInstance vertxInstance;
 
-    @Override
-    public void injectServices(ServiceRegistryImplementor serviceRegistry) {
-        vertxInstance = serviceRegistry.getService( VertxInstance.class );
-    }
+	@Override
+	public void injectServices(ServiceRegistryImplementor serviceRegistry) {
+		vertxInstance = serviceRegistry.getService( VertxInstance.class );
+	}
 
-    @Override
-    public <T> void put(Key<T> key, T instance) {
-        final io.vertx.core.Context context = Vertx.currentContext();
-        if ( context != null ) {
-            context.putLocal( key, instance );
-        }
-        else {
-            throw LOG.notVertxContextActive();
-        }
-    }
+	@Override
+	public <T> void put(Key<T> key, T instance) {
+		final io.vertx.core.Context context = Vertx.currentContext();
+		if ( context != null ) {
+			context.putLocal( key, instance );
+		}
+		else {
+			throw LOG.notVertxContextActive();
+		}
+	}
 
-    @Override
-    public <T> T get(Key<T> key) {
-        final io.vertx.core.Context context = Vertx.currentContext();
-        if ( context != null ) {
-            return context.getLocal( key );
-        }
-        else {
-            return null;
-        }
-    }
+	@Override
+	public <T> T get(Key<T> key) {
+		final io.vertx.core.Context context = Vertx.currentContext();
+		if ( context != null ) {
+			return context.getLocal( key );
+		}
+		else {
+			return null;
+		}
+	}
 
-    @Override
-    public void remove(Key<?> key) {
-        final io.vertx.core.Context context = Vertx.currentContext();
-        if ( context != null ) {
-            context.removeLocal( key );
-        }
-    }
+	@Override
+	public void remove(Key<?> key) {
+		final io.vertx.core.Context context = Vertx.currentContext();
+		if ( context != null ) {
+			context.removeLocal( key );
+		}
+	}
 
 	@Override
 	public void execute(Runnable runnable) {
