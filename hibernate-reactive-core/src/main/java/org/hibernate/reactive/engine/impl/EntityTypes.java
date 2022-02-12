@@ -31,6 +31,7 @@ import static org.hibernate.property.access.internal.PropertyAccessStrategyBackR
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Reactive operations that really belong to {@link EntityType}
@@ -60,6 +61,36 @@ public class EntityTypes {
 		}
 		else {
 			return null;
+		}
+	}
+
+	public static CompletionStage<Void> resolveStages(Object[] loadedState) {
+		CompletionStage<Void> loop = voidFuture();
+		for ( int i = 0; i < loadedState.length; i++ ) {
+			if ( loadedState[i] instanceof CompletionStage ) {
+				final StageResolver resolver = new StageResolver( loadedState, i );
+				loop = loop.thenCompose( resolver::resolve );
+			}
+		}
+		return loop;
+	}
+
+	private static class StageResolver {
+
+		private final int index;
+		private final Object[] loadedState;
+
+		public StageResolver(Object[] loadedState, int index) {
+			this.loadedState = loadedState;
+			this.index = index;
+		}
+
+		public CompletionStage<Void> resolve(Void v) {
+			return ( (CompletionStage<?>) loadedState[index] ).thenAccept( this::assignNewValue );
+		}
+
+		private void assignNewValue(Object obj) {
+			loadedState[index] = obj;
 		}
 	}
 
