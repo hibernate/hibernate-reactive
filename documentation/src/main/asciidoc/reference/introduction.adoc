@@ -66,6 +66,7 @@ driver for your database, one of the following options:
 | MySQL or MariaDB          | `io.vertx:vertx-mysql-client:{vertxVersion}`
 | DB2                       | `io.vertx:vertx-db2-client:{vertxVersion}`
 | SQL Server                | `io.vertx:vertx-mssql-client:${vertxVersion}`
+| Oracle                    | `io.vertx:vertx-oracle-client:${vertxVersion}`
 |===
 
 Where `{vertxVersion}` is the version of Vert.x compatible with the
