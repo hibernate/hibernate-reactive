@@ -5,18 +5,26 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
+import java.util.Objects;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
+import javax.persistence.Version;
+
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
+
 import org.junit.Rule;
 import org.junit.Test;
 
-import javax.persistence.*;
-import java.util.Objects;
+import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 
 public class SequenceGeneratorTest extends BaseReactiveTest {
@@ -65,16 +73,25 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 	public static class SequenceGeneratorDefaultSchemaTest extends SequenceGeneratorTest {
 
 		// COCKROACHDB: we don't have permission to create schema in the CI!
-		// ORACLE: I don't know how to create one with docker
 		@Rule
-		public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( COCKROACHDB, ORACLE );
+		public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( COCKROACHDB );
 
 		@Override
 		protected Configuration constructConfiguration() {
 			Configuration configuration = super.constructConfiguration();
-			configuration.setProperty( Settings.DEFAULT_SCHEMA, "hr" );
+			configuration.setProperty( Settings.DEFAULT_SCHEMA, schemaName() );
 			configuration.setProperty( Settings.HBM2DDL_CREATE_SCHEMAS, "true" );
 			return configuration;
+		}
+
+		/**
+		 * Oracle Database automatically creates a schema when you create a user,
+		 * for the other databases we test with a schema that doesn't match the username.
+		 */
+		private String schemaName() {
+			return dbType() == ORACLE
+					? DatabaseConfiguration.USERNAME
+					: "hr";
 		}
 	}
 
