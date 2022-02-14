@@ -15,7 +15,7 @@ especially targeted toward usage in reactive environments like
 [Quarkus][] and [Vert.x][].
 
 Currently [PostgreSQL][], [MySQL][], [MariaDB][], [Db2][], 
-[CockroachDB][] and [MS SQL Server][MSSQL] are supported.
+[CockroachDB][], [MS SQL Server][MSSQL] adn [Oracle][] are supported.
 
 Learn more at <http://hibernate.org/reactive>.
 
@@ -35,6 +35,7 @@ Hibernate Reactive has been tested with:
 - Db2 11.5
 - CockroachDB 21.2
 - MS SQL Server 2019
+- Oracle 21.3
 - [Hibernate ORM][] 5.6.5.Final
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 4.2.4
 - [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 4.2.4
@@ -48,6 +49,7 @@ Hibernate Reactive has been tested with:
 [DB2]: https://www.ibm.com/analytics/db2
 [CockroachDB]: https://www.cockroachlabs.com/
 [MSSQL]: https://www.microsoft.com/en-gb/sql-server
+[Oracle]: https://www.oracle.com/database/
 
 ## Documentation
 
