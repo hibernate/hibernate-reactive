@@ -1,11 +1,5 @@
 import java.nio.charset.StandardCharsets
 
-plugins {
-    // Used for publishing the documentation
-    // https://github.com/ajoberstar/gradle-git-publish
-    id 'org.ajoberstar.git-publish' version '3.0.0'
-}
-
 ext {
     // Select which repository to use for publishing the documentation
     // Example:
@@ -33,80 +27,102 @@ description = 'Release module'
 // To tag a version and trigger a release on CI (which will include publishing to Bintray and publishing documentation):
 //  ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin -PgitBranch=main
 
-final File documentationDir = mkdir( "${project.buildDir}/documentation" );
+// The folder containing the rendered documentation
+final String documentationDir = "${rootProject.project( 'documentation' ).buildDir}"
+
+// The location of the docs when the website has been cloned
+final String docWebsiteReactiveFolder = "${project.buildDir}/docs-website/reactive/documentation/${projectVersion.family}"
 
 /**
  * Assembles all documentation into the {buildDir}/documentation directory.
  */
 task assembleDocumentation(dependsOn: [rootProject.project( 'documentation' ).tasks.assemble]) {
-    description = 'Assembles all documentation into the {buildDir}/documentation directory'
-
-    doLast {
-        // copy documentation outputs into target/documentation.
-        // 		* this is used in building the dist bundles
-        //		* it is also used as a base to build a staged directory for documentation upload
-
-        // Aggregated JavaDoc
-        copy {
-            from "${rootProject.project( 'documentation' ).buildDir}/javadocs"
-            into "${documentationDir}/javadocs"
-        }
-
-        // Reference Documentation
-        copy {
-            from "${rootProject.project( 'documentation' ).buildDir}/asciidoc/reference"
-            into "${documentationDir}/reference"
-        }
-    }
+    group = 'Documentation'
+    description = 'Render the documentation'
 }
 assemble.dependsOn assembleDocumentation
 
 /**
- * Configuration to push the documentation on hibernate.org on GitHub
- */
-gitPublish {
-    // where to publish to (repo must exist)
-    repoUri = docPublishRepoUri
-    // branch will be created if it doesn't exist
-    branch = docPublishBranch
-    // where the repository gets cloned
-    repoDir = file("$buildDir/hibernate.org") // defaults to $buildDir/gitPublish
-    // where to fetch from prior to fetching from the remote (i.e. a local repo to save time)
-    // referenceRepoUri = 'file:///home/ddalto/workspace/hibernate.org'
-
-    // what to publish, this is a standard CopySpec
-    contents {
-        from "${documentationDir}"
-        into "reactive/documentation/${projectVersion.family}/"
-    }
-
-    // what to keep in the existing branch (include=keep)
-    preserve {
-        // =================================================================================
-        // WARNING: Keep the include all or everything will be deleted before the copy task
-        // =================================================================================
-        include '**/*'
-        exclude "reactive/documentation/${projectVersion.family}/"
-    }
-
-    // message used when committing changes
-    commitMessage = "[HR] Hibernate Reactive documentation for ${projectVersion}"
+* Clone the website
+*/
+task removeDocWebsite( type: Exec ) {
+    workingDir project.buildDir
+    commandLine 'rm', '-rf', 'docs-website'
 }
 
-gitPublishCopy.dependsOn assembleDocumentation
+task cloneDocsWebsite( type: Exec, dependsOn: removeDocWebsite ) {
+    workingDir project.buildDir
+    commandLine 'git', 'clone', "$docPublishRepoUri", '--sparse', 'docs-website'
+}
+
+task switchDocBranch( type: Exec, dependsOn: cloneDocsWebsite ) {
+    workingDir "$project.buildDir/docs-website"
+    commandLine 'git', 'switch', "$docPublishBranch"
+}
+
+task sparseCheckoutDocumentation( type: Exec, dependsOn: switchDocBranch ) {
+    workingDir "$project.buildDir/docs-website"
+    commandLine 'git', 'sparse-checkout', 'set', "reactive/$projectVersion.family"
+}
 
 /**
- * Upload documentation on hibernate.org
- */
-task publishDocumentation {
-    dependsOn = [gitPublishPush]
-    description = "Upload documentation on hibernate.org"
+* Update the docs on the cloned website
+*/
+task updateDocumentation( dependsOn: [assembleDocumentation, sparseCheckoutDocumentation] ) {
+    description = "Update the documentation o the cloned static website"
 
-    doFirst {
+    // copy documentation outputs into target/documentation:
+    // * this is used in building the dist bundles
+    // * it is also used as a base to build a staged directory for documentation upload
+
+    doLast {
+        // delete the folders in case some files have been removed
+        delete "${docWebsiteReactiveFolder}/javadocs", "${docWebsiteReactiveFolder}/reference"
+
+        // Aggregated JavaDoc
+        copy {
+            from "${documentationDir}/javadocs"
+            into "${docWebsiteReactiveFolder}/javadocs"
+        }
+
+        // Reference Documentation
+        copy {
+            from "${documentationDir}/reference"
+            into "${docWebsiteReactiveFolder}/reference"
+        }
+    }
+}
+
+/**
+* Push documentation changes on the remote repository
+*/
+task stageDocChanges( type: Exec, dependsOn: updateDocumentation ) {
+    workingDir "$project.buildDir/docs-website"
+    commandLine 'git', 'add', '-A', '--sparse', '.'
+}
+
+task commitDocChanges( type: Exec, dependsOn: stageDocChanges ) {
+    workingDir "$project.buildDir/docs-website"
+    commandLine 'git', 'commit', '-m', "[HR] Hibernate Reactive documentation for ${projectVersion}"
+}
+
+task pushDocChanges( type: Exec, dependsOn: commitDocChanges ) {
+    workingDir "$project.buildDir/docs-website"
+    commandLine 'git', 'push', '--atomic', 'origin', "$docPublishBranch"
+}
+
+task publishDocumentation(dependsOn: pushDocChanges) {
+    group = "Release"
+    description = "Upload documentation on the website"
+
+    doLast {
         logger.lifecycle "Documentation published on '${docPublishRepoUri}' branch '${docPublishBranch}'"
     }
 }
 
+/*
+* Release everything
+*/
 task ciRelease {
     group = "Release"
     description = "Triggers the release on CI: creates commits to change the version (release, then development), creates a tag, pushes everything. Then CI will take over and perform the release."
@@ -129,7 +145,7 @@ task ciRelease {
                     "Cannot release because there are uncommitted or untracked files in the working tree."
                             + "\nCommit or stash your changes first."
                             + "\nUncommitted files:\n" + uncommittedFiles
-            );
+            )
         }
 
         logger.lifecycle("Switching to branch '${project.gitBranch}'...")
@@ -141,7 +157,7 @@ task ciRelease {
             throw new GradleException(
                     "Cannot release because there are commits on the branch to release that haven't been pushed yet."
                             + "\nPush your commits to the branch to release first."
-            );
+            )
         }
 
         logger.lifecycle("Adding commit to update version to '${project.releaseVersion}'...")
@@ -187,12 +203,12 @@ static String inputStreamToString(InputStream inputStream) {
     inputStream.withCloseable { ins ->
         new BufferedInputStream(ins).withCloseable { bis ->
             new ByteArrayOutputStream().withCloseable { buf ->
-                int result = bis.read();
+                int result = bis.read()
                 while (result != -1) {
-                    buf.write((byte) result);
-                    result = bis.read();
+                    buf.write((byte) result)
+                    result = bis.read()
                 }
-                return buf.toString(StandardCharsets.UTF_8.name());
+                return buf.toString(StandardCharsets.UTF_8.name())
             }
         }
     }
