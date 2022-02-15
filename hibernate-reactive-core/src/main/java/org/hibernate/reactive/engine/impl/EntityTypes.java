@@ -28,6 +28,7 @@ import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 import static java.util.Arrays.stream;
@@ -75,6 +76,7 @@ public class EntityTypes {
 	public static CompletionStage<Void> resolveStages(Object[] loadedState) {
 		if ( LOG.isDebugEnabled() ) {
 			final List<? extends Class<?>> classes = stream( loadedState )
+					.filter( Objects::nonNull )
 					.map( Object::getClass )
 					.collect( toList() );
 			LOG.debugf( "Check entity loaded state for CompletionStage: %s ", classes );
@@ -90,6 +92,7 @@ public class EntityTypes {
 		if ( LOG.isDebugEnabled() ) {
 			loop = loop.thenAccept( v -> {
 				final List<? extends Class<?>> classes = stream( loadedState )
+						.filter( Objects::nonNull )
 						.map( Object::getClass )
 						.collect( toList() );
 				LOG.debugf( "Resolved all CompletionStage: %s ", classes );
