@@ -41,4 +41,4 @@ jobs:
       - name: Print the effective Vert.x version used
         run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency io.vertx -PvertxVersion='${{ matrix.vertx-version }}' -PenableSonatypeOpenSourceSnapshotsRep
       - name: Build and Test with ${{ matrix.db }}
-        run: ./gradlew build -Pdb=${{ matrix.db }} -Pdocker -PvertxVersion='${{ matrix.vertx-version }}' -PenableSonatypeOpenSourceSnapshotsRep -PshowStandardOutput --tests=LazyManyToOneAssociationTest
+        run: ./gradlew build -Pdb=${{ matrix.db }} -Pdocker -PvertxVersion='${{ matrix.vertx-version }}' -PenableSonatypeOpenSourceSnapshotsRep -PshowStandardOutput -PincludeTests=LazyManyToOneAssociationTest
