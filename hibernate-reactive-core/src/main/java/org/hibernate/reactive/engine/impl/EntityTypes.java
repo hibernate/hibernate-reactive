@@ -14,6 +14,8 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
@@ -23,9 +25,13 @@ import org.hibernate.type.OneToOneType;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toList;
 import static org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer.UNFETCHED_PROPERTY;
 import static org.hibernate.property.access.internal.PropertyAccessStrategyBackRefImpl.UNKNOWN;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
@@ -39,6 +45,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * @author Gavin King
  */
 public class EntityTypes {
+
+	private static Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	/**
 	 * Replacement for {@link EntityType#resolve(Object, SharedSessionContractImplementor, Object, Boolean)}
@@ -65,12 +73,27 @@ public class EntityTypes {
 	}
 
 	public static CompletionStage<Void> resolveStages(Object[] loadedState) {
+		if ( LOG.isDebugEnabled() ) {
+			final List<? extends Class<?>> classes = stream( loadedState )
+					.map( Object::getClass )
+					.collect( toList() );
+			LOG.debugf( "Check entity loaded state for CompletionStage: %s ", classes );
+		}
 		CompletionStage<Void> loop = voidFuture();
 		for ( int i = 0; i < loadedState.length; i++ ) {
 			if ( loadedState[i] instanceof CompletionStage ) {
 				final StageResolver resolver = new StageResolver( loadedState, i );
-				loop = loop.thenCompose( resolver::resolve );
+				loop = loop
+						.thenCompose( resolver::resolve );
 			}
+		}
+		if ( LOG.isDebugEnabled() ) {
+			loop = loop.thenAccept( v -> {
+				final List<? extends Class<?>> classes = stream( loadedState )
+						.map( Object::getClass )
+						.collect( toList() );
+				LOG.debugf( "Resolved all CompletionStage: %s ", classes );
+			} );
 		}
 		return loop;
 	}
