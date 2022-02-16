@@ -28,10 +28,13 @@ description = 'Release module'
 //  ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin -PgitBranch=main
 
 // The folder containing the rendered documentation
-final String documentationDir = "${rootProject.project( 'documentation' ).buildDir}"
+final String documentationDir = rootProject.project( 'documentation' ).buildDir
+
+// Relative path on the static website where the documentation is located
+final String docWebsiteRelativePath = "/reactive/documentation/${projectVersion.family}"
 
 // The location of the docs when the website has been cloned
-final String docWebsiteReactiveFolder = "${project.buildDir}/docs-website/reactive/documentation/${projectVersion.family}"
+final String docWebsiteReactiveFolder = "${project.buildDir}/docs-website/${docWebsiteRelativePath}"
 
 /**
  * Assembles all documentation into the {buildDir}/documentation directory.
@@ -45,24 +48,24 @@ assemble.dependsOn assembleDocumentation
 /**
 * Clone the website
 */
-task removeDocWebsite( type: Exec ) {
+task removeDocsWebsite( type: Exec ) {
     workingDir project.buildDir
     commandLine 'rm', '-rf', 'docs-website'
 }
 
-task cloneDocsWebsite( type: Exec, dependsOn: removeDocWebsite ) {
+task cloneDocsWebsite( type: Exec, dependsOn: removeDocsWebsite ) {
     workingDir project.buildDir
-    commandLine 'git', 'clone', "$docPublishRepoUri", '--sparse', 'docs-website'
+    commandLine 'git', 'clone', docPublishRepoUri, '--sparse', '--depth', '1', 'docs-website'
 }
 
 task switchDocBranch( type: Exec, dependsOn: cloneDocsWebsite ) {
-    workingDir "$project.buildDir/docs-website"
-    commandLine 'git', 'switch', "$docPublishBranch"
+    workingDir "${project.buildDir}/docs-website"
+    commandLine 'git', 'switch', docPublishBranch
 }
 
 task sparseCheckoutDocumentation( type: Exec, dependsOn: switchDocBranch ) {
-    workingDir "$project.buildDir/docs-website"
-    commandLine 'git', 'sparse-checkout', 'set', "reactive/$projectVersion.family"
+    workingDir "${project.buildDir}/docs-website"
+    commandLine 'git', 'sparse-checkout', 'set', docWebsiteRelativePath
 }
 
 /**
@@ -97,18 +100,18 @@ task updateDocumentation( dependsOn: [assembleDocumentation, sparseCheckoutDocum
 * Push documentation changes on the remote repository
 */
 task stageDocChanges( type: Exec, dependsOn: updateDocumentation ) {
-    workingDir "$project.buildDir/docs-website"
-    commandLine 'git', 'add', '-A', '--sparse', '.'
+    workingDir "${project.buildDir}/docs-website"
+    commandLine 'git', 'add', '-A', '.'
 }
 
 task commitDocChanges( type: Exec, dependsOn: stageDocChanges ) {
-    workingDir "$project.buildDir/docs-website"
+    workingDir "${project.buildDir}/docs-website"
     commandLine 'git', 'commit', '-m', "[HR] Hibernate Reactive documentation for ${projectVersion}"
 }
 
 task pushDocChanges( type: Exec, dependsOn: commitDocChanges ) {
-    workingDir "$project.buildDir/docs-website"
-    commandLine 'git', 'push', '--atomic', 'origin', "$docPublishBranch"
+    workingDir "${project.buildDir}/docs-website"
+    commandLine 'git', 'push', '--atomic', 'origin', docPublishBranch
 }
 
 task publishDocumentation(dependsOn: pushDocChanges) {
