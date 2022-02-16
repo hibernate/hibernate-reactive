@@ -136,16 +136,3 @@ def dbs = ['MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer'
 task testAll( dependsOn: dbs.collect( [] as HashSet ) { db -> "testDb${db}" } ) {
     description = "Run tests for ${dbs}"
 }
-
-spotless {
-    //Don't fail during the check: rather than enforcing guidelines, we use this plugin to fix mistakes automatically.
-    enforceCheck false
-    java {
-        licenseHeaderFile rootProject.file('spotless.license.java')
-        removeUnusedImports()
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
-}
-
-tasks.compileJava.dependsOn(spotlessApply)
