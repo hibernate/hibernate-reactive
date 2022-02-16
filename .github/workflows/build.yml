@@ -143,8 +143,8 @@ jobs:
         java:
           - { name: "11", java_version_numeric: 11 }
           - { name: "17", java_version_numeric: 17 }
-          - { name: "18-ea", java_version_numeric: 18,
-              download_url: "https://download.java.net/java/early_access/jdk18/33/GPL/openjdk-18-ea+33_linux-x64_bin.tar.gz" }
+          - { name: "18", java_version_numeric: 18,
+              download_url: "https://download.java.net/java/GA/jdk18/43f95e8614114aeaa8e8a5fcf20a682d/36/GPL/openjdk-18_linux-x64_bin.tar.gz" }
           - { name: "19-ea", java_version_numeric: 19,
               download_url: "https://download.java.net/java/early_access/jdk19/8/GPL/openjdk-19-ea+8_linux-x64_bin.tar.gz" }
     steps:
