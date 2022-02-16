@@ -95,17 +95,3 @@ tasks.addRule( "Pattern testDb<id>" ) { String taskName ->
         }
     }
 }
-
-spotless {
-    //Don't fail during the check: rather than enforcing guidelines, we use this plugin to fix mistakes automatically.
-    enforceCheck false
-    java {
-        licenseHeaderFile 'spotless.license.java'
-        removeUnusedImports()
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
-}
-
-tasks.compileJava.dependsOn(spotlessApply)
-
