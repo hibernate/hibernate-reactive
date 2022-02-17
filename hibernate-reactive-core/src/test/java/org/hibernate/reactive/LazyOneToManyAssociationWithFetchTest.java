@@ -10,9 +10,12 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.FetchProfile;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -29,6 +32,9 @@ import java.util.List;
 import java.util.Objects;
 
 public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
+
+	@Rule
+	public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( DatabaseConfiguration.DBType.ORACLE );
 
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
