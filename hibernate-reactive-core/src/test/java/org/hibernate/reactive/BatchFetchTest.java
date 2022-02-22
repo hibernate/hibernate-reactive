@@ -130,6 +130,33 @@ public class BatchFetchTest extends BaseReactiveTest {
 		);
 	}
 
+	// If it's only one collection a different method is called
+	// See ReactivePaddedBatchingCollectionInitializer#reactiveInitialize
+	@Test
+	public void testWithCollection(TestContext context) {
+		Node node = new Node( "Child" );
+		node.elements.add( new Element( node ) );
+		node.elements.add( new Element( node ) );
+		node.elements.add( new Element( node ) );
+
+		test( context, openSession()
+				.thenCompose( s -> s.persist( node ).thenCompose( v -> s.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( s -> s.createQuery( "from Node n order by id", Node.class )
+						.getResultList()
+						.thenCompose( list -> {
+							context.assertEquals( list.size(), 1 );
+							Node n1 = list.get( 0 );
+							context.assertFalse( Hibernate.isInitialized( n1.elements ) );
+							return s.fetch( n1.elements ).thenAccept( elements -> {
+								context.assertTrue( Hibernate.isInitialized( elements ) );
+								context.assertTrue( Hibernate.isInitialized( n1.elements ) );
+							} );
+						} )
+				)
+		);
+	}
+
 	@Entity(name = "Element")
 	@Table(name = "Element")
 	public static class Element {
