@@ -194,7 +194,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 			}
 		}
 
-		source.getActionQueue().sortActions();
+		actionQueue( source ).sortActions();
 
 		return count;
 	}
