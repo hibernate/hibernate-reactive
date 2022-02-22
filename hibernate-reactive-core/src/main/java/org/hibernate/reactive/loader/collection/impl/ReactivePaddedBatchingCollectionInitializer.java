@@ -28,10 +28,12 @@ class ReactivePaddedBatchingCollectionInitializer extends ReactiveCollectionLoad
 	private final int[] batchSizes;
 	private final ReactiveCollectionLoader[] loaders;
 
-	public ReactivePaddedBatchingCollectionInitializer(QueryableCollection persister, int[] batchSizes,
-													   ReactiveCollectionLoader[] loaders,
-													   SessionFactoryImplementor factory,
-													   LoadQueryInfluencers loadQueryInfluencers) {
+	public ReactivePaddedBatchingCollectionInitializer(
+			QueryableCollection persister,
+			int[] batchSizes,
+			ReactiveCollectionLoader[] loaders,
+			SessionFactoryImplementor factory,
+			LoadQueryInfluencers loadQueryInfluencers) {
 		super( persister, factory, loadQueryInfluencers );
 		this.persister = persister;
 		this.batchSizes = batchSizes;
@@ -43,6 +45,7 @@ class ReactivePaddedBatchingCollectionInitializer extends ReactiveCollectionLoad
 		final Serializable[] batch = session.getPersistenceContextInternal()
 				.getBatchFetchQueue()
 				.getCollectionBatch( persister, id, batchSizes[0] );
+
 		final int numberOfIds = ArrayHelper.countNonNull( batch );
 		if ( numberOfIds <= 1 ) {
 			loaders[batchSizes.length-1].loadCollection( session, id, persister.getKeyType() );
@@ -50,8 +53,8 @@ class ReactivePaddedBatchingCollectionInitializer extends ReactiveCollectionLoad
 		}
 
 		// Uses the first batch-size bigger than the number of actual ids in the batch
-		int indexToUse = batchSizes.length-1;
-		for ( int i = 0; i < batchSizes.length-1; i++ ) {
+		int indexToUse = batchSizes.length - 1;
+		for ( int i = 0; i < batchSizes.length - 1; i++ ) {
 			if ( batchSizes[i] >= numberOfIds ) {
 				indexToUse = i;
 			}
@@ -60,7 +63,7 @@ class ReactivePaddedBatchingCollectionInitializer extends ReactiveCollectionLoad
 			}
 		}
 
-		final Serializable[] idsToLoad = new Serializable[ batchSizes[indexToUse] ];
+		final Serializable[] idsToLoad = new Serializable[batchSizes[indexToUse]];
 		System.arraycopy( batch, 0, idsToLoad, 0, numberOfIds );
 		for ( int i = numberOfIds; i < batchSizes[indexToUse]; i++ ) {
 			idsToLoad[i] = id;
