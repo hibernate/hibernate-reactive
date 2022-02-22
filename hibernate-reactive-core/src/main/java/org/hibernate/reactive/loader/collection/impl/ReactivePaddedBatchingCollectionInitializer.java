@@ -15,7 +15,6 @@ import org.hibernate.persister.collection.QueryableCollection;
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A batching collection initializer for {@link org.hibernate.loader.BatchFetchStyle#PADDED}.
@@ -48,8 +47,8 @@ class ReactivePaddedBatchingCollectionInitializer extends ReactiveCollectionLoad
 
 		final int numberOfIds = ArrayHelper.countNonNull( batch );
 		if ( numberOfIds <= 1 ) {
-			loaders[batchSizes.length-1].loadCollection( session, id, persister.getKeyType() );
-			return voidFuture();
+			return loaders[batchSizes.length - 1]
+					.reactiveLoadCollection( (SharedSessionContractImplementor) session, id, persister.getKeyType() );
 		}
 
 		// Uses the first batch-size bigger than the number of actual ids in the batch
