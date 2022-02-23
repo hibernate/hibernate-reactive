@@ -105,6 +105,7 @@ public class ReactiveGenerationTarget implements GenerationTarget {
 	private static <U> U logCommandFailure(Void ignore, Throwable throwable) {
 		if ( throwable != null ) {
 			log.ddlCommandFailed( throwable.getMessage() );
+			log.debug( "Command failed stacktrace:", throwable );
 		}
 		return null;
 	}
