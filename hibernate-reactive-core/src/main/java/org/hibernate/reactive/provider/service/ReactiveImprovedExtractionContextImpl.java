@@ -49,7 +49,7 @@ import org.hibernate.tool.schema.internal.exec.ImprovedExtractionContextImpl;
 import org.hibernate.tool.schema.internal.exec.JdbcContext;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
-import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionContextImpl {
 
@@ -82,8 +82,20 @@ public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionCon
 		}
 		finally {
 			// We start closing the connection but we don't care about the result
-			connectionStage.whenComplete( (c, e) -> c.close() );
+			connectionStage
+					.handle( ReactiveImprovedExtractionContextImpl::ignoreException )
+					.thenCompose( ReactiveImprovedExtractionContextImpl::closeConnection );
+
 		}
+	}
+
+	private static ReactiveConnection ignoreException(ReactiveConnection reactiveConnection, Throwable throwable) {
+		return reactiveConnection;
+	}
+
+	private static CompletionStage<Void> closeConnection(ReactiveConnection connection) {
+		// Avoid NullPointerException if we couldn't create a connection
+		return connection != null ? connection.close() : voidFuture();
 	}
 
 	private ResultSet getQueryResultSet(
@@ -96,10 +108,7 @@ public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionCon
 		);
 		final String queryToUse = parametersDialectSpecific.process( queryString, parametersToUse.length );
 		return connectionStage.thenCompose( c -> c.selectJdbcOutsideTransaction( queryToUse, parametersToUse ) )
-				.handle( (resultSet, err) -> {
-					logSqlException( err, () -> "could not execute query ", queryToUse );
-					return returnOrRethrow( err, resultSet );
-				} )
+				.whenComplete( (resultSet, err) -> logSqlException( err, () -> "could not execute query ", queryToUse ) )
 				.thenApply(ResultSetWorkaround::new)
 				.toCompletableFuture()
 				.join();
