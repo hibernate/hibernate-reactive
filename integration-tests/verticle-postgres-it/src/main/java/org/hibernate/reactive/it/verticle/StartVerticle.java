@@ -19,8 +19,8 @@ import org.hibernate.reactive.vertx.VertxInstance;
 import org.jboss.logging.Logger;
 
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.mutiny.core.Vertx;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 /**
@@ -93,15 +93,13 @@ public class StartVerticle {
 		options.setInstances( 1 );
 
 		Vertx vertx = Vertx.vertx( vertxOptions() );
-		final Mutiny.SessionFactory sessionFactory = createHibernateSessionFactory( USE_DOCKER, vertx.getDelegate() )
+		final Mutiny.SessionFactory sessionFactory = createHibernateSessionFactory( USE_DOCKER, vertx )
 				.unwrap( Mutiny.SessionFactory.class );
 		vertx.deployVerticle( () -> new ProductVerticle( () -> sessionFactory ), options )
-				.subscribe().with(
-						d -> {
-							LOG.info( "✅ Deployment success" );
-							LOG.info( "💡 Vert.x app started" );
-						},
-						err -> LOG.error( "🔥 Deployment failure", err )
-				);
+				.onSuccess( s -> {
+					LOG.info( "✅ Deployment success" );
+					LOG.info( "💡 Vert.x app started" );
+				} )
+				.onFailure( err -> LOG.error( "🔥 Deployment failure", err ) );
 	}
 }

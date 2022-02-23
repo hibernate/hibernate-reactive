@@ -1,29 +1,29 @@
 description = 'Hibernate Reactive Verticle Integration Tests'
 
 ext {
-    smallryeMutinyVertxVersion = '2.17.0'
-    jacksonDatabindVersion = '2.13.0'
+    jacksonDatabindVersion = '2.13.1'
+    log4jVersion = '2.17.1'
+    assertjVersion = '3.20.2'
 }
 
 dependencies {
     implementation project(':hibernate-reactive-core')
-
-    implementation "io.smallrye.reactive:smallrye-mutiny-vertx-core:${smallryeMutinyVertxVersion}"
-    implementation "io.smallrye.reactive:smallrye-mutiny-vertx-web:${smallryeMutinyVertxVersion}"
+    implementation "io.vertx:vertx-web:${vertxVersion}"
     implementation "io.vertx:vertx-web-client:${vertxVersion}"
 
+    runtimeOnly "io.vertx:vertx-pg-client:${vertxVersion}"
+    // The Pg client requires this dependency
+    runtimeOnly "com.ongres.scram:client:2.1"
     runtimeOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
-    runtimeOnly "io.smallrye.reactive:smallrye-mutiny-vertx-pg-client:${smallryeMutinyVertxVersion}"
-    runtimeOnly "io.smallrye.reactive:smallrye-mutiny-vertx-mysql-client:${smallryeMutinyVertxVersion}"
 
     // logging
-    runtimeOnly "org.apache.logging.log4j:log4j-core:2.17.1"
+    runtimeOnly "org.apache.logging.log4j:log4j-core:${log4jVersion}"
 
     // Testcontainers
     implementation "org.testcontainers:postgresql:${testcontainersVersion}"
 
     // Testing
-    testImplementation 'org.assertj:assertj-core:3.20.2'
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
     testImplementation "io.vertx:vertx-unit:${vertxVersion}"
 }
 
