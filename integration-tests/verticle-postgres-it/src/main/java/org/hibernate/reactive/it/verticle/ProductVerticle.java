@@ -13,11 +13,14 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.logging.Logger;
 
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.vertx.core.AbstractVerticle;
-import io.vertx.mutiny.core.http.HttpServer;
-import io.vertx.mutiny.ext.web.Router;
-import io.vertx.mutiny.ext.web.RoutingContext;
-import io.vertx.mutiny.ext.web.handler.BodyHandler;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.http.HttpServer;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 
 public class ProductVerticle extends AbstractVerticle {
 
@@ -36,39 +39,45 @@ public class ProductVerticle extends AbstractVerticle {
 		this.emfSupplier = emfSupplier;
 	}
 
-	private Uni<Mutiny.SessionFactory> startHibernate() {
-		return Uni.createFrom().item( emfSupplier );
+	private void startHibernate(Promise<Object> p) {
+		try {
+			this.emf = emfSupplier.get();
+			p.complete();
+		}
+		catch (Throwable t) {
+			p.fail( t );
+		}
 	}
 
 	@Override
-	public Uni<Void> asyncStart() {
-		final Uni<Mutiny.SessionFactory> startHibernate = vertx
-				.executeBlocking( this.startHibernate() )
-				.invoke( factory -> {
-					this.emf = factory;
-					LOG.infof( "✅ Hibernate Reactive is ready" );
-				} );
+	public void start(Promise<Void> startPromise) {
+		final Future<Object> startHibernate = vertx.executeBlocking( this::startHibernate )
+				.onSuccess( s -> LOG.infof( "✅ Hibernate Reactive is ready" ) );
 
 		Router router = Router.router( vertx );
 		BodyHandler bodyHandler = BodyHandler.create();
-		router.post().handler( bodyHandler::handle );
+		router.post().handler( bodyHandler );
 
 		router.get( "/products" ).respond( this::listProducts );
 		router.get( "/products/:id" ).respond( this::getProduct );
 		router.post( "/products" ).respond( this::createProduct );
 
 		this.httpServer = vertx.createHttpServer();
-		Uni<HttpServer> startHttpServer = httpServer
-				.requestHandler( router::handle )
+		final Future<HttpServer> startHttpServer = httpServer
+				.requestHandler( router )
 				.listen( HTTP_PORT )
-				.onItem().invoke( () -> LOG.infof( "✅ HTTP server listening on port %s", HTTP_PORT ) );
+				.onSuccess( v -> LOG.infof( "✅ HTTP server listening on port %s", HTTP_PORT ) );
 
-		return Uni.combine().all().unis( startHibernate, startHttpServer ).discardItems();
+		CompositeFuture.all( startHibernate, startHttpServer )
+				.onSuccess( s -> startPromise.complete() )
+				.onFailure( startPromise::fail );
 	}
 
 	@Override
-	public Uni<Void> asyncStop() {
-		return httpServer.close().invoke( emf::close );
+	public void stop(Promise<Void> stopPromise) {
+		httpServer.close().onComplete( unused -> emf.close() )
+				.onSuccess( s -> stopPromise.complete() )
+				.onFailure( stopPromise::fail );
 	}
 
 	private static Product logFound(Product product) {
@@ -81,21 +90,30 @@ public class ProductVerticle extends AbstractVerticle {
 		return product;
 	}
 
-	private Uni<List<Product>> listProducts(RoutingContext ctx) {
-		return emf.withSession( session -> session.createQuery( "from Product", Product.class ).getResultList() );
+	private Future<List<Product>> listProducts(RoutingContext ctx) {
+		return toFuture( emf.withSession( session -> session
+				.createQuery( "from Product", Product.class ).getResultList()
+		) );
 	}
 
-	private Uni<Product> getProduct(RoutingContext ctx) {
+	private Future<Product> getProduct(RoutingContext ctx) {
 		long id = Long.parseLong( ctx.pathParam( "id" ) );
-		return emf.withSession( session -> session.find( Product.class, id ).invoke( ProductVerticle::logFound ) )
-				.onItem().ifNull().continueWith( Product::new );
+		return toFuture( emf.withSession( session -> session.find( Product.class, id ) )
+								 .invoke( ProductVerticle::logFound )
+								 .onItem().ifNull().continueWith( Product::new )
+		);
 	}
 
-	private Uni<Product> createProduct(RoutingContext ctx) {
+	private Future<Product> createProduct(RoutingContext ctx) {
 		Product product = ctx.getBodyAsJson().mapTo( Product.class );
-		return emf.withTransaction( session -> session.persist( product ) )
-				.map( v -> product )
-				.invoke( ProductVerticle::logCreated )
-				.replaceWith( product );
+		return toFuture( emf.withTransaction( session -> session.persist( product ) )
+								 .map( v -> product )
+								 .invoke( ProductVerticle::logCreated )
+								 .replaceWith( product )
+		);
+	}
+
+	private static <U> Future<U> toFuture(Uni<U> uni) {
+		return Future.fromCompletionStage( uni.convert().toCompletionStage() );
 	}
 }

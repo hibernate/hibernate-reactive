@@ -18,10 +18,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import junit.framework.AssertionFailedError;
 
-import io.smallrye.mutiny.Uni;
+import org.jboss.logging.Logger;
+
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -30,7 +32,6 @@ import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
-import io.vertx.mutiny.core.Vertx;
 
 
 /**
@@ -52,6 +53,8 @@ import io.vertx.mutiny.core.Vertx;
 @RunWith(VertxUnitRunner.class)
 public class LocalContextTest {
 
+	private static final Logger LOG = Logger.getLogger( LocalContextTest.class );
+
 	// Number of requests: each request is a product created and then searched
 	private static final int REQUEST_NUMBER = 20;
 
@@ -67,24 +70,23 @@ public class LocalContextTest {
 		final Vertx vertx = Vertx.vertx( StartVerticle.vertxOptions() );
 
 		Mutiny.SessionFactory sf = StartVerticle
-				.createHibernateSessionFactory( StartVerticle.USE_DOCKER, vertx.getDelegate() )
+				.createHibernateSessionFactory( StartVerticle.USE_DOCKER, vertx )
 				.unwrap( Mutiny.SessionFactory.class );
 
-		final WebClient webClient = WebClient.create( vertx.getDelegate() );
+		final WebClient webClient = WebClient.create( vertx );
 
 		final DeploymentOptions deploymentOptions = new DeploymentOptions();
 		deploymentOptions.setInstances( VERTICLE_INSTANCES );
 
 		vertx
 				.deployVerticle( () -> new ProductVerticle( () -> sf ), deploymentOptions )
-				.map( s -> webClient )
-				.call( this::createProducts )
-				.call( this::findProducts )
-				.eventually( vertx::close )
-				.subscribe().with(
-						res -> async.complete(),
-						context::fail
-				);
+				.map( ignore -> webClient )
+				.compose( this::createProducts )
+				.map( ignore -> webClient )
+				.compose( this::findProducts )
+				.onSuccess( res -> async.complete() )
+				.onFailure( context::fail )
+				.eventually( unused -> vertx.close() );
 	}
 
 	/**
@@ -92,18 +94,19 @@ public class LocalContextTest {
 	 *
 	 * @see #REQUEST_NUMBER
 	 */
-	private Uni<?> createProducts(WebClient webClient) {
+	private Future<?> createProducts(WebClient webClient) {
 		List<Future> postRequests = new ArrayList<>();
 		for ( int i = 0; i < REQUEST_NUMBER; i++ ) {
-			Product product = new Product( i + 1 );
+			final Product product = new Product( i + 1 );
 
 			final Future<HttpResponse<Buffer>> send = webClient
 					.post( ProductVerticle.HTTP_PORT, "localhost", "/products" )
-					.sendJsonObject( JsonObject.mapFrom( product ) );
+					.sendJsonObject( JsonObject.mapFrom( product ) )
+					.onComplete( v -> LOG.debugf( "Request sent: %s", product.getId() ) );
 
 			postRequests.add( send );
 		}
-		return Uni.createFrom().completionStage( CompositeFuture.all( postRequests ).toCompletionStage() );
+		return CompositeFuture.all( postRequests );
 	}
 
 	/**
@@ -111,7 +114,7 @@ public class LocalContextTest {
 	 *
 	 * @see #REQUEST_NUMBER
 	 */
-	private Uni<?> findProducts(WebClient webClient) {
+	private Future<?> findProducts(WebClient webClient) {
 		List<Future> getRequests = new ArrayList<>();
 		for ( int i = 0; i < REQUEST_NUMBER; i++ ) {
 			final Product expected = new Product( i + 1 );
@@ -127,7 +130,7 @@ public class LocalContextTest {
 
 			getRequests.add( send );
 		}
-		return Uni.createFrom().completionStage( CompositeFuture.all( getRequests ).toCompletionStage() );
+		return CompositeFuture.all( getRequests );
 	}
 
 	/**
@@ -139,6 +142,7 @@ public class LocalContextTest {
 		}
 
 		final Product found = response.bodyAsJson( Product.class );
+		LOG.debugf( "Found: %s - Expected: %s [%s]", found, expected, expected.equals( found ) );
 		if ( !expected.equals( found ) ) {
 			return Future.failedFuture( new AssertionFailedError( "Wrong value returned. Expected " + expected + " but was " + found ) );
 		}
