@@ -84,7 +84,7 @@ ext {
 
     testcontainersVersion = '1.16.3'
 
-    logger.lifecycle "Hibernate ORM Version: " + project.hibernateOrmVersion
+    logger.lifecycle "Hibernate ORM Version: " + project.hibernateOrmVersion + " (Jakarta EE edition)"
     logger.lifecycle "Vert.x Version: " + project.vertxVersion
     logger.lifecycle "Hibernate Reactive: " + project.version
 }
