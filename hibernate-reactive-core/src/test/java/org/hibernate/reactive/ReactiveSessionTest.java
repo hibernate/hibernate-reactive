@@ -10,12 +10,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.PersistenceException;
-import javax.persistence.Table;
-import javax.persistence.Version;
-import javax.persistence.metamodel.EntityType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import jakarta.persistence.metamodel.EntityType;
 
 import org.hibernate.LockMode;
 import org.hibernate.reactive.common.AffectedEntities;

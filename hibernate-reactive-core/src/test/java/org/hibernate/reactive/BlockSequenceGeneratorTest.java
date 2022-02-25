@@ -8,7 +8,7 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.junit.Test;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;

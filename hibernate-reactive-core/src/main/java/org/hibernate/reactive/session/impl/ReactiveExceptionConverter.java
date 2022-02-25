@@ -15,7 +15,7 @@ import org.hibernate.internal.ExceptionConverterImpl;
  * Depending on the value of
  * {@link org.hibernate.cfg.AvailableSettings#NATIVE_EXCEPTION_HANDLING_51_COMPLIANCE}
  * it converts the exception to a {@link HibernateException} or a
- * {@link javax.persistence.PersistenceException}.
+ * {@link jakarta.persistence.PersistenceException}.
  *
  * @see org.hibernate.engine.spi.ExceptionConverter
  * @see org.hibernate.cfg.AvailableSettings#NATIVE_EXCEPTION_HANDLING_51_COMPLIANCE

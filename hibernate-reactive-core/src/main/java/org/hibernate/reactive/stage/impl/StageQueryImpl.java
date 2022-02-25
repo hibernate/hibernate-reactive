@@ -12,8 +12,8 @@ import org.hibernate.LockOptions;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.stage.Stage;
 
-import javax.persistence.EntityGraph;
-import javax.persistence.Parameter;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.Parameter;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;

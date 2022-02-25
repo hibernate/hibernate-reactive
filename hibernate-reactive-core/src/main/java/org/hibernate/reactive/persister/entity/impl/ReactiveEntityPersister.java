@@ -14,7 +14,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
 
-import javax.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.Attribute;
 import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CompletionStage;

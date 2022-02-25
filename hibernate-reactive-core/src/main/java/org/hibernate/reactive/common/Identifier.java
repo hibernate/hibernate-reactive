@@ -7,7 +7,7 @@ package org.hibernate.reactive.common;
 
 import org.hibernate.Incubating;
 
-import javax.persistence.metamodel.SingularAttribute;
+import jakarta.persistence.metamodel.SingularAttribute;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

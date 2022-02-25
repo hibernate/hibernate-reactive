@@ -12,11 +12,11 @@ import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 
 /**
  * A reactific {@link CriteriaDeleteImpl}, providing the implementation
- * of {@link javax.persistence.criteria.CriteriaDelete}.
+ * of {@link jakarta.persistence.criteria.CriteriaDelete}.
  *
  * @author Gavin King
  */

@@ -21,8 +21,8 @@ import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.transform.ResultTransformer;
 
-import javax.persistence.EntityGraph;
-import javax.persistence.Parameter;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.Parameter;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 

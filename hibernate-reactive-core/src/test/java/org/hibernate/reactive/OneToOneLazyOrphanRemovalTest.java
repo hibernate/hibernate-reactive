@@ -7,9 +7,9 @@ package org.hibernate.reactive;
 
 import java.util.Collection;
 import java.util.List;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.OneToOne;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 
 import org.junit.Before;
 import org.junit.Test;

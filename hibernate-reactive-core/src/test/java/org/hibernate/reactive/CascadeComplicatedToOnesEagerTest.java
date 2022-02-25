@@ -8,16 +8,16 @@ package org.hibernate.reactive;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
-import javax.persistence.Basic;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.OneToMany;
+import jakarta.persistence.Basic;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.OneToMany;
 
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
@@ -36,7 +36,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  *
  * All IDs are generated from a sequence.
  *
- * JPA cascade types are used (javax.persistence.CascadeType)..
+ * JPA cascade types are used (jakarta.persistence.CascadeType)..
  *
  * This test uses the following model:
  *

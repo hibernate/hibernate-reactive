@@ -5,9 +5,9 @@
  */
 package org.hibernate.reactive.example.session;
 
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.Root;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Root;
 
 import java.time.LocalDate;
 
@@ -15,7 +15,7 @@ import static java.lang.System.out;
 import static java.time.Month.JANUARY;
 import static java.time.Month.JUNE;
 import static java.time.Month.MAY;
-import static javax.persistence.Persistence.createEntityManagerFactory;
+import static jakarta.persistence.Persistence.createEntityManagerFactory;
 import static org.hibernate.reactive.stage.Stage.SessionFactory;
 import static org.hibernate.reactive.stage.Stage.fetch;
 

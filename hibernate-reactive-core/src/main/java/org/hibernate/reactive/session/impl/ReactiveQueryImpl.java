@@ -22,9 +22,9 @@ import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.transform.ResultTransformer;
 
-import javax.persistence.EntityGraph;
-import javax.persistence.Parameter;
-import javax.persistence.criteria.ParameterExpression;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.Parameter;
+import jakarta.persistence.criteria.ParameterExpression;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

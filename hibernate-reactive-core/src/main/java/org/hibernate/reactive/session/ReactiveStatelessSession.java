@@ -8,7 +8,7 @@ package org.hibernate.reactive.session;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 
-import javax.persistence.EntityGraph;
+import jakarta.persistence.EntityGraph;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 

@@ -49,7 +49,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
- * An entity loader that respects the JPA {@link javax.persistence.EntityGraph}
+ * An entity loader that respects the JPA {@link jakarta.persistence.EntityGraph}
  * in effect.
  *
  * @see AbstractLoadPlanBasedEntityLoader

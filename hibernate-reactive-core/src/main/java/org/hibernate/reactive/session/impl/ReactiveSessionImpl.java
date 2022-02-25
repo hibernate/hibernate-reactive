@@ -13,10 +13,10 @@ import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
-import javax.persistence.EntityGraph;
-import javax.persistence.EntityNotFoundException;
-import javax.persistence.Tuple;
-import javax.persistence.metamodel.Attribute;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.Tuple;
+import jakarta.persistence.metamodel.Attribute;
 
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
