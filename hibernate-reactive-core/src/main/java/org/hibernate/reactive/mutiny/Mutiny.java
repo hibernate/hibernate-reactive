@@ -10,14 +10,14 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import javax.persistence.EntityGraph;
-import javax.persistence.Parameter;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaDelete;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.CriteriaUpdate;
-import javax.persistence.metamodel.Attribute;
-import javax.persistence.metamodel.Metamodel;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.Parameter;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.Metamodel;
 
 import org.hibernate.Cache;
 import org.hibernate.CacheMode;
@@ -60,13 +60,13 @@ public interface Mutiny {
 	 * that the operations are performed asynchronously, returning a
 	 * {@link Uni} without blocking the calling thread.
 	 * <p>
-	 * Note that {@link javax.persistence.TemporalType} is not supported
+	 * Note that {@link jakarta.persistence.TemporalType} is not supported
 	 * as an argument for parameter bindings, and so parameters of type
 	 * {@link java.util.Date} or {@link java.util.Calendar} should not be
 	 * used. Instead, datetime types from {@code java.time} should be used
 	 * as parameters.
 	 *
-	 * @see javax.persistence.Query
+	 * @see jakarta.persistence.Query
 	 */
 	interface Query<R> {
 
@@ -135,10 +135,10 @@ public interface Mutiny {
 		 * {@code Object[]}.
 		 *
 		 * @return the single resulting row
-		 * @throws javax.persistence.NoResultException if there is no result
-		 * @throws javax.persistence.NonUniqueResultException if there are multiple results
+		 * @throws jakarta.persistence.NoResultException if there is no result
+		 * @throws jakarta.persistence.NonUniqueResultException if there are multiple results
 		 *
-		 * @see javax.persistence.Query#getSingleResult()
+		 * @see jakarta.persistence.Query#getSingleResult()
 		 */
 		Uni<R> getSingleResult();
 
@@ -150,7 +150,7 @@ public interface Mutiny {
 		 * returned in an instance of {@code Object[]}.
 		 *
 		 * @return the single resulting row or {@code null}
-		 * @throws javax.persistence.NonUniqueResultException if there are multiple results
+		 * @throws jakarta.persistence.NonUniqueResultException if there are multiple results
 		 *
 		 * @see #getSingleResult()
 		 */
@@ -165,7 +165,7 @@ public interface Mutiny {
 		 *
 		 * @return the resulting rows as a {@link List}
 		 *
-		 * @see javax.persistence.Query#getResultList()
+		 * @see jakarta.persistence.Query#getResultList()
 		 */
 		Uni<List<R>> getResultList();
 
@@ -175,7 +175,7 @@ public interface Mutiny {
 		 *
 		 * @return the row count as an integer
 		 *
-		 * @see javax.persistence.Query#executeUpdate()
+		 * @see jakarta.persistence.Query#executeUpdate()
 		 */
 		Uni<Integer> executeUpdate();
 
@@ -336,7 +336,7 @@ public interface Mutiny {
 		 *
 		 * @return a persistent instance or null via a {@code Uni}
 		 *
-		 * @see javax.persistence.EntityManager#find(Class, Object)
+		 * @see jakarta.persistence.EntityManager#find(Class, Object)
 		 */
 		<T> Uni<T> find(Class<T> entityClass, Object id);
 
@@ -425,7 +425,7 @@ public interface Mutiny {
 		 *
 		 * @return the persistent instance or proxy
 		 *
-		 * @see javax.persistence.EntityManager#getReference(Class, Object)
+		 * @see jakarta.persistence.EntityManager#getReference(Class, Object)
 		 */
 		<T> T getReference(Class<T> entityClass, Object id);
 
@@ -448,7 +448,7 @@ public interface Mutiny {
 		 * property if the entity has assigned identifiers.)
 		 * <p>
 		 * This operation cascades to associated instances if the association is
-		 * mapped with {@link javax.persistence.CascadeType#PERSIST}.
+		 * mapped with {@link jakarta.persistence.CascadeType#PERSIST}.
 		 *
 		 * <pre>
 		 * {@code session.persist(newBook).map(v -> session.flush());}
@@ -456,7 +456,7 @@ public interface Mutiny {
 		 *
 		 * @param entity a transient instance of a persistent class
 		 *
-		 * @see javax.persistence.EntityManager#persist(Object)
+		 * @see jakarta.persistence.EntityManager#persist(Object)
 		 */
 		Uni<Void> persist(Object entity);
 
@@ -474,7 +474,7 @@ public interface Mutiny {
 		 * persistent state.
 		 * <p>
 		 * This operation cascades to associated instances if the association is
-		 * mapped with {@link javax.persistence.CascadeType#REMOVE}.
+		 * mapped with {@link jakarta.persistence.CascadeType#REMOVE}.
 		 *
 		 * <pre>
 		 * {@code session.delete(book).thenAccept(v -> session.flush());}
@@ -484,7 +484,7 @@ public interface Mutiny {
 		 *
 		 * @throws IllegalArgumentException if the given instance is not managed
 		 *
-		 * @see javax.persistence.EntityManager#remove(Object)
+		 * @see jakarta.persistence.EntityManager#remove(Object)
 		 */
 		Uni<Void> remove(Object entity);
 
@@ -504,13 +504,13 @@ public interface Mutiny {
 		 * does not become associated with the session.
 		 * <p>
 		 * This operation cascades to associated instances if the association is
-		 * mapped with {@link javax.persistence.CascadeType#MERGE}.
+		 * mapped with {@link jakarta.persistence.CascadeType#MERGE}.
 		 *
 		 * @param entity a detached instance with state to be copied
 		 *
 		 * @return an updated persistent instance
 		 *
-		 * @see javax.persistence.EntityManager#merge(Object)
+		 * @see jakarta.persistence.EntityManager#merge(Object)
 		 */
 		<T> Uni<T> merge(T entity);
 
@@ -537,7 +537,7 @@ public interface Mutiny {
 		 *
 		 * @throws IllegalArgumentException if the given instance is not managed
 		 *
-		 * @see javax.persistence.EntityManager#refresh(Object)
+		 * @see jakarta.persistence.EntityManager#refresh(Object)
 		 */
 		Uni<Void> refresh(Object entity);
 
@@ -615,7 +615,7 @@ public interface Mutiny {
 		 * {@code session.flush().thenAccept(v -> print("done saving changes"));}
 		 * </pre>
 		 *
-		 * @see javax.persistence.EntityManager#flush()
+		 * @see jakarta.persistence.EntityManager#flush()
 		 */
 		Uni<Void> flush();
 
@@ -682,7 +682,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createQuery(String)
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
 		<R> Query<R> createQuery(String queryString);
 
@@ -695,7 +695,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createQuery(String, Class)
+		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
 		 */
 		<R> Query<R> createQuery(String queryString, Class<R> resultType);
 
@@ -706,7 +706,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createQuery(String)
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
 		<R> Query<R> createNamedQuery(String queryName);
 
@@ -718,7 +718,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Mutiny.Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createQuery(String, Class)
+		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
 		 */
 		<R> Query<R> createNamedQuery(String queryName, Class<R> resultType);
 
@@ -783,7 +783,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Mutiny.Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createNativeQuery(String, Class)
+		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, Class)
 		 */
 		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType);
 
@@ -811,7 +811,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Mutiny.Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createNativeQuery(String, Class)
+		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, Class)
 		 */
 		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType,
 									   AffectedEntities affectedEntities);
@@ -826,7 +826,7 @@ public interface Mutiny {
 		 * @return The {@link Mutiny.Query} instance for manipulation and execution
 		 *
 		 * @see #getResultSetMapping(Class, String)
-		 * @see javax.persistence.EntityManager#createNativeQuery(String, String)
+		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, String)
 		 */
 		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
 
@@ -844,7 +844,7 @@ public interface Mutiny {
 		 * @return The {@link Mutiny.Query} instance for manipulation and execution
 		 *
 		 * @see #getResultSetMapping(Class, String)
-		 * @see javax.persistence.EntityManager#createNativeQuery(String, String)
+		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, String)
 		 */
 		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping,
 									   AffectedEntities affectedEntities);
@@ -856,7 +856,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Mutiny.Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createQuery(String)
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
 		<R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery);
 
@@ -867,7 +867,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Mutiny.Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createQuery(String)
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
 		<R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
 
@@ -878,7 +878,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Mutiny.Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createQuery(String)
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
 		<R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete);
 
@@ -908,14 +908,14 @@ public interface Mutiny {
 		 * will not be synchronized with the database.
 		 * <p>
 		 * This operation cascades to associated instances if the association is
-		 * mapped with {@link javax.persistence.CascadeType#DETACH}.
+		 * mapped with {@link jakarta.persistence.CascadeType#DETACH}.
 		 *
 		 * @param entity The entity to evict
 		 *
 		 * @throws NullPointerException if the passed object is {@code null}
 		 * @throws IllegalArgumentException if the passed object is not defined as an entity
 		 *
-		 * @see javax.persistence.EntityManager#detach(Object)
+		 * @see jakarta.persistence.EntityManager#detach(Object)
 		 */
 		Session detach(Object entity);
 
@@ -923,7 +923,7 @@ public interface Mutiny {
 		 * Completely clear the session. Detach all persistent instances and cancel
 		 * all pending insertions, updates and deletions.
 		 *
-		 * @see javax.persistence.EntityManager#clear()
+		 * @see jakarta.persistence.EntityManager#clear()
 		 */
 		Session clear();
 
@@ -941,7 +941,7 @@ public interface Mutiny {
 
 		/**
 		 * Obtain a native SQL result set mapping defined via the annotation
-		 * {@link javax.persistence.SqlResultSetMapping}.
+		 * {@link jakarta.persistence.SqlResultSetMapping}.
 		 */
 		<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
 
@@ -1218,7 +1218,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createQuery(String)
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
 		<R> Query<R> createNamedQuery(String queryName);
 
@@ -1230,7 +1230,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createQuery(String, Class)
+		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
 		 */
 		<R> Query<R> createNamedQuery(String queryName, Class<R> resultType);
 
@@ -1279,7 +1279,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Mutiny.Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createQuery(String)
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
 		<R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery);
 
@@ -1290,7 +1290,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Mutiny.Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createQuery(String)
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
 		<R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
 
@@ -1301,7 +1301,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Mutiny.Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createQuery(String)
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
 		<R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete);
 
@@ -1448,7 +1448,7 @@ public interface Mutiny {
 
 		/**
 		 * Obtain a native SQL result set mapping defined via the annotation
-		 * {@link javax.persistence.SqlResultSetMapping}.
+		 * {@link jakarta.persistence.SqlResultSetMapping}.
 		 */
 		<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
 
@@ -1532,7 +1532,7 @@ public interface Mutiny {
 	 * Factory for {@link Session reactive sessions}.
 	 * <p>
 	 * A {@code Mutiny.SessionFactory} may be obtained from an instance of
-	 * {@link javax.persistence.EntityManagerFactory} as follows:
+	 * {@link jakarta.persistence.EntityManagerFactory} as follows:
 	 *
 	 * <pre>
 	 * Mutiny.SessionFactory sessionFactory =

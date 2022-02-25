@@ -18,9 +18,9 @@ import org.hibernate.query.internal.AbstractProducedQuery;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
-import javax.persistence.EntityGraph;
-import javax.persistence.NoResultException;
-import javax.persistence.Parameter;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.Parameter;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 

@@ -14,11 +14,11 @@ import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import javax.persistence.Basic;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.time.Instant;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;

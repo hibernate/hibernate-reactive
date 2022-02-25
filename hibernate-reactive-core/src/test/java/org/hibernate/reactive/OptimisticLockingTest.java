@@ -13,9 +13,9 @@ import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 
 import static org.hibernate.annotations.OptimisticLockType.ALL;
 import static org.hibernate.annotations.OptimisticLockType.DIRTY;

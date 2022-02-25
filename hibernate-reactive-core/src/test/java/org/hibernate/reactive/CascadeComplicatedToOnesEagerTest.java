@@ -12,7 +12,7 @@ import org.hibernate.reactive.stage.Stage;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
@@ -25,7 +25,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  *
  * All IDs are generated from a sequence.
  *
- * JPA cascade types are used (javax.persistence.CascadeType)..
+ * JPA cascade types are used (jakarta.persistence.CascadeType)..
  *
  * This test uses the following model:
  *

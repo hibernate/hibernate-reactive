@@ -8,13 +8,13 @@ package org.hibernate.reactive.session.impl;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
 
-import javax.persistence.Tuple;
-import javax.persistence.criteria.CriteriaDelete;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.Tuple;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
 
 /**
- * A JPA {@link javax.persistence.criteria.CriteriaBuilder} for
+ * A JPA {@link jakarta.persistence.criteria.CriteriaBuilder} for
  * that acts as a factory for {@link ReactiveCriteriaQueryImpl}.
  *
  * @author Gavin King

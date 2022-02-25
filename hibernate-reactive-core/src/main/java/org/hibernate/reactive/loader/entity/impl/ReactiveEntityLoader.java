@@ -17,7 +17,7 @@ import org.hibernate.type.Type;
 /**
  * A reactific {@link org.hibernate.loader.entity.EntityLoader}.
  *
- * This one doesn't support the JPA {@link javax.persistence.EntityGraph},
+ * This one doesn't support the JPA {@link jakarta.persistence.EntityGraph},
  * so for fetch plan support see {@link ReactivePlanEntityLoader}.
  *
  * @see org.hibernate.loader.entity.EntityLoader

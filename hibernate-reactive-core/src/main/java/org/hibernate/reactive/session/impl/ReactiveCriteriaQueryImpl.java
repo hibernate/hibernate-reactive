@@ -20,13 +20,13 @@ import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.type.Type;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 /**
  * A reactific {@link CriteriaQueryImpl}, providing the implementation
- * of {@link javax.persistence.criteria.CriteriaQuery}.
+ * of {@link jakarta.persistence.criteria.CriteriaQuery}.
  *
  * @author Gavin King
  */

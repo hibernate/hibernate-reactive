@@ -14,7 +14,7 @@ import java.util.Map;
 
 /**
  * Helper for handling checks to see whether ReactivePersistenceProvider is the requested
- * {@link javax.persistence.spi.PersistenceProvider}.
+ * {@link jakarta.persistence.spi.PersistenceProvider}.
  * <p>
  * Copied and adapted from {@link org.hibernate.jpa.boot.spi.ProviderChecker}.
  */
@@ -25,7 +25,7 @@ public final class ReactiveProviderChecker {
 
     /**
      * Does the descriptor and/or integration request Hibernate as the
-     * {@link javax.persistence.spi.PersistenceProvider}?  Note that in the case of no requested provider being named
+     * {@link jakarta.persistence.spi.PersistenceProvider}?  Note that in the case of no requested provider being named
      * we assume we are the provider (the calls got to us somehow...)
      *
      * @param persistenceUnit The {@code <persistence-unit/>} descriptor.

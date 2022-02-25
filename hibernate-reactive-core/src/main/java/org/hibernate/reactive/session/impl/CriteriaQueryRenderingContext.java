@@ -21,8 +21,8 @@ import org.hibernate.sql.ast.Clause;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeResolver;
 
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.ParameterExpression;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.ParameterExpression;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

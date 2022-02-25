@@ -16,7 +16,7 @@ import static org.hibernate.internal.util.config.ConfigurationHelper.getInt;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
 
 /**
- * Support for JPA's {@link javax.persistence.SequenceGenerator}
+ * Support for JPA's {@link jakarta.persistence.SequenceGenerator}
  * for databases which do not support sequences. Persistence is
  * managed via a table with just one row and one column.
  * <p>

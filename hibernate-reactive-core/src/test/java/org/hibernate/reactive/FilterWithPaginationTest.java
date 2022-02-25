@@ -7,11 +7,11 @@ package org.hibernate.reactive;
 
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
-import javax.persistence.NamedQuery;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.NamedQuery;
 
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;

@@ -12,7 +12,7 @@ import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 

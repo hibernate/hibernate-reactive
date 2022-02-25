@@ -12,7 +12,7 @@ import org.hibernate.reactive.BaseReactiveTest;
 import org.junit.After;
 import org.junit.Test;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -572,7 +572,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 		Embed embed;
 
-		@javax.persistence.Basic
+		@jakarta.persistence.Basic
 		Serializable thing;
 
 		UUID uuid;

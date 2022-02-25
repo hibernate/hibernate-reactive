@@ -12,11 +12,11 @@ import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 
 /**
  * A reactific {@link CriteriaUpdateImpl}, providing the implementation
- * of {@link javax.persistence.criteria.CriteriaUpdate}.
+ * of {@link jakarta.persistence.criteria.CriteriaUpdate}.
  *
  * @author Gavin King
  */

@@ -11,7 +11,7 @@ import static java.lang.System.out;
 import static java.time.Month.JANUARY;
 import static java.time.Month.JUNE;
 import static java.time.Month.MAY;
-import static javax.persistence.Persistence.createEntityManagerFactory;
+import static jakarta.persistence.Persistence.createEntityManagerFactory;
 import static org.hibernate.reactive.mutiny.Mutiny.SessionFactory;
 
 /**

@@ -9,7 +9,7 @@ import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Objects;
 
 
