@@ -5,19 +5,12 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.db2client.DB2ConnectOptions;
-import io.vertx.mssqlclient.MSSQLConnectOptions;
-import io.vertx.mysqlclient.MySQLConnectOptions;
-import io.vertx.oracleclient.OracleConnectOptions;
-import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.SqlConnectOptions;
+import java.net.URI;
 
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
 
-import java.net.URI;
-
-import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.SqlConnectOptions;
 
 public class UriPoolConfiguration implements SqlClientPoolConfiguration {
 	@Override
@@ -27,21 +20,6 @@ public class UriPoolConfiguration implements SqlClientPoolConfiguration {
 
 	@Override
 	public SqlConnectOptions connectOptions(URI uri) {
-		switch ( uri.getScheme() ) {
-			case "postgresql":
-			case "postgres":
-				return PgConnectOptions.fromUri( uri.toString() );
-			case "mariadb":
-			case "mysql":
-				return MySQLConnectOptions.fromUri( uri.toString() );
-			case "db2":
-				return DB2ConnectOptions.fromUri( uri.toString() );
-			case "sqlserver":
-				return MSSQLConnectOptions.fromUri( uri.toString() );
-			case "oracle":
-				return OracleConnectOptions.fromUri( uri.toString() );
-			default:
-				throw new IllegalArgumentException( "Database not recognized: " + dbType() );
-		}
+		return SqlConnectOptions.fromUri( uri.toString() );
 	}
 }
