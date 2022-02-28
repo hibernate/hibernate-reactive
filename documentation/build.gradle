@@ -132,7 +132,7 @@ task assembleDocumentation(dependsOn: [aggregateJavadocs, renderReferenceDocumen
 	group 'Documentation'
 	description 'Grouping task for performing all documentation building tasks'
 
-	logger.lifecycle "Documentation groupId: '" + project.group + "', version: '" + project.version + "'"
+	logger.lifecycle "Documentation groupId: '" + project.group + "', version: '" + project.version + "' (Jakarta EE edition)"
 }
 
 assemble.dependsOn assembleDocumentation

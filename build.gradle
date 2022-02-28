@@ -86,7 +86,7 @@ ext {
 
     logger.lifecycle "Hibernate ORM Version: " + project.hibernateOrmVersion + " (Jakarta EE edition)"
     logger.lifecycle "Vert.x Version: " + project.vertxVersion
-    logger.lifecycle "Hibernate Reactive: " + project.version
+    logger.lifecycle "Hibernate Reactive: " + project.version + " (Jakarta EE edition)"
 }
 
 // To release, see task ciRelease in release/build.gradle

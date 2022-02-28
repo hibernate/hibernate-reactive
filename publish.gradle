@@ -36,7 +36,7 @@ javadoc {
 
 publishing {
     publications {
-        logger.lifecycle "Publishing groupId: '" + project.group + "', version: '" + project.version + "'"
+        logger.lifecycle "Publishing groupId: '" + project.group + "', version: '" + project.version + "' (Jakarta EE edition)"
 
         publishedArtifacts(MavenPublication) {
             groupId = project.group
