@@ -1,9 +1,9 @@
-<persistence xmlns="http://java.sun.com/xml/ns/persistence"
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd"
-             version="2.0">
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
+             version="3.0">
 
-    <persistence-unit name="postgresql-example">
+<persistence-unit name="postgresql-example">
         <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
 
         <class>org.hibernate.reactive.example.session.Author</class>
@@ -12,13 +12,13 @@
         <properties>
 
             <!-- PostgreSQL -->
-            <property name="javax.persistence.jdbc.url"
+            <property name="jakarta.persistence.jdbc.url"
                       value="jdbc:postgresql://localhost/hreact"/>
 
             <!-- Credentials -->
-            <property name="javax.persistence.jdbc.user"
+            <property name="jakarta.persistence.jdbc.user"
                       value="hreact"/>
-            <property name="javax.persistence.jdbc.password"
+            <property name="jakarta.persistence.jdbc.password"
                       value="hreact"/>
 
             <!-- The Vert.x SQL Client connection pool size -->
@@ -26,7 +26,7 @@
                       value="10"/>
 
             <!-- Automatic schema export -->
-            <property name="javax.persistence.schema-generation.database.action"
+            <property name="jakarta.persistence.schema-generation.database.action"
                       value="drop-and-create"/>
 
             <!-- SQL statement logging -->
@@ -47,13 +47,13 @@
         <properties>
 
             <!-- MySQL -->
-            <property name="javax.persistence.jdbc.url"
+            <property name="jakarta.persistence.jdbc.url"
                       value="jdbc:mysql://localhost/hreact"/>
 
             <!-- Credentials -->
-            <property name="javax.persistence.jdbc.user"
+            <property name="jakarta.persistence.jdbc.user"
                       value="hreact"/>
-            <property name="javax.persistence.jdbc.password"
+            <property name="jakarta.persistence.jdbc.password"
                       value="hreact"/>
 
             <!-- The Vert.x SQL Client connection pool size -->
@@ -61,7 +61,7 @@
                       value="10"/>
 
             <!-- Automatic schema export -->
-            <property name="javax.persistence.schema-generation.database.action"
+            <property name="jakarta.persistence.schema-generation.database.action"
                       value="drop-and-create"/>
 
             <!-- SQL statement logging -->
