@@ -40,6 +40,7 @@ publishing {
 
         publishedArtifacts(MavenPublication) {
             groupId = project.group
+            artifactId = project.name + "-jakarta"
             version = project.version
             from components.java
             artifact sourcesJar
