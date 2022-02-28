@@ -84,12 +84,8 @@ public class DatabaseConfiguration {
 		return dbType;
 	}
 
- 	public static String getJdbcUrl() {
-		return dbType().configuration.getJdbcUrl();
-	}
-
-	public static String getUri() {
-		return dbType().configuration.getUri();
+ 	public static String getConnectionUri() {
+		return dbType().configuration.getConnectionUri();
 	}
 
 	public static String getDatatypeQuery(String tableName, String columnName) {

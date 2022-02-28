@@ -28,6 +28,7 @@ import org.hibernate.type.TrueFalseType;
 import org.hibernate.type.YesNoType;
 import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
 
+
 class MySQLDatabase implements TestableDatabase {
 
 	static MySQLDatabase INSTANCE = new MySQLDatabase();
@@ -84,50 +85,24 @@ class MySQLDatabase implements TestableDatabase {
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
+			.withLogConsumer( of -> System.out.println( of.getUtf8String() ) )
 			.withReuse( true );
 
-	private String getRegularJdbcUrl() {
-		return "jdbc:mysql://localhost:3306/" + mysql.getDatabaseName();
+	protected MySQLDatabase() {
 	}
 
 	@Override
-	public String getJdbcUrl() {
-		return buildJdbcUrlWithCredentials( address() );
+	public String getConnectionUri() {
+		return connectionUri( mysql );
 	}
 
 	@Override
-	public String getUri() {
-		return buildUriWithCredentials( address() );
+	public String getDefaultUrl() {
+		return "mysql://" + TestableDatabase.credentials( mysql ) + "localhost:3306/" + mysql.getDatabaseName();
 	}
 
 	@Override
 	public String getExpectedNativeDatatype(Class<?> dataType) {
 		return expectedDBTypeForClass.get( dataType );
 	}
-
-	private String address() {
-		String address;
-		if ( DatabaseConfiguration.USE_DOCKER ) {
-			// Calling start() will start the container (if not already started)
-			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
-			mysql.start();
-			address = mysql.getJdbcUrl();
-		}
-		else {
-			address = getRegularJdbcUrl();
-		}
-		return address;
-	}
-
-	static String buildJdbcUrlWithCredentials(String jdbcUrl) {
-		return jdbcUrl + "?user=" + mysql.getUsername() + "&password=" + mysql.getPassword() + "&serverTimezone=UTC";
-	}
-
-	private static String buildUriWithCredentials(String jdbcUrl) {
-		return "mysql://" + mysql.getUsername() + ":" + mysql.getPassword() + "@" + jdbcUrl.substring(13);
-	}
-
-	protected MySQLDatabase() {
-	}
-
 }

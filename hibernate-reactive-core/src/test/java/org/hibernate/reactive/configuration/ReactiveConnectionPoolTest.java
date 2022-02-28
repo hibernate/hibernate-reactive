@@ -85,7 +85,7 @@ public class ReactiveConnectionPoolTest {
 
 	@Test
 	public void configureWithJdbcUrl(TestContext context) {
-		String url = DatabaseConfiguration.getJdbcUrl();
+		String url = DatabaseConfiguration.getConnectionUri();
 		Map<String,Object> config = new HashMap<>();
 		config.put( Settings.URL, url );
 		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
@@ -96,7 +96,7 @@ public class ReactiveConnectionPoolTest {
 	public void configureWithCredentials(TestContext context) {
 		// Set up URL with invalid credentials so we can ensure that
 		// explicit USER and PASS settings take precedence over credentials in the URL
-		String url = DatabaseConfiguration.getJdbcUrl();
+		String url = DatabaseConfiguration.getConnectionUri();
 		url = url.replace( "user=" + DatabaseConfiguration.USERNAME, "user=bogus" );
 		url = url.replace( "password=" + DatabaseConfiguration.PASSWORD, "password=bogus" );
 
@@ -116,7 +116,7 @@ public class ReactiveConnectionPoolTest {
 		thrown.expectMessage( "io.vertx.pgclient.PgException:" );
 		thrown.expectMessage( "bogus" );
 
-		String url = DatabaseConfiguration.getJdbcUrl();
+		String url = DatabaseConfiguration.getConnectionUri();
 		Map<String,Object> config = new HashMap<>();
 		config.put( Settings.URL, url );
 		config.put( Settings.USER, "bogus" );

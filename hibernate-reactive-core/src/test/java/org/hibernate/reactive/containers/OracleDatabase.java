@@ -90,19 +90,24 @@ class OracleDatabase implements TestableDatabase {
 			.withReuse( true );
 
 	@Override
-	public String getJdbcUrl() {
-		return addCredentialsAsParameters( address() );
-	}
+	public String getConnectionUri() {
+		if ( DatabaseConfiguration.USE_DOCKER ) {
+			// Calling start() will start the container (if not already started)
+			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
+			oracle.start();
+			return oracle.getJdbcUrl()
+					.replace( "jdbc:oracle:thin:@", "oracle:thin:" + getCredentials() )
+					// This should actually end with /databaseName but there is a bug in the Vert.x client
+					.replaceAll( "/" + oracle.getDatabaseName() + "$", ":" + oracle.getDatabaseName() );
+		}
 
-	private String getRegularJdbcUrl() {
-		return "jdbc:oracle:thin:" + getCredentials() + "@localhost:1521/" + oracle.getDatabaseName();
+		return getDefaultUrl();
 	}
 
 	@Override
-	public String getUri() {
-		// The url is different here because we expect it to work with io.vertx.oracleclient.impl.OracleConnectionUriParser
-		return addCredentialsToUri( address() )
-				.replaceAll( "/" + oracle.getDatabaseName() + "$", ":" + oracle.getDatabaseName() );
+	public String getDefaultUrl() {
+		// This should actually end with /databaseName but there is a bug in the Vert.x client
+		return "oracle:thin:" + getCredentials() + "localhost:1521:" + oracle.getDatabaseName();
 	}
 
 	@Override
@@ -115,38 +120,11 @@ class OracleDatabase implements TestableDatabase {
 		return expectedDBTypeForClass.get( dataType );
 	}
 
-	private String address() {
-		if ( DatabaseConfiguration.USE_DOCKER ) {
-			// Calling start() will start the container (if not already started)
-			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
-			oracle.start();
-			return oracle.getJdbcUrl();
-		}
-
-		return getRegularJdbcUrl();
-	}
-
 	private static String getCredentials() {
-		if ( oracle.getUsername() == null
-				|| oracle.getUsername().trim().length() == 0 ) {
+		if ( oracle.getUsername() == null || oracle.getUsername().trim().length() == 0 ) {
 			return "";
 		}
-		return oracle.getUsername() + "/" + oracle.getPassword();
-	}
-
-	private static String addCredentialsAsParameters(String jdbcUrl) {
-		return jdbcUrl + "?user=" + oracle.getUsername() + "&password=" + oracle.getPassword();
-	}
-
-	private static String addCredentialsToUri(String jdbcUrl) {
-		// The JDBC url will look something like:
-		// jdbc:oracle:thin:@localhost:49413/hreact
-		String uri = jdbcUrl;
-		if ( uri.startsWith( "jdbc:" ) ) {
-			jdbcUrl.substring( "jdbc:".length() );
-		}
-		uri = uri.replace( "thin:@", "thin:" + getCredentials() + "@");
-		return uri;
+		return oracle.getUsername() + "/" + oracle.getPassword() + "@";
 	}
 
 	private OracleDatabase() {

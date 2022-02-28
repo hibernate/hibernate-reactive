@@ -8,12 +8,13 @@ package org.hibernate.reactive;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
+import java.util.ServiceConfigurationError;
 
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -22,6 +23,7 @@ import org.junit.rules.ExpectedException;
 import io.vertx.sqlclient.SqlConnectOptions;
 import org.assertj.core.api.Assertions;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 /**
@@ -30,13 +32,16 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 public class DefaultPortTest {
 
 	@Rule
+	public DatabaseSelectionRule skipDbs = DatabaseSelectionRule.skipTestsFor( ORACLE );
+
+	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public void testDefaultPortIsSet() throws URISyntaxException {
 		DefaultSqlClientPoolConfiguration configuration = new DefaultSqlClientPoolConfiguration();
 		configuration.configure( requiredProperties() );
-		SqlConnectOptions sqlConnectOptions = configuration.connectOptions( new URI( scheme() + "://localhost/database" ) );
+		SqlConnectOptions sqlConnectOptions = configuration.connectOptions( new URI( uriString() ) );
 		Assertions.assertThat( sqlConnectOptions.getPort() )
 				.as( "Default port not defined for " + dbType() )
 				.isEqualTo( dbType().getDefaultPort() );
@@ -44,17 +49,20 @@ public class DefaultPortTest {
 
 	@Test
 	public void testUnrecognizedSchemeException() throws URISyntaxException {
-		thrown.expect( IllegalArgumentException.class );
+		thrown.expect( ServiceConfigurationError.class );
 
 		URI uri = new URI( "bogusScheme://localhost/database" );
 		new DefaultSqlClientPoolConfiguration().connectOptions( uri );
 	}
 
-	private static String scheme() {
+	private static String uriString() {
 		if ( dbType() == DatabaseConfiguration.DBType.MARIA ) {
-			return "mariadb";
+			return "mariadb://localhost/database";
 		}
-		return dbType().name().toLowerCase( Locale.ROOT );
+		if ( dbType() == ORACLE ) {
+			return "oracle:thin:@localhost:orcl";
+		}
+		return dbType().name().toLowerCase() + "://localhost/database";
 	}
 
 	// Only set the required properties

@@ -42,7 +42,7 @@ public class UriConfigTest extends BaseReactiveTest {
 
 		Configuration configuration = super.constructConfiguration();
 		configuration.setProperty( Environment.DIALECT, dialect.getName() );
-		configuration.setProperty( Settings.URL, DatabaseConfiguration.getUri() );
+		configuration.setProperty( Settings.URL, DatabaseConfiguration.getConnectionUri() );
 		configuration.setProperty( Settings.SQL_CLIENT_POOL_CONFIG, UriPoolConfiguration.class.getName() );
 		return configuration;
 	}

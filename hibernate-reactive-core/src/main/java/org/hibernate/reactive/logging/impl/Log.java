@@ -64,6 +64,10 @@ public interface Log extends BasicLogger {
 	@Message(id = 18, value = "Instantiating reactive pool: %1$s")
 	void instantiatingReactivePool(@FormatWith(ClassFormatter.class) Class<?> implClass);
 
+	@Message(id = 19, value = "Cannot specify URL using the JDBC syntax. Check the Hibernate Reactive or Vert.x SQL client documentation for more details." +
+			" Invalid URL: %s")
+	HibernateException invalidJdbcUrl(String url);
+
 	@LogMessage(level = WARN)
 	@Message(id = 21, value = "DDL command failed [%1$s]")
 	void ddlCommandFailed(String message);
@@ -253,5 +257,4 @@ public interface Log extends BasicLogger {
 	@LogMessage(level = WARN)
 	@Message(id = 447, value= "Explicit use of UPGRADE_SKIPLOCKED in lock() calls is not recommended; use normal UPGRADE locking instead")
 	void explicitSkipLockedLockCombo();
-
 }

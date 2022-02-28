@@ -22,7 +22,7 @@ public class StandAloneReactiveTest {
 		StandardServiceRegistry registry = new ReactiveServiceRegistryBuilder()
 				.applySetting( Settings.TRANSACTION_COORDINATOR_STRATEGY, "jta" )
 				.applySetting( Settings.DIALECT, PostgreSQL9Dialect.class.getName() )
-				.applySetting( Settings.URL, "jdbc:postgresql://localhost/hreact?user=none" )
+				.applySetting( Settings.URL, "postgresql://localhost/hreact?user=none" )
 				.build();
 
 		Stage.SessionFactory factory = new MetadataSources( registry )

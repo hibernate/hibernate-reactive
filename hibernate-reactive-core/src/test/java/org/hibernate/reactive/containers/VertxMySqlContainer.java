@@ -10,6 +10,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.vertx.core.Vertx;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.MySQLContainer;
 
@@ -31,70 +32,75 @@ class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
 	}
 
 	@Override
-    protected void waitUntilContainerStarted() {
-        logger().info( "Waiting for database connection to become available at {} using query '{}'", getVertxUrl(), getTestQueryString());
+	protected void waitUntilContainerStarted() {
+		logger().info( "Waiting for database connection to become available at {} using query '{}'", getVertxUrl(), getTestQueryString() );
 
-        // Repeatedly try and open a connection to the DB and execute a test query
-        long start = System.currentTimeMillis();
-        try {
-            while (System.currentTimeMillis() < start + ( 1000L * getStartupTimeoutSeconds())) {
-                try {
-                    if (!isRunning()) {
-                        Thread.sleep(100L);
-                        continue; // Don't attempt to connect yet
-                    }
+		// Repeatedly try and open a connection to the DB and execute a test query
+		long start = System.currentTimeMillis();
+		try {
+			while ( System.currentTimeMillis() < start + ( 1000L * getStartupTimeoutSeconds() ) ) {
+				try {
+					if ( !isRunning() ) {
+						Thread.sleep( 100L );
+						continue; // Don't attempt to connect yet
+					}
 
-                    AtomicReference<AsyncResult<?>> result = new AtomicReference<>();
-                    CountDownLatch countDown = new CountDownLatch( 1 );
-                    SqlConnection connection = createVertxConnection();
-                    connection.query( getTestQueryString() ).execute( ar -> {
-                    	result.set( ar );
-                    	countDown.countDown();
-                    });
-                    await(countDown);
-                    if (result.get().succeeded()) {
-                    	break;
-                    } else {
-                    	throw result.get().cause();
-                    }
-                } catch (Throwable e) {
-                    // ignore so that we can try again
-                    logger().debug("Failure when trying test query", e);
-                    Thread.sleep(100L);
-                }
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new ContainerLaunchException("Container startup wait was interrupted", e);
-        }
+					AtomicReference<AsyncResult<?>> result = new AtomicReference<>();
+					CountDownLatch countDown = new CountDownLatch( 1 );
+					SqlConnection connection = createVertxConnection();
+					connection.query( getTestQueryString() ).execute( ar -> {
+						result.set( ar );
+						countDown.countDown();
+					} );
+					await( countDown );
+					if ( result.get().succeeded() ) {
+						break;
+					}
+					else {
+						throw result.get().cause();
+					}
+				}
+				catch (Throwable e) {
+					// ignore so that we can try again
+					logger().debug( "Failure when trying test query", e );
+					Thread.sleep( 100L );
+				}
+			}
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new ContainerLaunchException( "Container startup wait was interrupted", e );
+		}
 
-        logger().info("Container is started (URL: {})", getVertxUrl());
-    }
+		logger().info( "Container is started (URL: {})", getVertxUrl() );
+	}
 
-    public String getVertxUrl() {
-    	return MySQLDatabase.buildJdbcUrlWithCredentials( getJdbcUrl().replace( "jdbc:", "" ) );
-    }
+	public String getVertxUrl() {
+		return TestableDatabase.vertxUrl( this );
+	}
 
-    public SqlConnection createVertxConnection() {
-    	String url = getVertxUrl();
-    	CountDownLatch countDown = new CountDownLatch( 1 );
-    	AtomicReference<AsyncResult<SqlConnection>> result = new AtomicReference<>();
-    	MySQLPool.pool( url ).getConnection( ar -> {
-    		result.set( ar );
-    		countDown.countDown();
-    	});
-    	await(countDown);
-    	SqlConnection con = result.get().result();
-    	if (con != null)
-    		return con;
-    	else
-    		throw new ContainerLaunchException( "Failed to obtain a connection", result.get().cause() );
-    }
+	public SqlConnection createVertxConnection() {
+		String url = getVertxUrl();
+		CountDownLatch countDown = new CountDownLatch( 1 );
+		AtomicReference<AsyncResult<SqlConnection>> result = new AtomicReference<>();
+		MySQLPool.pool( Vertx.currentContext().owner(), url ).getConnection( ar -> {
+			result.set( ar );
+			countDown.countDown();
+		} );
+		await( countDown );
+		SqlConnection con = result.get().result();
+		if ( con != null ) {
+			return con;
+		}
+		else {
+			throw new ContainerLaunchException( "Failed to obtain a connection", result.get().cause() );
+		}
+	}
 
-    @Override
-    public Connection createConnection(String queryString) throws NoDriverFoundException {
-    	throw new UnsupportedOperationException();
-    }
+	@Override
+	public Connection createConnection(String queryString) throws NoDriverFoundException {
+		throw new UnsupportedOperationException();
+	}
 
 	private void await(CountDownLatch latch) {
 		try {

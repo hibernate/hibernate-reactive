@@ -539,6 +539,10 @@ public class MutinySessionTest extends BaseReactiveTest {
 		} ) );
 	}
 
+	private void metodo() {
+
+	}
+
 	@Test
 	public void testDupeException(TestContext context) {
 		test(

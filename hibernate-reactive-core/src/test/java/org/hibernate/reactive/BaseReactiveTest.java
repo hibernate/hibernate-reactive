@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.hibernate.SessionFactory;
@@ -119,7 +120,7 @@ public abstract class BaseReactiveTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
 		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
-		configuration.setProperty( Settings.URL, DatabaseConfiguration.getJdbcUrl() );
+		configuration.setProperty( Settings.URL, DatabaseConfiguration.getConnectionUri() );
 		if ( DatabaseConfiguration.dbType() == DBType.DB2 && !doneTablespace ) {
 			configuration.setProperty(Settings.HBM2DDL_IMPORT_FILES, "/db2.sql");
 			doneTablespace = true;
@@ -153,17 +154,21 @@ public abstract class BaseReactiveTest {
 
 	@Before
 	public void before(TestContext context) {
-		test( context, setupSessionFactory( constructConfiguration() ) );
+		test( context, setupSessionFactory( () -> constructConfiguration() ) );
 	}
 
 	protected CompletionStage<Void> setupSessionFactory(Configuration configuration) {
+		return setupSessionFactory( () -> configuration );
+	}
+
+	protected CompletionStage<Void> setupSessionFactory(Supplier<Configuration> configurationSupplier) {
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		vertxContextRule.vertx()
 				.executeBlocking(
 						// schema generation is a blocking operation and so it causes an
 						// exception when run on the Vert.x event loop. So call it using
 						// Vertx.executeBlocking()
-						promise -> startFactoryManager( promise, configuration ),
+						promise -> startFactoryManager( promise, configurationSupplier.get() ),
 						event -> {
 							if ( event.succeeded() ) {
 								future.complete( null );

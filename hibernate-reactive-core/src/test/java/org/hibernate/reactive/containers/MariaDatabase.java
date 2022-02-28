@@ -24,41 +24,16 @@ class MariaDatabase extends MySQLDatabase {
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
 			.withReuse( true );
 
-	private String getRegularJdbcUrl() {
-		return "jdbc:mariadb://localhost:3306/" + maria.getDatabaseName();
+	protected MariaDatabase() {
 	}
 
 	@Override
-	public String getJdbcUrl() {
-		return buildJdbcUrlWithCredentials( address() );
+	public String getConnectionUri() {
+		return connectionUri( maria );
 	}
 
 	@Override
-	public String getUri() {
-		return buildUriWithCredentials( address() );
+	public String getDefaultUrl() {
+		return super.getDefaultUrl().replaceAll( "^mysql:", "mariadb:" );
 	}
-
-	private String address() {
-		if ( DatabaseConfiguration.USE_DOCKER ) {
-			// Calling start() will start the container (if not already started)
-			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
-			maria.start();
-			return maria.getJdbcUrl();
-		}
-
-		return getRegularJdbcUrl();
-	}
-
-	static String buildJdbcUrlWithCredentials(String jdbcUrl) {
-		return jdbcUrl + "?user=" + maria.getUsername() + "&password=" + maria.getPassword() + "&serverTimezone=UTC";
-	}
-
-	private static String buildUriWithCredentials(String jdbcUrl) {
-		return "mariadb://" + maria.getUsername() + ":" + maria.getPassword() + "@"
-				+ jdbcUrl.substring( "jdbc:mariadb://".length() );
-	}
-
-	private MariaDatabase() {
-	}
-
 }
