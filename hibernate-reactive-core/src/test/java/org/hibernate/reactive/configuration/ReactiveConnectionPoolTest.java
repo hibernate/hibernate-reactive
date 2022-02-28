@@ -7,7 +7,6 @@ package org.hibernate.reactive.configuration;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.internal.JdbcServicesImpl;
@@ -20,11 +19,11 @@ import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.ReactiveAssertions;
 import org.hibernate.reactive.testing.TestingRegistryRule;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import io.vertx.ext.unit.Async;
@@ -32,6 +31,8 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.pgclient.PgException;
+import org.assertj.core.api.Assertions;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 
@@ -43,9 +44,6 @@ public class ReactiveConnectionPoolTest {
 
 	@Rule
 	public Timeout rule = Timeout.seconds( 3600 );
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	@Rule
 	public TestingRegistryRule registryRule = new TestingRegistryRule();
@@ -112,22 +110,18 @@ public class ReactiveConnectionPoolTest {
 
 	@Test
 	public void configureWithWrongCredentials(TestContext context) {
-		thrown.expect( CompletionException.class );
-		thrown.expectMessage( "io.vertx.pgclient.PgException:" );
-		thrown.expectMessage( "bogus" );
-
 		String url = DatabaseConfiguration.getJdbcUrl();
 		Map<String,Object> config = new HashMap<>();
 		config.put( Settings.URL, url );
 		config.put( Settings.USER, "bogus" );
 		config.put( Settings.PASS, "bogus" );
 		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
-		verifyConnectivity( context, reactivePool );
+		verifyConnectivityFails( context, reactivePool );
 	}
 
 	private void verifyConnectivity(TestContext context, ReactiveConnectionPool reactivePool) {
 		test( context, reactivePool.getConnection().thenCompose(
-				connection -> connection.select( "SELECT 1")
+				connection -> connection.select( "SELECT 1" )
 						.thenApply( rows -> {
 							context.assertNotNull( rows );
 							context.assertEquals( 1, rows.size() );
@@ -135,6 +129,22 @@ public class ReactiveConnectionPoolTest {
 							context.assertEquals( 1, row[0] );
 							return null;
 						} ) ) );
+	}
+
+	private void verifyConnectivityFails(TestContext context, ReactiveConnectionPool reactivePool) {
+		test( context, ReactiveAssertions.assertThrown( PgException.class, reactivePool.getConnection().thenCompose(
+						connection -> connection.select( "SELECT 1" )
+								.thenApply( rows -> {
+									context.assertNotNull( rows );
+									context.assertEquals( 1, rows.size() );
+									Object[] row = rows.next();
+									context.assertEquals( 1, row[0] );
+									return null;
+								} ) ) )
+				.thenAccept( e -> {
+					Assertions.assertThat( e.getMessage() ).contains( "bogus" );
+				} )
+		);
 	}
 
 }

@@ -9,17 +9,19 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.PersistenceException;
 import javax.persistence.Table;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.ReactiveAssertions;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import io.vertx.ext.unit.TestContext;
+import org.assertj.core.api.Assertions;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
@@ -34,9 +36,6 @@ public class IdentityGeneratorTypeForCockroachDBTest extends BaseReactiveTest {
 
 	@Rule
 	public DatabaseSelectionRule runOnly = runOnlyFor( COCKROACHDB );
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	/**
 	 * When {@link AvailableSettings#USE_GET_GENERATED_KEYS} is enabled, different
@@ -78,21 +77,24 @@ public class IdentityGeneratorTypeForCockroachDBTest extends BaseReactiveTest {
 
 	@Test
 	public void integerIdentityType(TestContext context) {
-		thrown.expectMessage( "too big" );
-		thrown.expectMessage( "Integer" );
-
-		test( context, getMutinySessionFactory()
-				.withTransaction( (s, tx) -> s.persist( new IntegerTypeEntity() ) )
+		test( context, ReactiveAssertions.assertThrown( PersistenceException.class, getMutinySessionFactory()
+				.withTransaction( (s, tx) -> s.persist( new IntegerTypeEntity() )  ) )
+				.onItem().invoke( exception -> {
+					Assertions.assertThat( exception.getMessage() ).contains( "too big" );
+					Assertions.assertThat( exception.getMessage() ).contains( "Integer" );
+				} )
 		);
+
 	}
 
 	@Test
 	public void shortIdentityType(TestContext context) {
-		thrown.expectMessage( "too big" );
-		thrown.expectMessage( "Short" );
-
-		test( context, getMutinySessionFactory()
-				.withTransaction( (s, tx) -> s.persist( new ShortTypeEntity() ) )
+		test( context, ReactiveAssertions.assertThrown( PersistenceException.class, getMutinySessionFactory()
+				.withTransaction( (s, tx) -> s.persist( new ShortTypeEntity() )  ) )
+				.onItem().invoke( exception -> {
+					Assertions.assertThat( exception.getMessage() ).contains( "too big" );
+					Assertions.assertThat( exception.getMessage() ).contains( "Short" );
+				} )
 		);
 	}
 
