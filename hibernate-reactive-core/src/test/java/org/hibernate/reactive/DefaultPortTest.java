@@ -15,9 +15,8 @@ import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 import org.hibernate.reactive.provider.Settings;
 
-import org.junit.Rule;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import io.vertx.sqlclient.SqlConnectOptions;
 import org.assertj.core.api.Assertions;
@@ -28,9 +27,6 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
  * Test the default port is set correctly when using {@link DefaultSqlClientPoolConfiguration}
  */
 public class DefaultPortTest {
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public void testDefaultPortIsSet() throws URISyntaxException {
@@ -44,10 +40,10 @@ public class DefaultPortTest {
 
 	@Test
 	public void testUnrecognizedSchemeException() throws URISyntaxException {
-		thrown.expect( IllegalArgumentException.class );
-
-		URI uri = new URI( "bogusScheme://localhost/database" );
-		new DefaultSqlClientPoolConfiguration().connectOptions( uri );
+		Assert.assertThrows( IllegalArgumentException.class, () -> {
+			URI uri = new URI( "bogusScheme://localhost/database" );
+			new DefaultSqlClientPoolConfiguration().connectOptions( uri );
+		} );
 	}
 
 	private static String scheme() {

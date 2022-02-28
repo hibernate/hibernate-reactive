@@ -23,16 +23,16 @@ import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 
-import static org.hamcrest.CoreMatchers.isA;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DEFAULT;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_1;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
 /**
  * Test Multitenancy without a {@link org.hibernate.context.spi.CurrentTenantIdentifierResolver}.
@@ -48,9 +48,6 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 	// To check if we are using the right database we run native queries for PostgreSQL
 	@Rule
 	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	@Override
 	protected Configuration constructConfiguration() {
@@ -266,74 +263,59 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 
 	@Test
 	public void testOpenSessionThrowsExceptionWithoutTenant(TestContext context) {
-		thrown.expectCause( isA( HibernateException.class ) );
-		thrown.expectMessage( "no tenant identifier" );
-
-		test( context, openSession().thenCompose( this::selectCurrentDB ) );
+		test( context, assertThrown( HibernateException.class, getSessionFactory().withSession( this::selectCurrentDB ) )
+				.thenAccept( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) ) );
 	}
 
 	@Test
 	public void testWithSessionThrowsExceptionWithoutTenant(TestContext context) {
-		thrown.expectCause( isA( HibernateException.class ) );
-		thrown.expectMessage( "no tenant identifier" );
-
-		test( context, getSessionFactory().withSession( this::selectCurrentDB ) );
+		test( context, assertThrown( HibernateException.class, getSessionFactory().withSession( this::selectCurrentDB ) )
+				.thenAccept( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) ) );
 	}
 
 	@Test
 	public void testWithTransactionThrowsExceptionWithoutTenant(TestContext context) {
-		thrown.expectCause( isA( HibernateException.class ) );
-		thrown.expectMessage( "no tenant identifier" );
-
-		test( context, getSessionFactory().withTransaction( (s, t) -> selectCurrentDB( s ) ) );
+		test( context, assertThrown( HibernateException.class, getSessionFactory().withTransaction( this::selectCurrentDB ) )
+				.thenAccept( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) ) );
 	}
 
 	@Test
 	public void testWithStatelessTransactionThrowsExceptionWithoutTenant(TestContext context) {
-		thrown.expectCause( isA( HibernateException.class ) );
-		thrown.expectMessage( "no tenant identifier" );
-
-		test( context, getSessionFactory().withStatelessTransaction( (s, t) -> selectCurrentDB( s ) ) );
+		test( context, assertThrown( HibernateException.class, getSessionFactory().withStatelessTransaction( this::selectCurrentDB ) )
+				.thenAccept( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) ) );
 	}
 
 	@Test
 	public void testOpenSessionThrowsExceptionWithoutTenantWithMutiny(TestContext context) {
-		thrown.expect( HibernateException.class );
-		thrown.expectMessage( "no tenant identifier" );
-
-		test( context, openMutinySession().call( this::selectCurrentDB ) );
+		test( context, assertThrown( HibernateException.class, openMutinySession().invoke( this::selectCurrentDB ) )
+				.invoke( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) ) );
 	}
 
 	@Test
 	public void testWithSessionThrowsExceptionWithoutTenantWithMutiny(TestContext context) {
-		thrown.expect( HibernateException.class );
-		thrown.expectMessage( "no tenant identifier" );
-
-		test( context, getMutinySessionFactory().withSession( this::selectCurrentDB ) );
+		test( context, assertThrown( HibernateException.class, getMutinySessionFactory().withSession( this::selectCurrentDB ) )
+				.invoke( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) ) );
 	}
 
 	@Test
 	public void testWithTransactionThrowsExceptionWithoutTenantWithMutiny(TestContext context) {
-		thrown.expect( HibernateException.class );
-		thrown.expectMessage( "no tenant identifier" );
-
-		test( context, getMutinySessionFactory().withTransaction( (s, t) -> selectCurrentDB( s ) ) );
+		test( context, assertThrown( HibernateException.class, getMutinySessionFactory().withTransaction( this::selectCurrentDB ) )
+				.invoke( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) )
+		);
 	}
 
 	@Test
 	public void testWithStatelessSessionThrowsExceptionWithoutTenant(TestContext context) {
-		thrown.expectCause( isA( HibernateException.class ) );
-		thrown.expectMessage( "no tenant identifier" );
-
-		test( context, getSessionFactory().withStatelessSession( this::selectCurrentDB ) );
+		test( context, assertThrown( HibernateException.class, getSessionFactory().withStatelessTransaction( this::selectCurrentDB ) )
+				.thenAccept( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) )
+		);
 	}
 
 	@Test
 	public void testWithStatelessSessionThrowsExceptionWithoutTenantWithMutiny(TestContext context) {
-		thrown.expect( isA( HibernateException.class ) );
-		thrown.expectMessage( "no tenant identifier" );
-
-		test( context, getMutinySessionFactory().withStatelessSession( this::selectCurrentDB ) );
+		test( context, assertThrown( HibernateException.class, getMutinySessionFactory().withStatelessSession( this::selectCurrentDB ) )
+				.invoke( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) )
+		);
 	}
 
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {

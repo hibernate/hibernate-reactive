@@ -21,11 +21,12 @@ import org.hibernate.LazyInitializationException;
 import org.hibernate.cfg.Configuration;
 
 import org.junit.After;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import io.vertx.ext.unit.TestContext;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
 /**
  * Test the stateless update of a proxy.
@@ -38,9 +39,6 @@ import io.vertx.ext.unit.TestContext;
  * @see ReactiveStatelessSessionTest
  */
 public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	@Override
 	protected Configuration constructConfiguration() {
@@ -57,23 +55,18 @@ public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 
 	@Test
 	public void testUnfetchedEntityException(TestContext context) {
-		thrown.expect( HibernateException.class );
-		thrown.expectMessage( "HR000072" );
-
 		SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.sampleField = "test";
 
 		SampleJoinEntity sampleJoinEntity = new SampleJoinEntity();
 		sampleJoinEntity.sampleEntity = sampleEntity;
 
-		test( context, getMutinySessionFactory()
+		test( context, assertThrown( HibernateException.class, getMutinySessionFactory()
 				.withTransaction( (s, t) -> s.persistAll( sampleEntity, sampleJoinEntity ) )
-
 				.chain( targetId -> getMutinySessionFactory()
 						.withTransaction( (session, transaction) -> session
 								.find( SampleJoinEntity.class, sampleJoinEntity.getId() ) )
 				)
-
 				.chain( joinEntityFromDatabase -> getMutinySessionFactory().withStatelessTransaction(
 						(s, t) -> {
 							SampleEntity entityFromDb = joinEntityFromDatabase.sampleEntity;
@@ -82,21 +75,20 @@ public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 							// and therefore the proxy is uninitialized
 							return s.update( entityFromDb );
 						} )
-				)
+				) )
+				.invoke( exception -> assertThat( exception.getMessage() ).contains( "HR000072" ) )
 		);
 	}
 
 	@Test
 	public void testLazyInitializationException(TestContext context) {
-		thrown.expect( LazyInitializationException.class );
-
 		SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.sampleField = "test";
 
 		SampleJoinEntity sampleJoinEntity = new SampleJoinEntity();
 		sampleJoinEntity.sampleEntity = sampleEntity;
 
-		test( context, getMutinySessionFactory()
+		test( context, assertThrown( LazyInitializationException.class, getMutinySessionFactory()
 				.withTransaction( (s, t) -> s.persistAll( sampleEntity, sampleJoinEntity ) )
 
 				.chain( targetId -> getMutinySessionFactory()
@@ -111,7 +103,7 @@ public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 							entityFromDb.setSampleField( "updated field" );
 							return s.update( entityFromDb );
 						} )
-				)
+				) )
 		);
 	}
 
