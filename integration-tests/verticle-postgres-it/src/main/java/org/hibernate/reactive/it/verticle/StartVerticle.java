@@ -65,7 +65,7 @@ public class StartVerticle {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
 			postgresql.start();
-			return postgresql.getJdbcUrl();
+			return postgresql.getJdbcUrl().replaceAll( "^jdbc:", "" );
 		}
 
 		// When we don't use testcontainers we expect a database on the default url

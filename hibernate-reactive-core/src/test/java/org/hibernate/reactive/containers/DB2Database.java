@@ -90,18 +90,14 @@ class DB2Database implements TestableDatabase {
 			.acceptLicense()
 			.withReuse( true );
 
-	private String getRegularJdbcUrl() {
-		return "jdbc:db2://localhost:50000/" + db2.getDatabaseName();
+	@Override
+	public String getDefaultUrl() {
+		return "db2://" + TestableDatabase.credentials( db2 ) + "localhost:50000/" + db2.getDatabaseName();
 	}
 
 	@Override
-	public String getJdbcUrl() {
-		return buildJdbcUrlWithCredentials( address() );
-	}
-
-	@Override
-	public String getUri() {
-		return buildUriWithCredentials( address() );
+	public String getConnectionUri() {
+		return connectionUri( db2 );
 	}
 
 	@Override
@@ -112,25 +108,6 @@ class DB2Database implements TestableDatabase {
 	@Override
 	public String getExpectedNativeDatatype(Class<?> dataType) {
 		return expectedDBTypeForClass.get( dataType );
-	}
-
-	private String address() {
-		if ( DatabaseConfiguration.USE_DOCKER ) {
-			// Calling start() will start the container (if not already started)
-			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
-			db2.start();
-			return db2.getJdbcUrl();
-		}
-
-		return getRegularJdbcUrl();
-	}
-
-	private static String buildJdbcUrlWithCredentials(String jdbcUrl) {
-		return jdbcUrl + ":user=" + db2.getUsername() + ";password=" + db2.getPassword() + ";";
-	}
-
-	private static String buildUriWithCredentials(String jdbcUrl) {
-		return "db2://" + db2.getUsername() + ":" + db2.getPassword() + "@" + jdbcUrl.substring(11);
 	}
 
 	private DB2Database() {

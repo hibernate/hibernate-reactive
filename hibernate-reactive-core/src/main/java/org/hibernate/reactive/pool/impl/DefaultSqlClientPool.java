@@ -125,7 +125,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 
 	@Override
 	public void configure(Map configuration) {
-		uri = jdbcUrl( configuration );
+		uri = connectionUri( configuration );
 	}
 
 	@Override
@@ -198,7 +198,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 *
 	 * @return the JDBC URL as a {@link URI}
 	 */
-	protected URI jdbcUrl(Map<?,?> configurationValues) {
+	protected URI connectionUri(Map<?,?> configurationValues) {
 		String url = ConfigurationHelper.getString( Settings.URL, configurationValues );
 		LOG.sqlClientUrl( url);
 		return parse( url );
@@ -240,21 +240,15 @@ public class DefaultSqlClientPool extends SqlClientPool
 	}
 
 	public static URI parse(String url) {
-
 		if ( url == null || url.trim().isEmpty() ) {
 			throw new HibernateError( "The configuration property '" + Settings.URL + "' was not provided, or is in invalid format. This is required when using the default DefaultSqlClientPool: " +
 											  "either provide the configuration setting or integrate with a different SqlClientPool implementation" );
 		}
 
 		if ( url.startsWith( "jdbc:" ) ) {
-			return URI.create( updateUrl( url.substring( 5 ) ) );
+			throw LOG.invalidJdbcUrl( url );
 		}
 
-		return URI.create( updateUrl( url ) );
+		return URI.create( url );
 	}
-
-	private static String updateUrl(String url) {
-		return url.replaceAll( "^cockroachdb:", "postgres:" );
-	}
-
 }

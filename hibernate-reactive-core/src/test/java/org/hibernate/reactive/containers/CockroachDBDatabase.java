@@ -30,32 +30,19 @@ class CockroachDBDatabase extends PostgreSQLDatabase {
 			// Testcontainers will use a database named 'postgres' and the 'root' user
 			.withReuse( true );
 
-	private String getRegularJdbcUrl() {
-		return "jdbc:postgres://localhost:26257/" + cockroachDb.getDatabaseName();
+	@Override
+	public String getDefaultUrl() {
+		return "cockroachdb://" + TestableDatabase.credentials( cockroachDb ) + "localhost:26257/" + cockroachDb.getDatabaseName();
 	}
 
 	@Override
-	public String getJdbcUrl() {
-		return buildJdbcUrlWithCredentials( address() )
-				.replaceAll( "^jdbc:postgre(s|sql):", "jdbc:cockroachdb:" );
-	}
-
-	@Override
-	public String getUri() {
-		return buildUriWithCredentials( address() )
-				.replaceAll( "^postgre(s|sql):", "jdbc:cockroachdb:" );
-	}
-
-	private String address() {
+	public String getConnectionUri() {
+		String vertxUri = disableSslMode( connectionUri( cockroachDb ) )
+				.replaceAll( "^postgre(s|sql):", "cockroachdb:" );
 		if ( DatabaseConfiguration.USE_DOCKER ) {
-			// Calling start() will start the container (if not already started)
-			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
-			cockroachDb.start();
 			enableTemporaryTables();
-			return disableSslMode( cockroachDb.getJdbcUrl() );
 		}
-
-		return disableSslMode( getRegularJdbcUrl() );
+		return vertxUri;
 	}
 
 	private static String disableSslMode(String url) {
@@ -87,15 +74,6 @@ class CockroachDBDatabase extends PostgreSQLDatabase {
 					: execResult.getStdout();
 			throw new HibernateException( "[CockroachDB] Error running " + command + " [" + execResult.getExitCode() + "]: " + error );
 		}
-	}
-
-	private static String buildJdbcUrlWithCredentials(String jdbcUrl) {
-		return jdbcUrl + "&user=" + cockroachDb.getUsername();
-	}
-
-	private static String buildUriWithCredentials(String jdbcUrl) {
-		String suffix = jdbcUrl.replaceAll( "^jdbc:postgre(s|sql)://", "" );
-		return "postgresql://" + cockroachDb.getUsername() + "@" + suffix;
 	}
 
 	private CockroachDBDatabase() {

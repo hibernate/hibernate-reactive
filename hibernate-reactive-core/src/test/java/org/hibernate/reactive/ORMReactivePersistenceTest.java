@@ -24,8 +24,12 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import org.jetbrains.annotations.NotNull;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.PASSWORD;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.USERNAME;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.getConnectionUri;
 
 /**
  * This test class verifies that data can be persisted and queried on the same database
@@ -48,14 +52,22 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	@Before
 	public void prepareOrmFactory() {
 		Configuration configuration = constructConfiguration();
+		configuration.setProperty( Settings.USER, USERNAME );
+		configuration.setProperty( Settings.PASS, PASSWORD );
 		configuration.setProperty( Settings.DRIVER, "org.postgresql.Driver" );
 		configuration.setProperty( Settings.DIALECT, "org.hibernate.dialect.PostgreSQL95Dialect");
+		configuration.setProperty( Settings.URL, jdbcConnectionUrl() );
 
 		StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() );
 
 		StandardServiceRegistry registry = builder.build();
 		ormFactory = configuration.buildSessionFactory( registry );
+	}
+
+	@NotNull
+	private String jdbcConnectionUrl() {
+		return "jdbc:" + getConnectionUri().replaceAll( USERNAME + ":" + PASSWORD + "@", "" );
 	}
 
 	@After

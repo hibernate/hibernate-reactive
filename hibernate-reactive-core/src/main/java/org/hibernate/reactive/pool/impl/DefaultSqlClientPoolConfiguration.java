@@ -10,7 +10,6 @@ import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.hibernate.HibernateError;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.provider.Settings;
@@ -64,7 +63,6 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 	@Override
 	public PoolOptions poolOptions() {
 		PoolOptions poolOptions = new PoolOptions();
-
 		LOG.connectionPoolSize( poolSize );
 		poolOptions.setMaxSize( poolSize );
 		if ( maxWaitQueueSize != null ) {
@@ -90,122 +88,23 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
 	@Override
 	public SqlConnectOptions connectOptions(URI uri) {
-		String scheme = uri.getScheme();
-		String path = scheme.equals( "oracle" )
-				? oraclePath( uri )
-				: uri.getPath();
+		String url = uri.toString().replaceAll( "^cockroachdb:", "postgres:" );
+		final SqlConnectOptions connectOptions = SqlConnectOptions.fromUri( url );
 
-		String database = path.length() > 0
-				? path.substring( 1 )
-				: "";
-
-		if ( scheme.equals( "db2" ) && database.indexOf( ':' ) > 0 ) {
-			// DB2 URLs are a bit odd and have the format:
-			// jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
-			database = database.substring( 0, database.indexOf( ':' ) );
+		if ( connectOptions.getUser() == null && user == null ) {
+			throw new IllegalArgumentException( "database username not specified (set the property 'hibernate.connection.username', or include it as a parameter in the connection URL)" );
 		}
 
-		String host = scheme.equals( "oracle" )
-				? oracleHost( uri )
-				: uri.getHost();
-
-		int port = scheme.equals( "oracle" )
-				? oraclePort( uri )
-				: uri.getPort();
-
-		int index = uri.toString().indexOf( ';' );
-		if ( scheme.equals( "sqlserver" ) && index > 0 ) {
-			// SQL Server separates parameters in the url with a semicolon (';')
-			// and the URI class doesn't get the right value for host and port when the url
-			// contains parameters
-			URI uriWithoutParams = URI.create( uri.toString().substring( 0, index ) );
-			host = uriWithoutParams.getHost();
-			port = uriWithoutParams.getPort();
+		if ( user != null ) {
+			connectOptions.setUser( user );
 		}
 
-		if ( port == -1 ) {
-			port = defaultPort( scheme );
-		}
-
-		//see if the credentials were specified via properties
-		String username = user;
-		String password = pass;
-		if ( username == null || password == null ) {
-			//if not, look for URI-style user info first
-			String userInfo = uri.getUserInfo();
-			if ( userInfo != null ) {
-				String[] bits = userInfo.split( ":" );
-				username = bits[0];
-				if ( bits.length > 1 ) {
-					password = bits[1];
-				}
-			}
-			else {
-				//check the query for named parameters
-				//in case it's a JDBC-style URL
-				String[] params = {};
-				// DB2 URLs are a bit odd and have the format:
-				// jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
-				if ( scheme.equals( "db2" ) ) {
-					int queryIndex = uri.getPath().indexOf( ':' ) + 1;
-					if ( queryIndex > 0 ) {
-						params = uri.getPath().substring( queryIndex ).split( ";" );
-					}
-				}
-				else if ( scheme.contains( "sqlserver" ) ) {
-					// SQL Server separates parameters in the url with a semicolon (';')
-					// Ex: jdbc:sqlserver://<server>:<port>;<database>=AdventureWorks;user=<user>;password=<password>
-					String query = uri.getQuery();
-					String rawQuery = uri.getRawQuery();
-					String s = uri.toString();
-					int queryIndex = s.indexOf( ';' ) + 1;
-					if ( queryIndex > 0 ) {
-						params = s.substring( queryIndex ).split( ";" );
-					}
-				}
-				else {
-					final String query = scheme.equals( "oracle" )
-							? oracleQuery( uri )
-							: uri.getQuery();
-					if ( query != null ) {
-						params = query.split( "&" );
-					}
-				}
-				for ( String param : params ) {
-					if ( param.startsWith( "user=" ) ) {
-						username = param.substring( 5 );
-					}
-					else if ( param.startsWith( "pass=" ) ) {
-						password = param.substring( 5 );
-					}
-					else if ( param.startsWith( "password=" ) ) {
-						password = param.substring( 9 );
-					}
-					else if ( param.startsWith( "database=" ) ) {
-						database = param.substring( 9 );
-					}
-				}
-			}
-		}
-
-		if ( username == null ) {
-			throw new HibernateError(
-					"database username not specified (set the property 'javax.persistence.jdbc.user', or include it as a parameter in the connection URL)" );
-		}
-
-		SqlConnectOptions connectOptions = new SqlConnectOptions()
-				.setHost( host )
-				.setPort( port )
-				.setDatabase( database )
-				.setUser( username );
-
-		if ( password != null ) {
-			connectOptions.setPassword( password );
+		if ( pass != null ) {
+			connectOptions.setPassword( pass );
 		}
 
 		//enable the prepared statement cache by default
 		connectOptions.setCachePreparedStatements( true );
-
 		if ( cacheMaxSize != null ) {
 			if ( cacheMaxSize <= 0 ) {
 				LOG.preparedStatementCacheDisabled();
@@ -225,86 +124,4 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
 		return connectOptions;
 	}
-
-	private int oraclePort(URI uri) {
-		String s = uri.toString().substring( "oracle:thin:".length() );
-		if ( s.indexOf( ':' ) > -1 ) {
-			// Example: localhost:1234...
-			s = s.substring( s.indexOf( ':' ) + 1 );
-			if ( s.indexOf( '/' ) != -1 ) {
-				// Example: 1234/
-				s = s.substring( 0, s.indexOf( '/' ) );
-				return Integer.valueOf( s );
-			}
-			if ( s.indexOf( '?' ) != -1 ) {
-				// Example: 1234?param=value
-				s = s.substring( 0, s.indexOf( '?' ) );
-				return Integer.valueOf( s );
-			}
-			// Example: 1234
-			return Integer.valueOf( s );
-		}
-		return -1;
-	}
-
-	// For Oracle the host part starts with a '@'
-	// Example oracle:thin:[username/password]@localhost:1234/database?param=value
-	private String oracleHost(URI uri) {
-		String s = uri.toString();
-		String host = s.substring( s.indexOf( '@' ) + 1 );
-		int end = host.indexOf( ':' );
-		if ( end == -1 ) {
-			end = host.indexOf( '/' );
-			if ( end == -1) {
-				end = host.indexOf( '?' );
-			}
-		}
-		return host.substring( 0, end );
-	}
-
-	private String oracleQuery(URI uri) {
-		String string = uri.toString();
-		int start = string.indexOf( '?' );
-		return start == -1
-				? null
-				: string.substring( start + 1 );
-	}
-
-	private String oraclePath(URI uri) {
-		String string = uri.toString();
-		// Remove everything before localhost:port
-		final int i = string.indexOf( '@' );
-		string = string.substring( i + 1 );
-		// Check the start of the path
-		int start = string.indexOf( '/' );
-		if ( start == -1) {
-			return "";
-		}
-		int end = string.indexOf( '?' ) == -1
-				? string.length()
-				: string.indexOf( '?' );
-		return string.substring( start, end );
-	}
-
-	private int defaultPort(String scheme) {
-		switch ( scheme ) {
-			case "postgresql":
-			case "postgres":
-				return 5432;
-			case "mariadb":
-			case "mysql":
-				return 3306;
-			case "db2":
-				return 50000;
-			case "cockroachdb":
-				return 26257;
-			case "sqlserver":
-				return 1433;
-			case "oracle":
-				return 1521;
-			default:
-				throw new IllegalArgumentException( "Unknown default port for scheme: " + scheme );
-		}
-	}
-
 }

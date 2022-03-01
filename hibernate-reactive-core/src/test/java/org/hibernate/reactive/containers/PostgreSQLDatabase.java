@@ -36,7 +36,7 @@ class PostgreSQLDatabase implements TestableDatabase {
 
 	public final static String IMAGE_NAME = "postgres:14.1";
 
-	private static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
+	private static final Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
 
 	static {{
 			expectedDBTypeForClass.put( boolean.class, "boolean" );
@@ -88,18 +88,17 @@ class PostgreSQLDatabase implements TestableDatabase {
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
 			.withReuse( true );
 
-	private String getRegularJdbcUrl() {
-		return "jdbc:postgresql://localhost:5432/" + postgresql.getDatabaseName() + "?loggerLevel=OFF";
+	protected PostgreSQLDatabase() {
 	}
 
 	@Override
-	public String getJdbcUrl() {
-		return buildJdbcUrlWithCredentials( address() );
+	public String getConnectionUri() {
+		return connectionUri( postgresql );
 	}
 
 	@Override
-	public String getUri() {
-		return buildUriWithCredentials( address() );
+	public String getDefaultUrl() {
+		return "postgresql://" + TestableDatabase.credentials( postgresql ) + "localhost:5432/" + postgresql.getDatabaseName();
 	}
 
 	@Override
@@ -110,27 +109,5 @@ class PostgreSQLDatabase implements TestableDatabase {
 	@Override
 	public String getExpectedNativeDatatype(Class<?> dataType) {
 		return expectedDBTypeForClass.get( dataType );
-	}
-
-	private String address() {
-		if ( DatabaseConfiguration.USE_DOCKER ) {
-			// Calling start() will start the container (if not already started)
-			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
-			postgresql.start();
-			return postgresql.getJdbcUrl();
-		}
-
-		return getRegularJdbcUrl();
-	}
-
-	private static String buildJdbcUrlWithCredentials(String jdbcUrl) {
-		return jdbcUrl + "&user=" + postgresql.getUsername() + "&password=" + postgresql.getPassword();
-	}
-
-	private static String buildUriWithCredentials(String jdbcUrl) {
-		return "postgresql://" + postgresql.getUsername() + ":" + postgresql.getPassword() + "@" + jdbcUrl.substring(18);
-	}
-
-	protected PostgreSQLDatabase() {
 	}
 }

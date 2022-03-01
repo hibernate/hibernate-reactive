@@ -97,41 +97,18 @@ class MSSQLServerDatabase implements TestableDatabase {
 			.withReuse( true );
 
 	@Override
-	public String getJdbcUrl() {
-		return buildJdbcUrlWithCredentials( address() );
-	}
-
-	private String getRegularJdbcUrl() {
-		return "jdbc:sqlserver://localhost:1433";
+	public String getConnectionUri() {
+		return connectionUri( mssqlserver );
 	}
 
 	@Override
-	public String getUri() {
-		return buildUriWithCredentials( address() );
+	public String getDefaultUrl() {
+		return "sqlserver:// " + TestableDatabase.credentials( mssqlserver ) + "localhost:1433/" + mssqlserver.getDatabaseName();
 	}
 
 	@Override
 	public String getExpectedNativeDatatype(Class<?> dataType) {
 		return expectedDBTypeForClass.get( dataType );
-	}
-
-	private String address() {
-		if ( DatabaseConfiguration.USE_DOCKER ) {
-			// Calling start() will start the container (if not already started)
-			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
-			mssqlserver.start();
-			return mssqlserver.getJdbcUrl();
-		}
-
-		return getRegularJdbcUrl();
-	}
-
-	private String buildJdbcUrlWithCredentials(String jdbcUrl) {
-		return jdbcUrl + ";user=" + mssqlserver.getUsername() + ";password=" + mssqlserver.getPassword();
-	}
-
-	private static String buildUriWithCredentials(String jdbcUrl) {
-		return "sqlserver://" + mssqlserver.getUsername() + ":" + mssqlserver.getPassword() + "@" + jdbcUrl.substring( "jdbc:sqlserver://".length() );
 	}
 
 	private MSSQLServerDatabase() {
