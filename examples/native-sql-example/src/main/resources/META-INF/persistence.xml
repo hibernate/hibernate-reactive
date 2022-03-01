@@ -13,7 +13,7 @@
 
             <!-- PostgreSQL -->
             <property name="javax.persistence.jdbc.url"
-                      value="jdbc:postgresql://localhost/hreact"/>
+                      value="postgresql://localhost/hreact"/>
 
             <!-- Credentials -->
             <property name="javax.persistence.jdbc.user"
