@@ -89,7 +89,7 @@ class PostgreSQLDatabase implements TestableDatabase {
 			.withReuse( true );
 
 	private String getRegularJdbcUrl() {
-		return "jdbc:postgresql://localhost:5432/" + postgresql.getDatabaseName() + "?loggerLevel=OFF";
+		return "jdbc:postgresql://localhost:5432/" + postgresql.getDatabaseName();
 	}
 
 	@Override
@@ -117,14 +117,16 @@ class PostgreSQLDatabase implements TestableDatabase {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
 			postgresql.start();
-			return postgresql.getJdbcUrl();
+			// Latest Postgres JDBC driver has dropped support for loggerLevel
+			// and the Vert.x driver throws an exception because it does not recognize it
+			return postgresql.getJdbcUrl().replace( "?loggerLevel=OFF", "" );
 		}
 
 		return getRegularJdbcUrl();
 	}
 
 	private static String buildJdbcUrlWithCredentials(String jdbcUrl) {
-		return jdbcUrl + "&user=" + postgresql.getUsername() + "&password=" + postgresql.getPassword();
+		return jdbcUrl + "?user=" + postgresql.getUsername() + "&password=" + postgresql.getPassword();
 	}
 
 	private static String buildUriWithCredentials(String jdbcUrl) {
