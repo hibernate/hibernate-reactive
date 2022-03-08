@@ -7,6 +7,7 @@ package org.hibernate.reactive.pool.impl;
 
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -130,6 +131,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 		//see if the credentials were specified via properties
 		String username = user;
 		String password = pass;
+		Map<String, String> extraProps = new HashMap<>();
 		if ( username == null || password == null ) {
 			//if not, look for URI-style user info first
 			String userInfo = uri.getUserInfo();
@@ -184,6 +186,10 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 					else if ( param.startsWith( "database=" ) ) {
 						database = param.substring( 9 );
 					}
+					else {
+						String[] propertySet = param.split( "=" );
+						extraProps.put( propertySet[0], propertySet[1] );
+					}
 				}
 			}
 		}
@@ -201,6 +207,10 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
 		if ( password != null ) {
 			connectOptions.setPassword( password );
+		}
+
+		for ( String key : extraProps.keySet() ) {
+			connectOptions.addProperty( key, extraProps.get( key ) );
 		}
 
 		//enable the prepared statement cache by default
