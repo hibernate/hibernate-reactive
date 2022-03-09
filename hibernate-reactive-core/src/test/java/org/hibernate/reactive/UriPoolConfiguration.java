@@ -20,6 +20,8 @@ public class UriPoolConfiguration implements SqlClientPoolConfiguration {
 
 	@Override
 	public SqlConnectOptions connectOptions(URI uri) {
-		return SqlConnectOptions.fromUri( uri.toString() );
+		// For CockroachDB we use the PostgreSQL Vert.x client
+		String uriWithPgScheme = uri.toString().replaceAll( "^cockroach(db)?:", "postgres:" );
+		return SqlConnectOptions.fromUri( uriWithPgScheme );
 	}
 }

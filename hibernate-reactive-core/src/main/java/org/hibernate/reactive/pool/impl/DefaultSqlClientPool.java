@@ -216,7 +216,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 * @return the disambiguated {@link Driver}
 	 */
 	private Driver findDriver(URI uri, ServiceConfigurationError originalError) {
-		String scheme = uri.getScheme(); // "postgresql", "mysql", "db2", etc
+		String scheme = scheme( uri );
 		for ( Driver d : ServiceLoader.load( Driver.class ) ) {
 			String driverName = d.getClass().getCanonicalName();
 			LOG.detectedDriver( driverName );
@@ -224,7 +224,14 @@ public class DefaultSqlClientPool extends SqlClientPool
 				return d;
 			}
 		}
-		throw new ConfigurationException( "No suitable drivers found for URI scheme: " + uri.getScheme(), originalError );
+		throw new ConfigurationException( "No suitable drivers found for URI scheme: " + scheme, originalError );
+	}
+
+	private String scheme(URI uri) {
+		// For CockroachDB we use the same driver we sue for Postgres
+		return uri.getScheme().toLowerCase().startsWith( "cockroach" )
+				? "postgresql"
+				: uri.getScheme();
 	}
 
 	private boolean matchesScheme(String driverName, String scheme) {
@@ -247,14 +254,9 @@ public class DefaultSqlClientPool extends SqlClientPool
 		}
 
 		if ( url.startsWith( "jdbc:" ) ) {
-			return URI.create( updateUrl( url.substring( 5 ) ) );
+			return URI.create( url.substring( 5 ) );
 		}
 
-		return URI.create( updateUrl( url ) );
+		return URI.create( url );
 	}
-
-	private static String updateUrl(String url) {
-		return url.replaceAll( "^cockroachdb:", "postgres:" );
-	}
-
 }
