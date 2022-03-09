@@ -125,6 +125,16 @@ class DB2Database implements TestableDatabase {
 		return getRegularJdbcUrl();
 	}
 
+	@Override
+	public String jdbcStartQuery() {
+		return ":";
+	}
+
+	@Override
+	public String jdbcParamDelimiter() {
+		return ";";
+	}
+
 	private static String buildJdbcUrlWithCredentials(String jdbcUrl) {
 		return jdbcUrl + ":user=" + db2.getUsername() + ";password=" + db2.getPassword() + ";";
 	}

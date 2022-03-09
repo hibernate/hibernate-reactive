@@ -126,6 +126,16 @@ class MSSQLServerDatabase implements TestableDatabase {
 		return getRegularJdbcUrl();
 	}
 
+	@Override
+	public String jdbcStartQuery() {
+		return ";";
+	}
+
+	@Override
+	public String jdbcParamDelimiter() {
+		return ";";
+	}
+
 	private String buildJdbcUrlWithCredentials(String jdbcUrl) {
 		return jdbcUrl + ";user=" + mssqlserver.getUsername() + ";password=" + mssqlserver.getPassword();
 	}

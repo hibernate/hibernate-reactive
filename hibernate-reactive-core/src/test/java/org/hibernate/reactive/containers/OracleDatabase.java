@@ -99,6 +99,33 @@ class OracleDatabase implements TestableDatabase {
 	}
 
 	@Override
+	public String createJdbcUrl(String host, int port, String database, Map<String, String> params) {
+		final StringBuilder paramsBuilder = new StringBuilder();
+		if ( params != null && !params.isEmpty() ) {
+			params.forEach( (key, value) -> {
+				paramsBuilder.append( jdbcParamDelimiter() );
+				paramsBuilder.append( key );
+				paramsBuilder.append( "=" );
+				paramsBuilder.append( value );
+			} );
+		}
+
+		String url = "jdbc:oracle:thin:@" + host + ":" + port;
+		if ( database != null && !database.isBlank() ) {
+			url += "/" + database;
+		}
+		if ( paramsBuilder.length() > 0 ) {
+			url += jdbcStartQuery() + paramsBuilder.substring( 1 );
+		}
+		return url;
+	}
+
+	@Override
+	public String getScheme() {
+		return "oracle:thin:";
+	}
+
+	@Override
 	public String getUri() {
 		// The url is different here because we expect it to work with io.vertx.oracleclient.impl.OracleConnectionUriParser
 		return addCredentialsToUri( address() )
