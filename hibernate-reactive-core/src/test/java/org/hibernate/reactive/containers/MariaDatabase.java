@@ -34,6 +34,11 @@ class MariaDatabase extends MySQLDatabase {
 	}
 
 	@Override
+	public String getScheme() {
+		return "mariadb:";
+	}
+
+	@Override
 	public String getUri() {
 		return buildUriWithCredentials( address() );
 	}

@@ -126,6 +126,40 @@ class MSSQLServerDatabase implements TestableDatabase {
 		return getRegularJdbcUrl();
 	}
 
+	@Override
+	public String createJdbcUrl(String host, int port, String database, Map<String, String> params) {
+		final StringBuilder paramsBuilder = new StringBuilder();
+		if ( params != null && !params.isEmpty() ) {
+			params.forEach( (key, value) -> {
+				paramsBuilder.append( jdbcParamDelimiter() );
+				paramsBuilder.append( key );
+				paramsBuilder.append( "=" );
+				paramsBuilder.append( value );
+			} );
+		}
+		String url = "jdbc:" + getScheme() + "//" + host;
+		if ( port > -1 ) {
+			url += ":" + port;
+		}
+		if ( paramsBuilder.length() > 0 ) {
+			url += jdbcStartQuery() + paramsBuilder.substring( 1 );
+		}
+		if ( database != null ) {
+			return url + ";database=" + database;
+		}
+		return url;
+	}
+
+	@Override
+	public String jdbcStartQuery() {
+		return ";";
+	}
+
+	@Override
+	public String jdbcParamDelimiter() {
+		return ";";
+	}
+
 	private String buildJdbcUrlWithCredentials(String jdbcUrl) {
 		return jdbcUrl + ";user=" + mssqlserver.getUsername() + ";password=" + mssqlserver.getPassword();
 	}

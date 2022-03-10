@@ -6,6 +6,7 @@
 package org.hibernate.reactive.containers;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -90,6 +91,10 @@ public class DatabaseConfiguration {
 
 	public static String getUri() {
 		return dbType().configuration.getUri();
+	}
+
+	public static String createJdbcUrl(String host, int port, String database, Map<String, String> properties) {
+		return dbType().configuration.createJdbcUrl( host, port, database, properties );
 	}
 
 	public static String getDatatypeQuery(String tableName, String columnName) {
