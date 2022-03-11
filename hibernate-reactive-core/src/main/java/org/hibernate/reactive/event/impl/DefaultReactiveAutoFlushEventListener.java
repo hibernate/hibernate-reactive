@@ -10,7 +10,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.ActionQueue;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.event.spi.AutoFlushEvent;
@@ -23,7 +22,6 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlushingEventListener
@@ -41,7 +39,7 @@ public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlush
 		if ( flushMightBeNeeded( source ) ) {
 			// Need to get the number of collection removals before flushing to executions
 			// (because flushing to executions can add collection removal actions to the action queue).
-			final ActionQueue actionQueue = source.getActionQueue();
+			final ReactiveActionQueue actionQueue = reactiveActionQueue( event );
 			final int oldSize = actionQueue.numberOfCollectionRemovals();
 
 			autoFlushStage = flushEverythingToExecutions( event )
@@ -59,7 +57,6 @@ public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlush
 											statistics.flush();
 										}
 									} );
-
 						}
 						else {
 							LOG.trace( "Don't need to execute flush" );
@@ -69,15 +66,17 @@ public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlush
 						}
 					} );
 		}
-		autoFlushStage.whenComplete( (v, x) -> {
-			source.getEventListenerManager().flushEnd(
-					event.getNumberOfEntitiesProcessed(),
-					event.getNumberOfCollectionsProcessed()
-			);
-			returnNullorRethrow( x );
-		} );
+		return autoFlushStage.whenComplete( (v, x) -> source.getEventListenerManager()
+				.partialFlushEnd(
+						event.getNumberOfEntitiesProcessed(),
+						event.getNumberOfCollectionsProcessed()
+				) );
+	}
 
-		return autoFlushStage;
+	private ReactiveActionQueue reactiveActionQueue(AutoFlushEvent event) {
+		return event.getSession()
+				.unwrap( ReactiveSession.class )
+				.getReactiveActionQueue();
 	}
 
 	private boolean flushIsReallyNeeded(AutoFlushEvent event, final EventSource source) {
