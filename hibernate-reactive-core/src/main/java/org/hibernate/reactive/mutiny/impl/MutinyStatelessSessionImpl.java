@@ -5,7 +5,14 @@
  */
 package org.hibernate.reactive.mutiny.impl;
 
-import io.smallrye.mutiny.Uni;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import javax.persistence.EntityGraph;
+import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
 
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
@@ -15,14 +22,7 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 
-import javax.persistence.EntityGraph;
-import javax.persistence.criteria.CriteriaDelete;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.CriteriaUpdate;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Implements the {@link Mutiny.StatelessSession} API. This delegating
@@ -221,17 +221,25 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
 		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
 			currentTransaction = this;
-			//noinspection Convert2MethodRef
 			return begin()
-					.chain( () -> work.apply( this ) )
+					.chain( () -> executeInTransaction( work ) )
+					.eventually( () -> currentTransaction = null );
+		}
+
+		/**
+		 * Run the code assuming that a transaction has already started so that we can
+		 * differentiate an error starting a transaction (and therefore doesn't need to rollback)
+		 * and an error thrown by the work.
+		 */
+		Uni<T> executeInTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
+			return work.apply( this )
 					// in the case of an exception or cancellation
 					// we need to rollback the transaction
-					.onFailure().call( () -> rollback() )
-					.onCancellation().call( () -> rollback() )
+					.onFailure().call( this::rollback )
+					.onCancellation().call( this::rollback )
 					// finally, when there was no exception,
 					// commit or rollback the transaction
-					.onItem().call( () -> rollback ? rollback() : commit() )
-					.eventually( () -> currentTransaction = null );
+					.call( () -> rollback ? rollback() : commit() );
 		}
 
 		Uni<Void> begin() {
