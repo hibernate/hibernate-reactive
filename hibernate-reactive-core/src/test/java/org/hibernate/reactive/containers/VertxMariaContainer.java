@@ -10,6 +10,7 @@ import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.SqlConnection;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import java.sql.Connection;
 import java.util.concurrent.CountDownLatch;
@@ -26,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 class VertxMariaContainer extends MariaDBContainer<VertxMariaContainer> {
 
 	public VertxMariaContainer(String dockerImageName) {
-		super( dockerImageName );
+		super( DockerImageName.parse( dockerImageName ).asCompatibleSubstituteFor( "mariadb" ) );
 	}
 
 	@Override
