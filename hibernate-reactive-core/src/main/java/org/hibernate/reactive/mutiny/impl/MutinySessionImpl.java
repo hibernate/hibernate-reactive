@@ -430,21 +430,29 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
 			currentTransaction = this;
-			//noinspection Convert2MethodRef
 			return begin()
-					.chain( () -> work.apply( this ) )
+					.chain( () -> executeInTransaction( work ) )
+					.eventually( () -> currentTransaction = null );
+		}
+
+		/**
+		 * Run the code assuming that a transaction has already started so that we can
+		 * differentiate an error starting a transaction (and therefore doesn't need to rollback)
+		 * and an error thrown by the work.
+		 */
+		Uni<T> executeInTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
+			return work.apply( this )
 					// only flush() if the work completed with no exception
-					.call( () -> flush() )
-					.call( () -> beforeCompletion() )
+					.call( this::flush )
+					.call( this::beforeCompletion )
 					// in the case of an exception or cancellation
 					// we need to rollback the transaction
-					.onFailure().call( () -> rollback() )
-					.onCancellation().call( () -> rollback() )
+					.onFailure().call( this::rollback )
+					.onCancellation().call( this::rollback )
 					// finally, when there was no exception,
 					// commit or rollback the transaction
-					.onItem().call( () -> rollback ? rollback() : commit() )
-					.call( () -> afterCompletion() )
-					.eventually( () -> currentTransaction = null );
+					.call( () -> rollback ? rollback() : commit() )
+					.call( this::afterCompletion );
 		}
 
 		Uni<Void> flush() {

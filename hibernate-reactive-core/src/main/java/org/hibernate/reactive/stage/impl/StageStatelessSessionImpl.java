@@ -5,6 +5,14 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import javax.persistence.EntityGraph;
+import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
+
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
@@ -12,14 +20,6 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.stage.Stage;
-
-import javax.persistence.EntityGraph;
-import javax.persistence.criteria.CriteriaDelete;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.CriteriaUpdate;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
@@ -238,22 +238,30 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 		CompletionStage<T> execute(Function<Stage.Transaction, CompletionStage<T>> work) {
 			currentTransaction = this;
 			return begin()
-					.thenCompose( v -> work.apply( this ) )
+					.thenCompose( v -> executeInTransaction( work ) )
+					.whenComplete( (t, x) -> currentTransaction = null );
+		}
+
+		/**
+		 * Run the code assuming that a transaction has already started so that we can
+		 * differentiate an error starting a transaction (and therefore doesn't need to rollback)
+		 * and an error thrown by the work.
+		 */
+		CompletionStage<T> executeInTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
+			return work.apply( this )
 					// have to capture the error here and pass it along,
 					// since we can't just return a CompletionStage that
 					// rolls back the transaction from the handle() function
 					.handle( this::processError )
 					// finally, commit or rollback the transaction, and
 					// then rethrow the caught error if necessary
-					.thenCompose(
-							result -> end()
-									// make sure that if rollback() throws,
-									// the original error doesn't get swallowed
-									.handle( this::processError )
-									// finally rethrow the original error, if any
-									.thenApply( v -> returnOrRethrow( error, result ) )
-					)
-					.whenComplete( (t, x) -> currentTransaction = null );
+					.thenCompose( result -> end()
+							// make sure that if rollback() throws,
+							// the original error doesn't get swallowed
+							.handle( this::processError )
+							// finally, rethrow the original error, if any
+							.thenApply( v -> returnOrRethrow( error, result ) )
+					);
 		}
 
 		CompletionStage<Void> begin() {

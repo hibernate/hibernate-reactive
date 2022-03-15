@@ -431,7 +431,17 @@ public class StageSessionImpl implements Stage.Session {
 		CompletionStage<T> execute(Function<Stage.Transaction, CompletionStage<T>> work) {
 			currentTransaction = this;
 			return begin()
-					.thenCompose( v -> work.apply( this ) )
+					.thenCompose( v -> executeInTransaction( work ) )
+					.whenComplete( (t, x) -> currentTransaction = null );
+		}
+
+		/**
+		 * Run the code assuming that a transaction has already started so that we can
+		 * differentiate an error starting a transaction (and therefore doesn't need to rollback)
+		 * and an error thrown by the work.
+		 */
+		CompletionStage<T> executeInTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
+			return work.apply( this )
 					// only flush() if the work completed with no exception
 					.thenCompose( result -> flush().thenApply( v -> result ) )
 					// have to capture the error here and pass it along,
@@ -440,15 +450,14 @@ public class StageSessionImpl implements Stage.Session {
 					.handle( this::processError )
 					// finally, commit or rollback the transaction, and
 					// then rethrow the caught error if necessary
-					.thenCompose(
-							result -> end()
-									// make sure that if rollback() throws,
-									// the original error doesn't get swallowed
-									.handle( this::processError )
-									// finally rethrow the original error, if any
-									.thenApply( v -> returnOrRethrow( error, result ) )
-					)
-					.whenComplete( (t, x) -> currentTransaction = null );
+					.thenCompose( result -> end()
+							// make sure that if rollback() throws,
+							// the original error doesn't get swallowed
+							.handle( this::processError )
+							// finally, rethrow the original error, if any
+							.thenApply( v -> returnOrRethrow( error, result ) )
+					);
+
 		}
 
 		CompletionStage<Void> flush() {
