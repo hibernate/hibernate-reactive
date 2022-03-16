@@ -235,35 +235,36 @@ public abstract class BaseReactiveTest {
 
 	protected static CompletionStage<Void> closeSession(Object closable) {
 		if ( closable instanceof CompletionStage<?> ) {
-			CompletionStage closableStage = (CompletionStage) closable;
-			return closableStage.thenCompose( obj -> closeSession( obj ) );
+			CompletionStage<?> closableStage = (CompletionStage<?>) closable;
+			return closableStage.thenCompose( BaseReactiveTest::closeSession );
 		}
 		if ( closable instanceof Uni<?> ) {
-			Uni closableUni = (Uni) closable;
-			return closableUni.subscribeAsCompletionStage().thenCompose( obj -> closeSession( obj ) );
+			Uni<?> closableUni = (Uni<?>) closable;
+			return closableUni.subscribeAsCompletionStage()
+					.thenCompose( BaseReactiveTest::closeSession );
 		}
 		if ( closable instanceof ReactiveConnection ) {
 			return ( (ReactiveConnection) closable ).close();
 		}
-		if ( closable instanceof Mutiny.Session) {
+		if ( closable instanceof Mutiny.Session ) {
 			Mutiny.Session mutiny = (Mutiny.Session) closable;
 			if ( mutiny.isOpen() ) {
 				return mutiny.close().subscribeAsCompletionStage();
 			}
 		}
-		if ( closable instanceof Stage.Session) {
+		if ( closable instanceof Stage.Session ) {
 			Stage.Session stage = (Stage.Session) closable;
 			if ( stage.isOpen() ) {
 				return stage.close();
 			}
 		}
-		if ( closable instanceof Mutiny.StatelessSession) {
+		if ( closable instanceof Mutiny.StatelessSession ) {
 			Mutiny.StatelessSession mutiny = (Mutiny.StatelessSession) closable;
 			if ( mutiny.isOpen() ) {
 				return mutiny.close().subscribeAsCompletionStage();
 			}
 		}
-		if ( closable instanceof Stage.StatelessSession) {
+		if ( closable instanceof Stage.StatelessSession ) {
 			Stage.StatelessSession stage = (Stage.StatelessSession) closable;
 			if ( stage.isOpen() ) {
 				return stage.close();
@@ -289,11 +290,7 @@ public abstract class BaseReactiveTest {
 	protected CompletionStage<Stage.Session> openSession() {
 		return closeSession( session )
 				.thenCompose( v -> getSessionFactory().openSession()
-						.thenApply( newSession -> {
-							this.session = newSession;
-							return newSession;
-						} )
-				);
+						.thenApply( this::saveSession ) );
 	}
 
 	/**
@@ -304,11 +301,7 @@ public abstract class BaseReactiveTest {
 	protected CompletionStage<Stage.StatelessSession> openStatelessSession() {
 		return closeSession( statelessSession )
 				.thenCompose( v -> getSessionFactory().openStatelessSession()
-						.thenApply( newSession -> {
-							this.statelessSession = newSession;
-							return newSession;
-						} )
-				);
+						.thenApply( this::saveStatelessSession ) );
 	}
 
 	protected CompletionStage<ReactiveConnection> connection() {
@@ -322,11 +315,7 @@ public abstract class BaseReactiveTest {
 	 */
 	protected Uni<Mutiny.Session> openMutinySession() {
 		return Uni.createFrom().completionStage( closeSession( session ) )
-				.replaceWith(
-					getMutinySessionFactory().openSession().invoke( newSession -> {
-						this.session = newSession;
-					} )
-				);
+				.replaceWith( getMutinySessionFactory().openSession().invoke( this::saveSession ) );
 	}
 
 	/**
@@ -336,14 +325,20 @@ public abstract class BaseReactiveTest {
 	 */
 	protected Uni<Mutiny.StatelessSession> openMutinyStatelessSession() {
 		return Uni.createFrom().completionStage( closeSession( statelessSession ) )
-				.replaceWith(
-						getMutinySessionFactory().openStatelessSession().invoke( newSession -> {
-							this.session = newSession;
-						} )
-				);
+				.replaceWith( getMutinySessionFactory().openStatelessSession().invoke( this::saveStatelessSession ) );
 	}
 
 	protected static Mutiny.SessionFactory getMutinySessionFactory() {
 		return factoryManager.getHibernateSessionFactory().unwrap( Mutiny.SessionFactory.class );
+	}
+
+	private <T> T saveSession(T newSession) {
+		this.session = newSession;
+		return newSession;
+	}
+
+	private <T> T saveStatelessSession(T newSession) {
+		this.statelessSession = newSession;
+		return newSession;
 	}
 }
