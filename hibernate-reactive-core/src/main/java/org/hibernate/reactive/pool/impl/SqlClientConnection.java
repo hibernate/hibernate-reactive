@@ -61,11 +61,11 @@ public class SqlClientConnection implements ReactiveConnection {
 	private final SqlConnection connection;
 	private Transaction transaction;
 
-	SqlClientConnection(SqlConnection connection, Pool pool,
-						SqlStatementLogger sqlStatementLogger) {
+	SqlClientConnection(SqlConnection connection, Pool pool, SqlStatementLogger sqlStatementLogger) {
 		this.pool = pool;
 		this.sqlStatementLogger = sqlStatementLogger;
 		this.connection = connection;
+		LOG.tracef( "Connection created: %s", connection );
 	}
 
 	@Override
@@ -294,7 +294,9 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> close() {
-		return connection.close().toCompletionStage();
+		return connection.close()
+				.onSuccess( event -> LOG.tracef( "Connection closed: %s", connection ) )
+				.toCompletionStage();
 	}
 
 	@SuppressWarnings("unchecked")
