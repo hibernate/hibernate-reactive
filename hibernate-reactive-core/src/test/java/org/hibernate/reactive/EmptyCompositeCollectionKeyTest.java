@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,7 +19,6 @@ import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
 
-import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -27,16 +27,15 @@ import io.vertx.ext.unit.TestContext;
 public class EmptyCompositeCollectionKeyTest extends BaseReactiveTest {
 
 	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Family.class );
+	}
+
+	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.getProperties().put( Environment.CREATE_EMPTY_COMPOSITES_ENABLED, "true" );
-		configuration.addAnnotatedClass( Family.class );
 		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "Family" ) );
 	}
 
 	@Test

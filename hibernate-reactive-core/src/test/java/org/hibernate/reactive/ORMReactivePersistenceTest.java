@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -39,10 +41,8 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	private SessionFactory ormFactory;
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Flour.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Flour.class );
 	}
 
 	@Before
@@ -61,8 +61,6 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	@After
 	public void cleanDb(TestContext context) {
 		ormFactory.close();
-
-		test( context, deleteEntities( "Flour" ) );
 	}
 
 	@Test

@@ -5,11 +5,9 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.Hibernate;
-import org.hibernate.cfg.Configuration;
-import org.junit.Test;
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -27,9 +25,13 @@ import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.Version;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+
+import org.hibernate.Hibernate;
+import org.hibernate.cfg.Configuration;
+
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 
 public class CascadeTest extends BaseReactiveTest {

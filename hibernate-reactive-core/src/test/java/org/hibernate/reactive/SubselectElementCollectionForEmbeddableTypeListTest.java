@@ -9,9 +9,7 @@ import io.vertx.ext.unit.TestContext;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,6 +19,7 @@ import javax.persistence.Embeddable;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -47,10 +46,9 @@ import java.util.Objects;
  */
 public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseReactiveTest {
 
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Person.class );
-		return configuration;
+	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Person.class );
 	}
 
 	@Before
@@ -68,14 +66,8 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 		phones3.add( new Phone( "111-111-1111" ) );
 		Person p3 = new Person( 999999, "Claude", phones3 );
 
-		test( context, openSession()
-				.thenCompose( session -> session.persist( p1, p2, p3 )
-						.thenCompose( v -> session.flush() ) ) );
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "Person" ) );
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.persistAll( p1, p2, p3 ) ) );
 	}
 
 	@Test
@@ -88,16 +80,17 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 		test (
 				context,
 				getMutinySessionFactory()
-						.withTransaction( (session, tx) -> session.persist( johnny ) )
+						.withTransaction( session -> session.persist( johnny ) )
 						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, tx) -> session.find( Person.class, johnny.getId() )
+								.withTransaction( session -> session.find( Person.class, johnny.getId() )
 										.invoke( result -> context.assertFalse( Hibernate.isInitialized( result.phones ) ) )
 										.chain ( result -> session.fetch(result.phones) )
 										.invoke( found -> assertPhones( context, found, "888", "555" ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, tx) -> session.find( Person.class, johnny.getId() )
+								.withTransaction( session -> session
+										.find( Person.class, johnny.getId() )
 										.chain( session::remove )
 								)
 						)
@@ -109,7 +102,7 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 		test (
 				context,
 				getMutinySessionFactory()
-						.withTransaction( (session, tx) -> session.createQuery("select distinct p from Person p join fetch p.phones where p.name='Claude'", Person.class)
+						.withTransaction( session -> session.createQuery("select distinct p from Person p join fetch p.phones where p.name='Claude'", Person.class)
 								.getResultList()
 								.invoke( all -> context.assertEquals( 2, all.size() ) )
 								.invoke( all -> all.forEach( result -> {
@@ -125,7 +118,7 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 		test (
 				context,
 				getMutinySessionFactory()
-						.withTransaction( (session, tx) -> session.createQuery("from Person p where p.name='Claude'", Person.class)
+						.withTransaction( session -> session.createQuery("from Person p where p.name='Claude'", Person.class)
 								.getResultList()
 								.invoke( all -> context.assertEquals( 2, all.size() ) )
 								.invoke( all -> all.forEach( result -> context.assertFalse( Hibernate.isInitialized( result.phones ) ) ) )

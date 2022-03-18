@@ -5,15 +5,15 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -27,22 +27,14 @@ public class HQLQueryTest extends BaseReactiveTest {
 	Flour almond = new Flour( 3, "Almond", "made from ground almonds.", "Gluten free" );
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Flour.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Flour.class );
 	}
 
 	@Before
 	public void populateDb(TestContext context) {
 		test( context, getMutinySessionFactory()
 				.withTransaction( (session, transaction) -> session.persistAll( spelt, rye, almond ) ) );
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, openSession()
-				.thenCompose( s -> s.createQuery( "delete Flour" ).executeUpdate() ) );
 	}
 
 	@Test

@@ -5,7 +5,9 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -23,7 +25,6 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -39,24 +40,21 @@ import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
  */
 public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 
-
 	// It requires native queries, so it won't work for every db
 	@Rule
 	public DatabaseSelectionRule selectionRule = runOnlyFor( POSTGRESQL, COCKROACHDB, MYSQL );
+
+	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( GeneratedWithIdentity.class, GeneratedRegular.class );
+	}
 
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.setProperty(AvailableSettings.HBM2DDL_CREATE_SOURCE, "script-then-metadata");
 		configuration.setProperty(AvailableSettings.HBM2DDL_CREATE_SCRIPT_SOURCE, "/mysql-pipe.sql");
-		configuration.addAnnotatedClass( GeneratedWithIdentity.class );
-		configuration.addAnnotatedClass( GeneratedRegular.class );
 		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( GeneratedWithIdentity.class, GeneratedRegular.class ) );
 	}
 
 	@Test

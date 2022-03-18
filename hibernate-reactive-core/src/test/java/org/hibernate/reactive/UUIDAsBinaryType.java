@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import javax.persistence.Column;
@@ -12,7 +14,6 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.Rule;
@@ -36,10 +37,8 @@ public abstract class UUIDAsBinaryType extends BaseReactiveTest {
 		public DatabaseSelectionRule rule = runOnlyFor( MYSQL, MARIA );
 
 		@Override
-		protected Configuration constructConfiguration() {
-			Configuration configuration = super.constructConfiguration();
-			configuration.addAnnotatedClass( ExactSizeUUIDEntity.class );
-			return configuration;
+		protected Collection<Class<?>> annotatedEntities() {
+			return List.of( ExactSizeUUIDEntity.class );
 		}
 
 		@Test
@@ -109,10 +108,8 @@ public abstract class UUIDAsBinaryType extends BaseReactiveTest {
 		public DatabaseSelectionRule rule = skipTestsFor( MYSQL, MARIA, ORACLE );
 
 		@Override
-		protected Configuration constructConfiguration() {
-			Configuration configuration = super.constructConfiguration();
-			configuration.addAnnotatedClass( UUIDEntity.class );
-			return configuration;
+		protected Collection<Class<?>> annotatedEntities() {
+			return List.of( UUIDEntity.class );
 		}
 
 		@Test

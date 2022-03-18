@@ -5,16 +5,24 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
-import org.junit.Test;
-
-import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Objects;
+import javax.persistence.Embeddable;
+import javax.persistence.EmbeddedId;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.IdClass;
+import javax.persistence.OneToOne;
+
+import org.hibernate.cfg.Configuration;
+
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 
 public class OneToOneIdClassParentEmbeddedIdTest extends BaseReactiveTest {
+
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
@@ -41,7 +49,7 @@ public class OneToOneIdClassParentEmbeddedIdTest extends BaseReactiveTest {
 									context.assertNotNull( optionalAnEntity );
 									context.assertEquals( anEntity, optionalAnEntity );
 									context.assertEquals( otherEntity, optionalAnEntity.otherEntity );
-								})
+								} )
 						)
 		);
 	}
@@ -64,16 +72,20 @@ public class OneToOneIdClassParentEmbeddedIdTest extends BaseReactiveTest {
 
 		@Override
 		public boolean equals(Object o) {
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
 			AnEntity anEntity = (AnEntity) o;
-			return otherEntity.equals(anEntity.otherEntity) &&
-					Objects.equals(name, anEntity.name);
+			return otherEntity.equals( anEntity.otherEntity ) &&
+					Objects.equals( name, anEntity.name );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(otherEntity, name);
+			return Objects.hash( otherEntity, name );
 		}
 	}
 
@@ -90,15 +102,19 @@ public class OneToOneIdClassParentEmbeddedIdTest extends BaseReactiveTest {
 
 		@Override
 		public boolean equals(Object o) {
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
 			OtherEntityId that = (OtherEntityId) o;
 			return id == that.id;
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(id);
+			return Objects.hash( id );
 		}
 	}
 
@@ -119,16 +135,20 @@ public class OneToOneIdClassParentEmbeddedIdTest extends BaseReactiveTest {
 
 		@Override
 		public boolean equals(Object o) {
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
 			OtherEntity that = (OtherEntity) o;
-			return id.equals(that.id) &&
-					Objects.equals(name, that.name);
+			return id.equals( that.id ) &&
+					Objects.equals( name, that.name );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(id, name);
+			return Objects.hash( id, name );
 		}
 	}
 }

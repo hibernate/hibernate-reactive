@@ -7,6 +7,7 @@ package org.hibernate.reactive;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
@@ -17,9 +18,7 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
 
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -49,10 +48,9 @@ public class EagerElementCollectionForEmbeddedEmbeddableTest extends BaseReactiv
 
 	private Person thePerson;
 
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Person.class );
-		return configuration;
+	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Person.class );
 	}
 
 	@Before
@@ -67,11 +65,6 @@ public class EagerElementCollectionForEmbeddedEmbeddableTest extends BaseReactiv
 				.thenCompose( session -> session.persist( thePerson )
 						.thenCompose( v -> session.flush() ) )
 		);
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "Person" ) );
 	}
 
 	@Test

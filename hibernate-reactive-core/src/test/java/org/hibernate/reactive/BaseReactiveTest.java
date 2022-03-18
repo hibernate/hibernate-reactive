@@ -5,11 +5,12 @@
  */
 package org.hibernate.reactive;
 
-import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import javax.persistence.criteria.CriteriaQuery;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -23,7 +24,6 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
-import org.hibernate.reactive.provider.service.ReactiveSchemaManagementTool;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.SessionFactoryManager;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
@@ -87,6 +87,17 @@ public abstract class BaseReactiveTest {
 	}
 
 	/**
+	 * These entities will be added to the configuration of the factory and the rows in the mapping tables delted after
+	 * each test.
+	 * <p>
+	 * For more complicated configuration see {@link #constructConfiguration()} or {@link #cleanDb()}
+	 * </p>
+	 */
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of();
+	}
+
+	/**
 	 * For when we need to create the {@link Async} in advance
 	 */
 	protected static void test(Async async, TestContext context, CompletionStage<?> work) {
@@ -118,10 +129,11 @@ public abstract class BaseReactiveTest {
 
 	protected Configuration constructConfiguration() {
 		Configuration configuration = new Configuration();
+		annotatedEntities().forEach( configuration::addAnnotatedClass );
 		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
 		configuration.setProperty( Settings.URL, DatabaseConfiguration.getJdbcUrl() );
 		if ( DatabaseConfiguration.dbType() == DBType.DB2 && !doneTablespace ) {
-			configuration.setProperty(Settings.HBM2DDL_IMPORT_FILES, "/db2.sql");
+			configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES, "/db2.sql" );
 			doneTablespace = true;
 		}
 		//Use JAVA_TOOL_OPTIONS='-Dhibernate.show_sql=true'
@@ -132,23 +144,20 @@ public abstract class BaseReactiveTest {
 	}
 
 	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
-		return deleteEntities( Arrays.stream( entities )
-									   .map( BaseReactiveTest::defaultEntityName )
-									   .collect( Collectors.toList() )
-									   .toArray( new String[entities.length] ) );
-	}
-
-	private static String defaultEntityName(Class<?> aClass) {
-		int index = aClass.getName().lastIndexOf( '.' );
-		index = index > -1 ? index + 1 : 0;
-		return aClass.getName().substring( index );
-	}
-
-	public CompletionStage<Void> deleteEntities(String... entities) {
 		return getSessionFactory()
-				.withTransaction( (s, tx) -> loop( entities, name -> s
-						.createQuery( "from " + name ).getResultList()
-						.thenCompose( list -> s.remove( list.toArray( new Object[0] ) ) ) ) );
+				.withTransaction( s -> loop( entities, entityClass -> s
+						.createQuery( queryForDelete( entityClass ) )
+						.getResultList()
+						// This approach will also remove embedded collections and associated entities when possible
+						// (a `delete from` query will only remove the elements from one table)
+						.thenCompose( list -> s.remove( list.toArray( new Object[0] ) ) )
+				) );
+	}
+
+	private <T> CriteriaQuery<T> queryForDelete(Class<T> entityClass) {
+		final CriteriaQuery<T> query = getSessionFactory().getCriteriaBuilder().createQuery( entityClass );
+		query.from( entityClass );
+		return query;
 	}
 
 	@Before
@@ -207,18 +216,17 @@ public abstract class BaseReactiveTest {
 	protected void configureServices(StandardServiceRegistry registry) {
 		if ( dbType() == DBType.MYSQL ) {
 			registry.getService( ConnectionProvider.class ); //force the NoJdbcConnectionProvider to load first
-			ReactiveSchemaManagementTool tool = (ReactiveSchemaManagementTool) registry.getService(
-					SchemaManagementTool.class
-			);
-			tool.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget(registry) {
+			SchemaManagementTool tool = registry.getService( SchemaManagementTool.class );
+			tool.setCustomDatabaseGenerationTarget( new ReactiveGenerationTarget( registry ) {
 				@Override
 				public void prepare() {
 					super.prepare();
-					accept("set foreign_key_checks = 0");
+					accept( "set foreign_key_checks = 0" );
 				}
+
 				@Override
 				public void release() {
-					accept("set foreign_key_checks = 1");
+					accept( "set foreign_key_checks = 1" );
 					super.release();
 				}
 			} );
@@ -230,7 +238,19 @@ public abstract class BaseReactiveTest {
 		test( context, closeSession( session )
 				.thenAccept( v -> session = null )
 				.thenCompose( v -> closeSession( connection ) )
-				.thenAccept( v -> connection = null ) );
+				.thenAccept( v -> connection = null )
+				.thenCompose( v -> cleanDb() )
+		);
+	}
+
+	/**
+	 * Called after each test, remove all the entities defined in {@link #annotatedEntities()}
+	 */
+	protected CompletionStage<Void> cleanDb() {
+		final Collection<Class<?>> classes = annotatedEntities();
+		return classes.isEmpty()
+				? voidFuture()
+				: deleteEntities( classes.toArray( new Class<?>[0] ) );
 	}
 
 	protected static CompletionStage<Void> closeSession(Object closable) {

@@ -9,7 +9,6 @@ import io.vertx.ext.unit.TestContext;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
@@ -19,13 +18,14 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.List;
 
 public class TimestampTest extends BaseReactiveTest {
+
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Record.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Record.class );
 	}
 
 	@Test

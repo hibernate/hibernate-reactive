@@ -17,6 +17,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -40,9 +41,13 @@ public class IdentityGeneratorDynamicInsertTest extends BaseReactiveTest {
 	private static final int ENTITY_NUMBER = 100;
 
 	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( EntityWithIdentity.class );
+	}
+
+	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( EntityWithIdentity.class );
 		configuration.setProperty( AvailableSettings.USE_GET_GENERATED_KEYS, "false" );
 		return configuration;
 	}

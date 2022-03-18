@@ -5,21 +5,25 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.TableGenerator;
+import javax.persistence.Version;
+
 import org.junit.Test;
 
-import javax.persistence.*;
-import java.util.Objects;
+import io.vertx.ext.unit.TestContext;
 
 
 public class TableGeneratorTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( TableId.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( TableId.class );
 	}
 
 	@Test
@@ -28,31 +32,32 @@ public class TableGeneratorTest extends BaseReactiveTest {
 		TableId b = new TableId();
 		b.string = "Hello World";
 
-		test( context,
+		test(
+				context,
 				openSession()
-				.thenCompose(s -> s.persist(b).thenCompose(v -> s.flush()))
-				.thenCompose( v -> openSession() )
-				.thenCompose( s2 ->
-					s2.find( TableId.class, b.getId() )
-						.thenAccept( bb -> {
-							context.assertNotNull( bb );
-							context.assertEquals( bb.id, 6 );
-							context.assertEquals( bb.string, b.string );
-							context.assertEquals( bb.version, 0 );
+						.thenCompose( s -> s.persist( b ).thenCompose( v -> s.flush() ) )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s2 ->
+											  s2.find( TableId.class, b.getId() )
+													  .thenAccept( bb -> {
+														  context.assertNotNull( bb );
+														  context.assertEquals( bb.id, 6 );
+														  context.assertEquals( bb.string, b.string );
+														  context.assertEquals( bb.version, 0 );
 
-							bb.string = "Goodbye";
-						})
-						.thenCompose(vv -> s2.flush())
-						.thenCompose(vv -> s2.find( TableId.class, b.getId() ))
-						.thenAccept( bt -> {
-							context.assertEquals( bt.version, 1 );
-						}))
-				.thenCompose( v -> openSession() )
-				.thenCompose( s3 -> s3.find( TableId.class, b.getId() ) )
-				.thenAccept( bb -> {
-					context.assertEquals(bb.version, 1);
-					context.assertEquals( bb.string, "Goodbye");
-				})
+														  bb.string = "Goodbye";
+													  } )
+													  .thenCompose( vv -> s2.flush() )
+													  .thenCompose( vv -> s2.find( TableId.class, b.getId() ) )
+													  .thenAccept( bt -> {
+														  context.assertEquals( bt.version, 1 );
+													  } ) )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s3 -> s3.find( TableId.class, b.getId() ) )
+						.thenAccept( bb -> {
+							context.assertEquals( bb.version, 1 );
+							context.assertEquals( bb.string, "Goodbye" );
+						} )
 		);
 	}
 
@@ -63,9 +68,11 @@ public class TableGeneratorTest extends BaseReactiveTest {
 			initialValue = 5,
 			allocationSize = 1)
 	public static class TableId {
-		@Id @GeneratedValue(generator = "tab")
+		@Id
+		@GeneratedValue(generator = "tab")
 		Integer id;
-		@Version Integer version;
+		@Version
+		Integer version;
 		String string;
 
 		public TableId() {
@@ -106,12 +113,12 @@ public class TableGeneratorTest extends BaseReactiveTest {
 				return false;
 			}
 			TableId tableId = (TableId) o;
-			return Objects.equals(string, tableId.string);
+			return Objects.equals( string, tableId.string );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(string);
+			return Objects.hash( string );
 		}
 	}
 }

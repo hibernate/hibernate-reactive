@@ -8,7 +8,6 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.id.Configurable;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
@@ -20,6 +19,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Version;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CompletionStage;
@@ -29,10 +30,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 public class CustomGeneratorTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( CustomId.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( CustomId.class );
 	}
 
 	@Test

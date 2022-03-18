@@ -8,7 +8,6 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.Hibernate;
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.junit.Test;
@@ -22,6 +21,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.metamodel.Attribute;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import static java.util.Collections.singleton;
@@ -31,16 +31,12 @@ import static javax.persistence.FetchType.LAZY;
 public class LazyPropertyTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Book.class );
-		configuration.addAnnotatedClass( Author.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Book.class, Author.class );
 	}
 
 	@Test
 	public void testLazyProperty(TestContext context) {
-
 		Author author1 = new Author("Iain M. Banks");
 		Author author2 = new Author("Neal Stephenson");
 		Book book1 = new Book("1-85723-235-6", "Feersum Endjinn", author1);
@@ -74,7 +70,6 @@ public class LazyPropertyTest extends BaseReactiveTest {
 				)
 		);
 	}
-
 
 	@Entity(name="Author")
 	@Table(name="authors")

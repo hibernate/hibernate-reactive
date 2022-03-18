@@ -5,17 +5,28 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.Hibernate;
-import org.hibernate.reactive.stage.Stage;
-import org.junit.Before;
-import org.junit.Test;
-
-import javax.persistence.*;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.MappedSuperclass;
+import javax.persistence.OneToMany;
+
+import org.hibernate.Hibernate;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.stage.Stage;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 

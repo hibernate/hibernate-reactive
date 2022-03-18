@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -30,10 +32,8 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 public class SequenceGeneratorTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( SequenceId.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( SequenceId.class );
 	}
 
 	@Test

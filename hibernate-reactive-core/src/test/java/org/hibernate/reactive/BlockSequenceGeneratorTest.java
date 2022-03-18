@@ -6,10 +6,11 @@
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
 import javax.persistence.*;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 
@@ -17,10 +18,8 @@ import java.util.Objects;
 public class BlockSequenceGeneratorTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( TableId.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( TableId.class );
 	}
 
 	@Test

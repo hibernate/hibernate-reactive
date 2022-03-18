@@ -6,7 +6,6 @@
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.Rule;
@@ -17,6 +16,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Version;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -29,10 +30,8 @@ public class UUIDGeneratorTest extends BaseReactiveTest {
 	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( DB2, ORACLE );
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( TableId.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( TableId.class );
 	}
 
 	@Test

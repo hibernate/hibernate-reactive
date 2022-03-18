@@ -5,18 +5,21 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
-import org.junit.Test;
-
+import java.io.Serializable;
+import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
-import java.io.Serializable;
-import java.util.Objects;
+
+import org.hibernate.cfg.Configuration;
+
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 
 public class OneToOneNoIdClassTest extends BaseReactiveTest {
+
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();

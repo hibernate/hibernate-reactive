@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,10 +16,8 @@ import javax.persistence.Table;
 import javax.persistence.metamodel.EntityType;
 
 import org.hibernate.LockMode;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
 
-import org.junit.After;
 import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
@@ -28,23 +27,14 @@ import io.vertx.ext.unit.TestContext;
 public class MutinySessionTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( GuineaPig.class );
-		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "GuineaPig" ) );
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( GuineaPig.class );
 	}
 
 	private Uni<Void> populateDB() {
 		return getMutinySessionFactory()
-				.withSession(
-						session -> session.persist( new GuineaPig(5, "Aloi") )
-								.chain(session::flush)
-				);
+				.withSession( session -> session.persist( new GuineaPig( 5, "Aloi" ) )
+						.chain( session::flush ) );
 	}
 
 	private Uni<String> selectNameFromId(Integer id) {

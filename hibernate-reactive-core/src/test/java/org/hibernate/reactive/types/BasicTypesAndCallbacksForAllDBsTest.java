@@ -5,14 +5,6 @@
  */
 package org.hibernate.reactive.types;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.annotations.Type;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.BaseReactiveTest;
-import org.junit.After;
-import org.junit.Test;
-
-import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -26,8 +18,45 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.UUID;
 import java.util.function.Consumer;
+import javax.persistence.AttributeConverter;
+import javax.persistence.Column;
+import javax.persistence.Convert;
+import javax.persistence.Converter;
+import javax.persistence.Embeddable;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.PostLoad;
+import javax.persistence.PostPersist;
+import javax.persistence.PostRemove;
+import javax.persistence.PostUpdate;
+import javax.persistence.PrePersist;
+import javax.persistence.PreRemove;
+import javax.persistence.PreUpdate;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.persistence.Transient;
+import javax.persistence.Version;
+
+import org.hibernate.annotations.Type;
+import org.hibernate.reactive.BaseReactiveTest;
+
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 /**
  * Test all the types and lifecycle callbacks that we expect to work on all supported DBs
@@ -35,15 +64,8 @@ import java.util.function.Consumer;
 public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Basic.class );
-		return configuration;
-	}
-
-	@After
-	public void deleteTable(TestContext context) {
-		test( context, deleteEntities( "Basic" ) );
+	protected Set<Class<?>> annotatedEntities() {
+		return Set.of( Basic.class );
 	}
 
 	private void testField(TestContext context, Basic original, Consumer<Basic> consumer) {

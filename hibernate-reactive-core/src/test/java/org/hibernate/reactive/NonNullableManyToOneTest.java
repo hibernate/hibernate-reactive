@@ -6,6 +6,7 @@
 package org.hibernate.reactive;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -14,9 +15,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -25,12 +24,8 @@ import io.vertx.ext.unit.TestContext;
 public class NonNullableManyToOneTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Dealer.class );
-		configuration.addAnnotatedClass( Artist.class );
-		configuration.addAnnotatedClass( Painting.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Painting.class, Artist.class, Dealer.class );
 	}
 
 	@Before
@@ -39,7 +34,7 @@ public class NonNullableManyToOneTest extends BaseReactiveTest {
 		artist.id = 1L;
 		Dealer dealer = new Dealer( "Dealer" );
 		dealer.id = 1L;
-		Painting painting = new Painting( "Mona Lisa");
+		Painting painting = new Painting( "Mona Lisa" );
 		painting.id = 2L;
 		artist.addPainting( painting );
 		dealer.addPainting( painting );
@@ -48,33 +43,28 @@ public class NonNullableManyToOneTest extends BaseReactiveTest {
 				.withTransaction( s -> s.persistAll( painting, artist, dealer ) ) );
 	}
 
-	@After
-	public void cleanDB(TestContext context) {
-		test( context, deleteEntities( "Painting", "Artist" ) );
-	}
-
 	@Test
 	public void testNonNullableSuccess(TestContext context) {
-		test(
-				context,
-				getMutinySessionFactory().withTransaction( session -> session
-								.createQuery( "from Artist", Artist.class )
-								.getSingleResult().chain( a -> session.fetch( a.paintings ) )
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session
+						.createQuery( "from Artist", Artist.class )
+						.getSingleResult().chain( a -> session.fetch( a.paintings ) )
+						.invoke( paintings -> {
+							context.assertNotNull( paintings );
+							context.assertEquals( 1, paintings.size() );
+							context.assertEquals( "Mona Lisa", paintings.get( 0 ).name );
+						} ) )
+				.chain( () -> getMutinySessionFactory()
+						.withTransaction( s1 -> s1
+								.createQuery( "from Dealer", Dealer.class )
+								.getSingleResult().chain( d -> s1.fetch( d.paintings ) )
 								.invoke( paintings -> {
 									context.assertNotNull( paintings );
 									context.assertEquals( 1, paintings.size() );
 									context.assertEquals( "Mona Lisa", paintings.get( 0 ).name );
-								} ) )
-						.chain( () -> getMutinySessionFactory().withTransaction( s1 -> s1
-										.createQuery( "from Dealer", Dealer.class )
-										.getSingleResult().chain( d -> s1.fetch( d.paintings ) )
-										.invoke( paintings -> {
-											context.assertNotNull( paintings );
-											context.assertEquals( 1, paintings.size() );
-											context.assertEquals( "Mona Lisa", paintings.get( 0 ).name );
-										} )
-								)
+								} )
 						)
+				)
 		);
 	}
 

@@ -5,17 +5,28 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import javax.persistence.Column;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Inheritance;
+import javax.persistence.InheritanceType;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import javax.persistence.*;
-import java.util.Date;
-import java.util.Objects;
+import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 
@@ -25,17 +36,8 @@ public class UnionSubclassInheritanceTest extends BaseReactiveTest {
 	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( ORACLE );
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Book.class );
-		configuration.addAnnotatedClass( SpellBook.class );
-		configuration.addAnnotatedClass( Author.class );
-		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "Book", "Author", "SpellBook" ) );
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Book.class, Author.class, SpellBook.class );
 	}
 
 	@Test

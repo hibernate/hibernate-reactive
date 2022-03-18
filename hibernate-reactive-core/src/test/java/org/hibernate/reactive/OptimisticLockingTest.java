@@ -5,11 +5,13 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
+
 import io.vertx.ext.unit.TestContext;
 
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.OptimisticLocking;
-import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
@@ -23,11 +25,8 @@ import static org.hibernate.annotations.OptimisticLockType.DIRTY;
 public class OptimisticLockingTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Mergeable1.class );
-		configuration.addAnnotatedClass( Mergeable2.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Mergeable1.class, Mergeable2.class );
 	}
 
 	@Test

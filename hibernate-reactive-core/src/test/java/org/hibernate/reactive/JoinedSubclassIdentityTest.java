@@ -5,10 +5,12 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
+import java.util.Collection;
+import java.util.List;
 
-import org.junit.After;
+import io.vertx.ext.unit.TestContext;
+
+
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -20,45 +22,39 @@ import javax.persistence.InheritanceType;
 
 public class JoinedSubclassIdentityTest extends BaseReactiveTest {
 
-    @Override
-    protected Configuration constructConfiguration() {
-        Configuration configuration = super.constructConfiguration();
-        configuration.addAnnotatedClass(GeneratedWithIdentityParent.class);
-        configuration.addAnnotatedClass(GeneratedWithIdentity.class);
-        return configuration;
-    }
+	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( GeneratedWithIdentityParent.class, GeneratedWithIdentity.class );
+	}
 
-    @After
-    public void cleanDb(TestContext context) {
-        test( context, deleteEntities( "GeneratedWithIdentityParent", "GeneratedWithIdentity" ) );
-    }
+	@Test
+	public void testParent(TestContext context) {
+		test( context, getMutinySessionFactory().withSession(
+				s -> s.persist( new GeneratedWithIdentityParent() )
+						.chain( s::flush )
+		) );
+	}
 
-    @Test public void testParent(TestContext context) {
-        test(context, getMutinySessionFactory().withSession(
-                s -> s.persist( new GeneratedWithIdentityParent() )
-                .chain( s::flush )
-        ));
-    }
+	@Test
+	public void testChild(TestContext context) {
+		test( context, getMutinySessionFactory().withSession(
+				s -> s.persist( new GeneratedWithIdentity() )
+						.chain( s::flush )
+		) );
+	}
 
-    @Test public void testChild(TestContext context) {
-        test(context, getMutinySessionFactory().withSession(
-                s -> s.persist( new GeneratedWithIdentity() )
-                        .chain( s::flush )
-        ));
-    }
+	@Entity(name = "GeneratedWithIdentityParent")
+	@Inheritance(strategy = InheritanceType.JOINED)
+	static class GeneratedWithIdentityParent {
+		@Id
+		@GeneratedValue(strategy = GenerationType.IDENTITY)
+		public Long id;
 
-    @Entity(name="GeneratedWithIdentityParent")
-    @Inheritance(strategy = InheritanceType.JOINED)
-    static class GeneratedWithIdentityParent {
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        public Long id;
+		public String firstname;
+	}
 
-        public String firstname;
-    }
-
-    @Entity(name="GeneratedWithIdentity")
-    static class GeneratedWithIdentity extends GeneratedWithIdentityParent {
-        public String updatedBy;
-    }
+	@Entity(name = "GeneratedWithIdentity")
+	static class GeneratedWithIdentity extends GeneratedWithIdentityParent {
+		public String updatedBy;
+	}
 }

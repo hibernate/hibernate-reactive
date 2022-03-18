@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -22,10 +24,14 @@ import io.vertx.ext.unit.TestContext;
 public class MutinyExceptionsTest extends BaseReactiveTest {
 
 	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Person.class );
+	}
+
+	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.setProperty( AvailableSettings.NATIVE_EXCEPTION_HANDLING_51_COMPLIANCE, "false" );
-		configuration.addAnnotatedClass( Person.class );
 		return configuration;
 	}
 

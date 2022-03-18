@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -13,9 +15,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -23,16 +23,8 @@ import io.vertx.ext.unit.TestContext;
 public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Book.class );
-		configuration.addAnnotatedClass( Author.class );
-		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( Book.class, Author.class ) );
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Book.class, Author.class );
 	}
 
 	@Test

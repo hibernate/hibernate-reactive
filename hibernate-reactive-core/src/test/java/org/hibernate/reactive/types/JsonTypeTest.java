@@ -5,22 +5,24 @@
  */
 package org.hibernate.reactive.types;
 
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Version;
-import java.util.Objects;
-import java.util.function.Consumer;
+
+import org.hibernate.reactive.BaseReactiveTest;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+
+import org.junit.Rule;
+import org.junit.Test;
+
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
@@ -35,19 +37,8 @@ public class JsonTypeTest extends BaseReactiveTest {
 	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, SQLSERVER, ORACLE);
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Basic.class );
-		return configuration;
-	}
-
-	@After
-	public void deleteTable(TestContext context) {
-		test( context,
-			  getSessionFactory().withSession(
-					  session -> session.createQuery( "delete from JsonEntity" ).executeUpdate()
-			  )
-		);
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Basic.class );
 	}
 
 	@Test

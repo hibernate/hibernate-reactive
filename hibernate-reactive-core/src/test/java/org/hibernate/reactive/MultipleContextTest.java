@@ -5,13 +5,14 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
@@ -52,10 +53,8 @@ public class MultipleContextTest extends BaseReactiveTest {
 	public DatabaseSelectionRule rule = runOnlyFor( POSTGRESQL );
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Competition.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Competition.class );
 	}
 
 	@After

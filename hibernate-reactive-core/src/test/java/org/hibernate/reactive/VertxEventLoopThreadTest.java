@@ -5,15 +5,16 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-
-import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
 import io.vertx.core.Context;
 import io.vertx.ext.unit.TestContext;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -32,10 +33,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class VertxEventLoopThreadTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Boardgame.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Boardgame.class );
 	}
 
 	@Test

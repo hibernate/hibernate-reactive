@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionException;
@@ -19,9 +20,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.hibernate.LazyInitializationException;
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,25 +30,14 @@ import io.vertx.ext.unit.TestContext;
 public class LazyInitializationExceptionWithStage extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Artist.class );
-		configuration.addAnnotatedClass( Painting.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Artist.class, Painting.class );
 	}
 
 	@Before
 	public void populateDB(TestContext context) {
 		Artist artemisia = new Artist( "Artemisia Gentileschi" );
 		test( context, getSessionFactory().withTransaction( (session, tx) -> session.persist( artemisia ) ) );
-	}
-
-	@After
-	public void cleanDB(TestContext context) {
-		test( context, getSessionFactory()
-				.withTransaction( (session, tx) ->
-					  session.createQuery( "delete from Artist" )
-							  .executeUpdate() ) );
 	}
 
 	@Test

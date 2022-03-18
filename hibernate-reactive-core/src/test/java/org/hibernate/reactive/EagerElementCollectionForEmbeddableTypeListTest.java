@@ -7,6 +7,7 @@ package org.hibernate.reactive;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
@@ -18,9 +19,7 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
 
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,10 +53,9 @@ public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiv
 
 	private Person thePerson;
 
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Person.class );
-		return configuration;
+	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Person.class );
 	}
 
 	@Before
@@ -69,11 +67,6 @@ public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiv
 
 		test( context, openMutinySession()
 				.chain( session -> session.persist( thePerson ).call( session::flush ) ) );
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "Person" ) );
 	}
 
 	@Test
@@ -194,15 +187,17 @@ public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiv
 		Person thomas = new Person( 47, "Thomas Reaper", phones );
 
 		test( context, getMutinySessionFactory()
-				.withTransaction( (session, tx) -> session.persist( thomas ) )
-				.chain( () -> getMutinySessionFactory().withSession( session -> session
-						.find( Person.class, thomas.getId() )
-						// Change a couple of the elements in the collection
-						.invoke( found -> {
-							found.getPhones().set( 1, new Phone( "47" ) );
-							found.getPhones().set( 3, new Phone( "47" ) );
-						} )
-						.call( session::flush ) ) )
+				.withTransaction( session -> session.persist( thomas ) )
+				.chain( () -> getMutinySessionFactory()
+						// FIXME: Why withSession + flush doesn't work with Oracle?
+						.withTransaction( session -> session
+								.find( Person.class, thomas.getId() )
+								// Change a couple of the elements in the collection
+								.invoke( found -> {
+									found.getPhones().set( 1, new Phone( "47" ) );
+									found.getPhones().set( 3, new Phone( "47" ) );
+								} )
+						) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thomas.getId() ) )
 				.invoke( found -> assertPhones( context, found, "000", "47", "000", "47" ) )

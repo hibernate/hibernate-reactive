@@ -5,12 +5,9 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.Hibernate;
-import org.hibernate.cfg.Configuration;
-import org.junit.Before;
-import org.junit.Test;
-
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -22,9 +19,14 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.OneToMany;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletionStage;
+
+import org.hibernate.Hibernate;
+import org.hibernate.cfg.Configuration;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 
 /**

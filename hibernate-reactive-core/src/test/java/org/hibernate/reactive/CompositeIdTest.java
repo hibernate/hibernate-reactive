@@ -7,7 +7,6 @@ package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
 
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
 
 import org.junit.Test;
@@ -17,6 +16,7 @@ import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.Table;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
@@ -25,10 +25,8 @@ import java.util.concurrent.CompletionStage;
 public class CompositeIdTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( GuineaPig.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( GuineaPig.class );
 	}
 
 	private CompletionStage<Void> populateDB() {
@@ -37,22 +35,6 @@ public class CompositeIdTest extends BaseReactiveTest {
 						session -> session.persist( new GuineaPig(5, "Aloi", 100) )
 							.thenCompose( v -> session.flush() )
 				 );
-	}
-
-	private CompletionStage<Integer> cleanDB() {
-		return getSessionFactory()
-				.withSession( session -> session.createQuery( "delete GuineaPig" ).executeUpdate() );
-	}
-
-	public void after(TestContext context) {
-		test( context,
-			  cleanDB()
-					  .whenComplete( (res, err) -> {
-						  // in case cleanDB() fails we
-						  // still have to close the factory
-						  super.after( context );
-					  } )
-		);
 	}
 
 	private CompletionStage<String> selectNameFromId(Integer id) {

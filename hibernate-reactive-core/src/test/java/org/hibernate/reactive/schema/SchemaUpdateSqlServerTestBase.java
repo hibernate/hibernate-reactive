@@ -44,8 +44,7 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	/**
 	 * Test INDIVIDUALLY option without setting the default catalog name
 	 */
-	public static class IndividuallySchemaUpdateSqlServerTest
-			extends SchemaUpdateSqlServerTestBase {
+	public static class IndividuallySchemaUpdateSqlServerTest extends SchemaUpdateSqlServerTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -58,8 +57,7 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	/**
 	 * Test INDIVIDUALLY option when we set the catalog name to the default name
 	 */
-	public static class IndividuallySchemaUpdateWithCatalogTest
-			extends SchemaUpdateSqlServerTestBase {
+	public static class IndividuallySchemaUpdateWithCatalogTest extends SchemaUpdateSqlServerTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {

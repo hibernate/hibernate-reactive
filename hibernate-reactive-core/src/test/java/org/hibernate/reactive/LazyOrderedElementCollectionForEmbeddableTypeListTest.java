@@ -5,23 +5,23 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.Hibernate;
-import org.hibernate.cfg.Configuration;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OrderBy;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+
+import org.hibernate.Hibernate;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 /**
  * Tests @{@link ElementCollection} on a {@link java.util.Set} of basic types.
@@ -48,15 +48,9 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 
 	private Person thePerson;
 
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Person.class );
-		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "Person" ) );
+	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Person.class );
 	}
 
 	@Before

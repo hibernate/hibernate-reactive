@@ -14,7 +14,9 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -23,8 +25,6 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
-import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
@@ -35,11 +35,8 @@ public class UTCTest extends BaseReactiveTest {
 	final Thing thing = new Thing();
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( AvailableSettings.JDBC_TIME_ZONE, "UTC" );
-		configuration.addAnnotatedClass( Thing.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Thing.class );
 	}
 
 	@Test
@@ -150,23 +147,25 @@ public class UTCTest extends BaseReactiveTest {
 		);
 	}
 
-    private void testField(TestContext context, String columnName, Supplier<?> fieldValue, Consumer<Thing> assertion) {
-        test( context, getMutinySessionFactory()
-                .withSession( session -> session.persist( thing ).call( session::flush ).invoke( session::clear ) )
-                .chain( () -> getMutinySessionFactory()
-                        .withSession( session -> session.find( Thing.class, thing.id ) )
-                        .invoke( t -> {
-                            context.assertNotNull( t );
-                            assertion.accept( t );
-                        } )
-                )
-                .chain( () -> getMutinySessionFactory()
-                        .withSession( session -> session.createQuery( "from ThingInUTC where " + columnName + "=:dt", Thing.class )
-                                .setParameter( "dt", fieldValue.get() ).getSingleResult() )
-                        .invoke( assertion )
-                )
-        );
-    }
+	private void testField(TestContext context, String columnName, Supplier<?> fieldValue, Consumer<Thing> assertion) {
+		test( context, getMutinySessionFactory()
+				.withSession( session -> session.persist( thing ).call( session::flush ).invoke( session::clear ) )
+				.chain( () -> getMutinySessionFactory()
+						.withSession( session -> session.find( Thing.class, thing.id ) )
+						.invoke( t -> {
+							context.assertNotNull( t );
+							assertion.accept( t );
+						} )
+				)
+				.chain( () -> getMutinySessionFactory()
+						.withSession( session -> session
+								.createQuery( "from ThingInUTC where " + columnName + "=:dt", Thing.class )
+								.setParameter( "dt", fieldValue.get() )
+								.getSingleResult() )
+						.invoke( assertion )
+				)
+		);
+	}
 
 	@Entity(name = "ThingInUTC")
 	static class Thing {

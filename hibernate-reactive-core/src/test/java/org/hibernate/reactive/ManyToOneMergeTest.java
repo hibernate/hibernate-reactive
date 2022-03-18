@@ -6,6 +6,8 @@
 package org.hibernate.reactive;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -14,9 +16,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -25,11 +25,8 @@ import io.vertx.ext.unit.TestContext;
 public class ManyToOneMergeTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( AcademicYearDetailsDBO.class );
-		configuration.addAnnotatedClass( CampusDBO.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( AcademicYearDetailsDBO.class, CampusDBO.class );
 	}
 
 	@Before
@@ -54,16 +51,6 @@ public class ManyToOneMergeTest extends BaseReactiveTest {
 								campusDBO, campusDBO2,
 								academicYearDetailsDBO
 						) )
-		);
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context,
-				getMutinySessionFactory()
-						.withTransaction( (session, transaction) ->
-								session.createQuery("delete from AcademicYearDetailsDBO").executeUpdate()
-										.chain( v -> session.createQuery("delete from CampusDBO").executeUpdate() ) )
 		);
 	}
 

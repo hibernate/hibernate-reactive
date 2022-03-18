@@ -6,15 +6,15 @@
 package org.hibernate.reactive;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -27,17 +27,8 @@ import io.vertx.ext.unit.TestContext;
 public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( LongEntity.class );
-		configuration.addAnnotatedClass( IntegerEntity.class );
-		configuration.addAnnotatedClass( ShortEntity.class );
-		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( LongEntity.class, IntegerEntity.class, ShortEntity.class ) );
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( LongEntity.class, IntegerEntity.class, ShortEntity.class );
 	}
 
 	/*

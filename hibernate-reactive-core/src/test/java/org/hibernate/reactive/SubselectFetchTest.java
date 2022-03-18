@@ -5,13 +5,9 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.Hibernate;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
-import org.hibernate.cfg.Configuration;
-import org.junit.Test;
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -29,9 +25,15 @@ import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.Version;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+
+import org.hibernate.Hibernate;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+import org.hibernate.cfg.Configuration;
+
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 
 
 public class SubselectFetchTest extends BaseReactiveTest {
@@ -47,39 +49,43 @@ public class SubselectFetchTest extends BaseReactiveTest {
 	@Test
 	public void testQuery(TestContext context) {
 
-		Node basik = new Node("Child");
-		basik.parent = new Node("Parent");
-		basik.elements.add(new Element(basik));
-		basik.elements.add(new Element(basik));
-		basik.elements.add(new Element(basik));
-		basik.parent.elements.add(new Element(basik.parent));
-		basik.parent.elements.add(new Element(basik.parent));
+		Node basik = new Node( "Child" );
+		basik.parent = new Node( "Parent" );
+		basik.elements.add( new Element( basik ) );
+		basik.elements.add( new Element( basik ) );
+		basik.elements.add( new Element( basik ) );
+		basik.parent.elements.add( new Element( basik.parent ) );
+		basik.parent.elements.add( new Element( basik.parent ) );
 
-		test( context,
+		test(
+				context,
 				openSession()
-						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
+						.thenCompose( s -> s.persist( basik ).thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose(s -> s.createQuery("from Node n order by id", Node.class)
+						.thenCompose( s -> s.createQuery( "from Node n order by id", Node.class )
 								.getResultList()
 								.thenCompose( list -> {
-									context.assertEquals(list.size(), 2);
-									Node n1 = list.get(0);
-									Node n2 = list.get(1);
-									context.assertFalse( Hibernate.isInitialized(n1.elements) );
-									context.assertFalse( Hibernate.isInitialized(n2.elements) );
+									context.assertEquals( list.size(), 2 );
+									Node n1 = list.get( 0 );
+									Node n2 = list.get( 1 );
+									context.assertFalse( Hibernate.isInitialized( n1.elements ) );
+									context.assertFalse( Hibernate.isInitialized( n2.elements ) );
 									return s.fetch( n1.elements ).thenAccept( elements -> {
-										context.assertTrue( Hibernate.isInitialized(elements) );
-										context.assertTrue( Hibernate.isInitialized(n1.elements) );
-										context.assertTrue( Hibernate.isInitialized(n2.elements) );
+										context.assertTrue( Hibernate.isInitialized( elements ) );
+										context.assertTrue( Hibernate.isInitialized( n1.elements ) );
+										context.assertTrue( Hibernate.isInitialized( n2.elements ) );
 									} );
-								})
+								} )
 						)
 		);
 	}
 
-	@Entity(name = "Element") @Table(name="Element")
+	@Entity(name = "Element")
+	@Table(name = "Element")
 	public static class Element {
-		@Id @GeneratedValue Integer id;
+		@Id
+		@GeneratedValue
+		Integer id;
 
 		@ManyToOne(fetch = FetchType.LAZY)
 		Node node;
@@ -88,43 +94,53 @@ public class SubselectFetchTest extends BaseReactiveTest {
 			this.node = node;
 		}
 
-		Element() {}
+		Element() {
+		}
 	}
 
-	@Entity(name = "Node") @Table(name="Node")
+	@Entity(name = "Node")
+	@Table(name = "Node")
 	public static class Node {
 
-		@Id @GeneratedValue Integer id;
-		@Version Integer version;
+		@Id
+		@GeneratedValue
+		Integer id;
+		@Version
+		Integer version;
 		String string;
 
-		@ManyToOne(fetch = FetchType.LAZY,
-				cascade = {CascadeType.PERSIST,
-						CascadeType.REFRESH,
-						CascadeType.MERGE,
-						CascadeType.REMOVE})
+		@ManyToOne(fetch = FetchType.LAZY, cascade = {
+				CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.MERGE, CascadeType.REMOVE
+		})
 		Node parent;
 
 		@OneToMany(fetch = FetchType.LAZY,
-				cascade = {CascadeType.PERSIST,
-						CascadeType.REMOVE},
+				cascade = { CascadeType.PERSIST, CascadeType.REMOVE },
 				mappedBy = "node")
 		@Fetch(FetchMode.SUBSELECT)
 		List<Element> elements = new ArrayList<>();
 
-		@Transient boolean prePersisted;
-		@Transient boolean postPersisted;
-		@Transient boolean preUpdated;
-		@Transient boolean postUpdated;
-		@Transient boolean postRemoved;
-		@Transient boolean preRemoved;
-		@Transient boolean loaded;
+		@Transient
+		boolean prePersisted;
+		@Transient
+		boolean postPersisted;
+		@Transient
+		boolean preUpdated;
+		@Transient
+		boolean postUpdated;
+		@Transient
+		boolean postRemoved;
+		@Transient
+		boolean preRemoved;
+		@Transient
+		boolean loaded;
 
 		public Node(String string) {
 			this.string = string;
 		}
 
-		Node() {}
+		Node() {
+		}
 
 		@PrePersist
 		void prePersist() {
@@ -191,12 +207,12 @@ public class SubselectFetchTest extends BaseReactiveTest {
 				return false;
 			}
 			Node node = (Node) o;
-			return Objects.equals(string, node.string);
+			return Objects.equals( string, node.string );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(string);
+			return Objects.hash( string );
 		}
 	}
 }

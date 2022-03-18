@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -29,10 +31,14 @@ import static org.hibernate.cfg.AvailableSettings.USE_NATIONALIZED_CHARACTER_DAT
 public class UnicodeCharsTest extends BaseReactiveTest {
 
 	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( UnicodeString.class );
+	}
+
+	@Override
 	protected Configuration constructConfiguration() {
 		final Configuration configuration = super.constructConfiguration();
 		configuration.getProperties().put( USE_NATIONALIZED_CHARACTER_DATA, true );
-		configuration.addAnnotatedClass( UnicodeString.class );
 		return configuration;
 	}
 

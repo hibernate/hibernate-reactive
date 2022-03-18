@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -52,13 +54,15 @@ public class IdentityGeneratorTypeForCockroachDBTest extends BaseReactiveTest {
 	}
 
 	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( IntegerTypeEntity.class, LongTypeEntity.class, ShortTypeEntity.class );
+	}
+
+	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		// It's the default but I want to highlight what we are testing
 		configuration.setProperty( AvailableSettings.USE_GET_GENERATED_KEYS, "false" );
-		configuration.addAnnotatedClass( IntegerTypeEntity.class );
-		configuration.addAnnotatedClass( LongTypeEntity.class );
-		configuration.addAnnotatedClass( ShortTypeEntity.class );
 		return configuration;
 	}
 

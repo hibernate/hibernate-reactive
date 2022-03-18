@@ -10,8 +10,8 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
-import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.CascadeType;
@@ -32,26 +32,32 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 
 
 public class EagerTest extends BaseReactiveTest {
 
 	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Element.class, Node.class );
+	}
+
+	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.addPackage(this.getClass().getPackage().getName());
-		configuration.addAnnotatedClass(Node.class);
-		configuration.addAnnotatedClass(Element.class);
+		configuration.addPackage( this.getClass().getPackage().getName() );
 		return configuration;
 	}
 
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, getSessionFactory()
-				.withTransaction( (s, t) -> s.createQuery( "delete from Element" ).executeUpdate()
-						.thenCompose( v -> s.createQuery( "delete from Node" ).executeUpdate() ) ) );
+	@Override
+	protected CompletionStage<Void> cleanDb() {
+		return getSessionFactory()
+				.withTransaction( s -> s.createQuery( "delete from Element" ).executeUpdate()
+						.thenCompose( v -> s.createQuery( "delete from Node" ).executeUpdate() )
+						.thenCompose( CompletionStages::voidFuture ) );
 	}
 
 	@Test

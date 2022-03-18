@@ -6,6 +6,8 @@
 package org.hibernate.reactive;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -16,7 +18,6 @@ import javax.persistence.Table;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLInsert;
 import org.hibernate.annotations.SQLUpdate;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.Before;
@@ -70,11 +71,10 @@ public class CustomStoredProcedureSqlTest extends BaseReactiveTest {
 			"$BODY$ " +
 			"LANGUAGE plpgsql;";
 
+
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( SimpleRecord.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( SimpleRecord.class );
 	}
 
 	@Before
