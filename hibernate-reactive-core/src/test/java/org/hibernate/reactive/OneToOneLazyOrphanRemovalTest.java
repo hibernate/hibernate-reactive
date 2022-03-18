@@ -5,26 +5,23 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 
-import org.hibernate.cfg.Configuration;
-
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
 public class OneToOneLazyOrphanRemovalTest extends BaseReactiveTest {
+
+
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Car.class );
-		configuration.addAnnotatedClass( PaintColor.class );
-		configuration.addAnnotatedClass( Engine.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Car.class, PaintColor.class, Engine.class );
 	}
 
 	@Before
@@ -34,11 +31,6 @@ public class OneToOneLazyOrphanRemovalTest extends BaseReactiveTest {
 		final Car car = new Car( 1, engine, color );
 		test( context, getSessionFactory()
 				.withTransaction( (session, tx) -> session.persist( color, engine, car ) ) );
-	}
-
-	@After
-	public void deleteAll(TestContext context) {
-		test( context, deleteEntities( "Car", "PaintColor", "Engine" ) );
 	}
 
 	@Test

@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletionException;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -14,7 +16,6 @@ import javax.persistence.PersistenceException;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.junit.Test;
 
@@ -24,10 +25,14 @@ import io.vertx.ext.unit.TestContext;
 public class StageExceptionsTest extends BaseReactiveTest {
 
 	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( MyPerson.class );
+	}
+
+	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.setProperty( Settings.NATIVE_EXCEPTION_HANDLING_51_COMPLIANCE, "false" );
-		configuration.addAnnotatedClass( MyPerson.class );
 		return configuration;
 	}
 
@@ -43,10 +48,12 @@ public class StageExceptionsTest extends BaseReactiveTest {
 				)
 				.handle( (res, err) -> {
 					context.assertNotNull( err );
-					context.assertTrue( err.getClass().isAssignableFrom( CompletionException.class) );
-					context.assertTrue( expectedException.isAssignableFrom( err.getCause().getClass() ),
-							"Expected " + expectedException.getName() + " but was " + err );
-					return CompletionStages.voidFuture();
+					context.assertTrue( err.getClass().isAssignableFrom( CompletionException.class ) );
+					context.assertTrue(
+							expectedException.isAssignableFrom( err.getCause().getClass() ),
+							"Expected " + expectedException.getName() + " but was " + err
+					);
+					return null;
 				} )
 		);
 	}

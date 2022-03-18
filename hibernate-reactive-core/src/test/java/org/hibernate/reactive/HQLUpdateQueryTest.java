@@ -5,15 +5,15 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,10 +33,8 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 	Flour almond = new Flour( 3, "Almond", "made from ground almonds.", "Gluten free" );
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Flour.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Flour.class );
 	}
 
 	@Before
@@ -47,12 +45,6 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 				.thenCompose( v -> s.persist( almond ) )
 				.thenCompose( v -> s.flush() )
 		) );
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, openSession()
-				.thenCompose( s -> s.createQuery("delete Flour").executeUpdate() ) );
 	}
 
 	@Test

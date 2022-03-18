@@ -6,6 +6,7 @@
 package org.hibernate.reactive;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import javax.persistence.Column;
@@ -52,9 +53,13 @@ public class IdentityGeneratorWithColumnTransformerTest extends BaseReactiveTest
 	private static final int ENTITY_NUMBER = 100;
 
 	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( EntityWithIdentity.class );
+	}
+
+	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( EntityWithIdentity.class );
 		configuration.setProperty( AvailableSettings.USE_SQL_COMMENTS, ENABLE_COMMENTS );
 		return configuration;
 	}

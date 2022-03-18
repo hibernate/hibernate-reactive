@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive.types;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import javax.persistence.Column;
@@ -14,7 +16,6 @@ import javax.persistence.Id;
 import javax.persistence.Lob;
 import javax.persistence.Table;
 
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
@@ -31,10 +32,8 @@ public class LongLobTest extends BaseReactiveTest {
 	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.runOnlyFor( MYSQL );
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Basic.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Basic.class );
 	}
 
 	@Test

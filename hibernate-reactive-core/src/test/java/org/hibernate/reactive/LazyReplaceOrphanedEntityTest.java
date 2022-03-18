@@ -7,6 +7,8 @@ package org.hibernate.reactive;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -22,9 +24,7 @@ import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,12 +37,8 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 	private Campaign theCampaign;
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Campaign.class );
-		configuration.addAnnotatedClass( ExecutionDate.class );
-		configuration.addAnnotatedClass( Schedule.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Campaign.class, ExecutionDate.class, Schedule.class );
 	}
 
 	@Before
@@ -51,11 +47,6 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 		theCampaign.setSchedule( new ExecutionDate(OffsetDateTime.now(), "ALPHA") );
 
 		test( context, getMutinySessionFactory().withTransaction( (s, t) -> s.persist( theCampaign ) ) );
-	}
-
-	@After
-	public void cleanDB(TestContext context) {
-		test( context, deleteEntities( "Campaign", "Schedule" ) );
 	}
 
 	@Test

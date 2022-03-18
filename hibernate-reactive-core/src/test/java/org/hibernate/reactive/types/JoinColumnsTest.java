@@ -6,7 +6,9 @@
 package org.hibernate.reactive.types;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import javax.persistence.Column;
@@ -22,10 +24,8 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.hibernate.TransientPropertyValueException;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 
-import org.junit.After;
 import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
@@ -34,16 +34,8 @@ import io.vertx.ext.unit.TestContext;
 public class JoinColumnsTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( SampleEntity.class );
-		configuration.addAnnotatedClass( SampleJoinEntity.class );
-		return configuration;
-	}
-
-	@After
-	public void cleanDB(TestContext context) {
-		test( context, deleteEntities( "SampleJoinEntity", "SampleEntity" ) );
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( SampleJoinEntity.class, SampleEntity.class );
 	}
 
 	@Test

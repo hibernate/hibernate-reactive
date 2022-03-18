@@ -7,6 +7,7 @@ package org.hibernate.reactive;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
@@ -18,9 +19,7 @@ import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.OrderBy;
 
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -52,10 +51,9 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 
 	private Person thePerson;
 
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Person.class );
-		return configuration;
+	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Person.class );
 	}
 
 	@Before
@@ -66,11 +64,6 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 		thePerson = new Person( 777777, "Claude", phones );
 		test( context, getSessionFactory()
 				.withTransaction( (s, t) -> s.persist( thePerson ) ) );
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "Person" ) );
 	}
 
 	@Test

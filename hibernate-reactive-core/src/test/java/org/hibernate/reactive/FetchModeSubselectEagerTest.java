@@ -5,53 +5,77 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletionStage;
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.PostLoad;
+import javax.persistence.PostPersist;
+import javax.persistence.PostRemove;
+import javax.persistence.PostUpdate;
+import javax.persistence.PrePersist;
+import javax.persistence.PreRemove;
+import javax.persistence.PreUpdate;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+import javax.persistence.Version;
+
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
-import org.junit.After;
 import org.junit.Test;
 
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import io.vertx.ext.unit.TestContext;
 
 
 public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 
 	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Element.class, Node.class );
+	}
+
+	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.addPackage(this.getClass().getPackage().getName());
-		configuration.addAnnotatedClass(Node.class);
-		configuration.addAnnotatedClass(Element.class);
+		configuration.addPackage( this.getClass().getPackage().getName() );
 		return configuration;
 	}
 
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, getSessionFactory()
-				.withTransaction( (s, t) -> s.createQuery( "delete from Element" ).executeUpdate()
-						.thenCompose( v -> s.createQuery( "delete from Node" ).executeUpdate() ) ) );
+	@Override
+	protected CompletionStage<Void> cleanDb() {
+		return getSessionFactory()
+				.withTransaction( s -> s.createQuery( "delete from Element" ).executeUpdate()
+						.thenCompose( v -> s.createQuery( "delete from Node" ).executeUpdate() )
+						.thenCompose( CompletionStages::voidFuture ) );
 	}
 
 	@Test
 	public void testEagerCollectionFetch(TestContext context) {
 
-		Node basik = new Node("Child");
-		basik.parent = new Node("Parent");
-		basik.elements.add(new Element(basik));
-		basik.elements.add(new Element(basik));
-		basik.elements.add(new Element(basik));
+		Node basik = new Node( "Child" );
+		basik.parent = new Node( "Parent" );
+		basik.elements.add( new Element( basik ) );
+		basik.elements.add( new Element( basik ) );
+		basik.elements.add( new Element( basik ) );
 
-		test(context,
+		test(
+				context,
 				openSession()
-						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
+						.thenCompose( s -> s.persist( basik ).thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose(s -> s.find( Node.class, basik.getId() ))
+						.thenCompose( s -> s.find( Node.class, basik.getId() ) )
 						.thenAccept( node -> {
 							context.assertTrue( Hibernate.isInitialized( node.elements ) );
 							context.assertEquals( 3, node.elements.size() );
@@ -65,17 +89,18 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 	@Test
 	public void testEagerParentFetch(TestContext context) {
 
-		Node basik = new Node("Child");
-		basik.parent = new Node("Parent");
-		basik.elements.add(new Element(basik));
-		basik.elements.add(new Element(basik));
-		basik.elements.add(new Element(basik));
+		Node basik = new Node( "Child" );
+		basik.parent = new Node( "Parent" );
+		basik.elements.add( new Element( basik ) );
+		basik.elements.add( new Element( basik ) );
+		basik.elements.add( new Element( basik ) );
 
-		test(context,
+		test(
+				context,
 				openSession()
-						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
+						.thenCompose( s -> s.persist( basik ).thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose(s -> s.find( Element.class, basik.elements.get(0).id ))
+						.thenCompose( s -> s.find( Element.class, basik.elements.get( 0 ).id ) )
 						.thenAccept( element -> {
 							context.assertTrue( Hibernate.isInitialized( element.node ) );
 							context.assertTrue( Hibernate.isInitialized( element.node.elements ) );
@@ -87,31 +112,33 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 	@Test
 	public void testEagerFetchQuery(TestContext context) {
 
-		Node basik = new Node("Child");
-		basik.parent = new Node("Parent");
-		basik.elements.add(new Element(basik));
-		basik.elements.add(new Element(basik));
-		basik.elements.add(new Element(basik));
+		Node basik = new Node( "Child" );
+		basik.parent = new Node( "Parent" );
+		basik.elements.add( new Element( basik ) );
+		basik.elements.add( new Element( basik ) );
+		basik.elements.add( new Element( basik ) );
 
-		test(context,
+		test(
+				context,
 				openSession()
-						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
+						.thenCompose( s -> s.persist( basik ).thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose(s -> s.createQuery("from Node order by id", Node.class).getResultList())
-						.thenAccept(list -> {
-							context.assertEquals(list.size(), 2);
-							context.assertTrue( Hibernate.isInitialized( list.get(0).elements ) );
-							context.assertEquals(list.get(0).elements.size(), 3);
-							context.assertEquals(list.get(1).elements.size(), 0);
-						})
+						.thenCompose( s -> s.createQuery( "from Node order by id", Node.class ).getResultList() )
+						.thenAccept( list -> {
+							context.assertEquals( list.size(), 2 );
+							context.assertTrue( Hibernate.isInitialized( list.get( 0 ).elements ) );
+							context.assertEquals( list.get( 0 ).elements.size(), 3 );
+							context.assertEquals( list.get( 1 ).elements.size(), 0 );
+						} )
 						.thenCompose( v -> openSession() )
-						.thenCompose(s -> s.createQuery("select distinct n, e from Node n join n.elements e order by n.id").getResultList())
-						.thenAccept(list -> {
-							context.assertEquals(list.size(), 3);
-							Object[] tup = (Object[]) list.get(0);
-							context.assertTrue( Hibernate.isInitialized( ((Node) tup[0]).elements ) );
-							context.assertEquals(((Node) tup[0]).elements.size(), 3);
-						})
+						.thenCompose( s -> s.createQuery(
+								"select distinct n, e from Node n join n.elements e order by n.id" ).getResultList() )
+						.thenAccept( list -> {
+							context.assertEquals( list.size(), 3 );
+							Object[] tup = (Object[]) list.get( 0 );
+							context.assertTrue( Hibernate.isInitialized( ( (Node) tup[0] ).elements ) );
+							context.assertEquals( ( (Node) tup[0] ).elements.size(), 3 );
+						} )
 		);
 	}
 
@@ -146,15 +173,19 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 		String string;
 
 		@ManyToOne(fetch = FetchType.LAZY,
-				cascade = {CascadeType.PERSIST,
+				cascade = {
+						CascadeType.PERSIST,
 						CascadeType.REFRESH,
 						CascadeType.MERGE,
-						CascadeType.REMOVE})
+						CascadeType.REMOVE
+				})
 		Node parent;
 
 		@OneToMany(fetch = FetchType.EAGER,
-				cascade = {CascadeType.PERSIST,
-						CascadeType.REMOVE},
+				cascade = {
+						CascadeType.PERSIST,
+						CascadeType.REMOVE
+				},
 				mappedBy = "node")
 		@Fetch(FetchMode.SUBSELECT)
 		List<Element> elements = new ArrayList<>();
@@ -239,19 +270,19 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 
 		@Override
 		public boolean equals(Object o) {
-			if (this == o) {
+			if ( this == o ) {
 				return true;
 			}
-			if (o == null || getClass() != o.getClass()) {
+			if ( o == null || getClass() != o.getClass() ) {
 				return false;
 			}
 			Node node = (Node) o;
-			return Objects.equals(string, node.string);
+			return Objects.equals( string, node.string );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(string);
+			return Objects.hash( string );
 		}
 	}
 }

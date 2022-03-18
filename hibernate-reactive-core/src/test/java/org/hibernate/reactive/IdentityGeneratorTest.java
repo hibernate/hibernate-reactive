@@ -6,6 +6,7 @@
 package org.hibernate.reactive;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import javax.persistence.Column;
@@ -41,9 +42,13 @@ public class IdentityGeneratorTest extends BaseReactiveTest {
 	private static final int ENTITY_NUMBER = 100;
 
 	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( EntityWithIdentity.class );
+	}
+
+	@Override
 	protected org.hibernate.cfg.Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( EntityWithIdentity.class );
 		configuration.setProperty( AvailableSettings.USE_GET_GENERATED_KEYS, "false" );
 		return configuration;
 	}
@@ -69,9 +74,9 @@ public class IdentityGeneratorTest extends BaseReactiveTest {
 	public void testIdentityGenerator(TestContext context) {
 		test( context, populateDb( context )
 				.thenCompose( v -> openSession() )
-				.thenCompose( session ->
-					  session.createQuery( "FROM EntityWithIdentity ORDER BY position ASC", EntityWithIdentity.class )
-					  .getResultList() )
+				.thenCompose( session -> session
+						.createQuery( "FROM EntityWithIdentity ORDER BY position ASC", EntityWithIdentity.class )
+						.getResultList() )
 				.thenAccept( list -> {
 					context.assertEquals( ENTITY_NUMBER, list.size() );
 					int i = 0;

@@ -6,13 +6,14 @@
 package org.hibernate.reactive.types;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 
 import org.junit.Test;
@@ -29,10 +30,8 @@ import io.vertx.ext.unit.TestContext;
 public class SerializableExceptionTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Basic.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Basic.class );
 	}
 
 	@Test

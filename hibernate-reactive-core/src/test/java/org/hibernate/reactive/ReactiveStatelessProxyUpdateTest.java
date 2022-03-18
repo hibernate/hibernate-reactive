@@ -6,6 +6,8 @@
 package org.hibernate.reactive;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -18,9 +20,7 @@ import javax.persistence.Table;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LazyInitializationException;
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -41,16 +41,8 @@ import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( SampleEntity.class );
-		configuration.addAnnotatedClass( SampleJoinEntity.class );
-		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "SampleEntity", "SampleJoinEntity" ) );
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( SampleEntity.class, SampleJoinEntity.class );
 	}
 
 	@Test

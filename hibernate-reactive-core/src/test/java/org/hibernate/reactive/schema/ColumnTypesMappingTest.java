@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.schema;
 
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.type.NumericBooleanType;
 import org.hibernate.type.TrueFalseType;
@@ -30,7 +29,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.TimeZone;
 
 /**
@@ -39,10 +40,8 @@ import java.util.TimeZone;
 public class ColumnTypesMappingTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( BasicTypesTestEntity.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( BasicTypesTestEntity.class );
 	}
 
 	private void testDatatype(TestContext context, String columnName, Class<?> type) {

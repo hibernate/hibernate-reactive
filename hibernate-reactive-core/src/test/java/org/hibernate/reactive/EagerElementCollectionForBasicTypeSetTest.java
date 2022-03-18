@@ -19,9 +19,6 @@ import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import org.hibernate.cfg.Configuration;
-
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -48,10 +45,9 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 
 	private Person thePerson;
 
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Person.class );
-		return configuration;
+	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Person.class );
 	}
 
 	@Before
@@ -60,11 +56,6 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 		thePerson = new Person( 7242000, "Claude", phones );
 
 		test( context, getMutinySessionFactory().withTransaction( (s, t) -> s.persist( thePerson ) ) );
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "Person" ) );
 	}
 
 	@Test

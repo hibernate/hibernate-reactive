@@ -6,29 +6,21 @@
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.*;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 
 public class SecondaryTableTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( SecondaryTableTest.Book.class );
-		configuration.addAnnotatedClass( SecondaryTableTest.Author.class );
-		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( Book.class, Author.class ) );
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Book.class, Author.class );
 	}
 
 	@Test

@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,9 +17,7 @@ import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,10 +40,9 @@ public class EagerElementCollectionForBasicTypeMapTest extends BaseReactiveTest 
 
 	private Person thePerson;
 
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Person.class );
-		return configuration;
+	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Person.class );
 	}
 
 	@Before
@@ -56,11 +54,6 @@ public class EagerElementCollectionForBasicTypeMapTest extends BaseReactiveTest 
 
 		test( context, openMutinySession().chain( session -> session
 				.persist( thePerson ).call( session::flush ) ) );
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "Person" ) );
 	}
 
 	@Test

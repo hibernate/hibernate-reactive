@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -15,7 +17,6 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,6 +39,11 @@ public class IdentityGeneratorTypeTest extends BaseReactiveTest {
 	@Rule
 	public DatabaseSelectionRule skip = skipTestsFor( COCKROACHDB );
 
+	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( IntegerTypeEntity.class, LongTypeEntity.class, ShortTypeEntity.class );
+	}
+
 	/**
 	 * When {@link AvailableSettings#USE_GET_GENERATED_KEYS} is enabled, different
 	 * queries will be used for each datastore to get the id
@@ -57,15 +63,7 @@ public class IdentityGeneratorTypeTest extends BaseReactiveTest {
 		Configuration configuration = super.constructConfiguration();
 		// It's the default but I want to highlight what we are testing
 		configuration.setProperty( AvailableSettings.USE_GET_GENERATED_KEYS, "false" );
-		configuration.addAnnotatedClass( IntegerTypeEntity.class );
-		configuration.addAnnotatedClass( LongTypeEntity.class );
-		configuration.addAnnotatedClass( ShortTypeEntity.class );
 		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( IntegerTypeEntity.class, ShortTypeEntity.class, LongTypeEntity.class ) );
 	}
 
 	private <U extends Number, T extends TypeIdentity<U>> void assertType(

@@ -8,6 +8,7 @@ package org.hibernate.reactive;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import javax.persistence.ColumnResult;
 import javax.persistence.Entity;
@@ -30,9 +31,6 @@ import javax.persistence.criteria.Join;
 import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Root;
 
-import org.hibernate.cfg.Configuration;
-
-import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -44,16 +42,8 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 public class QueryTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass(Author.class);
-		configuration.addAnnotatedClass(Book.class);
-		return configuration;
-	}
-
-	@After
-	public void cleanDB(TestContext context) {
-		test( context, deleteEntities( "Book", "Author" ) );
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Book.class, Author.class );
 	}
 
 	@Test

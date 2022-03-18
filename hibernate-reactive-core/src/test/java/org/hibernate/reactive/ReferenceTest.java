@@ -8,23 +8,21 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 import org.hibernate.Hibernate;
 import org.hibernate.LockMode;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
 import org.junit.Test;
 
 import javax.persistence.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
 
 public class ReferenceTest extends BaseReactiveTest {
 
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Book.class );
-		configuration.addAnnotatedClass( Author.class );
-		return configuration;
+	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Author.class, Book.class );
 	}
 
 	@Test

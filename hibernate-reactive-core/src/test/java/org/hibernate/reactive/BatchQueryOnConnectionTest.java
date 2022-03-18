@@ -9,17 +9,16 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.OracleParameters;
 import org.hibernate.reactive.pool.impl.PostgresParameters;
 import org.hibernate.reactive.pool.impl.SQLServerParameters;
 
-import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -30,9 +29,9 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 
 	private static final int BATCH_SIZE = 20;
 
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "DataPoint" ) );
+	@Override
+	protected Set<Class<?>> annotatedEntities() {
+		return Set.of( DataPoint.class );
 	}
 
 	@Test
@@ -130,12 +129,6 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 			default:
 				return sql;
 		}
-	}
-
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( DataPoint.class );
-		return configuration;
 	}
 
 	@Entity(name = "DataPoint")

@@ -5,22 +5,28 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.TableGenerator;
+import javax.persistence.Version;
+
+
 import org.junit.Test;
 
-import javax.persistence.*;
-import java.util.Objects;
+import io.vertx.ext.unit.TestContext;
 
 
 
 public class BlockTableGeneratorTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( TableId.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( TableId.class );
 	}
 
 	@Test

@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import javax.persistence.Entity;
@@ -16,11 +18,9 @@ import javax.persistence.NamedQuery;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,10 +43,8 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 	FamousPerson rebeccaSinger = new FamousPerson( 5L, "Rebecca Ferguson", Status.LIVING, "Shot to fame on The X Factor and is currently a solo artist." );
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( FamousPerson.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( FamousPerson.class );
 	}
 
 	@Before
@@ -54,12 +52,6 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 		test( context, getMutinySessionFactory().withSession( s -> s
 					  .persistAll( margaret, nellie, hedy, rebeccaActress, rebeccaSinger )
 					  .chain( s::flush ) ) );
-	}
-
-	@After
-	public void clearDb(TestContext context) {
-		test( context, getMutinySessionFactory().withTransaction( (s, tx) -> s
-				.createQuery( "delete from FamousPerson" ).executeUpdate() ) );
 	}
 
 	@Test

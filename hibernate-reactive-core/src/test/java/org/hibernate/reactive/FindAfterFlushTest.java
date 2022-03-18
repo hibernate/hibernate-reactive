@@ -5,15 +5,15 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -24,18 +24,8 @@ import io.vertx.ext.unit.TestContext;
 public class FindAfterFlushTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Webcomic.class );
-		return configuration;
-	}
-
-	@After
-	public void cleanDB(TestContext context) {
-		test( context, getSessionFactory()
-				.withTransaction( (session, tx) -> session
-						.createQuery( "delete from Webcomic" )
-						.executeUpdate() ) );
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Webcomic.class );
 	}
 
 	@Test

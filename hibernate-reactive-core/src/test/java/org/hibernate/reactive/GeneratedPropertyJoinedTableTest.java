@@ -5,7 +5,9 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -24,7 +26,6 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -45,18 +46,16 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 	public DatabaseSelectionRule selectionRule = runOnlyFor( POSTGRESQL, COCKROACHDB, MYSQL );
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty(AvailableSettings.HBM2DDL_CREATE_SOURCE, "script-then-metadata");
-		configuration.setProperty(AvailableSettings.HBM2DDL_CREATE_SCRIPT_SOURCE, "/mysql-pipe.sql");
-		configuration.addAnnotatedClass( GeneratedWithIdentity.class );
-		configuration.addAnnotatedClass( GeneratedRegular.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( GeneratedWithIdentity.class, GeneratedRegular.class );
 	}
 
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "GeneratedWithIdentity", "GeneratedRegular" ) );
+	@Override
+	protected Configuration constructConfiguration() {
+		Configuration configuration = super.constructConfiguration();
+		configuration.setProperty( AvailableSettings.HBM2DDL_CREATE_SOURCE, "script-then-metadata" );
+		configuration.setProperty( AvailableSettings.HBM2DDL_CREATE_SCRIPT_SOURCE, "/mysql-pipe.sql" );
+		return configuration;
 	}
 
 	@Test
@@ -64,38 +63,39 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		final GeneratedWithIdentity davide = new GeneratedWithIdentity( "Davide", "D'Alto" );
 
 		CurrentUser.INSTANCE.logIn( "dd-insert" );
-		test( context,
-			  getMutinySessionFactory()
-					  // Generated during insert
-					  .withSession( session -> session.persist( davide ).call( session::flush )
-							  .invoke( v -> {
-								  context.assertNotNull( davide.id );
-								  context.assertEquals( "Davide", davide.firstname );
-								  context.assertEquals( "D'Alto", davide.lastname );
-								  context.assertEquals( "Davide D'Alto", davide.fullName );
-								  context.assertNotNull( davide.createdAt );
-								  context.assertEquals( "dd-insert", davide.createdBy );
-								  context.assertEquals( "dd-insert", davide.updatedBy );
-								  context.assertNull( davide.never );
-								  CurrentUser.INSTANCE.logOut();
-							  } ) )
-					  // Generated during update
-					  .chain( () -> getMutinySessionFactory()
-							  .withSession( session -> session.find( GeneratedWithIdentity.class, davide.id )
-									  .chain( result -> {
-										  CurrentUser.INSTANCE.logIn( "dd-update" );
-										  result.lastname = "O'Tall";
-										  return session.flush().invoke( afterUpdate -> {
-											  context.assertEquals( "Davide", result.firstname );
-											  context.assertEquals( "O'Tall", result.lastname );
-											  context.assertEquals( "Davide O'Tall", result.fullName );
-											  context.assertEquals( davide.createdAt, result.createdAt );
-											  context.assertEquals( "dd-insert", result.createdBy );
-											  context.assertEquals( "dd-update", result.updatedBy );
-											  context.assertNull( result.never );
-											  CurrentUser.INSTANCE.logOut();
-										  } );
-									  } ) ) )
+		test( context, getMutinySessionFactory()
+				// Generated during insert
+				.withTransaction( session -> session.persist( davide ) )
+				.invoke( v -> {
+					context.assertNotNull( davide.id );
+					context.assertEquals( "Davide", davide.firstname );
+					context.assertEquals( "D'Alto", davide.lastname );
+					context.assertEquals( "Davide D'Alto", davide.fullName );
+					context.assertNotNull( davide.createdAt );
+					context.assertEquals( "dd-insert", davide.createdBy );
+					context.assertEquals( "dd-insert", davide.updatedBy );
+					context.assertNull( davide.never );
+					CurrentUser.INSTANCE.logOut();
+				} )
+				// Generated during update
+				.chain( () -> getMutinySessionFactory()
+						.withTransaction( session -> session
+								.find( GeneratedWithIdentity.class, davide.id )
+								.chain( result -> {
+									CurrentUser.INSTANCE.logIn( "dd-update" );
+									result.lastname = "O'Tall";
+									return session.flush().invoke( afterUpdate -> {
+										context.assertEquals( "Davide", result.firstname );
+										context.assertEquals( "O'Tall", result.lastname );
+										context.assertEquals( "Davide O'Tall", result.fullName );
+										context.assertEquals( davide.createdAt, result.createdAt );
+										context.assertEquals( "dd-insert", result.createdBy );
+										context.assertEquals( "dd-update", result.updatedBy );
+										context.assertNull( result.never );
+										CurrentUser.INSTANCE.logOut();
+									} );
+								} ) )
+				)
 		);
 	}
 
@@ -104,38 +104,40 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		final GeneratedRegular davide = new GeneratedRegular( "Davide", "D'Alto" );
 
 		CurrentUser.INSTANCE.logIn( "dd-insert" );
-		test( context,
-			  getMutinySessionFactory()
-					  // Generated during insert
-					  .withSession( session -> session.persist( davide ).call( session::flush )
-							  .invoke( v -> {
-								  context.assertNotNull( davide.id );
-								  context.assertEquals( "Davide", davide.firstname );
-								  context.assertEquals( "D'Alto", davide.lastname );
-								  context.assertEquals( "Davide D'Alto", davide.fullName );
-								  context.assertNotNull( davide.createdAt );
-								  context.assertEquals( "dd-insert", davide.createdBy );
-								  context.assertEquals( "dd-insert", davide.updatedBy );
-								  context.assertNull( davide.never );
-								  CurrentUser.INSTANCE.logOut();
-							  } ) )
-					  // Generated during update
-					  .chain( () -> getMutinySessionFactory()
-							  .withSession( session -> session.find( GeneratedRegular.class, davide.id )
-									  .chain( result -> {
-										  CurrentUser.INSTANCE.logIn( "dd-update" );
-										  result.lastname = "O'Tall";
-										  return session.flush().invoke( afterUpdate -> {
-											  context.assertEquals( "Davide", result.firstname );
-											  context.assertEquals( "O'Tall", result.lastname );
-											  context.assertEquals( "Davide O'Tall", result.fullName );
-											  context.assertEquals( davide.createdAt, result.createdAt );
-											  context.assertEquals( "dd-insert", result.createdBy );
-											  context.assertEquals( "dd-update", result.updatedBy );
-											  context.assertNull( result.never );
-											  CurrentUser.INSTANCE.logOut();
-										  } );
-									  } ) ) )
+		test(
+				context,
+				getMutinySessionFactory()
+						// Generated during insert
+						.withTransaction( session -> session.persist( davide ) )
+						.invoke( v -> {
+							context.assertNotNull( davide.id );
+							context.assertEquals( "Davide", davide.firstname );
+							context.assertEquals( "D'Alto", davide.lastname );
+							context.assertEquals( "Davide D'Alto", davide.fullName );
+							context.assertNotNull( davide.createdAt );
+							context.assertEquals( "dd-insert", davide.createdBy );
+							context.assertEquals( "dd-insert", davide.updatedBy );
+							context.assertNull( davide.never );
+							CurrentUser.INSTANCE.logOut();
+						} )
+						// Generated during update
+						.chain( () -> getMutinySessionFactory()
+								.withSession( session -> session
+										.find( GeneratedRegular.class, davide.id )
+										.chain( result -> {
+											CurrentUser.INSTANCE.logIn( "dd-update" );
+											result.lastname = "O'Tall";
+											return session.flush().invoke( afterUpdate -> {
+												context.assertEquals( "Davide", result.firstname );
+												context.assertEquals( "O'Tall", result.lastname );
+												context.assertEquals( "Davide O'Tall", result.fullName );
+												context.assertEquals( davide.createdAt, result.createdAt );
+												context.assertEquals( "dd-insert", result.createdBy );
+												context.assertEquals( "dd-update", result.updatedBy );
+												context.assertNull( result.never );
+												CurrentUser.INSTANCE.logOut();
+											} );
+										} ) ) )
 		);
 	}
 

@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import javax.persistence.Entity;
@@ -18,9 +19,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.hibernate.LazyInitializationException;
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,11 +30,8 @@ import io.vertx.ext.unit.TestContext;
 public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Artist.class );
-		configuration.addAnnotatedClass( Painting.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Artist.class, Painting.class );
 	}
 
 	@Before
@@ -44,14 +40,6 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 		Artist artemisia = new Artist( "Artemisia Gentileschi" );
 		getMutinySessionFactory()
 				.withTransaction( (session, tx) -> session.persist( artemisia ) )
-				.subscribe().with( success -> async.complete(), context::fail );
-	}
-
-	@After
-	public void cleanDB(TestContext context) {
-		Async async = context.async();
-		getMutinySessionFactory()
-				.withTransaction( (session, tx) -> session.createQuery( "delete from Artist" ).executeUpdate() )
 				.subscribe().with( success -> async.complete(), context::fail );
 	}
 

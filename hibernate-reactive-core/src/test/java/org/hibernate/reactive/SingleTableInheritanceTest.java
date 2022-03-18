@@ -6,13 +6,13 @@
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Test;
 
 import javax.persistence.*;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -20,17 +20,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 public class SingleTableInheritanceTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( SingleTableInheritanceTest.Book.class );
-		configuration.addAnnotatedClass( SingleTableInheritanceTest.SpellBook.class );
-		configuration.addAnnotatedClass( SingleTableInheritanceTest.Author.class );
-		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "Book", "Author", "SpellBook" ) );
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Book.class, Author.class, SpellBook.class );
 	}
 
 	@Test

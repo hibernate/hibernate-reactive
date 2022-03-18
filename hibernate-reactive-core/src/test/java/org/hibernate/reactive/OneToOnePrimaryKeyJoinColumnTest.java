@@ -5,15 +5,15 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 import javax.persistence.PrimaryKeyJoinColumn;
 import javax.persistence.Table;
 
-import org.hibernate.cfg.Configuration;
 
-import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -21,16 +21,8 @@ import io.vertx.ext.unit.TestContext;
 public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Person.class );
-		configuration.addAnnotatedClass( PersonDetails.class );
-		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "PersonDetails", "Person" ) );
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( PersonDetails.class, Person.class );
 	}
 
 	@Test

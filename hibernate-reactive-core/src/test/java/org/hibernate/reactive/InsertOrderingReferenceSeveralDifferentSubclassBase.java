@@ -5,9 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-
 import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.CascadeType;
@@ -29,11 +26,13 @@ import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.hibernate.reactive.testing.SqlStatementTracker;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 
 /**
  * Test ORDER_INSERTS property value during batching.
@@ -123,12 +122,6 @@ public abstract class InsertOrderingReferenceSeveralDifferentSubclassBase extend
 	@Override
 	protected void addServices(StandardServiceRegistryBuilder builder) {
 		sqlTracker.registerService( builder );
-	}
-
-	@After
-	public void cleanDB(TestContext context) {
-		deleteEntities( "SubclassZero", "SubclassOne", "SubclassTwo", "UnrelatedEntity" );
-		sqlTracker.clear();
 	}
 
 	@Test

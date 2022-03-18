@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive.types;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import javax.persistence.Column;
@@ -15,11 +17,9 @@ import javax.persistence.Table;
 import javax.persistence.Version;
 
 import org.hibernate.annotations.Type;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -39,19 +39,8 @@ public class UserJsonTypeTest extends BaseReactiveTest {
 	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, SQLSERVER, ORACLE );
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Basic.class );
-		return configuration;
-	}
-
-	@After
-	public void deleteTable(TestContext context) {
-		test( context,
-			  getSessionFactory().withSession(
-					  session -> session.createQuery( "delete from JsonEntity" ).executeUpdate()
-			  )
-		);
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Basic.class );
 	}
 
 	@Test

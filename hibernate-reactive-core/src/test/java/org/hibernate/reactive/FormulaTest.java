@@ -8,7 +8,6 @@ package org.hibernate.reactive;
 import io.vertx.ext.unit.TestContext;
 
 import org.hibernate.annotations.Formula;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.Rule;
@@ -20,6 +19,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
@@ -30,10 +31,8 @@ public class FormulaTest extends BaseReactiveTest {
 	public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( MARIA, MYSQL );
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Record.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Record.class );
 	}
 
 	@Test

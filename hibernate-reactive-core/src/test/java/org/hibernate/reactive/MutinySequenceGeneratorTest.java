@@ -6,7 +6,6 @@
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
-import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
 import javax.persistence.Entity;
@@ -14,15 +13,15 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Version;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( SequenceId.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( SequenceId.class );
 	}
 
 	@Test

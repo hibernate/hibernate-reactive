@@ -5,15 +5,14 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
+import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.MapsId;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
-import org.hibernate.cfg.Configuration;
-
-import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -21,16 +20,8 @@ import io.vertx.ext.unit.TestContext;
 public class OneToOneMapsIdTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Person.class );
-		configuration.addAnnotatedClass( PersonDetails.class );
-		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, deleteEntities( "PersonDetails", "Person" ) );
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( PersonDetails.class, Person.class );
 	}
 
 	@Test
@@ -38,14 +29,11 @@ public class OneToOneMapsIdTest extends BaseReactiveTest {
 		Person person = new Person( "Joshua", 1 );
 		PersonDetails personDetails = new PersonDetails( "Josh", person );
 
-		test( context, openSession()
-				.thenCompose( session -> session
-						.persist( person, personDetails )
-						.thenCompose( v -> session.flush() ) )
-				.thenCompose( v -> openSession() )
-				.thenAccept( session -> session
-						.find( PersonDetails.class, 1 )
-						.thenAccept( context::assertNotNull ) )
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.persist( person, personDetails ) )
+				.thenCompose( v -> getSessionFactory()
+						.withSession( s -> s.find( PersonDetails.class, 1 ) ) )
+				.thenAccept( context::assertNotNull )
 		);
 	}
 

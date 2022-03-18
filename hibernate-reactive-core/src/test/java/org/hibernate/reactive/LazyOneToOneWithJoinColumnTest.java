@@ -5,23 +5,28 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
+import java.util.Collection;
+import java.util.List;
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
+import javax.persistence.Table;
 
 import org.hibernate.Hibernate;
-import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
-import javax.persistence.*;
+import io.vertx.ext.unit.TestContext;
 
 public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Endpoint.class );
-		configuration.addAnnotatedClass( EndpointWebhook.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Endpoint.class, EndpointWebhook.class );
 	}
 
 	@Test

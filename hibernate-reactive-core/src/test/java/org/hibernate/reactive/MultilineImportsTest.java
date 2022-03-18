@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import javax.persistence.Column;
@@ -34,6 +35,11 @@ public class MultilineImportsTest extends BaseReactiveTest {
 	}
 
 	@Override
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Hero.class );
+	}
+
+	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		// Testing the model from the Quarkus workshops (a smaller extract of):
@@ -41,7 +47,6 @@ public class MultilineImportsTest extends BaseReactiveTest {
 		configuration.setProperty( AvailableSettings.HBM2DDL_IMPORT_FILES, "/complexMultilineImports.sql" );
 		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
 		configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR, "org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor" );
-		configuration.addAnnotatedClass( Hero.class );
 		return configuration;
 	}
 
