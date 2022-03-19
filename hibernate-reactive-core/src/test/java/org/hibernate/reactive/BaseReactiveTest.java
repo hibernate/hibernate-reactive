@@ -237,6 +237,8 @@ public abstract class BaseReactiveTest {
 	public void after(TestContext context) {
 		test( context, closeSession( session )
 				.thenAccept( v -> session = null )
+				.thenCompose( v -> closeSession( statelessSession ) )
+				.thenAccept( v -> statelessSession = null )
 				.thenCompose( v -> closeSession( connection ) )
 				.thenAccept( v -> connection = null )
 				.thenCompose( v -> cleanDb() )
