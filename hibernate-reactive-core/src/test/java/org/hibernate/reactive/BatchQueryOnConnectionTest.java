@@ -36,42 +36,50 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 
 	@Test
 	public void testBatchInsertSizeEqMultiple(TestContext context) {
-		final List<List<Object[]>> paramsBatches = doBatchInserts( context, 50, BATCH_SIZE );
-		context.assertEquals( 3, paramsBatches.size() );
-		context.assertEquals( 20, paramsBatches.get( 0 ).size() );
-		context.assertEquals( 20, paramsBatches.get( 1 ).size() );
-		context.assertEquals( 10, paramsBatches.get( 2 ).size() );
+		test( context, doBatchInserts( context, 50, BATCH_SIZE )
+				.thenAccept( paramsBatches -> {
+					context.assertEquals( 3, paramsBatches.size() );
+					context.assertEquals( 20, paramsBatches.get( 0 ).size() );
+					context.assertEquals( 20, paramsBatches.get( 1 ).size() );
+					context.assertEquals( 10, paramsBatches.get( 2 ).size() );
+				} )
+		);
 	}
 
 	@Test
 	public void testBatchInsertUpdateSizeLtMultiple(TestContext context) {
-		final List<List<Object[]>> paramsBatches = doBatchInserts( context, 50, BATCH_SIZE - 1 );
-		context.assertEquals( 3, paramsBatches.size() );
-		context.assertEquals( 19, paramsBatches.get( 0 ).size() );
-		context.assertEquals( 19, paramsBatches.get( 1 ).size() );
-		context.assertEquals( 12, paramsBatches.get( 2 ).size() );
+		test( context, doBatchInserts( context, 50, BATCH_SIZE - 1 )
+				.thenAccept( paramsBatches -> {
+					context.assertEquals( 3, paramsBatches.size() );
+					context.assertEquals( 19, paramsBatches.get( 0 ).size() );
+					context.assertEquals( 19, paramsBatches.get( 1 ).size() );
+					context.assertEquals( 12, paramsBatches.get( 2 ).size() );
+				} )
+		);
 	}
 
 	@Test
 	public void testBatchInsertUpdateSizeGtMultiple(TestContext context) {
-		final List<List<Object[]>> paramsBatches = doBatchInserts( context, 50, BATCH_SIZE + 1 );
-		context.assertEquals( 5, paramsBatches.size() );
-		context.assertEquals( 20, paramsBatches.get( 0 ).size() );
-		context.assertEquals( 1, paramsBatches.get( 1 ).size() );
-		context.assertEquals( 20, paramsBatches.get( 2 ).size() );
-		context.assertEquals( 1, paramsBatches.get( 3 ).size() );
-		context.assertEquals( 8, paramsBatches.get( 4 ).size() );
+		test( context, doBatchInserts( context, 50, BATCH_SIZE + 1 )
+				.thenAccept( paramsBatches -> {
+					context.assertEquals( 5, paramsBatches.size() );
+					context.assertEquals( 20, paramsBatches.get( 0 ).size() );
+					context.assertEquals( 1, paramsBatches.get( 1 ).size() );
+					context.assertEquals( 20, paramsBatches.get( 2 ).size() );
+					context.assertEquals( 1, paramsBatches.get( 3 ).size() );
+					context.assertEquals( 8, paramsBatches.get( 4 ).size() );
+				} )
+		);
 	}
 
-	public List<List<Object[]>> doBatchInserts(TestContext context, int nEntities, int nEntitiesMultiple) {
+	public CompletionStage<List<List<Object[]>>> doBatchInserts(TestContext context, int nEntities, int nEntitiesMultiple) {
 		final String insertSql = process( "insert into DataPoint (description, x, y, id) values (?, ?, ?, ?)" );
 
 		List<List<Object[]>> paramsBatches = new ArrayList<>();
 		List<Object[]> paramsBatch = new ArrayList<>( BATCH_SIZE );
 
-		for (int i = 1; i <= nEntities; i++) {
-
-			DataPoint dp = new DataPoint(i);
+		for ( int i = 1; i <= nEntities; i++ ) {
+			DataPoint dp = new DataPoint( i );
 			dp.description = "#" + i;
 			dp.setX( new BigDecimal( i * 0.1d ).setScale( 19, RoundingMode.DOWN ) );
 			dp.setY( new BigDecimal( dp.getX().doubleValue() * Math.PI ).setScale( 19, RoundingMode.DOWN ) );
@@ -92,29 +100,23 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 
 		CompletionStage<ReactiveConnection> stage = connection();
 		for ( List<Object[]> batch : paramsBatches ) {
-			stage = stage.thenCompose( connection -> connection.update( insertSql, batch )
+			stage = stage.thenCompose( connection -> connection
+					.update( insertSql, batch )
 					.thenApply( updateCounts -> {
 						context.assertEquals( batch.size(), updateCounts.length );
 						for ( int updateCount : updateCounts ) {
 							context.assertEquals( 1, updateCount );
 						}
 						return connection;
-					})
-			);
+					} ) );
 		}
 
-		test(
-				context,
-				stage.thenCompose( ignore -> openSession() )
-				.thenCompose( s -> s.createQuery( "select count(*) from DataPoint" ).getSingleResult()
-					.thenApply( result -> {
-						context.assertEquals( (long) nEntities, result );
-						return s;
-					})
-				)
-		);
-
-		return paramsBatches;
+		return stage
+				.thenCompose( ignore -> openSession() )
+				.thenCompose( s -> s
+						.createQuery( "select count(*) from DataPoint" ).getSingleResult()
+						.thenAccept( result -> context.assertEquals( (long) nEntities, result ) ) )
+				.thenApply( v -> paramsBatches );
 	}
 
 	private String process(String sql) {
