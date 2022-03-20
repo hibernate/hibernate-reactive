@@ -276,19 +276,25 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> beginTransaction() {
-		return connection.begin().toCompletionStage()
+		return connection.begin()
+				.onSuccess( tx -> LOG.tracef( "Transaction started: %s", tx ) )
+				.toCompletionStage()
 				.thenAccept( tx -> transaction = tx );
 	}
 
 	@Override
 	public CompletionStage<Void> commitTransaction() {
-		return transaction.commit().toCompletionStage()
+		return transaction.commit()
+				.onSuccess( v -> LOG.tracef( "Transaction committed: %s", transaction ) )
+				.toCompletionStage()
 				.whenComplete( (v, x) -> transaction = null );
 	}
 
 	@Override
 	public CompletionStage<Void> rollbackTransaction() {
-		return transaction.rollback().toCompletionStage()
+		return transaction.rollback()
+				.onSuccess( v -> LOG.tracef( "Transaction rollbacked: %s", transaction ) )
+				.toCompletionStage()
 				.whenComplete( (v, x) -> transaction = null );
 	}
 
