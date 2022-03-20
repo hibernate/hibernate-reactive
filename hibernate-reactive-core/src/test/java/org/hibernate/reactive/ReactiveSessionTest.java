@@ -815,6 +815,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 							context.assertTrue( session.currentTransaction().isMarkedForRollback() );
 							context.assertTrue( transaction.isMarkedForRollback() );
 							return session.withTransaction( t -> {
+								context.assertEquals( t, transaction );
 								context.assertTrue( t.isMarkedForRollback() );
 								return session.createQuery( "from GuineaPig" ).getResultList();
 							} );
