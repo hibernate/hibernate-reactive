@@ -55,15 +55,10 @@ task removeDocsWebsite( type: Exec ) {
 
 task cloneDocsWebsite( type: Exec, dependsOn: removeDocsWebsite ) {
     workingDir project.buildDir
-    commandLine 'git', 'clone', docPublishRepoUri, '--sparse', '--depth', '1', 'docs-website'
+    commandLine 'git', 'clone', docPublishRepoUri, '-b', docPublishBranch, '--sparse', '--depth', '1', 'docs-website'
 }
 
-task switchDocBranch( type: Exec, dependsOn: cloneDocsWebsite ) {
-    workingDir "${project.buildDir}/docs-website"
-    commandLine 'git', 'switch', docPublishBranch
-}
-
-task sparseCheckoutDocumentation( type: Exec, dependsOn: switchDocBranch ) {
+task sparseCheckoutDocumentation( type: Exec, dependsOn: cloneDocsWebsite ) {
     workingDir "${project.buildDir}/docs-website"
     commandLine 'git', 'sparse-checkout', 'set', docWebsiteRelativePath
 }
