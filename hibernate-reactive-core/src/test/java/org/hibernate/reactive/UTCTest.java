@@ -25,6 +25,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
@@ -37,6 +39,13 @@ public class UTCTest extends BaseReactiveTest {
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Thing.class );
+	}
+
+	@Override
+	protected Configuration constructConfiguration() {
+		final Configuration configuration = super.constructConfiguration();
+		configuration.setProperty( AvailableSettings.JDBC_TIME_ZONE, "UTC" );
+		return configuration;
 	}
 
 	@Test
