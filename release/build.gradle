@@ -48,12 +48,12 @@ assemble.dependsOn assembleDocumentation
 /**
 * Clone the website
 */
-task removeDocsWebsite( type: Exec ) {
-    workingDir project.buildDir
-    commandLine 'rm', '-rf', 'docs-website'
+task removeDocsWebsite( type: Delete ) {
+    delete "${project.buildDir}/docs-website/"
 }
 
-task cloneDocsWebsite( type: Exec, dependsOn: removeDocsWebsite ) {
+// Depending on compileJava makes sure that the buildDir exists. Otherwise this task will fail.
+task cloneDocsWebsite( type: Exec, dependsOn: [removeDocsWebsite, compileJava] ) {
     workingDir project.buildDir
     commandLine 'git', 'clone', docPublishRepoUri, '-b', docPublishBranch, '--sparse', '--depth', '1', 'docs-website'
 }
@@ -85,8 +85,8 @@ task updateDocumentation( dependsOn: [assembleDocumentation, sparseCheckoutDocum
 
         // Reference Documentation
         copy {
-            from "${documentationDir}/reference"
-            into "${docWebsiteReactiveFolder}/reference"
+            from "${documentationDir}/asciidoc/reference/html_single"
+            into "${docWebsiteReactiveFolder}/reference/html_single"
         }
     }
 }
