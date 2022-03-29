@@ -136,17 +136,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # To list the available "feature versions" (ignore "tip_version", it's not relevant):
+        # To list the available "feature versions" on adoptium.net (ignore "tip_version", it's not relevant):
         # https://api.adoptium.net/v3/info/available_releases
-        # To list the available releases for a given "feature version" (example for 16):
+        # To list the available releases for a given "feature version" on adoptium.net (example for 16):
         # https://api.adoptium.net/v3/assets/latest/16/hotspot
+        # To see the available versions and download links on jdk.java.net:
+        # https://github.com/oracle-actions/setup-java/blob/main/jdk.java.net-uri.properties
         java:
           - { name: "11", java_version_numeric: 11 }
           - { name: "17", java_version_numeric: 17 }
-          - { name: "18", java_version_numeric: 18,
-              download_url: "https://download.java.net/java/GA/jdk18/43f95e8614114aeaa8e8a5fcf20a682d/36/GPL/openjdk-18_linux-x64_bin.tar.gz" }
-          - { name: "19-ea", java_version_numeric: 19,
-              download_url: "https://download.java.net/java/early_access/jdk19/12/GPL/openjdk-19-ea+12_linux-x64_bin.tar.gz" }
+          - { name: "18", java_version_numeric: 18, from: 'jdk.java.net' }
+          - { name: "19-ea", java_version_numeric: 19, from: 'jdk.java.net' }
     steps:
     - uses: actions/checkout@v2
     - name: Get year/month for cache key
@@ -164,23 +164,18 @@ jobs:
           .gradle/wrapper
         # refresh cache every month to avoid unlimited growth
         key: gradle-java${{ matrix.java }}-${{ steps.get-date.outputs.yearmonth }}
-    - name: Manually download JDK ${{ matrix.java.name }}
-      if: matrix.java.download_url != ''
-      run: wget -O $RUNNER_TEMP/java_package.tar.gz ${{ matrix.java.download_url }}
-    - name: Set up JDK ${{ matrix.java.name }} (manually downloaded)
-      if: matrix.java.download_url != ''
-      uses: actions/setup-java@v2.2.0
+    - name: Set up latest JDK ${{ matrix.java.name }} from jdk.java.net
+      if: matrix.java.from == 'jdk.java.net'
+      uses: oracle-actions/setup-java@v1
       with:
-        distribution: 'jdkfile'
-        jdkFile: ${{ runner.temp }}/java_package.tar.gz
-        java-version: ${{ matrix.java.name }}
-        architecture: x64
-    - name: Set up JDK ${{ matrix.java.name }} (automatically downloaded)
-      if: matrix.java.download_url == ''
+        website: jdk.java.net
+        release: ${{ matrix.java.java_version_numeric }}
+    - name: Set up latest JDK ${{ matrix.java.name }} from Adoptium
+      if: matrix.java.from == '' || matrix.java.from == 'adoptium.net'
       uses: actions/setup-java@v2.2.0
       with:
         distribution: 'temurin'
-        java-version: ${{ matrix.java.name }}
+        java-version: ${{ matrix.java.java_version_numeric }}
         check-latest: true
     - name: Export path to JDK ${{ matrix.java.name }}
       id: testjdk-exportpath
