@@ -101,7 +101,7 @@ final class ProxyConnection implements ReactiveConnection {
 			Object[] paramValues,
 			boolean allowBatching,
 			Expectation expectation) {
-		return withConnection( conn -> conn.update( sql, paramValues, false, expectation ) );
+		return withConnection( conn -> conn.update( sql, paramValues, allowBatching, expectation ) );
 	}
 
 	@Override
