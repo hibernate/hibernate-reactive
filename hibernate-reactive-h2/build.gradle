@@ -1,0 +1,60 @@
+ext {
+    mavenPomName = 'Hibernate Reactive H2'
+}
+
+description = 'The H2 module of Hibernate Reactive'
+
+apply from: publishScript
+
+dependencies {
+    implementation project(':hibernate-reactive-core')
+    implementation "com.h2database:h2:2.1.210"
+
+    // Dependencies for using H2 with Vert.x:
+    implementation "io.vertx:vertx-jdbc-client:${vertxVersion}"
+
+    // Testing
+    testImplementation 'org.assertj:assertj-core:3.20.2'
+    testImplementation "io.vertx:vertx-unit:${vertxVersion}"
+
+    // log4j
+    testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.17.1'
+}
+
+// Print a summary of the results of the tests (number of failures, successes and skipped)
+def loggingSummary(db, result, desc) {
+    if ( !desc.parent ) { // will match the outermost suite
+        def output = "${db} results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
+        def repeatLength = output.length() + 1
+        logger.lifecycle '\n' + ('-' * repeatLength) + '\n' + output + '\n' + ('-' * repeatLength)
+    }
+}
+
+// Configuration for the tests
+tasks.withType(Test) {
+    defaultCharacterEncoding = "UTF-8"
+    testLogging {
+        displayGranularity 1
+        showStandardStreams = project.hasProperty('showStandardOutput')
+        showStackTraces = true
+        exceptionFormat = 'full'
+        events 'PASSED', 'FAILED', 'SKIPPED'
+    }
+    systemProperty 'org.hibernate.reactive.common.InternalStateAssertions.ENFORCE', 'true'
+
+    if ( project.hasProperty( 'includeTests' ) ) {
+        // Example: ./gradlew testAll -PincludeTests=DefaultPortTest
+        filter {
+            includeTestsMatching project.getProperty( 'includeTests' ) ?: '*'
+        }
+    }
+}
+
+test {
+    afterSuite { desc, result ->
+        loggingSummary( 'H2', result, desc )
+    }
+    doFirst {
+        systemProperty 'db', 'H2'
+    }
+}
