@@ -15,11 +15,15 @@ import javax.persistence.PersistenceException;
 import org.hibernate.HibernateException;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.exception.ConstraintViolationException;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 public class MutinyExceptionsTest extends BaseReactiveTest {
 
@@ -48,7 +52,12 @@ public class MutinyExceptionsTest extends BaseReactiveTest {
 				.onItem().call( Mutiny.Session::flush )
 				.onItem().invoke( ignore -> context.fail( "Expected exception not thrown" ) )
 				.onFailure().recoverWithItem( err -> {
-					context.assertEquals( getExpectedException(), err.getClass() );
+					if( dbType() == DatabaseConfiguration.DBType.H2 ) {
+						context.assertTrue( ConstraintViolationException.class == err.getClass() ||
+								getExpectedException() == err.getClass() );
+					} else {
+						context.assertEquals( getExpectedException(), err.getClass() );
+					}
 					return null;
 				} )
 		);
