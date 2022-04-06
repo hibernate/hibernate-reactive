@@ -96,8 +96,10 @@ public class SqlClientConnection implements ReactiveConnection {
 		return preparedQuery( sql, Tuple.wrap( paramValues ) )
 				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) )
 				.thenApply( rowSet -> {
-					for (Row row: rowSet) {
-						return row.get(idClass, 0);
+					if ( rowSet != null ) {
+						for ( Row row : rowSet ) {
+							return row.get( idClass, 0 );
+						}
 					}
 					return null;
 				} );
@@ -170,7 +172,12 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	public CompletionStage<Integer> update(String sql, Tuple parameters) {
-		return preparedQuery( sql, parameters ).thenApply(SqlResult::rowCount);
+		return preparedQuery( sql, parameters )
+				.thenApply( SqlClientConnection::rowCount );
+	}
+
+	private static Integer rowCount(RowSet<Row> rows) {
+		return rows == null ? 0 : rows.rowCount();
 	}
 
 	public CompletionStage<int[]> updateBatch(String sql, List<Tuple> parametersBatch) {
@@ -180,7 +187,7 @@ public class SqlClientConnection implements ReactiveConnection {
 
 			int i = 0;
 			RowSet<Row> resultNext = result;
-			if ( parametersBatch.size() > 0 ) {
+			if ( result != null && parametersBatch.size() > 0 ) {
 				final RowIterator<Row> iterator = resultNext.iterator();
 				if ( iterator.hasNext() ) {
 					while ( iterator.hasNext() ) {

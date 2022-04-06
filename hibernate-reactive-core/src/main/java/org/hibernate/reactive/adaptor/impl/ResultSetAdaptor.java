@@ -51,7 +51,17 @@ public class ResultSetAdaptor implements ResultSet {
 	private boolean wasNull;
 
 	public ResultSetAdaptor(RowSet<Row> rows) {
-		this.iterator = rows.iterator();
+		this.iterator = rows != null ? rows.iterator() : new RowIterator<Row>() {
+			@Override
+			public boolean hasNext() {
+				return false;
+			}
+
+			@Override
+			public Row next() {
+				return null;
+			}
+		};
 		this.rows = rows;
 	}
 

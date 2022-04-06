@@ -49,6 +49,14 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 	private String user;
 	private String pass;
 
+	protected String getUser() {
+		return user;
+	}
+
+	protected String getPassword() {
+		return pass;
+	}
+
 	@Override
 	public void configure(Map configuration) {
 		user = getString( Settings.USER, configuration );
@@ -101,7 +109,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 				: "";
 
 		if ( scheme.equals( "db2" ) && database.indexOf( ':' ) > 0 ) {
-			// DB2 URLs are a bit odd and have the format:
+			// DB2 URLs are a bit odd and have the format:-
 			// jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
 			database = database.substring( 0, database.indexOf( ':' ) );
 		}
