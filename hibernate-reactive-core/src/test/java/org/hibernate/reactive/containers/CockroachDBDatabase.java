@@ -9,6 +9,7 @@ import org.hibernate.HibernateException;
 
 import org.testcontainers.containers.CockroachContainer;
 import org.testcontainers.containers.Container;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.testcontainers.shaded.org.apache.commons.lang.StringUtils.isNotBlank;
 
@@ -16,7 +17,8 @@ class CockroachDBDatabase extends PostgreSQLDatabase {
 
 	public static CockroachDBDatabase INSTANCE = new CockroachDBDatabase();
 
-	public final static String IMAGE_NAME = "cockroachdb/cockroach:v21.2.4";
+	public static final String IMAGE_NAME = "cockroachdb/cockroach";
+	public static final String IMAGE_VERSION = ":v21.2.4";
 
 	/**
 	 * Holds configuration for the CockroachDB database container. If the build is run with <code>-Pdocker</code> then
@@ -25,7 +27,8 @@ class CockroachDBDatabase extends PostgreSQLDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final CockroachContainer cockroachDb = new CockroachContainer( IMAGE_NAME )
+	public static final CockroachContainer cockroachDb = new CockroachContainer(
+			DockerImageName.parse( DOCKER_REPOSITORY + IMAGE_NAME + IMAGE_VERSION ).asCompatibleSubstituteFor( IMAGE_NAME ) )
 			// Username, password and database are not supported by test container at the moment
 			// Testcontainers will use a database named 'postgres' and the 'root' user
 			.withReuse( true );
@@ -100,4 +103,5 @@ class CockroachDBDatabase extends PostgreSQLDatabase {
 
 	private CockroachDBDatabase() {
 	}
+
 }

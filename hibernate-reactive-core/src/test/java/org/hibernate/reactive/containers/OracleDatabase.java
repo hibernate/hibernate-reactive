@@ -29,6 +29,7 @@ import org.hibernate.type.YesNoType;
 import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
 
 import org.testcontainers.containers.OracleContainer;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * Connection string for Oracle thin should be something like:
@@ -37,7 +38,8 @@ import org.testcontainers.containers.OracleContainer;
  */
 class OracleDatabase implements TestableDatabase {
 
-	public static final String IMAGE_NAME = "gvenzl/oracle-xe:21.3.0-slim";
+	public static final String IMAGE_NAME = "gvenzl/oracle-xe";
+	public static final String IMAGE_VERSION = ":21.3.0-slim";
 
 	public static final OracleDatabase INSTANCE = new OracleDatabase();
 
@@ -82,7 +84,8 @@ class OracleDatabase implements TestableDatabase {
 		}
 	}
 
-	public static final OracleContainer oracle = new OracleContainer( IMAGE_NAME )
+	public static final OracleContainer oracle = new OracleContainer(
+			DockerImageName.parse( DOCKER_REPOSITORY + IMAGE_NAME + IMAGE_VERSION ).asCompatibleSubstituteFor( IMAGE_NAME ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
@@ -175,7 +178,7 @@ class OracleDatabase implements TestableDatabase {
 		if ( uri.startsWith( "jdbc:" ) ) {
 			jdbcUrl.substring( "jdbc:".length() );
 		}
-		uri = uri.replace( "thin:@", "thin:" + getCredentials() + "@");
+		uri = uri.replace( "thin:@", "thin:" + getCredentials() + "@" );
 		return uri;
 	}
 
