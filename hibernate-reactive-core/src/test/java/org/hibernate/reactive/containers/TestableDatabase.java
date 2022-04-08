@@ -14,6 +14,8 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
  */
 public interface TestableDatabase {
 
+	String DOCKER_REPOSITORY = "docker.io/";
+
 	String getJdbcUrl();
 
 	String getUri();

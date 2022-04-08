@@ -29,12 +29,14 @@ import org.hibernate.type.YesNoType;
 import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
 
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 class PostgreSQLDatabase implements TestableDatabase {
 
 	public static PostgreSQLDatabase INSTANCE = new PostgreSQLDatabase();
 
-	public final static String IMAGE_NAME = "postgres:14.2";
+	public static final String IMAGE_NAME = "postgres";
+	public static final String IMAGE_VERSION = ":14.2";
 
 	private static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
 
@@ -82,7 +84,8 @@ class PostgreSQLDatabase implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>( IMAGE_NAME )
+	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>(
+			DockerImageName.parse( DOCKER_REPOSITORY + IMAGE_NAME + IMAGE_VERSION ).asCompatibleSubstituteFor( IMAGE_NAME ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )

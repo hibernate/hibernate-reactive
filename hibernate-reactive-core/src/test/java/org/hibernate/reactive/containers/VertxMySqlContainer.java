@@ -16,6 +16,7 @@ import org.testcontainers.containers.MySQLContainer;
 import io.vertx.core.AsyncResult;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.SqlConnection;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * Normally the {@link MySQLContainer} checks for readiness by attempting to establish a JDBC connection
@@ -27,7 +28,7 @@ import io.vertx.sqlclient.SqlConnection;
 class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
 
 	public VertxMySqlContainer(String dockerImageName) {
-		super( dockerImageName );
+		super( DockerImageName.parse( dockerImageName ).asCompatibleSubstituteFor( "mysql" )  );
 	}
 
 	@Override

@@ -39,7 +39,8 @@ import org.testcontainers.containers.MSSQLServerContainer;
  */
 class MSSQLServerDatabase implements TestableDatabase {
 
-	public static final String IMAGE_NAME = "mcr.microsoft.com/mssql/server:2019-latest";
+	public static final String IMAGE_NAME = "mcr.microsoft.com/mssql/server";
+	public static final String IMAGE_VERSION = ":2019-latest";
 
 	public static final MSSQLServerDatabase INSTANCE = new MSSQLServerDatabase();
 
@@ -91,7 +92,7 @@ class MSSQLServerDatabase implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final MSSQLServerContainer<?> mssqlserver = new MSSQLServerContainer<>( IMAGE_NAME )
+	public static final MSSQLServerContainer<?> mssqlserver = new MSSQLServerContainer<>( IMAGE_NAME + IMAGE_VERSION )
 			.acceptLicense()
 			.withPassword( PASSWORD )
 			.withReuse( true );

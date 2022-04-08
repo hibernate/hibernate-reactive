@@ -32,7 +32,8 @@ class MySQLDatabase implements TestableDatabase {
 
 	static MySQLDatabase INSTANCE = new MySQLDatabase();
 
-	public final static String IMAGE_NAME = "mysql:8.0.28";
+	public final static String IMAGE_NAME = "mysql";
+	public static final String IMAGE_VERSION = ":8.0.28";
 
 	private static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
 
@@ -80,7 +81,7 @@ class MySQLDatabase implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final VertxMySqlContainer mysql = new VertxMySqlContainer( IMAGE_NAME )
+	public static final VertxMySqlContainer mysql = new VertxMySqlContainer( DOCKER_REPOSITORY + IMAGE_NAME + IMAGE_VERSION )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
