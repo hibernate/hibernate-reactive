@@ -82,7 +82,8 @@ logger.lifecycle "Java versions for main code: " + gradle.ext.javaVersions.main
 logger.lifecycle "Java versions for tests: " + gradle.ext.javaVersions.test
 
 include 'hibernate-reactive-core'
-include 'session-example'
+// Metamodel Generation doesn't work with ORM 5.6.7 Jakarta
+// include 'session-example'
 include 'native-sql-example'
 include 'verticle-postgres-it'
 include 'documentation'
