@@ -8,7 +8,7 @@
 //DEPS io.vertx:vertx-pg-client:${vertx.version:4.2.4}
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:4.2.4}
 //DEPS io.vertx:vertx-db2-client:${vertx.version:4.2.4}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:1.0.0.CR6}
+//DEPS org.hibernate.reactive:hibernate-reactive-core-jakarta:${hibernate-reactive.version:1.0.0.CR6}
 //DEPS org.slf4j:slf4j-simple:1.7.30
 
 import java.time.LocalDate;
