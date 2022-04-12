@@ -3,10 +3,10 @@ name: Hibernate Reactive CI
 on:
   push:
     branches:
-      - main
-    tags: '1.1.*'
+      - main-jakarta
+    tags: '*-jakarta'
   pull_request:
-    branches: main
+    branches: main-jakarta
 
 # See https://github.com/hibernate/hibernate-orm/pull/4615 for a description of the behavior we're getting.
 concurrency:
