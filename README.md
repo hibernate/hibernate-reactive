@@ -5,7 +5,7 @@
 [![Latest version on Maven Central](https://img.shields.io/maven-central/v/org.hibernate.reactive/hibernate-reactive-core.svg?label=Maven%20Central&logo=apache-maven&style=flat)](https://search.maven.org/search?q=g:%22org.hibernate.reactive%22)
 [![Developers stream on Zulip](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg?logo=zulip&style=flat)](https://hibernate.zulipchat.com/#narrow/stream/205413-hibernate-reactive-dev)
 
-# Hibernate Reactive
+# Hibernate Reactive Jakarta EE edition
 
 A reactive API for [Hibernate ORM][], supporting non-blocking database
 drivers and a reactive style of interaction with the database.
