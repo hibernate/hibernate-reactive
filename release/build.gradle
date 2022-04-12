@@ -166,7 +166,7 @@ task ciRelease {
         if ( tag.endsWith( ".Final" ) ) {
             tag = tag.replace( ".Final", "" )
         }
-
+        tag = "jakarta/" + tag
         logger.lifecycle("Tagging '${tag}'...")
         executeGitCommand('tag', '-a', '-m', "Release ${project.releaseVersion}", tag)
 
