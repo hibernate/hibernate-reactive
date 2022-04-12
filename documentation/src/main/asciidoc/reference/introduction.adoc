@@ -130,10 +130,10 @@ You'll never need to touch most of these. The properties you do need at
 this stage are these three:
 
 |===
-| Configuration property name                                         | Purpose
+| Configuration property name                                             | Purpose
 
-| `javax.persistence.jdbc.url`                                        | JDBC URL of your database
-| `javax.persistence.jdbc.user` and `javax.persistence.jdbc.password` | Your database credentials
+| `jakarta.persistence.jdbc.url`                                          | JDBC URL of your database
+| `jakarta.persistence.jdbc.user` and `jakarta.persistence.jdbc.password` | Your database credentials
 |===
 
 These configuration properties have `jdbc` in their names, but of course
@@ -173,7 +173,7 @@ properties:
 |===
 | Configuration property name                                | Purpose
 
-| `javax.persistence.schema-generation.database.action` 
+| `jakarta.persistence.schema-generation.database.action` 
 a| * If `create`, first drop the schema and then export tables, sequences, and constraints.
    * If `create-only`, export tables, sequences, and constraints.
    * If `create-drop`, drop the schema and recreate it on SessionFactory startup.
@@ -182,13 +182,13 @@ a| * If `create`, first drop the schema and then export tables, sequences, and c
    * If `validate`, validate the database schema without changing it.
    * If `update`, only export what's missing in the schema.
 
-| `javax.persistence.create-database-schemas`
+| `jakarta.persistence.create-database-schemas`
 | (Optional) If `true`, automatically create schemas and catalogs
 
-| `javax.persistence.schema-generation.create-source`
+| `jakarta.persistence.schema-generation.create-source`
 | (Optional) If `metadata-then-script` or `script-then-metadata`, execute an additional SQL script when exported tables and sequences
 
-| `javax.persistence.schema-generation.create-script-source`
+| `jakarta.persistence.schema-generation.create-script-source`
 | (Optional) The name of the SQL script to be executed
 |===
 
@@ -362,7 +362,7 @@ class Author {
 You're quite free to mix and match:
 
 - the regular JPA mapping annotations defined in the package
-  `javax.persistence` with
+  `jakarta.persistence` with
 - the advanced mapping annotations in `org.hibernate.annotations`, and even
 - annotations like `@NotNull` and `@Size` defined by Bean Validation.
 
