@@ -31,7 +31,7 @@ description = 'Release module'
 final String documentationDir = rootProject.project( 'documentation' ).buildDir
 
 // Relative path on the static website where the documentation is located
-final String docWebsiteRelativePath = "/reactive/documentation/${projectVersion.family}"
+final String docWebsiteRelativePath = "/reactive/documentation/${projectVersion.family}-jakarta"
 
 // The location of the docs when the website has been cloned
 final String docWebsiteReactiveFolder = "${project.buildDir}/docs-website/${docWebsiteRelativePath}"
@@ -101,7 +101,7 @@ task stageDocChanges( type: Exec, dependsOn: updateDocumentation ) {
 
 task commitDocChanges( type: Exec, dependsOn: stageDocChanges ) {
     workingDir "${project.buildDir}/docs-website"
-    commandLine 'git', 'commit', '-m', "[HR] Hibernate Reactive documentation for ${projectVersion}"
+    commandLine 'git', 'commit', '-m', "[HR] Documentation for ${projectVersion} (Jakarta EE edition)"
 }
 
 task pushDocChanges( type: Exec, dependsOn: commitDocChanges ) {
