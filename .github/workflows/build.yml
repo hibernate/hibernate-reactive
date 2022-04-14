@@ -23,8 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # We are not testing session-example because Metamodel Generation doesn't work at the moment
-        example: [ 'native-sql-example' ]
+        example: [ 'session-example', 'native-sql-example' ]
         db: [ 'MySQL', 'PostgreSQL' ]
         exclude:
           # 'native-sql-example' doesn't run on MySQL because it has native queries
