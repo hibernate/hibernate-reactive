@@ -134,8 +134,7 @@ class OracleDatabase implements TestableDatabase {
 	@Override
 	public String getUri() {
 		// The url is different here because we expect it to work with io.vertx.oracleclient.impl.OracleConnectionUriParser
-		return addCredentialsToUri( address() )
-				.replaceAll( "/" + oracle.getDatabaseName() + "$", ":" + oracle.getDatabaseName() );
+		return addCredentialsToUri( address() );
 	}
 
 	@Override
