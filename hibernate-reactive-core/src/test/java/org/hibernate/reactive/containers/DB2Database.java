@@ -29,14 +29,12 @@ import org.hibernate.type.YesNoType;
 import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
 
 import org.testcontainers.containers.Db2Container;
-import org.testcontainers.utility.DockerImageName;
+
+import static org.hibernate.reactive.containers.DockerImage.imageName;
 
 class DB2Database implements TestableDatabase {
 
 	public static DB2Database INSTANCE = new DB2Database();
-
-	public static final String IMAGE_NAME = "ibmcom/db2";
-	public static final String IMAGE_VERSION = ":11.5.7.0";
 
 	public static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
 
@@ -84,8 +82,7 @@ class DB2Database implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	static final Db2Container db2 = new Db2Container(
-			DockerImageName.parse( DOCKER_REPOSITORY + IMAGE_NAME + IMAGE_VERSION ).asCompatibleSubstituteFor( IMAGE_NAME ) )
+	static final Db2Container db2 = new Db2Container( imageName( "ibmcom/db2", "11.5.7.0" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )

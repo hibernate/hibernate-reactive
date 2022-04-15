@@ -27,8 +27,8 @@ import org.testcontainers.utility.DockerImageName;
  */
 class VertxMySqlContainer extends MySQLContainer<VertxMySqlContainer> {
 
-	public VertxMySqlContainer(String dockerImageName) {
-		super( DockerImageName.parse( dockerImageName ).asCompatibleSubstituteFor( "mysql" )  );
+	public VertxMySqlContainer(DockerImageName dockerImageName) {
+		super( dockerImageName );
 	}
 
 	@Override
