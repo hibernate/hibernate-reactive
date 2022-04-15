@@ -30,14 +30,14 @@ import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
 
 import org.testcontainers.containers.OracleContainer;
 
+import static org.hibernate.reactive.containers.DockerImage.imageName;
+
 /**
  * Connection string for Oracle thin should be something like:
  *
  * jdbc:oracle:thin:[<user>/<password>]@<host>[:<port>][/<databaseName>]
  */
 class OracleDatabase implements TestableDatabase {
-
-	public static final String IMAGE_NAME = "gvenzl/oracle-xe:21.3.0-slim";
 
 	public static final OracleDatabase INSTANCE = new OracleDatabase();
 
@@ -82,7 +82,7 @@ class OracleDatabase implements TestableDatabase {
 		}
 	}
 
-	public static final OracleContainer oracle = new OracleContainer( IMAGE_NAME )
+	public static final OracleContainer oracle = new OracleContainer( imageName( "gvenzl/oracle-xe", "21.3.0-slim" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )

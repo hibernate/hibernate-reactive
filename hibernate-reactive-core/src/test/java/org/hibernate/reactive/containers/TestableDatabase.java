@@ -18,7 +18,7 @@ public interface TestableDatabase {
 
 	String getUri();
 
-	/**
+ 	/**
 	 * @return the database scheme for the connection. Example: {@code mysql:}
 	 */
 	default String getScheme() {

@@ -5,11 +5,12 @@
  */
 package org.hibernate.reactive.containers;
 
+
+import static org.hibernate.reactive.containers.DockerImage.imageName;
+
 class MariaDatabase extends MySQLDatabase {
 
 	static MariaDatabase INSTANCE = new MariaDatabase();
-
-	public final static String IMAGE_NAME = "docker.io/mariadb:10.7.1";
 
 	/**
 	 * Holds configuration for the MariaDB database container. If the build is run with <code>-Pdocker</code> then
@@ -18,7 +19,7 @@ class MariaDatabase extends MySQLDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final VertxMariaContainer maria = new VertxMariaContainer( IMAGE_NAME )
+	public static final VertxMariaContainer maria = new VertxMariaContainer( imageName( "mariadb", "10.7.1" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )

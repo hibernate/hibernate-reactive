@@ -30,6 +30,8 @@ import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
 
 import org.testcontainers.containers.MSSQLServerContainer;
 
+import static org.hibernate.reactive.containers.DockerImage.imageName;
+
 /**
  * The JDBC driver syntax is:
  *     jdbc:sqlserver://[serverName[\instanceName][:portNumber]][;property=value[;property=value]]
@@ -38,8 +40,6 @@ import org.testcontainers.containers.MSSQLServerContainer;
  *     sqlserver://[user[:[password]]@]host[:port][/database][?attribute1=value1&attribute2=value2…​]
  */
 class MSSQLServerDatabase implements TestableDatabase {
-
-	public static final String IMAGE_NAME = "mcr.microsoft.com/mssql/server:2019-latest";
 
 	public static final MSSQLServerDatabase INSTANCE = new MSSQLServerDatabase();
 
@@ -91,7 +91,7 @@ class MSSQLServerDatabase implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final MSSQLServerContainer<?> mssqlserver = new MSSQLServerContainer<>( IMAGE_NAME )
+	public static final MSSQLServerContainer<?> mssqlserver = new MSSQLServerContainer<>( imageName( "mcr.microsoft.com", "mssql/server", "2019-latest" ) )
 			.acceptLicense()
 			.withPassword( PASSWORD )
 			.withReuse( true );
