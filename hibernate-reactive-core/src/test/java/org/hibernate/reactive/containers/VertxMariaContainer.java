@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 class VertxMariaContainer extends MariaDBContainer<VertxMariaContainer> {
 
-	public VertxMariaContainer(String dockerImageName) {
-		super( DockerImageName.parse( dockerImageName ).asCompatibleSubstituteFor( "mariadb" ) );
+	public VertxMariaContainer(DockerImageName dockerImageName) {
+		super( dockerImageName );
 	}
 
 	@Override
