@@ -14,12 +14,17 @@ import javax.persistence.Id;
 import javax.persistence.NamedQuery;
 import javax.persistence.QueryHint;
 import javax.persistence.Table;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
+import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.Settings;
+import org.hibernate.stat.spi.StatisticsImplementor;
 
 import org.junit.Test;
 
@@ -56,6 +61,7 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 		configuration.setProperty( "hibernate.javax.cache.provider", "org.ehcache.jsr107.EhcacheCachingProvider" );
 		configuration.setProperty( "hibernate.javax.cache.uri", "/ehcache.xml" );
 		configuration.addAnnotatedClass( Fruit.class );
+		configuration.getProperties().put( Settings.GENERATE_STATISTICS, Boolean.FALSE );
 		return configuration;
 	}
 
@@ -99,6 +105,33 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 				.withSession( s -> findAllWithCacheableQuery( s ).chain( () -> findAllWithCacheableQuery( s ) ) )
 				.invoke( list -> assertThat( list ).containsExactly( FRUITS ) )
 		);
+	}
+
+	@Test
+	public void testQueryPlanCacheHitsGenerateStatisticsFalse(TestContext context) {
+		test( context, criteriaFindAll()
+				.call( CachedQueryResultsTest::criteriaFindAll )
+				.call( CachedQueryResultsTest::criteriaFindAll )
+				.invoke( () -> context.assertEquals( 0L, statistics().getQueryPlanCacheHitCount() ) )
+		);
+	}
+
+	public static StatisticsImplementor statistics() {
+		return ( (Implementor) getSessionFactory() ).getServiceRegistry().getService(
+				StatisticsImplementor.class );
+	}
+
+	public static Uni<List<Fruit>> criteriaFindAll() {
+		final Mutiny.SessionFactory sf = getMutinySessionFactory();
+		return sf.withStatelessSession( s -> s.createQuery( criteriaQuery( sf.getCriteriaBuilder() ) ).getResultList()
+		);
+	}
+
+	public static CriteriaQuery<Fruit> criteriaQuery(CriteriaBuilder criteriaBuilder) {
+		CriteriaQuery<Fruit> criteriaQuery = criteriaBuilder.createQuery( Fruit.class );
+		Root<Fruit> from = criteriaQuery.from( Fruit.class );
+		criteriaQuery.select( from );
+		return criteriaQuery;
 	}
 
 	private static Uni<List<Fruit>> findAllWithCacheableQuery(Mutiny.Session session) {
