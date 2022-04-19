@@ -7,6 +7,19 @@ package org.hibernate.reactive;
 
 import java.util.List;
 import java.util.Objects;
+
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.cfg.Environment;
+import org.hibernate.reactive.common.spi.Implementor;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.stat.spi.StatisticsImplementor;
+
+import org.junit.Test;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -14,17 +27,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.QueryHint;
 import jakarta.persistence.Table;
-
-import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.cfg.Environment;
-import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.provider.Settings;
-
-import org.junit.Test;
-
-import io.smallrye.mutiny.Uni;
-import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,6 +61,7 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 		configuration.setProperty( "hibernate.javax.cache.provider", "org.ehcache.jsr107.EhcacheCachingProvider" );
 		configuration.setProperty( "hibernate.javax.cache.uri", "/ehcache.xml" );
 		configuration.addAnnotatedClass( Fruit.class );
+		configuration.getProperties().put( Settings.GENERATE_STATISTICS, Boolean.FALSE );
 		return configuration;
 	}
 
@@ -99,6 +105,33 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 				.withSession( s -> findAllWithCacheableQuery( s ).chain( () -> findAllWithCacheableQuery( s ) ) )
 				.invoke( list -> assertThat( list ).containsExactly( FRUITS ) )
 		);
+	}
+
+	@Test
+	public void testQueryPlanCacheHitsGenerateStatisticsFalse(TestContext context) {
+		test( context, criteriaFindAll()
+				.call( CachedQueryResultsTest::criteriaFindAll )
+				.call( CachedQueryResultsTest::criteriaFindAll )
+				.invoke( () -> context.assertEquals( 0L, statistics().getQueryPlanCacheHitCount() ) )
+		);
+	}
+
+	public static StatisticsImplementor statistics() {
+		return ( (Implementor) getSessionFactory() ).getServiceRegistry().getService(
+				StatisticsImplementor.class );
+	}
+
+	public static Uni<List<Fruit>> criteriaFindAll() {
+		final Mutiny.SessionFactory sf = getMutinySessionFactory();
+		return sf.withStatelessSession( s -> s.createQuery( criteriaQuery( sf.getCriteriaBuilder() ) ).getResultList()
+		);
+	}
+
+	public static CriteriaQuery<Fruit> criteriaQuery(CriteriaBuilder criteriaBuilder) {
+		CriteriaQuery<Fruit> criteriaQuery = criteriaBuilder.createQuery( Fruit.class );
+		Root<Fruit> from = criteriaQuery.from( Fruit.class );
+		criteriaQuery.select( from );
+		return criteriaQuery;
 	}
 
 	private static Uni<List<Fruit>> findAllWithCacheableQuery(Mutiny.Session session) {
