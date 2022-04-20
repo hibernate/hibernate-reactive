@@ -128,6 +128,23 @@ public class ReferenceTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testRemoveWithTransaction(TestContext context) {
+		final Book goodOmens = new Book("Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s.persist( goodOmens ) )
+				.call( () -> getMutinySessionFactory()
+						.withSession( s -> s.find( Book.class, goodOmens.getId() ) )
+						.invoke( book -> context.assertEquals( goodOmens, book ) ) )
+				.call( () -> getMutinySessionFactory().withTransaction( s -> s
+						.remove( s.getReference( Book.class, goodOmens.getId() ) ) ) )
+				.call( () -> getMutinySessionFactory().withSession( s -> s
+						.find( Book.class, goodOmens.getId() ) ) )
+				.invoke( context::assertNull )
+		);
+	}
+
+	@Test
 	public void testLockDetachedProxy(TestContext context) {
 		final Book goodOmens = new Book("Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
 
