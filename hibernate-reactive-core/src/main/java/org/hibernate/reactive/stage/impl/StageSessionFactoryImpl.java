@@ -82,30 +82,30 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	public CompletionStage<Stage.Session> openSession() {
 		SessionCreationOptions options = options();
 		return stage( v -> connection( options.getTenantIdentifier() )
-				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options, connection ) ) )
-				.thenApply( s -> new StageSessionImpl(s, this) ) );
+				.thenComposeAsync( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options, connection ) ), context )
+				.thenApplyAsync( s -> new StageSessionImpl(s, this), context ) );
 	}
 
 	@Override
 	public CompletionStage<Stage.Session> openSession(String tenantId) {
 		return stage( v -> connection( tenantId )
-				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), connection ) ) )
-				.thenApply( s -> new StageSessionImpl(s, this) ) );
+				.thenComposeAsync( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), connection ) ), context )
+				.thenApplyAsync( s -> new StageSessionImpl(s, this), context ) );
 	}
 
 	@Override
 	public CompletionStage<Stage.StatelessSession> openStatelessSession() {
 		SessionCreationOptions options = options();
 		return stage( v -> connection( options.getTenantIdentifier() )
-				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options, connection ) ) )
-				.thenApply( s -> new StageStatelessSessionImpl(s, this) ) );
+				.thenComposeAsync( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options, connection ) ), context )
+				.thenApplyAsync( s -> new StageStatelessSessionImpl(s, this), context ) );
 	}
 
 	@Override
 	public CompletionStage<Stage.StatelessSession> openStatelessSession(String tenantId) {
 		return stage( v -> connection( tenantId )
-				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) ) )
-				.thenApply( s -> new StageStatelessSessionImpl( s, this ) ) );
+				.thenComposeAsync( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) ), context )
+				.thenApplyAsync( s -> new StageStatelessSessionImpl( s, this ), context ) );
 	}
 
 	/**
@@ -209,20 +209,20 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 			CompletionStage<S> sessionStage,
 			Function<S, CompletionStage<T>> work,
 			Context.Key<S> contextKey) {
-		return sessionStage.thenCompose( session -> {
+		return sessionStage.thenComposeAsync( session -> {
 			context.put( contextKey, session );
 			return voidFuture()
-					.thenCompose( v -> work.apply( session ) )
+					.thenComposeAsync( v -> work.apply( session ), context )
 					.handle( this::handler )
-					.thenCompose( handler -> {
+					.thenComposeAsync( handler -> {
 						context.remove( contextKey );
 						return session.close()
 								// Using .handle (instead of .thenApply(handler) because
 								// I want to rethrow the original exception in case an error
 								// occurs while closing the session
 								.handle( (unused, throwable) -> handler.apply( null ) );
-					} );
-		} );
+					}, context );
+		}, context );
 	}
 
 	private <T> Function<Void, T> handler(T result, Throwable exception) {
