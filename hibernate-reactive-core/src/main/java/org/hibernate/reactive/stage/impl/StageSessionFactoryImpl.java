@@ -212,6 +212,8 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		return sessionStage.thenCompose( session -> {
 			context.put( contextKey, session );
 			return voidFuture()
+					// We call work.apply inside a thenCompose so that we can catch all the exceptions
+					// and still be able to close the session in case of errors
 					.thenCompose( v -> work.apply( session ) )
 					.handle( this::handler )
 					.thenCompose( handler -> {
