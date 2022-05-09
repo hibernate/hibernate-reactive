@@ -50,7 +50,6 @@ task aggregateJavadocs(type: Javadoc, group: 'Documentation') {
 		options.encoding = 'UTF-8'
 
 		def matcher = hibernateOrmVersion =~ /\d+\.\d+/
-		def ormMinorVersion = matcher.find() ? matcher.group() : "5.4";
 
 		links = [
 				'https://docs.oracle.com/javase/8/docs/api/',
@@ -58,16 +57,6 @@ task aggregateJavadocs(type: Javadoc, group: 'Documentation') {
 				'https://javaee.github.io/javaee-spec/javadocs/',
 //				"https://docs.jboss.org/hibernate/orm/" + ormMinorVersion + "/javadocs/"
 		]
-		
-		if ( gradle.ext.javaVersions.main.compiler.asInt() >= 11 ) {
-			//The need to set `--source 1.8` applies to all JVMs after 11, and also to 11
-			// but after excluding the first two builds; see also specific comments on
-			// https://bugs.openjdk.java.net/browse/JDK-8212233?focusedCommentId=14245762
-			// For now, let's be compatible with JDK 11.0.3+. We can improve on it if people
-			// complain they cannot build with JDK 11.0.0, 11.0.1 and 11.0.2.
-			logger.lifecycle "Forcing Javadoc in Java 8 compatible mode"
-			options.source = gradle.ext.baselineJavaVersion
-		}
 
 		options.addStringOption( 'Xdoclint:none', '-quiet' )
 
