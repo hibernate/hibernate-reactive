@@ -50,12 +50,13 @@ task aggregateJavadocs(type: Javadoc, group: 'Documentation') {
 		options.encoding = 'UTF-8'
 
 		def matcher = hibernateOrmVersion =~ /\d+\.\d+/
+		def ormMinorVersion = matcher.find() ? matcher.group() : "5.6";
 
 		links = [
-				'https://docs.oracle.com/javase/8/docs/api/',
+				'https://docs.oracle.com/en/java/javase/11/docs/api/',
 				'http://docs.jboss.org/hibernate/beanvalidation/spec/2.0/api/',
-				'https://javaee.github.io/javaee-spec/javadocs/',
-//				"https://docs.jboss.org/hibernate/orm/" + ormMinorVersion + "/javadocs/"
+				'https://jakarta.ee/specifications/platform/8/apidocs/',
+				"https://docs.jboss.org/hibernate/orm/" + ormMinorVersion + "/javadocs/"
 		]
 
 		options.addStringOption( 'Xdoclint:none', '-quiet' )
