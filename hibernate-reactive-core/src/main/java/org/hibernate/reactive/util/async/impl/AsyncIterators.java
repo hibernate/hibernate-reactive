@@ -6,7 +6,6 @@
 package org.hibernate.reactive.util.async.impl;
 
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
@@ -60,16 +59,13 @@ class AsyncIterators {
 
 	static <T, U> AsyncIterator<U> thenApplyImpl(
 			final AsyncIterator<T> it,
-			final Function<? super T, ? extends U> f,
-			final boolean synchronous) {
+			final Function<? super T, ? extends U> f) {
 		return new AsyncIterator<U>() {
 			@Override
 			public CompletionStage<Either<End, U>> nextStage() {
 				final CompletionStage<Either<End, T>> next = it.nextStage();
 
-				return synchronous
-						? next.thenApply( this::eitherFunction )
-						: next.thenApplyAsync( this::eitherFunction );
+				return next.thenApply( this::eitherFunction );
 			}
 
 			Either<End, U> eitherFunction(final Either<End, T> either) {
