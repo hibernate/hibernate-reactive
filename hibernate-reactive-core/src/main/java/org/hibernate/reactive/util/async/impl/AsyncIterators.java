@@ -90,9 +90,7 @@ class AsyncIterators {
 	static <T, U> AsyncIterator<U> thenComposeImpl(
 			final AsyncIterator<T> it,
 			final Function<? super T, ? extends CompletionStage<U>> f,
-			final boolean synchronous,
-			final Executor e) {
-		assert !synchronous || e == null;
+			final boolean synchronous) {
 
 		return new AsyncIterator<U>() {
 			@Override
@@ -100,9 +98,7 @@ class AsyncIterators {
 				final CompletionStage<Either<End, T>> nxt = it.nextStage();
 				return synchronous
 						? nxt.thenCompose( this::eitherFunction )
-						: e == null
-						? nxt.thenComposeAsync( this::eitherFunction )
-						: nxt.thenComposeAsync( this::eitherFunction, e );
+						: nxt.thenComposeAsync( this::eitherFunction );
 			}
 
 			/*
