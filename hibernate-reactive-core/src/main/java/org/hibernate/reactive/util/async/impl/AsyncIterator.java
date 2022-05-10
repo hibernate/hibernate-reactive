@@ -292,7 +292,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 	 * from {@code this} iterator
 	 */
 	default <U> AsyncIterator<U> thenApply(final Function<? super T, ? extends U> fn) {
-		return AsyncIterators.thenApplyImpl( this, fn, true, null );
+		return AsyncIterators.thenApplyImpl( this, fn, true );
 	}
 
 	/**
