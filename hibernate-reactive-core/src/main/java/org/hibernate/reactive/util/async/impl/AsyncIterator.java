@@ -318,7 +318,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 	 */
 	default <U> AsyncIterator<U> thenCompose(
 			final Function<? super T, ? extends CompletionStage<U>> fn) {
-		return AsyncIterators.thenComposeImpl( this, fn, true, null );
+		return AsyncIterators.thenComposeImpl( this, fn, true );
 	}
 
 	/**
