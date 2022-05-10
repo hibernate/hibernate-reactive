@@ -61,9 +61,7 @@ class AsyncIterators {
 	static <T, U> AsyncIterator<U> thenApplyImpl(
 			final AsyncIterator<T> it,
 			final Function<? super T, ? extends U> f,
-			final boolean synchronous,
-			final Executor e) {
-		assert !synchronous || e == null;
+			final boolean synchronous) {
 		return new AsyncIterator<U>() {
 			@Override
 			public CompletionStage<Either<End, U>> nextStage() {
@@ -71,9 +69,7 @@ class AsyncIterators {
 
 				return synchronous
 						? next.thenApply( this::eitherFunction )
-						: e == null
-						? next.thenApplyAsync( this::eitherFunction )
-						: next.thenApplyAsync( this::eitherFunction, e );
+						: next.thenApplyAsync( this::eitherFunction );
 			}
 
 			Either<End, U> eitherFunction(final Either<End, T> either) {
