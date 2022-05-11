@@ -122,7 +122,7 @@ public class ReactiveActionQueue {
 					}
 
 					ExecutableList<ReactiveEntityUpdateAction> init(ReactiveActionQueue instance) {
-						return instance.updates = new ExecutableList<>( false );
+						return instance.updates = new ExecutableList<>( instance.isOrderUpdatesEnabled() );
 					}
 				}
 		);
