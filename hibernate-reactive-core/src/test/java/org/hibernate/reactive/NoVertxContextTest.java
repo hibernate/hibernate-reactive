@@ -42,7 +42,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * </p>
  */
 public class NoVertxContextTest {
-	private static final int ENTRIES_NUM = 500;
+
+	/**
+	 * The number of entities to create.
+	 * Faster machines might need a higher number for this test to fail.
+	 */
+	private static final int ENTRIES_NUM = 1000;
 
 	private static SessionFactory sessionFactory;
 
