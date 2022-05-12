@@ -28,7 +28,7 @@ public final class OneOffDelegatingExecutor implements Executor {
 	private final Executor delegateExecutor;
 	private Runnable deferredTask;
 
-	OneOffDelegatingExecutor(Executor delegate) {
+	public OneOffDelegatingExecutor(Executor delegate) {
 		Objects.requireNonNull(delegate);
 		this.delegateExecutor = delegate;
 	}
