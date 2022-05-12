@@ -60,10 +60,6 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		contextKeyForStatelessSession = new BaseKey<>( Stage.StatelessSession.class, delegate.getUuid() );
 	}
 
-	<T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stageSupplier) {
-		return voidFuture().thenCompose( stageSupplier );
-	}
-
 	@Override
 	public String getUuid() {
 		return delegate.getUuid();
@@ -82,31 +78,31 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	@Override
 	public CompletionStage<Stage.Session> openSession() {
 		SessionCreationOptions options = options();
-		return stage( v -> connection( options.getTenantIdentifier() )
+		return connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options, connection ) ) )
-				.thenApply( s -> new StageSessionImpl(s, this) ) );
+				.thenApply( StageSessionImpl::new );
 	}
 
 	@Override
 	public CompletionStage<Stage.Session> openSession(String tenantId) {
-		return stage( v -> connection( tenantId )
+		return connection( tenantId )
 				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), connection ) ) )
-				.thenApply( s -> new StageSessionImpl(s, this) ) );
+				.thenApply( StageSessionImpl::new );
 	}
 
 	@Override
 	public CompletionStage<Stage.StatelessSession> openStatelessSession() {
 		SessionCreationOptions options = options();
-		return stage( v -> connection( options.getTenantIdentifier() )
+		return connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options, connection ) ) )
-				.thenApply( s -> new StageStatelessSessionImpl(s, this) ) );
+				.thenApply( StageStatelessSessionImpl::new );
 	}
 
 	@Override
 	public CompletionStage<Stage.StatelessSession> openStatelessSession(String tenantId) {
-		return stage( v -> connection( tenantId )
+		return connection( tenantId )
 				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) ) )
-				.thenApply( s -> new StageStatelessSessionImpl( s, this ) ) );
+				.thenApply( StageStatelessSessionImpl::new );
 	}
 
 	/**
