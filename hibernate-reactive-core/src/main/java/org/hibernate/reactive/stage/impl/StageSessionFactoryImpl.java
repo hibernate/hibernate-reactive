@@ -21,6 +21,7 @@ import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.context.impl.BaseKey;
 import org.hibernate.reactive.context.impl.MultitenantKey;
+import org.hibernate.reactive.context.impl.OneOffDelegatingExecutor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -149,13 +150,17 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Stage.Session current = context.get( contextKeyForSession );
-		if ( current!=null && current.isOpen() ) {
+		if ( current != null && current.isOpen() ) {
 			LOG.debug( "Reusing existing open Stage.Session which was found in the current Vert.x context" );
 			return work.apply( current );
 		}
 		else {
 			LOG.debug( "No existing open Stage.Session was found in the current Vert.x context: opening a new instance" );
-			return withSession( openSession(), work, contextKeyForSession );
+			OneOffDelegatingExecutor oneOffExecutor = new OneOffDelegatingExecutor( context );
+			final CompletionStage<T> withSessionStage = voidFuture()
+					.thenComposeAsync( v -> withSession( openSession(), work, contextKeyForSession ), oneOffExecutor );
+			oneOffExecutor.runHeldTasks();
+			return withSessionStage;
 		}
 	}
 
@@ -165,7 +170,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Context.Key<Stage.Session> key = new MultitenantKey<>( this.contextKeyForSession, tenantId );
 		Stage.Session current = context.get( key );
-		if ( current!=null && current.isOpen() ) {
+		if ( current != null && current.isOpen() ) {
 			LOG.debugf( "Reusing existing open Stage.Session which was found in the current Vert.x context for current tenant '%s'", tenantId );
 			return work.apply( current );
 		}
