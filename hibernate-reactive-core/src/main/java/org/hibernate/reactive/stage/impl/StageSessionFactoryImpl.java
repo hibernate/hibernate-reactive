@@ -155,7 +155,15 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 					.thenComposeAsync( v -> withSession( openSession(), work, contextKeyForSession ), oneOffExecutor );
 			oneOffExecutor.runHeldTasks();
 			return withSessionStage;
+			return executeLazily( v -> withSession( openSession(), work, contextKeyForSession ) );
 		}
+	}
+
+	private <T> CompletionStage<T> executeLazily(Function<Void, CompletionStage<T>> fun) {
+		OneOffDelegatingExecutor oneOffExecutor = new OneOffDelegatingExecutor( context );
+		final CompletionStage<T> withSessionStage = voidFuture().thenComposeAsync( fun, oneOffExecutor );
+		oneOffExecutor.runHeldTasks();
+		return withSessionStage;
 	}
 
 	@Override
@@ -171,6 +179,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		else {
 			LOG.debugf( "No existing open Stage.Session was found in the current Vert.x context for current tenant '%s': opening a new instance", tenantId );
 			return withSession( openSession( tenantId ), work, key );
+			return executeLazily( v -> withSession( openSession( tenantId ), work, key ) );
 		}
 	}
 
@@ -185,6 +194,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		else {
 			LOG.debug( "No existing open Stage.StatelessSession was found in the current Vert.x context: opening a new instance" );
 			return withSession( openStatelessSession(), work, contextKeyForStatelessSession );
+			return executeLazily( v -> withSession( openStatelessSession(), work, contextKeyForStatelessSession ) );
 		}
 	}
 
@@ -201,6 +211,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		else {
 			LOG.debugf( "No existing open Stage.StatelessSession was found in the current Vert.x context for current tenant '%s': opening a new instance", tenantId );
 			return withSession( openStatelessSession( tenantId), work, key );
+			return executeLazily( v -> withSession( openStatelessSession( tenantId ), work, contextKeyForStatelessSession ) );
 		}
 	}
 
