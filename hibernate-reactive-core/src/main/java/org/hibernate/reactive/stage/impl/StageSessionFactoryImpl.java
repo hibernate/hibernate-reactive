@@ -60,7 +60,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	<T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stageSupplier) {
-		return voidFuture().thenComposeAsync( stageSupplier, context );
+		return voidFuture().thenCompose( stageSupplier );
 	}
 
 	@Override
