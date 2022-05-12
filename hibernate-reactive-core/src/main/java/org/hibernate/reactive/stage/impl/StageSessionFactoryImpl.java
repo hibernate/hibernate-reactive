@@ -140,12 +140,6 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 				: connectionPool.getConnection( tenantId );
 	}
 
-	private ReactiveConnection proxyConnection(String tenantId) {
-		return tenantId==null
-				? connectionPool.getProxyConnection()
-				: connectionPool.getProxyConnection( tenantId );
-	}
-
 	@Override
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
