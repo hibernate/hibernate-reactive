@@ -34,6 +34,9 @@ import static java.util.Collections.singleton;
  */
 public class ReactiveSessionFactoryImpl extends SessionFactoryImpl {
 	public ReactiveSessionFactoryImpl(MetadataImplementor metadata, SessionFactoryOptions options) {
+		// With are not using lambdas or method reference because of a bug in the JVM:
+		// https://bugs.openjdk.java.net/browse/JDK-8161588
+		// Please, don't change this unless you've tested it with Quarkus
 		super(metadata, options, new QueryPlanCache.QueryPlanCreator() {
 			@Override
 			public HQLQueryPlan createQueryPlan(String queryString, boolean shallow, Map<String, Filter> enabledFilters,
