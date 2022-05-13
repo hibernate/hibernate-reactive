@@ -37,6 +37,10 @@ public interface Log extends BasicLogger {
 	void creatingVertxInstance();
 
 	@LogMessage(level = INFO)
+	@Message(id = 3, value = "Vert.x instance stopped")
+	void vertxInstanceStopped();
+
+	@LogMessage(level = INFO)
 	@Message(id = 11, value = "SQL Client URL [%1$s]")
 	void sqlClientUrl(String url);
 
