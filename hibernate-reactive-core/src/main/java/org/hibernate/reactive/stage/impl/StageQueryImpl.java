@@ -5,6 +5,9 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
@@ -14,9 +17,6 @@ import org.hibernate.reactive.stage.Stage;
 
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.Parameter;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 /**
  * Implementation of {@link Stage.Query}.
@@ -24,20 +24,14 @@ import java.util.function.Function;
 public class StageQueryImpl<R> implements Stage.Query<R> {
 
 	private final ReactiveQuery<R> delegate;
-	private final StageSessionFactoryImpl factory;
 
-	public StageQueryImpl(ReactiveQuery<R> delegate, StageSessionFactoryImpl factory) {
+	public StageQueryImpl(ReactiveQuery<R> delegate) {
 		this.delegate = delegate;
-		this.factory = factory;
 	}
 
-	public StageQueryImpl(ReactiveQuery<R> delegate, String[] querySpaces, StageSessionFactoryImpl factory) {
-		this(delegate, factory);
+	public StageQueryImpl(ReactiveQuery<R> delegate, String[] querySpaces) {
+		this( delegate );
 		delegate.setQuerySpaces( querySpaces );
-	}
-
-	private <T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stage) {
-		return factory.stage(stage);
 	}
 
 	@Override
@@ -173,22 +167,22 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 
 	@Override
 	public CompletionStage<Integer> executeUpdate() {
-		return stage( v -> delegate.executeReactiveUpdate() );
+		return delegate.executeReactiveUpdate();
 	}
 
 	@Override
 	public CompletionStage<R> getSingleResult() {
-		return stage( v -> delegate.getReactiveSingleResult() );
+		return delegate.getReactiveSingleResult();
 	}
 
 	@Override
 	public CompletionStage<R> getSingleResultOrNull() {
-		return stage( v -> delegate.getReactiveSingleResultOrNull() );
+		return delegate.getReactiveSingleResultOrNull();
 	}
 
 	@Override
 	public CompletionStage<List<R>> getResultList() {
-		return stage( v -> delegate.getReactiveResultList() );
+		return delegate.getReactiveResultList();
 	}
 
 }
