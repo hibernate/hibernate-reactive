@@ -64,6 +64,29 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 @RunWith(VertxUnitRunner.class)
 public abstract class BaseReactiveTest {
 
+	/**
+	 * When we need to write a test that doesn't fit with {@link BaseReactiveTest}, we can use
+	 * this builder to get a default configuration that's compatible with the build properties.
+	 */
+	public static class ConfigurationBuilder {
+
+		public Configuration build(Collection<Class<?>> entityTypes) {
+			Configuration configuration = new Configuration();
+			entityTypes.forEach( configuration::addAnnotatedClass );
+			configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
+			configuration.setProperty( Settings.URL, DatabaseConfiguration.getJdbcUrl() );
+			if ( DatabaseConfiguration.dbType() == DBType.DB2 && !doneTablespace ) {
+				configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES, "/db2.sql" );
+				doneTablespace = true;
+			}
+			//Use JAVA_TOOL_OPTIONS='-Dhibernate.show_sql=true'
+			configuration.setProperty( Settings.SHOW_SQL, System.getProperty( Settings.SHOW_SQL, "false" ) );
+			configuration.setProperty( Settings.FORMAT_SQL, System.getProperty( Settings.FORMAT_SQL, "false" ) );
+			configuration.setProperty( Settings.HIGHLIGHT_SQL, System.getProperty( Settings.HIGHLIGHT_SQL, "true" ) );
+			return configuration;
+		}
+	}
+
 	public static SessionFactoryManager factoryManager = new SessionFactoryManager();
 
 	@ClassRule
@@ -128,19 +151,7 @@ public abstract class BaseReactiveTest {
 	private static boolean doneTablespace;
 
 	protected Configuration constructConfiguration() {
-		Configuration configuration = new Configuration();
-		annotatedEntities().forEach( configuration::addAnnotatedClass );
-		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
-		configuration.setProperty( Settings.URL, DatabaseConfiguration.getJdbcUrl() );
-		if ( DatabaseConfiguration.dbType() == DBType.DB2 && !doneTablespace ) {
-			configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES, "/db2.sql" );
-			doneTablespace = true;
-		}
-		//Use JAVA_TOOL_OPTIONS='-Dhibernate.show_sql=true'
-		configuration.setProperty( Settings.SHOW_SQL, System.getProperty(Settings.SHOW_SQL, "false") );
-		configuration.setProperty( Settings.FORMAT_SQL, System.getProperty(Settings.FORMAT_SQL, "false") );
-		configuration.setProperty( Settings.HIGHLIGHT_SQL, System.getProperty(Settings.HIGHLIGHT_SQL, "true") );
-		return configuration;
+		return new ConfigurationBuilder().build( annotatedEntities() );
 	}
 
 	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
