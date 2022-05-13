@@ -7,6 +7,7 @@ package org.hibernate.reactive;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
@@ -35,9 +36,8 @@ public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 						.persist( person, personDetails )
 						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
-				.thenAccept( session -> session
-						.find( OneToOneMapsIdTest.PersonDetails.class, 1 )
-						.thenAccept( context::assertNotNull ) )
+				.thenCompose( session -> session.find( PersonDetails.class, 1 ) )
+				.thenAccept( details -> context.assertEquals( personDetails, details ) )
 		);
 	}
 
@@ -58,6 +58,23 @@ public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 
 		public Integer getId() {
 			return id;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( !( o instanceof Person ) ) {
+				return false;
+			}
+			Person person = (Person) o;
+			return name.equals( person.name );
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash( name );
 		}
 	}
 
@@ -83,6 +100,23 @@ public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 
 		public Person getPerson() {
 			return person;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( !( o instanceof PersonDetails ) ) {
+				return false;
+			}
+			PersonDetails that = (PersonDetails) o;
+			return nickName.equals( that.nickName ) && Objects.equals( person, that.person );
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash( nickName );
 		}
 	}
 }
