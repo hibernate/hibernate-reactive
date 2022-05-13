@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.util.function.IntConsumer;
+
 public class PostgresParameters extends Parameters {
 
     public static final PostgresParameters INSTANCE = new PostgresParameters();
@@ -71,7 +73,47 @@ public class PostgresParameters extends Parameters {
 
         private Parser(String sql, int parameterCount) {
             result = new StringBuilder(sql.length() + parameterCount);
-            sql.codePoints().forEach(this::append);
+            sql.codePoints().forEach(new IntConsumer() {
+                @Override
+                public void accept(int codePoint) {
+                    if (escaped) {
+                        escaped = false;
+                    } else {
+                        switch (codePoint) {
+                            case '\\':
+                                escaped = true;
+                                break;
+                            case '"':
+                                if (!inString && !inSqlComment && !inCComment) inQuoted = !inQuoted;
+                                break;
+                            case '\'':
+                                if (!inQuoted && !inSqlComment && !inCComment) inString = !inString;
+                                break;
+                            case '-':
+                                if (!inQuoted && !inString && !inCComment && previous == '-') inSqlComment = true;
+                                break;
+                            case '\n':
+                                inSqlComment = false;
+                                break;
+                            case '*':
+                                if (!inQuoted && !inString && !inSqlComment && previous == '/') inCComment = true;
+                                break;
+                            case '/':
+                                if (previous == '*') inCComment = false;
+                                break;
+                            //TODO: $$-quoted strings
+                            case '?':
+                                if (!inQuoted && !inString) {
+                                    result.append('$').append(++count);
+                                    previous = '?';
+                                    return;
+                                }
+                        }
+                    }
+                    previous = codePoint;
+                    result.appendCodePoint(codePoint);
+                }
+            });
         }
 
         private String result() {
@@ -79,42 +121,7 @@ public class PostgresParameters extends Parameters {
         }
 
         private void append(int codePoint) {
-            if (escaped) {
-                escaped = false;
-            } else {
-                switch (codePoint) {
-                    case '\\':
-                        escaped = true;
-                        break;
-                    case '"':
-                        if (!inString && !inSqlComment && !inCComment) inQuoted = !inQuoted;
-                        break;
-                    case '\'':
-                        if (!inQuoted && !inSqlComment && !inCComment) inString = !inString;
-                        break;
-                    case '-':
-                        if (!inQuoted && !inString && !inCComment && previous == '-') inSqlComment = true;
-                        break;
-                    case '\n':
-                        inSqlComment = false;
-                        break;
-                    case '*':
-                        if (!inQuoted && !inString && !inSqlComment && previous == '/') inCComment = true;
-                        break;
-                    case '/':
-                        if (previous == '*') inCComment = false;
-                        break;
-                    //TODO: $$-quoted strings
-                    case '?':
-                        if (!inQuoted && !inString) {
-                            result.append('$').append(++count);
-                            previous = '?';
-                            return;
-                        }
-                }
-            }
-            previous = codePoint;
-            result.appendCodePoint(codePoint);
+
         }
     }
 }
