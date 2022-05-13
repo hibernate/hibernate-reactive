@@ -37,9 +37,11 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 	public <T> void put(Key<T> key, T instance) {
 		final io.vertx.core.Context context = Vertx.currentContext();
 		if ( context != null ) {
+			LOG.tracef( "Putting key,value in context: [%1$s, %2$s]", key, instance );
 			context.putLocal( key, instance );
 		}
 		else {
+			LOG.tracef( "Context is null for key,value: [%1$s, %2$s]", key, instance  );
 			throw LOG.notVertxContextActive();
 		}
 	}
@@ -48,9 +50,12 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 	public <T> T get(Key<T> key) {
 		final io.vertx.core.Context context = Vertx.currentContext();
 		if ( context != null ) {
-			return context.getLocal( key );
+			T local = context.getLocal( key );
+			LOG.tracef( "Getting value %2$s from context for key %1$s", key, local  );
+			return local;
 		}
 		else {
+			LOG.tracef( "Context is null. Returning null for key %s", key );
 			return null;
 		}
 	}
@@ -59,7 +64,11 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 	public void remove(Key<?> key) {
 		final io.vertx.core.Context context = Vertx.currentContext();
 		if ( context != null ) {
-			context.removeLocal( key );
+			boolean removed = context.removeLocal( key );
+			LOG.tracef( "Key %s removed from context: %s", key, removed );
+		}
+		else {
+			LOG.tracef( "Context is null, nothing to remove for key %s", key );
 		}
 	}
 
@@ -67,14 +76,17 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 	public void execute(Runnable runnable) {
 		final io.vertx.core.Context currentContext = Vertx.currentContext();
 		if ( currentContext == null ) {
+			LOG.tracef( "Not in a Vert.x context, checking the VertxInstance service" );
 			final io.vertx.core.Context newContext = vertxInstance.getVertx().getOrCreateContext();
 			// Ensure we don't run on the root context, which is globally scoped:
 			// that could lead to unintentionally share the same session with other streams.
 			ContextInternal newContextInternal = (ContextInternal) newContext;
 			final ContextInternal duplicate = newContextInternal.duplicate();
+			LOG.tracef( "Using duplicated context from VertxInstance: %s", duplicate );
 			duplicate.runOnContext( x -> runnable.run() );
 		}
 		else {
+			LOG.tracef( "Running in the current Vert.x context %s", currentContext );
 			runnable.run();
 		}
 	}
