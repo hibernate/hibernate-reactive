@@ -145,7 +145,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		}
 		else {
 			LOG.debug( "No existing open Stage.Session was found in the current Vert.x context: opening a new instance" );
-			return withSession( openSession(), work, contextKeyForSession );
+			return executeInContext( v -> withSession( openSession(), work, contextKeyForSession ) );
 		}
 	}
 
@@ -161,7 +161,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		}
 		else {
 			LOG.debugf( "No existing open Stage.Session was found in the current Vert.x context for current tenant '%s': opening a new instance", tenantId );
-			return withSession( openSession( tenantId ), work, key );
+			return executeInContext( v -> withSession( openSession( tenantId ), work, key ) );
 		}
 	}
 
@@ -175,7 +175,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		}
 		else {
 			LOG.debug( "No existing open Stage.StatelessSession was found in the current Vert.x context: opening a new instance" );
-			return withSession( openStatelessSession(), work, contextKeyForStatelessSession );
+			return executeInContext( v -> withSession( openStatelessSession(), work, contextKeyForStatelessSession ) );
 		}
 	}
 
@@ -191,8 +191,12 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		}
 		else {
 			LOG.debugf( "No existing open Stage.StatelessSession was found in the current Vert.x context for current tenant '%s': opening a new instance", tenantId );
-			return withSession( openStatelessSession( tenantId), work, key );
+			return executeInContext( v -> withSession( openStatelessSession( tenantId ), work, contextKeyForStatelessSession ) );
 		}
+	}
+
+	private <T> CompletionStage<T> executeInContext(Function<Void, CompletionStage<T>> fun) {
+		return voidFuture().thenComposeAsync( fun, context );
 	}
 
 	private <S extends Stage.Closeable, T> CompletionStage<T> withSession(
