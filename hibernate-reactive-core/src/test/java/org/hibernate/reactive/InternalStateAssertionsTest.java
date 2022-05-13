@@ -40,7 +40,7 @@ import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
  * in advance. Otherwise the test will end successfully because the async has not been created yet.
  * </p>
  */
-public class MultipleContextTest extends BaseReactiveTest {
+public class InternalStateAssertionsTest extends BaseReactiveTest {
 
 	private static final String ERROR_MESSAGE_LOWER_CASED = "Detected use of the reactive Session from a different Thread"
 			.toLowerCase( Locale.ROOT );
