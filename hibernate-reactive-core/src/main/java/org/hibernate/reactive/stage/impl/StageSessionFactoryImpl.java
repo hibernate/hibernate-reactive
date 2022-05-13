@@ -59,10 +59,6 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		contextKeyForStatelessSession = new BaseKey<>( Stage.StatelessSession.class, delegate.getUuid() );
 	}
 
-	<T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stageSupplier) {
-		return voidFuture().thenComposeAsync( stageSupplier, context );
-	}
-
 	@Override
 	public String getUuid() {
 		return delegate.getUuid();
@@ -81,31 +77,31 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	@Override
 	public CompletionStage<Stage.Session> openSession() {
 		SessionCreationOptions options = options();
-		return stage( v -> connection( options.getTenantIdentifier() )
+		return connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options, connection ) ) )
-				.thenApply( s -> new StageSessionImpl(s, this) ) );
+				.thenApply( StageSessionImpl::new );
 	}
 
 	@Override
 	public CompletionStage<Stage.Session> openSession(String tenantId) {
-		return stage( v -> connection( tenantId )
+		return connection( tenantId )
 				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), connection ) ) )
-				.thenApply( s -> new StageSessionImpl(s, this) ) );
+				.thenApply( StageSessionImpl::new );
 	}
 
 	@Override
 	public CompletionStage<Stage.StatelessSession> openStatelessSession() {
 		SessionCreationOptions options = options();
-		return stage( v -> connection( options.getTenantIdentifier() )
+		return connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options, connection ) ) )
-				.thenApply( s -> new StageStatelessSessionImpl(s, this) ) );
+				.thenApply( StageStatelessSessionImpl::new );
 	}
 
 	@Override
 	public CompletionStage<Stage.StatelessSession> openStatelessSession(String tenantId) {
-		return stage( v -> connection( tenantId )
+		return connection( tenantId )
 				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) ) )
-				.thenApply( s -> new StageStatelessSessionImpl( s, this ) ) );
+				.thenApply( StageStatelessSessionImpl::new );
 	}
 
 	/**
@@ -143,7 +139,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Stage.Session current = context.get( contextKeyForSession );
-		if ( current!=null && current.isOpen() ) {
+		if ( current != null && current.isOpen() ) {
 			LOG.debug( "Reusing existing open Stage.Session which was found in the current Vert.x context" );
 			return work.apply( current );
 		}
@@ -159,7 +155,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Context.Key<Stage.Session> key = new MultitenantKey<>( this.contextKeyForSession, tenantId );
 		Stage.Session current = context.get( key );
-		if ( current!=null && current.isOpen() ) {
+		if ( current != null && current.isOpen() ) {
 			LOG.debugf( "Reusing existing open Stage.Session which was found in the current Vert.x context for current tenant '%s'", tenantId );
 			return work.apply( current );
 		}

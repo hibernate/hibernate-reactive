@@ -31,158 +31,149 @@ import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	private final ReactiveStatelessSession delegate;
-	private final StageSessionFactoryImpl factory;
 
-	public StageStatelessSessionImpl(ReactiveStatelessSession delegate, StageSessionFactoryImpl factory) {
+	public StageStatelessSessionImpl(ReactiveStatelessSession delegate) {
 		this.delegate = delegate;
-		this.factory = factory;
 	}
 
 	public ReactiveConnection getReactiveConnection() {
 		return delegate.getReactiveConnection();
 	}
 
-	private <T> CompletionStage<T> stage(Function<Void, CompletionStage<T>> stage) {
-		return factory.stage( stage );
-	}
-
 	@Override
 	public <T> CompletionStage<T> get(Class<T> entityClass, Object id) {
-		return stage( v -> delegate.reactiveGet( entityClass, id ) );
+		return delegate.reactiveGet( entityClass, id );
 	}
 
 	@Override
 	public <T> CompletionStage<T> get(Class<T> entityClass, Object id, LockMode lockMode) {
-		return stage( v -> delegate.reactiveGet( entityClass, id, lockMode, null ) );
+		return delegate.reactiveGet( entityClass, id, lockMode, null );
 	}
 
 	@Override
 	public <T> CompletionStage<T> get(EntityGraph<T> entityGraph, Object id) {
 		Class<T> entityClass = ( (RootGraphImplementor<T>) entityGraph ).getGraphedType().getJavaType();
-		return stage( v -> delegate.reactiveGet( entityClass, id, null, entityGraph ) );
+		return delegate.reactiveGet( entityClass, id, null, entityGraph );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createQuery(String queryString) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
+		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString ) );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createQuery(String queryString, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ), factory );
+		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ) );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createNativeQuery(String queryString) {
-		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString ), factory );
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString ) );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ), factory );
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ) );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> sqlResultSetMapping) {
-		return new StageQueryImpl<>(
-				delegate.createReactiveNativeQuery( queryString, sqlResultSetMapping.getName() ),
-				factory
-		);
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString, sqlResultSetMapping.getName() ) );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createNamedQuery(String name) {
-		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( name ), factory );
+		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( name ) );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createNamedQuery(String name, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ), factory );
+		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ) );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery ), factory );
+		return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery ) );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaUpdate ), factory );
+		return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaUpdate ) );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaDelete ), factory );
+		return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaDelete ) );
 	}
 
 	@Override
 	public CompletionStage<Void> insert(Object entity) {
-		return stage( w -> delegate.reactiveInsert( entity ) );
+		return delegate.reactiveInsert( entity );
 	}
 
 	@Override
 	public CompletionStage<Void> insert(Object... entities) {
-		return stage( w -> delegate.reactiveInsertAll( entities ) );
+		return delegate.reactiveInsertAll( entities );
 	}
 
 	@Override
 	public CompletionStage<Void> insert(int batchSize, Object... entities) {
-		return stage( w -> delegate.reactiveInsertAll( batchSize, entities ) );
+		return delegate.reactiveInsertAll( batchSize, entities );
 	}
 
 	@Override
 	public CompletionStage<Void> delete(Object entity) {
-		return stage( w -> delegate.reactiveDelete( entity ) );
+		return delegate.reactiveDelete( entity );
 	}
 
 	@Override
 	public CompletionStage<Void> delete(Object... entities) {
-		return stage( w -> delegate.reactiveDeleteAll( entities ) );
+		return delegate.reactiveDeleteAll( entities );
 	}
 
 	@Override
 	public CompletionStage<Void> delete(int batchSize, Object... entities) {
-		return stage( w -> delegate.reactiveDeleteAll( batchSize, entities ) );
+		return delegate.reactiveDeleteAll( batchSize, entities );
 	}
 
 	@Override
 	public CompletionStage<Void> update(Object entity) {
-		return stage( w -> delegate.reactiveUpdate( entity ) );
+		return delegate.reactiveUpdate( entity );
 	}
 
 	@Override
 	public CompletionStage<Void> update(Object... entities) {
-		return stage( w -> delegate.reactiveUpdateAll( entities ) );
+		return delegate.reactiveUpdateAll( entities );
 	}
 
 	@Override
 	public CompletionStage<Void> update(int batchSize, Object... entities) {
-		return stage( w -> delegate.reactiveUpdateAll( batchSize, entities ) );
+		return delegate.reactiveUpdateAll( batchSize, entities );
 	}
 
 	@Override
 	public CompletionStage<Void> refresh(Object entity) {
-		return stage( w -> delegate.reactiveRefresh( entity ) );
+		return delegate.reactiveRefresh( entity );
 	}
 
 	@Override
 	public CompletionStage<Void> refresh(Object... entities) {
-		return stage( w -> delegate.reactiveRefreshAll( entities ) );
+		return delegate.reactiveRefreshAll( entities );
 	}
 
 	@Override
 	public CompletionStage<Void> refresh(int batchSize, Object... entities) {
-		return stage( w -> delegate.reactiveRefreshAll( batchSize, entities ) );
+		return delegate.reactiveRefreshAll( batchSize, entities );
 	}
 
 	@Override
 	public CompletionStage<Void> refresh(Object entity, LockMode lockMode) {
-		return stage( w -> delegate.reactiveRefresh( entity, lockMode ) );
+		return delegate.reactiveRefresh( entity, lockMode );
 	}
 
 	@Override
 	public <T> CompletionStage<T> fetch(T association) {
-		return stage( w -> delegate.reactiveFetch( association, false ) );
+		return delegate.reactiveFetch( association, false );
 	}
 
 	@Override
@@ -212,11 +203,9 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	@Override
 	public CompletionStage<Void> close() {
-		return stage( v -> {
-			CompletableFuture<Void> closing = new CompletableFuture<>();
-			delegate.close( closing );
-			return closing;
-		} );
+		CompletableFuture<Void> closing = new CompletableFuture<>();
+		delegate.close( closing );
+		return closing;
 	}
 
 	@Override
