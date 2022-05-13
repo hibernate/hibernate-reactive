@@ -5,8 +5,12 @@
  */
 package org.hibernate.reactive.session.impl;
 
+import org.hibernate.Filter;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryOptions;
+import org.hibernate.engine.query.spi.HQLQueryPlan;
+import org.hibernate.engine.query.spi.QueryPlanCache;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
@@ -30,7 +34,13 @@ import static java.util.Collections.singleton;
  */
 public class ReactiveSessionFactoryImpl extends SessionFactoryImpl {
 	public ReactiveSessionFactoryImpl(MetadataImplementor metadata, SessionFactoryOptions options) {
-		super( metadata, options, ReactiveHQLQueryPlan::new ); //TODO: pass ReactiveNativeHQLQueryPlan::new
+		super(metadata, options, new QueryPlanCache.QueryPlanCreator() {
+			@Override
+			public HQLQueryPlan createQueryPlan(String queryString, boolean shallow, Map<String, Filter> enabledFilters,
+												SessionFactoryImplementor factory) {
+				return new ReactiveHQLQueryPlan(queryString, shallow, enabledFilters, factory);
+			}
+		}); //TODO: pass ReactiveNativeHQLQueryPlan::new
 
 		Map<Integer, Set<String>> contributions =
 				getMetamodel().getTypeConfiguration().getJdbcToHibernateTypeContributionMap();
