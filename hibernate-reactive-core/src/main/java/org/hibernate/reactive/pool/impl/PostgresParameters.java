@@ -73,7 +73,7 @@ public class PostgresParameters extends Parameters {
 
 		private Parser(String sql, int parameterCount) {
 			result = new StringBuilder( sql.length() + parameterCount );
-			// With are not using lambdas or method reference because of a bug in the JVM:
+			// We aren't using lambdas or method reference because of a bug in the JVM:
 			// https://bugs.openjdk.java.net/browse/JDK-8161588
 			// Please, don't change this unless you've tested it with Quarkus
 			sql.codePoints().forEach( new IntConsumer() {
