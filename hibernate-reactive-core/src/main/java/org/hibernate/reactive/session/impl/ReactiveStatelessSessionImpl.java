@@ -746,23 +746,30 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 			else {
 				String entityName = initializer.getEntityName();
 				Serializable id = initializer.getIdentifier();
-				ReactiveEntityPersister persister = (ReactiveEntityPersister)
-						getFactory().getMetamodel().entityPersister( entityName );
+				ReactiveEntityPersister persister = (ReactiveEntityPersister) getFactory()
+						.getMetamodel().entityPersister( entityName );
 				initializer.setSession( this );
 				persistenceContext.beforeLoad();
-				return persister.reactiveLoad( id, initializer.getImplementation(), LockOptions.NONE, this )
-						.whenComplete( (v, e) -> {
-							persistenceContext.afterLoad();
-							if ( persistenceContext.isLoadFinished() ) {
-								persistenceContext.clear();
-							}
-						} )
-						.thenApply( entity -> {
-							checkEntityFound( this, entityName, id, entity );
-							initializer.setImplementation( entity );
-							initializer.unsetSession();
-							return unproxy ? (T) entity : association;
-						} );
+
+				CompletionStage<?> stage = initializer.getImplementation() instanceof CompletionStage
+					? (CompletionStage<?>) initializer.getImplementation()
+					: completedFuture( initializer.getImplementation() );
+
+				return stage
+						.thenCompose( implementation -> persister
+								.reactiveLoad( id, implementation, LockOptions.NONE, this )
+								.whenComplete( (v, e) -> {
+									persistenceContext.afterLoad();
+									if ( persistenceContext.isLoadFinished() ) {
+										persistenceContext.clear();
+									}
+								} )
+								.thenApply( entity -> {
+									checkEntityFound( this, entityName, id, entity );
+									initializer.setImplementation( entity );
+									initializer.unsetSession();
+									return unproxy ? (T) entity : association;
+								} ) );
 			}
 		}
 		else if ( association instanceof PersistentCollection ) {
