@@ -5,9 +5,9 @@
  */
 package org.hibernate.reactive;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.IntFunction;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -20,9 +20,11 @@ import javax.persistence.Table;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LazyInitializationException;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.junit.Test;
 
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,8 +33,8 @@ import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 /**
  * Test the stateless update of a proxy.
  * <p>
- *     Note that it's required to update and read the values from the proxy using getter/setter and
- *     there is no guarantee about this working otherwise.
+ * Note that it's required to update and read the values from the proxy using getter/setter and
+ * there is no guarantee about this working otherwise.
  * </p>
  *
  * @see org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl#reactiveUpdate(Object)
@@ -40,32 +42,35 @@ import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
  */
 public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 
+	/**
+	 * Number of updates. On slower machines like CI this test will fail even with a slow number of entries.
+	 * On faster machines, it needs a lot more updates.
+	 */
+	private final static int UPDATES_NUM = 10;
+
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( SampleEntity.class, SampleJoinEntity.class );
+		return List.of( Game.class, GameCharacter.class );
 	}
 
 	@Test
 	public void testUnfetchedEntityException(TestContext context) {
-		SampleEntity sampleEntity = new SampleEntity();
-		sampleEntity.sampleField = "test";
-
-		SampleJoinEntity sampleJoinEntity = new SampleJoinEntity();
-		sampleJoinEntity.sampleEntity = sampleEntity;
+		Game lol = new Game( "League of Legends" );
+		GameCharacter ck = new GameCharacter( "Caitlyn Kiramman" );
+		ck.setGame( lol );
 
 		test( context, assertThrown( HibernateException.class, getMutinySessionFactory()
-				.withTransaction( (s, t) -> s.persistAll( sampleEntity, sampleJoinEntity ) )
-				.chain( targetId -> getMutinySessionFactory()
-						.withTransaction( (session, transaction) -> session
-								.find( SampleJoinEntity.class, sampleJoinEntity.getId() ) )
+				.withTransaction( s -> s.persistAll( lol, ck ) )
+				.chain( targetId -> getMutinySessionFactory().withTransaction( session -> session
+						.find( GameCharacter.class, ck.getId() ) )
 				)
-				.chain( joinEntityFromDatabase -> getMutinySessionFactory().withStatelessTransaction(
-						(s, t) -> {
-							SampleEntity entityFromDb = joinEntityFromDatabase.sampleEntity;
-							entityFromDb.sampleField = "updated field";
+				.call( charFound -> getMutinySessionFactory()
+						.withStatelessTransaction( s -> {
+							Game game = charFound.getGame();
+							game.gameTitle = "League of Legends V2";
 							// We expect the update to fail because we haven't fetched the entity
 							// and therefore the proxy is uninitialized
-							return s.update( entityFromDb );
+							return s.update( game );
 						} )
 				) )
 				.invoke( exception -> assertThat( exception.getMessage() ).contains( "HR000072" ) )
@@ -74,73 +79,77 @@ public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 
 	@Test
 	public void testLazyInitializationException(TestContext context) {
-		SampleEntity sampleEntity = new SampleEntity();
-		sampleEntity.sampleField = "test";
-
-		SampleJoinEntity sampleJoinEntity = new SampleJoinEntity();
-		sampleJoinEntity.sampleEntity = sampleEntity;
+		Game lol = new Game( "League of Legends" );
+		GameCharacter ck = new GameCharacter( "Caitlyn Kiramman" );
+		ck.setGame( lol );
 
 		test( context, assertThrown( LazyInitializationException.class, getMutinySessionFactory()
-				.withTransaction( (s, t) -> s.persistAll( sampleEntity, sampleJoinEntity ) )
-
+				.withTransaction( s -> s.persistAll( lol, ck ) )
 				.chain( targetId -> getMutinySessionFactory()
-						.withTransaction( (session, transaction) -> session
-								.find( SampleJoinEntity.class, sampleJoinEntity.getId() ) )
+						.withStatelessSession( session -> session.get( GameCharacter.class, ck.getId() ) )
 				)
-
-				.chain( joinEntityFromDatabase -> getMutinySessionFactory().withStatelessTransaction(
-						(s, t) -> {
+				.call( charFound -> getMutinySessionFactory()
+						.withStatelessTransaction( s -> {
+							Game game = charFound.getGame();
 							// LazyInitializationException here because we haven't fetched the entity
-							SampleEntity entityFromDb = joinEntityFromDatabase.getSampleEntity();
-							entityFromDb.setSampleField( "updated field" );
-							return s.update( entityFromDb );
+							game.setGameTitle( "League of Legends V2" );
+							context.fail( "We were expecting a LazyInitializationException" );
+							return null;
 						} )
-				) )
-		);
+				)
+		) );
 	}
 
 	@Test
-	public void testUpdateWithInitializedProxy(TestContext context) {
-		SampleEntity sampleEntity = new SampleEntity();
-		sampleEntity.setSampleField( "test" );
+	public void testUpdateWithInitializedProxyInLoop(TestContext context) {
+		test( context, loop( 0, UPDATES_NUM, i -> {
+			Game lol = new Game( "League of Legends" );
+			GameCharacter ck = new GameCharacter( "Caitlyn Kiramman" );
+			ck.setGame( lol );
 
-		SampleJoinEntity sampleJoinEntity = new SampleJoinEntity();
-		sampleJoinEntity.setSampleEntity( sampleEntity );
-
-		test( context, getMutinySessionFactory()
-					  .withTransaction( (s, t) -> s.persistAll( sampleEntity, sampleJoinEntity ) )
-
-					  .chain( targetId -> getMutinySessionFactory()
-							  .withTransaction( (session, transaction) -> session
-									  .find( SampleJoinEntity.class, sampleJoinEntity.getId() ) )
-					  )
-
-					  .chain( joinEntityFromDatabase -> getMutinySessionFactory().withStatelessTransaction(
-							  (s, t) -> s
-									  // The update of the associated entity should work if we fetch it first
-									  .fetch( joinEntityFromDatabase.getSampleEntity() )
-									  .chain( fetchedEntity -> {
-										  fetchedEntity.setSampleField( "updated field" );
-										  return s.update( fetchedEntity );
-									  } ) )
-					  )
-					  .chain( () -> getMutinySessionFactory().withSession( session -> session
-							  .createQuery( "from SampleEntity", SampleEntity.class )
-							  .getSingleResult()
-							  .onItem().invoke( result -> context.assertEquals( "updated field", result.getSampleField() ) ) )
-					  )
-		);
+			return getMutinySessionFactory()
+					.withTransaction( s -> s.persistAll( lol, ck ) )
+					.chain( targetId -> getMutinySessionFactory()
+							.withSession( session -> session.find( GameCharacter.class, ck.getId() ) )
+					)
+					.chain( charFound -> getMutinySessionFactory()
+							.withStatelessTransaction( s -> s
+									// The update of the associated entity should work if we fetch it first
+									.fetch( charFound.getGame() )
+									.chain( fetchedGame -> {
+										fetchedGame.setGameTitle( "League of Legends V2" );
+										return s.update( fetchedGame );
+									} )
+							)
+					)
+					.call( () -> getMutinySessionFactory().withSession( session -> session
+							.find( Game.class, lol.getId() )
+							.invoke( result -> context.assertEquals( "League of Legends V2", result.getGameTitle() ) ) )
+					);
+		} ) );
 	}
 
-	@Entity(name = "SampleEntity")
-	@Table(name = "sample_entities")
-	public static class SampleEntity implements Serializable {
+	private Uni<Void> loop(int start, int end, IntFunction<Uni<Void>> intFun) {
+		return Uni.createFrom()
+				.completionStage( CompletionStages.loop( start, end, index -> intFun.apply( index ).subscribeAsCompletionStage() ) );
+	}
+
+	@Entity(name = "Game")
+	@Table(name = "game")
+	public static class Game {
 		@Id
 		@GeneratedValue(strategy = GenerationType.IDENTITY)
 		private Long id;
 
-		@Column(name = "sample_field")
-		private String sampleField;
+		@Column(name = "title")
+		private String gameTitle;
+
+		public Game() {
+		}
+
+		public Game(String gameTitle) {
+			this.gameTitle = gameTitle;
+		}
 
 		public Long getId() {
 			return id;
@@ -150,30 +159,39 @@ public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 			this.id = id;
 		}
 
-		public String getSampleField() {
-			return sampleField;
+		public String getGameTitle() {
+			return gameTitle;
 		}
 
-		public void setSampleField(String sampleField) {
-			this.sampleField = sampleField;
+		public void setGameTitle(String gameTitle) {
+			this.gameTitle = gameTitle;
 		}
 
 		@Override
 		public String toString() {
-			return getClass().getSimpleName() + " ID: " + id + " sampleField: " + sampleField;
+			return id + ":" + gameTitle;
 		}
 	}
 
-	@Entity(name = "SampleJoinEntity")
-	@Table(name = "sample_join_entities")
-	public static class SampleJoinEntity implements Serializable {
+	@Entity(name = "GameCharacter")
+	@Table(name = "game_character")
+	public static class GameCharacter {
 		@Id
 		@GeneratedValue(strategy = GenerationType.IDENTITY)
 		private Long id;
+
+		private String name;
 
 		@ManyToOne(fetch = FetchType.LAZY)
-		@JoinColumn(name = "sample_entity_id", referencedColumnName = "id")
-		private SampleEntity sampleEntity;
+		@JoinColumn(name = "game_id", referencedColumnName = "id")
+		private Game game;
+
+		public GameCharacter() {
+		}
+
+		public GameCharacter(String name) {
+			this.name = name;
+		}
 
 		public Long getId() {
 			return id;
@@ -183,17 +201,25 @@ public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 			this.id = id;
 		}
 
-		public SampleEntity getSampleEntity() {
-			return sampleEntity;
+		public String getName() {
+			return name;
 		}
 
-		public void setSampleEntity(SampleEntity sampleEntity) {
-			this.sampleEntity = sampleEntity;
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public Game getGame() {
+			return game;
+		}
+
+		public void setGame(Game game) {
+			this.game = game;
 		}
 
 		@Override
 		public String toString() {
-			return getClass().getSimpleName() + " ID: " + id + " sampleEntity: " + sampleEntity;
+			return id + ":" + name + ":" + game;
 		}
 	}
 }
