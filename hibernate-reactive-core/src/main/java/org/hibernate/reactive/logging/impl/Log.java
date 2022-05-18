@@ -174,7 +174,7 @@ public interface Log extends BasicLogger {
 	LazyInitializationException collectionCannotBeInitializedlazyInitializationException(String role);
 
 	@LogMessage(level = ERROR)
-	@Message(id = 57, value = "Failed to execute statement [$1%s]: $2%s")
+	@Message(id = 57, value = "Failed to execute statement [%1$s]: %2$s")
 	void failedToExecuteStatement(String sql, String s, @Cause Throwable t);
 
 	@Message(id = 58, value = "Impossible flush mode")
