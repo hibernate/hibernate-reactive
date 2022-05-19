@@ -18,6 +18,7 @@ import org.hibernate.graph.RootGraph;
 import org.hibernate.query.criteria.internal.compile.ExplicitParameterInfo;
 import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
 import org.hibernate.query.internal.QueryImpl;
+import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.transform.ResultTransformer;
@@ -25,6 +26,8 @@ import org.hibernate.transform.ResultTransformer;
 import javax.persistence.EntityGraph;
 import javax.persistence.Parameter;
 import javax.persistence.criteria.ParameterExpression;
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +53,14 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 	private EntityGraphQueryHint entityGraphQueryHint;
 	private Map<ParameterExpression<?>, ExplicitParameterInfo<?>> explicitParameterInfoMap;
 	private final QueryType type;
+	private Object optionalObject;
+	private String optionalEntityName;
+	private Serializable optionalId;
+	private ResultTransformer resultTransformer;
+
+	private final List<String> dbHints = new ArrayList<>();
+
+	private Boolean passDistinctThrough;
 
 	private static QueryType queryType(String queryString) {
 		queryString = queryString.trim().toLowerCase();
@@ -102,7 +113,7 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		beforeQuery();
 		String expanded = expandedQuery();
 		return reactiveProducer()
-				.executeReactiveUpdate( expanded, makeReactiveQueryParametersForExecution(expanded) )
+				.executeReactiveUpdate( expanded, makeQueryParametersForExecution( expanded ) )
 				.whenComplete( (count, error) -> afterQuery() )
 				.handle( (count, error) -> convertQueryException( count, error, this ) );
 	}
@@ -137,7 +148,7 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 
 			String expanded = expandedQuery();
 			return reactiveProducer()
-					.reactiveList( expanded, makeReactiveQueryParametersForExecution(expanded) );
+					.reactiveList( expanded, makeQueryParametersForExecution( expanded ) );
 		}
 	}
 
@@ -145,21 +156,79 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 		return (ReactiveQueryExecutor) getProducer();
 	}
 
+	@Override
+	public void setOptionalObject(Object optionalObject) {
+		this.optionalObject = optionalObject;
+		super.setOptionalObject( optionalObject );
+	}
+
+	@Override
+	public void setOptionalEntityName(String optionalEntityName) {
+		this.optionalEntityName = optionalEntityName;
+		super.setOptionalEntityName( optionalEntityName );
+	}
+
+	@Override
+	public void setOptionalId(Serializable optionalId) {
+		this.optionalId = optionalId;
+		super.setOptionalId( optionalId );
+	}
+
+	@Override
+	protected boolean applyPassDistinctThrough(boolean passDistinctThrough) {
+		this.passDistinctThrough = passDistinctThrough;
+		return super.applyPassDistinctThrough( passDistinctThrough );
+	}
+
+	@Override
+	public QueryImplementor addQueryHint(String hint) {
+		this.dbHints.add( hint );
+		return super.addQueryHint( hint );
+	}
+
 	/**
-	 * @see #makeQueryParametersForExecution(String)
+	 * Overrides {@link org.hibernate.query.internal.AbstractProducedQuery#makeQueryParametersForExecution(String)}
+	 * so that we can return a {@link ReactiveHQLQueryPlan}.
 	 */
-	private QueryParameters makeReactiveQueryParametersForExecution(String hql) {
-		QueryParameters queryParameters = super.makeQueryParametersForExecution( hql );
-//		if ( queryParameters.getQueryPlan() == null ) {
-			HQLQueryPlan plan = new ReactiveHQLQueryPlan<>(
+	@Override
+	protected QueryParameters makeQueryParametersForExecution(String hql) {
+		final HQLQueryPlan entityGraphHintedQueryPlan;
+		if ( entityGraphQueryHint == null ) {
+			entityGraphHintedQueryPlan = null;
+		}
+		else {
+			final SharedSessionContractImplementor producer = getProducer();
+			entityGraphHintedQueryPlan = new ReactiveHQLQueryPlan<>(
 					hql,
 					false,
-					getProducer().getLoadQueryInfluencers().getEnabledFilters(),
-					getProducer().getFactory(),
+					producer.getLoadQueryInfluencers().getEnabledFilters(),
+					producer.getFactory(),
 					entityGraphQueryHint
 			);
-			queryParameters.setQueryPlan( plan );
-//		}
+		}
+
+		QueryParameters queryParameters = new QueryParameters(
+				getQueryParameterBindings(),
+				getLockOptions(),
+				getQueryOptions(),
+				isReadOnly(),
+				isReadOnly(),
+				isCacheable(),
+				getCacheRegion(),
+				getComment(),
+				dbHints,
+				null,
+				optionalObject,
+				optionalEntityName,
+				optionalId,
+				resultTransformer
+		);
+
+		appendQueryPlanToQueryParameters( hql, queryParameters, entityGraphHintedQueryPlan );
+
+		if ( passDistinctThrough != null ) {
+			queryParameters.setPassDistinctThrough( passDistinctThrough );
+		}
 		return queryParameters;
 	}
 
@@ -296,6 +365,7 @@ public class ReactiveQueryImpl<R> extends QueryImpl<R> implements ReactiveQuery<
 
 	@Override
 	public ReactiveQueryImpl<R> setResultTransformer(ResultTransformer resultTransformer) {
+		this.resultTransformer = resultTransformer;
 		super.setResultTransformer(resultTransformer);
 		return this;
 	}
