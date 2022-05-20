@@ -8,7 +8,7 @@
 //DEPS io.vertx:vertx-pg-client:$\{vertx.version:4.2.7}
 //DEPS io.vertx:vertx-unit:$\{vertx.version:4.2.7}
 //DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:1.0.0.CR6}
-//DEPS org.assertj:assertj-core:3.19.0
+//DEPS org.assertj:assertj-core:3.22.0
 //DEPS junit:junit:4.13.2
 //DEPS org.testcontainers:postgresql:1.17.2
 //DEPS org.slf4j:slf4j-simple:1.7.30
