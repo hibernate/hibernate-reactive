@@ -11,7 +11,7 @@
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:4.2.7}
 //DEPS io.vertx:vertx-unit:${vertx.version:4.2.7}
 //DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:1.0.0.CR6}
-//DEPS org.assertj:assertj-core:3.19.0
+//DEPS org.assertj:assertj-core:3.22.0
 //DEPS junit:junit:4.13.2
 //DEPS org.testcontainers:postgresql:1.17.2
 //DEPS org.testcontainers:mysql:1.17.2
@@ -21,7 +21,7 @@
 //
 //// Testcontainer needs the JDBC drivers to start the containers
 //// Hibernate Reactive doesn't use them
-//DEPS org.postgresql:postgresql:42.2.16
+//DEPS org.postgresql:postgresql:42.3.5
 //DEPS mysql:mysql-connector-java:8.0.28
 //DEPS org.mariadb.jdbc:mariadb-java-client:2.7.3
 //
