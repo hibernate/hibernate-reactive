@@ -3,7 +3,7 @@ description = 'Hibernate Reactive Verticle Integration Tests'
 ext {
     jacksonDatabindVersion = '2.13.1'
     log4jVersion = '2.17.1'
-    assertjVersion = '3.20.2'
+    assertjVersion = '3.22.0'
 }
 
 dependencies {
