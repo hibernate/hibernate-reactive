@@ -5,13 +5,14 @@
  */
 package org.hibernate.reactive.containers;
 
+import java.util.Objects;
+
 import org.hibernate.HibernateException;
 
 import org.testcontainers.containers.CockroachContainer;
 import org.testcontainers.containers.Container;
 
 import static org.hibernate.reactive.containers.DockerImage.imageName;
-import static org.testcontainers.shaded.org.apache.commons.lang.StringUtils.isNotBlank;
 
 class CockroachDBDatabase extends PostgreSQLDatabase {
 
@@ -81,9 +82,9 @@ class CockroachDBDatabase extends PostgreSQLDatabase {
 			throw new HibernateException( "[CockroachDB] Error running " + command, e );
 		}
 		if ( execResult != null && execResult.getExitCode() != 0 ) {
-			String error = isNotBlank( execResult.getStderr() )
-					? execResult.getStderr()
-					: execResult.getStdout();
+			String error = Objects.isNull( execResult.getStderr() )
+					? execResult.getStdout()
+					: execResult.getStderr();
 			throw new HibernateException( "[CockroachDB] Error running " + command + " [" + execResult.getExitCode() + "]: " + error );
 		}
 	}

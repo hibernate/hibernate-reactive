@@ -10,7 +10,7 @@
 //DEPS org.hibernate.reactive:hibernate-reactive-core-jakarta:$\{hibernate-reactive.version:1.0.0.CR6}
 //DEPS org.assertj:assertj-core:3.19.0
 //DEPS junit:junit:4.13.2
-//DEPS org.testcontainers:mariadb:1.15.3
+//DEPS org.testcontainers:mariadb:1.17.2
 //DEPS org.slf4j:slf4j-simple:1.7.30
 
 //// Testcontainer needs the JDBC drivers to start the container
