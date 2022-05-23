@@ -1,4 +1,4 @@
-description = 'Hibernate Reactive Verticle Integration Tests'
+ description = 'Hibernate Reactive Verticle Integration Tests'
 
 ext {
     jacksonDatabindVersion = '2.13.3'
