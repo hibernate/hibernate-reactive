@@ -33,7 +33,7 @@ public class StartVerticle {
 	// These properties are in DatabaseConfiguration in core
 	public static final boolean USE_DOCKER = Boolean.getBoolean( "docker" );
 
-	public static final String IMAGE_NAME = "postgres:14.2";
+	public static final String IMAGE_NAME = "postgres:14.3";
 	public static final String USERNAME = "hreact";
 	public static final String PASSWORD = "hreact";
 	public static final String DB_NAME = "hreact";
