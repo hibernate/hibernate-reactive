@@ -19,7 +19,7 @@ class MariaDatabase extends MySQLDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final VertxMariaContainer maria = new VertxMariaContainer( imageName( "mariadb", "10.7.1" ) )
+	public static final VertxMariaContainer maria = new VertxMariaContainer( imageName( "mariadb", "10.7.3" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
