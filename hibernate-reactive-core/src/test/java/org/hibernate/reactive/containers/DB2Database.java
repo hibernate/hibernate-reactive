@@ -82,7 +82,7 @@ class DB2Database implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	static final Db2Container db2 = new Db2Container( imageName( "ibmcom/db2", "11.5.7.0" ) )
+	static final Db2Container db2 = new Db2Container( imageName( "docker.io", "ibmcom/db2", "11.5.7.0a" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
