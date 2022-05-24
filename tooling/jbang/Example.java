@@ -5,9 +5,9 @@
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
 
-//DEPS io.vertx:vertx-pg-client:${vertx.version:4.2.7}
-//DEPS io.vertx:vertx-mysql-client:${vertx.version:4.2.7}
-//DEPS io.vertx:vertx-db2-client:${vertx.version:4.2.7}
+//DEPS io.vertx:vertx-pg-client:${vertx.version:4.3.0}
+//DEPS io.vertx:vertx-mysql-client:${vertx.version:4.3.0}
+//DEPS io.vertx:vertx-db2-client:${vertx.version:4.3.0}
 //DEPS org.hibernate.reactive:hibernate-reactive-core-jakarta:${hibernate-reactive.version:1.1.6.Final}
 //DEPS org.slf4j:slf4j-simple:1.7.30
 
