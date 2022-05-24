@@ -44,7 +44,7 @@ podman run --rm --name HibernateTestingPGSQL \
 When the database has started, you can run the tests on PostgreSQL with:
 
 ```
-./gradlew test
+./gradlew test -Pdocker
 ```
 
 Optionally, you can connect to the database with the [PostgreSQL interactive terminal][psql](`psql`)
@@ -72,7 +72,7 @@ podman run --rm --name HibernateTestingMariaDB \
 When the database has started, you can run the tests on MariaDB with:
 
 ```
-./gradlew test -Pdb=mariadb
+./gradlew test -Pdocker -Pdb=mariadb
 ```
 
 Optionally, you can connect to the database with the [MySQL Command-Line Client][mysql-cli](`mysql`) using:
@@ -99,7 +99,7 @@ podman run --rm --name HibernateTestingMySQL \
 When the database has started, you can run the tests on MySQL with:
 
 ```
-./gradlew test -Pdb=mysql
+./gradlew test -Pdocker -Pdb=mysql
 ```
 
 Optionally, you can connect to the database with the [MySQL Command-Line Client][mysql-cli](`mysql`) using:
@@ -134,7 +134,7 @@ podman exec -it HibernateTestingCockroachDB ./cockroach sql --insecure \
 When the database has started, you can run the tests on CockroachDB with:
 
 ```
-./gradlew test -Pdb=CockroachDB
+./gradlew test -Pdocker -Pdb=CockroachDB
 ```
 
 Optionally, you can connect to the database with the [Cockroach commands][cockroach-cli](`cockroach`)
@@ -163,7 +163,7 @@ podman run --rm -e LICENSE=accept --privileged=true --name HibernateTestingDB2 \
 When the database has started, you can run the tests on Db2 with:
 
 ```
-./gradlew test -Pdb=db2
+./gradlew test -Pdocker -Pdb=db2
 ```
 
 Optionally, you can connect to the database with the [Db2 command line interface][db2-cli] using:
@@ -187,7 +187,7 @@ podman run --rm -it --name HibernateTestingMSSQL -e 'ACCEPT_EULA=Y' -e 'SA_PASSW
 When the database has started, you can run the tests on MS SQL Server with:
 
 ```
-./gradlew test -Pdb=SqlServer
+./gradlew test -Pdocker -Pdb=SqlServer
 ```
 
 Optionally, you can connect to the database with the [sqlcmd utility][sqlcmd-cli] using:
