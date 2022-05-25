@@ -250,6 +250,3 @@ At present several minor limitations remain.
   supported.
 - With Db2:
   * [Automatic schema](http://hibernate.org/reactive/documentation/1.1/reference/html_single/#_automatic_schema_export) update and validation is not supported.
-- [With Oracle](https://github.com/hibernate/hibernate-reactive/issues/1168):
-  * Querying a column mapped as `raw` throws an exception;
-  * Insert-select queries will cause on exception (see https://github.com/eclipse-vertx/vertx-sql-client/issues/1108). 
