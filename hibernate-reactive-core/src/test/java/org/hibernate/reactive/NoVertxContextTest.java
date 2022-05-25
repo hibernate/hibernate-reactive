@@ -20,19 +20,15 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
-import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
 
 /**
  * CompletionStage API doesn't guarantee that composing stages will be on the same thread.
@@ -45,14 +41,11 @@ import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
  */
 public class NoVertxContextTest {
 
-	@Rule
-	public DatabaseSelectionRule dbRule = skipTestsFor( ORACLE );
-
 	/**
 	 * The number of entities to persist.
 	 * Faster machines might need a higher number for this test to fail.
 	 */
-	private static final int ENTRIES_NUM = 1000;
+	private static final int ENTRIES_NUM = 100;
 
 	private static SessionFactory sessionFactory;
 
