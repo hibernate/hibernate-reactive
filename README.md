@@ -37,11 +37,11 @@ Hibernate Reactive has been tested with:
 - MS SQL Server 2019
 - Oracle 21.3
 - [Hibernate ORM][] 5.6.9.Final
-- [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 4.3.0
-- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 4.3.0
-- [Vert.x Reactive Db2 Client](https://vertx.io/docs/vertx-db2-client/java/) 4.3.0
-- [Vert.x Reactive MS SQL Server Client](https://vertx.io/docs/vertx-mssql-client/java/) 4.3.0
-- [Vert.x Reactive Oracle Client](https://vertx.io/docs/vertx-oracle-client/java/) 4.3.0
+- [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 4.3.1
+- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 4.3.1
+- [Vert.x Reactive Db2 Client](https://vertx.io/docs/vertx-db2-client/java/) 4.3.1
+- [Vert.x Reactive MS SQL Server Client](https://vertx.io/docs/vertx-mssql-client/java/) 4.3.1
+- [Vert.x Reactive Oracle Client](https://vertx.io/docs/vertx-oracle-client/java/) 4.3.1
 - [Quarkus][Quarkus] via the Hibernate Reactive extension
 
 [PostgreSQL]: https://www.postgresql.org
