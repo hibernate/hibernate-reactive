@@ -720,17 +720,14 @@ public class ResultSetAdaptor implements ResultSet {
 			return null;
 		}
 
-		if ( value instanceof Buffer ) {
-			return BlobProxy.generateProxy( ( (Buffer) value ).getBytes() );
-		}
-		else if ( value instanceof String ) {
+		if ( value instanceof String ) {
 			return BlobProxy.generateProxy( ( (String) value ).getBytes() );
 		}
-		else if ( value instanceof byte[] ) {
+		if ( value instanceof byte[] ) {
 			return BlobProxy.generateProxy( (byte[]) value );
 		}
 
-		throw new IllegalArgumentException( "Unexpected type: " + value.getClass() );
+		return BlobProxy.generateProxy( row.getBuffer( columnLabel ).getBytes() );
 	}
 
 	@Override
