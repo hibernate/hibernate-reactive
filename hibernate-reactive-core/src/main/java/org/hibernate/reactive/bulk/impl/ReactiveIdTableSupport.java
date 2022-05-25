@@ -9,6 +9,7 @@ import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
+import org.hibernate.dialect.Oracle8iDialect;
 import org.hibernate.dialect.PostgreSQL10Dialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.hql.spi.id.IdTableSupportStandardImpl;
@@ -40,7 +41,7 @@ class ReactiveIdTableSupport extends IdTableSupportStandardImpl {
         else if (dialect instanceof MySQL8Dialect || dialect instanceof MariaDB103Dialect) {
             return "create temporary table if not exists";
         }
-        else if (dialect instanceof DB297Dialect) {
+        else if (dialect instanceof DB297Dialect || dialect instanceof Oracle8iDialect ) {
             return "create global temporary table";
         }
         else if (dialect instanceof SQLServerDialect) {
