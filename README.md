@@ -15,7 +15,7 @@ especially targeted toward usage in reactive environments like
 [Quarkus][] and [Vert.x][].
 
 Currently [PostgreSQL][], [MySQL][], [MariaDB][], [Db2][], 
-[CockroachDB][], [MS SQL Server][MSSQL] adn [Oracle][] are supported.
+[CockroachDB][], [MS SQL Server][MSSQL] and [Oracle][] are supported.
 
 Learn more at <http://hibernate.org/reactive>.
 
