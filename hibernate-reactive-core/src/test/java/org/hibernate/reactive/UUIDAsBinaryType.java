@@ -103,7 +103,7 @@ public abstract class UUIDAsBinaryType extends BaseReactiveTest {
 
 	public static class ForOtherDbsTest extends UUIDAsBinaryType {
 
-		@Rule // Select a UUID field doesn't work with Oracle
+		@Rule
 		public DatabaseSelectionRule rule = skipTestsFor( MYSQL, MARIA );
 
 		@Override
