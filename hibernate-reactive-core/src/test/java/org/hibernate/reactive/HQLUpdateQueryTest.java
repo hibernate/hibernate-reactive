@@ -12,21 +12,15 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 
 
 public class HQLUpdateQueryTest extends BaseReactiveTest {
-
-	@Rule // We cannot read a generated id in Oracle (testInsertQuery will fail)
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( ORACLE );
 
 	Flour spelt = new Flour( 1, "Spelt", "An ancient grain, is a hexaploid species of wheat.", "Wheat flour" );
 	Flour rye = new Flour( 2, "Rye", "Used to bake the traditional sourdough breads of Germany.", "Wheat flour" );

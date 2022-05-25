@@ -21,21 +21,12 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-
-import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
-
 
 public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
-
-	@Rule // We cannot read a generated id in Oracle
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( ORACLE );
-
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Book.class, Author.class, SpellBook.class );
