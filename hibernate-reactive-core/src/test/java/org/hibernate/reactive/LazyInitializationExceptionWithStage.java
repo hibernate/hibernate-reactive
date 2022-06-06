@@ -19,7 +19,9 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+import org.hibernate.Hibernate;
 import org.hibernate.LazyInitializationException;
+import org.hibernate.reactive.stage.Stage;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -31,13 +33,19 @@ public class LazyInitializationExceptionWithStage extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( Artist.class, Painting.class );
+		return List.of(  Painting.class, Artist.class);
 	}
 
 	@Before
 	public void populateDB(TestContext context) {
 		Artist artemisia = new Artist( "Artemisia Gentileschi" );
-		test( context, getSessionFactory().withTransaction( (session, tx) -> session.persist( artemisia ) ) );
+		Painting sev = new Painting();
+		sev.setAuthor( artemisia );
+		sev.setName( "Susanna e i vecchioni" );
+		Painting liuto = new Painting();
+		liuto.setAuthor( artemisia );
+		liuto.setName( "Autoritratto come suonatrice di liuto" );
+		test( context, getSessionFactory().withTransaction( session -> session.persist( artemisia, liuto, sev ) ) );
 	}
 
 	@Test
@@ -55,9 +63,10 @@ public class LazyInitializationExceptionWithStage extends BaseReactiveTest {
 								else {
 									context.assertEquals( CompletionException.class, throwable.getClass() );
 									context.assertEquals( LazyInitializationException.class, throwable.getCause().getClass() );
-									context.assertEquals(
-											"org.hibernate.LazyInitializationException: HR000056: Collection cannot be initialized: org.hibernate.reactive.LazyInitializationExceptionWithStage$Artist.paintings",
-											throwable.getMessage() );
+									context.assertTrue(
+											throwable.getMessage().startsWith(
+												"org.hibernate.LazyInitializationException: HR000056: Collection cannot be initialized: org.hibernate.reactive.LazyInitializationExceptionWithStage$Artist.paintings" )
+									);
 								}
 								return null;
 							} )
@@ -70,6 +79,31 @@ public class LazyInitializationExceptionWithStage extends BaseReactiveTest {
 			.thenCompose( session -> session.createQuery( "from Artist", Artist.class ).getSingleResult() )
 			 // We are checking `.getPaintings()` but not doing anything with it and therefore it should work.
 			.thenAccept( Artist::getPaintings )
+		);
+	}
+
+	@Test
+	public void testLazyInitializationWithJoinFetch(TestContext context) {
+		test( context, openSession()
+				.thenCompose( session -> session
+						.createQuery( "from Artist a join fetch a.paintings", Artist.class )
+						.getSingleResult() )
+				.thenAccept( artist -> {
+					context.assertTrue( Hibernate.isInitialized( artist.paintings ) );
+					context.assertEquals( 2, artist.getPaintings().size() );
+				} ) );
+	}
+
+	@Test
+	public void testLazyInitializationWithStageFetch(TestContext context) {
+		test( context, openSession()
+				.thenCompose( session -> session.createQuery( "from Artist", Artist.class ).getSingleResult() )
+				.thenCompose( artist -> Stage.fetch( artist.paintings )
+						.thenAccept( paintings -> {
+							context.assertTrue( Hibernate.isInitialized( paintings ) );
+							context.assertEquals( 2, paintings.size() );
+						} )
+				)
 		);
 	}
 
@@ -184,10 +218,6 @@ public class LazyInitializationExceptionWithStage extends BaseReactiveTest {
 
 		public List<Painting> getPaintings() {
 			return paintings;
-		}
-
-		public void setPaintings(List<Painting> paintings) {
-			this.paintings = paintings;
 		}
 
 		@Override
