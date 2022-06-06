@@ -28,7 +28,6 @@ import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.action.internal.EntityAction;
 import org.hibernate.action.internal.EntityActionVetoException;
 import org.hibernate.action.internal.EntityDeleteAction;
-import org.hibernate.action.internal.QueuedOperationCollectionAction;
 import org.hibernate.action.internal.UnresolvedEntityInsertActions;
 import org.hibernate.action.spi.AfterTransactionCompletionProcess;
 import org.hibernate.action.spi.BeforeTransactionCompletionProcess;
@@ -43,6 +42,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.reactive.engine.impl.QueuedOperationCollectionAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionRecreateAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionRemoveAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionUpdateAction;
@@ -126,19 +126,19 @@ public class ReactiveActionQueue {
 					}
 				}
 		);
-//		EXECUTABLE_LISTS_MAP.put(
-//				QueuedOperationCollectionAction.class,
-//				new ListProvider<QueuedOperationCollectionAction>() {
-//					ExecutableList<QueuedOperationCollectionAction> get(ReactiveActionQueue instance) {
-//						return instance.collectionQueuedOps;
-//					}
-//					ExecutableList<QueuedOperationCollectionAction> init(ReactiveActionQueue instance) {
-//						return instance.collectionQueuedOps = new ExecutableList<>(
-//								instance.isOrderUpdatesEnabled()
-//						);
-//					}
-//				}
-//		);
+		EXECUTABLE_LISTS_MAP.put(
+				QueuedOperationCollectionAction.class,
+				new ListProvider<QueuedOperationCollectionAction>() {
+					ExecutableList<QueuedOperationCollectionAction> get(ReactiveActionQueue instance) {
+						return instance.collectionQueuedOps;
+					}
+					ExecutableList<QueuedOperationCollectionAction> init(ReactiveActionQueue instance) {
+						return instance.collectionQueuedOps = new ExecutableList<>(
+								instance.isOrderUpdatesEnabled()
+						);
+					}
+				}
+		);
 		EXECUTABLE_LISTS_MAP.put(
 				ReactiveCollectionRemoveAction.class,
 				new ListProvider<ReactiveCollectionRemoveAction>() {
@@ -479,8 +479,7 @@ public class ReactiveActionQueue {
 	 * @param action The action representing the queued operation
 	 */
 	public void addAction(QueuedOperationCollectionAction action) {
-//		addAction( QueuedOperationCollectionAction.class, action );
-		throw new UnsupportedOperationException();
+		addAction( QueuedOperationCollectionAction.class, action );
 	}
 
 	/**
@@ -892,8 +891,8 @@ public class ReactiveActionQueue {
 	public boolean hasAnyQueuedActions() {
 		return ( updates != null && !updates.isEmpty() ) || ( insertions != null && !insertions.isEmpty() ) || hasUnresolvedEntityInsertActions()
 				|| ( deletions != null && !deletions.isEmpty() ) || ( collectionUpdates != null && !collectionUpdates.isEmpty() )
-				|| ( collectionQueuedOps != null && !collectionQueuedOps.isEmpty() ) || ( collectionRemovals != null && !collectionRemovals
-				.isEmpty() )
+				|| ( collectionQueuedOps != null && !collectionQueuedOps.isEmpty() )
+				|| ( collectionRemovals != null && !collectionRemovals.isEmpty() )
 				|| ( collectionCreations != null && !collectionCreations.isEmpty() );
 	}
 
