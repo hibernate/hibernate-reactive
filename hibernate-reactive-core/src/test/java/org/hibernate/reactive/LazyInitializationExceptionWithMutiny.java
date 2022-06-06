@@ -18,7 +18,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
+import org.hibernate.Hibernate;
 import org.hibernate.LazyInitializationException;
+import org.hibernate.reactive.mutiny.Mutiny;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -31,15 +33,21 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( Artist.class, Painting.class );
+		return List.of( Painting.class, Artist.class );
 	}
 
 	@Before
 	public void populateDB(TestContext context) {
 		Async async = context.async();
 		Artist artemisia = new Artist( "Artemisia Gentileschi" );
+		Painting sev = new Painting();
+		sev.setAuthor( artemisia );
+		sev.setName( "Susanna e i vecchioni" );
+		Painting liuto = new Painting();
+		liuto.setAuthor( artemisia );
+		liuto.setName( "Autoritratto come suonatrice di liuto" );
 		getMutinySessionFactory()
-				.withTransaction( (session, tx) -> session.persist( artemisia ) )
+				.withTransaction( (session, tx) -> session.persistAll( artemisia, liuto, sev ) )
 				.subscribe().with( success -> async.complete(), context::fail );
 	}
 
@@ -53,9 +61,9 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 					  .onItem().invoke( () -> context.fail( "Unexpected success, we expect " + LazyInitializationException.class.getName() ) )
 					  .onFailure().recoverWithUni( throwable -> {
 						  context.assertEquals( LazyInitializationException.class, throwable.getClass() );
-						  context.assertEquals(
-								  "HR000056: Collection cannot be initialized: org.hibernate.reactive.LazyInitializationExceptionWithMutiny$Artist.paintings",
-								  throwable.getMessage()
+						  context.assertTrue(
+						  		throwable.getMessage().startsWith(
+									"HR000056: Collection cannot be initialized: org.hibernate.reactive.LazyInitializationExceptionWithMutiny$Artist.paintings" )
 						  );
 						  return Uni.createFrom().nullItem();
 					  } )
@@ -70,6 +78,33 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 					  .getSingleResult() )
 					  // We are checking `.getPaintings()` but not doing anything with it and therefore it should work.
 					  .onItem().invoke( Artist::getPaintings )
+		);
+	}
+
+	@Test
+	public void testLazyInitializationWithJoinFetch(TestContext context) {
+		test( context, openMutinySession()
+				.chain( session -> session
+						.createQuery( "from Artist a join fetch a.paintings", Artist.class )
+						.getSingleResult() )
+				.onItem().invoke( artist -> {
+					context.assertTrue( Hibernate.isInitialized( artist ) );
+					context.assertEquals( 2, artist.getPaintings().size() );
+				} ) );
+	}
+
+	@Test
+	public void testLazyInitializationWithMutinyFetch(TestContext context) {
+		test( context,
+				openMutinySession().chain( session -> session
+						.createQuery( "from Artist", Artist.class )
+						.getSingleResult() )
+						.chain( artist -> Mutiny.fetch( artist.paintings )
+								.invoke( paintings -> {
+							context.assertTrue( Hibernate.isInitialized( paintings ) );
+							context.assertEquals( 2, paintings.size() );
+						} )
+					)
 		);
 	}
 
@@ -184,10 +219,6 @@ public class LazyInitializationExceptionWithMutiny extends BaseReactiveTest {
 
 		public List<Painting> getPaintings() {
 			return paintings;
-		}
-
-		public void setPaintings(List<Painting> paintings) {
-			this.paintings = paintings;
 		}
 
 		@Override
