@@ -11,7 +11,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Interceptor;
-import org.hibernate.action.internal.QueuedOperationCollectionAction;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.Collections;
 import org.hibernate.engine.spi.CollectionKey;
@@ -28,6 +27,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;
+import org.hibernate.reactive.engine.impl.QueuedOperationCollectionAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionRecreateAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionRemoveAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionUpdateAction;
