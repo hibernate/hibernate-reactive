@@ -170,7 +170,7 @@ public interface Log extends BasicLogger {
 	@Message(id = 55, value = "Session closed")
 	LazyInitializationException sessionClosedLazyInitializationException();
 
-	@Message(id = 56, value = "Collection cannot be initialized: %1$s")
+	@Message(id = 56, value = "Collection cannot be initialized: %1$s - Fetch the collection using 'Mutiny.fetch', 'Stage.fetch', or 'fetch join' in HQL")
 	LazyInitializationException collectionCannotBeInitializedlazyInitializationException(String role);
 
 	@LogMessage(level = ERROR)
