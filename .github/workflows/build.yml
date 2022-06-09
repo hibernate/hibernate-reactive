@@ -146,7 +146,10 @@ jobs:
           - { name: "11", java_version_numeric: 11 }
           - { name: "17", java_version_numeric: 17 }
           - { name: "18", java_version_numeric: 18, from: 'jdk.java.net' }
-          - { name: "19-ea", java_version_numeric: 19, from: 'jdk.java.net' }
+          # We want to enable preview features when testing early-access builds of OpenJDK:
+          # even if we don't use these features, just enabling them can cause side effects
+          # and it's useful to test that.
+          - { name: "19-ea", java_version_numeric: 19, from: 'jdk.java.net', jvm_args: '--enable-preview' }
     steps:
     - uses: actions/checkout@v2
     - name: Get year/month for cache key
@@ -196,7 +199,8 @@ jobs:
     - name: Build and Test with Java ${{ matrix.java.name }}
       run: |
         ./gradlew build -PshowStandardOutput -Pdocker -Ptest.jdk.version=${{ matrix.java.java_version_numeric }} \
-            -Porg.gradle.java.installations.paths=${{ steps.mainjdk-exportpath.outputs.path }},${{ steps.testjdk-exportpath.outputs.path }}
+            -Porg.gradle.java.installations.paths=${{ steps.mainjdk-exportpath.outputs.path }},${{ steps.testjdk-exportpath.outputs.path }} \
+            ${{ matrix.java.jvm_args && '-Ptest.jdk.launcher.args=' }}${{ matrix.java.jvm_args }}
     - name: Upload reports (if build failed)
       uses: actions/upload-artifact@v2
       if: failure()
