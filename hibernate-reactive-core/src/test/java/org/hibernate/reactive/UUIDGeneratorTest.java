@@ -26,8 +26,8 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.*;
 
 public class UUIDGeneratorTest extends BaseReactiveTest {
 
-	@Rule // Storing UUID doesn't work with DB2, Searching a UUID doesn't work for Oracle
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( DB2, ORACLE );
+	@Rule // Storing UUID doesn't work with DB2
+	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
