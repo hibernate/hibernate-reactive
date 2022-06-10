@@ -11,6 +11,8 @@ import javax.persistence.criteria.Root;
 
 import java.time.LocalDate;
 
+import org.hibernate.reactive.mutiny.Mutiny;
+
 import static java.lang.System.out;
 import static java.time.Month.JANUARY;
 import static java.time.Month.JUNE;
@@ -54,6 +56,17 @@ public class MutinyMain {
 					(session, tx) -> session.persistAll( author1, author2 )
 			)
 					// wait for it to finish
+					.await().indefinitely();
+
+			factory.withSession(
+							// retrieve an Author from Book (lazy many-to one)
+							session -> session.find( Book.class, book1.getId() )
+									// fetch a lazy field of the Book
+									.chain( book -> Mutiny.fetch( book.getAuthor() )
+											// print the lazy field
+											.invoke( author -> out.printf( "'%s' has written '%s'\n", author.getName(), book1.getTitle() ) )
+									)
+					)
 					.await().indefinitely();
 
 			factory.withSession(
