@@ -15,7 +15,7 @@
 
 //// Testcontainer needs the JDBC drivers to start the container
 //// Hibernate Reactive doesn't need it
-//DEPS org.postgresql:postgresql:42.3.5
+//DEPS org.postgresql:postgresql:42.4.0
 
 import java.io.IOException;
 import javax.persistence.Entity;
