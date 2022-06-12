@@ -314,7 +314,7 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 						.thenAccept( foundPerson -> {
 							context.assertNotNull( foundPerson );
 							context.assertFalse( foundPerson.getPhones().isEmpty() );
-							foundPerson.setPhones( Arrays.asList( "555" ) );
+							foundPerson.setPhones( List.of( "555" ) );
 						} )
 				)
 				.thenCompose( v -> openSession() )
@@ -331,7 +331,7 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 						.invoke( foundPerson -> {
 							context.assertNotNull( foundPerson );
 							context.assertFalse( foundPerson.getPhones().isEmpty() );
-							foundPerson.setPhones( Arrays.asList( "555" ) );
+							foundPerson.setPhones( List.of( "555" ) );
 						} )
 				)
 				.chain( this::openMutinySession )

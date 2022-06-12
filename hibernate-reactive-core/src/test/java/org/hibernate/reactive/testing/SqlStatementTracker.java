@@ -48,14 +48,14 @@ public class SqlStatementTracker extends SqlStatementLogger {
 	}
 
 	private static boolean toBoolean(Object obj) {
-		return Boolean.valueOf( (String) obj );
+		return Boolean.parseBoolean( (String) obj );
 	}
 
 	private static long toLong(Object obj) {
 		if ( obj == null ) {
 			return 0;
 		}
-		return Long.valueOf( (String) obj );
+		return Long.parseLong( (String) obj );
 	}
 
 	@Override

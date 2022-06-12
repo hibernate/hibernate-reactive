@@ -395,7 +395,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		basic.duration = Duration.ofMillis( 1894657L );
 
 		testField( context, basic, found -> {
-			context.assertTrue( found.duration instanceof Duration );
+			context.assertNotNull( found.duration );
 			context.assertEquals( basic.duration, found.duration );
 		} );
 	}
@@ -406,7 +406,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		basic.instant = Instant.now();
 
 		testField( context, basic, found -> {
-			context.assertTrue( found.instant instanceof Instant );
+			context.assertNotNull( found.instant );
 			// Without the truncated it fails with JDK 15+
 			context.assertEquals( basic.instant.truncatedTo( ChronoUnit.MILLIS ),
 								  found.instant.truncatedTo( ChronoUnit.MILLIS ) );

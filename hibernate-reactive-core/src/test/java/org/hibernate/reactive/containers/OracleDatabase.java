@@ -41,7 +41,7 @@ class OracleDatabase implements TestableDatabase {
 
 	public static final OracleDatabase INSTANCE = new OracleDatabase();
 
-	public static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
+	public static final Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
 
 	static {
 		{
@@ -94,7 +94,7 @@ class OracleDatabase implements TestableDatabase {
 			// See https://github.com/gvenzl/oci-oracle-xe/issues/64
 			// I choose to limit it to "2 cpus": should be more than enough for any local testing needs,
 			// and keeps things simple.
-			.withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withCpuCount( 2l ) );
+			.withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withCpuCount( 2L ) );
 
 	@Override
 	public String getJdbcUrl() {
@@ -112,7 +112,7 @@ class OracleDatabase implements TestableDatabase {
 			params.forEach( (key, value) -> {
 				paramsBuilder.append( jdbcParamDelimiter() );
 				paramsBuilder.append( key );
-				paramsBuilder.append( "=" );
+				paramsBuilder.append( '=' );
 				paramsBuilder.append( value );
 			} );
 		}
@@ -179,7 +179,7 @@ class OracleDatabase implements TestableDatabase {
 		// jdbc:oracle:thin:@localhost:49413/hreact
 		String uri = jdbcUrl;
 		if ( uri.startsWith( "jdbc:" ) ) {
-			jdbcUrl.substring( "jdbc:".length() );
+			uri = uri.substring( "jdbc:".length() );
 		}
 		uri = uri.replace( "thin:@", "thin:" + getCredentials() + "@" );
 		return uri;

@@ -22,7 +22,7 @@ public class MyCurrentTenantIdentifierResolver implements CurrentTenantIdentifie
 		TENANT_1( "dbtenant1" ),
 		TENANT_2( "dbtenant2" );
 
-		private String dbName;
+		private final String dbName;
 
 		Tenant(String dbName) {
 			this.dbName = dbName;
