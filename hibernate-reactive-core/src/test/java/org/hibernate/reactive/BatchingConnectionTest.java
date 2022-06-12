@@ -54,6 +54,32 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 	}
 
 	@Test
+	public void testBatchingWithPersistAll(TestContext context) {
+		test( context, openSession()
+				.thenCompose( s -> s
+						.persist(
+								new GuineaPig( 11, "One" ),
+								new GuineaPig( 22, "Two" ),
+								new GuineaPig( 33, "Three" )
+						)
+						// Auto-flush
+						.thenCompose( v -> s
+								.createQuery( "select name from GuineaPig" )
+								.getResultList()
+								.thenAccept( names -> {
+									assertThat( names ).containsExactlyInAnyOrder( "One", "Two", "Three" );
+									assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
+									// Parameters are different for different dbs, so we cannot do an exact match
+									assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
+											.startsWith( "insert into pig (name, version, id) values " );
+									sqlTracker.clear();
+								} )
+						)
+				)
+		);
+	}
+
+	@Test
 	public void testBatching(TestContext context) {
 		test(
 				context,
