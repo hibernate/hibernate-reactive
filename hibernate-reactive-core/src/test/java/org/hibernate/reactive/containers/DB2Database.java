@@ -73,7 +73,7 @@ class DB2Database implements TestableDatabase {
 		expectedDBTypeForClass.put( char.class, "CHARACTER" );
 		expectedDBTypeForClass.put( TextType.class, "VARCHAR" );
 		expectedDBTypeForClass.put( String.class, "VARCHAR" );
-	}};
+	}}
 
 	/**
 	 * Holds configuration for the DB2 database container. If the build is run with <code>-Pdocker</code> then

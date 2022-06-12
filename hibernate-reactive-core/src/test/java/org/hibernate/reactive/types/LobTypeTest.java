@@ -44,9 +44,7 @@ public class LobTypeTest extends BaseReactiveTest {
 	public void testStringLobType(TestContext context) {
 		String text = "hello world once upon a time it was the best of times it was the worst of times goodbye";
 		StringBuilder longText = new StringBuilder();
-		for ( int i = 0; i < 1000; i++ ) {
-			longText.append( text );
-		}
+		longText.append( text.repeat( 1000 ) );
 		String book = longText.toString();
 
 		Basic basic = new Basic();
@@ -59,9 +57,7 @@ public class LobTypeTest extends BaseReactiveTest {
 	public void testBytesLobType(TestContext context) {
 		String text = "hello world once upon a time it was the best of times it was the worst of times goodbye";
 		StringBuilder longText = new StringBuilder();
-		for ( int i = 0; i < 1000; i++ ) {
-			longText.append( text );
-		}
+		longText.append( text.repeat( 1000 ) );
 		byte[] pic = longText.toString().getBytes();
 
 		Basic basic = new Basic();

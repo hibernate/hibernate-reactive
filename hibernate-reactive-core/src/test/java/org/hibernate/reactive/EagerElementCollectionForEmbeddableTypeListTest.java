@@ -402,7 +402,7 @@ public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiv
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						// replace phones with list of 1 phone
-						.thenAccept( foundPerson -> foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) ) )
+						.thenAccept( foundPerson -> foundPerson.setPhones( List.of( new Phone( "000-000-0000" ) ) ) )
 						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
@@ -415,7 +415,7 @@ public class EagerElementCollectionForEmbeddableTypeListTest extends BaseReactiv
 		test( context, openMutinySession()
 				.chain( session -> session.find( Person.class, thePerson.getId() )
 						// replace phones with list of 1 phone
-						.invoke( foundPerson -> foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) ) )
+						.invoke( foundPerson -> foundPerson.setPhones( List.of( new Phone( "000-000-0000" ) ) ) )
 						.call( session::flush ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )

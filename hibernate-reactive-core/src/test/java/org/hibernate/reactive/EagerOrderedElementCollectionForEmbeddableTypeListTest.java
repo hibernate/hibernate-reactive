@@ -401,7 +401,7 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 				.withTransaction( (session, tx) -> session
 						.find( Person.class, thePerson.getId() )
 						// replace phones with list of 1 phone
-						.thenAccept( foundPerson -> foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) ) ) )
+						.thenAccept( foundPerson -> foundPerson.setPhones( List.of( new Phone( "000-000-0000" ) ) ) ) )
 				.thenCompose( s -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000-000-0000" ) )
@@ -414,7 +414,7 @@ public class EagerOrderedElementCollectionForEmbeddableTypeListTest extends Base
 				.withTransaction( (session, tx) -> session
 						.find( Person.class, thePerson.getId() )
 						// replace phones with list of 1 phone
-						.invoke( foundPerson -> foundPerson.setPhones( Arrays.asList( new Phone( "000-000-0000" ) ) ) ) )
+						.invoke( foundPerson -> foundPerson.setPhones( List.of( new Phone( "000-000-0000" ) ) ) ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )
 				.invoke( changedPerson -> assertPhones( context, changedPerson, "000-000-0000" ) )

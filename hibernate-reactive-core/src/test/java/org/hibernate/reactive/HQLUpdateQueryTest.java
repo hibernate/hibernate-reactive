@@ -87,7 +87,7 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 		insertQueryBuilder.append( "'" ).append( chestnut.getName() ).append( "', " );
 		insertQueryBuilder.append( "'" ).append( chestnut.getDescription() ).append( "', " );
 		insertQueryBuilder.append( "'" ).append( chestnut.getType() ).append( "' " );
-		insertQueryBuilder.append( " from Flour where id = " + rye.getId() );
+		insertQueryBuilder.append( " from Flour where id = " ).append( rye.getId() );
 		test(
 				context,
 				openSession()

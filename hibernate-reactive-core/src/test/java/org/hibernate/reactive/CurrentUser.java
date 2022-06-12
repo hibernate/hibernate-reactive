@@ -47,7 +47,7 @@ public class CurrentUser {
 
 		@Override
 		public CompletionStage<String> generateValue(Stage.Session session, Object owner) {
-			Objects.nonNull( session );
+			Objects.requireNonNull( session );
 			String value = CurrentUser.INSTANCE.get();
 			return completedFuture( value );
 		}
@@ -57,7 +57,7 @@ public class CurrentUser {
 
 		@Override
 		public Uni<String> generateValue(Mutiny.Session session, Object owner) {
-			Objects.nonNull( session );
+			Objects.requireNonNull( session );
 			String value = CurrentUser.INSTANCE.get();
 			return Uni.createFrom().item( value );
 		}

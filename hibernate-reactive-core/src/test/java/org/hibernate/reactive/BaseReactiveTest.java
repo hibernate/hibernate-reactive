@@ -174,7 +174,7 @@ public abstract class BaseReactiveTest {
 
 	@Before
 	public void before(TestContext context) {
-		test( context, setupSessionFactory( () -> constructConfiguration() ) );
+		test( context, setupSessionFactory( this::constructConfiguration ) );
 	}
 
 	/**
