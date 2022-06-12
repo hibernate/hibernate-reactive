@@ -828,10 +828,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 	private RootGraphImplementor<?> createEntityGraph(String graphName) {
 		checkOpen();
 		final RootGraphImplementor<?> named = getFactory().findEntityGraphByName( graphName );
-		if ( named != null ) {
-			return named.makeRootGraph( graphName, true );
-		}
-		return named;
+		return named != null
+				? named.makeRootGraph( graphName, true )
+				: null;
 	}
 
 	private RootGraphImplementor<?> getEntityGraph(String graphName) {

@@ -525,7 +525,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 					@Override
 					public void doDirtyChecking(CustomEntityDirtinessStrategy.AttributeChecker attributeChecker) {
 						found = new DirtyCheckAttributeInfoImpl( event ).visitAttributes( attributeChecker );
-						if ( found != null && found.length == 0 ) {
+						if ( found.length == 0 ) {
 							found = null;
 						}
 					}

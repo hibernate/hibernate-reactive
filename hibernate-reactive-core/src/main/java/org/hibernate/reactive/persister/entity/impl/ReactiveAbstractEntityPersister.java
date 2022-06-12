@@ -761,7 +761,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			InMemoryValueGenerationStrategy valueGenerationStrategy) {
 		final ValueGenerator<?> valueGenerator = valueGenerationStrategy.getValueGenerator();
 		if ( valueGenerator instanceof StageValueGenerator ) {
-			final StageSessionFactoryImpl stageFactory = new StageSessionFactoryImpl( (SessionFactoryImpl) session.getFactory() );
 			final Stage.Session stageSession = new StageSessionImpl( (ReactiveSession) session );
 			return ( (StageValueGenerator<?>) valueGenerator )
 					.generateValue( stageSession, owner );

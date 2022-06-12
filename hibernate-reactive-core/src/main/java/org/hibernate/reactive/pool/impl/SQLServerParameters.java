@@ -81,7 +81,7 @@ public class SQLServerParameters extends Parameters {
         private boolean inCComment;
         private boolean escaped;
         private int count = 0;
-        private StringBuilder result;
+        private final StringBuilder result;
         private int previous;
 
         private Parser(String sql) {

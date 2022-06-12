@@ -34,7 +34,7 @@ public class OracleSqlReactiveInformationExtractorImpl extends AbstractReactiveI
 			String catalogFilter,
 			String schemaFilter,
 			Identifier tableName,
-			ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
+			ExtractionContext.ResultSetProcessor<T> processor) {
 		// This functionality is not used by ORM.
 		throw new NotYetImplementedException();
 	}
@@ -79,7 +79,7 @@ public class OracleSqlReactiveInformationExtractorImpl extends AbstractReactiveI
 				"(SELECT R_CONSTRAINT_NAME FROM USER_CONSTRAINTS WHERE OWNER = '" + schema + "' and table_name = '" + table + "' and CONSTRAINT_TYPE = 'R')";
 
 		final StringBuilder sb = new StringBuilder()
-				.append( "select " + fkNameSubquery + " as " ).append( getResultSetForeignKeyLabel() )
+				.append( "select " ).append( fkNameSubquery ).append( " as " ).append( getResultSetForeignKeyLabel() )
 				.append( ", null as " ).append( getResultSetPrimaryKeyCatalogLabel() )
 				.append( ", uc.owner as " ).append( getResultSetPrimaryKeySchemaLabel() )
 				.append( ", ucc.table_name as " ).append( getResultSetPrimaryKeyTableLabel() )
@@ -87,28 +87,10 @@ public class OracleSqlReactiveInformationExtractorImpl extends AbstractReactiveI
 				.append( ", ucc.column_name as " ).append( getResultSetForeignKeyColumnNameLabel() )
 				.append( " from user_constraints uc join user_cons_columns ucc on uc.constraint_name = ucc.constraint_name ")
 				// Exclude primary keys, which do not have a referenced table.
-				.append( " where uc.constraint_name = " + constraintSubquery );
+				.append( " where uc.constraint_name = " ).append( constraintSubquery )
+				.append( " order by uc.owner, ucc.table_name, ucc.position" );
 
-
-		// Now add constraints for the requested catalog/schema/table
-
-		final List<Object> parameters = new ArrayList<>();
-
-		final List<String> orderByList = new ArrayList<>();
-		orderByList.add( "uc.owner" );
-		orderByList.add( "ucc.table_name" );
-		orderByList.add( "ucc.position" );
-
-		if ( orderByList.size() > 0 ) {
-			sb.append( " order by " ).append( orderByList.get( 0 ) );
-			for ( int i = 1 ; i < orderByList.size() ; i++ ) {
-				sb.append( ", " ).append( orderByList.get( i ) );
-			}
-		}
-
-		T result =  getExtractionContext().getQueryResults( sb.toString(), parameters.toArray(), processor );
-
-		return result;
+		return getExtractionContext().getQueryResults( sb.toString(), null, processor );
 	}
 
 	@Override
