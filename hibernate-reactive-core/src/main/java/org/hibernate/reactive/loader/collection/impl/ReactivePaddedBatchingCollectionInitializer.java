@@ -23,7 +23,7 @@ import java.util.concurrent.CompletionStage;
  */
 class ReactivePaddedBatchingCollectionInitializer extends ReactiveCollectionLoader {
 
-	private QueryableCollection persister;
+	private final QueryableCollection persister;
 	private final int[] batchSizes;
 	private final ReactiveCollectionLoader[] loaders;
 

@@ -177,11 +177,9 @@ public class MySqlReactiveInformationExtractorImpl extends AbstractReactiveInfor
 		}
 		orderByList.add( "ordinal_position" );
 
-		if ( orderByList.size() > 0 ) {
-			sb.append( " order by " ).append( orderByList.get( 0 ) );
-			for ( int i = 1 ; i < orderByList.size() ; i++ ) {
-				sb.append( ", " ).append( orderByList.get( i ) );
-			}
+		sb.append( " order by " ).append( orderByList.get( 0 ) );
+		for ( int i = 1 ; i < orderByList.size() ; i++ ) {
+			sb.append( ", " ).append( orderByList.get( i ) );
 		}
 
 		return getExtractionContext().getQueryResults( sb.toString(), parameters.toArray(), processor );

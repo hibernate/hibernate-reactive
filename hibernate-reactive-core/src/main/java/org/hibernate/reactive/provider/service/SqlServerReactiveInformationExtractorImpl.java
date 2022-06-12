@@ -189,12 +189,8 @@ public class SqlServerReactiveInformationExtractorImpl extends AbstractReactiveI
 
 		sb.append( " order by OBJECT_SCHEMA_NAME( i.object_id), OBJECT_NAME( i.object_id ), ic.key_ordinal" );
 
-		T result = getExtractionContext().getQueryResults(
-				sb.toString(),
-				parameterValues.toArray(),
-				processor
-		);
-		return result;
+		return getExtractionContext()
+				.getQueryResults( sb.toString(), parameterValues.toArray(), processor );
 	}
 
 	@Override
@@ -241,11 +237,9 @@ public class SqlServerReactiveInformationExtractorImpl extends AbstractReactiveI
 		}
 		orderByList.add( "constraint_column_id" );
 
-		if ( orderByList.size() > 0 ) {
-			sb.append( " order by " ).append( orderByList.get( 0 ) );
-			for ( int i = 1 ; i < orderByList.size() ; i++ ) {
-				sb.append( ", " ).append( orderByList.get( i ) );
-			}
+		sb.append( " order by " ).append( orderByList.get( 0 ) );
+		for ( int i = 1 ; i < orderByList.size() ; i++ ) {
+			sb.append( ", " ).append( orderByList.get( i ) );
 		}
 
 		return getExtractionContext().getQueryResults( sb.toString(), parameters.toArray(), processor );
