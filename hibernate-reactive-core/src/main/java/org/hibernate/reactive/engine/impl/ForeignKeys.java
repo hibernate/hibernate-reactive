@@ -250,7 +250,6 @@ public final class ForeignKeys {
 	 *
 	 * @return {@code true} if the given entity is not transient (meaning it is either detached/persistent)
 	 */
-	@SuppressWarnings("SimplifiableIfStatement")
 	public static CompletionStage<Boolean> isNotTransient(String entityName, Object entity, Boolean assumed, SessionImplementor session) {
 		if ( entity instanceof HibernateProxy ) {
 			return trueFuture();
@@ -422,7 +421,7 @@ public final class ForeignKeys {
 								nonNullableTransientEntities.add( propertyName, value );
 							}
 						} );
-			};
+			}
 		}
 		else if ( type.isComponentType() ) {
 			final CompositeType actype = (CompositeType) type;

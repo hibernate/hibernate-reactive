@@ -150,10 +150,10 @@ public class SqlClientConnection implements ReactiveConnection {
 		if ( sqlException == null ) {
 			return rows;
 		}
-		if ( SQLIntegrityConstraintViolationException.class.isInstance( sqlException ) ) {
+		if ( sqlException instanceof SQLIntegrityConstraintViolationException ) {
 			throw new ConstraintViolationException( "could not execute statement", (SQLException) sqlException, sql );
 		}
-		if ( SQLException.class.isInstance( sqlException ) ) {
+		if ( sqlException instanceof SQLException ) {
 			throw new VertxSqlClientException( "could not execute statement", (SQLException) sqlException, sql );
 		}
 		return rethrow( sqlException );
