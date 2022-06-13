@@ -309,10 +309,19 @@ public class SqlClientConnection implements ReactiveConnection {
 	private static <T> T getLastInsertedId(RowSet<Row> rows, Class<T> idClass, String idColumnName) {
 		final Long mySqlId = rows.property( MYSQL_LAST_INSERTED_ID );
 		if ( mySqlId != null ) {
+			// MySQL will return a Long for any of these types
 			if ( Long.class.equals( idClass ) ) {
 				return (T) mySqlId;
 			}
-			throw LOG.nativelyGeneratedValueMustBeLong();
+			if ( Integer.class.equals( idClass )
+					&& mySqlId <= Integer.MAX_VALUE ) {
+				return (T) mySqlId;
+			}
+			if ( Short.class.equals( idClass )
+					&& mySqlId <= Short.MAX_VALUE) {
+				return (T) mySqlId;
+			}
+			throw LOG.nativelyGeneratedValueMustBeLong( mySqlId, idClass );
 		}
 		final Row oracleKeys = rows.property( ORACLE_GENERATED_KEYS );
 		if ( oracleKeys != null ) {
