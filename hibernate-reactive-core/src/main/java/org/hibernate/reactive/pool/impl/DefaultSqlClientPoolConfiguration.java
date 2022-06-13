@@ -49,6 +49,14 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 	private String user;
 	private String pass;
 
+	protected String getUser() {
+		return user;
+	}
+
+	protected String getPassword() {
+		return pass;
+	}
+
 	@Override
 	public void configure(Map configuration) {
 		user = getString( Settings.USER, configuration );

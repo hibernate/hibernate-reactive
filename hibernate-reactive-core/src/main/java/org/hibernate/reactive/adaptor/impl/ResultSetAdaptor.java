@@ -45,13 +45,31 @@ import java.util.Map;
  */
 public class ResultSetAdaptor implements ResultSet {
 
+	private static final class EmptyRowIterator implements RowIterator<Row> {
+
+		public static final EmptyRowIterator INSTANCE = new EmptyRowIterator();
+
+		private EmptyRowIterator() {
+		}
+
+		@Override
+		public boolean hasNext() {
+			return false;
+		}
+
+		@Override
+		public Row next() {
+			return null;
+		}
+	}
+
 	private final RowIterator<Row> iterator;
 	private final RowSet<Row> rows;
 	private Row row;
 	private boolean wasNull;
 
 	public ResultSetAdaptor(RowSet<Row> rows) {
-		this.iterator = rows.iterator();
+		this.iterator = rows != null ? rows.iterator() : EmptyRowIterator.INSTANCE;
 		this.rows = rows;
 	}
 
