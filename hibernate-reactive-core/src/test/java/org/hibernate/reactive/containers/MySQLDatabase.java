@@ -30,6 +30,8 @@ import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
 
 import static org.hibernate.reactive.containers.DockerImage.imageName;
 
+import org.testcontainers.containers.MySQLContainer;
+
 class MySQLDatabase implements TestableDatabase {
 
 	static MySQLDatabase INSTANCE = new MySQLDatabase();
@@ -80,7 +82,7 @@ class MySQLDatabase implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final VertxMySqlContainer mysql = new VertxMySqlContainer( imageName( "mysql", "8.0.28") )
+	public static final MySQLContainer<?> mysql = new MySQLContainer<>( imageName( "mysql", "8.0.28") )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
