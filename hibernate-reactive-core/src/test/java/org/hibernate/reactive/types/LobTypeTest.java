@@ -26,7 +26,6 @@ import org.junit.Test;
 import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 
 /**
  * Test types that we expect to work only on selected DBs.
@@ -34,7 +33,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQL
 public class LobTypeTest extends BaseReactiveTest {
 
 	@Rule
-	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, SQLSERVER );
+	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
