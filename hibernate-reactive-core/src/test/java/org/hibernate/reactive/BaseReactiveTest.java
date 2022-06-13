@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import javax.persistence.criteria.CriteriaQuery;
 
 import org.hibernate.SessionFactory;
@@ -173,17 +174,30 @@ public abstract class BaseReactiveTest {
 
 	@Before
 	public void before(TestContext context) {
-		test( context, setupSessionFactory( constructConfiguration() ) );
+		test( context, setupSessionFactory( () -> constructConfiguration() ) );
 	}
 
+	/**
+	 * Set up one session factory shared by the tests in the class.
+	 */
 	protected CompletionStage<Void> setupSessionFactory(Configuration configuration) {
+		return setupSessionFactory( () -> configuration );
+	}
+
+	/**
+	 * Set up the session factory but create the configuration only if necessary.
+	 *
+	 * @param confSupplier supplies the configuration for the factory
+	 * @return a {@link CompletionStage} void that succeeds when the factory is ready.
+	 */
+	protected CompletionStage<Void> setupSessionFactory(Supplier<Configuration> confSupplier) {
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		vertxContextRule.vertx()
 				.executeBlocking(
 						// schema generation is a blocking operation and so it causes an
 						// exception when run on the Vert.x event loop. So call it using
 						// Vertx.executeBlocking()
-						promise -> startFactoryManager( promise, configuration ),
+						promise -> startFactoryManager( promise, confSupplier ),
 						event -> {
 							if ( event.succeeded() ) {
 								future.complete( null );
@@ -196,9 +210,9 @@ public abstract class BaseReactiveTest {
 		return future;
 	}
 
-	private void startFactoryManager(Promise<Object> p, Configuration configuration ) {
+	private void startFactoryManager(Promise<Object> p, Supplier<Configuration> confSupplier ) {
 		try {
-			factoryManager.start( () -> createHibernateSessionFactory( configuration ) );
+			factoryManager.start( () -> createHibernateSessionFactory( confSupplier.get() ) );
 			p.complete();
 		}
 		catch (Throwable e) {
