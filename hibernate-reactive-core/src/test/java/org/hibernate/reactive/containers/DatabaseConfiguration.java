@@ -25,7 +25,8 @@ public class DatabaseConfiguration {
 		POSTGRESQL( PostgreSQLDatabase.INSTANCE, 5432, "POSTGRES", "PG" ),
 		COCKROACHDB( CockroachDBDatabase.INSTANCE, 26257, "COCKROACH" ),
 		SQLSERVER( MSSQLServerDatabase.INSTANCE, 1433, "MSSQL", "MSSQLSERVER" ),
-		ORACLE( OracleDatabase.INSTANCE, 1521 );
+		ORACLE( OracleDatabase.INSTANCE, 1521 ),
+		H2( H2Database.INSTANCE, -1 );
 
 		private final TestableDatabase configuration;
 		private final int defaultPort;

@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.H2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
@@ -35,7 +36,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQL
 public class StringToJsonTypeTest extends BaseReactiveTest {
 
 	@Rule
-	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, SQLSERVER, MARIA, ORACLE );
+	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, SQLSERVER, MARIA, ORACLE, H2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

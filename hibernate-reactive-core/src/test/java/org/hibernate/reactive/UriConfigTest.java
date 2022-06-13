@@ -17,14 +17,20 @@ import org.hibernate.dialect.PostgreSQL10Dialect;
 import org.hibernate.dialect.SQLServer2012Dialect;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.H2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 public class UriConfigTest extends BaseReactiveTest {
+
+	@Rule
+	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( H2 );
 
 	@Override
 	protected Configuration constructConfiguration() {

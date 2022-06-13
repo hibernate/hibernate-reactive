@@ -22,13 +22,14 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.H2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 
 public class FormulaTest extends BaseReactiveTest {
 
 	@Rule
-	public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( MARIA, MYSQL );
+	public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( MARIA, MYSQL, H2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

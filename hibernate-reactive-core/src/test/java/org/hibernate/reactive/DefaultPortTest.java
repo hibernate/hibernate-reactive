@@ -14,19 +14,25 @@ import java.util.Map;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.sqlclient.SqlConnectOptions;
 import org.assertj.core.api.Assertions;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.H2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 /**
  * Test the default port is set correctly when using {@link DefaultSqlClientPoolConfiguration}
  */
 public class DefaultPortTest {
+
+	@Rule
+	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( H2 );
 
 	@Test
 	public void testDefaultPortIsSet() throws URISyntaxException {

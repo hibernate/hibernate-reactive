@@ -22,6 +22,7 @@ import org.junit.Test;
 import io.vertx.ext.unit.TestContext;
 
 import static java.util.Arrays.asList;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.H2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
@@ -103,8 +104,8 @@ public abstract class UUIDAsBinaryType extends BaseReactiveTest {
 
 	public static class ForOtherDbsTest extends UUIDAsBinaryType {
 
-		@Rule
-		public DatabaseSelectionRule rule = skipTestsFor( MYSQL, MARIA );
+		@Rule // Select a UUID field doesn't work with Oracle
+		public DatabaseSelectionRule rule = skipTestsFor( MYSQL, MARIA, H2 );
 
 		@Override
 		protected Collection<Class<?>> annotatedEntities() {
