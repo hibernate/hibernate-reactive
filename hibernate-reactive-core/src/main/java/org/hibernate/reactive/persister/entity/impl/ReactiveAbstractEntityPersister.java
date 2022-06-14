@@ -26,6 +26,7 @@ import org.hibernate.Session;
 import org.hibernate.StaleObjectStateException;
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeDescriptor;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.dialect.CockroachDB192Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.Versioning;
@@ -44,6 +45,7 @@ import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.AbstractEntityPersister;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.Lockable;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.entity.OuterJoinLoadable;
@@ -72,6 +74,8 @@ import org.hibernate.tuple.InMemoryValueGenerationStrategy;
 import org.hibernate.tuple.NonIdentifierAttribute;
 import org.hibernate.tuple.ValueGenerator;
 import org.hibernate.type.EntityType;
+import org.hibernate.type.IntegerType;
+import org.hibernate.type.ShortType;
 import org.hibernate.type.Type;
 import org.hibernate.type.VersionType;
 
@@ -399,13 +403,28 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				//      getGeneratedKeys(), or an extra round select statement. But we
 				//      don't need these extra options.
 				.insertAndSelectIdentifier( sql, params, idClass, delegate().getIdentifierColumnNames()[0] )
-				.thenApply( generatedId -> {
-					log.debugf( "Natively generated identity: %s", generatedId );
-					if ( generatedId == null ) {
-						throw log.noNativelyGeneratedValueReturned();
-					}
-					return castToIdentifierType( generatedId, this );
-				} );
+				.thenApply( this::convertGeneratedId );
+	}
+
+	private Serializable convertGeneratedId(Object generatedId) {
+		log.debugf( "Natively generated identity: %s", generatedId );
+		validateGeneratedIdentityId( generatedId, this );
+		return castToIdentifierType( generatedId, this );
+	}
+
+	private static void validateGeneratedIdentityId(Object generatedId, EntityPersister persister) {
+		if ( generatedId == null ) {
+			throw log.noNativelyGeneratedValueReturned();
+		}
+
+		// CockroachDB might generate an identifier that fits an integer (and maybe a short) from time to time.
+		// Users should not rely on it, or they might have random, hard to debug failures.
+		Type identifierType = persister.getIdentifierType();
+		if ( ( identifierType == IntegerType.INSTANCE || identifierType == ShortType.INSTANCE )
+				&& persister.getFactory().getJdbcServices().getDialect() instanceof CockroachDB192Dialect
+		) {
+			throw log.invalidIdentifierTypeForCockroachDB( identifierType.getReturnedClass(), persister.getEntityName() );
+		}
 	}
 
 	default CompletionStage<Void> deleteReactive(

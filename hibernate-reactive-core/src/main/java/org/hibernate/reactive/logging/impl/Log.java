@@ -223,6 +223,9 @@ public interface Log extends BasicLogger {
 	@Message(id = 72, value= "Cannot update an uninitialized proxy. Make sure to fetch the value before trying to update it: %1$s")
 	HibernateException uninitializedProxyUpdate(Object entity);
 
+	@Message(id = 73, value = "%1$s is an invalid identity type when using CockroachDB (entity %2$s) - CockroachDB might generates identifiers that are too big and won't always fit in a %1$s. java.lang.Long is valid replacement")
+	HibernateException invalidIdentifierTypeForCockroachDB(@FormatWith(ClassFormatter.class) Class<?> idType, String entityName);
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )
