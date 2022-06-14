@@ -401,7 +401,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return getReactiveConnection( session )
 				//Note: in ORM core there are other ways to fetch the generated identity:
 				//      getGeneratedKeys(), or an extra round select statement. But we
-				//      don't need these extra options.
+				//      don't need those extra options.
 				.insertAndSelectIdentifier( sql, params, idClass, delegate().getIdentifierColumnNames()[0] )
 				.thenApply( this::convertGeneratedId );
 	}
