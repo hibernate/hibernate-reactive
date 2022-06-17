@@ -61,6 +61,14 @@ public class SQLServerParameters extends Parameters {
             shiftValues( parameterArray );
             return sqlProcessed;
         }
+
+        // No order by, no filter
+        // See SQLServer2005LimitHandler#processSql
+        int paginationFilterPos = sql.lastIndexOf( "__row__ >= ? and __row__ < ?" );
+        if ( paginationFilterPos > -1 ) {
+            sql = sql.substring( 0, paginationFilterPos );
+            sql += "__row__ >= @P" + index++ + " and __row__ < @P" + index++;
+        }
         return sql;
     }
 
