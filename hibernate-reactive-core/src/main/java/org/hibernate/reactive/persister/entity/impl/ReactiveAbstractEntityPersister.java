@@ -62,7 +62,6 @@ import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.stage.impl.StageSessionFactoryImpl;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.tuple.MutinyValueGenerator;
 import org.hibernate.reactive.tuple.StageValueGenerator;
