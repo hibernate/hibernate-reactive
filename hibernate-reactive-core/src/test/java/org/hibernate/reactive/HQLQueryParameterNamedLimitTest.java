@@ -72,6 +72,24 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 		);
 	}
 
+	/**
+	 * The MSSQL dialect generates a different query when there are no order-by clause and no filters
+	 */
+	@Test
+	public void testFirstResultWithoutOrderBy(TestContext context) {
+		test(
+				context,
+				openSession()
+						.thenCompose( s -> s.createQuery( "from Flour where id > :id" )
+								.setParameter( "id", 1 )
+								.setMaxResults( 1 )
+								.setFirstResult( 1 )
+								.getResultList()
+								.thenAccept( list -> context.assertEquals( 1, list.size() ) )
+						)
+		);
+	}
+
 	@Test
 	public void testFirstResultSingleResult(TestContext context) {
 		test(

@@ -54,6 +54,52 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 					  .chain( s::flush ) ) );
 	}
 
+	/**
+	 * Sql server run different queries based if order-by is missing and there are no filters
+	 */
+	@Test
+	public void testMaxResultsAndOffsetWithStageWithBasicQuery(TestContext context) {
+		test( context, openSession()
+				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_BASIC_QUERY )
+						.setMaxResults( 2 )
+						.setFirstResult( 1 )
+						.getResultList() )
+				// I cannot use the order-by, so I'm not sure which result it will return
+				.thenAccept( list -> {
+					assertThat( list ).containsAnyOf( margaret, nellie, hedy, rebeccaActress, rebeccaSinger );
+					assertThat( list ).hasSize( 2 );
+				} )
+		);
+	}
+
+	@Test
+	public void testOffsetWithStageWithBasicQuery(TestContext context) {
+		test( context, openSession()
+				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_BASIC_QUERY )
+						.setFirstResult( 3 )
+						.getResultList() )
+				// I cannot use the order-by, so I'm not sure which results it will return
+				.thenAccept( list -> {
+					assertThat( list ).containsAnyOf( margaret, nellie, hedy, rebeccaActress, rebeccaSinger );
+					assertThat( list ).hasSize( 2 );
+				} )
+		);
+	}
+
+	@Test
+	public void testMaxResultsWithStageWithBasicQuery(TestContext context) {
+		test( context, openSession()
+				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_BASIC_QUERY )
+						.setMaxResults( 4 )
+						.getResultList() )
+				// I cannot use the order-by, so I'm not sure which result it will return
+				.thenAccept( list -> {
+					assertThat( list ).containsAnyOf( margaret, nellie, hedy, rebeccaActress, rebeccaSinger );
+					assertThat( list ).hasSize( 4 );
+				} )
+		);
+	}
+
 	@Test
 	public void testMaxResultsWithStage(TestContext context) {
 		test( context, enableFilter( openSession(), FamousPerson.IS_ALIVE_FILTER )
@@ -234,12 +280,16 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "FamousPerson")
+	// No order by, No filters: Sql server changes the query based on these
+	@NamedQuery(name = FamousPerson.FIND_ALL_BASIC_QUERY, query = "from FamousPerson p")
 	@NamedQuery(name = FamousPerson.FIND_ALL_QUERY, query = "from FamousPerson p order by p.id")
 	@FilterDef(name = FamousPerson.HAS_NAME_FILTER, defaultCondition = "name = :name", parameters = @ParamDef(name = "name", type = "string"))
 	@FilterDef(name = FamousPerson.IS_ALIVE_FILTER, defaultCondition = "status = 'LIVING'")
 	@Filter(name = FamousPerson.IS_ALIVE_FILTER)
 	@Filter(name = FamousPerson.HAS_NAME_FILTER)
 	public static class FamousPerson {
+
+		static final String FIND_ALL_BASIC_QUERY = "Person.basicFindAll";
 
 		static final String FIND_ALL_QUERY = "Person.findAll";
 		static final String IS_ALIVE_FILTER = "Person.isAlive";
