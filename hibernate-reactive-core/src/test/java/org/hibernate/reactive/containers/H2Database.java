@@ -79,7 +79,7 @@ public class H2Database implements TestableDatabase {
 
 	@Override
 	public String getUri() {
-		return "h2:~/test;DATABASE_TO_UPPER=FALSE;DB_CLOSE_DELAY=-1";
+		return "h2:mem:test;DATABASE_TO_UPPER=FALSE;DB_CLOSE_DELAY=-1";
 	}
 
 
