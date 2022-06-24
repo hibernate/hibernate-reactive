@@ -124,6 +124,14 @@ Otherwise, configuration is almost completely transparent&mdash;you can
 configure Hibernate Reactive pretty much exactly as you would usually
 configure Hibernate ORM core.
 
+Just like in regular JPA, you should list your entity classes in `persistence.xml`:
+
+[source,xml]
+----
+<class>org.hibernate.reactive.example.session.Author</class>
+<class>org.hibernate.reactive.example.session.Book</class>
+----
+
 A full list of configuration properties recognized by Hibernate may be
 found in the {configuration-properties}[documentation for Hibernate ORM].
 You'll never need to touch most of these. The properties you do need at
