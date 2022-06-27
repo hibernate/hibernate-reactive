@@ -15,9 +15,15 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
 
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
 
 /**
  * Check that the generated id can be of a specific type
@@ -25,6 +31,11 @@ import io.vertx.ext.unit.TestContext;
  * @see org.hibernate.reactive.id.impl.IdentifierGeneration
  */
 public class IdentifierGenerationTypeTest extends BaseReactiveTest {
+
+	// Vertx DB2 client is throwing "java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0."
+	// TODO:  remove rule when https://github.com/eclipse-vertx/vertx-sql-client/issues/1208 is resolved
+	@Rule
+	public DatabaseSelectionRule skip = skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
