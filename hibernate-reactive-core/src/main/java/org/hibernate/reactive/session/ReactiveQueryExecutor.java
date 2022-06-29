@@ -72,4 +72,6 @@ public interface ReactiveQueryExecutor extends ReactiveConnectionSupplier {
 	<T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultType);
 
 	<T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping);
+
+	<T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
 }
