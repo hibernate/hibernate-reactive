@@ -6,10 +6,13 @@
 package org.hibernate.reactive.persister.entity.impl;
 
 import org.hibernate.HibernateException;
+import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.bytecode.BytecodeLogging;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.reactive.loader.entity.ReactiveUniqueEntityLoader;
@@ -19,7 +22,6 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 
 /**
  * A reactive {@link EntityPersister}. Supports non-blocking
@@ -115,6 +117,8 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	ReactiveUniqueEntityLoader getAppropriateUniqueKeyLoader(String propertyName,
 															 SharedSessionContractImplementor session);
 
+	UniqueEntityLoader getLoaderForLockMode(LockMode lockMode);
+
 	CompletionStage<Object> reactiveGetCurrentVersion(Serializable id,
 													  SharedSessionContractImplementor session);
 
@@ -137,11 +141,38 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Serializable id,
 														  SharedSessionContractImplementor session);
 
-	default <E,T> CompletionStage<T> reactiveInitializeLazyProperty(Attribute<E,T> field, E entity,
-																	SharedSessionContractImplementor session) {
-		return nullFuture();
-	}
+	<E,T> CompletionStage<T> reactiveInitializeLazyProperty(Attribute<E,T> field, E entity,
+															SharedSessionContractImplementor session);
 
-    CompletionStage<Serializable> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues,
+	CompletionStage<Object> reactiveInitializeEnhancedEntityUsedAsProxy(
+			Object entity,
+			String nameOfAttributeBeingAccessed,
+			SharedSessionContractImplementor session);
+
+	CompletionStage<Serializable> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues,
 																  LockOptions lockOptions, EventSource session);
+
+	/**
+	 * @see org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor#forceInitialize(Object, String, SharedSessionContractImplementor, boolean)
+	 */
+	//TODO find somewhere else for this function to live
+	static CompletionStage<Object> forceInitialize(
+			Object target,
+			String attributeName,
+			Object entityId,
+			String entityName,
+			SharedSessionContractImplementor session) {
+		BytecodeLogging.LOGGER.tracef(
+				"EnhancementAsProxyLazinessInterceptor#forceInitialize : %s#%s -> %s )",
+				entityName,
+				entityId,
+				attributeName
+		);
+
+		ReactiveEntityPersister persister = (ReactiveEntityPersister)
+				session.getFactory()
+						.getMetamodel()
+						.entityPersister(entityName);
+		return persister.reactiveInitializeEnhancedEntityUsedAsProxy( target, attributeName, session );
+	}
 }

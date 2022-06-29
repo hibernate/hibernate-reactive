@@ -260,6 +260,11 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
+	public UniqueEntityLoader getLoaderForLockMode(LockMode lockMode) {
+		return getLoaderByLockMode(lockMode);
+	}
+
+	@Override
 	public String getSqlInsertGeneratedValuesSelectString() {
 		return sqlInsertGeneratedValuesSelectString;
 	}

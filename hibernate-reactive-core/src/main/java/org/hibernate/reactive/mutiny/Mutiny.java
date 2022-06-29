@@ -25,8 +25,11 @@ import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
+import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.internal.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.spi.PersistentAttributeInterceptable;
+import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.reactive.common.AffectedEntities;
@@ -1902,6 +1905,16 @@ public interface Mutiny {
 		}
 		else if ( association instanceof PersistentCollection) {
 			session = ( (AbstractPersistentCollection) association ).getSession();
+		}
+		else if ( association instanceof PersistentAttributeInterceptable) {
+			final PersistentAttributeInterceptable interceptable = (PersistentAttributeInterceptable) association;
+			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor) {
+				session = ( (EnhancementAsProxyLazinessInterceptor) interceptor ).getLinkedSession();
+			}
+			else {
+				return Uni.createFrom().item( association );
+			}
 		}
 		else {
 			return Uni.createFrom().item( association );

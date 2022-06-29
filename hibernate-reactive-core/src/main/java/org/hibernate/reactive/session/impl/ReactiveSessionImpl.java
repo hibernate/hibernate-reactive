@@ -30,6 +30,7 @@ import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.action.internal.BulkOperationCleanupAction;
+import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
@@ -42,6 +43,8 @@ import org.hibernate.engine.spi.ExceptionConverter;
 import org.hibernate.engine.spi.NamedQueryDefinition;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.PersistentAttributeInterceptable;
+import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
@@ -104,6 +107,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 
 import static org.hibernate.engine.spi.PersistenceContext.NaturalIdHelper.INVALID_NATURAL_ID_REFERENCE;
 import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
+import static org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister.forceInitialize;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
@@ -235,8 +239,14 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override @SuppressWarnings("unchecked")
+	//Note: when making changes to this method, please also consider
+	//      the similar code in Mutiny.fetch() and Stage.fetch()
 	public <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy) {
 		checkOpen();
+		if ( association == null ) {
+			return CompletionStages.nullFuture();
+		}
+
 		if ( association instanceof HibernateProxy ) {
 			LazyInitializer initializer = ((HibernateProxy) association).getHibernateLazyInitializer();
 			if ( !initializer.isUninitialized() ) {
@@ -264,6 +274,19 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						// don't reassociate the collection instance, because
 						// its owner isn't associated with this session
 						.thenApply( v -> association );
+			}
+		}
+		else if ( association instanceof PersistentAttributeInterceptable) {
+			final PersistentAttributeInterceptable interceptable = (PersistentAttributeInterceptable) association;
+			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor) {
+				EnhancementAsProxyLazinessInterceptor eapli = (EnhancementAsProxyLazinessInterceptor) interceptor;
+				return forceInitialize( association, null, eapli.getIdentifier(), eapli.getEntityName(), this )
+						.thenApply( i -> association );
+
+			}
+			else {
+				return CompletionStages.completedFuture( association );
 			}
 		}
 		else {
