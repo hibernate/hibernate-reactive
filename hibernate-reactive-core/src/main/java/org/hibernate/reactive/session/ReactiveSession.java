@@ -46,8 +46,6 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 	@Override
 	SessionImplementor getSharedContract();
 
-	<T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
-
 	<E,T> CompletionStage<T> reactiveFetch(E entity, Attribute<E,T> field);
 
 	CompletionStage<Void> reactivePersist(Object entity);

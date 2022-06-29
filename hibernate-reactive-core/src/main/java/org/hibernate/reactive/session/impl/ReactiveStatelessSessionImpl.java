@@ -10,6 +10,7 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.action.internal.BulkOperationCleanupAction;
+import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
@@ -21,6 +22,8 @@ import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.NamedQueryDefinition;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.PersistentAttributeInterceptable;
+import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
@@ -52,6 +55,7 @@ import org.hibernate.reactive.session.CriteriaQueryOptions;
 import org.hibernate.reactive.session.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.tuple.entity.EntityMetamodel;
 
 import javax.persistence.EntityGraph;
@@ -64,6 +68,7 @@ import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.generateId;
+import static org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister.forceInitialize;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
@@ -737,6 +742,10 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 	@SuppressWarnings("unchecked")
 	public <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy) {
 		checkOpen();
+		if ( association == null ) {
+			return CompletionStages.nullFuture();
+		}
+
 		PersistenceContext persistenceContext = getPersistenceContext();
 		if ( association instanceof HibernateProxy ) {
 			LazyInitializer initializer = ( (HibernateProxy) association ).getHibernateLazyInitializer();
@@ -793,6 +802,19 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 							}
 						} )
 						.thenApply( v -> association );
+			}
+		}
+		else if ( association instanceof PersistentAttributeInterceptable) {
+			final PersistentAttributeInterceptable interceptable = (PersistentAttributeInterceptable) association;
+			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor) {
+				EnhancementAsProxyLazinessInterceptor eapli = (EnhancementAsProxyLazinessInterceptor) interceptor;
+				return forceInitialize( association, null, eapli.getIdentifier(), eapli.getEntityName(), this )
+						.thenApply( i -> association );
+
+			}
+			else {
+				return CompletionStages.completedFuture( association );
 			}
 		}
 		else {
