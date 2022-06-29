@@ -259,6 +259,11 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
+	public UniqueEntityLoader getLoaderForLockMode(LockMode lockMode) {
+		return getLoaderByLockMode(lockMode);
+	}
+
+	@Override
 	public String getSqlInsertGeneratedValuesSelectString() {
 		return sqlInsertGeneratedValuesSelectString;
 	}

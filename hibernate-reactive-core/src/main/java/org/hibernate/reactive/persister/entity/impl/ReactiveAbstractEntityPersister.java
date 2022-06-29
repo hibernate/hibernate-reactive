@@ -24,7 +24,12 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.Session;
 import org.hibernate.StaleObjectStateException;
+import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
+import org.hibernate.bytecode.enhance.spi.interceptor.BytecodeLazyAttributeInterceptor;
+import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeDescriptor;
+import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
+import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.CockroachDB192Dialect;
 import org.hibernate.dialect.Dialect;
@@ -40,9 +45,11 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
+import org.hibernate.loader.entity.CacheEntityLoaderHelper;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
@@ -1305,6 +1312,67 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		return null;
+	}
+
+	default CompletionStage<Object> reactiveInitializeEnhancedEntityUsedAsProxy(
+			Object entity,
+			String nameOfAttributeBeingAccessed,
+			SharedSessionContractImplementor session) {
+
+		final BytecodeEnhancementMetadata enhancementMetadata = getEntityMetamodel().getBytecodeEnhancementMetadata();
+		final BytecodeLazyAttributeInterceptor currentInterceptor = enhancementMetadata.extractLazyInterceptor( entity );
+		if ( currentInterceptor instanceof EnhancementAsProxyLazinessInterceptor) {
+			final EnhancementAsProxyLazinessInterceptor proxyInterceptor =
+					(EnhancementAsProxyLazinessInterceptor) currentInterceptor;
+
+			final EntityKey entityKey = proxyInterceptor.getEntityKey();
+			final Serializable identifier = entityKey.getIdentifier();
+
+			return loadFromDatabaseOrCache( entity, session, entityKey, identifier )
+					.thenApply( loaded -> {
+						if ( loaded == null ) {
+							final PersistenceContext persistenceContext = session.getPersistenceContext();
+							persistenceContext.removeEntry( entity );
+							persistenceContext.removeEntity( entityKey );
+							session.getFactory().getEntityNotFoundDelegate()
+									.handleEntityNotFound( entityKey.getEntityName(), identifier );
+						}
+
+						if ( nameOfAttributeBeingAccessed == null ) {
+							return null;
+						}
+						else {
+							final LazyAttributeLoadingInterceptor interceptor
+									= enhancementMetadata.injectInterceptor( entity, identifier, session );
+							return interceptor.readObject(
+									entity,
+									nameOfAttributeBeingAccessed,
+									interceptor.isAttributeLoaded( nameOfAttributeBeingAccessed )
+											? getEntityTuplizer().getPropertyValue( entity, nameOfAttributeBeingAccessed )
+											: ( (LazyPropertyInitializer) this )
+													.initializeLazyProperty( nameOfAttributeBeingAccessed, entity, session )
+							);
+						}
+					} );
+		}
+
+		throw new IllegalStateException();
+	}
+
+	private CompletionStage<?> loadFromDatabaseOrCache(
+			Object entity,
+			SharedSessionContractImplementor session,
+			EntityKey entityKey,
+			Serializable identifier) {
+		final LoadEvent loadEvent = new LoadEvent(identifier, entity, (EventSource) session, false );
+		final Object cached = canReadFromCache()
+				? CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache( loadEvent, this, entityKey)
+				: null;
+
+		return cached != null
+				? completedFuture( cached )
+				: (CompletionStage<?>) getLoaderForLockMode( LockMode.READ )
+						.load(identifier, entity, session, LockOptions.READ );
 	}
 
 	default UniqueEntityLoader createReactiveUniqueKeyLoader(Type uniqueKeyType, String[] columns, LoadQueryInfluencers loadQueryInfluencers) {
