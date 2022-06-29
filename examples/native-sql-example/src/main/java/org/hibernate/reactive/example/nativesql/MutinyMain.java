@@ -77,6 +77,17 @@ public class MutinyMain {
 			)
 					.await().indefinitely();
 
+			factory.withSession(
+					// retrieve the Author lazily from a Book
+					session -> session.find( Book.class, book1.getId() )
+							// fetch a lazy field of the Book
+							.chain( book -> session.fetch( book.getAuthor() )
+									// print the lazy field
+									.invoke( author -> out.printf( "%s wrote '%s'\n", author.getName(), book1.getTitle() ) )
+							)
+			)
+					.await().indefinitely();
+
 			factory.withStatelessSession(
 					// query the Book titles
 					session -> session.createNativeQuery(

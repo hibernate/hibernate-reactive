@@ -55,8 +55,6 @@ public interface ReactiveStatelessSession extends ReactiveQueryExecutor {
 
 	CompletionStage<Void> reactiveRefreshAll(int batchSize, Object... entities);
 
-	<T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
-
 	boolean isOpen();
 
 	void close(CompletableFuture<Void> closing);

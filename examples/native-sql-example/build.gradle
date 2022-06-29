@@ -41,6 +41,15 @@ buildscript {
     }
 }
 
+apply plugin: 'org.hibernate.orm'
+
+hibernate {
+    enhance {
+        enableLazyInitialization = true
+        enableDirtyTracking = true
+        enableAssociationManagement = false
+    }
+}
 
 // The following rules define a task to run
 // the different API available.

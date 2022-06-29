@@ -1364,15 +1364,21 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			SharedSessionContractImplementor session,
 			EntityKey entityKey,
 			Serializable identifier) {
-		final LoadEvent loadEvent = new LoadEvent(identifier, entity, (EventSource) session, false );
-		final Object cached = canReadFromCache()
-				? CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache( loadEvent, this, entityKey)
-				: null;
 
-		return cached != null
-				? completedFuture( cached )
-				: (CompletionStage<?>) getLoaderForLockMode( LockMode.READ )
-						.load(identifier, entity, session, LockOptions.READ );
+		// note that stateless sessions don't interact with second-level cache
+		if ( session instanceof EventSource && canReadFromCache() ) {
+			Object cached = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache(
+					new LoadEvent( identifier, entity, (EventSource) session, false ),
+					this,
+					entityKey
+			);
+			if ( cached != null ) {
+				return completedFuture( cached );
+			}
+		}
+
+		return (CompletionStage<?>) getLoaderForLockMode( LockMode.READ )
+				.load(identifier, entity, session, LockOptions.READ );
 	}
 
 	default UniqueEntityLoader createReactiveUniqueKeyLoader(Type uniqueKeyType, String[] columns, LoadQueryInfluencers loadQueryInfluencers) {

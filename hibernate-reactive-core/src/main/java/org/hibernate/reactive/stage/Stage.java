@@ -38,7 +38,7 @@ import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.Statistics;
 
@@ -1918,6 +1918,6 @@ public interface Stage {
 		if ( session == null ) {
 			throw LOG.sessionClosedLazyInitializationException();
 		}
-		return ( (ReactiveSession) session ).reactiveFetch( association, false );
+		return ( (ReactiveQueryExecutor) session ).reactiveFetch( association, false );
 	}
 }

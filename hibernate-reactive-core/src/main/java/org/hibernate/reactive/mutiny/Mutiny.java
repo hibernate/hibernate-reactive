@@ -37,7 +37,7 @@ import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 
 import io.smallrye.mutiny.Uni;
 import org.hibernate.stat.Statistics;
@@ -1904,6 +1904,7 @@ public interface Mutiny {
 			session = ( (HibernateProxy) association ).getHibernateLazyInitializer().getSession();
 		}
 		else if ( association instanceof PersistentCollection) {
+			//this unfortunately doesn't work for stateless session because the session ref gets set to null
 			session = ( (AbstractPersistentCollection) association ).getSession();
 		}
 		else if ( association instanceof PersistentAttributeInterceptable) {
@@ -1923,7 +1924,7 @@ public interface Mutiny {
 			throw LOG.sessionClosedLazyInitializationException();
 		}
 		return Uni.createFrom().completionStage(
-				( (ReactiveSession) session ).reactiveFetch( association, false )
+				( (ReactiveQueryExecutor) session ).reactiveFetch( association, false )
 		);
 	}
 }
