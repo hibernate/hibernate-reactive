@@ -58,17 +58,6 @@ public class MutinyMain {
 					.await().indefinitely();
 
 			factory.withSession(
-							// retrieve an Author from Book (lazy many-to one)
-							session -> session.find( Book.class, book1.getId() )
-									// fetch a lazy field of the Book
-									.chain( book -> fetch( book.getAuthor() )
-											// print the lazy field
-											.invoke( author -> out.printf( "'%s' has written '%s'\n", author.getName(), book1.getTitle() ) )
-									)
-					)
-					.await().indefinitely();
-
-			factory.withSession(
 					// retrieve a Book
 					session -> session.find( Book.class, book1.getId() )
 							// print its title
@@ -93,6 +82,17 @@ public class MutinyMain {
 										out.println( author.getName() + " wrote " + books.size() + " books" );
 										books.forEach( book -> out.println( book.getTitle() ) );
 									} )
+							)
+			)
+					.await().indefinitely();
+
+			factory.withSession(
+					// retrieve the Author lazily from a Book
+					session -> session.find( Book.class, book1.getId() )
+							// fetch a lazy field of the Book
+							.chain( book -> fetch( book.getAuthor() )
+									// print the lazy field
+									.invoke( author -> out.printf( "%s wrote '%s'\n", author.getName(), book1.getTitle() ) )
 							)
 			)
 					.await().indefinitely();
