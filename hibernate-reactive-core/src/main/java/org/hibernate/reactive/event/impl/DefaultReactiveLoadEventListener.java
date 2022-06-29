@@ -32,6 +32,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.event.ReactiveLoadEventListener;
+import org.hibernate.reactive.loader.entity.ReactiveCacheEntityLoaderHelper;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
@@ -594,7 +595,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		}
 
 		CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry =
-				CacheEntityLoaderHelper.INSTANCE.loadFromSessionCache(
+				ReactiveCacheEntityLoaderHelper.loadFromSessionCache(
 						event,
 						keyToLoad,
 						options
