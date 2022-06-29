@@ -87,6 +87,17 @@ public class Main {
 					.toCompletableFuture().join();
 
 			factory.withSession(
+					// retrieve the Author lazily from a Book
+					session -> session.find( Book.class, book1.getId() )
+							// fetch a lazy field of the Book
+							.thenCompose( book -> fetch( book.getAuthor() )
+									// print the lazy field
+									.thenAccept( author -> out.printf( "%s wrote '%s'\n", author.getName(), book1.getTitle() ) )
+							)
+			)
+					.toCompletableFuture().join();
+
+			factory.withSession(
 					// query the Book titles
 					session -> session.createQuery(
 							"select title, author.name from Book order by title desc",
