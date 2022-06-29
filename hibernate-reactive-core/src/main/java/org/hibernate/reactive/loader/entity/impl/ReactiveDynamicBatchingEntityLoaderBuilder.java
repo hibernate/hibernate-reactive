@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.reactive.loader.entity.ReactiveCacheEntityLoaderHelper.loadFromSessionCache;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -41,7 +42,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  *
  * A factory for {@link ReactiveDynamicBatchingEntityDelegator}s.
  *
- * @see org.hibernate.loader.entity.DynamicBatchingEntityLoaderBuilder
+ * @see org.hibernate.loader.entity.plan.DynamicBatchingEntityLoaderBuilder
  */
 public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatchingEntityLoaderBuilder {
 
@@ -114,11 +115,7 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 
 				// look for it in the Session first
 				CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry =
-						CacheEntityLoaderHelper.INSTANCE.loadFromSessionCache(
-								loadEvent,
-								entityKey,
-								LoadEventListener.GET
-						);
+						loadFromSessionCache( loadEvent, entityKey, LoadEventListener.GET );
 				if ( loadOptions.isSessionCheckingEnabled() ) {
 					managedEntity = persistenceContextEntry.getEntity();
 
@@ -293,12 +290,7 @@ public class ReactiveDynamicBatchingEntityLoaderBuilder extends ReactiveBatching
 				if ( loadOptions.isSessionCheckingEnabled() ) {
 					// look for it in the Session first
 					CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry =
-							CacheEntityLoaderHelper.INSTANCE
-									.loadFromSessionCache(
-											loadEvent,
-											entityKey,
-											LoadEventListener.GET
-									);
+							loadFromSessionCache( loadEvent, entityKey, LoadEventListener.GET );
 					managedEntity = persistenceContextEntry.getEntity();
 
 					if ( managedEntity != null
