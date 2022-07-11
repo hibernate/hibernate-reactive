@@ -151,6 +151,7 @@ jobs:
           # even if we don't use these features, just enabling them can cause side effects
           # and it's useful to test that.
           - { name: "19-ea", java_version_numeric: 19, from: 'jdk.java.net', jvm_args: '--enable-preview' }
+          - { name: "20-ea", java_version_numeric: 20, from: 'jdk.java.net', jvm_args: '--enable-preview' }
     steps:
     - uses: actions/checkout@v2
     - name: Get year/month for cache key
