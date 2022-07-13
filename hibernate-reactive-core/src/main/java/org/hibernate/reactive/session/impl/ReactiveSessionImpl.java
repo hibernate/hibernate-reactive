@@ -1601,6 +1601,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				});
 	}
 
+	@Override
+	public void clear() {
+		super.clear();
+		this.reactiveActionQueue.clear();
+	}
+
 	private void logRemoveOrphanBeforeUpdates(String timing, String entityName, Object entity,  StatefulPersistenceContext persistenceContext) {
 		if ( log.isTraceEnabled() ) {
 			final EntityEntry entityEntry = persistenceContext.getEntry( entity );
