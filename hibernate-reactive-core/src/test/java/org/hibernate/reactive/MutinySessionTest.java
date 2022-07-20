@@ -57,6 +57,25 @@ public class MutinySessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void sessionClear(TestContext context) {
+		final GuineaPig guineaPig = new GuineaPig( 81, "Perry" );
+		test(
+				context,
+				getMutinySessionFactory().withSession( session -> session
+						.persist( guineaPig )
+						.invoke( session::clear )
+						// If the previous clear doesn't work, this will cause a duplicated entity exception
+						.chain( () -> session.persist( guineaPig ) )
+						.call( session::flush )
+						.chain( () -> session.createQuery( "FROM GuineaPig", GuineaPig.class )
+								// By not using .find() we check that there is only one entity in the db with getSingleResult()
+								.getSingleResult() )
+						.invoke( result -> assertThatPigsAreEqual( context, guineaPig, result ) )
+				)
+		);
+	}
+
+	@Test
 	public void reactiveWithTransactionStatelessSession(TestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 61, "Mr. Peanutbutter" );
 		test( context, getMutinySessionFactory()
