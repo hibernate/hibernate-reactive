@@ -77,6 +77,25 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void sessionClear(TestContext context) {
+		final GuineaPig guineaPig = new GuineaPig( 81, "Perry" );
+		test(
+				context,
+				getSessionFactory().withSession( session -> session
+						.persist( guineaPig )
+						.thenAccept( v -> session.clear() )
+						// If the previous clear doesn't work, this will cause a duplicated entity exception
+						.thenCompose( v -> session.persist( guineaPig ) )
+						.thenCompose( v -> session.flush() )
+						.thenCompose( v -> session.createQuery( "FROM GuineaPig", GuineaPig.class )
+								// By not using .find() we check that there is only one entity in the db with getSingleResult()
+								.getSingleResult() )
+						.thenAccept( result -> assertThatPigsAreEqual( context, guineaPig, result ) )
+				)
+		);
+	}
+
+	@Test
 	public void reactiveWithTransactionSession(TestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 61, "Mr. Peanutbutter" );
 		test( context, getSessionFactory()
