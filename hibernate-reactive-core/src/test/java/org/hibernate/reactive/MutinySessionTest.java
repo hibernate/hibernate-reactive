@@ -57,6 +57,32 @@ public class MutinySessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testClearSessionAndChangeName(TestContext context) {
+		final GuineaPig pig1 = new GuineaPig( 81, "pig1" );
+		final GuineaPig pig2 = new GuineaPig( 82, "pig2" );
+
+		test( context,
+				getMutinySessionFactory().withSession( session -> session
+						.persistAll( pig1, pig2 )
+						.invoke( session::clear )
+						.invoke( session::flush )
+						.chain( () -> {
+							// change name after clearing session and persist
+							pig1.setName( "pig2" );
+							return session.persist( pig1 );
+						} )
+						.call( session::flush )
+						.chain( () -> session.find( GuineaPig.class, pig1.getId() ) )
+						.invoke( result -> {
+							context.assertNotNull( result );
+							context.assertEquals( "pig2", result.name );
+							context.assertEquals( pig1.getId(), result.getId() );
+						} )
+				)
+		);
+	}
+
+	@Test
 	public void reactiveWithTransactionStatelessSession(TestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 61, "Mr. Peanutbutter" );
 		test( context, getMutinySessionFactory()

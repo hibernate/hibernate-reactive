@@ -77,6 +77,31 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testClearSessionAndChangeName(TestContext context) {
+		final GuineaPig pig1 = new GuineaPig( 81, "pig1" );
+		final GuineaPig pig2 = new GuineaPig( 82, "pig2" );
+
+		test( context,
+				getSessionFactory().withSession( session -> session
+						.persist( pig1, pig2 )
+						.thenCompose( v -> getSessionFactory()
+								.withSession( s2 -> s2.clear().flush() ) )
+						.thenCompose( v -> {
+							// change name after clearing session and persist
+							pig1.setName( "pig2" );
+							return session.persist( pig1 );
+						} )
+						.thenCompose( v -> session.find( GuineaPig.class, pig1.getId() ) )
+						.thenAccept( result -> {
+							context.assertNotNull( result );
+							context.assertEquals( "pig2", result.name );
+							context.assertEquals( pig1.getId(), result.getId() );
+						} )
+				)
+		);
+	}
+
+	@Test
 	public void reactiveWithTransactionSession(TestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 61, "Mr. Peanutbutter" );
 		test( context, getSessionFactory()
