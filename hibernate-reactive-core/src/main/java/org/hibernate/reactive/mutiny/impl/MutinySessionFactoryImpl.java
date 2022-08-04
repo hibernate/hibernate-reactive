@@ -109,14 +109,16 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	public Uni<Mutiny.Session> openSession() {
 		SessionCreationOptions options = options();
 		return uni( () -> connection( options.getTenantIdentifier() ) )
-				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveSessionImpl( delegate, options, reactiveConnection ) ) )
+				.chain( reactiveConnection -> create( reactiveConnection,
+						() -> new ReactiveSessionImpl( delegate, options, reactiveConnection ) ) )
 				.map( s -> new MutinySessionImpl(s, this) );
 	}
 
 	@Override
 	public Uni<Mutiny.Session> openSession(String tenantId) {
 		return uni( () -> connection( tenantId ) )
-				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), reactiveConnection ) ) )
+				.chain( reactiveConnection -> create( reactiveConnection,
+						() -> new ReactiveSessionImpl( delegate, options( tenantId ), reactiveConnection ) ) )
 				.map( s -> new MutinySessionImpl(s, this) );
 	}
 
@@ -149,14 +151,16 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	public Uni<Mutiny.StatelessSession> openStatelessSession() {
 		SessionCreationOptions options = options();
 		return uni( () -> connection( options.getTenantIdentifier() ) )
-				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveStatelessSessionImpl( delegate, options, reactiveConnection ) ) )
+				.chain( reactiveConnection -> create( reactiveConnection,
+						() -> new ReactiveStatelessSessionImpl( delegate, options, reactiveConnection ) ) )
 				.map( s -> new MutinyStatelessSessionImpl(s, this) );
 	}
 
 	@Override
 	public Uni<Mutiny.StatelessSession> openStatelessSession(String tenantId) {
 		return uni( () -> connection( tenantId ) )
-				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), reactiveConnection ) ) )
+				.chain( reactiveConnection -> create( reactiveConnection,
+						() -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), reactiveConnection ) ) )
 				.map( s -> new MutinyStatelessSessionImpl( s, this ) );
 	}
 
@@ -201,7 +205,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	public <T> Uni<T> withSession(String tenantId, Function<Mutiny.Session, Uni<T>> work) {
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		Context.Key<Mutiny.Session> key = new MultitenantKey( contextKeyForSession, tenantId );
+		Context.Key<Mutiny.Session> key = new MultitenantKey<>( contextKeyForSession, tenantId );
 		Mutiny.Session current = context.get(key);
 		if ( current!=null && current.isOpen() ) {
 			LOG.debugf( "Reusing existing open Mutiny.Session which was found in the current Vert.x context for current tenant '%s'", tenantId );
