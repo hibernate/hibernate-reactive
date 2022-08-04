@@ -293,7 +293,7 @@ public class SqlClientConnection implements ReactiveConnection {
 	@Override
 	public CompletionStage<Void> rollbackTransaction() {
 		return transaction.rollback()
-				.onSuccess( v -> LOG.tracef( "Transaction rollbacked: %s", transaction ) )
+				.onSuccess( v -> LOG.tracef( "Transaction rolled back: %s", transaction ) )
 				.toCompletionStage()
 				.whenComplete( (v, x) -> transaction = null );
 	}

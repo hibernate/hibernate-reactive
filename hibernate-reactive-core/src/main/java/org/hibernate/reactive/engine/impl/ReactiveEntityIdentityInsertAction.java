@@ -99,8 +99,7 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 			Object instance,
 			SharedSessionContractImplementor session) {
 		if ( reactivePersister.hasInsertGeneratedProperties() ) {
-			return reactivePersister
-					.reactiveProcessInsertGenerated( generatedId, instance, getState(), session );
+			return reactivePersister.reactiveProcessInsertGenerated( generatedId, instance, getState(), session );
 		}
 		return voidFuture();
 	}

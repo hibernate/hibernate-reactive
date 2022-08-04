@@ -78,14 +78,16 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	public CompletionStage<Stage.Session> openSession() {
 		SessionCreationOptions options = options();
 		return connection( options.getTenantIdentifier() )
-				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options, connection ) ) )
+				.thenCompose( connection -> create( connection,
+						() -> new ReactiveSessionImpl( delegate, options, connection ) ) )
 				.thenApply( StageSessionImpl::new );
 	}
 
 	@Override
 	public CompletionStage<Stage.Session> openSession(String tenantId) {
 		return connection( tenantId )
-				.thenCompose( connection -> create( connection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), connection ) ) )
+				.thenCompose( connection -> create( connection,
+						() -> new ReactiveSessionImpl( delegate, options( tenantId ), connection ) ) )
 				.thenApply( StageSessionImpl::new );
 	}
 
@@ -93,14 +95,16 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	public CompletionStage<Stage.StatelessSession> openStatelessSession() {
 		SessionCreationOptions options = options();
 		return connection( options.getTenantIdentifier() )
-				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options, connection ) ) )
+				.thenCompose( connection -> create( connection,
+						() -> new ReactiveStatelessSessionImpl( delegate, options, connection ) ) )
 				.thenApply( StageStatelessSessionImpl::new );
 	}
 
 	@Override
 	public CompletionStage<Stage.StatelessSession> openStatelessSession(String tenantId) {
 		return connection( tenantId )
-				.thenCompose( connection -> create( connection, () -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) ) )
+				.thenCompose( connection -> create( connection,
+						() -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) ) )
 				.thenApply( StageStatelessSessionImpl::new );
 	}
 
