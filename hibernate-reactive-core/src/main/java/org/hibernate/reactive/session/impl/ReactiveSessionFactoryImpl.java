@@ -33,6 +33,7 @@ import static java.util.Collections.singleton;
  * {@link Mutiny.SessionFactory}.
  */
 public class ReactiveSessionFactoryImpl extends SessionFactoryImpl {
+
 	public ReactiveSessionFactoryImpl(MetadataImplementor metadata, SessionFactoryOptions options) {
 		// We aren't using lambdas or method reference because of a bug in the JVM:
 		// https://bugs.openjdk.java.net/browse/JDK-8161588
@@ -41,7 +42,7 @@ public class ReactiveSessionFactoryImpl extends SessionFactoryImpl {
 			@Override
 			public HQLQueryPlan createQueryPlan(String queryString, boolean shallow, Map<String, Filter> enabledFilters,
 												SessionFactoryImplementor factory) {
-				return new ReactiveHQLQueryPlan(queryString, shallow, enabledFilters, factory);
+				return new ReactiveHQLQueryPlan<>(queryString, shallow, enabledFilters, factory);
 			}
 		}); //TODO: pass ReactiveNativeHQLQueryPlan::new
 

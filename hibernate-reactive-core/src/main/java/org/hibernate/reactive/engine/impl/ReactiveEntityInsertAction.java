@@ -77,7 +77,7 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable {
 		return reactiveNullifyTransientReferencesIfNotAlready()
 				.thenAccept( v -> getSession().getPersistenceContextInternal().addEntity(
 						getInstance(),
-						( getPersister().isMutable() ? Status.MANAGED : Status.READ_ONLY ),
+						getPersister().isMutable() ? Status.MANAGED : Status.READ_ONLY,
 						getState(),
 						getEntityKey(),
 						Versioning.getVersion( getState(), getPersister() ),

@@ -85,7 +85,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	private ReactiveConnection reactiveConnection;
+	private final ReactiveConnection reactiveConnection;
 
 	private final ReactiveStatelessSession batchingHelperSession;
 
@@ -115,7 +115,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 		reactiveConnection = batchSize == null || batchSize < 2
 				? connection
 				: new BatchingConnection( connection, batchSize );
-		reactiveConnection = connection;
 		batchingHelperSession = this;
 	}
 
@@ -844,7 +843,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
 	@Override
 	public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity) {
-		return new RootGraphImpl<T>( null, getFactory().getMetamodel().entity( entity ), getFactory() );
+		return new RootGraphImpl<>( null, getFactory().getMetamodel().entity( entity ), getFactory() );
 	}
 
 	private RootGraphImplementor<?> createEntityGraph(String graphName) {
