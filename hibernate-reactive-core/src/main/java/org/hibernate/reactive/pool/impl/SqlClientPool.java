@@ -5,18 +5,15 @@
  */
 package org.hibernate.reactive.pool.impl;
 
-import java.lang.invoke.MethodHandles;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.SqlConnection;
-
 
 /**
  * A pool of reactive connections backed by a supplier of
@@ -36,8 +33,6 @@ import io.vertx.sqlclient.SqlConnection;
  * @see ExternalSqlClientPool the implementation used in Quarkus
  */
 public abstract class SqlClientPool implements ReactiveConnectionPool {
-
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	/**
 	 * @return the underlying Vert.x {@link Pool} for the current context.
@@ -60,7 +55,7 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	 *
 	 * @throws UnsupportedOperationException if multitenancy is not supported
 	 *
-	 * @see #getConnection(String)
+	 * @see ReactiveConnectionPool#getConnection(String)
 	 */
 	protected Pool getTenantPool(String tenantId) {
 		throw new UnsupportedOperationException("multitenancy not supported by built-in SqlClientPool");
