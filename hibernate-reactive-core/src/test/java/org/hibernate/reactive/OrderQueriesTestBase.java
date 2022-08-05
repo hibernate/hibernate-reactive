@@ -27,7 +27,7 @@ import jakarta.persistence.Table;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Test {@code hibernate.order_updates} and {@code hibernate.order_updates} configurations.
+ * Test {@code hibernate.order_updates} and {@code hibernate.order_inserts} configurations.
  *
  * @see  Settings#ORDER_INSERTS
  * @see  Settings#ORDER_UPDATES
