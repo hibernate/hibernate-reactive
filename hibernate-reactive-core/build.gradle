@@ -42,7 +42,7 @@ dependencies {
     testImplementation 'com.ongres.scram:client:2.1'
 
     // JDBC driver to test with ORM and PostgreSQL
-    testRuntimeOnly "org.postgresql:postgresql:42.4.0"
+    testRuntimeOnly "org.postgresql:postgresql:42.4.1"
 
     // JDBC driver for Testcontainers with MS SQL Server
     testRuntimeOnly "com.microsoft.sqlserver:mssql-jdbc:10.2.1.jre11"
