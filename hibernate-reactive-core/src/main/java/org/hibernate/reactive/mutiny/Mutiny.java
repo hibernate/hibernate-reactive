@@ -10,14 +10,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import jakarta.persistence.EntityGraph;
-import jakarta.persistence.Parameter;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaDelete;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.CriteriaUpdate;
-import jakarta.persistence.metamodel.Attribute;
-import jakarta.persistence.metamodel.Metamodel;
 
 import org.hibernate.Cache;
 import org.hibernate.CacheMode;
@@ -31,6 +23,7 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.jpa.internal.util.FlushModeTypeHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
@@ -38,9 +31,26 @@ import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveQueryExecutor;
+import org.hibernate.stat.Statistics;
 
 import io.smallrye.mutiny.Uni;
-import org.hibernate.stat.Statistics;
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.Parameter;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.Metamodel;
+
+import static org.hibernate.internal.util.LockModeConverter.convertToLockMode;
+import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheMode;
+import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheRetrieveMode;
+import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheStoreMode;
 
 /**
  * An API for Hibernate Reactive where non-blocking operations are
@@ -244,6 +254,22 @@ public interface Mutiny {
 		Query<R> setCacheMode(CacheMode cacheMode);
 
 		/**
+		 * Set the current {@link CacheStoreMode} in effect while this query
+		 * is being executed.
+		 */
+		default Query<R> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
+			return setCacheMode( interpretCacheMode( cacheStoreMode, interpretCacheRetrieveMode(getCacheMode()) ) );
+		}
+
+		/**
+		 * Set the current {@link CacheRetrieveMode} in effect while this query
+		 * is being executed.
+		 */
+		default Query<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+			return setCacheMode( interpretCacheMode( interpretCacheStoreMode(getCacheMode()), cacheRetrieveMode ) );
+		}
+
+		/**
 		 * Obtain the {@link CacheMode} in effect for this query. By default,
 		 * the query inherits the {@code CacheMode} of the {@link Session}
 		 * from which is originates.
@@ -258,6 +284,14 @@ public interface Mutiny {
 		 */
 		Query<R> setFlushMode(FlushMode flushMode);
 
+
+		/**
+		 * Set the current {@link FlushModeType} in effect while this query is
+		 * being executed.
+		 */
+		default Query<R> setFlushMode(FlushModeType flushModeType) {
+			return setFlushMode( FlushModeTypeHelper.getFlushMode(flushModeType) );
+		}
 		/**
 		 * Obtain the {@link FlushMode} in effect for this query. By default,
 		 * the query inherits the {@code FlushMode} of the {@link Session}
@@ -273,6 +307,13 @@ public interface Mutiny {
 		Query<R> setLockMode(LockMode lockMode);
 
 		/**
+		 * Set the {@link LockModeType} to use for the whole query.
+		 */
+		default Query<R> setLockMode(LockModeType lockModeType) {
+			return setLockMode( convertToLockMode(lockModeType) );
+		}
+
+		/**
 		 * Set the {@link LockMode} to use for specified alias (as defined in
 		 * the query's {@code from} clause).
 		 *
@@ -282,6 +323,19 @@ public interface Mutiny {
 		 * @see org.hibernate.query.Query#setLockMode(String,LockMode)
 		 */
 		Query<R> setLockMode(String alias, LockMode lockMode);
+
+		/**
+		 * Set the {@link LockModeType} to use for specified alias (as defined in
+		 * the query's {@code from} clause).
+		 *
+		 * @param alias the from clause alias
+		 * @param lockModeType the requested {@link LockModeType}
+		 *
+		 * @see org.hibernate.query.Query#setLockMode(String,LockMode)
+		 */
+		default Query<R> setLockMode(String alias, LockModeType lockModeType) {
+			return setLockMode( alias, convertToLockMode(lockModeType) );
+		}
 
 //		/**
 //		 * Set the {@link LockOptions} to use for the whole query.
@@ -357,6 +411,23 @@ public interface Mutiny {
 		 * @see #lock(Object, LockMode) this discussion of lock modes
 		 */
 		<T> Uni<T> find(Class<T> entityClass, Object id, LockMode lockMode);
+
+		/**
+		 * Asynchronously return the persistent instance of the given entity
+		 * class with the given identifier, requesting the given {@link LockModeType}.
+		 *
+		 * @param entityClass The entity type
+		 * @param id an identifier
+		 * @param lockModeType the requested {@link LockModeType}
+		 *
+		 * @return a persistent instance or null via a {@code Uni}
+		 *
+		 * @see #find(Class,Object)
+		 * @see #lock(Object, LockMode) this discussion of lock modes
+		 */
+		default <T> Uni<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
+			return find( entityClass, id, convertToLockMode(lockModeType) );
+		}
 
 //		/**
 //		 * Asynchronously return the persistent instance of the given entity
@@ -555,6 +626,19 @@ public interface Mutiny {
 		 */
 		Uni<Void> refresh(Object entity, LockMode lockMode);
 
+		/**
+		 * Re-read the state of the given instance from the underlying database,
+		 * requesting the given {@link LockModeType}.
+		 *
+		 * @param entity a managed persistent entity instance
+		 * @param lockModeType the requested lock mode
+		 *
+		 * @see #refresh(Object)
+		 */
+		default Uni<Void> refresh(Object entity, LockModeType lockModeType) {
+			return refresh( entity, convertToLockMode(lockModeType) );
+		}
+
 //		/**
 //		 * Re-read the state of the given instance from the underlying database,
 //		 * requesting the given {@link LockOptions}.
@@ -596,6 +680,32 @@ public interface Mutiny {
 		 * @throws IllegalArgumentException if the given instance is not managed
 		 */
 		Uni<Void> lock(Object entity, LockMode lockMode);
+
+		/**
+		 * Obtain the specified lock level upon the given object. For example,
+		 * this operation may be used to:
+		 *
+		 * <ul>
+		 * <li>perform a version check with {@link LockModeType#PESSIMISTIC_READ},
+		 * <li>upgrade to a pessimistic lock with {@link LockModeType#PESSIMISTIC_WRITE},
+		 * <li>force a version increment with {@link LockModeType#PESSIMISTIC_FORCE_INCREMENT},
+		 * <li>schedule a version check just before the end of the transaction with
+		 * {@link LockModeType#OPTIMISTIC}, or
+		 * <li>schedule a version increment just before the end of the transaction
+		 * with {@link LockModeType#OPTIMISTIC_FORCE_INCREMENT}.
+		 * </ul>
+		 *
+		 * This operation cascades to associated instances if the association is
+		 * mapped with {@link org.hibernate.annotations.CascadeType#LOCK}.
+		 *
+		 * @param entity a managed persistent instance
+		 * @param lockModeType the lock level
+		 *
+		 * @throws IllegalArgumentException if the given instance is not managed
+		 */
+		default Uni<Void> lock(Object entity, LockModeType lockModeType) {
+			return lock( entity, convertToLockMode(lockModeType) );
+		}
 
 //		/**
 //		 * Obtain the specified lock level upon the given object, with the given
@@ -901,6 +1011,19 @@ public interface Mutiny {
 		Session setFlushMode(FlushMode flushMode);
 
 		/**
+		 * Set the {@link FlushModeType flush mode} for this session.
+		 * <p>
+		 * The flush mode determines the points at which the session is flushed.
+		 * <i>Flushing</i> is the process of synchronizing the underlying persistent
+		 * store with persistable state held in memory.
+		 *
+		 * @param flushModeType the new flush mode
+		 */
+		default Session setFlushMode(FlushModeType flushModeType) {
+			return setFlushMode( FlushModeTypeHelper.getFlushMode(flushModeType) );
+		}
+
+		/**
 		 * Get the current flush mode for this session.
 		 *
 		 * @return the flush mode
@@ -1031,6 +1154,24 @@ public interface Mutiny {
 		 * @param cacheMode The new cache mode.
 		 */
 		Session setCacheMode(CacheMode cacheMode);
+
+		/**
+		 * Set the {@link CacheStoreMode} for this session.
+		 *
+		 * @param cacheStoreMode The new cache store mode.
+		 */
+		default Session setCacheStoreMode(CacheStoreMode cacheStoreMode) {
+			return setCacheMode( interpretCacheMode( cacheStoreMode, interpretCacheRetrieveMode(getCacheMode()) ) );
+		}
+
+		/**
+		 * Set the {@link CacheRetrieveMode} for this session.
+		 *
+		 * @param cacheRetrieveMode The new cache retrieve mode.
+		 */
+		default Session setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+			return setCacheMode( interpretCacheMode( interpretCacheStoreMode(getCacheMode()), cacheRetrieveMode ) );
+		}
 
 		/**
 		 * Get the current cache mode.
@@ -1175,6 +1316,21 @@ public interface Mutiny {
 		 * @see org.hibernate.StatelessSession#get(Class, Serializable, LockMode)
 		 */
 		<T> Uni<T> get(Class<T> entityClass, Object id, LockMode lockMode);
+
+		/**
+		 * Retrieve a row, obtaining the specified lock mode.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param id The id of the entity to retrieve
+		 * @param lockModeType The lock mode to apply to the entity
+		 *
+		 * @return a detached entity instance, via a {@code Uni}
+		 *
+		 * @see org.hibernate.StatelessSession#get(Class, Serializable, LockMode)
+		 */
+		default <T> Uni<T> get(Class<T> entityClass, Object id, LockModeType lockModeType) {
+			return get( entityClass, id, convertToLockMode(lockModeType) );
+		}
 
 		/**
 		 * Retrieve a row, using the given {@link EntityGraph} as a fetch plan.
@@ -1430,6 +1586,18 @@ public interface Mutiny {
 		 * @see org.hibernate.StatelessSession#refresh(Object, LockMode)
 		 */
 		Uni<Void> refresh(Object entity, LockMode lockMode);
+
+		/**
+		 * Refresh the entity instance state from the database.
+		 *
+		 * @param entity The entity to be refreshed.
+		 * @param lockModeType The LockMode to be applied.
+		 *
+		 * @see org.hibernate.StatelessSession#refresh(Object, LockMode)
+		 */
+		default Uni<Void> refresh(Object entity, LockModeType lockModeType) {
+			return refresh( entity, convertToLockMode(lockModeType) );
+		}
 
 		/**
 		 * Asynchronously fetch an association that's configured for lazy loading.
