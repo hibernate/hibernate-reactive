@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.pool.impl;
 
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
