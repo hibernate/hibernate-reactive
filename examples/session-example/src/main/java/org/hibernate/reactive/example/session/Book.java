@@ -35,6 +35,9 @@ class Book {
 	@NotNull @Past
 	private LocalDate published;
 
+	@Basic(fetch = LAZY)
+	public byte[] coverImage;
+
 	@NotNull
 	@ManyToOne(fetch = LAZY)
 	private Author author;
@@ -44,6 +47,7 @@ class Book {
 		this.isbn = isbn;
 		this.author = author;
 		this.published = published;
+		this.coverImage = ("Cover image for '" + title + "'").getBytes();
 	}
 
 	Book() {}
@@ -66,5 +70,9 @@ class Book {
 
 	LocalDate getPublished() {
 		return published;
+	}
+
+	byte[] getCoverImage() {
+		return coverImage;
 	}
 }
