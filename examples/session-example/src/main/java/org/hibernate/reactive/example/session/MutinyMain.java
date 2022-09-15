@@ -147,15 +147,19 @@ public class MutinyMain {
 					// retrieve a Book
 					session -> session.find( Book.class, book1.getId() )
 							// fetch a lazy field of the Book
-							.chain( book -> session.fetch( book, Book_.published )
-									// print the lazy field
+							.call( book -> session.fetch( book, Book_.published )
+									// print one lazy field
 									.invoke( published -> out.printf(
 											"'%s' was published in %d\n",
 											book.getTitle(),
 											published.getYear()
 									) )
 							)
-			)
+							.call( book -> session.fetch( book, Book_.coverImage )
+									// print the other lazy field
+									.invoke( coverImage -> out.println( new String( coverImage ) ) )
+							)
+					)
 					.await().indefinitely();
 
 			factory.withTransaction(
