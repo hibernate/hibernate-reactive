@@ -1273,45 +1273,36 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 									List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors,
 									Set<String> initializedLazyAttributeNames,
 									ResultSet resultSet)  {
+		// Load all the lazy properties that are in the same fetch group
+		Object result = null;
 		for ( LazyAttributeDescriptor fetchGroupAttributeDescriptor: fetchGroupAttributeDescriptors ) {
 
 			if ( initializedLazyAttributeNames.contains( fetchGroupAttributeDescriptor.getName() ) ) {
+				// Already initialized
+				if ( fetchGroupAttributeDescriptor.getName().equals( fieldName ) ) {
+					result = entry.getLoadedValue( fetchGroupAttributeDescriptor.getName() );
+				}
 				continue;
 			}
 
-			final Object selectedValue;
 			try {
-				selectedValue = fetchGroupAttributeDescriptor.getType().nullSafeGet(
-						resultSet,
-						getLazyPropertyColumnAliases()[ fetchGroupAttributeDescriptor.getLazyIndex() ],
-						session,
-						entity
-				);
+				String[] columnAlias = getLazyPropertyColumnAliases()[fetchGroupAttributeDescriptor.getLazyIndex()];
+				final Object selectedValue = fetchGroupAttributeDescriptor.getType()
+						.nullSafeGet( resultSet, columnAlias, session, entity );
+				final boolean set = initializeLazyProperty( fieldName, entity, session, entry, fetchGroupAttributeDescriptor.getLazyIndex(), selectedValue );
+				if ( set ) {
+					result = selectedValue;
+					interceptor.attributeInitialized( fetchGroupAttributeDescriptor.getName() );
+				}
 			}
 			catch (SQLException sqle) {
 				//can't occur
 				throw new JDBCException("error initializing lazy property", sqle);
 			}
-
-			final boolean set = initializeLazyProperty(
-					fieldName,
-					entity,
-					session,
-					entry,
-					fetchGroupAttributeDescriptor.getLazyIndex(),
-					selectedValue
-			);
-
-			if ( set ) {
-				interceptor.attributeInitialized( fetchGroupAttributeDescriptor.getName() );
-			}
-
-			log.trace( "Done initializing lazy properties" );
-
-			return selectedValue;
 		}
 
-		return null;
+		log.trace( "Done initializing lazy properties" );
+		return result;
 	}
 
 	default CompletionStage<Object> reactiveInitializeEnhancedEntityUsedAsProxy(
