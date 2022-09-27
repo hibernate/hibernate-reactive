@@ -898,6 +898,26 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		return getHibernateFlushMode().lessThan( FlushMode.COMMIT ) ? voidFuture() : doFlush();
 	}
 
+	@Override
+	public CompletionStage<Void> reactiveForceFlush(EntityEntry entry) {
+		if ( log.isDebugEnabled() ) {
+			log.debugf(
+					"Flushing to force deletion of re-saved object: %s",
+					MessageHelper.infoString( entry.getPersister(), entry.getId(), getFactory() )
+			);
+		}
+
+		if ( getPersistenceContextInternal().getCascadeLevel() > 0 ) {
+			return CompletionStages.failedFuture( new ObjectDeletedException(
+					"deleted object would be re-saved by cascade (remove deleted object from associations)",
+					entry.getId(),
+					entry.getPersister().getEntityName()
+			) );
+		}
+		checkOpenOrWaitingForAutoClose();
+		return doFlush();
+	}
+
 	private CompletionStage<Void> doFlush() {
 		checkTransactionNeededForUpdateOperation( "no transaction is in progress" );
 		pulseTransactionCoordinator();
