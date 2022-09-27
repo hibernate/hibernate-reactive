@@ -42,7 +42,9 @@ import org.hibernate.type.TypeHelper;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.generateId;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 
 /**
  * Functionality common to persist and merge event listeners.
@@ -164,11 +166,12 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		}
 
 		CompletionStage<EntityKey> keyStage = useIdentityColumn
-				? CompletionStages.nullFuture()
-				: generateEntityKey( id, persister, source ).thenCompose( generatedKey -> {
-			persister.setIdentifier( entity, id, source );
-			return CompletionStages.completedFuture( generatedKey );
-		} );
+				? nullFuture()
+				: generateEntityKey( id, persister, source )
+				.thenApply( generatedKey -> {
+					persister.setIdentifier( entity, id, source );
+					return generatedKey;
+				} );
 
 		return keyStage.thenCompose( key -> reactivePerformSaveOrReplicate(
 				entity,
@@ -181,22 +184,22 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		) );
 	}
 
-	private CompletionStage<EntityKey> generateEntityKey(Serializable id, EntityPersister persister,
-			EventSource source) {
+	private CompletionStage<EntityKey> generateEntityKey(Serializable id, EntityPersister persister, EventSource source) {
 		final EntityKey key = source.generateEntityKey( id, persister );
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		Object old = persistenceContext.getEntity( key );
 		if ( old != null ) {
 			if ( persistenceContext.getEntry( old ).getStatus() == Status.DELETED ) {
-				return source.unwrap( ReactiveSession.class ).reactiveForceFlush(
-						persistenceContext.getEntry( old ) ).thenApply( v -> key );
+				return source.unwrap( ReactiveSession.class )
+						.reactiveForceFlush( persistenceContext.getEntry( old ) )
+						.thenApply( v -> key );
 			}
 			else {
 				return failedFuture( new NonUniqueObjectException( id, persister.getEntityName() ) );
 			}
 		}
 
-		return CompletionStages.completedFuture( key );
+		return completedFuture( key );
 	}
 
 	/**
