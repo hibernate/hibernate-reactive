@@ -35,6 +35,7 @@ import org.hibernate.reactive.engine.impl.ReactiveEntityRegularInsertAction;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
@@ -162,26 +163,14 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			LOG.tracev( "Saving {0}", infoString( persister, id, source.getFactory() ) );
 		}
 
-		final EntityKey key;
-		if ( !useIdentityColumn ) {
-			key = source.generateEntityKey( id, persister );
-			final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
-			Object old = persistenceContext.getEntity( key );
-			if ( old != null ) {
-				if ( persistenceContext.getEntry( old ).getStatus() == Status.DELETED ) {
-					source.forceFlush( persistenceContext.getEntry( old ) );
-				}
-				else {
-					return failedFuture( new NonUniqueObjectException( id, persister.getEntityName() ) );
-				}
-			}
+		CompletionStage<EntityKey> keyStage = useIdentityColumn
+				? CompletionStages.nullFuture()
+				: generateEntityKey( id, persister, source ).thenCompose( generatedKey -> {
 			persister.setIdentifier( entity, id, source );
-		}
-		else {
-			key = null;
-		}
+			return CompletionStages.completedFuture( generatedKey );
+		} );
 
-		return reactivePerformSaveOrReplicate(
+		return keyStage.thenCompose( key -> reactivePerformSaveOrReplicate(
 				entity,
 				key,
 				persister,
@@ -189,7 +178,25 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 				context,
 				source,
 				requiresImmediateIdAccess
-		);
+		) );
+	}
+
+	private CompletionStage<EntityKey> generateEntityKey(Serializable id, EntityPersister persister,
+			EventSource source) {
+		final EntityKey key = source.generateEntityKey( id, persister );
+		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
+		Object old = persistenceContext.getEntity( key );
+		if ( old != null ) {
+			if ( persistenceContext.getEntry( old ).getStatus() == Status.DELETED ) {
+				return source.unwrap( ReactiveSession.class ).reactiveForceFlush(
+						persistenceContext.getEntry( old ) ).thenApply( v -> key );
+			}
+			else {
+				return failedFuture( new NonUniqueObjectException( id, persister.getEntityName() ) );
+			}
+		}
+
+		return CompletionStages.completedFuture( key );
 	}
 
 	/**
