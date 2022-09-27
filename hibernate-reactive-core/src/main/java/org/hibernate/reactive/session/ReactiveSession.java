@@ -13,6 +13,7 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.UnknownProfileException;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.internal.MergeContext;
@@ -67,6 +68,8 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 	CompletionStage<Void> reactiveFlush();
 
 	CompletionStage<Void> reactiveAutoflush();
+
+	CompletionStage<Void> reactiveForceFlush(EntityEntry entry);
 
 	CompletionStage<Void> reactiveRefresh(Object entity, LockOptions lockMode);
 
