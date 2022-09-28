@@ -35,7 +35,6 @@ import org.hibernate.reactive.engine.impl.ReactiveEntityRegularInsertAction;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
