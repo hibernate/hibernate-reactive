@@ -31,7 +31,7 @@ description = 'Release module'
 final String documentationDir = rootProject.project( 'documentation' ).buildDir
 
 // Relative path on the static website where the documentation is located
-final String docWebsiteRelativePath = "/reactive/documentation/${projectVersion.family}-jakarta"
+final String docWebsiteRelativePath = "reactive/documentation/${projectVersion.family}-jakarta"
 
 // The location of the docs when the website has been cloned
 final String docWebsiteReactiveFolder = "${project.buildDir}/docs-website/${docWebsiteRelativePath}"
