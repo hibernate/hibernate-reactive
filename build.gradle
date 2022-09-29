@@ -53,7 +53,7 @@ version = projectVersion
 // ./gradlew clean build -PhibernateOrmVersion=5.6.15-SNAPSHOT
 ext {
     if ( !project.hasProperty('hibernateOrmVersion') ) {
-        hibernateOrmVersion = '5.6.14.Final'
+        hibernateOrmVersion = '6.2.0-SNAPSHOT'
     }
     // For ORM, we need a parsed version (to get the family, ...)
 
