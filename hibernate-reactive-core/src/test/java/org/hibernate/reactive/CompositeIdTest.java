@@ -11,10 +11,10 @@ import org.hibernate.reactive.stage.Stage;
 
 import org.junit.Test;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.IdClass;
-import javax.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;

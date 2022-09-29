@@ -7,16 +7,16 @@ package org.hibernate.reactive;
 
 import java.io.Serializable;
 import java.util.Objects;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.IdClass;
-import javax.persistence.OneToOne;
 
 import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.OneToOne;
 
 
 public class OneToOneIdClassParentIdClassTest extends BaseReactiveTest {

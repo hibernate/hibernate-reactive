@@ -7,10 +7,6 @@ package org.hibernate.reactive;
 
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Version;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -26,6 +22,10 @@ import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DEFAULT;

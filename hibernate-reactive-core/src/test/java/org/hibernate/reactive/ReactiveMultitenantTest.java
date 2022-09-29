@@ -6,13 +6,9 @@
 package org.hibernate.reactive;
 
 import java.util.Objects;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Version;
 
+import org.assertj.core.api.Assertions;
 import org.hibernate.LockMode;
-import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
@@ -21,6 +17,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DEFAULT;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_1;

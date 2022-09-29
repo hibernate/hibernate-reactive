@@ -7,8 +7,8 @@ package org.hibernate.reactive.types;
 
 import io.vertx.core.json.JsonObject;
 
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 
 @Converter
 public class StringToJson implements AttributeConverter<String, JsonObject> {

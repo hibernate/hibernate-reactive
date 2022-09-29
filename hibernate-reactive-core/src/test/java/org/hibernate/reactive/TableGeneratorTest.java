@@ -8,15 +8,15 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.TableGenerator;
-import javax.persistence.Version;
 
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.TableGenerator;
+import jakarta.persistence.Version;
 
 
 public class TableGeneratorTest extends BaseReactiveTest {

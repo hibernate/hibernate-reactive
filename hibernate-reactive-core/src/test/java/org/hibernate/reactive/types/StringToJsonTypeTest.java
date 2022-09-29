@@ -5,24 +5,26 @@
  */
 package org.hibernate.reactive.types;
 
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.junit.Rule;
-import org.junit.Test;
-
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Version;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+
+import org.hibernate.reactive.BaseReactiveTest;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+
+import org.junit.Rule;
+import org.junit.Test;
+
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
