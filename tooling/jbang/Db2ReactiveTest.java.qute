@@ -13,8 +13,8 @@
 //DEPS org.testcontainers:db2:1.17.5
 //DEPS org.slf4j:slf4j-simple:1.7.30
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
