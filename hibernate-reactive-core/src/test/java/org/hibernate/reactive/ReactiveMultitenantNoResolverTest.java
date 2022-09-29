@@ -8,9 +8,9 @@ package org.hibernate.reactive;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
+import org.assertj.core.api.Assertions;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
-import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.Settings;
@@ -53,7 +53,9 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( GuineaPig.class );
-		configuration.setProperty( Settings.MULTI_TENANT, MultiTenancyStrategy.DATABASE.name() );
+		Assertions.fail( "ORM-6: TODO: Check how multi-tenancy works in ORM 6" );
+		// FIXME: Find new syntax for ORM 6
+		// configuration.setProperty( Settings.MULTI_TENANT, MultiTenancyStrategy.DATABASE.name() );
 		// Contains the SQL scripts for the creation of the additional databases
 		configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES, "/multitenancy-test.sql" );
 		configuration.setProperty( Settings.SQL_CLIENT_POOL, TenantDependentPool.class.getName() );

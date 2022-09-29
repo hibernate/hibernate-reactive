@@ -22,12 +22,6 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import org.hibernate.type.NumericBooleanType;
-import org.hibernate.type.TextType;
-import org.hibernate.type.TrueFalseType;
-import org.hibernate.type.YesNoType;
-import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
-
 import org.testcontainers.containers.OracleContainer;
 
 import static org.hibernate.reactive.containers.DockerImage.imageName;
@@ -47,9 +41,14 @@ class OracleDatabase implements TestableDatabase {
 		{
 			expectedDBTypeForClass.put( boolean.class, "NUMBER" );
 			expectedDBTypeForClass.put( Boolean.class, "NUMBER" );
-			expectedDBTypeForClass.put( NumericBooleanType.class, "NUMBER" );
-			expectedDBTypeForClass.put( TrueFalseType.class, "CHAR" );
-			expectedDBTypeForClass.put( YesNoType.class, "CHAR" );
+
+			// FIXME: [ORM-6] Check if we need alternatives
+			// expectedDBTypeForClass.put( NumericBooleanType.class, "NUMBER" );
+			// expectedDBTypeForClass.put( TrueFalseType.class, "CHAR" );
+			// expectedDBTypeForClass.put( YesNoType.class, "CHAR" );
+			// expectedDBTypeForClass.put( PrimitiveByteArrayTypeDescriptor.class, "BLOB" );
+			// expectedDBTypeForClass.put( TextType.class, "VARCHAR2" );
+
 			expectedDBTypeForClass.put( int.class, "NUMBER" );
 			expectedDBTypeForClass.put( Integer.class, "NUMBER" );
 			expectedDBTypeForClass.put( long.class, "NUMBER" );
@@ -60,7 +59,6 @@ class OracleDatabase implements TestableDatabase {
 			expectedDBTypeForClass.put( Double.class, "FLOAT" );
 			expectedDBTypeForClass.put( byte.class, "NUMBER" );
 			expectedDBTypeForClass.put( Byte.class, "NUMBER" );
-			expectedDBTypeForClass.put( PrimitiveByteArrayTypeDescriptor.class, "BLOB" );
 			expectedDBTypeForClass.put( URL.class, "VARCHAR2" );
 			expectedDBTypeForClass.put( TimeZone.class, "VARCHAR2" );
 			expectedDBTypeForClass.put( Date.class, "DATE" );
@@ -77,7 +75,6 @@ class OracleDatabase implements TestableDatabase {
 			expectedDBTypeForClass.put( Duration.class, "NUMBER" );
 			expectedDBTypeForClass.put( Character.class, "CHAR" );
 			expectedDBTypeForClass.put( char.class, "CHAR" );
-			expectedDBTypeForClass.put( TextType.class, "VARCHAR2" );
 			expectedDBTypeForClass.put( String.class, "VARCHAR2" );
 		}
 	}

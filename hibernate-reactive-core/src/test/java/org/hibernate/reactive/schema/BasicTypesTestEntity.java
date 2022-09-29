@@ -19,6 +19,7 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.UUID;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -27,7 +28,6 @@ import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import jakarta.persistence.Version;
 
-import org.hibernate.annotations.Type;
 
 @Entity(name = "BasicTypesTestEntity")
 @Table(name = BasicTypesTestEntity.TABLE_NAME)
@@ -59,13 +59,13 @@ public class BasicTypesTestEntity {
 	Double fieldDouble;
 	Byte fieldByte;
 
-	@Type(type = "true_false")
+	@Convert(converter = org.hibernate.type.YesNoConverter.class)
 	Boolean booleanTrueFalse;
 
-	@Type(type = "yes_no")
+	@Convert(converter = org.hibernate.type.TrueFalseConverter.class)
 	Boolean booleanYesNo;
 
-	@Type(type = "numeric_boolean")
+	@Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
 	Boolean booleanNumeric;
 
 	URL url;

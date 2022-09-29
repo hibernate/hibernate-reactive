@@ -43,7 +43,9 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( GuineaPig.class );
-		configuration.setProperty( Settings.MULTI_TENANT, MultiTenancyStrategy.DATABASE.name() );
+		Assertions.fail( "ORM-6: TODO: Check how multi-tenancy works in ORM 6" );
+		// FIXME: Find new syntax for ORM 6
+		// configuration.setProperty( Settings.MULTI_TENANT, MultiTenancyStrategy.DATABASE.name() );
 		configuration.getProperties().put( Settings.MULTI_TENANT_IDENTIFIER_RESOLVER, TENANT_RESOLVER );
 		// Contains the SQL scripts for the creation of the additional databases
 		configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES, "/multitenancy-test.sql" );

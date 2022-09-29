@@ -5,10 +5,6 @@
  */
 package org.hibernate.reactive.types;
 
-import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.usertype.UserType;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
@@ -17,66 +13,69 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Objects;
 
-public class BigDecimalAsString implements UserType {
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.usertype.UserType;
 
-    @Override
-    public int[] sqlTypes() {
-        return new int[] {Types.VARCHAR};
-    }
+public class BigDecimalAsString implements UserType<BigDecimal> {
 
-    @Override
-    public Class returnedClass() {
-        return BigDecimal.class;
-    }
+	@Override
+	public int getSqlType() {
+		return Types.VARCHAR;
+	}
 
-    @Override
-    public boolean equals(Object x, Object y) throws HibernateException {
-        return Objects.equals(x,y);
-    }
+	@Override
+	public Class<BigDecimal> returnedClass() {
+		return BigDecimal.class;
+	}
 
-    @Override
-    public int hashCode(Object x) throws HibernateException {
-        return Objects.hashCode(x);
-    }
+	@Override
+	public boolean equals(BigDecimal x, BigDecimal y) {
+		return Objects.equals( x, y );
+	}
 
-    @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
-        String string = rs.getString(names[0]);
-        return string == null || rs.wasNull() ? null : new BigDecimal(string);
-    }
+	@Override
+	public int hashCode(BigDecimal x) {
+		return Objects.hashCode( x );
+	}
 
-    @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
-        if (value==null) {
-            st.setNull(index, Types.VARCHAR);
-        }
-        else {
-            st.setString(index, value.toString());
-        }
-    }
+	@Override
+	public BigDecimal nullSafeGet(ResultSet rs, int position, SharedSessionContractImplementor session, Object owner) throws SQLException {
+		String string = rs.getString( position );
+		return string == null || rs.wasNull() ? null : new BigDecimal( string );
+	}
 
-    @Override
-    public Object deepCopy(Object value) throws HibernateException {
-        return value;
-    }
+	@Override
+	public void nullSafeSet(PreparedStatement st, BigDecimal value, int index, SharedSessionContractImplementor session) throws SQLException {
+		if ( value == null ) {
+			st.setNull( index, Types.VARCHAR );
+		}
+		else {
+			st.setString( index, value.toString() );
+		}
+	}
 
-    @Override
-    public boolean isMutable() {
-        return false;
-    }
+	@Override
+	public BigDecimal deepCopy(BigDecimal value) {
+		return value;
+	}
 
-    @Override
-    public Serializable disassemble(Object value) throws HibernateException {
-        return (BigDecimal) value;
-    }
+	@Override
+	public boolean isMutable() {
+		return false;
+	}
 
-    @Override
-    public Object assemble(Serializable cached, Object owner) throws HibernateException {
-        return cached;
-    }
+	@Override
+	public Serializable disassemble(BigDecimal value) {
+		return value;
+	}
 
-    @Override
-    public Object replace(Object original, Object target, Object owner) throws HibernateException {
-        return original;
-    }
+	@Override
+	public BigDecimal assemble(Serializable cached, Object owner) {
+		return (BigDecimal) cached;
+	}
+
+	@Override
+	public BigDecimal replace(BigDecimal detached, BigDecimal managed, Object owner) {
+		return detached;
+	}
 }

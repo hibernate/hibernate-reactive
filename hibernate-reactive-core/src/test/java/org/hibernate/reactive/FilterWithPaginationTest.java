@@ -20,7 +20,7 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
-
+import org.hibernate.type.descriptor.java.StringJavaType;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -283,7 +283,7 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 	// No order by, No filters: Sql server changes the query based on these
 	@NamedQuery(name = FamousPerson.FIND_ALL_BASIC_QUERY, query = "from FamousPerson p")
 	@NamedQuery(name = FamousPerson.FIND_ALL_QUERY, query = "from FamousPerson p order by p.id")
-	@FilterDef(name = FamousPerson.HAS_NAME_FILTER, defaultCondition = "name = :name", parameters = @ParamDef(name = "name", type = "string"))
+	@FilterDef(name = FamousPerson.HAS_NAME_FILTER, defaultCondition = "name = :name", parameters = @ParamDef(name = "name", type = StringJavaType.class))
 	@FilterDef(name = FamousPerson.IS_ALIVE_FILTER, defaultCondition = "status = 'LIVING'")
 	@Filter(name = FamousPerson.IS_ALIVE_FILTER)
 	@Filter(name = FamousPerson.HAS_NAME_FILTER)

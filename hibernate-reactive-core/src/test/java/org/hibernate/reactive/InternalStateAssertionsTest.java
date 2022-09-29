@@ -5,28 +5,28 @@
  */
 package org.hibernate.reactive;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-import javax.persistence.Entity;
-import javax.persistence.Id;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.stage.Stage.Session;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
-import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 /**
  * Checks that we throw the right exception when a session is shared between threads.
@@ -77,9 +77,13 @@ public class InternalStateAssertionsTest extends BaseReactiveTest {
 		ThreadPerCommandExecutor executor = new ThreadPerCommandExecutor();
 
 		test( testContext, assertThrown( IllegalStateException.class, sessionStage
-				.thenComposeAsync( session -> session.find( Competition.class, "Chess boxing" ), executor ) )
+				.thenComposeAsync( InternalStateAssertionsTest::findChessBoxing, executor ) )
 				.thenAccept( InternalStateAssertionsTest::assertException )
 		);
+	}
+
+	private static CompletionStage<Competition> findChessBoxing(Session session) {
+		return session.find( Competition.class, "Chess boxing" );
 	}
 
 	@Test

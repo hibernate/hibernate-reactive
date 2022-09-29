@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.hibernate.HibernateException;
-import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
 
@@ -31,7 +30,7 @@ public class MutinyExceptionsTest extends BaseReactiveTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( AvailableSettings.NATIVE_EXCEPTION_HANDLING_51_COMPLIANCE, "false" );
+		configuration.setProperty( "native_exception_handling_51_compliance", "false" );
 		return configuration;
 	}
 
@@ -77,6 +76,7 @@ public class MutinyExceptionsTest extends BaseReactiveTest {
 		}
 	}
 
+	// TODO: [ORM-6] Check if this property still makes sense
 	// I don't think we need to support this case but at the moment it would require more work to
 	// disable the behaviour.
 	public static class Native51ExceptionHandlingTest extends MutinyExceptionsTest {
@@ -89,7 +89,7 @@ public class MutinyExceptionsTest extends BaseReactiveTest {
 		@Override
 		protected Configuration constructConfiguration() {
 			Configuration configuration = super.constructConfiguration();
-			configuration.setProperty( AvailableSettings.NATIVE_EXCEPTION_HANDLING_51_COMPLIANCE, "true" );
+			configuration.setProperty( "native_exception_handling_51_compliance", "true" );
 			return configuration;
 		}
 	}

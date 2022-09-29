@@ -5,20 +5,6 @@
  */
 package org.hibernate.reactive.schema;
 
-import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.type.NumericBooleanType;
-import org.hibernate.type.TrueFalseType;
-import org.hibernate.type.YesNoType;
-import org.hibernate.type.descriptor.java.DataHelper;
-import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
-
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
-
-import static org.hibernate.reactive.containers.DatabaseConfiguration.getDatatypeQuery;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.expectedDatatype;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -33,6 +19,17 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+
+import org.assertj.core.api.Assertions;
+import org.hibernate.reactive.BaseReactiveTest;
+import org.hibernate.type.descriptor.java.DataHelper;
+
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
+
+import static org.hibernate.reactive.containers.DatabaseConfiguration.expectedDatatype;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.getDatatypeQuery;
 
 /**
  * Check that each property is mapped as the expected type in the database.
@@ -134,17 +131,20 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 
 	@Test
 	public void testBooleanTrueFalseType(TestContext context) {
-		testDatatype( context, "booleanTrueFalse", TrueFalseType.class );
+		Assertions.fail( "ORM-6: TODO" );
+//		testDatatype( context, "booleanTrueFalse", TrueFalseType.class );
 	}
 
 	@Test
 	public void testBooleanYesNoType(TestContext context) {
-		testDatatype( context, "booleanYesNo", YesNoType.class );
+		Assertions.fail( "ORM-6: TODO" );
+//		testDatatype( context, "booleanYesNo", YesNoType.class );
 	}
 
 	@Test
 	public void testBooleanNumericType(TestContext context) {
-		testDatatype( context, "booleanNumeric", NumericBooleanType.class );
+		Assertions.fail( "ORM-6: TODO" );
+		//testDatatype( context, "booleanNumeric", NumericBooleanType.class );
 	}
 
 	@Test
@@ -154,7 +154,8 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 
 	@Test
 	public void testBytesPrimitiveType(TestContext context) {
-		testDatatype( context, "primitiveBytes", PrimitiveByteArrayTypeDescriptor.class );
+		Assertions.fail( "ORM-6: TODO" );
+	//		testDatatype( context, "primitiveBytes", PrimitiveByteArrayTypeDescriptor.class );
 	}
 
 	@Test
