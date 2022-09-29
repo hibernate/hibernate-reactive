@@ -11,7 +11,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import javax.persistence.criteria.CriteriaQuery;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -44,6 +43,7 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import jakarta.persistence.Table;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -172,20 +172,44 @@ public abstract class BaseReactiveTest {
 	}
 
 	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
-		return getSessionFactory()
-				.withTransaction( s -> loop( entities, entityClass -> s
-						.createQuery( queryForDelete( entityClass ) )
-						.getResultList()
-						// This approach will also remove embedded collections and associated entities when possible
-						// (a `delete from` query will only remove the elements from one table)
-						.thenCompose( list -> s.remove( list.toArray( new Object[0] ) ) )
-				) );
+		CompletableFuture<Void> deletedStage = new CompletableFuture<>();
+		connection().thenCompose( connection -> connection
+				.beginTransaction()
+				.thenCompose( v -> loop( entities, entityClass -> connection.execute( "delete from " + entityTable( entityClass ) ) ) )
+				.thenCompose( v -> connection.commitTransaction() )
+				.whenComplete( (d, td) -> {
+					// Close the connection, no matter what
+					connection.close()
+							.whenComplete( (c, tc) -> {
+								if (td == null ) {
+									// Query executed
+									if ( tc == null ) {
+										// All good
+										deletedStage.complete( null );
+									}
+									else {
+										// Error closing the connection
+										deletedStage.completeExceptionally( tc );
+									}
+								}
+								else {
+									// Error during query or commit
+									// I don't care about roll-backing the tx
+									if ( tc != null ) {
+										// Error during connection close
+										td.addSuppressed( tc );
+									}
+									deletedStage.completeExceptionally( td );
+								}
+							} );
+				} )
+		);
+		return deletedStage;
 	}
 
-	private <T> CriteriaQuery<T> queryForDelete(Class<T> entityClass) {
-		final CriteriaQuery<T> query = getSessionFactory().getCriteriaBuilder().createQuery( entityClass );
-		query.from( entityClass );
-		return query;
+	private static String entityTable(Class<?> entityClass) {
+		Table annotation = entityClass.getAnnotation( Table.class );
+		return annotation == null ? entityClass.getSimpleName() : annotation.name();
 	}
 
 	@Before
