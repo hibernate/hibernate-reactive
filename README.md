@@ -188,6 +188,8 @@ don't need to create the test databases manually. Just type:
 
     ./gradlew test -Pdocker
 
+The above command will start a PostgreSQL instance, which is the default target.
+
 Or:
 
     ./gradlew test -Pdocker -Pdb=mysql
@@ -199,6 +201,10 @@ Or:
 Or:
 
     ./gradlew test -Pdocker -Pdb=db2
+
+Or:
+
+    ./gradlew test -Pdocker -Pdb=oracle
 
 The tests will run faster if you reuse the same containers across 
 multiple test runs. To do this, edit the testcontainers configuration 
