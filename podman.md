@@ -206,5 +206,5 @@ and schema to run the tests:
 [oracle]:https://www.oracle.com/database/technologies/appdev/xe.html
 
 ```
-podman run --rm --name $NAME -e ORACLE_PASSWORD=hreact -e APP_USER=hreact -e APP_USER_PASSWORD=hreact -e ORACLE_DATABASE=hreact -p 1521:1521 gvenzl/oracle-xe:21.3.0-slim
+podman run --rm --name HibernateTestingOracle -e ORACLE_PASSWORD=hreact -e APP_USER=hreact -e APP_USER_PASSWORD=hreact -e ORACLE_DATABASE=hreact -p 1521:1521 docker.io/gvenzl/oracle-xe:21-slim-faststart
 ```
