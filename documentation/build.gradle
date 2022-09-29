@@ -1,5 +1,6 @@
-import org.asciidoctor.gradle.jvm.AsciidoctorTask
 import java.time.Year
+
+import org.asciidoctor.gradle.jvm.AsciidoctorTask
 
 apply plugin: 'org.asciidoctor.jvm.convert'
 
