@@ -17,8 +17,8 @@
 //// Hibernate Reactive doesn't need it
 //DEPS org.mariadb.jdbc:mariadb-java-client:2.7.3
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;

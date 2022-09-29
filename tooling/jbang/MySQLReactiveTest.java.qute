@@ -17,8 +17,8 @@
 //// Hibernate Reactive doesn't need it
 //DEPS com.mysql:mysql-connector-j:8.0.31
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
