@@ -7,13 +7,13 @@ package org.hibernate.reactive;
 
 import java.util.Collection;
 import java.util.List;
-import javax.persistence.Entity;
-import javax.persistence.Id;
 
 import org.junit.Test;
 
 import io.vertx.core.Context;
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

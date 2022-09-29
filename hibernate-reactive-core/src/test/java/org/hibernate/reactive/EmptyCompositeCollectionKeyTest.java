@@ -9,11 +9,11 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import javax.persistence.ElementCollection;
-import javax.persistence.Embeddable;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
 
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;

@@ -5,18 +5,26 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.Hibernate;
-import org.hibernate.LockMode;
-import org.hibernate.reactive.stage.Stage;
-import org.junit.Test;
-
-import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import org.hibernate.Hibernate;
+import org.hibernate.LockMode;
+import org.hibernate.reactive.stage.Stage;
+
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 public class ReferenceTest extends BaseReactiveTest {
 

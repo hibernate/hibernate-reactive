@@ -5,13 +5,19 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.junit.Test;
-
-import javax.persistence.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 
 

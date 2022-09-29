@@ -8,23 +8,6 @@ package org.hibernate.reactive;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.PostLoad;
-import javax.persistence.PostPersist;
-import javax.persistence.PostRemove;
-import javax.persistence.PostUpdate;
-import javax.persistence.PrePersist;
-import javax.persistence.PreRemove;
-import javax.persistence.PreUpdate;
-import javax.persistence.Table;
-import javax.persistence.Transient;
-import javax.persistence.Version;
 
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
@@ -34,6 +17,23 @@ import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.PostRemove;
+import jakarta.persistence.PostUpdate;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreRemove;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import jakarta.persistence.Version;
 
 
 public class SubselectFetchTest extends BaseReactiveTest {

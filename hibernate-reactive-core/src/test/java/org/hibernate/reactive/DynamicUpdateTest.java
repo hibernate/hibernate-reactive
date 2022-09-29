@@ -7,12 +7,6 @@ package org.hibernate.reactive;
 
 import java.util.Collection;
 import java.util.List;
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
 
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
@@ -21,6 +15,12 @@ import org.hibernate.annotations.OptimisticLocking;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 import static org.hibernate.annotations.OptimisticLockType.DIRTY;
 

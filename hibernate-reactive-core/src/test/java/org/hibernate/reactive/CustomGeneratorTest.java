@@ -5,7 +5,12 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 import org.hibernate.id.Configurable;
@@ -13,17 +18,14 @@ import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
+
 import org.junit.Test;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Version;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.concurrent.CompletionStage;
+import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Version;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 

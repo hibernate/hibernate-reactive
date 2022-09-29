@@ -8,15 +8,6 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.IntFunction;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LazyInitializationException;
@@ -26,6 +17,15 @@ import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;

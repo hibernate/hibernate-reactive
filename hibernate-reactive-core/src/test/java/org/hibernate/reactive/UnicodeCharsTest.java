@@ -7,16 +7,16 @@ package org.hibernate.reactive;
 
 import java.util.Collection;
 import java.util.List;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
 
 import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 import static org.hibernate.cfg.AvailableSettings.USE_NATIONALIZED_CHARACTER_DATA;
 

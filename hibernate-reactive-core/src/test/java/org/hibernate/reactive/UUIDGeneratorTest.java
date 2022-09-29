@@ -5,23 +5,24 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-
-import org.junit.Rule;
-import org.junit.Test;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Version;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.*;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+
+import org.junit.Rule;
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Version;
+
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 
 
 public class UUIDGeneratorTest extends BaseReactiveTest {
