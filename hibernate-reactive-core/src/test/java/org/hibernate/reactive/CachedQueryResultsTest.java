@@ -124,8 +124,8 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 
 	public static Uni<List<Fruit>> criteriaFindAll() {
 		final Mutiny.SessionFactory sf = getMutinySessionFactory();
-		return sf.withStatelessSession( s -> s.createQuery( criteriaQuery( sf.getCriteriaBuilder() ) ).getResultList()
-		);
+		throw new AssertionFailure("ORM-6: TODO");
+//		return sf.withStatelessSession( s -> s.createQuery( criteriaQuery( sf.getCriteriaBuilder() ) ).getResultList() );
 	}
 
 	public static CriteriaQuery<Fruit> criteriaQuery(CriteriaBuilder criteriaBuilder) {

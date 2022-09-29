@@ -5,24 +5,23 @@
  */
 package org.hibernate.reactive;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
-import org.hibernate.dialect.CockroachDB201Dialect;
-import org.hibernate.dialect.DB297Dialect;
+import org.hibernate.dialect.CockroachDialect;
+import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.MariaDB103Dialect;
-import org.hibernate.dialect.MySQL8Dialect;
-import org.hibernate.dialect.Oracle12cDialect;
-import org.hibernate.dialect.PostgreSQL10Dialect;
-import org.hibernate.dialect.SQLServer2012Dialect;
+import org.hibernate.dialect.MariaDBDialect;
+import org.hibernate.dialect.MySQLDialect;
+import org.hibernate.dialect.OracleDialect;
+import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.provider.Settings;
-
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
-
-import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 public class UriConfigTest extends BaseReactiveTest {
 
@@ -30,13 +29,13 @@ public class UriConfigTest extends BaseReactiveTest {
 	protected Configuration constructConfiguration() {
 		Class<? extends Dialect> dialect;
 		switch ( dbType() ) {
-			case POSTGRESQL: dialect = PostgreSQL10Dialect.class; break;
-			case COCKROACHDB: dialect = CockroachDB201Dialect.class; break;
-			case MYSQL: dialect = MySQL8Dialect.class; break;
-			case MARIA: dialect = MariaDB103Dialect.class; break;
-			case SQLSERVER: dialect = SQLServer2012Dialect.class; break;
-			case DB2: dialect = DB297Dialect.class; break;
-			case ORACLE: dialect = Oracle12cDialect.class; break;
+			case POSTGRESQL: dialect = PostgreSQLDialect.class; break;
+			case COCKROACHDB: dialect = CockroachDialect.class; break;
+			case MYSQL: dialect = MySQLDialect.class; break;
+			case MARIA: dialect = MariaDBDialect.class; break;
+			case SQLSERVER: dialect = SQLServerDialect.class; break;
+			case DB2: dialect = DB2Dialect.class; break;
+			case ORACLE: dialect = OracleDialect.class; break;
 			default: throw new IllegalArgumentException( "Database not recognized: " + dbType().name() );
 		}
 

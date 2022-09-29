@@ -612,33 +612,35 @@ public class MutinySessionTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testForceFlushWithDelete(TestContext context) {
+		// Pig1 and Pig2 must have the same id
+		final GuineaPig pig1 = new GuineaPig( 111, "Pig 1" );
+		final GuineaPig pig2 = new GuineaPig( 111, "Pig 2" );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session
+						.persist( pig1 )
+						.call( () -> session.remove( pig1 ) )
+						// pig 2 has the same id as pig1.
+						// If pig1 has not been removed from the session,
+						// we will have a duplicated id exception
+						.call( () -> session.persist( pig2 ) )
+				)
+				.chain( () -> getMutinySessionFactory()
+						.withSession( s -> s.find( GuineaPig.class, pig2.getId() ) ) )
+				.invoke( result -> assertThatPigsAreEqual( context, pig2, result ) )
+		);
+	}
+
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
 		context.assertNotNull( actual );
 		context.assertEquals( expected.getId(), actual.getId() );
 		context.assertEquals( expected.getName(), actual.getName() );
 	}
 
-	@Test
-	public void testForceFlushWithDelete(TestContext context) {
-		final GuineaPig pig1 = new GuineaPig( 111, "Aloi" );
-		final GuineaPig pig2 = new GuineaPig( 111, "Bloi" );
-
-		test( context, getMutinySessionFactory()
-				.withTransaction( session -> session
-						.persist( pig1 )
-						// remove pig1
-						.call( () -> session.remove( pig1 ) )
-						// persist pig2 with same ID as original pig1 to verify that reactive flush was performed
-						.call( () -> session.persist( pig2 ) )
-				).chain( () -> getMutinySessionFactory()
-						.withSession( s -> s.find( GuineaPig.class, pig2.getId() ) ) )
-						// check that found entity is "pig2"
-				.invoke( result -> assertThatPigsAreEqual( context, pig2, result ) )
-		);
-	}
-
-	@Entity(name="GuineaPig")
-	@Table(name="Pig")
+	@Entity(name = "GuineaPig")
+	@Table(name = "Pig")
 	public static class GuineaPig {
 		@Id
 		private Integer id;

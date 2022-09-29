@@ -22,12 +22,6 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import org.hibernate.type.NumericBooleanType;
-import org.hibernate.type.TextType;
-import org.hibernate.type.TrueFalseType;
-import org.hibernate.type.YesNoType;
-import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
-
 import org.testcontainers.containers.MSSQLServerContainer;
 
 import static org.hibernate.reactive.containers.DockerImage.imageName;
@@ -50,9 +44,14 @@ class MSSQLServerDatabase implements TestableDatabase {
 	static {{
 		expectedDBTypeForClass.put( boolean.class, "bit" );
 		expectedDBTypeForClass.put( Boolean.class, "bit" );
-		expectedDBTypeForClass.put( NumericBooleanType.class, "int" );
-		expectedDBTypeForClass.put( TrueFalseType.class, "char" );
-		expectedDBTypeForClass.put( YesNoType.class, "char" );
+
+		// FIXME: [ORM-6] Check if we need alternatives
+		// expectedDBTypeForClass.put( NumericBooleanType.class, "int" );
+		// expectedDBTypeForClass.put( TrueFalseType.class, "char" );
+		// expectedDBTypeForClass.put( YesNoType.class, "char" );
+		// expectedDBTypeForClass.put( PrimitiveByteArrayTypeDescriptor.class, "varbinary" );
+		// expectedDBTypeForClass.put( TextType.class, "text" );
+
 		expectedDBTypeForClass.put( int.class, "int" );
 		expectedDBTypeForClass.put( Integer.class, "int" );
 		expectedDBTypeForClass.put( long.class, "bigint" );
@@ -63,7 +62,6 @@ class MSSQLServerDatabase implements TestableDatabase {
 		expectedDBTypeForClass.put( Double.class, "float" );
 		expectedDBTypeForClass.put( byte.class, "smallint" );
 		expectedDBTypeForClass.put( Byte.class, "smallint" );
-		expectedDBTypeForClass.put( PrimitiveByteArrayTypeDescriptor.class, "varbinary" );
 		expectedDBTypeForClass.put( URL.class, "varchar" );
 		expectedDBTypeForClass.put( TimeZone.class, "varchar" );
 		expectedDBTypeForClass.put( Date.class, "date" );
@@ -80,7 +78,6 @@ class MSSQLServerDatabase implements TestableDatabase {
 		expectedDBTypeForClass.put( Duration.class, "bigint" );
 		expectedDBTypeForClass.put( Character.class, "char" );
 		expectedDBTypeForClass.put( char.class, "char" );
-		expectedDBTypeForClass.put( TextType.class, "text" );
 		expectedDBTypeForClass.put( String.class, "varchar" );
 	}}
 

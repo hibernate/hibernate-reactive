@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive.containers;
 
+import static org.hibernate.reactive.containers.DockerImage.imageName;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -22,15 +24,7 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import org.hibernate.type.NumericBooleanType;
-import org.hibernate.type.TextType;
-import org.hibernate.type.TrueFalseType;
-import org.hibernate.type.YesNoType;
-import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
-
 import org.testcontainers.containers.PostgreSQLContainer;
-
-import static org.hibernate.reactive.containers.DockerImage.imageName;
 
 class PostgreSQLDatabase implements TestableDatabase {
 
@@ -41,9 +35,14 @@ class PostgreSQLDatabase implements TestableDatabase {
 	static {{
 			expectedDBTypeForClass.put( boolean.class, "boolean" );
 			expectedDBTypeForClass.put( Boolean.class, "boolean" );
-			expectedDBTypeForClass.put( NumericBooleanType.class, "integer" );
-			expectedDBTypeForClass.put( TrueFalseType.class, "character" );
-			expectedDBTypeForClass.put( YesNoType.class, "character" );
+
+			// FIXME: [ORM-6] Check if we need alternatives
+			// expectedDBTypeForClass.put( NumericBooleanType.class, "integer" );
+			// expectedDBTypeForClass.put( TrueFalseType.class, "character" );
+			// expectedDBTypeForClass.put( YesNoType.class, "character" );
+			// expectedDBTypeForClass.put( PrimitiveByteArrayTypeDescriptor.class, "bytea" );
+			// expectedDBTypeForClass.put( TextType.class, "text" );
+
 			expectedDBTypeForClass.put( int.class, "integer" );
 			expectedDBTypeForClass.put( Integer.class, "integer" );
 			expectedDBTypeForClass.put( long.class, "bigint" );
@@ -54,7 +53,6 @@ class PostgreSQLDatabase implements TestableDatabase {
 			expectedDBTypeForClass.put( Double.class, "double precision" );
 			expectedDBTypeForClass.put( byte.class, "smallint" );
 			expectedDBTypeForClass.put( Byte.class, "smallint" );
-			expectedDBTypeForClass.put( PrimitiveByteArrayTypeDescriptor.class, "bytea" );
 			expectedDBTypeForClass.put( URL.class, "character varying" );
 			expectedDBTypeForClass.put( TimeZone.class, "character varying" );
 			expectedDBTypeForClass.put( Date.class, "date" );
@@ -71,7 +69,6 @@ class PostgreSQLDatabase implements TestableDatabase {
 			expectedDBTypeForClass.put( Duration.class, "bigint" );
 			expectedDBTypeForClass.put( Character.class, "character" );
 			expectedDBTypeForClass.put( char.class, "character" );
-			expectedDBTypeForClass.put( TextType.class, "text" );
 			expectedDBTypeForClass.put( String.class, "character varying" );
 	}}
 

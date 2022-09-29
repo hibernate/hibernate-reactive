@@ -548,13 +548,13 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		Double fieldDouble;
 		Byte fieldByte;
 
-		@Type(type = "true_false")
+		@Convert(converter = org.hibernate.type.YesNoConverter.class)
 		Boolean booleanTrueFalse;
 
-		@Type(type = "yes_no")
+		@Convert(converter = org.hibernate.type.TrueFalseConverter.class)
 		Boolean booleanYesNo;
 
-		@Type(type = "numeric_boolean")
+		@Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
 		Boolean booleanNumeric;
 
 		URL url;
@@ -580,7 +580,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		@Convert(converter = BigIntegerAsString.class)
 		BigInteger bigIntegerAsString;
 
-		@Type(type="org.hibernate.reactive.types.BigDecimalAsString")
+		@Type(org.hibernate.reactive.types.BigDecimalAsString.class)
 		BigDecimal bigDecimalAsString;
 
 		Cover cover;

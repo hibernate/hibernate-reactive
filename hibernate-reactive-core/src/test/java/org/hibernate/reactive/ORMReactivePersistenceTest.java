@@ -19,6 +19,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
@@ -51,7 +52,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	public void prepareOrmFactory() {
 		Configuration configuration = constructConfiguration();
 		configuration.setProperty( Settings.DRIVER, "org.postgresql.Driver" );
-		configuration.setProperty( Settings.DIALECT, "org.hibernate.dialect.PostgreSQL95Dialect");
+		configuration.setProperty( Settings.DIALECT, PostgreSQLDialect.class.getName() );
 
 		StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() );
@@ -61,7 +62,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	}
 
 	@After
-	public void cleanDb(TestContext context) {
+	public void closeOrmFactory() {
 		ormFactory.close();
 	}
 
@@ -69,11 +70,11 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	public void testORMWithStageSession(TestContext context) {
 		final Flour almond = new Flour( 1, "Almond", "made from ground almonds.", "Gluten free" );
 
-		Session session = ormFactory.openSession();
-		session.beginTransaction();
-		session.persist( almond );
-		session.getTransaction().commit();
-		session.close();
+		try (Session session = ormFactory.openSession()) {
+			session.beginTransaction();
+			session.persist( almond );
+			session.getTransaction().commit();
+		}
 
 		// Check database with Stage session and verify 'almond' flour exists
 		test( context, openSession()
@@ -104,6 +105,8 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	public static class Flour {
 		@Id
 		private Integer id;
+
+		@Column(name = "`name`")
 		private String name;
 		private String description;
 		private String type;

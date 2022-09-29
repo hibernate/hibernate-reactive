@@ -46,9 +46,9 @@ public class UserJsonTypeTest extends BaseReactiveTest {
 	@Test
 	public void testJsonType(TestContext context) {
 		Basic basic = new Basic();
-		basic.jsonObj = new JsonObject().put("int", 123).put("str", "hello");
+		basic.jsonObj = new JsonObject().put( "int", 123 ).put( "str", "hello" );
 
-		testField( context, basic, found -> context.assertEquals(basic.jsonObj, found.jsonObj) );
+		testField( context, basic, found -> context.assertEquals( basic.jsonObj, found.jsonObj ) );
 	}
 
 	@Test
@@ -56,7 +56,7 @@ public class UserJsonTypeTest extends BaseReactiveTest {
 		Basic basic = new Basic();
 		basic.jsonObj = null;
 
-		testField( context, basic, found -> context.assertEquals(basic.jsonObj, found.jsonObj) );
+		testField( context, basic, found -> context.assertEquals( basic.jsonObj, found.jsonObj ) );
 	}
 
 	/**
@@ -67,37 +67,30 @@ public class UserJsonTypeTest extends BaseReactiveTest {
 				context,
 				getSessionFactory().withTransaction( (s, t) -> s.persist( original ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose( s2 -> s2.find( Basic.class,  original.id )
+						.thenCompose( s2 -> s2.find( Basic.class, original.id )
 								.thenAccept( found -> {
 									context.assertNotNull( found );
 									context.assertEquals( original, found );
 									consumer.accept( found );
-								} ) )
-		);
+								} ) ) );
 	}
 
-	@Entity(name="JsonEntity")
-	@Table(name="JsonEntity")
+	@Entity(name = "JsonEntity")
+	@Table(name = "JsonEntity")
 	private static class Basic {
 
-		@Id @GeneratedValue Integer id;
-		@Version Integer version;
+		@Id
+		@GeneratedValue
+		Integer id;
+		@Version
+		Integer version;
 		String string;
 
-		@Type(type="org.hibernate.reactive.types.Json")
+		@Type(org.hibernate.reactive.types.Json.class)
 		@Column(columnDefinition = "json")
 		private JsonObject jsonObj;
 
 		public Basic() {
-		}
-
-		public Basic(String string) {
-			this.string = string;
-		}
-
-		public Basic(Integer id, String string) {
-			this.id = id;
-			this.string = string;
 		}
 
 		public Integer getId() {
@@ -122,12 +115,12 @@ public class UserJsonTypeTest extends BaseReactiveTest {
 				return false;
 			}
 			Basic basic = (Basic) o;
-			return Objects.equals(string, basic.string);
+			return Objects.equals( string, basic.string );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(string);
+			return Objects.hash( string );
 		}
 	}
 }
