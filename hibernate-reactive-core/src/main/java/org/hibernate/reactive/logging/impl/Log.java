@@ -13,6 +13,7 @@ import jakarta.persistence.PersistenceException;
 import org.hibernate.HibernateException;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.cache.CacheException;
+import org.hibernate.id.IdentifierGenerationException;
 
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.annotations.Cause;
@@ -225,6 +226,9 @@ public interface Log extends BasicLogger {
 
 	@Message(id = 73, value = "%1$s is an invalid identity type when using CockroachDB (entity %2$s) - CockroachDB might generates identifiers that are too big and won't always fit in a %1$s. java.lang.Long is valid replacement")
 	HibernateException invalidIdentifierTypeForCockroachDB(@FormatWith(ClassFormatter.class) Class<?> idType, String entityName);
+
+	@Message(id = 74, value = "ids for this class must be manually assigned before calling save(): %1$s")
+	IdentifierGenerationException idMustBeAssignedBeforeSave(String entityName);
 
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
