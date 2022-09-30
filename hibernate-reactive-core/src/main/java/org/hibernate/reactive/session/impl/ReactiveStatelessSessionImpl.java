@@ -58,8 +58,8 @@ import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.tuple.entity.EntityMetamodel;
 
-import javax.persistence.EntityGraph;
-import javax.persistence.Tuple;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.Tuple;
 import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.List;

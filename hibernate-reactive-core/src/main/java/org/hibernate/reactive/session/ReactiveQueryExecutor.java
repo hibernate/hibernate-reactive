@@ -14,7 +14,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
 
-import javax.persistence.EntityGraph;
+import jakarta.persistence.EntityGraph;
 import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CompletionStage;

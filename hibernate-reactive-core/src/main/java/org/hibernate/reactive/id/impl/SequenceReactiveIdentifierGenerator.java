@@ -21,7 +21,7 @@ import static org.hibernate.internal.util.config.ConfigurationHelper.getInt;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.determineSequenceName;
 
 /**
- * Support for JPA's {@link javax.persistence.SequenceGenerator}.
+ * Support for JPA's {@link jakarta.persistence.SequenceGenerator}.
  * <p>
  * This implementation supports block allocation, but does not
  * guarantee that generated identifiers are sequential.

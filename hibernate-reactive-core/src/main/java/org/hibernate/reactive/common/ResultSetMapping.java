@@ -8,7 +8,7 @@ package org.hibernate.reactive.common;
 /**
  * Represents the shape of a native SQL query result
  * set, as specified by an instance of the annotation
- * {@link javax.persistence.SqlResultSetMapping}. At
+ * {@link jakarta.persistence.SqlResultSetMapping}. At
  * runtime an instance may be obtained by calling
  * {@code session.getResultSetMapping(type, name)}, or
  * using a typesafe reference produced by some sort of
@@ -22,7 +22,7 @@ package org.hibernate.reactive.common;
 public interface ResultSetMapping<T> {
 	/**
 	 * The name of the result set mapping, as specified by
-	 * {@link javax.persistence.SqlResultSetMapping#name}.
+	 * {@link jakarta.persistence.SqlResultSetMapping#name}.
 	 */
 	String getName();
 

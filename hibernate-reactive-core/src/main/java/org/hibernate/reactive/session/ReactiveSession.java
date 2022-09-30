@@ -20,8 +20,8 @@ import org.hibernate.event.internal.MergeContext;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 
-import javax.persistence.EntityGraph;
-import javax.persistence.metamodel.Attribute;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.metamodel.Attribute;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;

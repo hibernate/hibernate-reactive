@@ -186,7 +186,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
 		if ( username == null ) {
 			throw new HibernateError(
-					"database username not specified (set the property 'javax.persistence.jdbc.user', or include it as a parameter in the connection URL)" );
+					"database username not specified (set the property 'jakarta.persistence.jdbc.user', or include it as a parameter in the connection URL)" );
 		}
 
 		SqlConnectOptions connectOptions = new SqlConnectOptions()
