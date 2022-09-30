@@ -10,10 +10,10 @@ import java.util.Iterator;
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
-import org.hibernate.dialect.CockroachDB192Dialect;
+import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.PostgreSQL81Dialect;
+import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.id.IdentityGenerator;
 import org.hibernate.id.PostInsertIdentityPersister;
@@ -52,7 +52,7 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 		}
 
 		private IdentifierGeneratingInsert createInsert(SqlStringGenerationContext context) {
-			if ( dialect instanceof PostgreSQL81Dialect || dialect instanceof CockroachDB192Dialect ) {
+			if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
 				return new PostgresIdentifierGeneratingInsert( dialect );
 			}
 			if ( dialect instanceof SQLServerDialect ) {
