@@ -5,15 +5,20 @@
  */
 package org.hibernate.reactive.provider.service;
 
+import java.lang.invoke.MethodHandles;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Map;
+
 import org.hibernate.boot.registry.StandardServiceInitiator;
-import org.hibernate.dialect.CockroachDB201Dialect;
-import org.hibernate.dialect.DB297Dialect;
+import org.hibernate.dialect.CockroachDialect;
+import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.MariaDB103Dialect;
-import org.hibernate.dialect.MySQL8Dialect;
+import org.hibernate.dialect.MariaDBDialect;
+import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.Oracle12cDialect;
-import org.hibernate.dialect.PostgreSQL10Dialect;
-import org.hibernate.dialect.SQLServer2012Dialect;
+import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.engine.jdbc.connections.spi.JdbcConnectionAccess;
 import org.hibernate.engine.jdbc.dialect.spi.DatabaseMetaDataDialectResolutionInfoAdapter;
@@ -26,11 +31,6 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-
-import java.lang.invoke.MethodHandles;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Map;
 
 /**
  * A Hibernate {@link StandardServiceInitiator service initiator} that
@@ -127,28 +127,27 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 		}
 
 		if ( url.startsWith( "mysql:" ) ) {
-			return MySQL8Dialect.class;
+			return MySQLDialect.class;
 		}
-		else if ( url.startsWith( "mariadb:" ) ) {
-			return MariaDB103Dialect.class;
+		if ( url.startsWith( "mariadb:" ) ) {
+			return MariaDBDialect.class;
 		}
-		else if ( url.startsWith( "postgresql:" ) || url.startsWith( "postgres:" ) ) {
-			return PostgreSQL10Dialect.class;
+		if ( url.startsWith( "postgresql:" ) || url.startsWith( "postgres:" ) ) {
+			return PostgreSQLDialect.class;
 		}
-		else if ( url.startsWith( "db2:" ) ) {
-			return DB297Dialect.class;
+		if ( url.startsWith( "db2:" ) ) {
+			return DB2Dialect.class;
 		}
-		else if ( url.startsWith( "cockroachdb:" ) ) {
-			return CockroachDB201Dialect.class;
+		if ( url.startsWith( "cockroachdb:" ) ) {
+			return CockroachDialect.class;
 		}
-		else if ( url.startsWith( "sqlserver:" ) ) {
-			return SQLServer2012Dialect.class;
+		if ( url.startsWith( "sqlserver:" ) ) {
+			return SQLServerDialect.class;
 		}
-		else if ( url.startsWith( "oracle:" ) ) {
+		if ( url.startsWith( "oracle:" ) ) {
 			return Oracle12cDialect.class;
 		}
-		else {
-			return null;
-		}
+
+		return null;
 	}
 }
