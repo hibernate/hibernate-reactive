@@ -25,66 +25,66 @@ import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
  */
 public class EmulatedSequenceReactiveIdentifierGenerator extends TableReactiveIdentifierGenerator {
 
-    @Override
-    protected Boolean determineStoreLastUsedValue(ServiceRegistry serviceRegistry) {
-        return false;
-    }
+	@Override
+	protected Boolean determineStoreLastUsedValue(ServiceRegistry serviceRegistry) {
+		return false;
+	}
 
-    @Override
-    protected QualifiedName determineTableName(Properties params, ServiceRegistry serviceRegistry) {
-        return IdentifierGeneration.determineSequenceName( params, serviceRegistry );
-    }
+	@Override
+	protected QualifiedName determineTableName(Properties params, ServiceRegistry serviceRegistry) {
+		return IdentifierGeneration.determineSequenceName( params, serviceRegistry );
+	}
 
-    @Override
-    protected String determineValueColumnNameForTable(Properties params, JdbcEnvironment jdbcEnvironment) {
-        final String name = getString( SequenceStyleGenerator.VALUE_COLUMN_PARAM, params, SequenceStyleGenerator.DEF_VALUE_COLUMN );
-        return jdbcEnvironment.getIdentifierHelper().toIdentifier( name ).render( jdbcEnvironment.getDialect() );
-    }
+	@Override
+	protected String determineValueColumnNameForTable(Properties params, JdbcEnvironment jdbcEnvironment) {
+		final String name = getString( SequenceStyleGenerator.VALUE_COLUMN_PARAM, params, SequenceStyleGenerator.DEF_VALUE_COLUMN );
+		return jdbcEnvironment.getIdentifierHelper().toIdentifier( name ).render( jdbcEnvironment.getDialect() );
+	}
 
-    @Override
-    protected String determineSegmentColumnName(Properties params, JdbcEnvironment jdbcEnvironment) {
-        return null;
-    }
+	@Override
+	protected String determineSegmentColumnName(Properties params, JdbcEnvironment jdbcEnvironment) {
+		return null;
+	}
 
-    @Override
-    protected String determineSegmentValue(Properties params) {
-        return null;
-    }
+	@Override
+	protected String determineSegmentValue(Properties params) {
+		return null;
+	}
 
-    @Override
-    protected int determineInitialValue(Properties params) {
-        return getInt( SequenceStyleGenerator.INITIAL_PARAM, params, SequenceStyleGenerator.DEFAULT_INITIAL_VALUE );
-    }
+	@Override
+	protected int determineInitialValue(Properties params) {
+		return getInt( SequenceStyleGenerator.INITIAL_PARAM, params, SequenceStyleGenerator.DEFAULT_INITIAL_VALUE );
+	}
 
-    @Override
-    protected int determineIncrement(Properties params) {
-        return getInt( SequenceStyleGenerator.INCREMENT_PARAM, params, SequenceStyleGenerator.DEFAULT_INCREMENT_SIZE );
-    }
+	@Override
+	protected int determineIncrement(Properties params) {
+		return getInt( SequenceStyleGenerator.INCREMENT_PARAM, params, SequenceStyleGenerator.DEFAULT_INCREMENT_SIZE );
+	}
 
-    protected Object[] updateParameters(long currentValue, long updatedValue) {
-        return new Object[]{ updatedValue, currentValue };
-    }
+	protected Object[] updateParameters(long currentValue, long updatedValue) {
+		return new Object[] { updatedValue, currentValue };
+	}
 
-    protected Object[] insertParameters(long insertedValue) {
-        return new Object[]{ insertedValue };
-    }
+	protected Object[] insertParameters(long insertedValue) {
+		return new Object[] { insertedValue };
+	}
 
-    protected Object[] selectParameters() {
-        return new Object[]{};
-    }
+	protected Object[] selectParameters() {
+		return new Object[] {};
+	}
 
-    protected String buildSelectQuery() {
-        return "select tbl." + valueColumnName + " from " + renderedTableName + " tbl";
-    }
+	protected String buildSelectQuery() {
+		return "select tbl." + valueColumnName + " from " + renderedTableName + " tbl";
+	}
 
-    protected String buildUpdateQuery() {
-        return "update " + renderedTableName + " set " + valueColumnName + "=?"
-                + " where " + valueColumnName + "=?";
-    }
+	protected String buildUpdateQuery() {
+		return "update " + renderedTableName + " set " + valueColumnName + "=?"
+				+ " where " + valueColumnName + "=?";
+	}
 
-    protected String buildInsertQuery() {
-        return "insert into " + renderedTableName + " (" + valueColumnName + ") "
-                + " values (?)";
-    }
+	protected String buildInsertQuery() {
+		return "insert into " + renderedTableName + " (" + valueColumnName + ") "
+				+ " values (?)";
+	}
 
 }
