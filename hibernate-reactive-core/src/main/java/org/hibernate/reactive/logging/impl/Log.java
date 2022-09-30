@@ -8,7 +8,7 @@ package org.hibernate.reactive.logging.impl;
 
 import java.io.Serializable;
 
-import javax.persistence.PersistenceException;
+import jakarta.persistence.PersistenceException;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LazyInitializationException;

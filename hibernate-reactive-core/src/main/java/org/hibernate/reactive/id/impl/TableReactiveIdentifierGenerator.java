@@ -39,7 +39,7 @@ import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
- * Support for JPA's {@link javax.persistence.TableGenerator}.
+ * Support for JPA's {@link jakarta.persistence.TableGenerator}.
  * Persistence is managed via a table which may hold multiple
  * rows distinguished by a "segment" column value.
  * <p>
