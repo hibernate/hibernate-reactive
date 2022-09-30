@@ -5,6 +5,9 @@
  */
 package org.hibernate.reactive.event.impl;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -22,7 +25,7 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEntityEvent;
 import org.hibernate.event.spi.FlushEntityEventListener;
 import org.hibernate.event.spi.FlushEvent;
-import org.hibernate.internal.util.collections.IdentitySet;
+import org.hibernate.event.spi.PersistContext;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.Cascade;
@@ -34,9 +37,6 @@ import org.hibernate.reactive.engine.impl.ReactiveCollectionUpdateAction;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
-
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Collects commons methods needed during the management of flush events.
@@ -125,13 +125,13 @@ public abstract class AbstractReactiveFlushingEventListener {
 
 		LOG.debug( "Processing flush-time cascades" );
 
-		IdentitySet copiedAlready = new IdentitySet( 10 );
+		PersistContext context = PersistContext.create();
 		//safe from concurrent modification because of how concurrentEntries() is implemented on IdentityMap
 		Map.Entry<Object, EntityEntry>[] entries = persistenceContext.reentrantSafeEntityEntries();
 		return loop(
 				entries,
 				index -> flushable( entries[index].getValue() ),
-				index -> cascadeOnFlush( session, entries[index].getValue().getPersister(), entries[index].getKey(), copiedAlready ) );
+				index -> cascadeOnFlush( session, entries[index].getValue().getPersister(), entries[index].getKey(), context ) );
 	}
 
 	private static boolean flushable(EntityEntry entry) {
@@ -280,7 +280,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 			EventSource session,
 			EntityPersister persister,
 			Object object,
-			IdentitySet copiedAlready)
+			PersistContext copiedAlready)
 			throws HibernateException {
 		return new Cascade<>(
 				CascadingActions.PERSIST_ON_FLUSH,

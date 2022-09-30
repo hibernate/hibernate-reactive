@@ -5,13 +5,31 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import org.hibernate.*;
+import static org.hibernate.pretty.MessageHelper.infoString;
+
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+
+import org.hibernate.AssertionFailure;
+import org.hibernate.CustomEntityDirtinessStrategy;
+import org.hibernate.HibernateException;
+import org.hibernate.SessionFactory;
+import org.hibernate.StaleObjectStateException;
 import org.hibernate.action.internal.DelayedPostInsertIdentifier;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.engine.internal.ManagedTypeHelper;
+import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.internal.Versioning;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.PersistentAttributeInterceptable;
+import org.hibernate.engine.spi.PersistentAttributeInterceptor;
+import org.hibernate.engine.spi.SelfDirtinessTracker;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.DirtyCollectionSearchVisitor;
 import org.hibernate.event.internal.FlushVisitor;
 import org.hibernate.event.internal.WrapVisitor;
@@ -21,20 +39,14 @@ import org.hibernate.event.spi.FlushEntityEventListener;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
-import org.hibernate.metadata.ClassMetadata;
+import org.hibernate.metamodel.mapping.NaturalIdMapping;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.reactive.engine.impl.ReactiveEntityUpdateAction;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.engine.impl.ReactiveEntityUpdateAction;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.Type;
-
-import java.io.Serializable;
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-
-import static org.hibernate.pretty.MessageHelper.infoString;
 
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultFlushEntityEventListener}.
@@ -59,7 +71,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 	/**
 	 * make sure user didn't mangle the id
 	 */
-	public void checkId(Object object, EntityPersister persister, Serializable id, SessionImplementor session)
+	public void checkId(Object object, EntityPersister persister, Object id, SessionImplementor session)
 			throws HibernateException {
 
 		if (id instanceof DelayedPostInsertIdentifier) {
@@ -69,8 +81,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 		}
 
 		if ( persister.canExtractIdOutOfEntity() ) {
-
-			Serializable oid = persister.getIdentifier( object, session );
+			Object oid = persister.getIdentifier( object, session );
 			if ( id == null ) {
 				throw new AssertionFailure( "null id in " + persister.getEntityName() + " entry (don't flush the Session after an exception occurs)" );
 			}
@@ -78,53 +89,29 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 				throw LOG.identifierAltered( persister.getEntityName(), id, oid );
 			}
 		}
-
 	}
 
 	private void checkNaturalId(
 			EntityPersister persister,
+			Object entity,
 			EntityEntry entry,
 			Object[] current,
 			Object[] loaded,
 			SessionImplementor session) {
-		if ( persister.hasNaturalIdentifier() && entry.getStatus() != Status.READ_ONLY ) {
-			if ( !persister.getEntityMetamodel().hasImmutableNaturalId() ) {
-				// SHORT-CUT: if the natural id is mutable (!immutable), no need to do the below checks
+
+		if ( entity instanceof PersistentAttributeInterceptable ) {
+			final PersistentAttributeInterceptor interceptor =
+					( (PersistentAttributeInterceptable) entity ).$$_hibernate_getInterceptor();
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
 				// EARLY EXIT!!!
+				// nothing to check - the entity is an un-initialized enhancement-as-proxy reference
 				return;
 			}
+		}
 
-			final int[] naturalIdentifierPropertiesIndexes = persister.getNaturalIdentifierProperties();
-			final Type[] propertyTypes = persister.getPropertyTypes();
-			final boolean[] propertyUpdateability = persister.getPropertyUpdateability();
-
-			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-			final Object[] snapshot = loaded == null
-					? persistenceContext.getNaturalIdSnapshot( entry.getId(), persister )
-					: persistenceContext.getNaturalIdHelper().extractNaturalIdValues( loaded, persister );
-
-			for ( int i = 0; i < naturalIdentifierPropertiesIndexes.length; i++ ) {
-				final int naturalIdentifierPropertyIndex = naturalIdentifierPropertiesIndexes[i];
-				if ( propertyUpdateability[naturalIdentifierPropertyIndex] ) {
-					// if the given natural id property is updatable (mutable), there is nothing to check
-					continue;
-				}
-
-				final Type propertyType = propertyTypes[naturalIdentifierPropertyIndex];
-				if ( !propertyType.isEqual( current[naturalIdentifierPropertyIndex], snapshot[i] ) ) {
-					throw LOG.immutableNaturalIdentifierAltered(
-							persister.getEntityName(),
-							propertyTypes[naturalIdentifierPropertyIndex].toLoggableString(
-									snapshot[i],
-									session.getFactory()
-							),
-							propertyTypes[naturalIdentifierPropertyIndex].toLoggableString(
-									current[naturalIdentifierPropertyIndex],
-									session.getFactory()
-							)
-					);
-				}
-			}
+		final NaturalIdMapping naturalIdMapping = persister.getNaturalIdMapping();
+		if ( naturalIdMapping != null && entry.getStatus() != Status.READ_ONLY ) {
+			naturalIdMapping.verifyFlushState( entry.getId(), current, loaded, session );
 		}
 	}
 
@@ -147,7 +134,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 		event.setPropertyValues( values );
 
 		//TODO: avoid this for non-new instances where mightBeDirty==false
-		boolean substitute = wrapCollections( session, persister, types, values );
+		boolean substitute = wrapCollections( session, persister, entity, entry.getId(), types, values );
 
 		if ( isUpdateNecessary( event, mightBeDirty ) ) {
 			substitute = scheduleUpdate( event ) || substitute;
@@ -184,16 +171,21 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 			checkId( entity, persister, entry.getId(), session );
 
 			// grab its current state
-			values = persister.getPropertyValues( entity );
+			values = persister.getValues( entity );
 
-			checkNaturalId( persister, entry, values, loadedState, session );
+			checkNaturalId( persister, entity, entry, values, loadedState, session );
 		}
 		return values;
 	}
 
+	/*
+	 * see DefaultFlushEntityEventListener#wrapCollections
+	 */
 	private boolean wrapCollections(
 			EventSource session,
 			EntityPersister persister,
+			Object entity,
+			Object id,
 			Type[] types,
 			Object[] values
 	) {
@@ -207,7 +199,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 			// don't dirty the container. Also, for versioned data, we
 			// need to wrap before calling searchForDirtyCollections
 
-			WrapVisitor visitor = new WrapVisitor( session );
+			WrapVisitor visitor = new WrapVisitor( entity, id ,session );
 			// substitutes into values by side-effect
 			visitor.processEntityPropertyValues( values, types );
 			return visitor.isSubstitutionRequired();
@@ -363,8 +355,12 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 
 	private boolean copyState(Object entity, Type[] types, Object[] state, SessionFactory sf) {
 		// copy the entity state into the state array and return true if the state has changed
-		ClassMetadata metadata = sf.getClassMetadata( entity.getClass() );
-		Object[] newState = metadata.getPropertyValues( entity );
+		final Object[] newState = sf.unwrap( SessionFactoryImplementor.class )
+				.getRuntimeMetamodels()
+				.getEntityMappingType( entity.getClass() )
+				.getEntityPersister()
+				.getValues( entity );
+
 		int size = newState.length;
 		boolean isDirty = false;
 		for ( int index = 0; index < size; index++ ) {
@@ -402,9 +398,9 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 						dirtyProperties
 				);
 
-				final Object nextVersion = isVersionIncrementRequired ?
-						Versioning.increment( entry.getVersion(), persister.getVersionType(), event.getSession() ) :
-						entry.getVersion(); //use the current version
+				final Object nextVersion = isVersionIncrementRequired
+						? Versioning.increment( entry.getVersion(), persister.getVersionMapping(), event.getSession() )
+						: entry.getVersion(); //use the current version
 
 				Versioning.setVersion( values, nextVersion, persister );
 
@@ -491,7 +487,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 		final SessionImplementor session = event.getSession();
 		final EntityEntry entry = event.getEntityEntry();
 		final EntityPersister persister = entry.getPersister();
-		final Serializable id = entry.getId();
+		final Object id = entry.getId();
 		final Object[] loadedState = entry.getLoadedState();
 
 		int[] dirtyProperties = session.getInterceptor().findDirty(
@@ -667,7 +663,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 		}
 	}
 
-	private void logDirtyProperties(Serializable id, int[] dirtyProperties, EntityPersister persister) {
+	private void logDirtyProperties(Object id, int[] dirtyProperties, EntityPersister persister) {
 		if ( dirtyProperties != null && dirtyProperties.length > 0 && LOG.isTraceEnabled() ) {
 			final String[] allPropertyNames = persister.getPropertyNames();
 			final String[] dirtyPropertyNames = new String[dirtyProperties.length];
@@ -682,11 +678,10 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 		}
 	}
 
-	private Object[] getDatabaseSnapshot(SessionImplementor session, EntityPersister persister, Serializable id) {
+	private Object[] getDatabaseSnapshot(SessionImplementor session, EntityPersister persister, Object id) {
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 		if ( persister.isSelectBeforeUpdateRequired() ) {
-			Object[] snapshot = persistenceContext
-					.getDatabaseSnapshot( id, persister );
+			Object[] snapshot = persistenceContext.getDatabaseSnapshot( id, persister );
 			if ( snapshot == null ) {
 				//do we even really need this? the update will fail anyway....
 				final StatisticsImplementor statistics = session.getFactory().getStatistics();

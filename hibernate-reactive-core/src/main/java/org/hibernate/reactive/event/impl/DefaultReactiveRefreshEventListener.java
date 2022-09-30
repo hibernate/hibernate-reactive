@@ -5,9 +5,11 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import java.io.Serializable;
+import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
@@ -26,9 +28,10 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.internal.EvictVisitor;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.event.spi.RefreshContext;
 import org.hibernate.event.spi.RefreshEvent;
 import org.hibernate.event.spi.RefreshEventListener;
-import org.hibernate.internal.util.collections.IdentitySet;
+import org.hibernate.loader.ast.spi.CascadingFetchProfile;
 import org.hibernate.metamodel.spi.MetamodelImplementor;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
@@ -43,9 +46,6 @@ import org.hibernate.type.CollectionType;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.Type;
 
-import static org.hibernate.pretty.MessageHelper.infoString;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultRefreshEventListener}.
  */
@@ -55,7 +55,7 @@ public class DefaultReactiveRefreshEventListener
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	public CompletionStage<Void> reactiveOnRefresh(RefreshEvent event) throws HibernateException {
-		return reactiveOnRefresh( event, new IdentitySet( 10 ) );
+		return reactiveOnRefresh( event, RefreshContext.create() );
 	}
 
 	@Override
@@ -64,8 +64,8 @@ public class DefaultReactiveRefreshEventListener
 	}
 
 	@Override
-	public void onRefresh(RefreshEvent event, Map refreshedAlready) throws HibernateException {
-		throw new UnsupportedOperationException();
+	public void onRefresh(RefreshEvent event, RefreshContext refreshedAlready) throws HibernateException {
+			throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -73,45 +73,37 @@ public class DefaultReactiveRefreshEventListener
 	 *
 	 * @param event The refresh event to be handled.
 	 */
-	public CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, IdentitySet refreshedAlready) {
+	@Override
+	public CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready) {
 
 		EventSource source = event.getSession();
 
 		boolean detached = event.getEntityName() != null
 				? !source.contains( event.getEntityName(), event.getObject() )
 				: !source.contains( event.getObject() );
+
 		if ( detached ) {
 			// Hibernate Reactive doesn't support detached instances in refresh()
 			throw new IllegalArgumentException("unmanaged instance passed to refresh()");
 		}
-
-//		if ( persistenceContext.reassociateIfUninitializedProxy( event.getObject() ) ) {
-//			if (detached) {
-//				source.setReadOnly( event.getObject(), source.isDefaultReadOnly() );
-//			}
-//			return CompletionStages.voidFuture();
-//		}
-//
-//		final Object entity = persistenceContext.unproxyAndReassociate( event.getObject() );
-
 		return ( (ReactiveSession) source ).reactiveFetch( event.getObject(), true )
 				.thenCompose( entity -> reactiveOnRefresh( event, refreshedAlready, entity ) );
 	}
 
-	private CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, IdentitySet refreshedAlready, Object entity) {
+	private CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready, Object entity) {
 		EventSource source = event.getSession();
 		PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 
-		if ( refreshedAlready.contains( entity ) ) {
+		if ( !refreshedAlready.add( entity) ) {
 			LOG.trace( "Already refreshed" );
 			return voidFuture();
 		}
 
-		final EntityEntry e = persistenceContext.getEntry( entity );
+		final EntityEntry entry = persistenceContext.getEntry( entity );
 		final EntityPersister persister;
-		final Serializable id;
+		final Object id;
 
-		if ( e == null ) {
+		if ( entry == null ) {
 			persister = source.getEntityPersister(
 					event.getEntityName(),
 					entity
@@ -134,27 +126,26 @@ public class DefaultReactiveRefreshEventListener
 			if ( LOG.isTraceEnabled() ) {
 				LOG.tracev(
 						"Refreshing ",
-						infoString( e.getPersister(), e.getId(), source.getFactory() )
+						infoString( entry.getPersister(), entry.getId(), source.getFactory() )
 				);
 			}
-			if ( !e.isExistsInDatabase() ) {
+			if ( !entry.isExistsInDatabase() ) {
 				throw new UnresolvableObjectException(
-						e.getId(),
+						entry.getId(),
 						"this instance does not yet exist as a row in the database"
 				);
 			}
 
-			persister = e.getPersister();
-			id = e.getId();
+			persister = entry.getPersister();
+			id = entry.getId();
 		}
 
 		// cascade the refresh prior to refreshing this entity
 		refreshedAlready.add( entity );
 
 		return cascadeRefresh(source, persister, entity, refreshedAlready)
-				.thenCompose(v -> {
-
-					if ( e != null ) {
+				.thenCompose( v -> {
+					if ( entry != null ) {
 						final EntityKey key = source.generateEntityKey( id, persister );
 						persistenceContext.removeEntity( key );
 						if ( persister.hasCollections() ) {
@@ -184,76 +175,95 @@ public class DefaultReactiveRefreshEventListener
 
 					evictCachedCollections( persister, id, source);
 
-					String previousFetchProfile = source.getLoadQueryInfluencers().getInternalFetchProfile();
-					source.getLoadQueryInfluencers().setInternalFetchProfile( "refresh" );
+					CompletableFuture<Void> refresh = new CompletableFuture<>();
+					source.getLoadQueryInfluencers()
+							.fromInternalFetchProfile( CascadingFetchProfile.REFRESH, () -> doRefresh( event, source, entity, entry, persister, id, persistenceContext )
+									.whenComplete( (unused, throwable) -> {
+										if ( throwable == null ) {
+											refresh.complete( null );
+										}
+										else {
+											refresh.completeExceptionally( throwable );
+										}
+									} ) );
+					return refresh;
+				} );
+	}
 
-					// Handle the requested lock-mode (if one) in relation to the entry's (if one) current lock-mode
+	private static CompletionStage<Void> doRefresh(
+			RefreshEvent event,
+			EventSource source,
+			Object entity,
+			EntityEntry entry,
+			EntityPersister persister,
+			Object id,
+			PersistenceContext persistenceContext) {
 
-					LockOptions lockOptionsToUse = event.getLockOptions();
+		// Handle the requested lock-mode (if one) in relation to the entry's (if one) current lock-mode
 
-					final LockMode requestedLockMode = lockOptionsToUse.getLockMode();
-					final LockMode postRefreshLockMode;
+		LockOptions lockOptionsToUse = event.getLockOptions();
 
-					if ( e != null ) {
-						final LockMode currentLockMode = e.getLockMode();
-						if ( currentLockMode.greaterThan( requestedLockMode ) ) {
-							// the requested lock-mode is less restrictive than the current one
-							//		- pass along the current lock-mode (after accounting for WRITE)
-							lockOptionsToUse = LockOptions.copy( event.getLockOptions(), new LockOptions() );
-							if ( currentLockMode == LockMode.WRITE ||
-									currentLockMode == LockMode.PESSIMISTIC_WRITE ||
-									currentLockMode == LockMode.PESSIMISTIC_READ ) {
-								// our transaction should already hold the exclusive lock on
-								// the underlying row - so READ should be sufficient.
-								//
-								// in fact, this really holds true for any current lock-mode that indicates we
-								// hold an exclusive lock on the underlying row - but we *need* to handle
-								// WRITE specially because the Loader/Locker mechanism does not allow for WRITE
-								// locks
-								lockOptionsToUse.setLockMode( LockMode.READ );
+		final LockMode requestedLockMode = lockOptionsToUse.getLockMode();
+		final LockMode postRefreshLockMode;
 
-								// and prepare to reset the entry lock-mode to the previous lock mode after
-								// the refresh completes
-								postRefreshLockMode = currentLockMode;
-							}
-							else {
-								lockOptionsToUse.setLockMode( currentLockMode );
-								postRefreshLockMode = null;
-							}
+		if ( entry != null ) {
+			final LockMode currentLockMode = entry.getLockMode();
+			if ( currentLockMode.greaterThan( requestedLockMode ) ) {
+				// the requested lock-mode is less restrictive than the current one
+				//		- pass along the current lock-mode (after accounting for WRITE)
+				lockOptionsToUse = LockOptions.copy( event.getLockOptions(), new LockOptions() );
+				if ( currentLockMode == LockMode.WRITE ||
+						currentLockMode == LockMode.PESSIMISTIC_WRITE ||
+						currentLockMode == LockMode.PESSIMISTIC_READ ) {
+					// our transaction should already hold the exclusive lock on
+					// the underlying row - so READ should be sufficient.
+					//
+					// in fact, this really holds true for any current lock-mode that indicates we
+					// hold an exclusive lock on the underlying row - but we *need* to handle
+					// WRITE specially because the Loader/Locker mechanism does not allow for WRITE
+					// locks
+					lockOptionsToUse.setLockMode( LockMode.READ );
+
+					// and prepare to reset the entry lock-mode to the previous lock mode after
+					// the refresh completes
+					postRefreshLockMode = currentLockMode;
+				}
+				else {
+					lockOptionsToUse.setLockMode( currentLockMode );
+					postRefreshLockMode = null;
+				}
+			}
+			else {
+				postRefreshLockMode = null;
+			}
+		}
+		else {
+			postRefreshLockMode = null;
+		}
+
+		return ( (ReactiveAbstractEntityPersister) persister )
+				.reactiveLoad( id, entity, lockOptionsToUse, source )
+				.thenAccept( result -> {
+					if ( result != null ) {
+						// apply `postRefreshLockMode`, if needed
+						if ( postRefreshLockMode != null ) {
+							// if we get here, there was a previous entry and we need to re-set its lock-mode
+							//		- however, the refresh operation actually creates a new entry, so get it
+							persistenceContext.getEntry( result ).setLockMode( postRefreshLockMode );
+						}
+
+						// Keep the same read-only/modifiable setting for the entity that it had before refreshing;
+						// If it was transient, then set it to the default for the source.
+						if ( !persister.isMutable() ) {
+							// this is probably redundant; it should already be read-only
+							source.setReadOnly( result, true );
 						}
 						else {
-							postRefreshLockMode = null;
+							source.setReadOnly( result, entry == null ? source.isDefaultReadOnly() : entry.isReadOnly() );
 						}
 					}
-					else {
-						postRefreshLockMode = null;
-					}
 
-					return ( (ReactiveAbstractEntityPersister) persister ).reactiveLoad( id, entity, lockOptionsToUse, source)
-							.thenAccept(result -> {
-								if ( result!=null ) {
-
-									// apply `postRefreshLockMode`, if needed
-									if (postRefreshLockMode != null) {
-										// if we get here, there was a previous entry and we need to re-set its lock-mode
-										//		- however, the refresh operation actually creates a new entry, so get it
-										persistenceContext.getEntry(result).setLockMode(postRefreshLockMode);
-									}
-
-									// Keep the same read-only/modifiable setting for the entity that it had before refreshing;
-									// If it was transient, then set it to the default for the source.
-									if (!persister.isMutable()) {
-										// this is probably redundant; it should already be read-only
-										source.setReadOnly(result, true);
-									}
-									else {
-										source.setReadOnly(result, e == null ? source.isDefaultReadOnly() : e.isReadOnly());
-									}
-								}
-
-								UnresolvableObjectException.throwIfNull(result, id, persister.getEntityName());
-							})
-							.whenComplete( (vv,t) -> source.getLoadQueryInfluencers().setInternalFetchProfile(previousFetchProfile) );
+					UnresolvableObjectException.throwIfNull( result, id, persister.getEntityName() );
 				} );
 	}
 
@@ -261,8 +271,8 @@ public class DefaultReactiveRefreshEventListener
 			EventSource source,
 			EntityPersister persister,
 			Object object,
-			IdentitySet refreshedAlready) {
-		return new Cascade<>(
+			RefreshContext refreshedAlready) {
+		return new Cascade(
 				CascadingActions.REFRESH,
 				CascadePoint.BEFORE_REFRESH,
 				persister,
@@ -272,11 +282,11 @@ public class DefaultReactiveRefreshEventListener
 		).cascade();
 	}
 
-	private void evictCachedCollections(EntityPersister persister, Serializable id, EventSource source) {
+	private void evictCachedCollections(EntityPersister persister, Object id, EventSource source) {
 		evictCachedCollections( persister.getPropertyTypes(), id, source );
 	}
 
-	private void evictCachedCollections(Type[] types, Serializable id, EventSource source)
+	private void evictCachedCollections(Type[] types, Object id, EventSource source)
 			throws HibernateException {
 		final ActionQueue actionQueue = source.getActionQueue();
 		final SessionFactoryImplementor factory = source.getFactory();

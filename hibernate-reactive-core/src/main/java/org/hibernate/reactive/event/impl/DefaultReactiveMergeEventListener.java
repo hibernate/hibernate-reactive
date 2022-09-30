@@ -17,8 +17,10 @@ import org.hibernate.ObjectDeletedException;
 import org.hibernate.StaleObjectStateException;
 import org.hibernate.WrongClassException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
+import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.ManagedTypeHelper;
+import org.hibernate.engine.spi.CollectionEntry;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -29,12 +31,14 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.internal.EntityState;
 import org.hibernate.event.internal.EventUtil;
-import org.hibernate.event.internal.MergeContext;
+import org.hibernate.event.internal.WrapVisitor;
 import org.hibernate.event.spi.EntityCopyObserver;
 import org.hibernate.event.spi.EntityCopyObserverFactory;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.event.spi.MergeContext;
 import org.hibernate.event.spi.MergeEvent;
 import org.hibernate.event.spi.MergeEventListener;
+import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
@@ -45,8 +49,8 @@ import org.hibernate.reactive.event.ReactiveMergeEventListener;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.service.ServiceRegistry;
 import org.hibernate.stat.spi.StatisticsImplementor;
+import org.hibernate.type.CollectionType;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.TypeHelper;
 
@@ -74,13 +78,13 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	}
 
 	@Override
-	public void onMerge(MergeEvent event, Map copiedAlready) throws HibernateException {
+	public void onMerge(MergeEvent event, MergeContext copiedAlready) throws HibernateException {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	protected Map<?,?> getMergeMap(Object anything) {
-		return ( (MergeContext) anything ).invertMap();
+	protected Map<Object, Object> getMergeMap(MergeContext context) {
+		return context.invertMap();
 	}
 
 	/**
@@ -92,7 +96,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	public CompletionStage<Void> reactiveOnMerge(MergeEvent event) throws HibernateException {
 		final EntityCopyObserver entityCopyObserver = createEntityCopyObserver( event.getSession().getFactory() );
 		final MergeContext mergeContext = new MergeContext( event.getSession(), entityCopyObserver );
-		return reactiveOnMerge(event, mergeContext)
+		return reactiveOnMerge( event, mergeContext )
 				.thenAccept( v -> entityCopyObserver.topLevelMergeComplete( event.getSession() ) )
 				.whenComplete( (v, e) -> {
 					entityCopyObserver.clear();
@@ -101,9 +105,9 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	}
 
 	private EntityCopyObserver createEntityCopyObserver(SessionFactoryImplementor sessionFactory) {
-		final ServiceRegistry serviceRegistry = sessionFactory.getServiceRegistry();
-		final EntityCopyObserverFactory configurationService = serviceRegistry.getService( EntityCopyObserverFactory.class );
-		return configurationService.createEntityCopyObserver();
+		return sessionFactory.getServiceRegistry()
+				.getService( EntityCopyObserverFactory.class )
+				.createEntityCopyObserver();
 	}
 
 	/**
@@ -112,7 +116,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	 * @param event The merge event to be handled.
 	 */
 	@Override
-	public CompletionStage<Void> reactiveOnMerge(MergeEvent event, MergeContext copyCache) throws HibernateException {
+	public CompletionStage<Void> reactiveOnMerge(MergeEvent event, MergeContext copiedAlready) throws HibernateException {
 
 		final EventSource source = event.getSession();
 		final Object original = event.getOriginal();
@@ -140,7 +144,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 					final EnhancementAsProxyLazinessInterceptor proxyInterceptor = (EnhancementAsProxyLazinessInterceptor) interceptor;
 					LOG.trace( "Ignoring uninitialized enhanced-proxy" );
 					//no need to go async, AFAICT ?
-					event.setResult(source.load(proxyInterceptor.getEntityName(), (Serializable) proxyInterceptor.getIdentifier()));
+					event.setResult( source.load( proxyInterceptor.getEntityName(), (Serializable) proxyInterceptor.getIdentifier() ) );
 					//EARLY EXIT!
 					return voidFuture();
 				}
@@ -152,14 +156,14 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 				entity = original;
 			}
 
-			if ( copyCache.containsKey( entity ) && ( copyCache.isOperatedOn( entity ) ) ) {
+			if ( copiedAlready.containsKey( entity ) && ( copiedAlready.isOperatedOn( entity ) ) ) {
 				LOG.trace( "Already in merge process" );
 				event.setResult( entity );
 			}
 			else {
-				if ( copyCache.containsKey( entity ) ) {
+				if ( copiedAlready.containsKey( entity ) ) {
 					LOG.trace( "Already in copyCache; setting in merge process" );
-					copyCache.setOperatedOn( entity, true );
+					copiedAlready.setOperatedOn( entity, true );
 				}
 				event.setEntity( entity );
 				EntityState entityState = null;
@@ -170,7 +174,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 				EntityEntry entry = persistenceContext.getEntry( entity );
 				if ( entry == null ) {
 					EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
-					Serializable id = persister.getIdentifier( entity, source );
+					Object id = persister.getIdentifier( entity, source );
 					if ( id != null ) {
 						final EntityKey key = source.generateEntityKey( id, persister );
 						final Object managedEntity = persistenceContext.getEntity( key );
@@ -192,11 +196,11 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 
 				switch ( entityState ) {
 					case DETACHED:
-						return entityIsDetached( event, copyCache );
+						return entityIsDetached( event, copiedAlready );
 					case TRANSIENT:
-						return entityIsTransient( event, copyCache );
+						return entityIsTransient( event, copiedAlready );
 					case PERSISTENT:
-						return entityIsPersistent( event, copyCache );
+						return entityIsPersistent( event, copiedAlready );
 					default: //DELETED
 						throw new ObjectDeletedException(
 								"deleted instance passed to merge",
@@ -237,7 +241,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		final String entityName = event.getEntityName();
 		final EntityPersister persister = session.getEntityPersister( entityName, entity );
 
-		final Serializable id = persister.hasIdentifierProperty()
+		final Object id = persister.hasIdentifierProperty()
 				? persister.getIdentifier( entity, session )
 				: null;
 
@@ -263,6 +267,12 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 				.thenCompose( v -> super.cascadeAfterSave( session, persister, entity, copyCache ) )
 				.thenCompose( v -> copyValues( persister, entity, copy, session, copyCache, TO_PARENT ) )
 				.thenAccept( v -> {
+					// saveTransientEntity has been called using a copy that contains empty collections (copyValues uses `ForeignKeyDirection.FROM_PARENT`)
+					// then the PC may contain a wrong collection snapshot, the CollectionVisitor realigns the collection snapshot values with the final copy
+					new CollectionVisitor( copy, id, session )
+							.processEntityPropertyValues( persister.getPropertyValuesToInsert( copy, getMergeMap( copyCache ), session ), persister.getPropertyTypes() );
+				} )
+				.thenAccept( v -> {
 					event.setResult(copy);
 
 					if ( isPersistentAttributeInterceptable( copy ) ) {
@@ -275,10 +285,34 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 				});
 	}
 
+	private static class CollectionVisitor extends WrapVisitor {
+		CollectionVisitor(Object entity, Object id, EventSource session) {
+			super( entity, id, session );
+		}
+
+		@Override
+		protected Object processCollection(Object collection, CollectionType collectionType) throws HibernateException {
+			if ( collection instanceof PersistentCollection ) {
+				final PersistentCollection<?> coll = (PersistentCollection<?>) collection;
+				final CollectionPersister persister = getSession().getFactory()
+						.getRuntimeMetamodels()
+						.getMappingMetamodel()
+						.getCollectionDescriptor( collectionType.getRole() );
+				final CollectionEntry collectionEntry = getSession().getPersistenceContextInternal()
+						.getCollectionEntries()
+						.get( coll );
+				if ( !coll.equalsSnapshot( persister ) ) {
+					collectionEntry.resetStoredSnapshot( coll, coll.getSnapshot( persister ) );
+				}
+			}
+			return null;
+		}
+	}
+
 	private CompletionStage<Void> saveTransientEntity(
 			Object entity,
 			String entityName,
-			Serializable requestedId,
+			Object requestedId,
 			EventSource source,
 			MergeContext copyCache) {
 		//this bit is only *really* absolutely necessary for handling
@@ -299,15 +333,15 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
 		final String entityName = persister.getEntityName();
 
-		Serializable requestedId = event.getRequestedId();
-		Serializable id;
+		Object requestedId = event.getRequestedId();
+		Object id;
 		if ( requestedId == null ) {
 			id = persister.getIdentifier( entity, source );
 		}
 		else {
 			id = requestedId;
 			// check that entity id = requestedId
-			Serializable entityId = persister.getIdentifier( entity, source );
+			Object entityId = persister.getIdentifier( entity, source );
 			if ( !persister.getIdentifierType().isEqual( id, entityId, source.getFactory() ) ) {
 				throw LOG.mergeRequestedIdNotMatchingIdOfPassedEntity();
 			}
@@ -451,7 +485,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		EntityEntry entry = persistenceContext.getEntry( entity );
 		if ( entry == null ) {
-			Serializable id = persister.getIdentifier( entity, source );
+			Object id = persister.getIdentifier( entity, source );
 			if ( id != null ) {
 				final EntityKey key = source.generateEntityKey( id, persister );
 				final Object managedEntity = persistenceContext.getEntity( key );
