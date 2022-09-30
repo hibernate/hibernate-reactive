@@ -5,12 +5,11 @@
  */
 package org.hibernate.reactive.provider.service;
 
-import org.hibernate.MultiTenancyStrategy;
+import java.util.Map;
+
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-
-import java.util.Map;
 
 /**
  * A Hibernate {@link StandardServiceInitiator service initiator} for
@@ -24,13 +23,14 @@ public class NoJdbcMultiTenantConnectionProviderInitiator implements StandardSer
 
     @Override
     public MultiTenantConnectionProvider initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-        final MultiTenancyStrategy strategy = MultiTenancyStrategy.determineMultiTenancyStrategy(  configurationValues );
-        if ( !strategy.requiresMultiTenantConnectionProvider() ) {
-            // nothing to do, but given the separate hierarchies have to handle this here.
-            return null;
-        }
+//        final MultiTenancyStrategy strategy = MultiTenancyStrategy.determineMultiTenancyStrategy(  configurationValues );
+//        if ( !strategy.requiresMultiTenantConnectionProvider() ) {
+//            // nothing to do, but given the separate hierarchies have to handle this here.
+//            return null;
+//        }
 
-        return new NoJdbcMultiTenantConnectionProvider();
+//        return new NoJdbcMultiTenantConnectionProvider();
+        return null;
     }
 
     @Override
