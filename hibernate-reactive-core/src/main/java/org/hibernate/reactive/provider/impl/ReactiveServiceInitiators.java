@@ -50,84 +50,84 @@ import java.util.List;
  */
 public final class ReactiveServiceInitiators {
 
-    private ReactiveServiceInitiators() {
-    }
+	private ReactiveServiceInitiators() {
+	}
 
-    public static final List<StandardServiceInitiator<?>> LIST = buildInitialServiceInitiatorList();
+	public static final List<StandardServiceInitiator<?>> LIST = buildInitialServiceInitiatorList();
 
-    // Note that Quarkus uses a different list for the initialization of the services.
-    // If you update this list makes sure to check that reactive still works with Quarkus
-    // in native mode.
-    private static List<StandardServiceInitiator<?>> buildInitialServiceInitiatorList() {
-        final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<>();
+	// Note that Quarkus uses a different list for the initialization of the services.
+	// If you update this list makes sure to check that reactive still works with Quarkus
+	// in native mode.
+	private static List<StandardServiceInitiator<?>> buildInitialServiceInitiatorList() {
+		final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<>();
 
-        // Definitely exclusive to Hibernate Reactive, as it marks the registry as Reactive:
-        serviceInitiators.add( ReactiveMarkerServiceInitiator.INSTANCE );
+		// Definitely exclusive to Hibernate Reactive, as it marks the registry as Reactive:
+		serviceInitiators.add( ReactiveMarkerServiceInitiator.INSTANCE );
 
-        // Exclusive to Hibernate Reactive:
-        serviceInitiators.add( VertxInstanceInitiator.INSTANCE );
-        serviceInitiators.add( VertxContextInitiator.INSTANCE );
+		// Exclusive to Hibernate Reactive:
+		serviceInitiators.add( VertxInstanceInitiator.INSTANCE );
+		serviceInitiators.add( VertxContextInitiator.INSTANCE );
 
-        // Exclusive to Hibernate Reactive:
-        serviceInitiators.add( SqlClientPoolConfigurationInitiator.INSTANCE );
-        serviceInitiators.add( ReactiveConnectionPoolInitiator.INSTANCE );
+		// Exclusive to Hibernate Reactive:
+		serviceInitiators.add( SqlClientPoolConfigurationInitiator.INSTANCE );
+		serviceInitiators.add( ReactiveConnectionPoolInitiator.INSTANCE );
 
-        //Custom for Hibernate Reactive:
-        serviceInitiators.add( ReactiveSessionFactoryBuilderInitiator.INSTANCE );
+		//Custom for Hibernate Reactive:
+		serviceInitiators.add( ReactiveSessionFactoryBuilderInitiator.INSTANCE );
 
-        serviceInitiators.add( BytecodeProviderInitiator.INSTANCE );
-        serviceInitiators.add( ProxyFactoryFactoryInitiator.INSTANCE );
+		serviceInitiators.add( BytecodeProviderInitiator.INSTANCE );
+		serviceInitiators.add( ProxyFactoryFactoryInitiator.INSTANCE );
 
-        serviceInitiators.add( CfgXmlAccessServiceInitiator.INSTANCE );
-        serviceInitiators.add( ConfigurationServiceInitiator.INSTANCE );
-        serviceInitiators.add( PropertyAccessStrategyResolverInitiator.INSTANCE );
+		serviceInitiators.add( CfgXmlAccessServiceInitiator.INSTANCE );
+		serviceInitiators.add( ConfigurationServiceInitiator.INSTANCE );
+		serviceInitiators.add( PropertyAccessStrategyResolverInitiator.INSTANCE );
 
-        serviceInitiators.add( ImportSqlCommandExtractorInitiator.INSTANCE );
+		serviceInitiators.add( ImportSqlCommandExtractorInitiator.INSTANCE );
 
-        //Custom for Hibernate Reactive:
-        serviceInitiators.add( NoJdbcEnvironmentInitiator.INSTANCE );
+		//Custom for Hibernate Reactive:
+		serviceInitiators.add( NoJdbcEnvironmentInitiator.INSTANCE );
 
-        serviceInitiators.add( JndiServiceInitiator.INSTANCE );
-        serviceInitiators.add( JmxServiceInitiator.INSTANCE );
+		serviceInitiators.add( JndiServiceInitiator.INSTANCE );
+		serviceInitiators.add( JmxServiceInitiator.INSTANCE );
 
-        //Custom for Hibernate Reactive:
-        serviceInitiators.add( ReactivePersisterClassResolverInitiator.INSTANCE );
-        serviceInitiators.add( PersisterFactoryInitiator.INSTANCE );
+		//Custom for Hibernate Reactive:
+		serviceInitiators.add( ReactivePersisterClassResolverInitiator.INSTANCE );
+		serviceInitiators.add( PersisterFactoryInitiator.INSTANCE );
 
-        //Custom for Hibernate Reactive:
-        serviceInitiators.add( NoJdbcConnectionProviderInitiator.INSTANCE );
-        serviceInitiators.add( NoJdbcMultiTenantConnectionProviderInitiator.INSTANCE );
+		//Custom for Hibernate Reactive:
+		serviceInitiators.add( NoJdbcConnectionProviderInitiator.INSTANCE );
+		serviceInitiators.add( NoJdbcMultiTenantConnectionProviderInitiator.INSTANCE );
 
-        serviceInitiators.add( DialectResolverInitiator.INSTANCE );
-        serviceInitiators.add( DialectFactoryInitiator.INSTANCE );
-        serviceInitiators.add( BatchBuilderInitiator.INSTANCE );
-        serviceInitiators.add( JdbcServicesInitiator.INSTANCE );
-        serviceInitiators.add( RefCursorSupportInitiator.INSTANCE );
+		serviceInitiators.add( DialectResolverInitiator.INSTANCE );
+		serviceInitiators.add( DialectFactoryInitiator.INSTANCE );
+		serviceInitiators.add( BatchBuilderInitiator.INSTANCE );
+		serviceInitiators.add( JdbcServicesInitiator.INSTANCE );
+		serviceInitiators.add( RefCursorSupportInitiator.INSTANCE );
 
-        //Custom for Hibernate Reactive:
-        serviceInitiators.add( ReactiveSchemaManagementToolInitiator.INSTANCE );
+		//Custom for Hibernate Reactive:
+		serviceInitiators.add( ReactiveSchemaManagementToolInitiator.INSTANCE );
 
-        //Custom for Hibernate Reactive:
-        serviceInitiators.add( ReactiveQueryTranslatorFactoryInitiator.INSTANCE );
+		//Custom for Hibernate Reactive:
+		serviceInitiators.add( ReactiveQueryTranslatorFactoryInitiator.INSTANCE );
 
-        //Custom for Hibernate Reactive:
-        serviceInitiators.add( ReactiveIdentifierGeneratorFactoryInitiator.INSTANCE);
+		//Custom for Hibernate Reactive:
+		serviceInitiators.add( ReactiveIdentifierGeneratorFactoryInitiator.INSTANCE );
 
 
-        //Custom for Hibernate Reactive:
-        serviceInitiators.add( NoJtaPlatformInitiator.INSTANCE );
+		//Custom for Hibernate Reactive:
+		serviceInitiators.add( NoJtaPlatformInitiator.INSTANCE );
 
-        serviceInitiators.add( SessionFactoryServiceRegistryFactoryInitiator.INSTANCE );
+		serviceInitiators.add( SessionFactoryServiceRegistryFactoryInitiator.INSTANCE );
 
-        serviceInitiators.add( RegionFactoryInitiator.INSTANCE );
+		serviceInitiators.add( RegionFactoryInitiator.INSTANCE );
 
-        serviceInitiators.add( TransactionCoordinatorBuilderInitiator.INSTANCE );
+		serviceInitiators.add( TransactionCoordinatorBuilderInitiator.INSTANCE );
 
-        serviceInitiators.add( ManagedBeanRegistryInitiator.INSTANCE );
-        serviceInitiators.add( EntityCopyObserverFactoryInitiator.INSTANCE );
+		serviceInitiators.add( ManagedBeanRegistryInitiator.INSTANCE );
+		serviceInitiators.add( EntityCopyObserverFactoryInitiator.INSTANCE );
 
-        serviceInitiators.trimToSize();
+		serviceInitiators.trimToSize();
 
-        return Collections.unmodifiableList( serviceInitiators );
-    }
+		return Collections.unmodifiableList( serviceInitiators );
+	}
 }
