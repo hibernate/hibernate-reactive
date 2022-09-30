@@ -5,6 +5,15 @@
  */
 package org.hibernate.reactive.engine.impl;
 
+import static org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer.UNFETCHED_PROPERTY;
+import static org.hibernate.property.access.internal.PropertyAccessStrategyBackRefImpl.UNKNOWN;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.EntityKey;
@@ -23,15 +32,6 @@ import org.hibernate.type.OneToOneType;
 import org.hibernate.type.Type;
 
 import java.io.Serializable;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
-
-import static org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer.UNFETCHED_PROPERTY;
-import static org.hibernate.property.access.internal.PropertyAccessStrategyBackRefImpl.UNKNOWN;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
-
 /**
  * Reactive operations that really belong to {@link EntityType}
  *
@@ -122,7 +122,8 @@ public class EntityTypes {
 			return completedFuture( persistenceContext.proxyFor( result ) );
 		}
 		else {
-			return persister.reactiveLoadByUniqueKey( uniqueKeyPropertyName, key, session )
+			return persister
+					.reactiveLoadByUniqueKey( uniqueKeyPropertyName, key, session )
 					.thenApply( loaded -> {
 						// If the entity was not in the Persistence Context, but was found now,
 						// add it to the Persistence Context
@@ -206,17 +207,17 @@ public class EntityTypes {
 			}
 		}
 		return loop( 0, types.length,
-					 i -> original[i] != UNFETCHED_PROPERTY && original[i] != UNKNOWN
-							 && types[i] instanceof EntityType,
-					 i -> replace(
-							 (EntityType) types[i],
-							 original[i],
-							 target[i] == UNFETCHED_PROPERTY ? null : target[i],
-							 session,
-							 owner,
-							 copyCache,
-							 foreignKeyDirection
-					 ).thenAccept( copy -> copied[i] = copy )
+				i -> original[i] != UNFETCHED_PROPERTY && original[i] != UNKNOWN
+						&& types[i] instanceof EntityType,
+				i -> replace(
+						(EntityType) types[i],
+						original[i],
+						target[i] == UNFETCHED_PROPERTY ? null : target[i],
+						session,
+						owner,
+						copyCache,
+						foreignKeyDirection
+				).thenAccept( copy -> copied[i] = copy )
 		).thenApply( v -> copied );
 	}
 
