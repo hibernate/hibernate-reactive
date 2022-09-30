@@ -31,7 +31,6 @@ import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.OneToOneType;
 import org.hibernate.type.Type;
 
-import java.io.Serializable;
 /**
  * Reactive operations that really belong to {@link EntityType}
  *
@@ -48,7 +47,7 @@ public class EntityTypes {
 			if ( entityType.isReferenceToPrimaryKey() ) {
 				return ReactiveQueryExecutorLookup.extract( session ).reactiveInternalLoad(
 						entityType.getAssociatedEntityName(),
-						(Serializable) idOrUniqueKey,
+						idOrUniqueKey,
 						true,
 						entityType.isNullable()
 				);
@@ -102,8 +101,10 @@ public class EntityTypes {
 		String entityName = entityType.getAssociatedEntityName();
 		String uniqueKeyPropertyName = entityType.getRHSUniqueKeyPropertyName();
 
-		ReactiveEntityPersister persister =
-				(ReactiveEntityPersister) factory.getMetamodel().entityPersister( entityName );
+		ReactiveEntityPersister persister = (ReactiveEntityPersister) factory
+				.getRuntimeMetamodels()
+				.getMappingMetamodel()
+				.getEntityDescriptor( entityName );
 
 		//TODO: implement 2nd level caching?! natural id caching ?! proxies?!
 
@@ -112,7 +113,6 @@ public class EntityTypes {
 				uniqueKeyPropertyName,
 				key,
 				entityType.getIdentifierOrUniqueKeyType( factory ),
-				persister.getEntityMode(),
 				factory
 		);
 

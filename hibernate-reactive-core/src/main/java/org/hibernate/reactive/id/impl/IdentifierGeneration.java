@@ -5,189 +5,77 @@
  */
 package org.hibernate.reactive.id.impl;
 
-import org.hibernate.boot.model.naming.Identifier;
-import org.hibernate.boot.model.relational.QualifiedName;
-import org.hibernate.boot.model.relational.QualifiedNameParser;
-import org.hibernate.engine.config.spi.ConfigurationService;
-import org.hibernate.engine.config.spi.StandardConverters;
-import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.id.IdentifierGenerationException;
 import org.hibernate.id.IdentifierGenerator;
-import org.hibernate.id.enhanced.SequenceStyleGenerator;
-import org.hibernate.id.enhanced.TableGenerator;
-import org.hibernate.internal.util.StringHelper;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.service.ServiceRegistry;
-import org.hibernate.type.IntegerType;
-import org.hibernate.type.LongType;
-import org.hibernate.type.ShortType;
-import org.hibernate.type.StringType;
-import org.hibernate.type.Type;
+import org.hibernate.type.descriptor.java.IntegerJavaType;
+import org.hibernate.type.descriptor.java.JavaType;
+import org.hibernate.type.descriptor.java.LongJavaType;
+import org.hibernate.type.descriptor.java.ShortJavaType;
+import org.hibernate.type.descriptor.java.StringJavaType;
 
-import java.io.Serializable;
-import java.lang.invoke.MethodHandles;
-import java.util.Properties;
-import java.util.concurrent.CompletionStage;
-
-import static org.hibernate.id.enhanced.SequenceStyleGenerator.CATALOG;
-import static org.hibernate.id.enhanced.SequenceStyleGenerator.SCHEMA;
-import static org.hibernate.internal.util.config.ConfigurationHelper.getBoolean;
-import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 public class IdentifierGeneration {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	/**
-	 * Determine the name of the sequence (or table if this resolves to a physical table)
-	 * to use.
-	 *
-	 * @param params The params supplied in the generator config (plus some standard useful extras).
-	 * @return The sequence name
-	 */
-	static QualifiedName determineSequenceName(Properties params, ServiceRegistry serviceRegistry) {
-		final String sequencePerEntitySuffix =
-				getString( SequenceStyleGenerator.CONFIG_SEQUENCE_PER_ENTITY_SUFFIX, params,
-						SequenceStyleGenerator.DEF_SEQUENCE_SUFFIX );
-
-		String fallbackSequenceName = SequenceStyleGenerator.DEF_SEQUENCE_NAME;
-		if ( preferGeneratorNameAsDefaultName(serviceRegistry) ) {
-			final String generatorName = params.getProperty( IdentifierGenerator.GENERATOR_NAME );
-			if ( StringHelper.isNotEmpty( generatorName ) ) {
-				fallbackSequenceName = generatorName;
-			}
-		}
-
-		// JPA_ENTITY_NAME value honors <class ... entity-name="..."> (HBM) and @Entity#name (JPA) overrides.
-		final String defaultSequenceName =
-				getBoolean( SequenceStyleGenerator.CONFIG_PREFER_SEQUENCE_PER_ENTITY, params, false )
-						? params.getProperty( SequenceStyleGenerator.JPA_ENTITY_NAME ) + sequencePerEntitySuffix
-						: fallbackSequenceName;
-
-		final String sequenceName = getString( SequenceStyleGenerator.SEQUENCE_PARAM, params, defaultSequenceName );
-		if ( sequenceName.contains( "." ) ) {
-			return QualifiedNameParser.INSTANCE.parse( sequenceName );
-		}
-		else {
-			JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
-			// todo : need to incorporate implicit catalog and schema names
-			final Identifier catalog = jdbcEnvironment.getIdentifierHelper().toIdentifier(
-					getString( CATALOG, params )
-			);
-			final Identifier schema =  jdbcEnvironment.getIdentifierHelper().toIdentifier(
-					getString( SCHEMA, params )
-			);
-			return new QualifiedNameParser.NameParts(
-					catalog,
-					schema,
-					jdbcEnvironment.getIdentifierHelper().toIdentifier( sequenceName )
-			);
-		}
-	}
-
-	static QualifiedName determineTableName(Properties params, ServiceRegistry serviceRegistry) {
-		String fallbackTableName = TableGenerator.DEF_TABLE;
-		if ( preferGeneratorNameAsDefaultName(serviceRegistry) ) {
-			final String generatorName = params.getProperty( IdentifierGenerator.GENERATOR_NAME );
-			if ( StringHelper.isNotEmpty( generatorName ) ) {
-				fallbackTableName = generatorName;
-			}
-		}
-
-		String tableName = getString( TableGenerator.TABLE_PARAM, params, fallbackTableName );
-
-		QualifiedNameParser.NameParts qualifiedTableName;
-		if ( tableName.contains( "." ) ) {
-			qualifiedTableName = QualifiedNameParser.INSTANCE.parse( tableName );
-		}
-		else {
-			JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
-			// todo : need to incorporate implicit catalog and schema names
-			final Identifier catalog = jdbcEnvironment.getIdentifierHelper().toIdentifier(
-					getString( CATALOG, params )
-			);
-			final Identifier schema = jdbcEnvironment.getIdentifierHelper().toIdentifier(
-					getString( SCHEMA, params )
-			);
-			qualifiedTableName = new QualifiedNameParser.NameParts(
-					catalog,
-					schema,
-					jdbcEnvironment.getIdentifierHelper().toIdentifier( tableName )
-			);
-		}
-		return qualifiedTableName;
-	}
-
-	private static Boolean preferGeneratorNameAsDefaultName(ServiceRegistry serviceRegistry) {
-		return serviceRegistry.getService(ConfigurationService.class)
-				.getSetting( Settings.PREFER_GENERATOR_NAME_AS_DEFAULT_SEQUENCE_NAME,
-						StandardConverters.BOOLEAN, true );
-	}
-
 	@SuppressWarnings("unchecked")
-	public static CompletionStage<Serializable> generateId(Object entity, EntityPersister persister,
-														   ReactiveConnectionSupplier connectionSupplier,
-														   SharedSessionContractImplementor session) {
+	public static CompletionStage<Object> generateId(Object entity, EntityPersister persister, ReactiveConnectionSupplier connectionSupplier, SharedSessionContractImplementor session) {
 		IdentifierGenerator generator = persister.getIdentifierGenerator();
 		return generator instanceof ReactiveIdentifierGenerator
-				? ( (ReactiveIdentifierGenerator<Serializable>) generator ).generate( connectionSupplier, entity )
+				? ( (ReactiveIdentifierGenerator<Object>) generator ).generate( connectionSupplier, entity )
 				: completedFuture( generator.generate( session, entity ) );
 	}
 
-	public static Serializable assignIdIfNecessary(Object generatedId, Object entity,
-													EntityPersister persister,
-													SharedSessionContractImplementor session) {
+	public static Object assignIdIfNecessary(Object generatedId, Object entity, EntityPersister persister, SharedSessionContractImplementor session) {
 		if ( generatedId != null ) {
 			return castToIdentifierType( generatedId, persister );
 		}
-		else {
-			Serializable assignedId = persister.getIdentifier( entity, session );
-			if ( assignedId == null ) {
-				throw new IdentifierGenerationException(
-						"ids for this class must be manually assigned before calling save(): "
-								+ persister.getEntityName()
-				);
-			}
-			return assignedId;
+
+		Object assignedId = persister.getIdentifier( entity, session );
+		if ( assignedId == null ) {
+			throw LOG.idMustBeAssignedBeforeSave( persister.getEntityName() );
 		}
+		return assignedId;
 	}
 
-	public static Serializable castToIdentifierType(Object generatedId, EntityPersister persister) {
-		if ( generatedId instanceof Long ) {
-			Long longId = (Long) generatedId;
-			if ( longId <= 0 ) {
-				throw LOG.generatedIdentifierSmallerOrEqualThanZero( longId );
-			}
-			Type identifierType = persister.getIdentifierType();
-			if ( identifierType == LongType.INSTANCE ) {
-				return longId;
-			}
-			else if ( identifierType == IntegerType.INSTANCE ) {
-				validateMaxValue( persister, longId, Integer.MAX_VALUE );
-				return longId.intValue();
+	public static Object castToIdentifierType(Object generatedId, EntityPersister persister) {
+		return generatedId instanceof Long
+				? castLongIdToIdentifierType( (Long) generatedId, persister )
+				: generatedId;
+	}
 
-			}
-			else if ( identifierType == ShortType.INSTANCE ) {
-				validateMaxValue( persister, longId, Short.MAX_VALUE );
-				return longId.shortValue();
-			}
-			else if ( identifierType == StringType.INSTANCE ) {
-				return longId.toString();
-			}
-			else {
-				throw LOG.cannotGenerateIdentifiersOfType(identifierType.getReturnedClass().getSimpleName(),persister.getEntityName() );
-			}
+	private static Object castLongIdToIdentifierType(Long longId, EntityPersister persister) {
+		if ( longId <= 0 ) {
+			throw LOG.generatedIdentifierSmallerOrEqualThanZero( longId );
 		}
-		else {
-			return (Serializable) generatedId;
+
+		final JavaType<?> identifierType = persister.getIdentifierMapping().getJavaType();
+		if ( identifierType == LongJavaType.INSTANCE ) {
+			return longId;
 		}
+		if ( identifierType == IntegerJavaType.INSTANCE ) {
+			validateMaxValue( persister, longId, Integer.MAX_VALUE );
+			return longId.intValue();
+
+		}
+		if ( identifierType == ShortJavaType.INSTANCE ) {
+			validateMaxValue( persister, longId, Short.MAX_VALUE );
+			return longId.shortValue();
+		}
+		if ( identifierType == StringJavaType.INSTANCE ) {
+			return longId.toString();
+		}
+
+		throw LOG.cannotGenerateIdentifiersOfType( identifierType.getJavaType().getTypeName(), persister.getEntityName() );
 	}
 
 	private static void validateMaxValue(EntityPersister persister, Long id, int maxValue) {

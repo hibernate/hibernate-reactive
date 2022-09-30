@@ -5,30 +5,25 @@
  */
 package org.hibernate.reactive.persister.collection.impl;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.MappingException;
+import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
-import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.BasicCollectionPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
-import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
-import org.hibernate.reactive.loader.collection.impl.ReactiveBatchingCollectionInitializerBuilder;
-import org.hibernate.reactive.loader.collection.impl.ReactiveSubselectCollectionLoader;
 import org.hibernate.reactive.pool.impl.Parameters;
-
-import java.io.Serializable;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -51,35 +46,35 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister
 		super( collectionBinding, cacheAccessStrategy, creationContext );
 	}
 
-	public CompletionStage<Void> reactiveInitialize(Serializable key,
-													SharedSessionContractImplementor session) {
-		return getAppropriateInitializer( key, session ).reactiveInitialize( key, session );
-	}
-
 	@Override
-	protected ReactiveCollectionInitializer createCollectionInitializer(LoadQueryInfluencers loadQueryInfluencers) {
-		return ReactiveBatchingCollectionInitializerBuilder.getBuilder( getFactory() )
-				.createBatchingCollectionInitializer( this, batchSize, getFactory(), loadQueryInfluencers );
+	public CompletionStage<Void> reactiveInitialize(Object key, SharedSessionContractImplementor session) {
+		// FIXME: [ORM6]
+		throw new NotYetImplementedFor6Exception();
+//		return getAppropriateInitializer( key, session ).reactiveInitialize( key, session );
 	}
 
-	@Override
-	protected ReactiveCollectionInitializer createSubselectInitializer(SubselectFetch subselect,
-																	   SharedSessionContractImplementor session) {
-		return new ReactiveSubselectCollectionLoader(
-				this,
-				subselect.toSubselectString( getCollectionType().getLHSPropertyName() ),
-				subselect.getResult(),
-				subselect.getQueryParameters(),
-				subselect.getNamedParameterLocMap(),
-				session.getFactory(),
-				session.getLoadQueryInfluencers()
-		);
-	}
-
-	protected ReactiveCollectionInitializer getAppropriateInitializer(Serializable key,
-																	  SharedSessionContractImplementor session) {
-		return (ReactiveCollectionInitializer) super.getAppropriateInitializer(key, session);
-	}
+//	@Override
+//	protected ReactiveCollectionInitializer createCollectionInitializer(LoadQueryInfluencers loadQueryInfluencers) {
+//		return ReactiveBatchingCollectionInitializerBuilder.getBuilder( getFactory() )
+//				.createBatchingCollectionInitializer( this, batchSize, getFactory(), loadQueryInfluencers );
+//	}
+//
+//	@Override
+//	protected ReactiveCollectionInitializer createSubselectInitializer(SubselectFetch subselect, SharedSessionContractImplementor session) {
+//		return new ReactiveSubselectCollectionLoader(
+//				this,
+//				subselect.toSubselectString( getCollectionType().getLHSPropertyName() ),
+//				subselect.getResult(),
+//				subselect.getQueryParameters(),
+//				subselect.getNamedParameterLocMap(),
+//				session.getFactory(),
+//				session.getLoadQueryInfluencers()
+//		);
+//	}
+//
+//	protected ReactiveCollectionInitializer getAppropriateInitializer(Object key, SharedSessionContractImplementor session) {
+//		return (ReactiveCollectionInitializer) super.getAppropriateInitializer(key, session);
+//	}
 
 
 	@Override
@@ -117,15 +112,13 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister
 	}
 
 	@Override
-	public int writeKey(PreparedStatement st, Serializable id, int offset,
-						SharedSessionContractImplementor session)
+	public int writeKey(PreparedStatement st, Object id, int offset, SharedSessionContractImplementor session)
 			throws SQLException {
 		return super.writeKey(st, id, offset, session);
 	}
 
 	@Override
-	public int writeElementToWhere(PreparedStatement st, Object entry, int loc,
-								   SharedSessionContractImplementor session)
+	public int writeElementToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
 			throws SQLException {
 		return super.writeElementToWhere(st, entry, loc, session);
 	}
@@ -192,11 +185,10 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister
 	}
 
 	/**
-	 * @see BasicCollectionPersister#doUpdateRows(Serializable, PersistentCollection, SharedSessionContractImplementor)
+	 * @see BasicCollectionPersister#doUpdateRows(Object, PersistentCollection, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> doReactiveUpdateRows(Serializable id, PersistentCollection collection,
-														 SharedSessionContractImplementor session) {
+	public CompletionStage<Void> doReactiveUpdateRows(Object id, PersistentCollection collection, SharedSessionContractImplementor session) {
 		if ( ArrayHelper.isAllFalse( elementColumnIsSettable ) ) {
 			return voidFuture();
 		}
@@ -240,8 +232,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister
 		return indices;
 	}
 
-	private Object[] updateRowsParamValues(Object entry, int i, PersistentCollection collection, Serializable id,
-										   SharedSessionContractImplementor session) {
+	private Object[] updateRowsParamValues(Object entry, int i, PersistentCollection collection, Object id, SharedSessionContractImplementor session) {
 		int offset = 1;
 		return PreparedStatementAdaptor.bind( st -> {
 			int loc = writeElement( st, collection.getElement( entry ), offset, session );

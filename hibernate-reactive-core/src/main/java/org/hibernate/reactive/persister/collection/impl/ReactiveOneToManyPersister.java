@@ -5,31 +5,25 @@
  */
 package org.hibernate.reactive.persister.collection.impl;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
-import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.mapping.Collection;
+import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.collection.OneToManyPersister;
-import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
-import org.hibernate.reactive.loader.collection.ReactiveCollectionInitializer;
-import org.hibernate.reactive.loader.collection.impl.ReactiveBatchingCollectionInitializerBuilder;
-import org.hibernate.reactive.loader.collection.impl.ReactiveSubselectOneToManyLoader;
 import org.hibernate.reactive.pool.impl.Parameters;
-
-import java.io.Serializable;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -46,41 +40,15 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 		return Parameters.instance( getFactory().getJdbcServices().getDialect() );
 	}
 
-	public ReactiveOneToManyPersister(Collection collectionBinding,
-									  CollectionDataAccess cacheAccessStrategy,
-									  PersisterCreationContext creationContext)
-			throws MappingException, CacheException {
+	public ReactiveOneToManyPersister(
+			Collection collectionBinding,
+			CollectionDataAccess cacheAccessStrategy,
+			RuntimeModelCreationContext creationContext) throws MappingException, CacheException {
 		super( collectionBinding, cacheAccessStrategy, creationContext );
 	}
 
-	public CompletionStage<Void> reactiveInitialize(Serializable key,
-													SharedSessionContractImplementor session) {
-		return getAppropriateInitializer( key, session ).reactiveInitialize( key, session );
-	}
-
-	@Override
-	protected ReactiveCollectionInitializer createCollectionInitializer(LoadQueryInfluencers loadQueryInfluencers) {
-		return ReactiveBatchingCollectionInitializerBuilder.getBuilder( getFactory() )
-				.createBatchingOneToManyInitializer( this, batchSize, getFactory(), loadQueryInfluencers );
-	}
-
-	@Override
-	protected ReactiveCollectionInitializer createSubselectInitializer(SubselectFetch subselect,
-																	   SharedSessionContractImplementor session) {
-		return new ReactiveSubselectOneToManyLoader(
-				this,
-				subselect.toSubselectString( getCollectionType().getLHSPropertyName() ),
-				subselect.getResult(),
-				subselect.getQueryParameters(),
-				subselect.getNamedParameterLocMap(),
-				session.getFactory(),
-				session.getLoadQueryInfluencers()
-		);
-	}
-
-	protected ReactiveCollectionInitializer getAppropriateInitializer(Serializable key,
-																	  SharedSessionContractImplementor session) {
-		return (ReactiveCollectionInitializer) super.getAppropriateInitializer(key, session);
+	public CompletionStage<Void> reactiveInitialize(Object key, SharedSessionContractImplementor session) {
+		throw new UnsupportedOperationException( "Not yet implemented" );
 	}
 
 	@Override
@@ -104,36 +72,31 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	}
 
 	@Override
-	public int writeElement(PreparedStatement st, Object element, int loc,
-							SharedSessionContractImplementor session)
+	public int writeElement(PreparedStatement st, Object element, int loc, SharedSessionContractImplementor session)
 			throws SQLException {
 		return super.writeElement(st, element, loc, session);
 	}
 
 	@Override
-	public int writeIndex(PreparedStatement st, Object index, int loc,
-						  SharedSessionContractImplementor session)
+	public int writeIndex(PreparedStatement st, Object index, int loc, SharedSessionContractImplementor session)
 			throws SQLException {
 		return super.writeIndex(st, index, loc, session);
 	}
 
 	@Override
-	public int writeKey(PreparedStatement st, Serializable id, int offset,
-						SharedSessionContractImplementor session)
+	public int writeKey(PreparedStatement st, Object id, int offset, SharedSessionContractImplementor session)
 			throws SQLException {
 		return super.writeKey(st, id, offset, session);
 	}
 
 	@Override
-	public int writeElementToWhere(PreparedStatement st, Object entry, int loc,
-								   SharedSessionContractImplementor session)
+	public int writeElementToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
 			throws SQLException {
 		return super.writeElementToWhere(st, entry, loc, session);
 	}
 
 	@Override
-	public int writeIndexToWhere(PreparedStatement st, Object entry, int loc,
-								 SharedSessionContractImplementor session)
+	public int writeIndexToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
 			throws SQLException {
 		return super.writeIndexToWhere(st, entry, loc, session);
 	}
@@ -193,11 +156,10 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	}
 
 	/**
-	 * @see OneToManyPersister#doUpdateRows(Serializable, PersistentCollection, SharedSessionContractImplementor)
+	 * @see OneToManyPersister#doUpdateRows(Object, PersistentCollection, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> doReactiveUpdateRows(Serializable id, PersistentCollection collection,
-														 SharedSessionContractImplementor session) {
+	public CompletionStage<Void> doReactiveUpdateRows(Object id, PersistentCollection collection, SharedSessionContractImplementor session) {
 
 		List<Object> entries = entryList( collection );
 		if ( !needsUpdate( collection, entries ) ) {
@@ -251,18 +213,18 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	}
 
 	@Override
-	public CompletionStage<Void> recreateReactive(PersistentCollection collection, Serializable id, SharedSessionContractImplementor session) throws HibernateException {
+	public CompletionStage<Void> recreateReactive(PersistentCollection collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
 		return reactiveWriteIndex( collection, id, session,
 				ReactiveAbstractCollectionPersister.super.recreateReactive( collection, id, session ) );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInsertRows(PersistentCollection collection, Serializable id, SharedSessionContractImplementor session) throws HibernateException {
+	public CompletionStage<Void> reactiveInsertRows(PersistentCollection collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
 		return reactiveWriteIndex( collection, id, session,
 				ReactiveAbstractCollectionPersister.super.reactiveInsertRows( collection, id, session ) );
 	}
 
-	private CompletionStage<Void> reactiveWriteIndex(PersistentCollection collection, Serializable id,
+	private CompletionStage<Void> reactiveWriteIndex(PersistentCollection collection, Object id,
 													 SharedSessionContractImplementor session,
 													 CompletionStage<Void> stage) {
 		if ( isInverse

@@ -6,12 +6,12 @@
 package org.hibernate.reactive.event;
 
 
+import java.io.Serializable;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.DeleteEvent;
-
-import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
 
 /**
  * Defines the contract for handling of deletion events generated from a session.

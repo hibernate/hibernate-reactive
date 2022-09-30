@@ -125,10 +125,6 @@ public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionCon
 		}
 
 		@Override
-		public void prepare() {
-		}
-
-		@Override
 		public Connection getIsolatedConnection() {
 			return NoopConnection.INSTANCE;
 		}

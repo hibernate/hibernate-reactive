@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive.engine.impl;
 
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityInsertAction;
@@ -17,13 +19,10 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 
-import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
-
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
- * A reactific {@link EntityInsertAction}.
+ * A reactive {@link EntityInsertAction}.
  */
 public class ReactiveEntityRegularInsertAction extends EntityInsertAction implements ReactiveEntityInsertAction {
 
@@ -32,7 +31,7 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 	private boolean transientReferencesNullified;
 
 	public ReactiveEntityRegularInsertAction(
-			Serializable id,
+			Object id,
 			Object[] state,
 			Object instance,
 			Object version,
@@ -56,7 +55,7 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 			EntityPersister persister = getPersister();
 			final SharedSessionContractImplementor session = getSession();
 			final Object instance = getInstance();
-			final Serializable id = getId();
+			final Object id = getId();
 
 			// FIXME: It needs to become async
 			final boolean veto = preInsert();
@@ -124,7 +123,7 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 			ReactiveEntityPersister persister,
 			SharedSessionContractImplementor session,
 			Object instance,
-			Serializable id,
+			Object id,
 			EntityEntry entry) {
 		if ( persister.hasInsertGeneratedProperties() ) {
 			if ( persister.isVersionPropertyGenerated() ) {

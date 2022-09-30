@@ -5,27 +5,30 @@
  */
 package org.hibernate.reactive.id.impl;
 
+import java.util.Collections;
+import java.util.Properties;
+import java.util.concurrent.CompletionStage;
+
+import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.boot.model.relational.QualifiedName;
+import org.hibernate.boot.model.relational.Database;
+import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
-import org.hibernate.id.Configurable;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.jdbc.TooManyRowsAffectedException;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
-
-import java.util.Collections;
-import java.util.Properties;
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.id.enhanced.TableGenerator.CONFIG_PREFER_SEGMENT_PER_ENTITY;
 import static org.hibernate.id.enhanced.TableGenerator.DEF_SEGMENT_COLUMN;
@@ -46,17 +49,15 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  * This implementation supports block allocation, but does not
  * guarantee that generated identifiers are sequential.
  */
-public class TableReactiveIdentifierGenerator
-		extends BlockingIdentifierGenerator implements Configurable {
+public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerator implements IdentifierGenerator {
 
 	private boolean storeLastUsedValue;
 
-	String renderedTableName;
+	protected String renderedTableName;
+	protected String segmentColumnName;
+	protected String valueColumnName;
 
-	String segmentColumnName;
 	private String segmentValue;
-
-	String valueColumnName;
 	private long initialValue;
 	private int increment;
 
@@ -77,7 +78,8 @@ public class TableReactiveIdentifierGenerator
 		// transaction rollback.
 		ReactiveConnection connection = session.getReactiveConnection();
 		// 1) select the current hi value
-		return connection.selectIdentifier( selectQuery, selectParameters(), Long.class )
+		return connection
+				.selectIdentifier( selectQuery, selectParameters(), Long.class )
 				// 2) attempt to update the hi value
 				.thenCompose( result -> {
 					Object[] params;
@@ -110,11 +112,11 @@ public class TableReactiveIdentifierGenerator
 										switch (rowCount) {
 											case 1:
 												//we successfully obtained the next hi value
-												return completedFuture(id);
+												return completedFuture( id );
 											case 0:
 												//someone else grabbed the next hi value
 												//so retry everything from scratch
-												return nextHiValue(session);
+												return nextHiValue( session );
 											default:
 												throw new TooManyRowsAffectedException( "multiple rows in id table", 1, rowCount );
 										}
@@ -126,25 +128,37 @@ public class TableReactiveIdentifierGenerator
 	@Override
 	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) {
 		JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
-		Dialect dialect = jdbcEnvironment.getDialect();
-
-		QualifiedName qualifiedTableName = determineTableName( params, serviceRegistry );
 		segmentColumnName = determineSegmentColumnName( params, jdbcEnvironment );
 		valueColumnName = determineValueColumnNameForTable( params, jdbcEnvironment );
 		segmentValue = determineSegmentValue( params );
 		initialValue = determineInitialValue( params );
 		increment = determineIncrement( params );
-
 		storeLastUsedValue = determineStoreLastUsedValue( serviceRegistry );
+		renderedTableName = determineTableName( type, params, serviceRegistry );
 
-		// allow physical naming strategies a chance to kick in
-		renderedTableName = jdbcEnvironment.getQualifiedObjectNameFormatter()
-				.format( qualifiedTableName, dialect );
-
+		Dialect dialect = jdbcEnvironment.getDialect();
 		Parameters parameters = Parameters.instance( dialect );
 		selectQuery = parameters.process( applyLocksToSelect( dialect, "tbl", buildSelectQuery() ) );
 		updateQuery = parameters.process( buildUpdateQuery() );
 		insertQuery = parameters.process( buildInsertQuery() );
+	}
+
+	@Override
+	public void registerExportables(Database database) {
+	}
+
+	@Override
+	public void initialize(SqlStringGenerationContext context) {
+	}
+
+	@Override
+	public Object generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean supportsJdbcBatchInserts() {
+		return IdentifierGenerator.super.supportsJdbcBatchInserts();
 	}
 
 	private String applyLocksToSelect(Dialect dialect, String alias, String query) {
@@ -161,8 +175,10 @@ public class TableReactiveIdentifierGenerator
 				.getSetting( Settings.TABLE_GENERATOR_STORE_LAST_USED, StandardConverters.BOOLEAN, true );
 	}
 
-	protected QualifiedName determineTableName(Properties params, ServiceRegistry serviceRegistry) {
-		return IdentifierGeneration.determineTableName( params, serviceRegistry );
+	protected String determineTableName(Type type, Properties params, ServiceRegistry serviceRegistry) {
+		TableGenerator ormTableGenerator = new TableGenerator();
+		ormTableGenerator.configure( type, params, serviceRegistry );
+		return ormTableGenerator.getTableName();
 	}
 
 	protected String determineSegmentColumnName(Properties params, JdbcEnvironment jdbcEnvironment) {

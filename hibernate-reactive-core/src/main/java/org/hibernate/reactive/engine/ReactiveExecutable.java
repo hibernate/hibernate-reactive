@@ -5,17 +5,16 @@
  */
 package org.hibernate.reactive.engine;
 
-import org.hibernate.action.spi.Executable;
-
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
+
+import org.hibernate.action.spi.Executable;
 
 /**
  * An operation that is scheduled for later non-blocking
  * execution in an {@link ReactiveActionQueue}. Reactive counterpart
  * to {@link Executable}.
  */
-@SuppressWarnings("rawtypes")
-public interface ReactiveExecutable extends Executable, Comparable, Serializable {
+public interface ReactiveExecutable extends Executable, Serializable {
 	CompletionStage<Void> reactiveExecute();
 }

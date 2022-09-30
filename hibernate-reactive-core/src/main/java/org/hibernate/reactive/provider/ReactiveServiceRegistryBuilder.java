@@ -5,32 +5,22 @@
  */
 package org.hibernate.reactive.provider;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.hibernate.boot.cfgxml.internal.ConfigLoader;
 import org.hibernate.boot.cfgxml.spi.LoadedConfig;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
 import org.hibernate.boot.registry.StandardServiceInitiator;
-import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.Environment;
-import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.integrator.spi.IntegratorService;
-import org.hibernate.integrator.spi.ServiceContributingIntegrator;
-import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.internal.util.PropertiesHelper;
 import org.hibernate.reactive.provider.impl.ReactiveServiceInitiators;
-import org.hibernate.service.Service;
 import org.hibernate.service.ServiceRegistry;
-import org.hibernate.service.internal.ProvidedService;
-import org.hibernate.service.spi.ServiceContributor;
-
-import java.io.File;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Adaptation of {@link StandardServiceRegistryBuilder}; the main difference
@@ -40,20 +30,6 @@ import java.util.Map;
  * @see ReactiveServiceInitiators
  */
 public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistryBuilder {
-
-    private final Map<Object,Object> settings;
-
-    @SuppressWarnings("rawtypes")
-    private final List<StandardServiceInitiator> initiators;
-
-    @SuppressWarnings("rawtypes")
-    private final List<ProvidedService> providedServices = new ArrayList<>();
-
-    private boolean autoCloseRegistry = true;
-
-    private final BootstrapServiceRegistry bootstrapServiceRegistry;
-    private final ConfigLoader configLoader;
-    private final LoadedConfig aggregatedCfgXml;
 
     public static StandardServiceRegistryBuilder forJpa(BootstrapServiceRegistry bootstrapServiceRegistry) {
         final LoadedConfig loadedConfig = new LoadedConfig( null ) {
@@ -95,6 +71,20 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
     }
 
     /**
+     * Create a builder with the specified bootstrap services.
+     *
+     * @param bootstrapServiceRegistry Provided bootstrap registry to use.
+     */
+    public ReactiveServiceRegistryBuilder(BootstrapServiceRegistry bootstrapServiceRegistry, LoadedConfig loadedConfigBaseline) {
+        this(
+                bootstrapServiceRegistry,
+                PropertiesHelper.map( Environment.getProperties() ),
+                loadedConfigBaseline,
+                defaultReactiveInitiatorList()
+        );
+    }
+
+    /**
      * Intended for use exclusively from JPA boot-strapping, or extensions of
      * this class. Consider this an SPI.
      *
@@ -102,262 +92,29 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
      */
     ReactiveServiceRegistryBuilder(
             BootstrapServiceRegistry bootstrapServiceRegistry,
-            Map<Object,Object> settings,
+            Map<String,Object> settings,
             LoadedConfig loadedConfig) {
-        this.bootstrapServiceRegistry = bootstrapServiceRegistry;
-        this.configLoader = new ConfigLoader( bootstrapServiceRegistry );
-        this.settings = settings;
-        this.aggregatedCfgXml = loadedConfig;
-        this.initiators = defaultReactiveInitiatorList();
+        this( bootstrapServiceRegistry, settings, loadedConfig, defaultReactiveInitiatorList() );
     }
 
     /**
-     * Intended for use exclusively from Quarkus boot-strapping, or extensions of
+     * Intended for use exclusively from Quarkus bootstrapping, or extensions of
      * this class which need to override the standard ServiceInitiator list.
      * Consider this an SPI.
      */
     ReactiveServiceRegistryBuilder(
             BootstrapServiceRegistry bootstrapServiceRegistry,
-            Map<Object,Object> settings,
+            Map<String,Object> settings,
             LoadedConfig loadedConfig,
             @SuppressWarnings("rawtypes")
-            List<StandardServiceInitiator> initiators) {
-        this.bootstrapServiceRegistry = bootstrapServiceRegistry;
-        this.configLoader = new ConfigLoader( bootstrapServiceRegistry );
-        this.settings = settings;
-        this.aggregatedCfgXml = loadedConfig;
-        this.initiators = initiators;
-    }
-
-    /**
-     * Create a builder with the specified bootstrap services.
-     *
-     * @param bootstrapServiceRegistry Provided bootstrap registry to use.
-     */
-    public ReactiveServiceRegistryBuilder(
-            BootstrapServiceRegistry bootstrapServiceRegistry,
-            LoadedConfig loadedConfigBaseline) {
-        this.settings = Environment.getProperties();
-        this.bootstrapServiceRegistry = bootstrapServiceRegistry;
-        this.configLoader = new ConfigLoader( bootstrapServiceRegistry );
-        this.aggregatedCfgXml = loadedConfigBaseline;
-        this.initiators = defaultReactiveInitiatorList();
-    }
-
-    public ConfigLoader getConfigLoader() {
-        return configLoader;
-    }
-
-    /**
-     * Intended for internal testing use only!!
-     */
-    public LoadedConfig getAggregatedCfgXml() {
-        return aggregatedCfgXml;
-    }
-
-    public BootstrapServiceRegistry getBootstrapServiceRegistry() {
-        return bootstrapServiceRegistry;
-    }
-
-    /**
-     * Read settings from a {@link java.util.Properties} file by resource name.
-     * <p>
-     * Differs from {@link #configure()} and {@link #configure(String)} in that here we expect to read a
-     * {@link java.util.Properties} file while for {@link #configure} we read the XML variant.
-     *
-     * @param resourceName The name by which to perform a resource look up for the properties file.
-     *
-     * @return this, for method chaining
-     *
-     * @see #configure()
-     * @see #configure(String)
-     */
-    public StandardServiceRegistryBuilder loadProperties(String resourceName) {
-        settings.putAll( configLoader.loadProperties( resourceName ) );
-        return this;
-    }
-
-    /**
-     * Read settings from a {@link java.util.Properties} file by File reference
-     * <p>
-     * Differs from {@link #configure()} and {@link #configure(String)} in that here we expect to read a
-     * {@link java.util.Properties} file while for {@link #configure} we read the XML variant.
-     *
-     * @param file The properties File reference
-     *
-     * @return this, for method chaining
-     *
-     * @see #configure()
-     * @see #configure(String)
-     */
-    public StandardServiceRegistryBuilder loadProperties(File file) {
-        settings.putAll( configLoader.loadProperties( file ) );
-        return this;
-    }
-
-    /**
-     * Read setting information from an XML file using the standard resource location.
-     *
-     * @return this, for method chaining
-     *
-     * @see StandardServiceRegistryBuilder#DEFAULT_CFG_RESOURCE_NAME
-     * @see #configure(String)
-     * @see #loadProperties(String)
-     */
-    public StandardServiceRegistryBuilder configure() {
-        return configure( StandardServiceRegistryBuilder.DEFAULT_CFG_RESOURCE_NAME );
-    }
-
-    /**
-     * Read setting information from an XML file using the named resource location.
-     *
-     * @param resourceName The named resource
-     *
-     * @return this, for method chaining
-     */
-    public StandardServiceRegistryBuilder configure(String resourceName) {
-        return configure( configLoader.loadConfigXmlResource( resourceName ) );
-    }
-
-    public StandardServiceRegistryBuilder configure(File configurationFile) {
-        return configure( configLoader.loadConfigXmlFile( configurationFile ) );
-    }
-
-    public StandardServiceRegistryBuilder configure(URL url) {
-        return configure( configLoader.loadConfigXmlUrl( url ) );
-    }
-
-    public StandardServiceRegistryBuilder configure(LoadedConfig loadedConfig) {
-        aggregatedCfgXml.merge( loadedConfig );
-        settings.putAll( loadedConfig.getConfigurationValues() );
-
-        return this;
-    }
-
-    /**
-     * Apply a setting value.
-     *
-     * @param settingName The name of the setting
-     * @param value The value to use.
-     *
-     * @return this, for method chaining
-     */
-    public StandardServiceRegistryBuilder applySetting(String settingName, Object value) {
-        settings.put( settingName, value );
-        return this;
-    }
-
-    /**
-     * Apply a groups of setting values.
-     *
-     * @param settings The incoming settings to apply
-     *
-     * @return this, for method chaining
-     */
-    public StandardServiceRegistryBuilder applySettings(Map settings) {
-        this.settings.putAll( settings );
-        return this;
-    }
-
-    public void clearSettings() {
-        settings.clear();
-    }
-
-    /**
-     * Adds a service initiator.
-     *
-     * @param initiator The initiator to be added
-     *
-     * @return this, for method chaining
-     */
-    public StandardServiceRegistryBuilder addInitiator(StandardServiceInitiator initiator) {
-        initiators.add( initiator );
-        return this;
-    }
-
-    /**
-     * Adds a user-provided service.
-     *
-     * @param serviceRole The role of the service being added
-     * @param service The service implementation
-     *
-     * @return this, for method chaining
-     */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public StandardServiceRegistryBuilder addService(final Class serviceRole, final Service service) {
-        providedServices.add( new ProvidedService<>( serviceRole, service ) );
-        return this;
-    }
-
-    /**
-     * By default, when a ServiceRegistry is no longer referenced by any other
-     * registries as a parent it will be closed.
-     * <p/>
-     * Some applications that explicitly build "shared registries" may want to
-     * circumvent that behavior.
-     * <p/>
-     * This method indicates that the registry being built should not be
-     * automatically closed.  The caller agrees to take responsibility to
-     * close it themselves.
-     *
-     * @return this, for method chaining
-     */
-    public StandardServiceRegistryBuilder disableAutoClose() {
-        this.autoCloseRegistry = false;
-        return this;
-    }
-
-    /**
-     * See the discussion on {@link #disableAutoClose}.  This method enables
-     * the auto-closing.
-     *
-     * @return this, for method chaining
-     */
-    public StandardServiceRegistryBuilder enableAutoClose() {
-        this.autoCloseRegistry = true;
-        return this;
-    }
-
-    /**
-     * Build the StandardServiceRegistry.
-     *
-     * @return The StandardServiceRegistry.
-     */
-    public StandardServiceRegistry build() {
-        applyServiceContributingIntegrators();
-        applyServiceContributors();
-
-        final Map<Object,Object> settingsCopy = new HashMap<>( settings );
-        settingsCopy.put( org.hibernate.boot.cfgxml.spi.CfgXmlAccessService.LOADED_CONFIG_KEY, aggregatedCfgXml );
-        ConfigurationHelper.resolvePlaceHolders( settingsCopy );
-
-        return new StandardServiceRegistryImpl(
-                autoCloseRegistry,
+            List<StandardServiceInitiator<?>> initiators) {
+        super(
                 bootstrapServiceRegistry,
-                initiators,
-                providedServices,
-                settingsCopy
+                settings,
+                new ConfigLoader( bootstrapServiceRegistry ),
+                loadedConfig,
+                initiators
         );
-    }
-
-    @SuppressWarnings("deprecation")
-    private void applyServiceContributingIntegrators() {
-        for ( Integrator integrator : bootstrapServiceRegistry.getService( IntegratorService.class )
-                .getIntegrators() ) {
-            if (integrator instanceof ServiceContributingIntegrator) {
-                ((ServiceContributingIntegrator) integrator).prepareServices( this );
-            }
-        }
-    }
-
-    private void applyServiceContributors() {
-        final Iterable<ServiceContributor> serviceContributors =
-                bootstrapServiceRegistry.getService( ClassLoaderService.class )
-                        .loadJavaServices( ServiceContributor.class );
-
-        for ( ServiceContributor serviceContributor : serviceContributors ) {
-            serviceContributor.contribute( this );
-        }
     }
 
     /**
@@ -374,8 +131,8 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
     }
 
     @SuppressWarnings("rawtypes")
-    private static List<StandardServiceInitiator> defaultReactiveInitiatorList() {
-        final List<StandardServiceInitiator> initiators = new ArrayList<>( ReactiveServiceInitiators.LIST.size() );
+    private static List<StandardServiceInitiator<?>> defaultReactiveInitiatorList() {
+        final List<StandardServiceInitiator<?>> initiators = new ArrayList<>( ReactiveServiceInitiators.LIST.size() );
         initiators.addAll( ReactiveServiceInitiators.LIST );
         return initiators;
     }

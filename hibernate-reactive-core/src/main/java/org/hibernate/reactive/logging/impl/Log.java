@@ -6,7 +6,6 @@
 package org.hibernate.reactive.logging.impl;
 
 
-import java.io.Serializable;
 
 import jakarta.persistence.PersistenceException;
 
@@ -115,7 +114,7 @@ public interface Log extends BasicLogger {
 	HibernateException firstOrMaxResultsFailedBecausePaginationOverCollectionIsEnabled();
 
 	@Message(id = 37, value = "Reactive sessions do not support transparent lazy fetching - use Session.fetch() (entity '%1$s' with id '%2$s' was not loaded)")
-	LazyInitializationException lazyInitializationException(String entityName, Serializable id);
+	LazyInitializationException lazyInitializationException(String entityName, Object id);
 
 	@Message(id = 38, value = "Entity [%1$s] did not define a natural id")
 	HibernateException entityDidNotDefinedNaturalId(String entityName);
@@ -127,7 +126,7 @@ public interface Log extends BasicLogger {
 	HibernateException immutableNaturalIdentifierAltered(String entityName, String from, String to);
 
 	@Message(id = 41, value = "Identifier of an instance of %1$s was altered from %2$s to %3$s")
-	HibernateException identifierAltered(String entityName, Serializable id, Serializable oid);
+	HibernateException identifierAltered(String entityName, Object id, Object oid);
 
 	@Message(id = 42, value = "Merge requested with id not matching id of passed entity")
 	HibernateException mergeRequestedIdNotMatchingIdOfPassedEntity();
@@ -264,5 +263,4 @@ public interface Log extends BasicLogger {
 	@LogMessage(level = WARN)
 	@Message(id = 447, value= "Explicit use of UPGRADE_SKIPLOCKED in lock() calls is not recommended; use normal UPGRADE locking instead")
 	void explicitSkipLockedLockCombo();
-
 }

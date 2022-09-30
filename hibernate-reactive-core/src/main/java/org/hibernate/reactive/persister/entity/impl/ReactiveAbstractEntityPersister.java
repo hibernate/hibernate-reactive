@@ -5,17 +5,14 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
-import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import jakarta.persistence.metamodel.Attribute;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
@@ -38,27 +35,25 @@ import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
+import org.hibernate.loader.ast.internal.SingleIdArrayLoadPlan;
+import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.loader.entity.CacheEntityLoaderHelper;
-import org.hibernate.loader.entity.UniqueEntityLoader;
+import org.hibernate.metamodel.mapping.EntityVersionMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.Lockable;
-import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
-import org.hibernate.reactive.loader.entity.impl.ReactiveDynamicBatchingEntityLoaderBuilder;
-import org.hibernate.reactive.loader.entity.impl.ReactiveEntityLoader;
+import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -75,30 +70,23 @@ import org.hibernate.reactive.tuple.StageValueGenerator;
 import org.hibernate.sql.Delete;
 import org.hibernate.sql.SimpleSelect;
 import org.hibernate.sql.Update;
-import org.hibernate.tuple.GenerationTiming;
 import org.hibernate.tuple.InMemoryValueGenerationStrategy;
-import org.hibernate.tuple.NonIdentifierAttribute;
 import org.hibernate.tuple.ValueGenerator;
-import org.hibernate.type.EntityType;
-import org.hibernate.type.IntegerType;
-import org.hibernate.type.ShortType;
+import org.hibernate.type.BasicType;
 import org.hibernate.type.Type;
-import org.hibernate.type.VersionType;
+
+import jakarta.persistence.metamodel.Attribute;
 
 import static org.hibernate.internal.util.collections.ArrayHelper.join;
 import static org.hibernate.internal.util.collections.ArrayHelper.trim;
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
-import static org.hibernate.persister.entity.AbstractEntityPersister.VERSION_COLUMN_ALIAS;
-import static org.hibernate.persister.entity.AbstractEntityPersister.determineValueNullness;
-import static org.hibernate.persister.entity.AbstractEntityPersister.isValueGenerationRequired;
 import static org.hibernate.pretty.MessageHelper.infoString;
-import static org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor.bind;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.castToIdentifierType;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -140,89 +128,20 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return ReactiveQueryExecutorLookup.extract( session ).getReactiveConnection();
 	}
 
-	String getSqlInsertGeneratedValuesSelectString();
-
-	String getSqlUpdateGeneratedValuesSelectString();
-
-	/**
-	 * Process properties generated with an insert
-	 *
-	 * @see AbstractEntityPersister#processUpdateGeneratedProperties(Serializable, Object, Object[], SharedSessionContractImplementor)
-	 */
 	@Override
-	default CompletionStage<Void> reactiveProcessInsertGenerated(
-			Serializable id, Object entity, Object[] state, SharedSessionContractImplementor session) {
-		if ( !hasInsertGeneratedProperties() ) {
-			throw new AssertionFailure( "no insert-generated properties" );
-		}
-		return processGeneratedProperties(
-				id,
-				entity,
-				state,
-				session,
-				getSqlInsertGeneratedValuesSelectString(),
-				GenerationTiming.INSERT
-		);
+	/**
+	 * @deprecated use the reactive version {@link #reactiveMultiLoad(Object[], SessionImplementor, MultiIdLoadOptions)}
+	 */
+	@Deprecated
+	default List<?> multiLoad(Object[] ids, SharedSessionContractImplementor session, MultiIdLoadOptions loadOptions) {
+		throw new UnsupportedOperationException("Use the reactive version: reactiveMultiLoad");
 	}
 
 	/**
-	 * Process properties generated with an update
-	 *
-	 * @see AbstractEntityPersister#processUpdateGeneratedProperties(Serializable, Object, Object[], SharedSessionContractImplementor)
+	 * @see AbstractEntityPersister#insert(Object[], Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	default CompletionStage<Void> reactiveProcessUpdateGenerated(
-			Serializable id, Object entity, Object[] state, SharedSessionContractImplementor session) {
-		if ( !hasUpdateGeneratedProperties() ) {
-			throw new AssertionFailure( "no update-generated properties" );
-		}
-		return processGeneratedProperties(
-				id,
-				entity,
-				state,
-				session,
-				getSqlUpdateGeneratedValuesSelectString(),
-				GenerationTiming.ALWAYS
-		);
-	}
-
-	default CompletionStage<Void> processGeneratedProperties(
-			Serializable id,
-			Object entity,
-			Object[] state,
-			SharedSessionContractImplementor session,
-			String selectionSQL,
-			GenerationTiming matchTiming) {
-		ReactiveConnection connection = getReactiveConnection( session );
-		// force immediate execution of the insert batch (if one)
-		return connection.executeBatch()
-				.thenCompose( v -> connection
-						.selectJdbc( selectionSQL, bind( ps -> getIdentifierType().nullSafeSet( ps, id, 1, session ) ) ) )
-				.thenAccept( rs -> {
-					try {
-						if ( !rs.next() ) {
-							throw log.unableToRetrieveGeneratedProperties( infoString( this, id, getFactory() ) );
-						}
-						int propertyIndex = -1;
-						for ( NonIdentifierAttribute attribute : getEntityMetamodel().getProperties() ) {
-							propertyIndex++;
-							if ( isValueGenerationRequired( attribute, matchTiming ) ) {
-								final Object hydratedState = attribute.getType()
-										.hydrate( rs, getPropertyAliases( "", propertyIndex ), session, entity );
-								state[propertyIndex] = attribute.getType().resolve( hydratedState, session, entity );
-								setPropertyValue( entity, propertyIndex, state[propertyIndex] );
-							}
-						}
-					}
-					catch (SQLException sqle) {
-						//can never happen
-						throw new JDBCException( "unable to select generated column values: " + selectionSQL, sqle );
-					}
-				} );
-	}
-
-	@Override
-	default CompletionStage<Serializable> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
+	default CompletionStage<Object> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
 		// apply any pre-insert in-memory value generation
 		return reactivePreInsertInMemoryValueGeneration( fields, object, session )
 				.thenCompose( unused -> {
@@ -230,48 +149,29 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					if ( delegate().getEntityMetamodel().isDynamicInsert() ) {
 						// For the case of dynamic-insert="true", we need to generate the INSERT SQL
 						boolean[] notNull = delegate().getPropertiesToInsert( fields );
-						return insertReactive(
-								fields,
-								notNull,
-								//this differs from core, but it's core that should be changed:
-								delegate().generateIdentityInsertString( getFactory().getSqlStringGenerationContext(), notNull ),
-								session
-						)
-						.thenCompose(
-								id -> loop(
-										1, span,
-										table -> insertReactive(
-												id,
-												fields,
-												notNull,
-												table,
-												delegate().generateInsertString( notNull, table ),
-												session
-										)
-								).thenApply( v -> id )
-						);
+						return insertReactive( fields, notNull, delegate().generateIdentityInsertString( notNull ), session )
+								.thenCompose( id -> loop( 1, span, table -> insertReactive(
+													  id,
+													  fields,
+													  notNull,
+													  table,
+													  delegate().generateInsertString( notNull, table ),
+													  session
+											  ) ).thenApply( v -> id )
+								);
 					}
 					else {
 						// For the case of dynamic-insert="false", use the static SQL
-						return insertReactive(
-								fields,
-								delegate().getPropertyInsertability(),
-								delegate().getSQLIdentityInsertString(),
-								session
-						)
-						.thenCompose(
-								id -> loop(
-										1, span,
-										table -> insertReactive(
-												id,
-												fields,
-												delegate().getPropertyInsertability(),
-												table,
-												delegate().getSQLInsertStrings()[table],
-												session
-										)
-								).thenApply( v -> id )
-						);
+						return insertReactive( fields, delegate().getPropertyInsertability(), delegate().getSQLIdentityInsertString(), session )
+								.thenCompose( id -> loop( 1, span, table -> insertReactive(
+														id,
+														fields,
+														delegate().getPropertyInsertability(),
+														table,
+														delegate().getSQLInsertStrings()[table],
+														session
+												) ).thenApply( v -> id )
+								);
 					}
 		} );
 	}
@@ -287,7 +187,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					stage = stage.thenCompose( v -> generateValue( object, session, strategy )
 							.thenAccept( value -> {
 								fields[index] = value;
-								setPropertyValue( object, index, value );
+								setValue( object, index, value );
 							} ) );
 				}
 			}
@@ -297,7 +197,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	@Override
 	default CompletionStage<Void> insertReactive(
-			Serializable id,
+			Object id,
 			Object[] fields,
 			Object object,
 			SharedSessionContractImplementor session) {
@@ -337,8 +237,12 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				} );
 	}
 
+	/**
+	 *
+	 * @see AbstractEntityPersister#insert(Object, Object[], boolean[], int, String, Object, SharedSessionContractImplementor)
+	 */
 	default CompletionStage<Void> insertReactive(
-			Serializable id,
+			Object id,
 			Object[] fields,
 			boolean[] notNull,
 			int j,
@@ -381,7 +285,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	 * <p>
 	 * This form is used for PostInsertIdentifierGenerator-style ids.
 	 */
-	default CompletionStage<Serializable> insertReactive(
+	default CompletionStage<Object> insertReactive(
 			Object[] fields,
 			boolean[] notNull,
 			String sql,
@@ -413,7 +317,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				.thenApply( this::convertGeneratedId );
 	}
 
-	private Serializable convertGeneratedId(Object generatedId) {
+	private Object convertGeneratedId(Object generatedId) {
 		log.debugf( "Natively generated identity: %s", generatedId );
 		validateGeneratedIdentityId( generatedId, this );
 		return castToIdentifierType( generatedId, this );
@@ -426,16 +330,16 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		// CockroachDB might generate an identifier that fits an integer (and maybe a short) from time to time.
 		// Users should not rely on it, or they might have random, hard to debug failures.
-		Type identifierType = persister.getIdentifierType();
-		if ( ( identifierType == IntegerType.INSTANCE || identifierType == ShortType.INSTANCE )
-				&& persister.getFactory().getJdbcServices().getDialect() instanceof CockroachDB192Dialect
+		Class<?> returnedClass = persister.getIdentifierType().getReturnedClass();
+		if ( ( returnedClass == Integer.class || returnedClass == Short.class )
+				&& persister.getFactory().getJdbcServices().getDialect() instanceof CockroachDialect
 		) {
-			throw log.invalidIdentifierTypeForCockroachDB( identifierType.getReturnedClass(), persister.getEntityName() );
+			throw log.invalidIdentifierTypeForCockroachDB( returnedClass, persister.getEntityName() );
 		}
 	}
 
 	default CompletionStage<Void> deleteReactive(
-			Serializable id,
+			Object id,
 			Object version,
 			int j,
 			String sql,
@@ -500,7 +404,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	default CompletionStage<Void> deleteReactive(
-			Serializable id, Object version, Object object,
+			Object id, Object version, Object object,
 			SharedSessionContractImplementor session) {
 		final int span = delegate().getTableSpan();
 		boolean isImpliedOptimisticLocking =
@@ -586,7 +490,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	default CompletionStage<Boolean> updateReactive(
-			final Serializable id,
+			final Object id,
 			final Object[] fields,
 			final Object[] oldFields,
 			final Object rowId,
@@ -665,13 +569,13 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	boolean check(
 			int rows,
-			Serializable id,
+			Object id,
 			int tableNumber,
 			Expectation expectation,
 			PreparedStatement statement, String sql) throws HibernateException;
 
 	default CompletionStage<Void> updateReactive(
-			final Serializable id,
+			final Object id,
 			final Object[] fields,
 			int[] paramDirtyFields,
 			final boolean hasDirtyCollection,
@@ -809,10 +713,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		delegate().setPropertyValue( object, index, fields[index] );
 	}
 
-	String[] getUpdateStrings(boolean byRowId, boolean hasUninitializedLazyProperties);
-
 	default CompletionStage<Void> updateOrInsertReactive(
-			final Serializable id,
+			final Object id,
 			final Object[] fields,
 			final Object[] oldFields,
 			final Object rowId,
@@ -903,9 +805,10 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return parameters().process( update.toStatementString() );
 	}
 
+
 	@Override
-	default CompletionStage<Void> lockReactive(
-			Serializable id,
+	default CompletionStage<Void> reactiveLock(
+			Object id,
 			Object version,
 			Object object,
 			LockOptions lockOptions,
@@ -926,7 +829,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			case PESSIMISTIC_READ:
 			// 2) select ... for update
 			case PESSIMISTIC_WRITE:
-			case UPGRADE:
 			// 3) select ... for nowait
 			case UPGRADE_NOWAIT:
 			// 4) select ... for update skip locked
@@ -941,7 +843,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				break;
 			// 5) update ... set version
 			case PESSIMISTIC_FORCE_INCREMENT:
-			case FORCE:
 				sql = generateUpdateLockString( lockOptions );
 				writeLock = true;
 				break;
@@ -972,44 +873,45 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			}
 		} );
 
-		ReactiveConnection connection = getReactiveConnection( session );
-		CompletionStage<Boolean> lock = writeLock
-				? connection.update( sql, arguments ).thenApply( affected -> affected > 0 )
-				: connection.select( sql, arguments ).thenApply( Iterator::hasNext );
-
-		return lock.thenAccept( rowExisted -> {
-			if ( !rowExisted ) {
-				throw new StaleObjectStateException( getEntityName(), id );
-			}
-		} ).handle( (r ,e) -> {
-			logSqlException( e,
-					() -> "could not lock: "
-							+ infoString( this, id, getFactory() ),
-					sql
-			);
-			return returnOrRethrow( e, r );
-		} );
+		return writeLock( session, sql, writeLock, arguments )
+				.thenAccept( rowExisted -> {
+					if ( !rowExisted ) {
+						throw new StaleObjectStateException( getEntityName(), id );
+					}
+				} )
+				.whenComplete( (r, e) -> logSqlException( e, () -> "could not lock: " + infoString( this, id, getFactory() ), sql ) );
 	}
 
-	@Override
-	VersionType<Object> getVersionType();
+	private CompletionStage<Boolean> writeLock(SharedSessionContractImplementor session, String sql, boolean writeLock, Object[] arguments) {
+		return writeLock
+				? getReactiveConnection( session ).update( sql, arguments ).thenApply( affected -> affected > 0 )
+				: getReactiveConnection( session ).select( sql, arguments ).thenApply( Iterator::hasNext );
+	}
 
-	default Object nextVersionForLock(LockMode lockMode, Serializable id, Object version, Object entity,
-									  SharedSessionContractImplementor session) {
+	/**
+	 * @see AbstractEntityPersister#getVersionType()
+	 */
+	@Override
+	BasicType<?> getVersionType();
+
+	/**
+	 * @see AbstractEntityPersister#forceVersionIncrement(Object, Object, SharedSessionContractImplementor)
+	 */
+	default Object nextVersionForLock(LockMode lockMode, Object id, Object currentVersion, Object entity, SharedSessionContractImplementor session) {
 		if ( lockMode == LockMode.PESSIMISTIC_FORCE_INCREMENT ) {
 			if ( !isVersioned() ) {
-				throw new IllegalArgumentException("increment locks not supported for unversioned entity");
+				throw new AssertionFailure( "cannot force version increment on non-versioned entity" );
 			}
 
-			VersionType<Object> versionType = getVersionType();
-			Object nextVersion = versionType.next( version, session);
+			final EntityVersionMapping versionMapping = getVersionMapping();
+			BasicType<?> versionType = getVersionType();
+			final Object nextVersion = getVersionJavaType()
+					.next( currentVersion, versionMapping.getLength(), versionMapping.getPrecision(), versionMapping.getScale(), session );
 
 			if ( log.isTraceEnabled() ) {
-				log.trace(
-						"Forcing version increment [" + infoString( this, id, getFactory() ) + "; "
-								+ versionType.toLoggableString( version, getFactory() ) + " -> "
-								+ versionType.toLoggableString( nextVersion, getFactory() ) + "]"
-				);
+				log.trace( "Forcing version increment [" + infoString( this, id, getFactory() ) + "; "
+								+ versionType.toLoggableString( currentVersion, getFactory() ) + " -> "
+								+ versionType.toLoggableString( nextVersion, getFactory() ) + "]" );
 			}
 
 			session.getPersistenceContextInternal().getEntry( entity ).forceLocked( entity, nextVersion );
@@ -1017,151 +919,61 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			return nextVersion;
 		}
 		else {
-			return version;
+			return currentVersion;
 		}
 	}
 
-	default CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions,
-												 SharedSessionContractImplementor session) {
-		return reactiveLoad( id, optionalObject, lockOptions, session, null );
+	@Override
+	default CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
+		return getReactiveSingleIdEntityLoader().reactiveLoadDatabaseSnapshot( id, session );
 	}
 
+	ReactiveSingleIdEntityLoader<?> getReactiveSingleIdEntityLoader();
+
+	/**
+	 * @see AbstractEntityPersister#getCurrentVersion(Object, SharedSessionContractImplementor)
+	 */
 	@Override
-	default CompletionStage<Object> reactiveLoad(Serializable id, Object optionalObject, LockOptions lockOptions,
-												 SharedSessionContractImplementor session, Boolean readOnly) {
+	default CompletionStage<Object> reactiveGetCurrentVersion(Object id, SharedSessionContractImplementor session) {
 		if ( log.isTraceEnabled() ) {
-			log.tracev( "Fetching entity: {0}", infoString( this, id, getFactory() ) );
+			log.tracev( "Getting version: {0}", infoString( this, id, getFactory() ) );
 		}
 
-		return getAppropriateLoader( lockOptions, session )
-				.load( id, optionalObject, session, lockOptions, readOnly );
-	}
-
-	@Override
-	default CompletionStage<Object> reactiveLoadByUniqueKey(
-			String propertyName,
-			Object uniqueKey,
-			SharedSessionContractImplementor session) {
-		return getAppropriateUniqueKeyLoader( propertyName, session ).load( uniqueKey, session, LockOptions.NONE );
-	}
-
-	@Override
-	default CompletionStage<List<Object>> reactiveMultiLoad(Serializable[] ids,
-															SessionImplementor session,
-															MultiLoadOptions loadOptions) {
-		return ReactiveDynamicBatchingEntityLoaderBuilder.INSTANCE.multiLoad(this, ids, session, loadOptions);
-	}
-
-//	@Override
-//	default CompletionStage<Boolean> reactiveIsTransient(Object entity, SessionImplementor session) {
-//		Boolean unsaved = delegate().isTransient( entity, session );
-//		if ( unsaved!=null ) {
-//			return CompletionStages.completedFuture( unsaved );
-//		}
-//		String sql = processParameters(
-//				delegate().getSQLSnapshotSelectString(),
-//				session.getFactory().getJdbcServices().getDialect()
-//		);
-//		Serializable id = delegate().getIdentifier( entity, session );
-//		Object[] params = toParameterArray( new QueryParameters( getIdentifierType(), id ), session );
-//		return getReactiveConnection(session).select( sql, params )
-//				.thenApply( resultSet -> !resultSet.hasNext() );
-//	}
-
-	@Override
-	default CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Serializable id,
-																  SharedSessionContractImplementor session) {
-		if ( log.isTraceEnabled() ) {
-			log.tracev(
-					"Getting current persistent state for: {0}",
-					infoString( this, id, getFactory() )
-			);
-		}
-
-		Object[] params = PreparedStatementAdaptor.bind(
-				statement -> getIdentifierType().nullSafeSet(statement, id, 1, session)
-		);
-
-		return getReactiveConnection( session )
-				.selectJdbc( delegate().getSQLSnapshotSelectString(), params )
-				.thenApply( resultSet -> processSnapshot(session, resultSet) );
-	}
-
-	@Override
-	default CompletionStage<Object> reactiveGetCurrentVersion(Serializable id,
-															  SharedSessionContractImplementor session) {
-		if ( log.isTraceEnabled() ) {
-			log.tracev(
-					"Getting version: {0}",
-					infoString( this, id, getFactory() )
-			);
-		}
-
-		Object[] params = PreparedStatementAdaptor.bind(
-				statement -> getIdentifierType().nullSafeSet( statement, id, 1, session )
-		);
+		Object[] params = PreparedStatementAdaptor
+				.bind( statement -> getIdentifierType().nullSafeSet( statement, id, 1, session ) );
 
 		return getReactiveConnection( session )
 				.selectJdbc( delegate().getVersionSelectString(), params )
-				.thenApply( (resultSet) -> {
-					try {
-						if ( !resultSet.next() ) {
-							return null;
-						}
-						if ( !isVersioned() ) {
-							return this;
-						}
-						return getVersionType().nullSafeGet( resultSet, VERSION_COLUMN_ALIAS, session, null );
-					}
-					catch (SQLException sqle) {
-						//can never happen
-						throw new JDBCException("error reading version", sqle);
-					}
-				} );
+				.thenCompose( resultSet -> currentVersion( session, resultSet ) );
 	}
 
-	//would be nice of we could just reuse this code from AbstractEntityPersister
-	default Object[] processSnapshot(SharedSessionContractImplementor session, ResultSet resultSet) {
+	private CompletionStage<Object> currentVersion(SharedSessionContractImplementor session, ResultSet resultSet) {
 		try {
-			if ( resultSet.next() ) {
-				//return the "hydrated" state (ie. associations are not resolved)
-				Type[] types = getPropertyTypes();
-				Object[] values = new Object[types.length];
-				boolean[] includeProperty = getPropertyUpdateability();
-				for ( int i = 0; i < types.length; i++ ) {
-					if ( includeProperty[i] ) {
-						values[i] = types[i].hydrate(
-								resultSet,
-								getPropertyAliases( "", i ),
-								session,
-								null
-						); //null owner ok??
-					}
-				}
-				return values;
+			if ( !resultSet.next() ) {
+				return nullFuture();
 			}
-			else {
-				//no corresponding row: transient!
-				return null;
+			if ( !isVersioned() ) {
+				return completedFuture( this );
 			}
+			return completedFuture( getVersionType()
+											.getJdbcMapping()
+											.getJdbcValueExtractor()
+											.extract( resultSet, 1, session ) );
 		}
-		catch (SQLException e) {
-			//can't actually occur!
-			throw new JDBCException( "error while binding parameters", e );
+		catch (SQLException sqle) {
+			//can never happen
+			return failedFuture( new JDBCException( "error reading version", sqle ) );
 		}
 	}
 
-	default boolean hasUnenhancedProxy() {
+	default boolean hasEnhancedProxy() {
 		// skip proxy instantiation if entity is bytecode enhanced
 		return getEntityMetamodel().isLazy()
 				&& !getEntityMetamodel().getBytecodeEnhancementMetadata().isEnhancedForLazyLoading();
 	}
 
-	Object initializeLazyProperty(String fieldName, Object entity, SharedSessionContractImplementor session);
-
 	@SuppressWarnings("unchecked")
-	default <E,T> CompletionStage<T> reactiveInitializeLazyProperty(Attribute<E,T> field, E entity,
-																	SharedSessionContractImplementor session) {
+	default <E, T> CompletionStage<T> reactiveInitializeLazyProperty(Attribute<E, T> field, E entity, SharedSessionContractImplementor session) {
 		String fieldName = field.getName();
 		Object result = initializeLazyProperty( fieldName, entity, session );
 		if (result instanceof CompletionStage) {
@@ -1195,12 +1007,13 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 	}
 
+	// See AbstractEntityPersister#initializeLazyPropertiesFromDatastore(Object, Object, EntityEntry, String, SharedSessionContractImplementor)
 	default CompletionStage<Object> reactiveInitializeLazyPropertiesFromDatastore(
-			final String fieldName,
-			final Object entity,
-			final SharedSessionContractImplementor session,
-			final Serializable id,
-			final EntityEntry entry) {
+			Object entity,
+			Object id,
+			EntityEntry entry,
+			String fieldName,
+			SharedSessionContractImplementor session) {
 
 		if ( !hasLazyProperties() ) {
 			throw new AssertionFailure( "no lazy properties" );
@@ -1213,23 +1026,24 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		log.tracef( "Initializing lazy properties from datastore (triggered for `%s`)", fieldName );
 
-		 String fetchGroup =
-				 getEntityMetamodel().getBytecodeEnhancementMetadata()
-						 .getLazyAttributesMetadata()
-						 .getFetchGroupName( fieldName );
-		List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors =
-				getEntityMetamodel().getBytecodeEnhancementMetadata()
-						.getLazyAttributesMetadata()
-						.getFetchGroupAttributeDescriptors( fetchGroup );
+		String fetchGroup = getEntityMetamodel()
+				.getBytecodeEnhancementMetadata()
+				.getLazyAttributesMetadata()
+				.getFetchGroupName( fieldName );
+		List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors = getEntityMetamodel()
+				.getBytecodeEnhancementMetadata()
+				.getLazyAttributesMetadata()
+				.getFetchGroupAttributeDescriptors( fetchGroup );
 
 		@SuppressWarnings("deprecation")
 		Set<String> initializedLazyAttributeNames = interceptor.getInitializedLazyAttributeNames();
 
+		// FIXME: How do I pass this to the query?
 		Object[] arguments = PreparedStatementAdaptor.bind(
 				statement -> getIdentifierType().nullSafeSet( statement, id, 1, session )
 		);
 
-		String lazySelect = getSQLLazySelectString( fetchGroup );
+		final SingleIdArrayLoadPlan lazySelect = getSQLLazySelectLoadPlan( fetchGroup );
 
 		// null sql means that the only lazy properties
 		// are shared PK one-to-one associations which are
@@ -1245,38 +1059,21 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			);
 		}
 
-		return getReactiveConnection( session )
-				.selectJdbc( lazySelect, arguments )
-				.thenCompose( resultSet -> {
-					try {
-						resultSet.next();
-						return initLazyProperty(
-								fieldName, entity,
-								session, entry,
-								interceptor,
-								fetchGroupAttributeDescriptors,
-								initializedLazyAttributeNames,
-								resultSet
-						);
-					}
-					catch (SQLException sqle) {
-						//can't occur
-						throw new JDBCException("error initializing lazy property", sqle);
-					}
-				} );
+		// FIXME: We need a reactive version SingleIdArrayLoadPlan
+		return completedFuture( lazySelect.load( id, session ) );
 	}
 
-	default CompletionStage<Object> initLazyProperty(String fieldName, Object entity,
-									SharedSessionContractImplementor session,
-									EntityEntry entry,
-									PersistentAttributeInterceptor interceptor,
-									List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors,
-									Set<String> initializedLazyAttributeNames,
-									ResultSet resultSet)  {
-		// Load all the lazy properties that are in the same fetch group
+	default CompletionStage<Object> initLazyProperty(
+			String fieldName, Object entity,
+			SharedSessionContractImplementor session,
+			EntityEntry entry,
+			PersistentAttributeInterceptor interceptor,
+			List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors,
+			Set<String> initializedLazyAttributeNames,
+			Object[] values) {    // Load all the lazy properties that are in the same fetch group
 		CompletionStage<Object> resultStage = nullFuture();
+		int i = 0;
 		for ( LazyAttributeDescriptor fetchGroupAttributeDescriptor: fetchGroupAttributeDescriptors ) {
-
 			if ( initializedLazyAttributeNames.contains( fetchGroupAttributeDescriptor.getName() ) ) {
 				// Already initialized
 				if ( fetchGroupAttributeDescriptor.getName().equals( fieldName ) ) {
@@ -1285,36 +1082,34 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				continue;
 			}
 
-			try {
-				String[] columnAlias = getLazyPropertyColumnAliases()[fetchGroupAttributeDescriptor.getLazyIndex()];
-				final Object selectedValue = fetchGroupAttributeDescriptor.getType()
-						.nullSafeGet( resultSet, columnAlias, session, entity );
-				if ( selectedValue instanceof CompletionStage ) {
-					// This happens with a lazy one-to-one (bytecode enhancement enabled)
-					CompletionStage<Object> selectedValueStage = (CompletionStage<Object>) selectedValue;
-					resultStage = resultStage
-							.thenCompose( result -> selectedValueStage
-									.thenApply( selected -> {
-										final boolean set = initializeLazyProperty( fieldName, entity, session, entry, fetchGroupAttributeDescriptor.getLazyIndex(), selected );
-										if ( set ) {
-											interceptor.attributeInitialized( fetchGroupAttributeDescriptor.getName() );
-											return selected;
-										}
-										return result;
-									} )
-							);
-				}
-				else {
-					final boolean set = initializeLazyProperty( fieldName, entity, session, entry, fetchGroupAttributeDescriptor.getLazyIndex(), selectedValue );
-					if ( set ) {
-						resultStage = completedFuture( selectedValue );
-						interceptor.attributeInitialized( fetchGroupAttributeDescriptor.getName() );
-					}
-				}
+			final Object selectedValue =  values[i++];
+			if ( selectedValue instanceof CompletionStage ) {
+				// This happens with a lazy one-to-one (bytecode enhancement enabled)
+				CompletionStage<Object> selectedValueStage = (CompletionStage<Object>) selectedValue;
+				resultStage = resultStage
+						.thenCompose( result -> selectedValueStage
+								.thenApply( selected -> {
+									final boolean set = initializeLazyProperty(
+											fieldName,
+											entity,
+											entry,
+											fetchGroupAttributeDescriptor.getLazyIndex(),
+											selected
+									);
+									if ( set ) {
+										interceptor.attributeInitialized( fetchGroupAttributeDescriptor.getName() );
+										return selected;
+									}
+									return result;
+								} )
+						);
 			}
-			catch (SQLException sqle) {
-				//can't occur
-				throw new JDBCException("error initializing lazy property", sqle);
+			else {
+				final boolean set = initializeLazyProperty( fieldName, entity, entry, fetchGroupAttributeDescriptor.getLazyIndex(), selectedValue );
+				if ( set ) {
+					resultStage = completedFuture( selectedValue );
+					interceptor.attributeInitialized( fetchGroupAttributeDescriptor.getName() );
+				}
 			}
 		}
 
@@ -1336,7 +1131,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					(EnhancementAsProxyLazinessInterceptor) currentInterceptor;
 
 			final EntityKey entityKey = proxyInterceptor.getEntityKey();
-			final Serializable identifier = entityKey.getIdentifier();
+			final Object identifier = entityKey.getIdentifier();
 
 			return loadFromDatabaseOrCache( entity, session, entityKey, identifier )
 					.thenApply( loaded -> {
@@ -1352,13 +1147,13 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 							return null;
 						}
 						else {
-							final LazyAttributeLoadingInterceptor interceptor
-									= enhancementMetadata.injectInterceptor( entity, identifier, session );
+							final LazyAttributeLoadingInterceptor interceptor = enhancementMetadata
+									.injectInterceptor( entity, identifier, session );
 							return interceptor.readObject(
 									entity,
 									nameOfAttributeBeingAccessed,
 									interceptor.isAttributeLoaded( nameOfAttributeBeingAccessed )
-											? getEntityTuplizer().getPropertyValue( entity, nameOfAttributeBeingAccessed )
+											? getPropertyValue( entity, nameOfAttributeBeingAccessed )
 											: ( (LazyPropertyInitializer) this )
 													.initializeLazyProperty( nameOfAttributeBeingAccessed, entity, session )
 							);
@@ -1373,7 +1168,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Object entity,
 			SharedSessionContractImplementor session,
 			EntityKey entityKey,
-			Serializable identifier) {
+			Object identifier) {
 
 		// note that stateless sessions don't interact with second-level cache
 		if ( session instanceof EventSource && canReadFromCache() ) {
@@ -1387,96 +1182,41 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			}
 		}
 
-		return (CompletionStage<?>) getLoaderForLockMode( LockMode.READ )
-				.load(identifier, entity, session, LockOptions.READ );
-	}
-
-	default UniqueEntityLoader createReactiveUniqueKeyLoader(Type uniqueKeyType, String[] columns, LoadQueryInfluencers loadQueryInfluencers) {
-		if (uniqueKeyType.isEntityType()) {
-			String className = ((EntityType) uniqueKeyType).getAssociatedEntityName();
-			uniqueKeyType = getFactory().getMetamodel().entityPersister(className).getIdentifierType();
-		}
-		return new ReactiveEntityLoader(
-				this,
-				columns,
-				uniqueKeyType,
-				1,
-				LockMode.NONE,
-				getFactory(),
-				loadQueryInfluencers
+		return getReactiveSingleIdEntityLoader().load(
+				identifier,
+				entity,
+				LockOptions.NONE,
+				session
 		);
 	}
 
-	@Override
-	default CompletionStage<Serializable> reactiveLoadEntityIdByNaturalId(Object[] naturalIdValues,
-																		  LockOptions lockOptions, EventSource session) {
-		if ( log.isTraceEnabled() ) {
-			log.tracef(
-					"Resolving natural-id [%s] to id : %s ",
-					Arrays.asList( naturalIdValues ),
-					infoString( this )
-			);
-		}
+	/*
+	 * These are methods in AbstractEntityPersister that we want to be able to reuse
+	 */
+	// BEGIN AbstractEntityPersister methods
+	String[] getUpdateStrings(boolean byRowId, boolean hasUninitializedLazyProperties);
 
-		Object[] parameters = PreparedStatementAdaptor.bind( statement -> {
-			int positions = 1;
-			int loop = 0;
-			for ( int idPosition : getNaturalIdentifierProperties() ) {
-				final Object naturalIdValue = naturalIdValues[loop++];
-				if ( naturalIdValue != null ) {
-					final Type type = getPropertyTypes()[idPosition];
-					type.nullSafeSet( statement, naturalIdValue, positions, session );
-					positions += type.getColumnSpan( session.getFactory() );
-				}
-			}
-		} );
+	boolean initializeLazyProperty(String fieldName, Object entity, EntityEntry entry, int lazyIndex, Object selectedValue);
 
-		String sql = determinePkByNaturalIdQuery( determineValueNullness( naturalIdValues ) );
-		return getReactiveConnection( session )
-				.selectJdbc( parameters().process(sql), parameters )
-				.thenApply( resultSet -> {
-					try {
-						// if there is no resulting row, return null
-						if ( !resultSet.next() ) {
-							return null;
-						}
-
-						Object hydratedId = getIdentifierType().hydrate( resultSet, getIdentifierAliases(), session, null );
-						return (Serializable) getIdentifierType().resolve( hydratedId, session, null );
-					}
-					catch (SQLException sqle) {
-						//can never happen
-						throw new JDBCException( "could not resolve natural-id: " + sql, sqle );
-					}
-				} );
-	}
-
-	String[] getIdentifierAliases();
-
-	String determinePkByNaturalIdQuery(boolean[] valueNullness);
-
-	boolean initializeLazyProperty(String fieldName,
-								   Object entity,
-								   SharedSessionContractImplementor session,
-								   EntityEntry entry,
-								   int lazyIndex,
-								   Object selectedValue);
+	Object initializeLazyProperty(String fieldName, Object entity, SharedSessionContractImplementor session);
 
 	String[][] getLazyPropertyColumnAliases();
 
-	String getSQLLazySelectString(String fetchGroup);
+	SingleIdArrayLoadPlan getSQLLazySelectLoadPlan(String fetchGroup);
 
 	boolean isBatchable();
+
+	// END AbstractEntityPersister methods
 
 	class UpdateExpectation implements ReactiveConnection.Expectation {
 		private boolean successful;
 
-		private final Serializable id;
+		private final Object id;
 		private final int table;
 		private final Expectation expectation;
 		private final ReactiveAbstractEntityPersister persister;
 
-		public UpdateExpectation(Serializable id, int table, Expectation expectation,
+		public UpdateExpectation(Object id, int table, Expectation expectation,
 								 ReactiveAbstractEntityPersister persister) {
 			this.id = id;
 			this.table = table;
@@ -1495,12 +1235,12 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	class DeleteExpectation implements ReactiveConnection.Expectation {
-		private final Serializable id;
+		private final Object id;
 		private final int table;
 		private final Expectation expectation;
 		private final ReactiveAbstractEntityPersister persister;
 
-		public DeleteExpectation(Serializable id, int table, Expectation expectation,
+		public DeleteExpectation(Object id, int table, Expectation expectation,
 								 ReactiveAbstractEntityPersister persister) {
 			this.id = id;
 			this.table = table;
@@ -1533,4 +1273,5 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			}
 		}
 	}
+
 }

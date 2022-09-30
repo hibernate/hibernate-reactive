@@ -15,7 +15,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -23,6 +22,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -30,7 +30,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 public class ReactivePersistenceContextAdapter extends StatefulPersistenceContext {
 
-	private HashMap<Serializable,Object[]> entitySnapshotsByKey;
+	private HashMap<Serializable, Object[]> entitySnapshotsByKey;
 
 	/**
 	 * Constructs a PersistentContext, bound to the given session.
@@ -47,16 +47,14 @@ public class ReactivePersistenceContextAdapter extends StatefulPersistenceContex
 		return initializer.stage;
 	}
 
-	private class NonLazyCollectionInitializer implements Consumer<PersistentCollection> {
+	private class NonLazyCollectionInitializer implements Consumer<PersistentCollection<?>> {
 		CompletionStage<Void> stage = voidFuture();
 
 		@Override
-		public void accept(PersistentCollection nonLazyCollection) {
+		public void accept(PersistentCollection<?> nonLazyCollection) {
 			if ( !nonLazyCollection.wasInitialized() ) {
-				stage = stage.thenCompose(
-						v -> ( (ReactiveSession) getSession() )
-								.reactiveInitializeCollection( nonLazyCollection, false )
-				);
+				stage = stage.thenCompose( v -> ( (ReactiveSession) getSession() )
+						.reactiveInitializeCollection( nonLazyCollection, false ) );
 			}
 		}
 	}
@@ -67,31 +65,31 @@ public class ReactivePersistenceContextAdapter extends StatefulPersistenceContex
 	@Deprecated
 	@Override
 	public void initializeNonLazyCollections() {
-		//still called by ResultSetProcessorImpl, so can't throw UnsupportedOperationException
+		// still called by ResultSetProcessorImpl, so can't throw UnsupportedOperationException
 	}
 
 	@Deprecated
 	@Override
-	public Object[] getDatabaseSnapshot(Serializable id, EntityPersister persister) throws HibernateException {
-		throw new UnsupportedOperationException("reactive persistence context");
+	public Object[] getDatabaseSnapshot(Object id, EntityPersister persister) throws HibernateException {
+		throw new UnsupportedOperationException( "reactive persistence context" );
 	}
 
-	private static final Object[] NO_ROW = new Object[] {StatefulPersistenceContext.NO_ROW};
+	private static final Object[] NO_ROW = new Object[]{ StatefulPersistenceContext.NO_ROW };
 
-	public CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Serializable id, EntityPersister persister)
+	public CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Object id, EntityPersister persister)
 			throws HibernateException {
 
 		SessionImplementor session = (SessionImplementor) getSession();
 		final EntityKey key = session.generateEntityKey( id, persister );
 		final Object[] cached = entitySnapshotsByKey == null ? null : entitySnapshotsByKey.get( key );
 		if ( cached != null ) {
-			return CompletionStages.completedFuture( cached == NO_ROW ? null : cached );
+			return completedFuture( cached == NO_ROW ? null : cached );
 		}
 		else {
-			return ((ReactiveEntityPersister) persister).reactiveGetDatabaseSnapshot( id, session )
+			return ( (ReactiveEntityPersister) persister ).reactiveGetDatabaseSnapshot( id, session )
 					.thenApply( snapshot -> {
 						if ( entitySnapshotsByKey == null ) {
-							entitySnapshotsByKey = new HashMap<>(8);
+							entitySnapshotsByKey = new HashMap<>( 8 );
 						}
 						entitySnapshotsByKey.put( key, snapshot == null ? NO_ROW : snapshot );
 						return snapshot;

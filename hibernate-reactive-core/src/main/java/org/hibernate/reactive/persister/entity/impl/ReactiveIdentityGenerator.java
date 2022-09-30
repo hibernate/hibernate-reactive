@@ -154,7 +154,7 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 						buf.append( ", " );
 					}
 				}
-				buf.append( ")");
+				buf.append( ')');
 				// This line is missing in ORM
 				buf.append( " output inserted." ).append( identityColumnName );
 				buf.append( " values (" );

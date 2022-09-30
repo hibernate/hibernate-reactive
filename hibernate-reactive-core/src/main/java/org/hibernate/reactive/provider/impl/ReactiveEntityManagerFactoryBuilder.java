@@ -15,7 +15,6 @@ import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.reactive.bulk.impl.ReactiveBulkIdStrategy;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilder;
@@ -51,7 +50,8 @@ public final class ReactiveEntityManagerFactoryBuilder extends EntityManagerFact
                 ( (MetadataImpl) metadata).getBootstrapContext()
         );
         optionsBuilder.enableCollectionInDefaultFetchGroup(true);
-        optionsBuilder.applyMultiTableBulkIdStrategy( new ReactiveBulkIdStrategy( metadata ) );
+        // FIXME [ORM-6]: This method does not exists anymore
+//        optionsBuilder.applyMultiTableBulkIdStrategy( new ReactiveBulkIdStrategy( metadata ) );
         int batchSize = ConfigurationHelper.getInt( Settings.STATEMENT_BATCH_SIZE, getConfigurationValues(), 0 );
         optionsBuilder.applyJdbcBatchSize(batchSize);
 

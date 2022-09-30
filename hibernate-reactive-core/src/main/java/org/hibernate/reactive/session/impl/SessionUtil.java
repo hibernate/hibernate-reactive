@@ -7,17 +7,15 @@ package org.hibernate.reactive.session.impl;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 
-import java.io.Serializable;
-
 public class SessionUtil {
 
-	public static void throwEntityNotFound(SharedSessionContractImplementor session, String entityName, Serializable identifier) {
+	public static void throwEntityNotFound(SharedSessionContractImplementor session, String entityName, Object identifier) {
 		session.getFactory().getEntityNotFoundDelegate().handleEntityNotFound( entityName, identifier );
 	}
 
-	public static void checkEntityFound(SharedSessionContractImplementor session, String entityName, Serializable identifier, Object optional) {
-		if ( optional==null ) {
-			throwEntityNotFound(session, entityName, identifier);
+	public static void checkEntityFound(SharedSessionContractImplementor session, String entityName, Object identifier, Object optional) {
+		if ( optional == null ) {
+			throwEntityNotFound( session, entityName, identifier );
 		}
 	}
 

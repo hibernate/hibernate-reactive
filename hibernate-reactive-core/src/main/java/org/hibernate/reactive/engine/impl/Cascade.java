@@ -22,8 +22,8 @@ import org.hibernate.engine.spi.CollectionEntry;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.Status;
+import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
@@ -364,7 +364,7 @@ public final class Cascade<C> {
 							else {
 								// Else, we must delete after the updates.
 								stage = stage.thenCompose( v -> ( (ReactiveSession) eventSource )
-										.reactiveRemove( entityName, loaded, isCascadeDeleteEnabled, new IdentitySet() ) );
+										.reactiveRemove( entityName, loaded, isCascadeDeleteEnabled, DeleteContext.create() ) );
 							}
 						}
 					}
@@ -570,7 +570,7 @@ public final class Cascade<C> {
 				Objects::nonNull,
 				orphan -> {
 					LOG.tracev( "Deleting orphaned entity instance: {0}", entityName );
-					return session.reactiveRemove( orphan, false, new IdentitySet() );
+					return session.reactiveRemove( entityName, orphan, false, DeleteContext.create() );
 				}
 		) );
 	}
