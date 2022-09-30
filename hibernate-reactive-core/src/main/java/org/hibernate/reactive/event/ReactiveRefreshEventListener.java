@@ -5,9 +5,8 @@
  */
 package org.hibernate.reactive.event;
 
-import org.hibernate.HibernateException;
+import org.hibernate.event.spi.RefreshContext;
 import org.hibernate.event.spi.RefreshEvent;
-import org.hibernate.internal.util.collections.IdentitySet;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
@@ -24,8 +23,8 @@ public interface ReactiveRefreshEventListener extends Serializable {
      *
      * @param event The refresh event to be handled.
      */
-	CompletionStage<Void> reactiveOnRefresh(RefreshEvent event) throws HibernateException;
+	CompletionStage<Void> reactiveOnRefresh(RefreshEvent event);
 
-	CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, IdentitySet refreshedAlready) throws HibernateException;
+	CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready);
 
 }

@@ -7,8 +7,8 @@ package org.hibernate.reactive.event;
 
 
 import org.hibernate.HibernateException;
+import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.DeleteEvent;
-import org.hibernate.internal.util.collections.IdentitySet;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
@@ -27,5 +27,5 @@ public interface ReactiveDeleteEventListener extends Serializable {
 	 */
 	CompletionStage<Void> reactiveOnDelete(DeleteEvent event) throws HibernateException;
 
-	CompletionStage<Void> reactiveOnDelete(DeleteEvent event, IdentitySet transientEntities) throws HibernateException;
+	CompletionStage<Void> reactiveOnDelete(DeleteEvent event, DeleteContext transientEntities) throws HibernateException;
 }

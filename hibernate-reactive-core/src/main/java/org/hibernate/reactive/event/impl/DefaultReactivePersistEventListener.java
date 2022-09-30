@@ -6,7 +6,6 @@
 package org.hibernate.reactive.event.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
@@ -18,10 +17,10 @@ import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.EntityState;
 import org.hibernate.event.internal.EventUtil;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.event.spi.PersistContext;
 import org.hibernate.event.spi.PersistEvent;
 import org.hibernate.event.spi.PersistEventListener;
 import org.hibernate.id.ForeignGenerator;
-import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
@@ -40,22 +39,18 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * A reactific {@link org.hibernate.event.internal.DefaultPersistEventListener}.
  */
 public class DefaultReactivePersistEventListener
-		extends AbstractReactiveSaveEventListener<IdentitySet>
+		extends AbstractReactiveSaveEventListener<PersistContext>
 		implements PersistEventListener, ReactivePersistEventListener, CallbackRegistryConsumer {
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	@Override
-	protected CascadingAction<IdentitySet> getCascadeReactiveAction() {
+	protected CascadingAction<PersistContext> getCascadeReactiveAction() {
 		return CascadingActions.PERSIST;
 	}
 
-	/**
-	 * Handle the given create event.
-	 *
-	 * @param event The create event to be handled.
-	 */
-	public CompletionStage<Void> reactiveOnPersist(PersistEvent event) throws HibernateException {
-		return reactiveOnPersist( event, new IdentitySet( 10 ) );
+	@Override
+	public void onPersist(PersistEvent event) throws HibernateException {
+		throw new UnsupportedOperationException( "Call #reactivePersist(PersistEvent) instead" );
 	}
 
 	/**
@@ -63,7 +58,23 @@ public class DefaultReactivePersistEventListener
 	 *
 	 * @param event The create event to be handled.
 	 */
-	public CompletionStage<Void> reactiveOnPersist(PersistEvent event, IdentitySet createCache) throws HibernateException {
+	@Override
+	public CompletionStage<Void> reactiveOnPersist(PersistEvent event) {
+		return reactiveOnPersist( event, PersistContext.create() );
+	}
+
+	@Override
+	public void onPersist(PersistEvent event, PersistContext createdAlready) throws HibernateException {
+		throw new UnsupportedOperationException( "Call #reactivePersist(PersistEvent, PersistContext) instead" );
+	}
+
+	/**
+	 * Handle the given create event.
+	 *
+	 * @param event The create event to be handled.
+	 */
+	@Override
+	public CompletionStage<Void> reactiveOnPersist(PersistEvent event, PersistContext createCache) {
 		final SessionImplementor source = event.getSession();
 		final Object object = event.getObject();
 		final Object entity;
@@ -104,7 +115,10 @@ public class DefaultReactivePersistEventListener
 			// entity state again.
 
 			// NOTE: entityEntry must be null to get here, so we cannot use any of its values
-			EntityPersister persister = source.getFactory().getMetamodel().entityPersister( entityName );
+			final EntityPersister persister = source.getFactory()
+					.getRuntimeMetamodels()
+					.getMappingMetamodel()
+					.getEntityDescriptor( entityName );
 			if (persister.getIdentifierGenerator() instanceof ForeignGenerator) {
 				if ( LOG.isDebugEnabled() && persister.getIdentifier( entity, source ) != null ) {
 					LOG.debug( "Resetting entity id attribute to null for foreign generator" );
@@ -143,7 +157,7 @@ public class DefaultReactivePersistEventListener
 		}
 	}
 
-	protected CompletionStage<Void> entityIsPersistent(PersistEvent event, IdentitySet createCache) {
+	protected CompletionStage<Void> entityIsPersistent(PersistEvent event, PersistContext createCache) {
 		LOG.trace( "Ignoring persistent instance" );
 		final EventSource source = event.getSession();
 
@@ -157,7 +171,7 @@ public class DefaultReactivePersistEventListener
 				: voidFuture();
 	}
 
-	private CompletionStage<Void> justCascade(IdentitySet createCache, EventSource source, Object entity, EntityPersister persister) {
+	private CompletionStage<Void> justCascade(PersistContext createCache, EventSource source, Object entity, EntityPersister persister) {
 		//TODO: merge into one method!
 		return cascadeBeforeSave( source, persister, entity, createCache )
 				.thenCompose( v -> cascadeAfterSave( source, persister, entity, createCache ) );
@@ -169,7 +183,7 @@ public class DefaultReactivePersistEventListener
 	 * @param event The save event to be handled.
 	 * @param createCache The copy cache of entity instance to merge/copy instance.
 	 */
-	protected CompletionStage<Void> entityIsTransient(PersistEvent event, IdentitySet createCache) {
+	protected CompletionStage<Void> entityIsTransient(PersistEvent event, PersistContext createCache) {
 		LOG.trace( "Saving transient instance" );
 
 		final EventSource source = event.getSession();
@@ -180,7 +194,7 @@ public class DefaultReactivePersistEventListener
 				: voidFuture();
 	}
 
-	private CompletionStage<Void> entityIsDeleted(PersistEvent event, IdentitySet createCache) {
+	private CompletionStage<Void> entityIsDeleted(PersistEvent event, PersistContext createCache) {
 		final EventSource source = event.getSession();
 
 		final Object entity = source.getPersistenceContextInternal().unproxy( event.getObject() );
@@ -197,15 +211,4 @@ public class DefaultReactivePersistEventListener
 				? justCascade( createCache, source, entity, persister )
 				: voidFuture();
 	}
-
-	@Override
-	public void onPersist(PersistEvent event) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void onPersist(PersistEvent event, Map createdAlready) {
-		throw new UnsupportedOperationException();
-	}
-
 }

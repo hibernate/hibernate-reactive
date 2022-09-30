@@ -5,8 +5,17 @@
  */
 package org.hibernate.reactive.event.impl;
 
+import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
+import static org.hibernate.reactive.session.impl.SessionUtil.throwEntityNotFound;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+
 import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
@@ -28,28 +37,21 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
 import org.hibernate.loader.entity.CacheEntityLoaderHelper;
+import org.hibernate.metamodel.mapping.AttributeMapping;
+import org.hibernate.metamodel.mapping.CompositeIdentifierMapping;
+import org.hibernate.metamodel.mapping.EntityIdentifierMapping;
+import org.hibernate.metamodel.mapping.EntityMappingType;
+import org.hibernate.metamodel.mapping.MappingType;
+import org.hibernate.metamodel.mapping.NonAggregatedIdentifierMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.event.ReactiveLoadEventListener;
-import org.hibernate.reactive.loader.entity.ReactiveCacheEntityLoaderHelper;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
-import org.hibernate.tuple.IdentifierProperty;
 import org.hibernate.tuple.entity.EntityMetamodel;
-import org.hibernate.type.EmbeddedComponentType;
-import org.hibernate.type.EntityType;
-import org.hibernate.type.Type;
-
-import static org.hibernate.pretty.MessageHelper.infoString;
-import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
-import static org.hibernate.reactive.session.impl.SessionUtil.throwEntityNotFound;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactive {@link org.hibernate.event.internal.DefaultLoadEventListener}.
@@ -137,8 +139,8 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			throw LOG.unableToLocatePersister( event.getEntityClassName() );
 		}
 
-		CompletionStage<Void> result = checkId( event, loadType, persister ).thenCompose(
-				vd -> doOnLoad( persister, event, loadType )
+		CompletionStage<Void> result = checkId( event, loadType, persister )
+				.thenCompose( vd -> doOnLoad( persister, event, loadType )
 						.thenAccept( event::setResult )
 						.handle( (v, x) -> {
 							if ( event.getResult() instanceof CompletionStage ) {
@@ -154,11 +156,10 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 
 		// if a pessimistic version increment was requested, we need
 		// to go back to the database immediately and update the row
-		if ( event.getLockMode() == LockMode.PESSIMISTIC_FORCE_INCREMENT
-				|| event.getLockMode() == LockMode.FORCE ) {
+		if ( event.getLockMode() == LockMode.PESSIMISTIC_FORCE_INCREMENT ) {
 			// TODO: should we call CachedDomainDataAccess.lockItem() ?
 			return result.thenCompose(
-					v -> persister.lockReactive(
+					v -> persister.reactiveLock(
 							event.getEntityId(),
 							persister.getVersion( event.getResult() ),
 							event.getResult(),
@@ -167,16 +168,15 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 					)
 			);
 		}
-		else {
-			return result;
-		}
+
+		return result;
 	}
 
 	private CompletionStage<Void> checkId(LoadEvent event, LoadType loadType, EntityPersister persister) {
 		final Class<?> idClass = persister.getIdentifierType().getReturnedClass();
-		if ( idClass != null &&
-				!idClass.isInstance( event.getEntityId() ) &&
-				!(event.getEntityId() instanceof DelayedPostInsertIdentifier) ) {
+		if ( idClass != null
+				&& !idClass.isInstance( event.getEntityId() )
+				&& !(event.getEntityId() instanceof DelayedPostInsertIdentifier) ) {
 			return checkIdClass( persister, event, loadType, idClass );
 		}
 		return voidFuture();
@@ -223,25 +223,39 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		// we may have the kooky jpa requirement of allowing find-by-id where
 		// "id" is the "simple pk value" of a dependent objects parent.  This
 		// is part of its generally goofy "derived identity" "feature"
-		final IdentifierProperty identifierProperty = persister.getEntityMetamodel().getIdentifierProperty();
-		if ( identifierProperty.isEmbedded() ) {
-			final EmbeddedComponentType dependentIdType = (EmbeddedComponentType) identifierProperty.getType();
-			if ( dependentIdType.getSubtypes().length == 1 ) {
-				final Type singleSubType = dependentIdType.getSubtypes()[0];
-				if ( singleSubType.isEntityType() ) {
-					final EntityType dependentParentType = (EntityType) singleSubType;
-					final SessionFactoryImplementor factory = event.getSession().getFactory();
-					final Type dependentParentIdType = dependentParentType.getIdentifierOrUniqueKeyType( factory );
-					if ( dependentParentIdType.getReturnedClass().isInstance( event.getEntityId() ) ) {
+		// we may have the jpa requirement of allowing find-by-id where id is the "simple pk value" of a
+		// dependent objects parent.  This is part of its generally goofy derived identity "feature"
+		final EntityIdentifierMapping idMapping = persister.getIdentifierMapping();
+		if ( idMapping instanceof CompositeIdentifierMapping ) {
+			final CompositeIdentifierMapping compositeIdMapping = (CompositeIdentifierMapping) idMapping;
+			final List<AttributeMapping> attributeMappings = compositeIdMapping.getPartMappingType().getAttributeMappings();
+			if ( attributeMappings.size() == 1 ) {
+				final AttributeMapping singleIdAttribute = attributeMappings.get( 0 );
+				if ( singleIdAttribute.getMappedType() instanceof EntityMappingType ) {
+					final EntityMappingType parentIdTargetMapping = (EntityMappingType) singleIdAttribute.getMappedType();
+					final EntityIdentifierMapping parentIdTargetIdMapping = parentIdTargetMapping.getIdentifierMapping();
+					final MappingType parentIdType = parentIdTargetIdMapping instanceof CompositeIdentifierMapping
+							? ((CompositeIdentifierMapping) parentIdTargetIdMapping).getMappedIdEmbeddableTypeDescriptor()
+							: parentIdTargetIdMapping.getMappedType();
+
+					if ( parentIdType.getMappedJavaType().getJavaTypeClass().isInstance( event.getEntityId() ) ) {
 						// yep that's what we have...
 						return loadByDerivedIdentitySimplePkValue(
 								event,
 								loadType,
 								persister,
-								dependentIdType,
-								factory.getMetamodel().entityPersister( dependentParentType.getAssociatedEntityName() )
+								compositeIdMapping,
+								(EntityPersister) parentIdTargetMapping
 						);
 					}
+				}
+				else if ( idClass.isInstance( event.getEntityId() ) ) {
+					return voidFuture();
+				}
+			}
+			else if ( idMapping instanceof NonAggregatedIdentifierMapping ) {
+				if ( idClass.isInstance( event.getEntityId() ) ) {
+					return voidFuture();
 				}
 			}
 		}
@@ -249,15 +263,19 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 				"Provided id of the wrong type for class " + persister.getEntityName() + ". Expected: " + idClass + ", got " + event.getEntityId().getClass() );
 	}
 
+	/*
+	 * See DefaultLoadEventListener#loadByDerivedIdentitySimplePkValue
+	 */
 	private CompletionStage<Void> loadByDerivedIdentitySimplePkValue(LoadEvent event, LoadEventListener.LoadType options,
-			EntityPersister dependentPersister, EmbeddedComponentType dependentIdType, EntityPersister parentPersister) {
+			EntityPersister dependentPersister, CompositeIdentifierMapping dependentIdType, EntityPersister parentPersister) {
 		EventSource session = event.getSession();
 		final EntityKey parentEntityKey = session.generateEntityKey( event.getEntityId(), parentPersister );
 		return doLoad( event, parentPersister, parentEntityKey, options )
 				.thenApply( parent -> {
 					checkEntityFound( session, parentEntityKey.getEntityName(), parentEntityKey, parent );
-					final Serializable dependent = (Serializable) dependentIdType.instantiate( parent, session );
-					dependentIdType.setPropertyValues( dependent, new Object[] {parent}, dependentPersister.getEntityMode() );
+
+					final Object dependent = dependentIdType.instantiate();
+					dependentIdType.getPartMappingType().setValues( dependent, new Object[] { parent } );
 					event.setEntityId( dependent );
 					return session.generateEntityKey( dependent, dependentPersister );
 				} )
@@ -329,9 +347,6 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 
 		final EntityMetamodel entityMetamodel = persister.getEntityMetamodel();
-		final boolean entityHasHibernateProxyFactory = entityMetamodel
-				.getTuplizer()
-				.getProxyFactory() != null;
 
 		// Check for the case where we can use the entity itself as a proxy
 		if ( options.isAllowProxyCreation()
@@ -351,7 +366,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 
 			// if the entity defines a HibernateProxy factory, see if there is an
 			// existing proxy associated with the PC - and if so, use it
-			if ( entityHasHibernateProxyFactory ) {
+			if ( persister.getRepresentationStrategy().getProxyFactory() != null ) {
 				final Object proxy = persistenceContext.getProxy( keyToLoad );
 
 				if ( proxy != null ) {
@@ -594,16 +609,13 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			);
 		}
 
-		CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry =
-				ReactiveCacheEntityLoaderHelper.loadFromSessionCache(
-						event,
-						keyToLoad,
-						options
-				);
+		CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry = CacheEntityLoaderHelper.INSTANCE
+				.loadFromSessionCache( event, keyToLoad, options );
 		Object entity = persistenceContextEntry.getEntity();
 		if ( entity != null ) {
-			Object managed = persistenceContextEntry.isManaged() ? entity : null;
-			return completedFuture( managed );
+			return persistenceContextEntry.isManaged()
+					? completedFuture( entity )
+					: nullFuture();
 		}
 
 		entity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache( event, persister, keyToLoad );
@@ -637,15 +649,10 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	private void cacheNaturalId(LoadEvent event, EntityPersister persister, EventSource session, Object entity) {
 		if ( entity != null && persister.hasNaturalIdentifier() ) {
 			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-			final PersistenceContext.NaturalIdHelper naturalIdHelper = persistenceContext.getNaturalIdHelper();
-			naturalIdHelper.cacheNaturalIdCrossReferenceFromLoad(
-					persister,
+			persistenceContext.getNaturalIdResolutions().cacheResolutionFromLoad(
 					event.getEntityId(),
-					naturalIdHelper.extractNaturalIdValues(
-							entity,
-							persister
-					)
-			);
+					persister.getNaturalIdMapping().extractNaturalIdFromEntity( entity, session ),
+					persister );
 		}
 	}
 

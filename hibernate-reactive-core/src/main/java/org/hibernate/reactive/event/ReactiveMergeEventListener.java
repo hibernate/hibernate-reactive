@@ -5,12 +5,12 @@
  */
 package org.hibernate.reactive.event;
 
-import org.hibernate.HibernateException;
-import org.hibernate.event.internal.MergeContext;
-import org.hibernate.event.spi.MergeEvent;
-
 import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
+
+import org.hibernate.HibernateException;
+import org.hibernate.event.spi.MergeContext;
+import org.hibernate.event.spi.MergeEvent;
 
 /**
  * Defines the contract for handling of merge events generated from a session.

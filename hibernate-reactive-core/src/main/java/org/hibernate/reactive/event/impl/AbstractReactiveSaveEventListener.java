@@ -5,8 +5,6 @@
  */
 package org.hibernate.reactive.event.impl;
 
-
-import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -76,7 +74,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 	 */
 	protected CompletionStage<Void> reactiveSaveWithRequestedId(
 			Object entity,
-			Serializable requestedId,
+			Object requestedId,
 			String entityName,
 			C context,
 			EventSource source) {
@@ -152,7 +150,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 	 */
 	protected CompletionStage<Void> reactivePerformSave(
 			Object entity,
-			Serializable id,
+			Object id,
 			EntityPersister persister,
 			boolean useIdentityColumn,
 			C context,
@@ -163,26 +161,30 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			LOG.tracev( "Saving {0}", infoString( persister, id, source.getFactory() ) );
 		}
 
-		CompletionStage<EntityKey> keyStage = useIdentityColumn
-				? nullFuture()
-				: generateEntityKey( id, persister, source )
+		return entityKey( entity, id, persister, useIdentityColumn, source )
+				.thenCompose( key -> reactivePerformSaveOrReplicate(
+						entity,
+						key,
+						persister,
+						useIdentityColumn,
+						context,
+						source,
+						requiresImmediateIdAccess
+				) );
+	}
+
+	private CompletionStage<EntityKey> entityKey(Object entity, Object id, EntityPersister persister, boolean useIdentityColumn, EventSource source) {
+		if ( useIdentityColumn ) {
+			return nullFuture();
+		}
+		return generateEntityKey( id, persister, source )
 				.thenApply( generatedKey -> {
 					persister.setIdentifier( entity, id, source );
 					return generatedKey;
 				} );
-
-		return keyStage.thenCompose( key -> reactivePerformSaveOrReplicate(
-				entity,
-				key,
-				persister,
-				useIdentityColumn,
-				context,
-				source,
-				requiresImmediateIdAccess
-		) );
 	}
 
-	private CompletionStage<EntityKey> generateEntityKey(Serializable id, EntityPersister persister, EventSource source) {
+	private CompletionStage<EntityKey> generateEntityKey(Object id, EntityPersister persister, EventSource source) {
 		final EntityKey key = source.generateEntityKey( id, persister );
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		Object old = persistenceContext.getEntity( key );
@@ -192,9 +194,8 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 						.reactiveForceFlush( persistenceContext.getEntry( old ) )
 						.thenApply( v -> key );
 			}
-			else {
-				return failedFuture( new NonUniqueObjectException( id, persister.getEntityName() ) );
-			}
+
+			return failedFuture( new NonUniqueObjectException( id, persister.getEntityName() ) );
 		}
 
 		return completedFuture( key );
@@ -225,7 +226,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			EventSource source,
 			boolean requiresImmediateIdAccess) {
 
-		Serializable id = key == null ? null : key.getIdentifier();
+		Object id = key == null ? null : key.getIdentifier();
 
 		boolean inTransaction = source.isTransactionInProgress();
 		boolean shouldDelayIdentityInserts = !inTransaction && !requiresImmediateIdAccess;
@@ -264,7 +265,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 					}
 
 					if ( substitute ) {
-						persister.setPropertyValues( entity, values );
+						persister.setValues( entity, values );
 					}
 
 					TypeHelper.deepCopy(
@@ -296,7 +297,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			// postpone initializing id in case the insert has non-nullable transient dependencies
 			// that are not resolved until cascadeAfterSave() is executed
 
-//			Serializable newId = id;
+//			Object newId = id;
 //			if ( useIdentityColumn && insert.isEarlyInsert() ) {
 //				if ( !EntityIdentityInsertAction.class.isInstance( insert ) ) {
 //					throw new IllegalStateException(
@@ -312,13 +313,13 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 //		} );
 	}
 
-	protected Map<?,?> getMergeMap(Object context) {
+	protected Map<Object,Object> getMergeMap(C anything) {
 		return null;
 	}
 
 	private CompletionStage<AbstractEntityInsertAction> addInsertAction(
 			Object[] values,
-			Serializable id,
+			Object id,
 			Object entity,
 			EntityPersister persister,
 			boolean useIdentityColumn,
@@ -404,7 +405,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 	 */
 	protected boolean substituteValuesIfNecessary(
 			Object entity,
-			Serializable id,
+			Object id,
 			Object[] values,
 			EntityPersister persister,
 			SessionImplementor source) {
@@ -421,7 +422,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			substitute = Versioning.seedVersion(
 					values,
 					persister.getVersionProperty(),
-					persister.getVersionType(),
+					persister.getVersionMapping(),
 					source
 			) || substitute;
 		}
@@ -430,7 +431,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 
 	protected boolean visitCollectionsBeforeSave(
 			Object entity,
-			Serializable id,
+			Object id,
 			Object[] values,
 			Type[] types,
 			EventSource source) {

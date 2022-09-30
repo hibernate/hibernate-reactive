@@ -5,7 +5,9 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import java.io.Serializable;
+import static org.hibernate.pretty.MessageHelper.collectionInfoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
@@ -25,9 +27,6 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
-
-import static org.hibernate.pretty.MessageHelper.collectionInfoString;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class DefaultReactiveInitializeCollectionEventListener implements InitializeCollectionEventListener {
 
@@ -97,7 +96,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 	 *         false otherwise.
 	 */
 	private boolean initializeCollectionFromCache(
-			Serializable id,
+			Object id,
 			CollectionPersister persister,
 			PersistentCollection collection,
 			SessionImplementor source) {

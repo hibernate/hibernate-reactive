@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
@@ -88,7 +87,7 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 		CompletionStage<EntityEntry> stage;
 		if (entry==null) {
 			final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity);
-			final Serializable id = persister.getIdentifier(entity, source);
+			final Object id = persister.getIdentifier(entity, source);
 			stage = ForeignKeys.isNotTransient( event.getEntityName(), entity, Boolean.FALSE, source).thenApply(
 					trans -> {
 						if (!trans) {
@@ -210,7 +209,7 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 
 		try {
 			return ((ReactiveEntityPersister) persister)
-					.lockReactive(
+					.reactiveLock(
 							entry.getId(),
 							entry.getVersion(),
 							object,

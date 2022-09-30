@@ -5,10 +5,8 @@
  */
 package org.hibernate.reactive.event;
 
-import org.hibernate.HibernateException;
 import org.hibernate.event.spi.ResolveNaturalIdEvent;
 
-import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -16,16 +14,16 @@ import java.util.concurrent.CompletionStage;
  *
  * @author Eric Dalquist
  * @author Steve Ebersole
+ *
+ * @see org.hibernate.event.spi.ResolveNaturalIdEventListener
  */
-public interface ReactiveResolveNaturalIdEventListener extends Serializable {
+public interface ReactiveResolveNaturalIdEventListener {
 
 	/**
 	 * Handle the given resolve natural id event.
 	 *
 	 * @param event The resolve natural id event to be handled.
-	 *
-	 * @throws HibernateException Indicates a problem resolving natural id to primary key
 	 */
-	CompletionStage<Void> reactiveResolveNaturalId(ResolveNaturalIdEvent event) throws HibernateException;
+	CompletionStage<Void> onReactiveResolveNaturalId(ResolveNaturalIdEvent event);
 
 }
