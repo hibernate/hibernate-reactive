@@ -5,6 +5,11 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -18,19 +23,15 @@ import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.stage.Stage.Query;
 
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
@@ -188,80 +189,6 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <R> Stage.Query<R> createQuery(String jpql) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( jpql ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createQuery(String jpql, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( jpql, resultType ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNativeQuery(String sql) {
-		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNativeQuery(String sql, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveNativeQuery(sql, resultType) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNativeQuery(String sql, ResultSetMapping<R> resultSetMapping) {
-		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping.getName() ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNativeQuery(String sql, Class<R> resultType, AffectedEntities affectedEntities) {
-		return new StageQueryImpl<>(
-				delegate.createReactiveNativeQuery( sql, resultType ),
-				affectedEntities.getAffectedSpaces( delegate.getFactory() )
-		);
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNativeQuery(String sql, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
-		return new StageQueryImpl<>(
-				delegate.createReactiveNativeQuery( sql, resultSetMapping.getName() ),
-				affectedEntities.getAffectedSpaces( delegate.getFactory() )
-		);
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNativeQuery(String sql, AffectedEntities affectedEntities) {
-		return new StageQueryImpl<>(
-				delegate.createReactiveNativeQuery( sql ),
-				affectedEntities.getAffectedSpaces( delegate.getFactory() )
-		);
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNamedQuery(String name) {
-		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( name ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNamedQuery(String name, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ) );
-	}
-
-	@Override @SuppressWarnings("unchecked")
-	public <R> Stage.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery ) );
-	}
-
-	@Override @SuppressWarnings("unchecked")
-	public <R> Stage.Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaUpdate ) );
-	}
-
-	@Override @SuppressWarnings("unchecked")
-	public <R> Stage.Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaDelete ) );
-	}
-
-	@Override
 	public FlushMode getFlushMode() {
 		switch ( delegate.getHibernateFlushMode() ) {
 			case MANUAL:
@@ -365,26 +292,6 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public boolean isFetchProfileEnabled(String name) {
 		return delegate.isFetchProfileEnabled(name);
-	}
-
-	@Override
-	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
-		return delegate.getResultSetMapping(resultType, mappingName);
-	}
-
-	@Override
-	public <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name) {
-		return delegate.getEntityGraph(entity, name);
-	}
-
-	@Override
-	public <T> EntityGraph<T> createEntityGraph(Class<T> entity) {
-		return delegate.createEntityGraph(entity);
-	}
-
-	@Override
-	public <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name) {
-		return delegate.createEntityGraph(entity, name);
 	}
 
 	@Override
@@ -498,6 +405,92 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public boolean isOpen() {
 		return delegate.isOpen();
+	}
+
+	@Override
+	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <R> Query<R> createQuery(String queryString) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <R> Query<R> createQuery(String queryString, Class<R> resultType) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <R> Query<R> createNamedQuery(String queryName) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <R> Query<R> createNamedQuery(String queryName, Class<R> resultType) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString, Class<R> resultType) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public <R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

@@ -27,7 +27,6 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.session.impl.ReactiveCriteriaBuilderImpl;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 import org.hibernate.service.ServiceRegistry;
@@ -285,7 +284,8 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 
 	@Override
 	public CriteriaBuilder getCriteriaBuilder() {
-		return new ReactiveCriteriaBuilderImpl( delegate );
+		throw new UnsupportedOperationException("Not yet implemented");
+//		return new ReactiveCriteriaBuilderImpl( delegate );
 	}
 
 	@Override

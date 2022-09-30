@@ -8,18 +8,17 @@ package org.hibernate.reactive.stage.impl;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+
+import org.hibernate.LockMode;
+import org.hibernate.reactive.common.ResultSetMapping;
+import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.session.ReactiveStatelessSession;
+import org.hibernate.reactive.stage.Stage;
+
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
-
-import org.hibernate.LockMode;
-import org.hibernate.graph.spi.RootGraphImplementor;
-import org.hibernate.reactive.common.ResultSetMapping;
-import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.session.Criteria;
-import org.hibernate.reactive.session.ReactiveStatelessSession;
-import org.hibernate.reactive.stage.Stage;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
@@ -48,62 +47,6 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	@Override
 	public <T> CompletionStage<T> get(Class<T> entityClass, Object id, LockMode lockMode) {
 		return delegate.reactiveGet( entityClass, id, lockMode, null );
-	}
-
-	@Override
-	public <T> CompletionStage<T> get(EntityGraph<T> entityGraph, Object id) {
-		Class<T> entityClass = ( (RootGraphImplementor<T>) entityGraph ).getGraphedType().getJavaType();
-		return delegate.reactiveGet( entityClass, id, null, entityGraph );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createQuery(String queryString) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createQuery(String queryString, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNativeQuery(String queryString) {
-		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> sqlResultSetMapping) {
-		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString, sqlResultSetMapping.getName() ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNamedQuery(String name) {
-		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( name ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createNamedQuery(String name, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaUpdate ) );
-	}
-
-	@Override
-	public <R> Stage.Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaDelete ) );
 	}
 
 	@Override
@@ -176,25 +119,15 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 		return delegate.reactiveFetch( association, false );
 	}
 
-	@Override
-	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
-		return delegate.getResultSetMapping( resultType, mappingName );
-	}
+//	@Override
+//	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
+//		return delegate.getResultSetMapping( resultType, mappingName );
+//	}
 
-	@Override
-	public <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name) {
-		return delegate.getEntityGraph( entity, name );
-	}
-
-	@Override
-	public <T> EntityGraph<T> createEntityGraph(Class<T> entity) {
-		return delegate.createEntityGraph( entity );
-	}
-
-	@Override
-	public <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name) {
-		return delegate.createEntityGraph( entity, name );
-	}
+//	@Override
+//	public <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name) {
+//		return delegate.getEntityGraph( entity, name );
+//	}
 
 	@Override
 	public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
@@ -284,5 +217,75 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 		public boolean isMarkedForRollback() {
 			return rollback;
 		}
+	}
+
+	@Override
+	public <T> CompletionStage<T> get(EntityGraph<T> entityGraph, Object id) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Stage.Query<R> createQuery(String queryString) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Stage.Query<R> createQuery(String queryString, Class<R> resultType) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Stage.Query<R> createNativeQuery(String queryString) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Stage.Query<R> createNamedQuery(String queryName) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Stage.Query<R> createNamedQuery(String queryName, Class<R> resultType) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Stage.Query<R> createNativeQuery(String queryString, Class<R> resultType) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Stage.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Stage.Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Stage.Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
+		throw new UnsupportedOperationException("Not yet implemented");
 	}
 }
