@@ -5,7 +5,12 @@
  */
 package org.hibernate.reactive.mutiny.impl;
 
-import io.smallrye.mutiny.Uni;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -19,19 +24,11 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.session.Criteria;
 import org.hibernate.reactive.session.ReactiveSession;
 
+import io.smallrye.mutiny.Uni;
 import jakarta.persistence.EntityGraph;
-import jakarta.persistence.criteria.CriteriaDelete;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
 
@@ -102,6 +99,62 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public boolean contains(Object entity) {
 		return delegate.contains( entity );
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createQuery(String queryString) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createQuery(String queryString, Class<R> resultType) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNamedQuery(String queryName) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNamedQuery(String queryName, Class<R> resultType) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNativeQuery(String queryString) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNativeQuery(String queryString, Class<R> resultType) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNativeQuery(
+			String queryString,
+			Class<R> resultType,
+			AffectedEntities affectedEntities) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createNativeQuery(
+			String queryString,
+			ResultSetMapping<R> resultSetMapping,
+			AffectedEntities affectedEntities) {
+		return null;
 	}
 
 	@Override
@@ -193,83 +246,6 @@ public class MutinySessionImpl implements Mutiny.Session {
 //	@Override
 	public Uni<Void> lock(Object entity, LockOptions lockOptions) {
 		return uni( () -> delegate.reactiveLock( entity, lockOptions ) );
-	}
-
-	@Override
-	public <R> Mutiny.Query<R> createQuery(String jpql) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql ), factory );
-	}
-
-	@Override
-	public <R> Mutiny.Query<R> createQuery(String jpql, Class<R> resultType) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( jpql, resultType ), factory );
-	}
-
-	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String sql) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql ), factory );
-	}
-
-	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String sql, Class<R> resultType) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery(sql, resultType), factory );
-	}
-
-	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String sql, ResultSetMapping<R> resultSetMapping) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( sql, resultSetMapping.getName() ), factory );
-	}
-
-	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String sql, AffectedEntities affectedEntities) {
-		return new MutinyQueryImpl<>(
-				delegate.createReactiveNativeQuery( sql ),
-				affectedEntities.getAffectedSpaces( delegate.getFactory() ),
-				factory
-		);
-	}
-
-	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String sql, Class<R> resultType, AffectedEntities affectedEntities) {
-		return new MutinyQueryImpl<>(
-				delegate.createReactiveNativeQuery( sql, resultType ),
-				affectedEntities.getAffectedSpaces( delegate.getFactory() ),
-				factory
-		);
-	}
-
-	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String sql, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
-		return new MutinyQueryImpl<>(
-				delegate.createReactiveNativeQuery( sql, resultSetMapping.getName() ),
-				affectedEntities.getAffectedSpaces( delegate.getFactory() ),
-				factory
-		);
-	}
-
-	@Override
-	public <R> Mutiny.Query<R> createNamedQuery(String name) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name ), factory );
-	}
-
-	@Override
-	public <R> Mutiny.Query<R> createNamedQuery(String name, Class<R> resultType) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( name, resultType ), factory );
-	}
-
-	@Override @SuppressWarnings("unchecked")
-	public <R> Mutiny.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaQuery ), factory );
-	}
-
-	@Override @SuppressWarnings("unchecked")
-	public <R> Mutiny.Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaUpdate ), factory );
-	}
-
-	@Override @SuppressWarnings("unchecked")
-	public <R> Mutiny.Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( (Criteria<R>) criteriaDelete ), factory );
 	}
 
 	@Override
@@ -379,26 +355,6 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
-		return delegate.getResultSetMapping(resultType, mappingName);
-	}
-
-	@Override
-	public <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name) {
-		return delegate.getEntityGraph(entity, name);
-	}
-
-	@Override
-	public <T> EntityGraph<T> createEntityGraph(Class<T> entity) {
-		return delegate.createEntityGraph(entity);
-	}
-
-	@Override
-	public <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name) {
-		return delegate.createEntityGraph(entity, name);
-	}
-
-	@Override
 	public Filter enableFilter(String filterName) {
 		return delegate.enableFilter(filterName);
 	}
@@ -498,6 +454,26 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public boolean isOpen() {
 		return delegate.isOpen();
+	}
+
+	@Override
+	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
+		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
 }

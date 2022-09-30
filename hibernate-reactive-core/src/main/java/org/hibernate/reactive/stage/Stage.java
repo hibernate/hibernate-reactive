@@ -5,24 +5,11 @@
  */
 package org.hibernate.reactive.stage;
 
-import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import jakarta.persistence.CacheRetrieveMode;
-import jakarta.persistence.CacheStoreMode;
-import jakarta.persistence.EntityGraph;
-import jakarta.persistence.FlushModeType;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.Parameter;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaDelete;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.CriteriaUpdate;
-import jakarta.persistence.metamodel.Attribute;
-import jakarta.persistence.metamodel.Metamodel;
 
 import org.hibernate.Cache;
 import org.hibernate.CacheMode;
@@ -31,7 +18,7 @@ import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
-import org.hibernate.collection.internal.AbstractPersistentCollection;
+import org.hibernate.collection.spi.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
@@ -47,6 +34,19 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.Statistics;
+
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.Parameter;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.Metamodel;
 
 import static org.hibernate.internal.util.LockModeConverter.convertToLockMode;
 import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheMode;
@@ -1302,7 +1302,7 @@ public interface Stage {
 		 *
 		 * @return a detached entity instance, via a {@code CompletionStage}
 		 *
-		 * @see org.hibernate.StatelessSession#get(Class, Serializable)
+		 * @see org.hibernate.StatelessSession#get(Class, Object)
 		 */
 		<T> CompletionStage<T> get(Class<T> entityClass, Object id);
 
@@ -1315,7 +1315,7 @@ public interface Stage {
 		 *
 		 * @return a detached entity instance, via a {@code CompletionStage}
 		 *
-		 * @see org.hibernate.StatelessSession#get(Class, Serializable, LockMode)
+		 * @see org.hibernate.StatelessSession#get(Class, Object, LockMode)
 		 */
 		<T> CompletionStage<T> get(Class<T> entityClass, Object id, LockMode lockMode);
 
@@ -1328,7 +1328,7 @@ public interface Stage {
 		 *
 		 * @return a detached entity instance, via a {@code CompletionStage}
 		 *
-		 * @see org.hibernate.StatelessSession#get(Class, Serializable, LockMode)
+		 * @see org.hibernate.StatelessSession#get(Class, Object, LockMode)
 		 */
 		default <T> CompletionStage<T> get(Class<T> entityClass, Object id, LockModeType lockModeType) {
 			return get( entityClass, id, convertToLockMode(lockModeType) );
@@ -1355,7 +1355,7 @@ public interface Stage {
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 *
-		 * @see Session#createQuery(String)
+		 * @see org.hibernate.Session#createQuery(String)
 		 */
 		<R> Query<R> createQuery(String queryString);
 
@@ -1368,7 +1368,7 @@ public interface Stage {
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 *
-		 * @see Session#createQuery(String, Class)
+		 * @see org.hibernate.Session#createQuery(String, Class)
 		 */
 		<R> Query<R> createQuery(String queryString, Class<R> resultType);
 
@@ -1380,7 +1380,7 @@ public interface Stage {
 		 *
 		 * @param queryString The SQL select, update, insert, or delete statement
 		 *
-		 * @see Session#createNativeQuery(String)
+		 * @see org.hibernate.Session#createNativeQuery(String)
 		 */
 		<R> Query<R> createNativeQuery(String queryString);
 
@@ -1416,22 +1416,9 @@ public interface Stage {
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 *
-		 * @see Session#createNativeQuery(String, Class)
+		 * @see org.hibernate.Session#createNativeQuery(String, Class)
 		 */
 		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType);
-
-		/**
-		 * Create an instance of {@link Query} for the given SQL query string,
-		 * using the given {@link ResultSetMapping} to interpret the result set.
-		 *
-		 * @param queryString The SQL query
-		 * @param resultSetMapping the result set mapping
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see Session#createNativeQuery(String, ResultSetMapping)
-		 */
-		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
 
 		/**
 		 * Create an instance of {@link Query} for the given criteria query.
