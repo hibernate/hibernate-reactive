@@ -49,7 +49,7 @@ public class ReactiveEntityIncrementVersionProcess implements ReactiveBeforeTran
 		}
 
 		return ( (ReactiveEntityPersister) entry.getPersister() )
-				.lockReactive(
+				.reactiveLock(
 						entry.getId(),
 						entry.getVersion(),
 						object,

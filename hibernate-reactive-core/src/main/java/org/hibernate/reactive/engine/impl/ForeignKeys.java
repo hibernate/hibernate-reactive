@@ -5,8 +5,9 @@
  */
 package org.hibernate.reactive.engine.impl;
 
-import org.hibernate.EntityMode;
-import org.hibernate.HibernateException;
+import java.util.Objects;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.TransientObjectException;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.engine.internal.ManagedTypeHelper;
@@ -22,11 +23,12 @@ import org.hibernate.type.CompositeType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
 
-import java.io.Serializable;
-import java.util.Objects;
-import java.util.concurrent.CompletionStage;
-
-import static org.hibernate.reactive.util.impl.CompletionStages.*;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.trueFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Algorithms related to foreign key constraint transparency
@@ -73,14 +75,17 @@ public final class ForeignKeys {
 		 *
 		 * @param values The entity attribute values
 		 */
-		public CompletionStage<Void> nullifyTransientReferences(Object[] values) {
-			CompletionStage<Void> result = nullifyTransientReferences(
-					null,
-					values,
-					persister.getPropertyTypes(),
-					persister.getPropertyNames()
-			);
-			return result==null ? voidFuture() : result;
+		public CompletionStage<Void> nullifyTransientReferences(final Object[] values) {
+			final String[] propertyNames = persister.getPropertyNames();
+			final Type[] types = persister.getPropertyTypes();
+			CompletionStage<Void> loop = voidFuture();
+			for ( int i = 0; i < values.length; i++ ) {
+				final int index = i;
+				loop = loop
+						.thenCompose( v -> nullifyTransientReferences( values[index], propertyNames[index], types[index] ) )
+						.thenAccept( replacement -> values[index] = replacement );
+			}
+			return loop;
 		}
 
 		/**
@@ -94,84 +99,72 @@ public final class ForeignKeys {
 		 * @return {@code null} if the argument is an unsaved entity; otherwise return the argument.
 		 */
 		private CompletionStage<Object> nullifyTransientReferences(Object value, String propertyName, Type type) {
-			final CompletionStage<Object> result;
+			CompletionStage<Object> returnedStage;
 			if ( value == null ) {
-				return null;
+				returnedStage = nullFuture();
 			}
 			else if ( type.isEntityType() ) {
 				final EntityType entityType = (EntityType) type;
 				if ( entityType.isOneToOne() ) {
-					return null;
+					returnedStage = completedFuture( value );
 				}
 				else {
 					// if we're dealing with a lazy property, it may need to be
 					// initialized to determine if the value is nullifiable
-					CompletionStage<Object> fetcher;
 					if ( isDelete
 							&& value == LazyPropertyInitializer.UNFETCHED_PROPERTY
 							&& !session.getPersistenceContextInternal().isNullifiableEntityKeysEmpty() ) {
-						throw new UnsupportedOperationException("lazy property initialization not supported");
-		//				fetcher = ( (LazyPropertyInitializer) persister ).initializeLazyProperty( propertyName, self, session );
+						throw new UnsupportedOperationException( "lazy property initialization not supported" );
 					}
-					else {
-						fetcher = completedFuture( value );
-					}
-					result = fetcher.thenCompose( fetchedValue -> {
-						if ( fetchedValue == null ) {
-							// The uninitialized value was initialized to null
-							return nullFuture();
-						}
-						else {
-							// If the value is not nullifiable, make sure that the
-							// possibly initialized value is returned.
-							return isNullifiable( entityType.getAssociatedEntityName(), fetchedValue )
-									.thenApply( trans -> trans ? null : fetchedValue );
-						}
-					} );
+
+					// If the value is not nullifiable, make sure that the
+					// possibly initialized value is returned.
+					returnedStage = isNullifiable( entityType.getAssociatedEntityName(), value )
+							.thenApply( trans -> trans ? null : value );
 				}
 			}
 			else if ( type.isAnyType() ) {
-				result = isNullifiable( null, value ).thenApply( trans -> trans  ? null : value );
+				returnedStage = isNullifiable( null, value ).thenApply( trans -> trans  ? null : value );
 			}
 			else if ( type.isComponentType() ) {
 				final CompositeType actype = (CompositeType) type;
-				final Object[] values = actype.getPropertyValues( value, session );
-				CompletionStage<Void> nullifier = nullifyTransientReferences(
-						propertyName,
-						values,
-						actype.getSubtypes(),
-						actype.getPropertyNames()
-				);
-				if ( nullifier == null ) {
-					return null;
+				final Object[] subValues = actype.getPropertyValues( value, session );
+				final Type[] subtypes = actype.getSubtypes();
+				final String[] subPropertyNames = actype.getPropertyNames();
+				CompletionStage<Boolean> loop = falseFuture();
+				for ( int i = 0; i < subValues.length; i++ ) {
+					final int index = i;
+					loop = loop
+							.thenCompose( substitute -> nullifyTransientReferences(
+												  subValues[index],
+												  StringHelper.qualify( propertyName, subPropertyNames[index] ),
+												  subtypes[index]
+										  )
+									.thenApply( replacement -> {
+										if ( replacement != subValues[index] ) {
+											subValues[index] = replacement;
+											return Boolean.TRUE;
+										}
+										return substitute;
+									} )
+							);
 				}
-				else {
-					result = nullifier.thenAccept( v -> actype.setPropertyValues( value, values, EntityMode.POJO ) )
-							.thenApply( v -> value );
-				}
+				returnedStage = loop.thenApply( substitute -> {
+					if ( substitute ) {
+						// todo : need to account for entity mode on the CompositeType interface :(
+						actype.setPropertyValues( value, subValues );
+					}
+					return value;
+				} );
 			}
 			else {
-				return null;
+				returnedStage = completedFuture( value );
 			}
 
-			return result.thenApply( returnedValue -> {
+			return returnedStage.thenApply( returnedValue -> {
 				trackDirt( value, propertyName, returnedValue );
 				return returnedValue;
 			} );
-		}
-
-		private CompletionStage<Void> nullifyTransientReferences(String propertyName, Object[] values, Type[] types, String[] names) {
-			CompletionStage<Void> nullifiers = null;
-			for ( int i = 0; i < values.length; i++ ) {
-				int ii = i;
-				String name = propertyName==null ? names[ii] : StringHelper.qualify( propertyName, names[ii] );
-				CompletionStage<Object> nullifier = nullifyTransientReferences( values[ii], name, types[ii] );
-				if ( nullifier != null ) {
-					nullifiers = ( nullifiers == null ? nullifier : nullifiers.thenCompose( v-> nullifier ) )
-							.thenAccept( replacement -> values[ii] = replacement );
-				}
-			}
-			return nullifiers;
 		}
 
 		private void trackDirt(Object value, String propertyName, Object returnedValue) {
@@ -193,8 +186,7 @@ public final class ForeignKeys {
 		 * @param entityName The name of the entity
 		 * @param object The entity instance
 		 */
-		private CompletionStage<Boolean> isNullifiable(final String entityName, Object object)
-				throws HibernateException {
+		private CompletionStage<Boolean> isNullifiable(final String entityName, Object object) {
 			if ( object == LazyPropertyInitializer.UNFETCHED_PROPERTY ) {
 				// this is the best we can do...
 				return falseFuture();
@@ -218,8 +210,7 @@ public final class ForeignKeys {
 			// unless we are using native id generation, in which
 			// case we definitely need to nullify
 			if ( object == self ) {
-				return completedFuture( isEarlyInsert
-						|| isDelete && session.getJdbcServices().getDialect().hasSelfReferentialForeignKeyBug() );
+				 return completedFuture( isEarlyInsert || ( isDelete && session.getJdbcServices().getDialect().hasSelfReferentialForeignKeyBug() ) );
 			}
 
 			// See if the entity is already bound to this session, if not look at the
@@ -259,7 +250,7 @@ public final class ForeignKeys {
 			return trueFuture();
 		}
 
-		// todo : shouldnt assumed be revered here?
+		// todo : shouldn't assumed be revered here?
 
 		return isTransient( entityName, entity, assumed, session )
 				.thenApply( trans -> !trans );
@@ -278,8 +269,7 @@ public final class ForeignKeys {
 	 *
 	 * @return {@code true} if the given entity is transient (unsaved)
 	 */
-	public static CompletionStage<Boolean> isTransient(String entityName, Object entity, Boolean assumed,
-													   SessionImplementor session) {
+	public static CompletionStage<Boolean> isTransient(String entityName, Object entity, Boolean assumed, SessionImplementor session) {
 		if ( entity == LazyPropertyInitializer.UNFETCHED_PROPERTY ) {
 			// an unfetched association can only point to
 			// an entity that already exists in the db
@@ -306,10 +296,9 @@ public final class ForeignKeys {
 		}
 
 		// hit the database, after checking the session cache for a snapshot
-		ReactivePersistenceContextAdapter persistenceContext =
-				(ReactivePersistenceContextAdapter) session.getPersistenceContextInternal();
-		Serializable id = persister.getIdentifier(entity, session);
-		return persistenceContext.reactiveGetDatabaseSnapshot( id, persister).thenApply(Objects::isNull);
+		ReactivePersistenceContextAdapter persistenceContext = (ReactivePersistenceContextAdapter) session.getPersistenceContextInternal();
+		Object id = persister.getIdentifier( entity, session );
+		return persistenceContext.reactiveGetDatabaseSnapshot( id, persister ).thenApply( Objects::isNull );
 	}
 
 	/**
@@ -337,7 +326,7 @@ public final class ForeignKeys {
 			return nullFuture();
 		}
 		else {
-			Serializable id = session.getContextEntityIdentifier( object );
+			Object id = session.getContextEntityIdentifier( object );
 			if ( id == null ) {
 				// context-entity-identifier returns null explicitly if the entity
 				// is not associated with the persistence context; so make some

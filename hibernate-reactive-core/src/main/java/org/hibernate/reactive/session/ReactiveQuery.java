@@ -5,26 +5,19 @@
  */
 package org.hibernate.reactive.session;
 
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
-import org.hibernate.HibernateException;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.TypeMismatchException;
-import org.hibernate.hql.internal.QueryExecutionRequestException;
-import org.hibernate.query.criteria.internal.compile.InterpretedParameterMetadata;
-import org.hibernate.query.internal.AbstractProducedQuery;
 import org.hibernate.transform.ResultTransformer;
 import org.hibernate.type.Type;
 
 import jakarta.persistence.EntityGraph;
-import jakarta.persistence.NoResultException;
 import jakarta.persistence.Parameter;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
-import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
 /**
  * An internal contract between the reactive session implementation
@@ -36,7 +29,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 @Incubating
 public interface ReactiveQuery<R> {
 
-	void setParameterMetadata(InterpretedParameterMetadata parameterMetadata);
+//	void setParameterMetadata(InterpretedParameterMetadata parameterMetadata);
 
 	CompletionStage<R> getReactiveSingleResult();
 
@@ -85,51 +78,50 @@ public interface ReactiveQuery<R> {
 	ReactiveQuery<R> setResultTransformer(ResultTransformer resultTransformer);
 
 	Type[] getReturnTypes();
-
-	static <T> T convertQueryException(T result, Throwable e,
-									   AbstractProducedQuery<?> query) {
-		if ( e instanceof QueryExecutionRequestException) {
-			throw new IllegalStateException( e );
-		}
-		if ( e instanceof TypeMismatchException) {
-			throw new IllegalStateException( e );
-		}
-		if ( e instanceof HibernateException) {
-			throw query.getProducer().getExceptionConverter()
-					.convert( (HibernateException) e, query.getLockOptions() );
-		}
-		return returnOrRethrow( e, result );
-	}
-
-	static <R> R extractUniqueResult(List<R> list, AbstractProducedQuery<R> query) {
-		try {
-			if ( list.isEmpty() ) {
-				throw new NoResultException( "No entity found for query" );
-			}
-			return AbstractProducedQuery.uniqueElement( list );
-		}
-		catch (HibernateException e) {
-			throw query.getProducer().getExceptionConverter()
-					.convert( e, query.getLockOptions() );
-		}
-	}
-
-	static <R> R extractUniqueResultOrNull(List<R> list, AbstractProducedQuery<R> query) {
-		try {
-			if ( list.isEmpty() ) {
-				return null;
-			}
-			return AbstractProducedQuery.uniqueElement( list );
-		}
-		catch (HibernateException e) {
-			throw query.getProducer().getExceptionConverter()
-					.convert( e, query.getLockOptions() );
-		}
-	}
+//
+//	static <T> T convertQueryException(T result, Throwable e AbstractProducedQuery<?> query) {
+//		if ( e instanceof QueryExecutionRequestException) {
+//			throw new IllegalStateException( e );
+//		}
+//		if ( e instanceof TypeMismatchException) {
+//			throw new IllegalStateException( e );
+//		}
+//		if ( e instanceof HibernateException) {
+//			throw query.getProducer().getExceptionConverter()
+//					.convert( (HibernateException) e, query.getLockOptions() );
+//		}
+//		return returnOrRethrow( e, result );
+//	}
+//
+//	static <R> R extractUniqueResult(List<R> list, AbstractProducedQuery<R> query) {
+//		try {
+//			if ( list.isEmpty() ) {
+//				throw new NoResultException( "No entity found for query" );
+//			}
+//			return AbstractProducedQuery.uniqueElement( list );
+//		}
+//		catch (HibernateException e) {
+//			throw query.getProducer().getExceptionConverter()
+//					.convert( e, query.getLockOptions() );
+//		}
+//	}
+//
+//	static <R> R extractUniqueResultOrNull(List<R> list, AbstractProducedQuery<R> query) {
+//		try {
+//			if ( list.isEmpty() ) {
+//				return null;
+//			}
+//			return AbstractProducedQuery.uniqueElement( list );
+//		}
+//		catch (HibernateException e) {
+//			throw query.getProducer().getExceptionConverter()
+//					.convert( e, query.getLockOptions() );
+//		}
+//	}
 
 	void setPlan(EntityGraph<R> entityGraph);
 
-    ReactiveQuery<R> setCacheable(boolean cacheable);
+	ReactiveQuery<R> setCacheable(boolean cacheable);
 
 	boolean isCacheable();
 

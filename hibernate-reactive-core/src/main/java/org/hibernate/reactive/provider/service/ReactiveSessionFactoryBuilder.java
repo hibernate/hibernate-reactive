@@ -37,15 +37,17 @@ public class ReactiveSessionFactoryBuilder
 		return this;
 	}
 
-	@Override
-	public <T extends SessionFactoryBuilder> T unwrap(Class<T> type) {
-		if ( type.isAssignableFrom( getClass() ) ) {
-			return type.cast( this );
-		}
-		else {
-			return delegate.unwrap( type );
-		}
-	}
+	// FIXME [ORM-6]: Not sure if we need this
+	//
+	//// @Override
+	// public <T extends SessionFactoryBuilder> T unwrap(Class<T> type) {
+	// if ( type.isAssignableFrom( getClass() ) ) {
+	// return type.cast( this );
+	// }
+	// else {
+	// return delegate.unwrap( type );
+	// }
+	// }
 
 	@Override
 	public SessionFactory build() {

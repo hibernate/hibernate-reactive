@@ -12,7 +12,6 @@ import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
 import org.hibernate.boot.spi.SessionFactoryBuilderService;
 import org.hibernate.internal.util.config.ConfigurationHelper;
-import org.hibernate.reactive.bulk.impl.ReactiveBulkIdStrategy;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.service.spi.Configurable;
 
@@ -37,7 +36,8 @@ final class ReactiveSessionFactoryBuilderService implements SessionFactoryBuilde
 				bootstrapContext
 		);
 		optionsBuilder.enableCollectionInDefaultFetchGroup(true);
-		optionsBuilder.applyMultiTableBulkIdStrategy( new ReactiveBulkIdStrategy( metadata ) );
+		// FIXME [ORM-6]: This method does not exists anymore
+//		optionsBuilder.applyMultiTableBulkIdStrategy( new ReactiveBulkIdStrategy( metadata ) );
 		optionsBuilder.applyJdbcBatchSize(batchSize);
 		return new ReactiveSessionFactoryBuilder( metadata, new SessionFactoryBuilderImpl( metadata, optionsBuilder ) );
 	}

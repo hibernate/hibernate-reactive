@@ -5,51 +5,37 @@
  */
 package org.hibernate.reactive.session.impl;
 
-import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
-import jakarta.persistence.EntityGraph;
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.Tuple;
-import jakarta.persistence.metamodel.Attribute;
 
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
-import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
 import org.hibernate.ObjectDeletedException;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.UnresolvableObjectException;
-import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
-import org.hibernate.engine.query.spi.HQLQueryPlan;
-import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.EffectiveEntityGraph;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.ExceptionConverter;
-import org.hibernate.engine.spi.NamedQueryDefinition;
-import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
-import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
-import org.hibernate.event.internal.MergeContext;
-import org.hibernate.event.spi.AutoFlushEvent;
+import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEvent;
@@ -57,8 +43,11 @@ import org.hibernate.event.spi.InitializeCollectionEvent;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
 import org.hibernate.event.spi.LockEvent;
+import org.hibernate.event.spi.MergeContext;
 import org.hibernate.event.spi.MergeEvent;
+import org.hibernate.event.spi.PersistContext;
 import org.hibernate.event.spi.PersistEvent;
+import org.hibernate.event.spi.RefreshContext;
 import org.hibernate.event.spi.RefreshEvent;
 import org.hibernate.event.spi.ResolveNaturalIdEvent;
 import org.hibernate.graph.GraphSemantic;
@@ -67,18 +56,12 @@ import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
-import org.hibernate.internal.util.collections.IdentitySet;
-import org.hibernate.jpa.spi.CriteriaQueryTupleTransformer;
-import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
-import org.hibernate.loader.custom.sql.SQLCustomQuery;
+import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.query.ParameterMetadata;
 import org.hibernate.reactive.common.InternalStateAssertions;
-import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.event.ReactiveDeleteEventListener;
@@ -89,25 +72,22 @@ import org.hibernate.reactive.event.ReactiveMergeEventListener;
 import org.hibernate.reactive.event.ReactivePersistEventListener;
 import org.hibernate.reactive.event.ReactiveRefreshEventListener;
 import org.hibernate.reactive.event.ReactiveResolveNaturalIdEventListener;
-import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveInitializeCollectionEventListener;
-import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.session.Criteria;
-import org.hibernate.reactive.session.CriteriaQueryOptions;
-import org.hibernate.reactive.session.ReactiveNativeQuery;
-import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.metamodel.Attribute;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
-import static org.hibernate.engine.spi.PersistenceContext.NaturalIdHelper.INVALID_NATURAL_ID_REFERENCE;
+import static org.hibernate.engine.spi.NaturalIdResolutions.INVALID_NATURAL_ID_REFERENCE;
 import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
 import static org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister.forceInitialize;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
@@ -172,7 +152,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public Object immediateLoad(String entityName, Serializable id) throws HibernateException {
+	public Object immediateLoad(String entityName, Object id) throws HibernateException {
 		throw log.lazyInitializationException( entityName, id );
 	}
 
@@ -181,7 +161,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	 * This is only called when lazily initializing a proxy. Do NOT return a proxy.
 	 */
 	@Override
-	public CompletionStage<Object> reactiveImmediateLoad(String entityName, Serializable id)
+	public CompletionStage<Object> reactiveImmediateLoad(String entityName, Object id)
 			throws HibernateException {
 //		if ( log.isDebugEnabled() ) {
 //			EntityPersister persister = getFactory().getMetamodel().entityPersister( entityName );
@@ -197,8 +177,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveInternalLoad(String entityName, Serializable id,
-													   boolean eager, boolean nullable) {
+	public CompletionStage<Object> reactiveInternalLoad(String entityName, Object id, boolean eager, boolean nullable) {
 		final EffectiveEntityGraph effectiveEntityGraph = getLoadQueryInfluencers().getEffectiveEntityGraph();
 		final GraphSemantic semantic = effectiveEntityGraph.getSemantic();
 		final RootGraphImplementor<?> graph = effectiveEntityGraph.getGraph();
@@ -240,7 +219,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				} );
 	}
 
-	@Override @SuppressWarnings("unchecked")
+	@Override
 	//Note: when making changes to this method, please also consider
 	//      the similar code in Mutiny.fetch() and Stage.fetch()
 	public <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy) {
@@ -256,7 +235,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			}
 			else {
 				String entityName = initializer.getEntityName();
-				Serializable identifier = initializer.getIdentifier();
+				Object identifier = initializer.getIdentifier();
 				return reactiveImmediateLoad( entityName, identifier )
 						.thenApply( entity -> {
 							checkEntityFound( this, entityName, identifier, entity );
@@ -302,90 +281,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				.reactiveInitializeLazyProperty( field, entity, this );
 	}
 
-	@Override
-	public <T> ReactiveNativeQueryImpl<T> createReactiveNativeQuery(String sqlString) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
-		try {
-			ParameterMetadata params = getFactory().getQueryPlanCache()
-					.getSQLParameterMetadata(sqlString, false);
-			ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>( sqlString, false, this, params );
-			query.setComment( "dynamic native SQL query" );
-			applyQuerySettingsAndHints( query );
-			return query;
-		}
-		catch ( RuntimeException he ) {
-			throw getExceptionConverter().convert( he );
-		}
-	}
-
-	@Override
-	public <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping) {
-		try {
-			ReactiveNativeQuery<T> query = createReactiveNativeQuery( sqlString );
-			query.setResultSetMapping( resultSetMapping );
-			return query;
-		}
-		catch ( RuntimeException he ) {
-			throw getExceptionConverter().convert( he );
-		}
-	}
-
-	@Override
-	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
-		return ResultSetMappings.resultSetMapping( resultType, mappingName, getFactory() );
-	}
-
-	@Override
-	public <T> ReactiveQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultClass) {
-		try {
-			ReactiveNativeQuery<T> query = createReactiveNativeQuery( sqlString );
-			if ( getMetamodel().entityPersisters().containsKey( resultClass.getName() ) ) {
-				query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
-			}
-			else if ( Tuple.class.equals(resultClass) ) {
-				query.setResultTransformer( new NativeQueryTupleTransformer() );
-			}
-			return query;
-		}
-		catch ( RuntimeException he ) {
-			throw getExceptionConverter().convert( he );
-		}
-	}
-
-	@Override
-	public <R> ReactiveQueryImpl<R> createReactiveQuery(String queryString) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
-		try {
-			ReactiveQueryImpl<R> query = new ReactiveQueryImpl<>( this, getQueryPlan( queryString, false ), queryString );
-			applyQuerySettingsAndHints( query );
-			query.setComment( queryString );
-			return query;
-		}
-		catch (RuntimeException e) {
-			markForRollbackOnly();
-			throw getExceptionConverter().convert( e );
-		}
-	}
-
-	@Override
-	public <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType) {
-		try {
-			// do the translation
-			final ReactiveQueryImpl<R> query = createReactiveQuery( queryString );
-			resultClassChecking( resultType, query );
-			return query;
-		}
-		catch (RuntimeException e) {
-			throw getExceptionConverter().convert( e );
-		}
-	}
-
 	/**
 	 * @deprecated use {@link #reactiveInitializeCollection(PersistentCollection, boolean)} instead
 	 */
@@ -423,264 +318,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				} );
 	}
 
-	//TODO: parameterize the SessionFactory constructor by ReactiveNativeSQLQueryPlan::new
-//	@Override
-//	protected ReactiveNativeSQLQueryPlan getNativeQueryPlan(NativeSQLQuerySpecification spec) throws HibernateException {
-//		QueryPlanCache queryPlanCache = getFactory().getQueryPlanCache();
-//		return (ReactiveNativeSQLQueryPlan) queryPlanCache.getNativeSQLQueryPlan( spec );
-//	}
-
-	protected CompletionStage<Void> reactiveAutoFlushIfRequired(Set<?> querySpaces) throws HibernateException {
-		checkOpen();
-//		if ( !isTransactionInProgress() ) {
-			// do not auto-flush while outside a transaction
-//			return CompletionStages.nullFuture();
-//		}
-		AutoFlushEvent event = new AutoFlushEvent( querySpaces, this );
-		return fastSessionServices.eventListenerGroup_AUTO_FLUSH.fireEventOnEachListener( event,
-				(DefaultReactiveAutoFlushEventListener l) -> l::reactiveOnAutoFlush );
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T> ReactiveHQLQueryPlan<T> getReactivePlan(String query, QueryParameters parameters) {
-		HQLQueryPlan plan = parameters.getQueryPlan();
-		if (plan == null) {
-			plan = getQueryPlan( query, false );
-		}
-		return (ReactiveHQLQueryPlan<T>) plan;
-	}
-
-	@Override
-	public <T> CompletionStage<List<T>> reactiveList(String query, QueryParameters parameters) throws HibernateException {
-		checkOpenOrWaitingForAutoClose();
-		pulseTransactionCoordinator();
-		parameters.validateParameters();
-
-		ReactiveHQLQueryPlan<T> reactivePlan = getReactivePlan( query, parameters );
-		return reactiveAutoFlushIfRequired( reactivePlan.getQuerySpaces() )
-				// FIXME: I guess I can fix this as a separate issue
-//				dontFlushFromFind++;   //stops flush being called multiple times if this method is recursively called
-				.thenCompose( v -> reactivePlan.performReactiveList( parameters, this ) )
-				.whenComplete( (list, x) -> {
-//					dontFlushFromFind--;
-					afterOperation( x == null );
-					delayedAfterCompletion();
-				} );
-	}
-
-	@Override
-	public <T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters parameters) {
-		checkOpenOrWaitingForAutoClose();
-		checkTransactionSynchStatus();
-
-		ReactiveCustomLoader<T> loader =
-				new ReactiveCustomLoader<>( getNativeQueryPlan( spec ).getCustomQuery(), getFactory() );
-//		dontFlushFromFind++;  //stops flush being called multiple times if this method is recursively called
-		return reactiveAutoFlushIfRequired( loader.getQuerySpaces() )
-				.thenCompose( v -> loader.reactiveList(this, parameters) )
-				.whenComplete( (r, e) -> {
-//					dontFlushFromFind--;
-					afterOperation( e == null );
-					delayedAfterCompletion();
-				} );
-	}
-
-	@Override
-	public <R> ReactiveQuery<R> createReactiveNamedQuery(String name) {
-		return buildReactiveQueryFromName( name, null );
-	}
-
-	@Override
-	public <R> ReactiveQuery<R> createReactiveNamedQuery(String name, Class<R> resultClass) {
-		return buildReactiveQueryFromName( name, resultClass );
-	}
-
-	private <T> ReactiveQuery<T> buildReactiveQueryFromName(String name, Class<T> resultType) {
-		checkOpen();
-		try {
-			pulseTransactionCoordinator();
-			delayedAfterCompletion();
-
-			// todo : apply stored setting at the JPA Query level too
-
-			NamedQueryDefinition namedQueryDefinition =
-					getFactory().getNamedQueryRepository()
-							.getNamedQueryDefinition( name );
-			if ( namedQueryDefinition != null ) {
-				return createReactiveQuery( namedQueryDefinition, resultType );
-			}
-
-			NamedSQLQueryDefinition nativeQueryDefinition =
-					getFactory().getNamedQueryRepository()
-							.getNamedSQLQueryDefinition( name );
-			if ( nativeQueryDefinition != null ) {
-				return createReactiveNativeQuery( nativeQueryDefinition, resultType );
-			}
-
-			throw getExceptionConverter().convert(
-					new IllegalArgumentException( "no query defined for name '" + name + "'" )
-			);
-		}
-		catch (RuntimeException e) {
-			throw !( e instanceof IllegalArgumentException ) ? new IllegalArgumentException( e ) : e;
-		}
-	}
-
-	private <T> ReactiveQuery<T> createReactiveQuery(NamedQueryDefinition namedQueryDefinition,
-													 Class<T> resultType) {
-		final ReactiveQuery<T> query = createReactiveQuery( namedQueryDefinition );
-		if ( resultType != null ) {
-			resultClassChecking( resultType, createQuery( namedQueryDefinition ) );
-		}
-		return query;
-	}
-
-	private static String comment(NamedQueryDefinition queryDefinition) {
-		return queryDefinition.getComment() != null
-				? queryDefinition.getComment()
-				: queryDefinition.getName();
-	}
-
-	private <T> ReactiveQuery<T> createReactiveQuery(NamedQueryDefinition queryDefinition) {
-		String queryString = queryDefinition.getQueryString();
-		ReactiveQueryImpl<T> query = new ReactiveQueryImpl<>( this, getQueryPlan( queryString, false ), queryString );
-		applyQuerySettingsAndHints( query );
-		query.setHibernateFlushMode( queryDefinition.getFlushMode() );
-		query.setComment( comment( queryDefinition ) );
-		if ( queryDefinition.getLockOptions() != null ) {
-			query.setLockOptions( queryDefinition.getLockOptions() );
-		}
-
-		initQueryFromNamedDefinition( query, queryDefinition );
-
-		return query;
-	}
-
-	private <T> ReactiveNativeQuery<T> createReactiveNativeQuery(NamedSQLQueryDefinition queryDefinition,
-																 Class<T> resultType) {
-		if ( resultType != null
-				&& !Tuple.class.equals( resultType )
-				&& !Object[].class.equals( resultType ) ) {
-			resultClassChecking( resultType, queryDefinition );
-		}
-
-		ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>(
-				queryDefinition,
-				this,
-				getFactory().getQueryPlanCache()
-						.getSQLParameterMetadata( queryDefinition.getQueryString(), false )
-		);
-		if ( Tuple.class.equals( resultType ) ) {
-			query.setResultTransformer( new NativeQueryTupleTransformer() );
-		}
-		applyQuerySettingsAndHints( query );
-		query.setHibernateFlushMode( queryDefinition.getFlushMode() );
-		query.setComment( comment(queryDefinition) );
-		if ( queryDefinition.getLockOptions() != null ) {
-			query.setLockOptions( queryDefinition.getLockOptions() );
-		}
-
-		initQueryFromNamedDefinition( query, queryDefinition );
-
-		return query;
-	}
-
-	@Override
-	public <R> ReactiveQuery<R> createReactiveQuery(Criteria<R> criteria) {
-		try {
-			criteria.validate();
-		}
-		catch (IllegalStateException ise) {
-			throw new IllegalArgumentException( "Error occurred validating the Criteria", ise );
-		}
-
-		return criteria.build( newRenderingContext(), this );
-	}
-
-	private CriteriaQueryRenderingContext newRenderingContext() {
-		return new CriteriaQueryRenderingContext( getFactory() );
-	}
-
-	@Override
-	public <T> ReactiveQuery<T> createReactiveCriteriaQuery(String jpaqlString,
-															Class<T> resultClass,
-															CriteriaQueryOptions queryOptions) {
-		try {
-			ReactiveQuery<T> query = createReactiveQuery( jpaqlString );
-			query.setParameterMetadata( queryOptions.getParameterMetadata() );
-
-			boolean hasValueHandlers = queryOptions.getValueHandlers() != null;
-			boolean hasTupleElements = Tuple.class.equals( resultClass );
-
-			if ( !hasValueHandlers ) {
-				queryOptions.validate( query.getReturnTypes() );
-			}
-
-			// determine if we need a result transformer
-			if ( hasValueHandlers || hasTupleElements ) {
-				query.setResultTransformer( new CriteriaQueryTupleTransformer(
-						queryOptions.getValueHandlers(),
-						hasTupleElements ? queryOptions.getSelection().getCompoundSelectionItems() : null
-				) );
-			}
-
-			return query;
-		}
-		catch ( RuntimeException e ) {
-			throw getExceptionConverter().convert( e );
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private ReactiveHQLQueryPlan<Void> getReactivePlan(String query) {
-		return (ReactiveHQLQueryPlan<Void>) getQueryPlan( query, false );
-	}
-
-	@Override
-	public CompletionStage<Integer> executeReactiveUpdate(String query, QueryParameters parameters) {
-		checkOpenOrWaitingForAutoClose();
-		pulseTransactionCoordinator();
-		parameters.validateParameters();
-
-		ReactiveHQLQueryPlan<Void> reactivePlan = getReactivePlan( query );
-		return reactiveAutoFlushIfRequired( reactivePlan.getQuerySpaces() )
-				.thenAccept( v -> verifyImmutableEntityUpdate( reactivePlan ) )
-				.thenCompose( v -> reactivePlan.performExecuteReactiveUpdate( parameters, this ) )
-				.whenComplete( (count, x) -> {
-					afterOperation( x == null );
-					delayedAfterCompletion();
-				} );
-	}
-
-	@Override
-	public CompletionStage<Integer> executeReactiveUpdate(NativeSQLQuerySpecification specification,
-														  QueryParameters parameters) {
-		checkOpenOrWaitingForAutoClose();
-		pulseTransactionCoordinator();
-		parameters.validateParameters();
-
-		ReactiveNativeSQLQueryPlan reactivePlan = //getNativeQueryPlan( specification );
-				new ReactiveNativeSQLQueryPlan(
-						specification.getQueryString(),
-						new SQLCustomQuery(
-								specification.getQueryString(),
-								specification.getQueryReturns(),
-								specification.getQuerySpaces(),
-								getFactory()
-						) );
-		return reactiveAutoFlushIfRequired( reactivePlan.getCustomQuery().getQuerySpaces() )
-				.thenCompose( v -> reactivePlan.performExecuteReactiveUpdate( parameters, this ) )
-				.whenComplete( (count, x) -> {
-					afterOperation( x == null );
-					delayedAfterCompletion();
-				} );
-	}
-
-	@Override
-	public void addBulkCleanupAction(BulkOperationCleanupAction action) {
-		getReactiveActionQueue().addAction( action );
-	}
-
 	@Override
 	public CompletionStage<Void> reactivePersist(Object entity) {
 		checkOpen();
@@ -688,7 +325,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactivePersist(Object object, IdentitySet copiedAlready) {
+	public CompletionStage<Void> reactivePersist(Object object, PersistContext copiedAlready) {
 		checkOpenOrWaitingForAutoClose();
 		return firePersist( copiedAlready, new PersistEvent( null, object, this ) );
 	}
@@ -698,8 +335,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
-		return fastSessionServices.eventListenerGroup_PERSIST.fireEventOnEachListener( event,
-				(ReactivePersistEventListener l) -> l::reactiveOnPersist )
+		return fastSessionServices.eventListenerGroup_PERSIST
+				.fireEventOnEachListener( event, (ReactivePersistEventListener l) -> l::reactiveOnPersist )
 				.handle( (v, e) -> {
 					checkNoUnresolvedActionsAfterOperation();
 
@@ -713,7 +350,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				});
 	}
 
-	private CompletionStage<Void> firePersist(IdentitySet copiedAlready, PersistEvent event) {
+	private CompletionStage<Void> firePersist(PersistContext copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
 		return fastSessionServices.eventListenerGroup_PERSIST.fireEventOnEachListener( event, copiedAlready,
@@ -732,12 +369,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactivePersistOnFlush(Object entity, IdentitySet copiedAlready) {
+	public CompletionStage<Void> reactivePersistOnFlush(Object entity, PersistContext copiedAlready) {
 		checkOpenOrWaitingForAutoClose();
 		return firePersistOnFlush( copiedAlready, new PersistEvent( null, entity, this ) );
 	}
 
-	private CompletionStage<Void> firePersistOnFlush(IdentitySet copiedAlready, PersistEvent event) {
+	private CompletionStage<Void> firePersistOnFlush(PersistContext copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
 		return fastSessionServices.eventListenerGroup_PERSIST.fireEventOnEachListener( event, copiedAlready,
@@ -748,41 +385,40 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public CompletionStage<Void> reactiveRemove(Object entity) {
 		checkOpen();
-		return fireRemove( new DeleteEvent( null, entity, this ) );
+		return fireRemove( new DeleteEvent( entity, this ) );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRemove(Object object, boolean isCascadeDeleteEnabled, IdentitySet transientEntities)
+	public CompletionStage<Void> reactiveRemove(String entityName, boolean isCascadeDeleteEnabled, DeleteContext transientEntities)
 			throws HibernateException {
+		// I'm not quite sure if we need this method
+		return reactiveRemove( entityName, null, isCascadeDeleteEnabled, transientEntities );
+	}
+
+	@Override
+	public CompletionStage<Void> reactiveRemove(String entityName, Object child, boolean isCascadeDeleteEnabled, DeleteContext transientEntities) {
 		checkOpenOrWaitingForAutoClose();
+		final boolean removingOrphanBeforeUpates = persistenceContext().isRemovingOrphanBeforeUpates();
+		if ( log.isTraceEnabled() && removingOrphanBeforeUpates ) {
+			logRemoveOrphanBeforeUpdates( "before continuing", entityName, entityName );
+		}
+
 		return fireRemove(
-				new DeleteEvent(
-						null,
-						object,
-						isCascadeDeleteEnabled,
-						( (ReactivePersistenceContextAdapter) getPersistenceContextInternal() )
-								.isRemovingOrphanBeforeUpates(),
-						this
-				),
+				new DeleteEvent( entityName, child, isCascadeDeleteEnabled, removingOrphanBeforeUpates, this ),
 				transientEntities
 		);
 	}
 
-	@Override
-	public CompletionStage<Void> reactiveRemove(String entityName, Object child, boolean isCascadeDeleteEnabled, IdentitySet transientEntities) {
-		checkOpenOrWaitingForAutoClose();
+	private ReactivePersistenceContextAdapter persistenceContext() {
+		return (ReactivePersistenceContextAdapter) getPersistenceContextInternal();
+	}
 
-		return fireRemove(
-				new DeleteEvent(
-						entityName,
-						child,
-						isCascadeDeleteEnabled,
-						( (ReactivePersistenceContextAdapter) getPersistenceContextInternal() )
-								.isRemovingOrphanBeforeUpates(),
-						this
-				),
-				transientEntities
-		);
+	private void logRemoveOrphanBeforeUpdates(String timing, String entityName, Object entity) {
+		if ( log.isTraceEnabled() ) {
+			final EntityEntry entityEntry = persistenceContext().getEntry( entity );
+			log.tracef( "%s remove orphan before updates: [%s]", timing,
+					entityEntry == null ? entityName : MessageHelper.infoString( entityName, entityEntry.getId() ) );
+		}
 	}
 
 	// Should be similar to fireRemove
@@ -808,7 +444,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				});
 	}
 
-	private CompletionStage<Void> fireRemove(DeleteEvent event, IdentitySet transientEntities) {
+	private CompletionStage<Void> fireRemove(DeleteEvent event, DeleteContext transientEntities) {
 		pulseTransactionCoordinator();
 
 		return fastSessionServices.eventListenerGroup_DELETE.fireEventOnEachListener( event, transientEntities,
@@ -959,7 +595,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRefresh(Object object, IdentitySet refreshedAlready) {
+	public CompletionStage<Void> reactiveRefresh(Object object, RefreshContext refreshedAlready) {
 		checkOpenOrWaitingForAutoClose();
 		return fireRefresh( refreshedAlready, new RefreshEvent( null, object, this ) );
 	}
@@ -997,11 +633,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				});
 	}
 
-	private CompletionStage<Void> fireRefresh(IdentitySet refreshedAlready, RefreshEvent event) {
+	private CompletionStage<Void> fireRefresh(RefreshContext refreshedAlready, RefreshEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_REFRESH.fireEventOnEachListener( event, refreshedAlready,
-				(ReactiveRefreshEventListener l) -> l::reactiveOnRefresh)
+		return fastSessionServices.eventListenerGroup_REFRESH
+				.fireEventOnEachListener( event, refreshedAlready, (ReactiveRefreshEventListener l) -> l::reactiveOnRefresh)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -1036,7 +672,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public <T> CompletionStage<T> reactiveGet(
 			Class<T> entityClass,
-			Serializable id) {
+			Object id) {
 		return new ReactiveIdentifierLoadAccessImpl<>( entityClass ).load( id );
 	}
 
@@ -1062,7 +698,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						.with( determineAppropriateLocalCacheMode(null) )
 						.with( lockOptions );
 
-		return loadAccess.load( (Serializable) id )
+		return loadAccess.load( id )
 				.handle( (result, e) -> {
 					if ( e instanceof EntityNotFoundException) {
 						// DefaultLoadEventListener.returnNarrowedProxy may throw ENFE (see HHH-7861 for details),
@@ -1116,7 +752,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				.thenCompose( id -> reactiveFind( entityClass, id, null, null ) );
 	}
 
-	private CompletionStage<Void> fireLoad(LoadEvent event, LoadEventListener.LoadType loadType) {
+	private CompletionStage<Void> fireReactiveLoad(LoadEvent event, LoadEventListener.LoadType loadType) {
 		checkOpenOrWaitingForAutoClose();
 
 		return fireLoadNoChecks( event, loadType )
@@ -1133,12 +769,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireResolveNaturalId(ResolveNaturalIdEvent event) {
 		checkOpenOrWaitingForAutoClose();
 		return fastSessionServices.eventListenerGroup_RESOLVE_NATURAL_ID.fireEventOnEachListener( event,
-				(ReactiveResolveNaturalIdEventListener l) -> l::reactiveResolveNaturalId )
+				(ReactiveResolveNaturalIdEventListener l) -> l::onReactiveResolveNaturalId
+				)
 				.whenComplete( (c, e) -> delayedAfterCompletion() );
 	}
 
 	@Override
-	protected void delayedAfterCompletion() {
+	public void delayedAfterCompletion() {
 		//disable for now, but figure out what to do here
 	}
 
@@ -1196,7 +833,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			return this;
 		}
 
-		public final CompletionStage<T> getReference(Serializable id) {
+		public final CompletionStage<T> getReference(Object id) {
 			return perform( () -> doGetReference( id ) );
 		}
 
@@ -1235,14 +872,14 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		@SuppressWarnings("unchecked")
-		protected CompletionStage<T> doGetReference(Serializable id) {
+		protected CompletionStage<T> doGetReference(Object id) {
 			if ( lockOptions != null ) {
 				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
-				return fireLoad( event, LoadEventListener.LOAD ).thenApply( v -> (T) event.getResult() );
+				return fireReactiveLoad( event, LoadEventListener.LOAD ).thenApply( v -> (T) event.getResult() );
 			}
 
 			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
-			return fireLoad( event, LoadEventListener.LOAD )
+			return fireReactiveLoad( event, LoadEventListener.LOAD )
 					.thenApply( v -> {
 						if ( event.getResult() == null ) {
 							getFactory().getEntityNotFoundDelegate().handleEntityNotFound(
@@ -1254,31 +891,31 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					} ).whenComplete( (v, x) -> afterOperation( x != null ) );
 		}
 
-		public final CompletionStage<T> load(Serializable id) {
+		public final CompletionStage<T> load(Object id) {
 			return perform( () -> doLoad( id, LoadEventListener.GET) );
 		}
 
-//		public final CompletionStage<T> fetch(Serializable id) {
+//		public final CompletionStage<T> fetch(Object id) {
 //			return perform( () -> doLoad( id, LoadEventListener.IMMEDIATE_LOAD) );
 //		}
 //
 		@SuppressWarnings("unchecked")
-		protected final CompletionStage<T> doLoad(Serializable id, LoadEventListener.LoadType loadType) {
+		protected final CompletionStage<T> doLoad(Object id, LoadEventListener.LoadType loadType) {
 			if (id == null) {
 				return CompletionStages.nullFuture();
 			}
 			if ( lockOptions != null ) {
 				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
-				return fireLoad( event, loadType ).thenApply( v -> (T) event.getResult() );
+				return fireReactiveLoad( event, loadType ).thenApply( v -> (T) event.getResult() );
 			}
 			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
-			return fireLoad( event, loadType )
+			return fireReactiveLoad( event, loadType )
 					.whenComplete( (v, t) -> afterOperation( t != null ) )
 					.thenApply( v -> (T) event.getResult() );
 		}
 	}
 
-	private class ReactiveMultiIdentifierLoadAccessImpl<T> implements MultiLoadOptions {
+	private class ReactiveMultiIdentifierLoadAccessImpl<T> implements MultiIdLoadOptions {
 		private final EntityPersister entityPersister;
 
 		private LockOptions lockOptions;
@@ -1373,10 +1010,14 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 		@SuppressWarnings("unchecked")
 		public CompletionStage<List<T>> multiLoad(Object... ids) {
-			Serializable[] sids = new Serializable[ids.length];
-			System.arraycopy(ids, 0, sids, 0, ids.length);
-			return perform( () -> (CompletionStage)
-					((ReactiveEntityPersister) entityPersister).reactiveMultiLoad( sids, ReactiveSessionImpl.this, this ) );
+			Object[] sids = new Object[ids.length];
+			System.arraycopy( ids, 0, sids, 0, ids.length );
+
+			throw new UnsupportedOperationException( "Not yet implemented" );
+			// TODO:
+//			return perform( () -> (CompletionStage)
+//					((ReactiveEntityPersister) entityPersister)
+//							.reactiveMultiLoad( sids, ReactiveSessionImpl.this, this ) );
 		}
 
 		public CompletionStage<List<T>> perform(Supplier<CompletionStage<List<T>>> executor) {
@@ -1412,9 +1053,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		@SuppressWarnings("unchecked")
-		public <K extends Serializable> CompletionStage<List<T>> multiLoad(List<K> ids) {
+		public <K extends Object> CompletionStage<List<T>> multiLoad(List<K> ids) {
 			return perform( () -> (CompletionStage<List<T>>)
-					entityPersister.multiLoad( ids.toArray(new Serializable[0]), ReactiveSessionImpl.this, this ) );
+					entityPersister.multiLoad( ids.toArray(new Object[0]), ReactiveSessionImpl.this, this ) );
 		}
 	}
 
@@ -1440,7 +1081,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			this.synchronizationEnabled = synchronizationEnabled;
 		}
 
-		protected final CompletionStage<Serializable> resolveNaturalId(Map<String, Object> naturalIdParameters) {
+		protected final CompletionStage<Object> resolveNaturalId(Map<String, Object> naturalIdParameters) {
 			performAnyNeededCrossReferenceSynchronizations();
 
 			ResolveNaturalIdEvent event =
@@ -1465,7 +1106,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 			final PersistenceContext persistenceContext = getPersistenceContextInternal();
 //			final boolean debugEnabled = log.isDebugEnabled();
-			for ( Serializable pk : persistenceContext.getNaturalIdHelper()
+			for ( Object pk : persistenceContext.getNaturalIdResolutions()
 					.getCachedPkResolutions( entityPersister ) ) {
 				final EntityKey entityKey = generateEntityKey( pk, entityPersister );
 				final Object entity = persistenceContext.getEntity( entityKey );
@@ -1490,11 +1131,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					continue;
 				}
 
-				persistenceContext.getNaturalIdHelper().handleSynchronization(
-						entityPersister,
-						pk,
-						entity
-				);
+				persistenceContext.getNaturalIdResolutions()
+						.handleSynchronization( pk, entity, entityPersister );
 			}
 		}
 
@@ -1537,28 +1175,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				: voidFuture();
 	}
 
-	@Override @SuppressWarnings("unchecked")
-	public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity, String name) {
-		RootGraphImplementor<?> entityGraph = super.createEntityGraph(name);
-		if ( !entityGraph.getGraphedType().getJavaType().equals(entity) ) {
-			throw log.wrongEntityType();
-		}
-		return (RootGraphImplementor<T>) entityGraph;
-	}
-
-	public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity) {
-		return super.createEntityGraph( entity );
-	}
-
-	@Override @SuppressWarnings("unchecked")
-	public <T> RootGraphImplementor<T> getEntityGraph(Class<T> entity, String name) {
-		RootGraphImplementor<?> entityGraph = super.getEntityGraph(name);
-		if ( !entityGraph.getGraphedType().getJavaType().equals(entity) ) {
-			throw log.wrongEntityType();
-		}
-		return (RootGraphImplementor<T>) entityGraph;
-	}
-
 	@Override
 	public Integer getBatchSize() {
 		return getJdbcBatchSize();
@@ -1571,19 +1187,20 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override @SuppressWarnings("unchecked")
-	public <T> Class<? extends T> getEntityClass(T entity) {
+	public <T> Class<T> getEntityClass(T entity) {
 		if ( entity instanceof HibernateProxy ) {
-			return ( (HibernateProxy) entity ).getHibernateLazyInitializer()
+			return (Class<T>) ( (HibernateProxy) entity )
+					.getHibernateLazyInitializer()
 					.getPersistentClass();
 		}
 		else {
-			return getEntityPersister(null, entity )
+			return (Class<T>) getEntityPersister( null, entity )
 					.getMappedClass();
 		}
 	}
 
 	@Override
-	public Serializable getEntityId(Object entity) {
+	public Object getEntityId(Object entity) {
 		if ( entity instanceof HibernateProxy ) {
 			return ( (HibernateProxy) entity ).getHibernateLazyInitializer()
 					.getIdentifier();
@@ -1638,5 +1255,17 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					entityEntry == null ? entityName : MessageHelper.infoString( entityName, entityEntry.getId() )
 			);
 		}
+	}
+
+	@Override
+	public <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name) {
+		// FIXME [ORM-6]:
+		throw new UnsupportedOperationException("Not done yet");
+	}
+
+	@Override
+	public <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name) {
+		// FIXME [ORM-6]:
+		throw new UnsupportedOperationException("Not done yet");
 	}
 }

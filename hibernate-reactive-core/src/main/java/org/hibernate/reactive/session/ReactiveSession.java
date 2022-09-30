@@ -5,6 +5,10 @@
  */
 package org.hibernate.reactive.session;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -16,16 +20,14 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.event.internal.MergeContext;
-import org.hibernate.internal.util.collections.IdentitySet;
+import org.hibernate.event.spi.DeleteContext;
+import org.hibernate.event.spi.MergeContext;
+import org.hibernate.event.spi.PersistContext;
+import org.hibernate.event.spi.RefreshContext;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.metamodel.Attribute;
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 /**
  * A contract with the Hibernate session backing the user-visible
@@ -38,28 +40,27 @@ import java.util.concurrent.CompletionStage;
  *  @see org.hibernate.reactive.mutiny.Mutiny.Session
  */
 @Incubating
-public interface ReactiveSession extends ReactiveQueryExecutor {
+public interface ReactiveSession extends ReactiveQueryExecutor  {
 
 	ReactiveActionQueue getReactiveActionQueue();
 
 	PersistenceContext getPersistenceContext();
 
-	@Override
 	SessionImplementor getSharedContract();
 
 	<E,T> CompletionStage<T> reactiveFetch(E entity, Attribute<E,T> field);
 
 	CompletionStage<Void> reactivePersist(Object entity);
 
-	CompletionStage<Void> reactivePersist(Object object, IdentitySet copiedAlready);
+	CompletionStage<Void> reactivePersist(Object object, PersistContext copiedAlready);
 
-	CompletionStage<Void> reactivePersistOnFlush(Object entity, IdentitySet copiedAlready);
+	CompletionStage<Void> reactivePersistOnFlush(Object entity, PersistContext copiedAlready);
 
 	CompletionStage<Void> reactiveRemove(Object entity);
 
-	CompletionStage<Void> reactiveRemove(Object entity, boolean isCascadeDeleteEnabled, IdentitySet transientObjects);
+	CompletionStage<Void> reactiveRemove(String entityName, boolean isCascadeDeleteEnabled, DeleteContext transientObjects);
 
-	CompletionStage<Void> reactiveRemove(String entityName, Object child, boolean isCascadeDeleteEnabled, IdentitySet transientEntities);
+	CompletionStage<Void> reactiveRemove(String entityName, Object child, boolean isCascadeDeleteEnabled, DeleteContext transientEntities);
 
 	<T> CompletionStage<T> reactiveMerge(T object);
 
@@ -73,20 +74,19 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 
 	CompletionStage<Void> reactiveRefresh(Object entity, LockOptions lockMode);
 
-	CompletionStage<Void> reactiveRefresh(Object child, IdentitySet refreshedAlready);
+	CompletionStage<Void> reactiveRefresh(Object child, RefreshContext refreshedAlready);
 
 	CompletionStage<Void> reactiveLock(Object entity, LockOptions lockMode);
 
-	<T> CompletionStage<T> reactiveGet(Class<T> entityClass, Serializable id);
+	<T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id);
 
-	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Object id,
-										LockOptions lockOptions, EntityGraph<T> fetchGraph);
+	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Object id, LockOptions lockOptions, EntityGraph<T> fetchGraph);
 
 	<T> CompletionStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids);
 
 	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Map<String,Object> naturalIds);
 
-	CompletionStage<Object> reactiveImmediateLoad(String entityName, Serializable id);
+	CompletionStage<Object> reactiveImmediateLoad(String entityName, Object id);
 
 	CompletionStage<Void> reactiveInitializeCollection(PersistentCollection collection, boolean writing);
 
@@ -112,11 +112,11 @@ public interface ReactiveSession extends ReactiveQueryExecutor {
 	boolean isReadOnly(Object entityOrProxy);
 
 	String getEntityName(Object entity);
-	Serializable getIdentifier(Object entity);
+	Object getIdentifier(Object entity);
 	boolean contains(Object entity);
 
 	<T> Class<? extends T> getEntityClass(T entity);
-	Serializable getEntityId(Object entity);
+	Object getEntityId(Object entity);
 
 	LockMode getCurrentLockMode(Object entity);
 

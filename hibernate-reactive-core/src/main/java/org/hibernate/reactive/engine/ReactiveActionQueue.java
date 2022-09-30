@@ -25,8 +25,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.PropertyValueException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.action.internal.BulkOperationCleanupAction;
-import org.hibernate.action.internal.EntityAction;
-import org.hibernate.action.internal.EntityActionVetoException;
 import org.hibernate.action.internal.EntityDeleteAction;
 import org.hibernate.action.internal.UnresolvedEntityInsertActions;
 import org.hibernate.action.spi.AfterTransactionCompletionProcess;
@@ -37,15 +35,17 @@ import org.hibernate.engine.spi.ActionQueue;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.ExecutableList;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.internal.util.collections.CollectionHelper;
 import org.hibernate.metadata.ClassMetadata;
+import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.engine.impl.QueuedOperationCollectionAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionRecreateAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionRemoveAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionUpdateAction;
+import org.hibernate.reactive.engine.impl.ReactiveEntityActionVetoException;
 import org.hibernate.reactive.engine.impl.ReactiveEntityDeleteAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityIdentityInsertAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityInsertAction;
@@ -76,10 +76,10 @@ public class ReactiveActionQueue {
 	/**
 	 * A LinkedHashMap containing providers for all the ExecutableLists, inserted in execution order
 	 */
-	private static final LinkedHashMap<Class<? extends ReactiveExecutable>, ListProvider<? extends ReactiveExecutable>> EXECUTABLE_LISTS_MAP;
+	private static final LinkedHashMap<Class<? extends ReactiveExecutable>, ListProvider<?>> EXECUTABLE_LISTS_MAP;
 
 	static {
-		EXECUTABLE_LISTS_MAP = new LinkedHashMap<>( 8 );
+		EXECUTABLE_LISTS_MAP = CollectionHelper.linkedMapOfSize( 8 );
 
 		EXECUTABLE_LISTS_MAP.put(
 				ReactiveOrphanRemovalAction.class,
@@ -101,16 +101,10 @@ public class ReactiveActionQueue {
 					}
 
 					ExecutableList<ReactiveEntityInsertAction> init(ReactiveActionQueue instance) {
-						if ( instance.isOrderInsertsEnabled() ) {
-							return instance.insertions = new ExecutableList<>(
-									new InsertActionSorter()
-							);
-						}
-						else {
-							return instance.insertions = new ExecutableList<>(
-									false
-							);
-						}
+						instance.insertions = instance.isOrderInsertsEnabled()
+								? new ExecutableList<>( new InsertActionSorter() )
+								: new ExecutableList<>( false );
+						return instance.insertions;
 					}
 				}
 		);
@@ -199,7 +193,7 @@ public class ReactiveActionQueue {
 	private final ReactiveSession session;
 	private UnresolvedEntityInsertActions unresolvedInsertions;
 	// Object insertions, updates, and deletions have list semantics because
-	// they must happen in the right order so as to respect referential
+	// they must happen in the right order to respect referential
 	// integrity
 	private ExecutableList<ReactiveEntityInsertAction> insertions;
 	private ExecutableList<ReactiveEntityDeleteAction> deletions;
@@ -264,54 +258,13 @@ public class ReactiveActionQueue {
 		return false;
 	}
 
-	private static Serializable[] convertTimestampSpaces(Set<Serializable> spaces) {
-		return spaces.toArray(new Serializable[0]);
+	private static String[] convertTimestampSpaces(Set<Serializable> spaces) {
+		return spaces.toArray( new String[0] );
 	}
 
 	private static String toString(ExecutableList<?> q) {
 		return q == null ? "ExecutableList{size=0}" : q.toString();
 	}
-
-//	/**
-//	 * Used by the owning session to explicitly control deserialization of the action queue.
-//	 *
-//	 * @param ois The stream from which to read the action queue
-//	 * @param session The session to which the action queue belongs
-//	 *
-//	 * @return The deserialized action queue
-//	 *
-//	 * @throws IOException indicates a problem reading from the stream
-//	 * @throws ClassNotFoundException Generally means we were unable to locate user classes.
-//	 */
-//	public static ReactiveActionQueue deserialize(ObjectInputStream ois,
-//												  SessionImplementor session, ReactiveSession session)
-//			throws IOException, ClassNotFoundException {
-//		final boolean traceEnabled = LOG.isTraceEnabled();
-//		if ( traceEnabled ) {
-//			LOG.trace( "Deserializing action-queue" );
-//		}
-//		ReactiveActionQueue rtn = new ReactiveActionQueue( session, session );
-//
-//		rtn.unresolvedInsertions = UnresolvedEntityInsertActions.deserialize( ois, session );
-//
-//		for ( ListProvider<?> provider : EXECUTABLE_LISTS_MAP.values() ) {
-//			ExecutableList<?> l = provider.get( rtn );
-//			boolean notNull = ois.readBoolean();
-//			if ( notNull ) {
-//				if ( l == null ) {
-//					l = provider.init( rtn );
-//				}
-//				l.readExternal( ois );
-//
-//				if ( traceEnabled ) {
-//					LOG.tracev( "Deserialized [{0}] entries", l.size() );
-//				}
-//				l.afterDeserialize( session );
-//			}
-//		}
-//
-//		return rtn;
-//	}
 
 	public void clear() {
 		for ( ListProvider<?> listProvider : EXECUTABLE_LISTS_MAP.values() ) {
@@ -325,20 +278,32 @@ public class ReactiveActionQueue {
 		}
 	}
 
+	/**
+	 * Adds an entity (REGULAR) insert action
+	 *
+	 * @param action The action representing the entity insertion
+	 */
 	public CompletionStage<Void> addAction(ReactiveEntityRegularInsertAction action) {
-		LOG.tracev( "Adding an EntityInsertAction for [{0}] object", action.getEntityName() );
+		LOG.tracev( "Adding a ReactiveEntityRegularInsertAction for [{0}] object", action.getEntityName() );
 		return addInsertAction( action );
 	}
 
-	private CompletionStage<Void> addInsertAction(ReactiveEntityInsertAction insert) {
+	/**
+	 * Adds an entity (IDENTITY) insert action
+	 *
+	 * @param action The action representing the entity insertion
+	 */
+	public CompletionStage<Void> addAction(ReactiveEntityIdentityInsertAction action) {
+		LOG.tracev( "Adding a ReactiveEntityIdentityInsertAction for [{0}] object", action.getEntityName() );
+		return addInsertAction( action );
+	}
+
+	private <D extends AbstractEntityInsertAction & ReactiveEntityInsertAction> CompletionStage<Void> addInsertAction(D insert) {
 		CompletionStage<Void> ret = voidFuture();
 		if ( insert.isEarlyInsert() ) {
 			// For early inserts, must execute inserts before finding non-nullable transient entities.
 			// TODO: find out why this is necessary
-			LOG.tracev(
-					"Executing inserts before finding non-nullable transient entities for early insert: [{0}]",
-					insert
-			);
+			LOG.tracev( "Executing inserts before finding non-nullable transient entities for early insert: [{0}]", insert );
 			ret = ret.thenCompose( v -> executeInserts() );
 		}
 
@@ -356,8 +321,7 @@ public class ReactiveActionQueue {
 						if ( unresolvedInsertions == null ) {
 							unresolvedInsertions = new UnresolvedEntityInsertActions();
 						}
-						unresolvedInsertions
-								.addUnresolvedEntityInsertAction( (AbstractEntityInsertAction) insert, nonNullables );
+						unresolvedInsertions.addUnresolvedEntityInsertAction( insert, nonNullables );
 						return voidFuture();
 					}
 				} );
@@ -367,9 +331,11 @@ public class ReactiveActionQueue {
 		CompletionStage<Void> ret;
 		if ( insert.isEarlyInsert() ) {
 			LOG.trace( "Executing insertions before resolved early-insert" );
-			ret = executeInserts();
-			LOG.debug( "Executing identity-insert immediately" );
-			ret = ret.thenCompose( v -> execute( insert ) );
+			ret = executeInserts()
+					.thenCompose( v -> {
+						LOG.debug( "Executing identity-insert immediately" );
+						return execute( insert );
+					} );
 		}
 		else {
 			LOG.trace( "Adding resolved non-early insert action." );
@@ -391,31 +357,19 @@ public class ReactiveActionQueue {
 				}
 			}
 			else {
-				throw new EntityActionVetoException(
-						"The EntityInsertAction was vetoed.",
-						(EntityAction) insert
-				);
+				// FIXME: Add it to the Log interface
+				throw new ReactiveEntityActionVetoException( "The ReactiveEntityInsertAction was vetoed.", insert );
 			}
 		} );
 	}
 
-	private <T extends ReactiveExecutable> void addAction(Class<T> executableClass, T action) {
+	private <T extends ReactiveExecutable & Comparable<? super T>> void addAction(Class<T> executableClass, T action) {
 		getExecutableList(executableClass).getOrInit( this ).add( action );
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T extends ReactiveExecutable> ListProvider<T> getExecutableList(Class<T> executableClass) {
+	private <T extends ReactiveExecutable & Comparable<? super T>> ListProvider<T> getExecutableList(Class<T> executableClass) {
 		return (ListProvider<T>) EXECUTABLE_LISTS_MAP.get( executableClass );
-	}
-
-	/**
-	 * Adds an entity (IDENTITY) insert action
-	 *
-	 * @param action The action representing the entity insertion
-	 */
-	public CompletionStage<Void> addAction(ReactiveEntityIdentityInsertAction action) {
-		LOG.tracev( "Adding an EntityIdentityInsertAction for [{0}] object", action.getEntityName() );
-		return addInsertAction( action );
 	}
 
 	/**
@@ -434,7 +388,6 @@ public class ReactiveActionQueue {
 	 */
 	public void addAction(ReactiveOrphanRemovalAction action) {
 		addAction( ReactiveOrphanRemovalAction.class, action );
-//		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -580,8 +533,7 @@ public class ReactiveActionQueue {
 	 */
 	public CompletionStage<Void> executeActions() {
 		if ( hasUnresolvedEntityInsertActions() ) {
-			return failedFuture( new IllegalStateException(
-					"About to execute actions, but there are unresolved entity insert actions." ) );
+			return failedFuture( new IllegalStateException( "About to execute actions, but there are unresolved entity insert actions." ) );
 		}
 
 		CompletionStage<Void> ret = voidFuture();
@@ -683,14 +635,14 @@ public class ReactiveActionQueue {
 	 *
 	 * @param list The list of Executable elements to be performed
 	 */
-	private <E extends ReactiveExecutable> CompletionStage<Void> executeActions(
-			ExecutableList<E> list) throws HibernateException {
+	private CompletionStage<Void> executeActions(
+			ExecutableList<? extends ReactiveExecutable> list) throws HibernateException {
 		// todo : consider ways to improve the double iteration of Executables here:
 		//		1) we explicitly iterate list here to perform Executable#execute()
 		//		2) ExecutableList#getQuerySpaces also iterates the Executables to collect query spaces.
 		return CompletionStages.loop( 0, list.size(),
 				index -> {
-					final E e = list.get( index );
+					final ReactiveExecutable e = (ReactiveExecutable) list.get( index );
 					return e.reactiveExecute()
 							.whenComplete( (v2, x1) -> {
 								if ( e.getBeforeTransactionCompletionProcess() != null ) {
@@ -728,9 +680,9 @@ public class ReactiveActionQueue {
 	 *
 	 * @param spaces The spaces to invalidate
 	 */
-	private void invalidateSpaces(Serializable[] spaces) {
+	private void invalidateSpaces(String[] spaces) {
 		if ( spaces != null && spaces.length > 0 ) {
-			for ( Serializable s : spaces ) {
+			for ( String s : spaces ) {
 				afterTransactionProcesses().addSpaceToInvalidate( s );
 			}
 			// Performance win: If we are processing an ExecutableList, this will only be called once
@@ -746,13 +698,13 @@ public class ReactiveActionQueue {
 	@Override
 	public String toString() {
 		return "ReactiveActionQueue[insertions=" + toString( insertions )
-//				+ " updates=" + toString( updates )
-//				+ " deletions=" + toString( deletions )
-//				+ " orphanRemovals=" + toString( orphanRemovals )
-//				+ " collectionCreations=" + toString( collectionCreations )
-//				+ " collectionRemovals=" + toString( collectionRemovals )
-//				+ " collectionUpdates=" + toString( collectionUpdates )
-//				+ " collectionQueuedOps=" + toString( collectionQueuedOps )
+				+ " updates=" + toString( updates )
+				+ " deletions=" + toString( deletions )
+				+ " orphanRemovals=" + toString( orphanRemovals )
+				+ " collectionCreations=" + toString( collectionCreations )
+				+ " collectionRemovals=" + toString( collectionRemovals )
+				+ " collectionUpdates=" + toString( collectionUpdates )
+				+ " collectionQueuedOps=" + toString( collectionQueuedOps )
 				+ " unresolvedInsertDependencies=" + unresolvedInsertions
 				+ "]";
 	}
@@ -1014,15 +966,14 @@ public class ReactiveActionQueue {
 	 * Encapsulates behavior needed for after transaction processing
 	 */
 	private static class AfterTransactionCompletionProcessQueue
-			extends AbstractTransactionCompletionProcessQueue<AfterTransactionCompletionProcess,
-															ReactiveAfterTransactionCompletionProcess> {
-		private final Set<Serializable> querySpacesToInvalidate = new HashSet<>();
+			extends AbstractTransactionCompletionProcessQueue<AfterTransactionCompletionProcess, ReactiveAfterTransactionCompletionProcess> {
+		private final Set<String> querySpacesToInvalidate = new HashSet<>();
 
 		private AfterTransactionCompletionProcessQueue(ReactiveSession session) {
 			super( session );
 		}
 
-		public void addSpaceToInvalidate(Serializable space) {
+		public void addSpaceToInvalidate(String space) {
 			querySpacesToInvalidate.add( space );
 		}
 
@@ -1042,7 +993,7 @@ public class ReactiveActionQueue {
 
 			if ( session.getFactory().getSessionFactoryOptions().isQueryCacheEnabled() ) {
 				session.getFactory().getCache().getTimestampsCache().invalidate(
-						querySpacesToInvalidate.toArray(new Serializable[0]),
+						querySpacesToInvalidate.toArray( new String[0] ),
 						session.getSharedContract()
 				);
 			}
@@ -1240,14 +1191,16 @@ public class ReactiveActionQueue {
 				BatchIdentifier batchIdentifier,
 				Type type,
 				Object value) {
+			final MappingMetamodelImplementor mappingMetamodel = action.getSession()
+					.getFactory()
+					.getRuntimeMetamodels()
+					.getMappingMetamodel();
 			if ( type.isEntityType() ) {
 				final EntityType entityType = (EntityType) type;
 				final String entityName = entityType.getName();
-				final String rootEntityName = action.getSession().getFactory().getMetamodel()
-						.entityPersister( entityName ).getRootEntityName();
+				final String rootEntityName = mappingMetamodel.getEntityDescriptor( entityName ).getRootEntityName();
 
-				if ( entityType.isOneToOne() &&
-						entityType.getForeignKeyDirection() == ForeignKeyDirection.TO_PARENT ) {
+				if ( entityType.isOneToOne() && entityType.getForeignKeyDirection() == ForeignKeyDirection.TO_PARENT ) {
 					if ( !entityType.isReferenceToPrimaryKey() ) {
 						batchIdentifier.getChildEntityNames().add( entityName );
 					}
@@ -1272,18 +1225,11 @@ public class ReactiveActionQueue {
 			}
 			else if ( type.isCollectionType() ) {
 				CollectionType collectionType = (CollectionType) type;
-				final SessionFactoryImplementor sessionFactory = ( (SessionImplementor) action.getSession() )
-						.getSessionFactory();
-				if ( collectionType.getElementType( sessionFactory ).isEntityType() &&
-						!sessionFactory.getMetamodel()
-								.collectionPersister( collectionType.getRole() )
-								.isManyToMany() ) {
-					String entityName = collectionType.getAssociatedEntityName( sessionFactory );
-					String rootEntityName = action.getSession()
-							.getFactory()
-							.getMetamodel()
-							.entityPersister( entityName )
-							.getRootEntityName();
+				final SessionFactoryImplementor sessionFactory = action.getSession().getSessionFactory();
+				if ( collectionType.getElementType( sessionFactory ).isEntityType()
+						&& !mappingMetamodel.getCollectionDescriptor( collectionType.getRole() ).isManyToMany() ) {
+					final String entityName = collectionType.getAssociatedEntityName( sessionFactory );
+					final String rootEntityName = mappingMetamodel.getEntityDescriptor( entityName ).getRootEntityName();
 					batchIdentifier.getChildEntityNames().add( entityName );
 					if ( !rootEntityName.equals( entityName ) ) {
 						batchIdentifier.getChildEntityNames().add( rootEntityName );
@@ -1298,21 +1244,14 @@ public class ReactiveActionQueue {
 				for ( int j = 0; j < componentValues.length; ++j ) {
 					Type componentValueType = compositeType.getSubtypes()[j];
 					Object componentValue = componentValues[j];
-					addParentChildEntityNameByPropertyAndValue(
-							action,
-							batchIdentifier,
-							componentValueType,
-							componentValue
-					);
+					addParentChildEntityNameByPropertyAndValue( action, batchIdentifier, componentValueType, componentValue );
 				}
 			}
 		}
 
 		private void addToBatch(BatchIdentifier batchIdentifier, ReactiveEntityInsertAction action) {
-			List<ReactiveEntityInsertAction> actions = actionBatches.computeIfAbsent(
-					batchIdentifier,
-					k -> new LinkedList<>()
-			);
+			List<ReactiveEntityInsertAction> actions = actionBatches
+					.computeIfAbsent( batchIdentifier, k -> new LinkedList<>() );
 
 			actions.add( action );
 		}
@@ -1384,7 +1323,7 @@ public class ReactiveActionQueue {
 			}
 
 			/**
-			 * Check if this {@link BatchIdentifier} has a parent or grand parent
+			 * Check if this {@link BatchIdentifier} has a parent or grandparent
 			 * matching the given {@link BatchIdentifier reference.
 			 *
 			 * @param batchIdentifier {@link BatchIdentifier} reference
@@ -1392,11 +1331,9 @@ public class ReactiveActionQueue {
 			 * @return this {@link BatchIdentifier} has a parent matching the given {@link BatchIdentifier reference
 			 */
 			boolean hasParent(BatchIdentifier batchIdentifier) {
-				return (
-						parent == batchIdentifier
-								|| ( parentEntityNames.contains( batchIdentifier.getEntityName() ) )
-								|| parent != null && parent.hasParent( batchIdentifier, new ArrayList<>() )
-				);
+				return parent == batchIdentifier
+						|| parentEntityNames.contains( batchIdentifier.getEntityName() )
+						|| parent != null && parent.hasParent( batchIdentifier, new ArrayList<>() );
 			}
 
 			private boolean hasParent(BatchIdentifier batchIdentifier, List<BatchIdentifier> stack) {
@@ -1404,16 +1341,13 @@ public class ReactiveActionQueue {
 					stack.add( this );
 					return parent.hasParent( batchIdentifier, stack );
 				}
-				return (
-						parent == batchIdentifier
-								|| parentEntityNames.contains( batchIdentifier.getEntityName() )
-				);
+				return parent == batchIdentifier || parentEntityNames.contains( batchIdentifier.getEntityName() );
 			}
 		}
 
 	}
 
-	private abstract static class ListProvider<T extends ReactiveExecutable> {
+	private abstract static class ListProvider<T extends ReactiveExecutable & Comparable<? super T> & Serializable> {
 		abstract ExecutableList<T> get(ReactiveActionQueue instance);
 
 		abstract ExecutableList<T> init(ReactiveActionQueue instance);

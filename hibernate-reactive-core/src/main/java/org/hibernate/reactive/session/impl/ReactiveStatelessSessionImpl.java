@@ -5,26 +5,24 @@
  */
 package org.hibernate.reactive.session.impl;
 
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.UnresolvableObjectException;
-import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.Versioning;
-import org.hibernate.engine.query.spi.HQLQueryPlan;
-import org.hibernate.engine.query.spi.sql.NativeSQLQuerySpecification;
 import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.NamedQueryDefinition;
-import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
-import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.internal.RootGraphImpl;
@@ -32,39 +30,22 @@ import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.StatelessSessionImpl;
-import org.hibernate.jpa.spi.CriteriaQueryTupleTransformer;
-import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
-import org.hibernate.loader.custom.CustomQuery;
-import org.hibernate.loader.custom.sql.SQLCustomQuery;
-import org.hibernate.metamodel.spi.MetamodelImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.query.ParameterMetadata;
-import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
-import org.hibernate.reactive.loader.custom.impl.ReactiveCustomLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.session.Criteria;
-import org.hibernate.reactive.session.CriteriaQueryOptions;
-import org.hibernate.reactive.session.ReactiveNativeQuery;
-import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.tuple.entity.EntityMetamodel;
+import org.hibernate.type.spi.TypeConfiguration;
 
 import jakarta.persistence.EntityGraph;
-import jakarta.persistence.Tuple;
-import java.io.Serializable;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
@@ -125,8 +106,23 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 	}
 
 	@Override
+	public TypeConfiguration getTypeConfiguration() {
+		return super.getTypeConfiguration();
+	}
+
+	@Override
 	public PersistenceContext getPersistenceContext() {
 		return persistenceContext;
+	}
+
+	@Override
+	public SharedSessionContractImplementor getSession() {
+		return super.getSession();
+	}
+
+	@Override
+	public void checkOpen() {
+		super.checkOpen();
 	}
 
 	@Override
@@ -145,6 +141,16 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 	}
 
 	@Override
+	public boolean isEnforcingFetchGraph() {
+		return super.isEnforcingFetchGraph();
+	}
+
+	@Override
+	public void setEnforcingFetchGraph(boolean enforcingFetchGraph) {
+		super.setEnforcingFetchGraph( enforcingFetchGraph );
+	}
+
+	@Override
 	public ReactiveConnection getReactiveConnection() {
 		return reactiveConnection;
 	}
@@ -156,13 +162,21 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
 	@Override
 	public <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id) {
-		return reactiveGet( entityClass, id, LockMode.NONE, null );
+		return reactiveGet( entityClass.getName(), id, LockMode.NONE, null );
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveGet(
-			Class<? extends T> entityClass, Object id, LockMode lockMode,
-			EntityGraph<T> fetchGraph) {
+	public <T> CompletionStage<T> reactiveGet(String entityName, Object id) {
+		return reactiveGet( entityName, id, LockMode.NONE, null );
+	}
+
+	@Override
+	public <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
+		return reactiveGet( entityClass.getName(), id, LockMode.NONE, fetchGraph );
+	}
+
+	@Override
+	public <T> CompletionStage<T> reactiveGet(String entityName, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
 		checkOpen();
 
 		if ( fetchGraph != null ) {
@@ -171,10 +185,13 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 					.applyGraph( (RootGraphImplementor<T>) fetchGraph, GraphSemantic.FETCH );
 		}
 
-		ReactiveEntityPersister persister = (ReactiveEntityPersister)
-				getFactory().getMetamodel().entityPersister( entityClass );
+		final ReactiveEntityPersister entityDescriptor = (ReactiveEntityPersister) getFactory().getRuntimeMetamodels()
+				.getMappingMetamodel()
+				.getEntityDescriptor( entityName );
+
 		LockOptions lockOptions = getNullSafeLockOptions( lockMode );
-		return persister.reactiveLoad( (Serializable) id, null, lockOptions, this )
+		return entityDescriptor
+				.reactiveLoad( id, null, lockOptions, this )
 				.whenComplete( (v, e) -> {
 					if ( getPersistenceContext().isLoadFinished() ) {
 						getPersistenceContext().clear();
@@ -200,11 +217,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 						boolean substitute = Versioning.seedVersion(
 								state,
 								persister.getVersionProperty(),
-								persister.getVersionType(),
+								persister.getVersionMapping(),
 								this
 						);
 						if ( substitute ) {
-							persister.setPropertyValues( entity, state );
+							persister.setValues( entity, state );
 						}
 					}
 
@@ -229,7 +246,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 	public CompletionStage<Void> reactiveDelete(Object entity) {
 		checkOpen();
 		ReactiveEntityPersister persister = getEntityPersister( null, entity );
-		Serializable id = persister.getIdentifier( entity, this );
+		Object id = persister.getIdentifier( entity, this );
 		Object version = persister.getVersion( entity );
 		return persister.deleteReactive( id, version, entity, this );
 	}
@@ -254,14 +271,14 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 	 */
 	private CompletionStage<Void> executeReactiveUpdate(Object entity) {
 		ReactiveEntityPersister persister = getEntityPersister( null, entity );
-		Serializable id = persister.getIdentifier( entity, this );
-		Object[] state = persister.getPropertyValues( entity );
+		Object id = persister.getIdentifier( entity, this );
+		Object[] state = persister.getValues( entity );
 		Object oldVersion;
 		if ( persister.isVersioned() ) {
 			oldVersion = persister.getVersion( entity );
-			Object newVersion = Versioning.increment( oldVersion, persister.getVersionType(), this );
+			Object newVersion = Versioning.increment( oldVersion, persister.getVersionMapping(), this );
 			Versioning.setVersion( state, newVersion, persister );
-			persister.setPropertyValues( entity, state );
+			persister.setValues( entity, state );
 		}
 		else {
 			oldVersion = null;
@@ -277,7 +294,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 	@Override
 	public CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode) {
 		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
-		final Serializable id = persister.getIdentifier( entity, this );
+		final Object id = persister.getIdentifier( entity, this );
 
 		if ( persister.canWriteToCache() ) {
 			final EntityDataAccess cacheAccess = persister.getCacheAccessStrategy();
@@ -362,294 +379,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 				.withBatchSize( batchSize );
 	}
 
-	@Override
-	public <R> ReactiveQueryImpl<R> createReactiveQuery(String queryString) {
-		checkOpen();
-
-		try {
-			ReactiveQueryImpl<R> query =
-					new ReactiveQueryImpl<>( this, getQueryPlan( queryString, false ), queryString );
-			applyQuerySettingsAndHints( query );
-			query.setComment( queryString );
-			return query;
-		}
-		catch (RuntimeException e) {
-			markForRollbackOnly();
-			throw getExceptionConverter().convert( e );
-		}
-	}
-
-	@Override
-	public <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType) {
-		try {
-			// do the translation
-			final ReactiveQueryImpl<R> query = createReactiveQuery( queryString );
-			resultClassChecking( resultType, query );
-			return query;
-		}
-		catch (RuntimeException e) {
-			throw getExceptionConverter().convert( e );
-		}
-	}
-
-	@Override
-	public <R> ReactiveQuery<R> createReactiveNamedQuery(String name) {
-		return buildReactiveQueryFromName( name, null );
-	}
-
-	@Override
-	public <R> ReactiveQuery<R> createReactiveNamedQuery(String name, Class<R> resultClass) {
-		return buildReactiveQueryFromName( name, resultClass );
-	}
-
-	//TODO nasty copy/paste
-	private <T> ReactiveQuery<T> buildReactiveQueryFromName(String name, Class<T> resultType) {
-		checkOpen();
-		try {
-			pulseTransactionCoordinator();
-			delayedAfterCompletion();
-
-			// todo : apply stored setting at the JPA Query level too
-
-			NamedQueryDefinition namedQueryDefinition =
-					getFactory().getNamedQueryRepository()
-							.getNamedQueryDefinition( name );
-			if ( namedQueryDefinition != null ) {
-				return createReactiveQuery( namedQueryDefinition, resultType );
-			}
-
-			NamedSQLQueryDefinition nativeQueryDefinition =
-					getFactory().getNamedQueryRepository()
-							.getNamedSQLQueryDefinition( name );
-			if ( nativeQueryDefinition != null ) {
-				return createReactiveNativeQuery( nativeQueryDefinition, resultType );
-			}
-
-			throw getExceptionConverter().convert(
-					new IllegalArgumentException( "no query defined for name '" + name + "'" )
-			);
-		}
-		catch (RuntimeException e) {
-			throw !( e instanceof IllegalArgumentException ) ? new IllegalArgumentException( e ) : e;
-		}
-	}
-
-	//TODO fix nasty copy/paste
-	private <T> ReactiveQuery<T> createReactiveQuery(
-			NamedQueryDefinition namedQueryDefinition,
-			Class<T> resultType) {
-		final ReactiveQuery<T> query = createReactiveQuery( namedQueryDefinition );
-		if ( resultType != null ) {
-			resultClassChecking( resultType, createQuery( namedQueryDefinition ) );
-		}
-		return query;
-	}
-
-	//TODO fix nasty copy/paste
-	private <T> ReactiveQuery<T> createReactiveQuery(NamedQueryDefinition queryDefinition) {
-		String queryString = queryDefinition.getQueryString();
-		ReactiveQueryImpl<T> query = new ReactiveQueryImpl<>( this, getQueryPlan( queryString, false ), queryString );
-		applyQuerySettingsAndHints( query );
-		query.setHibernateFlushMode( queryDefinition.getFlushMode() );
-		query.setComment( comment( queryDefinition ) );
-		if ( queryDefinition.getLockOptions() != null ) {
-			query.setLockOptions( queryDefinition.getLockOptions() );
-		}
-
-		initQueryFromNamedDefinition( query, queryDefinition );
-
-		return query;
-	}
-
-	//TODO fix nasty copy/paste
-	private <T> ReactiveNativeQuery<T> createReactiveNativeQuery(
-			NamedSQLQueryDefinition queryDefinition,
-			Class<T> resultType) {
-		if ( resultType != null
-				&& !Tuple.class.equals( resultType )
-				&& !Object[].class.equals( resultType ) ) {
-			resultClassChecking( resultType, queryDefinition );
-		}
-
-		ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>(
-				queryDefinition,
-				this,
-				getFactory().getQueryPlanCache()
-						.getSQLParameterMetadata( queryDefinition.getQueryString(), false )
-		);
-		if ( Tuple.class.equals( resultType ) ) {
-			query.setResultTransformer( new NativeQueryTupleTransformer() );
-		}
-		applyQuerySettingsAndHints( query );
-		query.setHibernateFlushMode( queryDefinition.getFlushMode() );
-		query.setComment( comment( queryDefinition ) );
-		if ( queryDefinition.getLockOptions() != null ) {
-			query.setLockOptions( queryDefinition.getLockOptions() );
-		}
-
-		initQueryFromNamedDefinition( query, queryDefinition );
-
-		return query;
-	}
-
-	@Override
-	public <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString) {
-		checkOpen();
-
-		try {
-			ParameterMetadata params = getFactory().getQueryPlanCache()
-					.getSQLParameterMetadata( sqlString, false );
-			ReactiveNativeQueryImpl<T> query =
-					new ReactiveNativeQueryImpl<>( sqlString, false, this, params );
-			query.setComment( "dynamic native SQL query" );
-			applyQuerySettingsAndHints( query );
-			return query;
-		}
-		catch (RuntimeException he) {
-			throw getExceptionConverter().convert( he );
-		}
-	}
-
-	public MetamodelImplementor getMetamodel() {
-		checkOpen();
-		return getFactory().getMetamodel();
-	}
-
-	@Override
-	public <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultClass) {
-		try {
-			ReactiveNativeQuery<T> query = createReactiveNativeQuery( sqlString );
-			if ( getMetamodel().entityPersisters().containsKey( resultClass.getName() ) ) {
-				query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
-			}
-			else if ( Tuple.class.equals( resultClass ) ) {
-				query.setResultTransformer( new NativeQueryTupleTransformer() );
-			}
-			return query;
-		}
-		catch (RuntimeException he) {
-			throw getExceptionConverter().convert( he );
-		}
-	}
-
-	@Override
-	public <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, String resultSetMapping) {
-		try {
-			ReactiveNativeQuery<T> query = createReactiveNativeQuery( sqlString );
-			query.setResultSetMapping( resultSetMapping );
-			return query;
-		}
-		catch (RuntimeException he) {
-			throw getExceptionConverter().convert( he );
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T> ReactiveHQLQueryPlan<T> getReactivePlan(String query, QueryParameters parameters) {
-		HQLQueryPlan plan = parameters.getQueryPlan();
-		if ( plan == null ) {
-			plan = getQueryPlan( query, false );
-		}
-		return (ReactiveHQLQueryPlan<T>) plan;
-	}
-
-	@Override
-	public <T> CompletionStage<List<T>> reactiveList(String query, QueryParameters parameters) {
-		checkOpen();
-		parameters.validateParameters();
-
-		ReactiveHQLQueryPlan<T> reactivePlan = getReactivePlan( query, parameters );
-		return reactivePlan.performReactiveList( parameters, this )
-				.whenComplete( (list, x) -> {
-					getPersistenceContext().clear();
-					afterOperation( x == null );
-				} );
-	}
-
-	@Override
-	public <T> CompletionStage<List<T>> reactiveList(NativeSQLQuerySpecification spec, QueryParameters parameters) {
-		checkOpen();
-
-		ReactiveCustomLoader<T> loader = new ReactiveCustomLoader<>(
-				getNativeQueryPlan( spec ).getCustomQuery(),
-				getFactory()
-		);
-
-		return loader.reactiveList( this, parameters )
-				.whenComplete( (r, x) -> {
-					getPersistenceContext().clear();
-					afterOperation( x == null );
-				} );
-	}
-
-	private static String comment(NamedQueryDefinition queryDefinition) {
-		return queryDefinition.getComment() != null
-				? queryDefinition.getComment()
-				: queryDefinition.getName();
-	}
-
-	@SuppressWarnings("unchecked")
-	private ReactiveHQLQueryPlan<Void> getReactivePlan(String query) {
-		return (ReactiveHQLQueryPlan<Void>) getQueryPlan( query, false );
-	}
-
-	@Override
-	public CompletionStage<Integer> executeReactiveUpdate(String query, QueryParameters parameters) {
-		checkOpen();
-		parameters.validateParameters();
-		return getReactivePlan( query )
-				.performExecuteReactiveUpdate( parameters, this )
-				.whenComplete( (count, x) -> {
-					getPersistenceContext().clear();
-					afterOperation( x == null );
-				} );
-	}
-
-	@Override
-	public CompletionStage<Integer> executeReactiveUpdate(
-			NativeSQLQuerySpecification specification,
-			QueryParameters parameters) {
-		checkOpen();
-		parameters.validateParameters();
-
-		ReactiveNativeSQLQueryPlan reactivePlan = //getNativeQueryPlan( specification );
-				new ReactiveNativeSQLQueryPlan(
-						specification.getQueryString(),
-						new SQLCustomQuery(
-								specification.getQueryString(),
-								specification.getQueryReturns(),
-								specification.getQuerySpaces(),
-								getFactory()
-						)
-				);
-		return reactivePlan.performExecuteReactiveUpdate( parameters, this )
-				.whenComplete( (count, x) -> {
-					getPersistenceContext().clear();
-					afterOperation( x == null );
-				} );
-	}
-
-	@Override
-	public void addBulkCleanupAction(BulkOperationCleanupAction action) {
-		action.getAfterTransactionCompletionProcess()
-				.doAfterTransactionCompletion( true, this );
-	}
-
-	@Override
-	public List<?> list(String query, QueryParameters queryParameters) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public List<?> listCustomQuery(CustomQuery customQuery, QueryParameters queryParameters) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
-		return ResultSetMappings.resultSetMapping( resultType, mappingName, getFactory() );
-	}
-
 	private Object createProxy(EntityKey entityKey) {
 		final Object proxy = entityKey.getPersister().createProxy( entityKey.getIdentifier(), this );
 		getPersistenceContext().addProxy( entityKey, proxy );
@@ -659,13 +388,15 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 	@Override
 	public CompletionStage<Object> reactiveInternalLoad(
 			String entityName,
-			Serializable id,
+			Object id,
 			boolean eager,
 			boolean nullable) {
 		checkOpen();
 
-		EntityPersister persister = getFactory().getMetamodel().entityPersister( entityName );
-		EntityKey entityKey = generateEntityKey( id, persister );
+		final EntityPersister entityDescriptor = getFactory().getRuntimeMetamodels()
+				.getMappingMetamodel()
+				.getEntityDescriptor( entityName );
+		final EntityKey entityKey = generateEntityKey( id, entityDescriptor );
 
 		// first, try to load it from the temp PC associated to this SS
 		PersistenceContext persistenceContext = getPersistenceContext();
@@ -682,24 +413,24 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
 			// first, check to see if we can use "bytecode proxies"
 
-			EntityMetamodel entityMetamodel = persister.getEntityMetamodel();
+			EntityMetamodel entityMetamodel = entityDescriptor.getEntityMetamodel();
 			BytecodeEnhancementMetadata enhancementMetadata = entityMetamodel.getBytecodeEnhancementMetadata();
 			if ( enhancementMetadata.isEnhancedForLazyLoading() ) {
 
 				// if the entity defines a HibernateProxy factory, see if there is an
 				// existing proxy associated with the PC - and if so, use it
-				if ( entityMetamodel.getTuplizer().getProxyFactory() != null ) {
+				if ( entityDescriptor.getRepresentationStrategy().getProxyFactory() != null ) {
 					final Object proxy = persistenceContext.getProxy( entityKey );
 
 					if ( proxy != null ) {
-//                        if ( LOG.isTraceEnabled() ) {
-//                            LOG.trace( "Entity proxy found in session cache" );
-//                        }
-//                        if ( LOG.isDebugEnabled() && ( (HibernateProxy) proxy ).getHibernateLazyInitializer().isUnwrap() ) {
-//                            LOG.debug( "Ignoring NO_PROXY to honor laziness" );
-//                        }
+                        if ( LOG.isTraceEnabled() ) {
+                            LOG.trace( "Entity proxy found in session cache" );
+                        }
+                        if ( LOG.isDebugEnabled() && ( (HibernateProxy) proxy ).getHibernateLazyInitializer().isUnwrap() ) {
+                            LOG.debug( "Ignoring NO_PROXY to honor laziness" );
+                        }
 
-						return completedFuture( persistenceContext.narrowProxy( proxy, persister, entityKey, null ) );
+						return completedFuture( persistenceContext.narrowProxy( proxy, entityDescriptor, entityKey, null ) );
 					}
 
 					// specialized handling for entities with subclasses with a HibernateProxy factory
@@ -718,10 +449,10 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 				// The entity will get loaded below.
 			}
 			else {
-				if ( persister.hasProxy() ) {
+				if ( entityDescriptor.hasProxy() ) {
 					final Object existingProxy = persistenceContext.getProxy( entityKey );
 					if ( existingProxy != null ) {
-						return completedFuture( persistenceContext.narrowProxy( existingProxy, persister, entityKey, null ) );
+						return completedFuture( persistenceContext.narrowProxy( existingProxy, entityDescriptor, entityKey, null ) );
 					}
 					else {
 						return completedFuture( createProxy( entityKey ) );
@@ -735,7 +466,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 		// IMPLEMENTATION NOTE: increment/decrement the load count before/after getting the value
 		//                      to ensure that #get does not clear the PersistenceContext.
 		persistenceContext.beforeLoad();
-		return this.<Object>reactiveGet( persister.getMappedClass(), id )
+		return this.<Object>reactiveGet( entityDescriptor.getMappedClass(), id )
 				.whenComplete( (r, e) -> persistenceContext.afterLoad() );
 	}
 
@@ -750,26 +481,25 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 		PersistenceContext persistenceContext = getPersistenceContext();
 		if ( association instanceof HibernateProxy ) {
 			LazyInitializer initializer = ( (HibernateProxy) association ).getHibernateLazyInitializer();
-			if ( !initializer.isUninitialized() ) {
-				return completedFuture( unproxy ? (T) initializer.getImplementation() : association );
-			}
-			else {
+			if ( initializer.isUninitialized() ) {
 				String entityName = initializer.getEntityName();
-				Serializable id = initializer.getIdentifier();
-				ReactiveEntityPersister persister = (ReactiveEntityPersister) getFactory()
-						.getMetamodel().entityPersister( entityName );
+				Object id = initializer.getIdentifier();
 				initializer.setSession( this );
 				persistenceContext.beforeLoad();
+
+				final ReactiveEntityPersister entityDescriptor = (ReactiveEntityPersister) getFactory().getRuntimeMetamodels()
+						.getMappingMetamodel()
+						.getEntityDescriptor( entityName );
 
 				// This is hard to test because it happens on slower machines like the ones we use on CI.
 				// See AbstractLazyInitializer#initialize, it happens when the object is not initialized and we need to
 				// call session.immediateLoad
 				CompletionStage<?> stage = initializer.getImplementation() instanceof CompletionStage
-					? (CompletionStage<?>) initializer.getImplementation()
-					: completedFuture( initializer.getImplementation() );
+						? (CompletionStage<?>) initializer.getImplementation()
+						: completedFuture( initializer.getImplementation() );
 
 				return stage
-						.thenCompose( implementation -> persister
+						.thenCompose( implementation -> entityDescriptor
 								.reactiveLoad( id, implementation, LockOptions.NONE, this )
 								.whenComplete( (v, e) -> {
 									persistenceContext.afterLoad();
@@ -784,6 +514,10 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 									return unproxy ? (T) entity : association;
 								} ) );
 			}
+			else {
+				// Initialized
+				return completedFuture( unproxy ? (T) initializer.getImplementation() : association );
+			}
 		}
 		else if ( association instanceof PersistentCollection ) {
 			PersistentCollection persistentCollection = (PersistentCollection) association;
@@ -791,12 +525,15 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 				return completedFuture( association );
 			}
 			else {
-				ReactiveCollectionPersister persister = (ReactiveCollectionPersister)
-						getFactory().getMetamodel().collectionPersister( persistentCollection.getRole() );
-				Serializable key = persistentCollection.getKey();
-				persistenceContext.addUninitializedCollection( persister, persistentCollection, key );
+				final ReactiveCollectionPersister collectionDescriptor = (ReactiveCollectionPersister) getFactory()
+						.getRuntimeMetamodels()
+						.getMappingMetamodel()
+						.getCollectionDescriptor( persistentCollection.getRole() );
+
+				Object key = persistentCollection.getKey();
+				persistenceContext.addUninitializedCollection( collectionDescriptor, persistentCollection, key );
 				persistentCollection.setCurrentSession( this );
-				return persister.reactiveInitialize( key, this )
+				return collectionDescriptor.reactiveInitialize( key, this )
 						.whenComplete( (v, e) -> {
 							if ( persistenceContext.isLoadFinished() ) {
 								persistenceContext.clear();
@@ -808,7 +545,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 		else if ( isPersistentAttributeInterceptable( association ) ) {
 			final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( association );
 			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
-			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor) {
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
 				EnhancementAsProxyLazinessInterceptor eapli = (EnhancementAsProxyLazinessInterceptor) interceptor;
 				return forceInitialize( association, null, eapli.getIdentifier(), eapli.getEntityName(), this )
 						.thenApply( i -> association );
@@ -845,7 +582,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
 	@Override
 	public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity) {
-		return new RootGraphImpl<>( null, getFactory().getMetamodel().entity( entity ), getFactory() );
+		return new RootGraphImpl<>( null,
+				getFactory().getJpaMetamodel().entity( entity ),
+				getSessionFactory().getJpaMetamodel() );
 	}
 
 	private RootGraphImplementor<?> createEntityGraph(String graphName) {
@@ -863,53 +602,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 			throw new IllegalArgumentException( "Could not locate EntityGraph with given name : " + graphName );
 		}
 		return named;
-	}
-
-	@Override
-	public <R> ReactiveQuery<R> createReactiveQuery(Criteria<R> criteria) {
-		try {
-			criteria.validate();
-		}
-		catch (IllegalStateException ise) {
-			throw new IllegalArgumentException( "Error occurred validating the Criteria", ise );
-		}
-
-		return criteria.build( newRenderingContext(), this );
-	}
-
-	private CriteriaQueryRenderingContext newRenderingContext() {
-		return new CriteriaQueryRenderingContext( getFactory() );
-	}
-
-	@Override
-	public <T> ReactiveQuery<T> createReactiveCriteriaQuery(
-			String jpaqlString,
-			Class<T> resultClass,
-			CriteriaQueryOptions queryOptions) {
-		try {
-			ReactiveQuery<T> query = createReactiveQuery( jpaqlString );
-			query.setParameterMetadata( queryOptions.getParameterMetadata() );
-
-			boolean hasValueHandlers = queryOptions.getValueHandlers() != null;
-			boolean hasTupleElements = Tuple.class.equals( resultClass );
-
-			if ( !hasValueHandlers ) {
-				queryOptions.validate( query.getReturnTypes() );
-			}
-
-			// determine if we need a result transformer
-			if ( hasValueHandlers || hasTupleElements ) {
-				query.setResultTransformer( new CriteriaQueryTupleTransformer(
-						queryOptions.getValueHandlers(),
-						hasTupleElements ? queryOptions.getSelection().getCompoundSelectionItems() : null
-				) );
-			}
-
-			return query;
-		}
-		catch (RuntimeException e) {
-			throw getExceptionConverter().convert( e );
-		}
 	}
 
 	@Override

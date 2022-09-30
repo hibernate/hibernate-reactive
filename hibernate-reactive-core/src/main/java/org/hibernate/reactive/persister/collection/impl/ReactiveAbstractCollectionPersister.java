@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.persister.collection.impl;
 
-import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -43,11 +42,11 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     }
 
     /**
-     * @see org.hibernate.persister.collection.AbstractCollectionPersister#recreate(PersistentCollection, Serializable, SharedSessionContractImplementor)
+     * @see org.hibernate.persister.collection.AbstractCollectionPersister#recreate(PersistentCollection, Object, SharedSessionContractImplementor)
      */
     default CompletionStage<Void> recreateReactive(
             PersistentCollection collection,
-            Serializable id,
+            Object id,
             SharedSessionContractImplementor session)
             throws HibernateException {
         if ( isInverse() || !isRowInsertEnabled() ) {
@@ -79,18 +78,15 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     }
 
     /**
-     * @see org.hibernate.persister.collection.AbstractCollectionPersister#remove(Serializable, SharedSessionContractImplementor)
+     * @see org.hibernate.persister.collection.AbstractCollectionPersister#remove(Object, SharedSessionContractImplementor)
      */
-    default CompletionStage<Void> removeReactive(Serializable id, SharedSessionContractImplementor session) {
+    default CompletionStage<Void> removeReactive(Object id, SharedSessionContractImplementor session) {
         if ( isInverse() || !isRowDeleteEnabled() ) {
             return voidFuture();
         }
 
         if ( LOG.isDebugEnabled() ) {
-            LOG.debugf(
-                    "Deleting collection: %s",
-                    collectionInfoString( this, id, getFactory() )
-            );
+            LOG.debugf( "Deleting collection: %s", collectionInfoString( this, id, getFactory() ) );
         }
 
         Expectation expectation = appropriateExpectation( getDeleteCheckStyle() );
@@ -103,12 +99,12 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     }
 
     /**
-     * @see org.hibernate.persister.collection.AbstractCollectionPersister#deleteRows(PersistentCollection, Serializable, SharedSessionContractImplementor)
+     * @see org.hibernate.persister.collection.AbstractCollectionPersister#deleteRows(PersistentCollection, Object, SharedSessionContractImplementor)
      */
     @Override
     default CompletionStage<Void> reactiveDeleteRows(
             PersistentCollection collection,
-            Serializable id,
+            Object id,
             SharedSessionContractImplementor session) {
         if ( isInverse() || !isRowDeleteEnabled() ) {
             return voidFuture();
@@ -133,12 +129,12 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     }
 
     /**
-     * @see org.hibernate.persister.collection.AbstractCollectionPersister#insertRows(PersistentCollection, Serializable, SharedSessionContractImplementor)
+     * @see org.hibernate.persister.collection.AbstractCollectionPersister#insertRows(PersistentCollection, Object, SharedSessionContractImplementor)
      */
     @Override
     default CompletionStage<Void> reactiveInsertRows(
             PersistentCollection collection,
-            Serializable id,
+            Object id,
             SharedSessionContractImplementor session) {
         if ( isInverse() || !isRowDeleteEnabled() ) {
             return voidFuture();
@@ -172,12 +168,12 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     }
 
     /**
-     * @see org.hibernate.persister.collection.AbstractCollectionPersister#updateRows(PersistentCollection, Serializable, SharedSessionContractImplementor)
+     * @see org.hibernate.persister.collection.AbstractCollectionPersister#updateRows(PersistentCollection, Object, SharedSessionContractImplementor)
      */
     @Override
     default CompletionStage<Void> reactiveUpdateRows(
             PersistentCollection collection,
-            Serializable id,
+            Object id,
             SharedSessionContractImplementor session) {
 
         if ( !isInverse() && collection.isRowUpdatePossible() ) {
@@ -196,13 +192,13 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     }
 
     /**
-     * @see org.hibernate.persister.collection.AbstractCollectionPersister#doUpdateRows(Serializable, PersistentCollection, SharedSessionContractImplementor)
+     * @see org.hibernate.persister.collection.AbstractCollectionPersister#doUpdateRows(Object, PersistentCollection, SharedSessionContractImplementor)
      */
-    CompletionStage<Void> doReactiveUpdateRows(Serializable id, PersistentCollection collection,
+    CompletionStage<Void> doReactiveUpdateRows(Object id, PersistentCollection collection,
                                                   SharedSessionContractImplementor session);
 
     default Object[] insertRowsParamValues(Object entry, int index,
-                                           PersistentCollection collection, Serializable id,
+                                           PersistentCollection collection, Object id,
                                            SharedSessionContractImplementor session) {
         int offset = 1;
         return PreparedStatementAdaptor.bind(
@@ -219,7 +215,7 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
         );
     }
 
-    default Object[] deleteRowsParamValues(Object entry, int offset, Serializable id,
+    default Object[] deleteRowsParamValues(Object entry, int offset, Object id,
                                            SharedSessionContractImplementor session) {
         return PreparedStatementAdaptor.bind(
                 st -> {
@@ -259,7 +255,7 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
             throws SQLException;
     int writeIdentifier(PreparedStatement st, Object identifier, int loc, SharedSessionContractImplementor session)
             throws SQLException;
-    int writeKey(PreparedStatement st, Serializable id, int offset, SharedSessionContractImplementor session)
+    int writeKey(PreparedStatement st, Object id, int offset, SharedSessionContractImplementor session)
             throws SQLException;
     int writeElementToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
             throws SQLException;

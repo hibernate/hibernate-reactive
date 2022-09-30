@@ -27,7 +27,11 @@ public interface ReactiveStatelessSession extends ReactiveQueryExecutor {
 
 	<T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id);
 
+	<T> CompletionStage<T> reactiveGet(String entityName, Object id);
+
 	<T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph);
+
+	<T> CompletionStage<T> reactiveGet(String entityName, Object id, LockMode lockMode, EntityGraph<T> fetchGraph);
 
 	CompletionStage<Void> reactiveInsert(Object entity);
 

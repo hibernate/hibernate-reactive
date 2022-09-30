@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.engine.impl;
 
-import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
@@ -15,7 +14,6 @@ import org.hibernate.action.internal.CollectionAction;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.service.spi.EventListenerGroup;
-import org.hibernate.event.spi.EventType;
 import org.hibernate.event.spi.PostCollectionRecreateEvent;
 import org.hibernate.event.spi.PostCollectionRecreateEventListener;
 import org.hibernate.event.spi.PostCollectionUpdateEvent;
@@ -48,7 +46,7 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 	public ReactiveCollectionUpdateAction(
 			final PersistentCollection collection,
 			final CollectionPersister persister,
-			final Serializable key,
+			final Object key,
 			final boolean emptySnapshot,
 			final SharedSessionContractImplementor session) {
 		super( persister, collection, key, session );
@@ -57,7 +55,7 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 
 	@Override
 	public CompletionStage<Void> reactiveExecute() {
-		final Serializable key = getKey();
+		final Object key = getKey();
 		final SharedSessionContractImplementor session = getSession();
 		final ReactiveCollectionPersister reactivePersister = (ReactiveCollectionPersister) getPersister();
 		final CollectionPersister corePersister = getPersister();
@@ -135,7 +133,7 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 	}
 
 	private void preUpdate() {
-		final EventListenerGroup<PreCollectionUpdateEventListener> listenerGroup = listenerGroup( EventType.PRE_COLLECTION_UPDATE );
+		final EventListenerGroup<PreCollectionUpdateEventListener> listenerGroup = getFastSessionServices().eventListenerGroup_PRE_COLLECTION_UPDATE;
 		if ( listenerGroup.isEmpty() ) {
 			return;
 		}
@@ -150,7 +148,7 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 	}
 
 	private void postUpdate() {
-		final EventListenerGroup<PostCollectionUpdateEventListener> listenerGroup = listenerGroup( EventType.POST_COLLECTION_UPDATE );
+		final EventListenerGroup<PostCollectionUpdateEventListener> listenerGroup = getFastSessionServices().eventListenerGroup_POST_COLLECTION_UPDATE;
 		if ( listenerGroup.isEmpty() ) {
 			return;
 		}
@@ -165,7 +163,7 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 	}
 
 	private void preRecreate() {
-		final EventListenerGroup<PreCollectionRecreateEventListener> listenerGroup = listenerGroup( EventType.PRE_COLLECTION_RECREATE );
+		final EventListenerGroup<PreCollectionRecreateEventListener> listenerGroup = getFastSessionServices().eventListenerGroup_PRE_COLLECTION_RECREATE;
 		if ( listenerGroup.isEmpty() ) {
 			return;
 		}
@@ -176,7 +174,7 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 	}
 
 	private void postRecreate() {
-		final EventListenerGroup<PostCollectionRecreateEventListener> listenerGroup = listenerGroup( EventType.POST_COLLECTION_RECREATE );
+		final EventListenerGroup<PostCollectionRecreateEventListener> listenerGroup = getFastSessionServices().eventListenerGroup_POST_COLLECTION_RECREATE;
 		if ( listenerGroup.isEmpty() ) {
 			return;
 		}

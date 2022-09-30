@@ -12,7 +12,6 @@ import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
-import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -39,7 +38,7 @@ public class ReactiveGeneratorWrapper<T> implements
 	}
 
 	@Override
-	public Serializable generate(SharedSessionContractImplementor session, Object object) {
+	public Object generate(SharedSessionContractImplementor session, Object object) {
 		if (generator == null) {
 			throw new UnsupportedOperationException("reactive generator");
 		}

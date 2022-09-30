@@ -5,6 +5,10 @@
  */
 package org.hibernate.reactive.engine.impl;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityDeleteAction;
@@ -19,18 +23,13 @@ import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
-import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
-
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-
 /**
  * A reactific {@link EntityDeleteAction}.
  */
 public class ReactiveEntityDeleteAction extends EntityDeleteAction implements ReactiveExecutable {
 
 	public ReactiveEntityDeleteAction(
-			Serializable id,
+			Object id,
 			Object[] state,
 			Object version,
 			Object instance,
@@ -47,7 +46,7 @@ public class ReactiveEntityDeleteAction extends EntityDeleteAction implements Re
 
 	@Override
 	public CompletionStage<Void> reactiveExecute() throws HibernateException {
-		final Serializable id = getId();
+		final Object id = getId();
 		final EntityPersister persister = getPersister();
 		final SharedSessionContractImplementor session = getSession();
 		final Object instance = getInstance();
@@ -73,7 +72,7 @@ public class ReactiveEntityDeleteAction extends EntityDeleteAction implements Re
 		}
 
 		CompletionStage<Void> deleteStep = !isCascadeDeleteEnabled() && !veto
-				? ((ReactiveEntityPersister) persister).deleteReactive( id, version, instance, session )
+				? ( (ReactiveEntityPersister) persister ).deleteReactive( id, version, instance, session )
 				: voidFuture();
 
 		return deleteStep.thenAccept( v -> {
@@ -95,11 +94,8 @@ public class ReactiveEntityDeleteAction extends EntityDeleteAction implements Re
 				persister.getCacheAccessStrategy().remove( session, ck );
 			}
 
-			persistenceContext.getNaturalIdHelper().removeSharedNaturalIdCrossReference(
-					persister,
-					id,
-					getNaturalIdValues()
-			);
+			persistenceContext.getNaturalIdResolutions()
+					.removeSharedResolution( id, getNaturalIdValues(), persister );
 
 			postDelete();
 

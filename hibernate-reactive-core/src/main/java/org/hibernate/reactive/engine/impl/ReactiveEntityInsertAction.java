@@ -5,7 +5,10 @@
  */
 package org.hibernate.reactive.engine.impl;
 
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.LockMode;
+import org.hibernate.action.internal.ComparableEntityAction;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.internal.Versioning;
@@ -17,15 +20,15 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 
-import java.util.concurrent.CompletionStage;
-
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Abstracts over {@link ReactiveEntityRegularInsertAction} and {@link ReactiveEntityIdentityInsertAction}.
  * Needed in {@link ReactiveActionQueue}.
+ *
+ * @see org.hibernate.action.internal.AbstractEntityInsertAction
  */
-public interface ReactiveEntityInsertAction extends ReactiveExecutable {
+public interface ReactiveEntityInsertAction extends ReactiveExecutable, ComparableEntityAction {
 	boolean isEarlyInsert();
 	NonNullableTransientDependencies findNonNullableTransientEntities();
 	SharedSessionContractImplementor getSession();
@@ -51,9 +54,9 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable {
 	 * called for a this object, so it can safely be called both when
 	 * the entity is made "managed" and when this action is executed.
 	 *
-	 * @see org.hibernate.action.internal.AbstractEntityInsertAction#nullifyTransientReferencesIfNotAlready()
 	 * @see #reactiveMakeEntityManaged()
 	 */
+	// @see org.hibernate.action.internal.AbstractEntityInsertAction#nullifyTransientReferencesIfNotAlready()
 	default CompletionStage<Void> reactiveNullifyTransientReferencesIfNotAlready() {
 		if ( !areTransientReferencesNullified() ) {
 			return new ForeignKeys.Nullifier( getInstance(), false, isEarlyInsert(), (SessionImplementor) getSession(), getPersister() )

@@ -80,7 +80,7 @@ public class DefaultReactiveDeleteEventListener
 
 	/**
 	 * @deprecated only the reactive version is supported
-	 * @see #reactiveOnDelete(DeleteEvent, DeleteContext)
+	 * @see #reactiveOnDelete(DeleteEvent, IdentitySet)
 	 */
 	@Deprecated
 	@Override
@@ -105,7 +105,7 @@ public class DefaultReactiveDeleteEventListener
 	 * @param transientEntities The cache of entities already deleted
 	 *
 	 */
-	public CompletionStage<Void> reactiveOnDelete(DeleteEvent event, IdentitySet transientEntities) throws HibernateException {
+	public CompletionStage<Void> reactiveOnDelete(DeleteEvent event, DeleteContext transientEntities) throws HibernateException {
 		EventSource source = event.getSession();
 		if ( event.getObject() instanceof CompletionStage ) {
 			CompletionStage<Object> objectStage = (CompletionStage<Object>) event.getObject();
@@ -118,7 +118,7 @@ public class DefaultReactiveDeleteEventListener
 
 	private CompletionStage<Void> fetchAndDelete(
 			DeleteEvent event,
-			IdentitySet transientEntities,
+			DeleteContext transientEntities,
 			EventSource source,
 			Object objectEvent) {
 		boolean detached = event.getEntityName() != null

@@ -5,12 +5,11 @@
  */
 package org.hibernate.reactive.engine.impl;
 
-import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.CollectionAction;
-import org.hibernate.collection.internal.AbstractPersistentCollection;
+import org.hibernate.collection.spi.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.CollectionEntry;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -36,7 +35,7 @@ public final class QueuedOperationCollectionAction extends CollectionAction impl
 	public QueuedOperationCollectionAction(
 			final PersistentCollection collection,
 			final CollectionPersister persister,
-			final Serializable id,
+			final Object id,
 			final SharedSessionContractImplementor session) {
 		super( persister, collection, id, session );
 	}
@@ -51,7 +50,7 @@ public final class QueuedOperationCollectionAction extends CollectionAction impl
 
 		// TODO: It would be nice if this could be done safely by CollectionPersister#processQueuedOps;
 		//       Can't change the SPI to do this though.
-		((AbstractPersistentCollection) getCollection() ).clearOperationQueue();
+		( (AbstractPersistentCollection<?>) getCollection() ).clearOperationQueue();
 
 		// The other CollectionAction types call CollectionEntry#afterAction, which
 		// clears the dirty flag. We don't want to call CollectionEntry#afterAction unless

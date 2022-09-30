@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.engine.impl;
 
-import java.io.Serializable;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
@@ -36,7 +35,7 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 			boolean isVersionIncrementDisabled,
 			SharedSessionContractImplementor session,
 			boolean isDelayed) {
-		super(state, instance, persister, isVersionIncrementDisabled, session, isDelayed);
+		super( state, instance, persister, isVersionIncrementDisabled, session, isDelayed );
 		this.isVersionIncrementDisabled = isVersionIncrementDisabled;
 	}
 
@@ -63,18 +62,20 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 			ReactiveEntityPersister reactivePersister = (ReactiveEntityPersister) persister;
 			return stage
 					.thenCompose( v -> reactivePersister.insertReactive( getState(), instance, session ) )
-					.thenApply( this::applyGeneratedId )
-					.thenCompose( generatedId -> processInsertGenerated( reactivePersister, generatedId, instance, session)
-							.thenApply( v -> generatedId ) )
+					.thenCompose( generatedId -> {
+						setGeneratedId( generatedId );
+						return processInsertGenerated( reactivePersister, generatedId, instance, session )
+								.thenApply( v -> generatedId );
+					} )
 					.thenAccept( generatedId -> {
 						//need to do that here rather than in the save event listener to let
 						//the post insert events to have a id-filled entity when IDENTITY is used (EJB3)
-						persister.setIdentifier(instance, generatedId, session);
+						persister.setIdentifier( instance, generatedId, session );
 						final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-						persistenceContext.registerInsertedKey(getPersister(), generatedId);
-						EntityKey entityKey = session.generateEntityKey(generatedId, persister);
+						persistenceContext.registerInsertedKey( getPersister(), generatedId );
+						EntityKey entityKey = session.generateEntityKey( generatedId, persister );
 						setEntityKey( entityKey );
-						persistenceContext.checkUniqueness(entityKey, getInstance());
+						persistenceContext.checkUniqueness( entityKey, getInstance() );
 
 						postInsert();
 
@@ -84,29 +85,23 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 						}
 
 						markExecuted();
-					});
-			}
-			else {
-				postInsert();
-				markExecuted();
-				return stage;
-			}
+					} );
+		}
+		else {
+			postInsert();
+			markExecuted();
+			return stage;
+		}
 	}
 
 	private CompletionStage<Void> processInsertGenerated(
 			ReactiveEntityPersister reactivePersister,
-			Serializable generatedId,
+			Object generatedId,
 			Object instance,
 			SharedSessionContractImplementor session) {
-		if ( reactivePersister.hasInsertGeneratedProperties() ) {
-			return reactivePersister.reactiveProcessInsertGenerated( generatedId, instance, getState(), session );
-		}
-		return voidFuture();
-	}
-
-	private Serializable applyGeneratedId(Serializable id) {
-		setGeneratedId( id );
-		return id;
+		return reactivePersister.hasInsertGeneratedProperties()
+				? reactivePersister.reactiveProcessInsertGenerated( generatedId, instance, getState(), session )
+				: voidFuture();
 	}
 
 	@Override
