@@ -5,15 +5,17 @@
  */
 package org.hibernate.reactive;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
 
-import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
@@ -27,12 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OrphanRemovalTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Version.class );
-		configuration.addAnnotatedClass( Product.class );
-		configuration.addAnnotatedClass( Shop.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Shop.class, Version.class, Product.class );
 	}
 
 	@Test
@@ -78,6 +76,7 @@ public class OrphanRemovalTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "ProductVersion")
+	@Table(name = "ORT_ProductVersion")
 	public static class Version {
 		@Id
 		@GeneratedValue
@@ -100,6 +99,7 @@ public class OrphanRemovalTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "Product")
+	@Table(name = "ORT_Product")
 	public static class Product {
 
 		@Id
@@ -132,6 +132,7 @@ public class OrphanRemovalTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "Shop")
+	@Table(name = "ORT_Shop")
 	public static class Shop {
 
 		@Id
