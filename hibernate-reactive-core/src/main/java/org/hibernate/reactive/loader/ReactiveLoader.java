@@ -10,12 +10,16 @@ import org.hibernate.dialect.PostgreSQL9Dialect;
 import org.hibernate.dialect.pagination.LimitHandler;
 import org.hibernate.dialect.pagination.LimitHelper;
 import org.hibernate.dialect.pagination.NoopLimitHandler;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.QueryParameters;
+import org.hibernate.engine.spi.RowSelection;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.pool.impl.Parameters;
-import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.reactive.session.ReactiveQueryExecutor;
 import org.hibernate.transform.ResultTransformer;
 
 import java.sql.ResultSet;
@@ -124,7 +128,12 @@ public interface ReactiveLoader {
 			sql = parameters().processLimit( sql, parameterArray, LimitHelper.hasFirstRow( queryParameters.getRowSelection() ) );
 		}
 
-		return ((ReactiveConnectionSupplier) session).getReactiveConnection()
+		//N.B. performance trap: always try to cast to ReactiveQueryExecutor even when only needing a ReactiveConnectionSupplier
+		//as we otherwise trigger a strong scalability issue.
+		//See also:
+		// - https://bugs.openjdk.org/browse/JDK-8180450
+		// - https://github.com/hibernate/hibernate-reactive/issues/1399
+		return ((ReactiveQueryExecutor) session).getReactiveConnection()
 				.selectJdbc( sql, parameterArray );
 	}
 
