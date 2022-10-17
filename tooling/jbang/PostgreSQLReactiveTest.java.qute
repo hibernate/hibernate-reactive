@@ -39,6 +39,7 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,8 +60,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(VertxUnitRunner.class)
 public class {baseName} {
 
-	@ClassRule
-	public final static PostgreSQLContainer<?> database = new PostgreSQLContainer<>( "postgres:14" );
+    public static DockerImageName imageName(String registry, String image, String version) {
+		return DockerImageName
+				.parse( registry + "/" + image + ":" + version )
+				.asCompatibleSubstituteFor( image );
+	}
+
+    @ClassRule
+    public final static PostgreSQLContainer database = new PostgreSQLContainer( imageName( "docker.io", "postgres", "14" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 
