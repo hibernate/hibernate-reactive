@@ -10,6 +10,8 @@
 //DEPS io.vertx:vertx-db2-client:${vertx.version:4.3.4}
 //DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:1.1.9.Final}
 //DEPS org.slf4j:slf4j-simple:1.7.30
+//DESCRIPTION Allow authentication to PostgreSQL using SCRAM:
+//DEPS com.ongres.scram:client:2.1
 
 import java.time.LocalDate;
 import java.util.ArrayList;
