@@ -41,6 +41,7 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,8 +62,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(VertxUnitRunner.class)
 public class {baseName} {
 
-	@ClassRule
-	public static MariaDBContainer<?> database = new MariaDBContainer<>( "mariadb:10.7.3" );
+    public static DockerImageName imageName(String registry, String image, String version) {
+		return DockerImageName
+				.parse( registry + "/" + image + ":" + version )
+				.asCompatibleSubstituteFor( image );
+	}
+
+    @ClassRule
+    public final static MariaDBContainer<?> database = new MariaDBContainer<>( imageName( "docker.io", "mariadb", "10.7.3" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 

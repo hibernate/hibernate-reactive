@@ -37,6 +37,7 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.testcontainers.containers.Db2Container;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,9 +58,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(VertxUnitRunner.class)
 public class {baseName} {
 
-	@ClassRule
-	public final static Db2Container database = new Db2Container( "docker.io/ibmcom/db2:11.5.7.0a" )
-			.acceptLicense();
+    public static DockerImageName imageName(String registry, String image, String version) {
+		return DockerImageName
+				.parse( registry + "/" + image + ":" + version )
+				.asCompatibleSubstituteFor( image );
+	}
+
+    @ClassRule
+    public final static Db2Container database = new Db2Container( imageName( "docker.io", "ibmcom/db2", "11.5.7.0a" ) )
+            .acceptLicense();
 
 	private Mutiny.SessionFactory sessionFactory;
 

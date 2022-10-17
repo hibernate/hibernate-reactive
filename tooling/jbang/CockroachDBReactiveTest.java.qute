@@ -42,6 +42,7 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.testcontainers.containers.CockroachContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -62,8 +63,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(VertxUnitRunner.class)
 public class {baseName} {
 
-	@ClassRule
-	public final static CockroachContainer database = new CockroachContainer( "cockroachdb/cockroach:v21.2.4" );
+    public static DockerImageName imageName(String registry, String image, String version) {
+		return DockerImageName
+				.parse( registry + "/" + image + ":" + version )
+				.asCompatibleSubstituteFor( image );
+	}
+
+    @ClassRule
+    public final static CockroachContainer database = new CockroachContainer( imageName( "cockroachdb", "cockroach", "v21.2.4" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 
