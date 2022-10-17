@@ -41,6 +41,7 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,8 +65,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(VertxUnitRunner.class)
 public class {baseName} {
 
-	@ClassRule
-	public static MySQLContainer<?> database = new MySQLContainer<>( "mysql:8.0.28" );
+    public static DockerImageName imageName(String registry, String image, String version) {
+		return DockerImageName
+				.parse( registry + "/" + image + ":" + version )
+				.asCompatibleSubstituteFor( image );
+	}
+
+    @ClassRule
+    public final static MySQLContainer<?> database = new MySQLContainer<>( imageName( "docker.io", "mysql", "8.0.28" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 
