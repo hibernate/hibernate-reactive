@@ -7,7 +7,7 @@
 
 //DEPS io.vertx:vertx-db2-client:$\{vertx.version:4.3.4}
 //DEPS io.vertx:vertx-unit:$\{vertx.version:4.3.4}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:1.1.6.Final}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:1.1.9.Final}
 //DEPS org.assertj:assertj-core:3.22.0
 //DEPS junit:junit:4.13.2
 //DEPS org.testcontainers:db2:1.17.3
