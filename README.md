@@ -125,6 +125,20 @@ or you can [open it in your editor](https://github.com/jbangdev/jbang#editing) (
 jbang edit --open=idea testcase@hibernate/hibernate-reactive
 ```
 
+You can also generate and run a db-specific test. See available templates using: `jbang template list`
+
+```
+cockroachdb-reproducer = Template for a test with CockroachDB using Junit 4, Vert.x Unit and Testcontainers
+db2-reproducer = Template for a test with Db2 using Junit 4, Vert.x Unit and Testcontainers
+mariadb-reproducer = Template for a test with MariaDB using Junit 4, Vert.x Unit and Testcontainers
+mysql-reproducer = Template for a test with MySQL using Junit 4, Vert.x Unit and Testcontainers
+pg-reproducer = Template for a test with PostgreSQL using Junit 4, Vert.x Unit and Testcontainers
+```
+
+Example for PostgreSQL:
+  - Generate java test from template: `jbang init --template=pg-reproducer pgTest.java`
+  - Run the test: `jbang pgTest.java` 
+
 ## Gradle build
 
 The project is built with Gradle, but you do _not_ need to have Gradle
