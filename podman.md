@@ -93,7 +93,7 @@ and schema to run the tests:
 ```
 podman run --rm --name HibernateTestingMySQL \
     -e MYSQL_ROOT_PASSWORD=hreact -e MYSQL_DATABASE=hreact -e MYSQL_USER=hreact -e MYSQL_PASSWORD=hreact \
-    -p 3306:3306 mysql:8.0.28
+    -p 3306:3306 mysql:8.0.31
 ```
 
 When the database has started, you can run the tests on MySQL with:
