@@ -91,7 +91,7 @@ class MSSQLServerDatabase implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final MSSQLServerContainer<?> mssqlserver = new MSSQLServerContainer<>( imageName( "mcr.microsoft.com", "mssql/server", "2019-latest" ) )
+	public static final MSSQLServerContainer<?> mssqlserver = new MSSQLServerContainer<>( imageName( "mcr.microsoft.com", "mssql/server", "2022-latest" ) )
 			.acceptLicense()
 			.withPassword( PASSWORD )
 			.withReuse( true );
