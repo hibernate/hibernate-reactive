@@ -70,7 +70,7 @@ public class {baseName} {
 	}
 
     @ClassRule
-    public final static CockroachContainer database = new CockroachContainer( imageName( "cockroachdb", "cockroach", "v21.2.4" ) );
+    public final static CockroachContainer database = new CockroachContainer( imageName( "cockroachdb", "cockroach", "v22.1.9" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 

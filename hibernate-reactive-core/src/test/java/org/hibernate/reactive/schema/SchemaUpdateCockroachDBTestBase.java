@@ -31,6 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import org.assertj.core.api.Assertions;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
@@ -103,6 +104,8 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 
 	@Test
 	public void testUpdate(TestContext context) {
+		// this test checks that the correct indexes and foreign constraints have been created
+		// by looking at the content of the pg_catalog schema using the following native queries.
 		final String indexDefinitionQuery =
 				"select indexdef from pg_indexes where schemaname = 'public' and tablename = ? order by indexname";
 
@@ -154,31 +157,19 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery, String.class )
 												.setParameter( 1, "asimple" )
 												.getResultList()
-												.thenAccept( list -> {
-													context.assertEquals(
-															"CREATE INDEX i_asimple_avalue_astringvalue ON postgres.public.asimple USING btree (avalue ASC, astringvalue DESC)",
-															list.get( 0 )
-													);
-													context.assertEquals(
-															"CREATE INDEX i_asimple_avalue_data ON postgres.public.asimple USING btree (avalue DESC, data ASC)",
-															list.get( 1 )
-													);
-													context.assertEquals(
-															"CREATE UNIQUE INDEX \"primary\" ON postgres.public.asimple USING btree (id ASC)",
-															list.get( 2 )
-													);
-													context.assertEquals(
-															"CREATE UNIQUE INDEX u_asimple_astringvalue ON postgres.public.asimple USING btree (astringvalue ASC)",
-															list.get( 3 )
-													);
-												} )
+												.thenAccept( list -> Assertions.assertThat( list ).containsExactlyInAnyOrder(
+														"CREATE INDEX i_asimple_avalue_astringvalue ON postgres.public.asimple USING btree (avalue ASC, astringvalue DESC)",
+														"CREATE INDEX i_asimple_avalue_data ON postgres.public.asimple USING btree (avalue DESC, data ASC)",
+														"CREATE UNIQUE INDEX asimple_pkey ON postgres.public.asimple USING btree (id ASC)",
+														"CREATE UNIQUE INDEX u_asimple_astringvalue ON postgres.public.asimple USING btree (astringvalue ASC)"
+												) )
 										)
 										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery, String.class )
 												.setParameter( 1, "aother" )
 												.getSingleResult()
 												.thenAccept( result ->
 																	 context.assertEquals(
-																			 "CREATE UNIQUE INDEX \"primary\" ON postgres.public.aother USING btree (id1 ASC, id2 ASC)",
+																			 "CREATE UNIQUE INDEX aother_pkey ON postgres.public.aother USING btree (id1 ASC, id2 ASC)",
 																			 result
 																	 )
 												)
@@ -188,12 +179,11 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 												.getSingleResult()
 												.thenAccept( result ->
 																	 context.assertEquals(
-																			 "CREATE UNIQUE INDEX \"primary\" ON postgres.public.aanother USING btree (id ASC)",
+																			 "CREATE UNIQUE INDEX aanother_pkey ON postgres.public.aanother USING btree (id ASC)",
 																			 result
 																	 )
 												)
 										)
-										// check foreign keys
 										.thenCompose( v -> s.createNativeQuery(
 												foreignKeyDefinitionQuery,
 												String.class
