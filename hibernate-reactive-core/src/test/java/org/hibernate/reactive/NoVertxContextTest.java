@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import javax.persistence.Column;
@@ -51,8 +50,9 @@ public class NoVertxContextTest {
 
 	@BeforeClass
 	public static void setupSessionFactory() {
-		final Configuration configuration = new BaseReactiveTest.ConfigurationBuilder()
-				.build( List.of( GameCharacter.class ) );
+		Configuration configuration = new Configuration();
+		configuration.addAnnotatedClass( GameCharacter.class );
+		BaseReactiveTest.setDefaultProperties( configuration );
 		StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() );
 		StandardServiceRegistry registry = builder.build();

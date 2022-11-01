@@ -66,26 +66,26 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 public abstract class BaseReactiveTest {
 
 	/**
-	 * When we need to write a test that doesn't fit with {@link BaseReactiveTest}, we can use
-	 * this builder to get a default configuration that's compatible with the build properties.
+	 * Configure properties defined in {@link Settings}.
 	 */
-	public static class ConfigurationBuilder {
+	protected void setProperties(Configuration configuration) {
+		setDefaultProperties( configuration );
+	}
 
-		public Configuration build(Collection<Class<?>> entityTypes) {
-			Configuration configuration = new Configuration();
-			entityTypes.forEach( configuration::addAnnotatedClass );
-			configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
-			configuration.setProperty( Settings.URL, DatabaseConfiguration.getJdbcUrl() );
-			if ( DatabaseConfiguration.dbType() == DBType.DB2 && !doneTablespace ) {
-				configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES, "/db2.sql" );
-				doneTablespace = true;
-			}
-			//Use JAVA_TOOL_OPTIONS='-Dhibernate.show_sql=true'
-			configuration.setProperty( Settings.SHOW_SQL, System.getProperty( Settings.SHOW_SQL, "false" ) );
-			configuration.setProperty( Settings.FORMAT_SQL, System.getProperty( Settings.FORMAT_SQL, "false" ) );
-			configuration.setProperty( Settings.HIGHLIGHT_SQL, System.getProperty( Settings.HIGHLIGHT_SQL, "true" ) );
-			return configuration;
+	/**
+	 * Configure default properties common to most tests.
+	 */
+	public static void setDefaultProperties(Configuration configuration) {
+		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
+		configuration.setProperty( Settings.URL, DatabaseConfiguration.getJdbcUrl() );
+		if ( DatabaseConfiguration.dbType() == DBType.DB2 && !doneTablespace ) {
+			configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES, "/db2.sql" );
+			doneTablespace = true;
 		}
+		//Use JAVA_TOOL_OPTIONS='-Dhibernate.show_sql=true'
+		configuration.setProperty( Settings.SHOW_SQL, System.getProperty( Settings.SHOW_SQL, "false" ) );
+		configuration.setProperty( Settings.FORMAT_SQL, System.getProperty( Settings.FORMAT_SQL, "false" ) );
+		configuration.setProperty( Settings.HIGHLIGHT_SQL, System.getProperty( Settings.HIGHLIGHT_SQL, "true" ) );
 	}
 
 	public static SessionFactoryManager factoryManager = new SessionFactoryManager();
@@ -111,13 +111,20 @@ public abstract class BaseReactiveTest {
 	}
 
 	/**
-	 * These entities will be added to the configuration of the factory and the rows in the mapping tables delted after
-	 * each test.
+	 * These entities will be added to the configuration of the factory and
+	 * the rows in the mapping tables deleted after each test.
 	 * <p>
-	 * For more complicated configuration see {@link #constructConfiguration()} or {@link #cleanDb()}
-	 * </p>
+	 * For more complicated configuration see {@link #constructConfiguration()}
+	 * or {@link #cleanDb()}.
 	 */
 	protected Collection<Class<?>> annotatedEntities() {
+		return List.of();
+	}
+
+	/**
+	 * XML mapping documents to be added to the configuration.
+	 */
+	protected Collection<String> mappings() {
 		return List.of();
 	}
 
@@ -143,16 +150,25 @@ public abstract class BaseReactiveTest {
 	 * For when we need to create the {@link Async} in advance
 	 */
 	public static void test(Async async, TestContext context, Uni<?> uni) {
-		uni.subscribe().with(
-				res -> async.complete(),
-				context::fail
-		);
+		uni.subscribe().with( res -> async.complete(), context::fail );
 	}
 
 	private static boolean doneTablespace;
 
 	protected Configuration constructConfiguration() {
-		return new ConfigurationBuilder().build( annotatedEntities() );
+		Configuration configuration = new Configuration();
+		addEntities( configuration );
+		setProperties( configuration );
+		return configuration;
+	}
+
+	protected void addEntities(Configuration configuration) {
+		for ( Class<?> entity: annotatedEntities() ) {
+			configuration.addAnnotatedClass( entity );
+		}
+		for ( String mapping: mappings() ) {
+			configuration.addResource( mapping );
+		}
 	}
 
 	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
