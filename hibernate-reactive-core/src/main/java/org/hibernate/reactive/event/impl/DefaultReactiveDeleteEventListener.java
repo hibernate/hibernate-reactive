@@ -105,21 +105,33 @@ public class DefaultReactiveDeleteEventListener
 	 *
 	 */
 	public CompletionStage<Void> reactiveOnDelete(DeleteEvent event, IdentitySet transientEntities) throws HibernateException {
-
 		EventSource source = event.getSession();
+		if ( event.getObject() instanceof CompletionStage ) {
+			CompletionStage<Object> objectStage = (CompletionStage<Object>) event.getObject();
+			return objectStage
+					.thenCompose( objectEvent -> fetchAndDelete( event, transientEntities, source, objectEvent ) );
+		}
 
+		return fetchAndDelete( event, transientEntities, source, event.getObject() );
+	}
+
+	private CompletionStage<Void> fetchAndDelete(
+			DeleteEvent event,
+			IdentitySet transientEntities,
+			EventSource source,
+			Object objectEvent) {
 		boolean detached = event.getEntityName() != null
-				? !source.contains( event.getEntityName(), event.getObject() )
-				: !source.contains( event.getObject() );
+				? !source.contains( event.getEntityName(), objectEvent )
+				: !source.contains( objectEvent );
 		if ( detached ) {
 			// Hibernate Reactive doesn't support detached instances in remove()
-			throw new IllegalArgumentException("unmanaged instance passed to remove()");
+			throw new IllegalArgumentException( "unmanaged instance passed to remove()" );
 		}
 
 		//Object entity = persistenceContext.unproxyAndReassociate( event.getObject() );
 
-		return ( (ReactiveSession) source ).reactiveFetch( event.getObject(), true )
-				.thenCompose( entity ->  reactiveOnDelete( event, transientEntities, entity ) );
+		return ( (ReactiveSession) source ).reactiveFetch( objectEvent, true )
+				.thenCompose( entity -> reactiveOnDelete( event, transientEntities, entity ) );
 	}
 
 	private CompletionStage<Void> reactiveOnDelete(DeleteEvent event, IdentitySet transientEntities, Object entity) {
