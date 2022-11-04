@@ -85,6 +85,7 @@ include 'hibernate-reactive-core'
 include 'session-example'
 include 'native-sql-example'
 include 'verticle-postgres-it'
+include 'bytecode-enhancements-it'
 include 'documentation'
 include 'release'
 
