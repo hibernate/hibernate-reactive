@@ -964,7 +964,28 @@ first.
 
 Similarly, field-level lazy fetching&mdash;an advanced feature, which
 is only supported in conjunction with Hibernate's optional compile-time
-bytecode enhancer&mdash;is also an explicit operation:
+bytecode enhancer&mdash;is also an explicit operation.
+
+To declare a lazy field we usually use the JPA `@Basic` annotation:
+
+[source, JAVA, indent=0]
+----
+@Basic(fetch=LAZY) String isbn;
+----
+
+An optional one-to-one association declared `@OneToOne(fetch=LAZY)` is
+also considered field-level lazy.
+
+IMPORTANT: This annotation has no effect at all unless the entity is
+processed by the bytecode enhancer during the build. Most Hibernate
+users don't bother with this, since it's often an inconvenience.
+
+TIP: On the other hand, if you're running Hibernate Reactive in Quarkus,
+the bytecode enhancer is always enabled, and you won't even notice it's
+there.
+
+A lazy field is only fetched if we explicitly request it by calling an
+overloaded version of the `fetch()` operation:
 
 [source, JAVA, indent=0]
 ----
@@ -976,7 +997,9 @@ session.find(Book.class, book.id)
 Note that the field to fetch is identified by a JPA metamodel `Attribute`.
 
 TIP: We don't encourage you to use field-level lazy fetching unless you
-have very specific requirements.
+have very specific requirements. It's almost always more efficient to fetch
+all the fields of an entity at once. Field-level lazy fetching is every bit
+as vulnerable to N+1 selects as lazy association fetching.
 
 === Transactions
 
