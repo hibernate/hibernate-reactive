@@ -27,6 +27,24 @@ dependencies {
     testImplementation "io.vertx:vertx-unit:${vertxVersion}"
 }
 
+ buildscript {
+     repositories {
+         // Example: ./gradlew build -PenableMavenLocalRepo
+         if ( project.hasProperty('enableMavenLocalRepo') ) {
+             // Useful for local development, it should be disabled otherwise
+             mavenLocal()
+         }
+
+         mavenCentral()
+
+         // Example: ./gradlew build -PenableJBossSnapshotsRep
+         if ( project.hasProperty('enableJBossSnapshotsRep') ) {
+             // Used only for testing with the latest Hibernate ORM snapshots.
+             maven { url 'https://repository.jboss.org/nexus/content/repositories/snapshots' }
+         }
+     }
+ }
+
 // Print a summary of the results of the tests (number of failures, successes and skipped)
 // This is the same as the one in hibernate-reactive-core
 def loggingSummary(db, result, desc) {
