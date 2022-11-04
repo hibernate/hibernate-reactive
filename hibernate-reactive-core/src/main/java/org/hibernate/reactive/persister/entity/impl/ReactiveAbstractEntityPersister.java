@@ -97,6 +97,7 @@ import static org.hibernate.reactive.id.impl.IdentifierGeneration.castToIdentifi
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -1235,19 +1236,19 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		// are shared PK one-to-one associations which are
 		// handled differently in the Type#nullSafeGet code...
 		if ( lazySelect == null ) {
-			return completedFuture( initLazyProperty(
+			return initLazyProperty(
 					fieldName, entity,
 					session, entry,
 					interceptor,
 					fetchGroupAttributeDescriptors,
 					initializedLazyAttributeNames,
 					null
-			) );
+			);
 		}
 
 		return getReactiveConnection( session )
 				.selectJdbc( lazySelect, arguments )
-				.thenApply( resultSet -> {
+				.thenCompose( resultSet -> {
 					try {
 						resultSet.next();
 						return initLazyProperty(
@@ -1266,7 +1267,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				} );
 	}
 
-	default Object initLazyProperty(String fieldName, Object entity,
+	default CompletionStage<Object> initLazyProperty(String fieldName, Object entity,
 									SharedSessionContractImplementor session,
 									EntityEntry entry,
 									PersistentAttributeInterceptor interceptor,
@@ -1274,13 +1275,13 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 									Set<String> initializedLazyAttributeNames,
 									ResultSet resultSet)  {
 		// Load all the lazy properties that are in the same fetch group
-		Object result = null;
+		CompletionStage<Object> resultStage = nullFuture();
 		for ( LazyAttributeDescriptor fetchGroupAttributeDescriptor: fetchGroupAttributeDescriptors ) {
 
 			if ( initializedLazyAttributeNames.contains( fetchGroupAttributeDescriptor.getName() ) ) {
 				// Already initialized
 				if ( fetchGroupAttributeDescriptor.getName().equals( fieldName ) ) {
-					result = entry.getLoadedValue( fetchGroupAttributeDescriptor.getName() );
+					resultStage = completedFuture( entry.getLoadedValue( fetchGroupAttributeDescriptor.getName() ) );
 				}
 				continue;
 			}
@@ -1289,10 +1290,27 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				String[] columnAlias = getLazyPropertyColumnAliases()[fetchGroupAttributeDescriptor.getLazyIndex()];
 				final Object selectedValue = fetchGroupAttributeDescriptor.getType()
 						.nullSafeGet( resultSet, columnAlias, session, entity );
-				final boolean set = initializeLazyProperty( fieldName, entity, session, entry, fetchGroupAttributeDescriptor.getLazyIndex(), selectedValue );
-				if ( set ) {
-					result = selectedValue;
-					interceptor.attributeInitialized( fetchGroupAttributeDescriptor.getName() );
+				if ( selectedValue instanceof CompletionStage ) {
+					// This happens with a lazy one-to-one (bytecode enhancement enabled)
+					CompletionStage<Object> selectedValueStage = (CompletionStage<Object>) selectedValue;
+					resultStage = resultStage
+							.thenCompose( result -> selectedValueStage
+									.thenApply( selected -> {
+										final boolean set = initializeLazyProperty( fieldName, entity, session, entry, fetchGroupAttributeDescriptor.getLazyIndex(), selected );
+										if ( set ) {
+											interceptor.attributeInitialized( fetchGroupAttributeDescriptor.getName() );
+											return selected;
+										}
+										return result;
+									} )
+							);
+				}
+				else {
+					final boolean set = initializeLazyProperty( fieldName, entity, session, entry, fetchGroupAttributeDescriptor.getLazyIndex(), selectedValue );
+					if ( set ) {
+						resultStage = completedFuture( selectedValue );
+						interceptor.attributeInitialized( fetchGroupAttributeDescriptor.getName() );
+					}
 				}
 			}
 			catch (SQLException sqle) {
@@ -1301,8 +1319,10 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			}
 		}
 
-		log.trace( "Done initializing lazy properties" );
-		return result;
+		return resultStage.thenApply( result -> {
+			log.trace( "Done initializing lazy properties" );
+			return result;
+		} );
 	}
 
 	default CompletionStage<Object> reactiveInitializeEnhancedEntityUsedAsProxy(
