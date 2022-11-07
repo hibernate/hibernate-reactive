@@ -42,9 +42,10 @@ import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.session.ReactiveQueryExecutor;
 
 import io.smallrye.mutiny.Uni;
+
+import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.stat.Statistics;
 
 import static org.hibernate.internal.util.LockModeConverter.convertToLockMode;
@@ -2092,7 +2093,7 @@ public interface Mutiny {
 			throw LOG.sessionClosedLazyInitializationException();
 		}
 		return Uni.createFrom().completionStage(
-				( (ReactiveQueryExecutor) session ).reactiveFetch( association, false )
+				ReactiveQueryExecutorLookup.extract( session ).reactiveFetch( association, false )
 		);
 	}
 }
