@@ -34,12 +34,12 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.CockroachDB192Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.OptimisticLockStyle;
+import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
@@ -1206,8 +1206,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			throw new AssertionFailure( "no lazy properties" );
 		}
 
-		final PersistentAttributeInterceptor interceptor =
-				( (PersistentAttributeInterceptable) entity ).$$_hibernate_getInterceptor();
+		final PersistentAttributeInterceptor interceptor = ManagedTypeHelper.asPersistentAttributeInterceptable( entity ).$$_hibernate_getInterceptor();
 		if ( interceptor == null ) {
 			throw new AssertionFailure( "Expecting bytecode interceptor to be non-null" );
 		}

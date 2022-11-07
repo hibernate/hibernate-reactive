@@ -32,6 +32,7 @@ import org.hibernate.LockMode;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.internal.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -2076,8 +2077,8 @@ public interface Mutiny {
 			//this unfortunately doesn't work for stateless session because the session ref gets set to null
 			session = ( (AbstractPersistentCollection) association ).getSession();
 		}
-		else if ( association instanceof PersistentAttributeInterceptable) {
-			final PersistentAttributeInterceptable interceptable = (PersistentAttributeInterceptable) association;
+		else if ( ManagedTypeHelper.isPersistentAttributeInterceptable( association ) ) {
+			final PersistentAttributeInterceptable interceptable = ManagedTypeHelper.asPersistentAttributeInterceptable( association );
 			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
 			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor) {
 				session = ( (EnhancementAsProxyLazinessInterceptor) interceptor ).getLinkedSession();
