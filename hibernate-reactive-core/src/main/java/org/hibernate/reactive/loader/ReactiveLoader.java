@@ -19,7 +19,7 @@ import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.reactive.adaptor.impl.QueryParametersAdaptor;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.pool.impl.Parameters;
-import org.hibernate.reactive.session.ReactiveQueryExecutor;
+import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.transform.ResultTransformer;
 
 import java.sql.ResultSet;
@@ -128,12 +128,7 @@ public interface ReactiveLoader {
 			sql = parameters().processLimit( sql, parameterArray, LimitHelper.hasFirstRow( queryParameters.getRowSelection() ) );
 		}
 
-		//N.B. performance trap: always try to cast to ReactiveQueryExecutor even when only needing a ReactiveConnectionSupplier
-		//as we otherwise trigger a strong scalability issue.
-		//See also:
-		// - https://bugs.openjdk.org/browse/JDK-8180450
-		// - https://github.com/hibernate/hibernate-reactive/issues/1399
-		return ((ReactiveQueryExecutor) session).getReactiveConnection()
+		return ReactiveQueryExecutorLookup.extract( session ).getReactiveConnection()
 				.selectJdbc( sql, parameterArray );
 	}
 

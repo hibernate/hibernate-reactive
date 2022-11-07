@@ -15,7 +15,7 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
-import org.hibernate.reactive.session.ReactiveQueryExecutor;
+import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.ForeignKeyDirection;
@@ -46,7 +46,7 @@ public class EntityTypes {
                                            SharedSessionContractImplementor session) {
         if ( idOrUniqueKey != null && !isNull( entityType, owner, session ) ) {
             if ( entityType.isReferenceToPrimaryKey() ) {
-                return ((ReactiveQueryExecutor) session).reactiveInternalLoad(
+                return ReactiveQueryExecutorLookup.extract( session ).reactiveInternalLoad(
                         entityType.getAssociatedEntityName(),
                         (Serializable) idOrUniqueKey,
                         true,

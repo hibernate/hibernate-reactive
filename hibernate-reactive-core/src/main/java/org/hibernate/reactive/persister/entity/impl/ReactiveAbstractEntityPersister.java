@@ -66,8 +66,8 @@ import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
 import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
-import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.tuple.MutinyValueGenerator;
@@ -137,7 +137,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	default ReactiveConnection getReactiveConnection(SharedSessionContractImplementor session) {
-		return ((ReactiveConnectionSupplier) session).getReactiveConnection();
+		return ReactiveQueryExecutorLookup.extract( session ).getReactiveConnection();
 	}
 
 	String getSqlInsertGeneratedValuesSelectString();
