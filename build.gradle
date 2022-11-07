@@ -50,10 +50,10 @@ version = projectVersion
 // allows overriding the build using a parameter, which can be
 // useful to monitor compatibility for upcoming versions on CI:
 //
-// ./gradlew clean build -PhibernateOrmVersion=5.6.9-SNAPSHOT
+// ./gradlew clean build -PhibernateOrmVersion=5.6.15-SNAPSHOT
 ext {
     if ( !project.hasProperty('hibernateOrmVersion') ) {
-        hibernateOrmVersion = '5.6.12.Final'
+        hibernateOrmVersion = '5.6.14.Final'
     }
     // For ORM, we need a parsed version (to get the family, ...)
 
