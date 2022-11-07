@@ -18,6 +18,7 @@ import org.hibernate.StaleObjectStateException;
 import org.hibernate.WrongClassException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.engine.internal.CascadePoint;
+import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -49,6 +50,10 @@ import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.TypeHelper;
 
+import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
+import static org.hibernate.engine.internal.ManagedTypeHelper.asSelfDirtinessTracker;
+import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
+import static org.hibernate.engine.internal.ManagedTypeHelper.isSelfDirtinessTracker;
 import static org.hibernate.event.internal.EntityState.DETACHED;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -128,8 +133,8 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 					entity = li.getImplementation();
 				}
 			}
-			else if ( original instanceof PersistentAttributeInterceptable ) {
-				final PersistentAttributeInterceptable interceptable = (PersistentAttributeInterceptable) original;
+			else if ( isPersistentAttributeInterceptable( original ) ) {
+				final PersistentAttributeInterceptable interceptable = ManagedTypeHelper.asPersistentAttributeInterceptable( original );
 				final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
 				if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
 					final EnhancementAsProxyLazinessInterceptor proxyInterceptor = (EnhancementAsProxyLazinessInterceptor) interceptor;
@@ -260,8 +265,8 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 				.thenAccept( v -> {
 					event.setResult(copy);
 
-					if (copy instanceof PersistentAttributeInterceptable) {
-						final PersistentAttributeInterceptable interceptable = (PersistentAttributeInterceptable) copy;
+					if ( isPersistentAttributeInterceptable( copy ) ) {
+						final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( copy );
 						final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
 						if (interceptor == null) {
 							persister.getBytecodeEnhancementMetadata().injectInterceptor( copy, id, session );
@@ -377,11 +382,11 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			return source.getPersistenceContextInternal().unproxy( managed );
 		}
 
-		if ( incoming instanceof PersistentAttributeInterceptable
+		if ( isPersistentAttributeInterceptable( incoming )
 				&& persister.getBytecodeEnhancementMetadata().isEnhancedForLazyLoading() ) {
 
-			final PersistentAttributeInterceptor incomingInterceptor = ( (PersistentAttributeInterceptable) incoming ).$$_hibernate_getInterceptor();
-			final PersistentAttributeInterceptor managedInterceptor = ( (PersistentAttributeInterceptable) managed ).$$_hibernate_getInterceptor();
+			final PersistentAttributeInterceptor incomingInterceptor = asPersistentAttributeInterceptable( incoming ).$$_hibernate_getInterceptor();
+			final PersistentAttributeInterceptor managedInterceptor = asPersistentAttributeInterceptable( managed ).$$_hibernate_getInterceptor();
 
 			// todo - do we need to specially handle the case where both `incoming` and `managed` are initialized, but
 			//		with different attributes initialized?
@@ -407,10 +412,10 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 
 	private void markInterceptorDirty(final Object entity, final Object target, EntityPersister persister) {
 		// for enhanced entities, copy over the dirty attributes
-		if ( entity instanceof SelfDirtinessTracker && target instanceof SelfDirtinessTracker ) {
+		if ( isSelfDirtinessTracker( entity ) && isSelfDirtinessTracker( target ) ) {
 			// clear, because setting the embedded attributes dirties them
-			SelfDirtinessTracker entityTracker = (SelfDirtinessTracker) entity;
-			SelfDirtinessTracker targetTracker = (SelfDirtinessTracker) target;
+			SelfDirtinessTracker entityTracker = asSelfDirtinessTracker( entity );
+			SelfDirtinessTracker targetTracker = asSelfDirtinessTracker( target );
 			targetTracker.$$_hibernate_clearDirtyAttributes();
 			for ( String fieldName : entityTracker.$$_hibernate_getDirtyAttributes() ) {
 				targetTracker.$$_hibernate_trackChange( fieldName );

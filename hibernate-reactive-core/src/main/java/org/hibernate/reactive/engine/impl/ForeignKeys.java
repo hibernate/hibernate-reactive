@@ -9,9 +9,9 @@ import org.hibernate.EntityMode;
 import org.hibernate.HibernateException;
 import org.hibernate.TransientObjectException;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
+import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
 import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.StringHelper;
@@ -181,8 +181,8 @@ public final class ForeignKeys {
 			// When bytecode-enhancement is used for dirty-checking, the change should
 			// only be tracked when returnedValue was nullified (1)).
 			if ( value != returnedValue && returnedValue == null
-					&& self instanceof SelfDirtinessTracker ) {
-				( (SelfDirtinessTracker) self ).$$_hibernate_trackChange( propertyName );
+					&& ManagedTypeHelper.isSelfDirtinessTracker( self ) ) {
+				ManagedTypeHelper.asSelfDirtinessTracker( self ).$$_hibernate_trackChange( propertyName );
 			}
 		}
 

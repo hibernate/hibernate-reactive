@@ -105,6 +105,8 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 
+import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
+import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.engine.spi.PersistenceContext.NaturalIdHelper.INVALID_NATURAL_ID_REFERENCE;
 import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
 import static org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister.forceInitialize;
@@ -276,8 +278,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						.thenApply( v -> association );
 			}
 		}
-		else if ( association instanceof PersistentAttributeInterceptable) {
-			final PersistentAttributeInterceptable interceptable = (PersistentAttributeInterceptable) association;
+		else if ( isPersistentAttributeInterceptable( association ) ) {
+			final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( association );
 			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
 			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor) {
 				EnhancementAsProxyLazinessInterceptor eapli = (EnhancementAsProxyLazinessInterceptor) interceptor;

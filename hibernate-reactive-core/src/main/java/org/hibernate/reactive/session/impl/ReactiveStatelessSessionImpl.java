@@ -66,6 +66,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
+import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.generateId;
 import static org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister.forceInitialize;
@@ -803,8 +805,8 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 						.thenApply( v -> association );
 			}
 		}
-		else if ( association instanceof PersistentAttributeInterceptable) {
-			final PersistentAttributeInterceptable interceptable = (PersistentAttributeInterceptable) association;
+		else if ( isPersistentAttributeInterceptable( association ) ) {
+			final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( association );
 			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
 			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor) {
 				EnhancementAsProxyLazinessInterceptor eapli = (EnhancementAsProxyLazinessInterceptor) interceptor;

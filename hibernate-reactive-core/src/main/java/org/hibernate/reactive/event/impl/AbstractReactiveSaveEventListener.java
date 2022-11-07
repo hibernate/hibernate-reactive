@@ -15,6 +15,7 @@ import org.hibernate.LockMode;
 import org.hibernate.NonUniqueObjectException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.engine.internal.CascadePoint;
+import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityEntryExtraState;
@@ -115,9 +116,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			boolean requiresImmediateIdAccess) {
 		callbackRegistry.preCreate( entity );
 
-		if ( entity instanceof SelfDirtinessTracker ) {
-			( (SelfDirtinessTracker) entity ).$$_hibernate_clearDirtyAttributes();
-		}
+		ManagedTypeHelper.processIfSelfDirtinessTracker( entity, SelfDirtinessTracker::$$_hibernate_clearDirtyAttributes );
 
 		EntityPersister persister = source.getEntityPersister( entityName, entity );
 		boolean autoincrement = persister.isIdentifierAssignedByInsert();

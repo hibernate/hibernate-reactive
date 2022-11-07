@@ -8,6 +8,7 @@ package org.hibernate.reactive.event.impl;
 import org.hibernate.*;
 import org.hibernate.action.internal.DelayedPostInsertIdentifier;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
+import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.*;
@@ -225,13 +226,12 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 				return true;
 			}
 			else {
-				if ( event.getEntity() instanceof SelfDirtinessTracker ) {
-					( (SelfDirtinessTracker) event.getEntity() ).$$_hibernate_clearDirtyAttributes();
-				}
+				final Object entity = event.getEntity();
+				ManagedTypeHelper.processIfSelfDirtinessTracker( entity, SelfDirtinessTracker::$$_hibernate_clearDirtyAttributes );
 				event.getSession()
 						.getFactory()
 						.getCustomEntityDirtinessStrategy()
-						.resetDirty( event.getEntity(), event.getEntityEntry().getPersister(), event.getSession() );
+						.resetDirty( entity, event.getEntityEntry().getPersister(), event.getSession() );
 				return false;
 			}
 		}
@@ -504,12 +504,13 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 		);
 
 		if ( dirtyProperties == null ) {
-			if ( entity instanceof SelfDirtinessTracker ) {
-				if ( ( (SelfDirtinessTracker) entity ).$$_hibernate_hasDirtyAttributes() || persister.hasMutableProperties() ) {
+			if ( ManagedTypeHelper.isSelfDirtinessTracker( entity ) ) {
+				final SelfDirtinessTracker tracker = ManagedTypeHelper.asSelfDirtinessTracker( entity );
+				if ( tracker.$$_hibernate_hasDirtyAttributes() || persister.hasMutableProperties() ) {
 					dirtyProperties = persister.resolveDirtyAttributeIndexes(
 							values,
 							loadedState,
-							( (SelfDirtinessTracker) entity ).$$_hibernate_getDirtyAttributes(),
+							tracker.$$_hibernate_getDirtyAttributes(),
 							session
 					);
 				}
