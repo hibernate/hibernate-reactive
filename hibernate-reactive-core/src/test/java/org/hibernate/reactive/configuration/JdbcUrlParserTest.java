@@ -12,13 +12,16 @@ import java.util.Map;
 import org.hibernate.HibernateError;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.sqlclient.SqlConnectOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.H2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.createJdbcUrl;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.junit.Assert.assertThrows;
@@ -32,6 +35,9 @@ import static org.junit.Assert.assertThrows;
 public class JdbcUrlParserTest {
 
 	private static final String DEFAULT_DB = "hreactDB";
+
+	@Rule
+	public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( H2 );
 
 	@Test
 	public void exceptionWhenNull() {

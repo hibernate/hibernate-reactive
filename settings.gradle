@@ -82,6 +82,7 @@ logger.lifecycle "Java versions for main code: " + gradle.ext.javaVersions.main
 logger.lifecycle "Java versions for tests: " + gradle.ext.javaVersions.test
 
 include 'hibernate-reactive-core'
+include 'hibernate-reactive-h2'
 include 'session-example'
 include 'native-sql-example'
 include 'verticle-postgres-it'

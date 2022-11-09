@@ -89,7 +89,7 @@ jobs:
     strategy:
       matrix:
         orm-version: [ '[5.6,5.7)' ]
-        db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer', 'Oracle' ]
+        db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer', 'Oracle', 'H2' ]
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 11
@@ -100,4 +100,3 @@ jobs:
         run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate:hibernate-core -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing -PenableJBossSnapshotsRep
       - name: Build and Test with ${{ matrix.db }}
         run: ./gradlew build -Pdb=${{ matrix.db }} -Pdocker -PhibernateOrmVersion='${{ matrix.orm-version }}' -PskipOrmVersionParsing -PenableJBossSnapshotsRep -PshowStandardOutput
-

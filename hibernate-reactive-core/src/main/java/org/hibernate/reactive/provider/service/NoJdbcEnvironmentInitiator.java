@@ -9,6 +9,7 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.dialect.CockroachDB201Dialect;
 import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.H2Dialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
 import org.hibernate.dialect.Oracle12cDialect;
@@ -35,7 +36,7 @@ import java.util.Map;
 /**
  * A Hibernate {@link StandardServiceInitiator service initiator} that
  * provides an implementation of {@link JdbcEnvironment} that infers
- * the Hibernate {@link org.hibernate.dialect.Dialect} from the JDBC URL.
+ * the Hibernate {@link Dialect} from the JDBC URL.
  */
 public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
@@ -146,6 +147,9 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 		}
 		else if ( url.startsWith( "oracle:" ) ) {
 			return Oracle12cDialect.class;
+		}
+		else if ( url.startsWith( "h2:" ) ) {
+			return H2Dialect.class;
 		}
 		else {
 			return null;

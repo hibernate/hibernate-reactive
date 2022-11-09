@@ -400,11 +400,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		} );
 
 		Class<?> idClass = delegate().getIdentifierType().getReturnedClass();
-		if ( idClass.equals(Integer.class) || idClass.equals(Short.class) ) {
-			// since on MySQL we can only retrieve Long values, adjust to Long
-			// id will be cast back to the right type by castToIdentifierType()
-			idClass = Long.class;
-		}
 		return getReactiveConnection( session )
 				//Note: in ORM core there are other ways to fetch the generated identity:
 				//      getGeneratedKeys(), or an extra round select statement. But we

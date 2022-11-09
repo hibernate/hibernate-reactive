@@ -21,6 +21,7 @@ import org.junit.Test;
 import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.H2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
@@ -53,7 +54,7 @@ public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 	}
 
 	@Rule
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( DB2 );
+	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( DB2, H2 );
 
 	protected Configuration constructConfiguration(String action) {
 		Configuration configuration = super.constructConfiguration();
