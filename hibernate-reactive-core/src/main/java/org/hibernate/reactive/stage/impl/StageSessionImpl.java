@@ -27,7 +27,11 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.Stage.Query;
 
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
@@ -98,6 +102,11 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public <R> Query<R> createSelectQuery(String queryString) {
+		return null;
+	}
+
+	@Override
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey) {
 		return delegate.reactiveFind( entityClass, primaryKey, null, null );
 	}
@@ -117,7 +126,12 @@ public class StageSessionImpl implements Stage.Session {
 		return delegate.reactiveFind( entityClass, primaryKey, new LockOptions( lockMode ), null );
 	}
 
-//	@Override
+	@Override
+	public <T> CompletionStage<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	//	@Override
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockOptions lockOptions) {
 		return delegate.reactiveFind( entityClass, primaryKey, lockOptions, null );
 	}
@@ -168,7 +182,12 @@ public class StageSessionImpl implements Stage.Session {
 		return delegate.reactiveRefresh( entity, new LockOptions(lockMode) );
 	}
 
-//	@Override
+	@Override
+	public CompletionStage<Void> refresh(Object entity, LockModeType lockModeType) {
+		return Stage.Session.super.refresh( entity, lockModeType );
+	}
+
+	//	@Override
 	public CompletionStage<Void> refresh(Object entity, LockOptions lockOptions) {
 		return delegate.reactiveRefresh( entity, lockOptions );
 	}
@@ -183,7 +202,12 @@ public class StageSessionImpl implements Stage.Session {
 		return delegate.reactiveLock( entity, new LockOptions(lockMode) );
 	}
 
-//	@Override
+	@Override
+	public CompletionStage<Void> lock(Object entity, LockModeType lockModeType) {
+		return Stage.Session.super.lock( entity, lockModeType );
+	}
+
+	//	@Override
 	public CompletionStage<Void> lock(Object entity, LockOptions lockOptions) {
 		return delegate.reactiveLock( entity, lockOptions );
 	}
@@ -224,6 +248,11 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public Stage.Session setFlushMode(FlushModeType flushModeType) {
+		return Stage.Session.super.setFlushMode( flushModeType );
+	}
+
+	@Override
 	public Stage.Session setDefaultReadOnly(boolean readOnly) {
 		delegate.setDefaultReadOnly(readOnly);
 		return this;
@@ -252,6 +281,16 @@ public class StageSessionImpl implements Stage.Session {
 	public Stage.Session setCacheMode(CacheMode cacheMode) {
 		delegate.setCacheMode(cacheMode);
 		return this;
+	}
+
+	@Override
+	public Stage.Session setCacheStoreMode(CacheStoreMode cacheStoreMode) {
+		return Stage.Session.super.setCacheStoreMode( cacheStoreMode );
+	}
+
+	@Override
+	public Stage.Session setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+		return Stage.Session.super.setCacheRetrieveMode( cacheRetrieveMode );
 	}
 
 	@Override
@@ -427,6 +466,7 @@ public class StageSessionImpl implements Stage.Session {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
 	@Override
 	public <R> Query<R> createQuery(String queryString) {
 		// TODO Auto-generated method stub

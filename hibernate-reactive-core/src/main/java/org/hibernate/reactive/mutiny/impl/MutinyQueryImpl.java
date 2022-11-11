@@ -6,70 +6,90 @@
 package org.hibernate.reactive.mutiny.impl;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
+import org.hibernate.jpa.internal.util.LockModeTypeHelper;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.session.ReactiveQuery;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
 
 /**
  * Implementation of {@link Mutiny.Query}.
  */
-// FIXME: [ORM-6]
 public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
+
+	private final ReactiveQuery<R> delegate;
+	private final MutinySessionFactoryImpl factory;
+
+	public MutinyQueryImpl(ReactiveQuery<R> delegate, MutinySessionFactoryImpl factory) {
+		this.delegate = delegate;
+		this.factory = factory;
+	}
 
 	@Override
 	public Mutiny.Query<R> setParameter(int parameter, Object argument) {
-		return null;
+		delegate.setParameter( parameter, argument );
+		return this;
+	}
+
+	private <T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
+		return factory.uni( stageSupplier );
 	}
 
 	@Override
 	public Mutiny.Query<R> setParameter(String parameter, Object argument) {
-		return null;
+		delegate.setParameter( parameter, argument );
+		return this;
 	}
 
 	@Override
 	public <T> Mutiny.Query<R> setParameter(Parameter<T> parameter, T argument) {
-		return null;
+		delegate.setParameter( parameter, argument );
+		return this;
 	}
 
 	@Override
 	public Mutiny.Query<R> setMaxResults(int maxResults) {
-		return null;
+		return (Mutiny.Query) delegate.setMaxResults( maxResults );
 	}
 
 	@Override
 	public Mutiny.Query<R> setFirstResult(int firstResult) {
-		return null;
+		return (Mutiny.Query) delegate.setFirstResult( firstResult );
 	}
 
 	@Override
 	public int getMaxResults() {
-		return 0;
+		return delegate.getMaxResults();
 	}
 
 	@Override
 	public int getFirstResult() {
-		return 0;
+		return delegate.getFirstResult();
 	}
 
 	@Override
 	public Uni<R> getSingleResult() {
-		return null;
+		return uni( delegate::getReactiveSingleResult );
 	}
 
 	@Override
 	public Uni<R> getSingleResultOrNull() {
-		return null;
+		return uni( delegate::getReactiveSingleResultOrNull );
 	}
 
 	@Override
 	public Uni<List<R>> getResultList() {
-		return null;
+		return uni( delegate::getReactiveResultList );
 	}
 
 	@Override
@@ -79,71 +99,87 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 
 	@Override
 	public Mutiny.Query<R> setReadOnly(boolean readOnly) {
-		return null;
+		delegate.setReadOnly( readOnly );
+		return this;
+
 	}
 
 	@Override
 	public boolean isReadOnly() {
-		return false;
+		return delegate.isReadOnly();
 	}
 
 	@Override
 	public Mutiny.Query<R> setComment(String comment) {
-		return null;
+		delegate.setComment( comment );
+		return this;
 	}
 
 	@Override
 	public Mutiny.Query<R> setCacheable(boolean cacheable) {
-		return null;
+		delegate.setCacheable( cacheable );
+		return this;
 	}
 
 	@Override
 	public boolean isCacheable() {
-		return false;
+		return delegate.isCacheable();
 	}
 
 	@Override
 	public Mutiny.Query<R> setCacheRegion(String cacheRegion) {
-		return null;
-	}
-
-	@Override
-	public String getCacheRegion() {
-		return null;
+		delegate.setCacheRegion( cacheRegion );
+		return this;
 	}
 
 	@Override
 	public Mutiny.Query<R> setCacheMode(CacheMode cacheMode) {
-		return null;
+		delegate.setCacheMode( cacheMode );
+		return this;
+	}
+
+	@Override
+	public String getCacheRegion() {
+		return delegate.getCacheRegion();
 	}
 
 	@Override
 	public CacheMode getCacheMode() {
-		return null;
+		return delegate.getCacheMode();
 	}
 
 	@Override
 	public Mutiny.Query<R> setFlushMode(FlushMode flushMode) {
-		return null;
+		delegate.setHibernateFlushMode( flushMode );
+		return this;
 	}
 
 	@Override
-	public FlushMode getFlushMode() {
-		return null;
+	public Mutiny.Query<R> setFlushMode(FlushModeType flushModeType) {
+		delegate.setFlushMode( flushModeType );
+		return this;
+	}
+
+	@Override
+	public FlushModeType getFlushMode() {
+		return delegate.getFlushMode();
 	}
 
 	@Override
 	public Mutiny.Query<R> setLockMode(LockMode lockMode) {
-		return null;
+		LockModeType lockModeType = LockModeTypeHelper.getLockModeType( lockMode );
+		delegate.setLockMode( lockModeType );
+		return this;
 	}
 
 	@Override
 	public Mutiny.Query<R> setLockMode(String alias, LockMode lockMode) {
-		return null;
+		delegate.setLockMode( alias, lockMode );
+		return this;
 	}
 
 	@Override
 	public Mutiny.Query<R> setPlan(EntityGraph<R> entityGraph) {
-		return null;
+		throw new UnsupportedOperationException("Not yet implemented");
 	}
 }

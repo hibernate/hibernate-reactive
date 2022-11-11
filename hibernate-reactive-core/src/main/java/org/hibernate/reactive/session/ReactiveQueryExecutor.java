@@ -59,10 +59,10 @@ public interface ReactiveQueryExecutor extends ReactiveConnectionSupplier {
 
 	<T> EntityGraph<T> getEntityGraph(Class<T> entity, String name);
 
-//	<R> ReactiveQuery<R> createReactiveQuery(String queryString);
-//
-//	<R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType);
-//
+	<R> ReactiveQuery<R> createReactiveQuery(String queryString);
+
+	<R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType);
+
 //	<R> ReactiveQuery<R> createReactiveNamedQuery(String name);
 //
 //	<R> ReactiveQuery<R> createReactiveNamedQuery(String name, Class<R> resultClass);

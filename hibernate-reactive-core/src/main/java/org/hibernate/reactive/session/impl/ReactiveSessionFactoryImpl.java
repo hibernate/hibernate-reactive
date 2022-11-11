@@ -8,6 +8,7 @@ package org.hibernate.reactive.session.impl;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
 import org.hibernate.reactive.stage.Stage;
@@ -31,6 +32,11 @@ public class ReactiveSessionFactoryImpl extends SessionFactoryImpl {
 //		contributions.put( Types.TIMESTAMP, singleton( LocalDateTimeType.class.getName() ) );
 //		contributions.put( Types.TIME, singleton( LocalTimeType.class.getName() ) );
 //		contributions.put( Types.DATE, singleton( LocalDateType.class.getName() ) );
+	}
+
+	@Override
+	public QueryEngine getQueryEngine() {
+		return super.getQueryEngine();
 	}
 
 	@Override
