@@ -103,12 +103,12 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <R> Mutiny.Query<R> createQuery(String queryString) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createQuery(String queryString, Class<R> resultType) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ), factory );
 	}
 
 	@Override

@@ -296,7 +296,7 @@ public interface Mutiny {
 		 *
 		 * @see Session#getFlushMode()
 		 */
-		FlushMode getFlushMode();
+		FlushModeType getFlushMode();
 
 		/**
 		 * Set the {@link LockMode} to use for the whole query.

@@ -61,6 +61,8 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.query.spi.QueryEngine;
+import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.reactive.common.InternalStateAssertions;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
@@ -78,6 +80,8 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.query.sqm.iternal.ReactiveQuerySqmImpl;
+import org.hibernate.reactive.session.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
@@ -279,6 +283,43 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <E,T> CompletionStage<T> reactiveFetch(E entity, Attribute<E,T> field) {
 		return ( (ReactiveEntityPersister) getEntityPersister( null, entity ) )
 				.reactiveInitializeLazyProperty( field, entity, this );
+	}
+
+	@Override
+	public <R> ReactiveQuery<R> createReactiveQuery(String queryString) {
+		return createReactiveQuery( queryString, null );
+	}
+
+	@Override
+	public <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> expectedResultType) {
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			final QueryEngine queryEngine = getFactory().getQueryEngine();
+			final QueryInterpretationCache interpretationCache = queryEngine.getInterpretationCache();
+
+			final ReactiveQuery<R> query = new ReactiveQuerySqmImpl<>(
+					queryString,
+					interpretationCache.resolveHqlInterpretation(
+							queryString,
+							expectedResultType,
+							s -> queryEngine.getHqlTranslator().translate( queryString, expectedResultType )
+					),
+					expectedResultType,
+					this
+			);
+
+			applyQuerySettingsAndHints( query );
+			query.setComment( queryString );
+
+			return query;
+		}
+		catch (RuntimeException e) {
+			markForRollbackOnly();
+			throw getExceptionConverter().convert( e );
+		}
 	}
 
 	/**

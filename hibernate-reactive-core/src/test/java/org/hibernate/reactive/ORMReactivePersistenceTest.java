@@ -9,17 +9,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.query.SelectionQuery;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
@@ -29,6 +25,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 
@@ -60,7 +60,6 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 		StandardServiceRegistry registry = builder.build();
 		ormFactory = configuration.buildSessionFactory( registry );
 	}
-
 	@After
 	public void closeOrmFactory() {
 		ormFactory.close();
@@ -76,6 +75,12 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 			session.getTransaction().commit();
 		}
 
+		try (Session session = ormFactory.openSession()) {
+			SelectionQuery<?> from_flour = session.createSelectionQuery( "from Flour" );
+			List<?> list = from_flour.list();
+			System.out.println(list);
+		}
+
 		// Check database with Stage session and verify 'almond' flour exists
 		test( context, openSession()
 				.thenCompose( stageSession -> stageSession.find( Flour.class, almond.id ) )
@@ -87,17 +92,19 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	public void testORMWitMutinySession(TestContext context) {
 		final Flour rose = new Flour( 2, "Rose", "made from ground rose pedals.", "Full fragrance" );
 
-		Session ormSession = ormFactory.openSession();
-		ormSession.beginTransaction();
-		ormSession.persist( rose );
-		ormSession.getTransaction().commit();
-		ormSession.close();
+		try (Session ormSession = ormFactory.openSession()) {
+			ormSession.beginTransaction();
+			ormSession.persist( rose );
+			ormSession.getTransaction().commit();
+		}
 
-		// Check database with Mutiny session and verify 'rose' flour exists
-		test( context, openMutinySession()
-				.chain( session -> session.find( Flour.class, rose.id ) )
-				.invoke( foundRose -> context.assertEquals( rose, foundRose ) )
-		);
+		try (Session ormSession = ormFactory.openSession()) {
+			List<Flour> flours = ormSession
+					.createQuery( "from Flour", Flour.class )
+					.list();
+			System.out.println( from_flour );
+		}
+
 	}
 
 	@Entity(name = "Flour")

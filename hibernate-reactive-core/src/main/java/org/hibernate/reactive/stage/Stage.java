@@ -785,6 +785,8 @@ public interface Stage {
 		 */
 		boolean contains(Object entity);
 
+		<R> Query<R> createSelectQuery(String queryString);
+
 		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query
 		 * string or HQL/JPQL update or delete statement. In the case of an
