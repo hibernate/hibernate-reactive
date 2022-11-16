@@ -12,15 +12,16 @@ import java.util.function.Supplier;
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
-import org.hibernate.jpa.internal.util.LockModeTypeHelper;
+import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.ReactiveQuery;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
-import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
+
+import static org.hibernate.jpa.internal.util.LockModeTypeHelper.getLockModeType;
 
 /**
  * Implementation of {@link Mutiny.Query}.
@@ -35,14 +36,14 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 		this.factory = factory;
 	}
 
+	private <T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
+		return factory.uni( stageSupplier );
+	}
+
 	@Override
 	public Mutiny.Query<R> setParameter(int parameter, Object argument) {
 		delegate.setParameter( parameter, argument );
 		return this;
-	}
-
-	private <T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
-		return factory.uni( stageSupplier );
 	}
 
 	@Override
@@ -167,8 +168,7 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 
 	@Override
 	public Mutiny.Query<R> setLockMode(LockMode lockMode) {
-		LockModeType lockModeType = LockModeTypeHelper.getLockModeType( lockMode );
-		delegate.setLockMode( lockModeType );
+		delegate.setLockMode( getLockModeType( lockMode ) );
 		return this;
 	}
 
@@ -180,6 +180,6 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 
 	@Override
 	public Mutiny.Query<R> setPlan(EntityGraph<R> entityGraph) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		throw new NotYetImplementedFor6Exception();
 	}
 }
