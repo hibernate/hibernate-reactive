@@ -74,17 +74,18 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 			session.persist( almond );
 			session.getTransaction().commit();
 		}
-
-		try (Session session = ormFactory.openSession()) {
-			SelectionQuery<?> from_flour = session.createSelectionQuery( "from Flour" );
-			List<?> list = from_flour.list();
-			System.out.println( list );
-		}
+//		try (Session session = ormFactory.openSession()) {
+//			SelectionQuery<?> from_flour = session.createSelectionQuery( "from Flour" );
+//			List<?> list = from_flour.list();
+//			System.out.println( list );
+//		}
 
 		// Check database with Stage session and verify 'almond' flour exists
-		test( context, openSession()
-				.thenCompose( stageSession -> stageSession.createQuery( "from Flour" ).getResultList() )
-				.thenAccept( list -> context.assertTrue( list.size() > 0 ) )
+		test( context, getMutinySessionFactory()
+				.withSession( s -> s
+						.createQuery( "from Flour" )
+						.getResultList() )
+				.invoke( context::assertNotNull )
 		);
 	}
 
@@ -114,10 +115,9 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	@Entity(name = "Flour")
 	@Table(name = "Flour")
 	public static class Flour {
-		@Id
+
 		private Integer id;
 
-		@Column(name = "`name`")
 		private String name;
 		private String description;
 		private String type;
@@ -132,6 +132,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 			this.type = type;
 		}
 
+		@Id
 		public Integer getId() {
 			return id;
 		}
@@ -140,6 +141,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 			this.id = id;
 		}
 
+		@Column(name = "`name`")
 		public String getName() {
 			return name;
 		}

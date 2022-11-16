@@ -17,8 +17,6 @@ import org.hibernate.persister.entity.Loadable;
 import org.hibernate.query.internal.SimpleQueryOptions;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
-import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.sql.exec.internal.ReactiveSelectExecutorStandardImpl;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.Clause;
@@ -43,12 +41,7 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 	}
 
 	@Override
-	public CompletionStage<T> load(
-			Object restrictedValue,
-			Object entityInstance,
-			Boolean readOnly,
-			Boolean singleResultExpected,
-			SharedSessionContractImplementor session) {
+	public CompletionStage<T> load(Object restrictedValue, Object entityInstance, Boolean readOnly, Boolean singleResultExpected, SharedSessionContractImplementor session) {
 		final int jdbcTypeCount = getRestrictivePart().getJdbcTypeCount();
 		assert getJdbcParameters().size() % jdbcTypeCount == 0;
 		final JdbcParameterBindings jdbcParameterBindings = new JdbcParameterBindingsImpl( jdbcTypeCount );
@@ -69,7 +62,6 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 		final QueryOptions queryOptions = new SimpleQueryOptions( getLockOptions(), readOnly );
 		final Callback callback = new CallbackImpl();
 		ExecutionContext executionContext = executionContext( restrictedValue, entityInstance, session, queryOptions, callback );
-		ReactiveConnection connection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
 		return new ReactiveSelectExecutorStandardImpl()
 				.list( getJdbcSelect(), jdbcParameterBindings, executionContext, getRowTransformer(), resultConsumer( singleResultExpected ) )
 				.thenApply( this::extractEntity )

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
+import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.IllegalQueryOperationException;
@@ -23,8 +24,6 @@ import org.hibernate.query.spi.MutableQueryOptions;
 import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.SelectQueryPlan;
-import org.hibernate.query.sqm.internal.AggregatedSelectQueryPlanImpl;
-import org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan;
 import org.hibernate.query.sqm.internal.QuerySqmImpl;
 import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
 import org.hibernate.query.sqm.tree.SqmStatement;
@@ -191,7 +190,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		}
 
 		return resolveSelectReactiveQueryPlan()
-				.performList( executionContextToUse )
+				.performReactiveList( executionContextToUse )
 				.thenApply( (List<R> list) -> needsDistinct
 						? applyDistinct( sqmStatement, hasLimit, list )
 						: list
@@ -218,22 +217,19 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	private SelectReactiveQueryPlan<R> resolveSelectReactiveQueryPlan() {
 		final QueryInterpretationCache.Key cacheKey = SqmInterpretationsKey.createInterpretationsKey( this );
 		if ( cacheKey != null ) {
-			SelectQueryPlan<R> queryPlan = getSession().getFactory()
+			return (SelectReactiveQueryPlan<R>) getSession().getFactory()
 					.getQueryEngine()
 					.getInterpretationCache()
 					.resolveSelectQueryPlan( cacheKey, this::buildSelectQueryPlan );
-			return new ConcreteSqmSelectReactiveQueryPlan( queryPlan );
 		}
 		else {
-			return new ConcreteSqmSelectReactiveQueryPlan( buildSelectQueryPlan() );
+			return buildSelectQueryPlan();
 		}
 	}
 
-	private SelectQueryPlan<R> buildSelectQueryPlan() {
-		final SqmSelectStatement<R>[] concreteSqmStatements = QuerySplitter.split(
-				(SqmSelectStatement<R>) getSqmStatement(),
-				getSession().getFactory()
-		);
+	private SelectReactiveQueryPlan<R> buildSelectQueryPlan() {
+		final SqmSelectStatement<R>[] concreteSqmStatements = QuerySplitter
+				.split( (SqmSelectStatement<R>) getSqmStatement(), getSession().getFactory() );
 
 		if ( concreteSqmStatements.length > 1 ) {
 			return buildAggregatedSelectQueryPlan( concreteSqmStatements );
@@ -243,7 +239,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		}
 	}
 
-	private SelectQueryPlan<R> buildAggregatedSelectQueryPlan(SqmSelectStatement<?>[] concreteSqmStatements) {
+	private SelectReactiveQueryPlan<R> buildAggregatedSelectQueryPlan(SqmSelectStatement<?>[] concreteSqmStatements) {
 		//noinspection unchecked
 		final SelectQueryPlan<R>[] aggregatedQueryPlans = new SelectQueryPlan[ concreteSqmStatements.length ];
 
@@ -257,57 +253,15 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 			);
 		}
 
-		return new AggregatedSelectQueryPlanImpl<>( aggregatedQueryPlans );
+		throw new NotYetImplementedFor6Exception();
+		//		return new AggregatedSelectQueryPlanImpl<>( aggregatedQueryPlans );
 	}
 
-	private <T> SelectQueryPlan<T> buildConcreteSelectQueryPlan(
+	private <T> SelectReactiveQueryPlan<T> buildConcreteSelectQueryPlan(
 			SqmSelectStatement<?> concreteSqmStatement,
 			Class<T> resultType,
 			QueryOptions queryOptions) {
-		return new ConcreteSqmSelectQueryPlan<>(
-				concreteSqmStatement,
-				getQueryString(),
-				getDomainParameterXref(),
-				resultType,
-				getTupleMetadata(),
-				queryOptions
-		);
-	}
-
-	private SelectQueryPlan<R> buildQueryPlan() {
-		final SqmSelectStatement<?>[] concreteSqmStatements = QuerySplitter
-				.split( (SqmSelectStatement<?>) getSqmStatement(), getSession().getFactory() );
-
-		if ( concreteSqmStatements.length > 1 ) {
-			return buildAggregatedQueryPlan( concreteSqmStatements );
-		}
-		else {
-			return buildConcreteQueryPlan( concreteSqmStatements[0], getResultType(), getQueryOptions() );
-		}
-	}
-
-	private SelectQueryPlan<R> buildAggregatedQueryPlan(SqmSelectStatement<?>[] concreteSqmStatements) {
-		//noinspection unchecked
-		final SelectQueryPlan<R>[] aggregatedQueryPlans = new SelectQueryPlan[ concreteSqmStatements.length ];
-
-		// todo (6.0) : we want to make sure that certain thing (ResultListTransformer, etc) only get applied at the aggregator-level
-
-		for ( int i = 0, x = concreteSqmStatements.length; i < x; i++ ) {
-			aggregatedQueryPlans[i] = buildConcreteQueryPlan(
-					concreteSqmStatements[i],
-					getResultType(),
-					getQueryOptions()
-			);
-		}
-
-		return new AggregatedSelectQueryPlanImpl<>( aggregatedQueryPlans );
-	}
-
-	private <T> SelectQueryPlan<T> buildConcreteQueryPlan(
-			SqmSelectStatement<?> concreteSqmStatement,
-			Class<T> resultType,
-			QueryOptions queryOptions) {
-		return new ConcreteSqmSelectQueryPlan<>(
+		return new ConcreteSqmSelectReactiveQueryPlan<>(
 				concreteSqmStatement,
 				getQueryString(),
 				getDomainParameterXref(),
@@ -319,6 +273,6 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 
 	@Override
 	public CompletionStage<Integer> executeReactiveUpdate() {
-		return null;
+		throw new NotYetImplementedFor6Exception();
 	}
 }

@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -39,7 +38,6 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.spi.ListResultsConsumer;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 
 // FIXME: not yet reactive
