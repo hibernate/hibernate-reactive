@@ -26,6 +26,7 @@ import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryOptionsAdapter;
 import org.hibernate.query.spi.QueryParameterBindings;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
+import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
@@ -103,59 +104,57 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 		final JdbcSelect jdbcSelect = sqlAstTranslatorFactory.buildSelectTranslator( sessionFactory, sqlAst )
 				.translate( jdbcParameterBindings, QueryOptions.NONE );
 
-		final List<Object> list = sessionFactory.getJdbcServices().getJdbcSelectExecutor().list(
-				jdbcSelect,
-				jdbcParameterBindings,
-				new ExecutionContext() {
-					private final Callback callback = new CallbackImpl();
+		ExecutionContext context = new ExecutionContext() {
+			private final Callback callback = new CallbackImpl();
+			@Override
+			public SharedSessionContractImplementor getSession() {
+				return session;
+			}
+
+			@Override
+			public QueryOptions getQueryOptions() {
+				return new QueryOptionsAdapter() {
 					@Override
-					public SharedSessionContractImplementor getSession() {
-						return session;
+					public Boolean isReadOnly() {
+						return readOnly;
 					}
+				};
+			}
 
-					@Override
-					public QueryOptions getQueryOptions() {
-						return new QueryOptionsAdapter() {
-							@Override
-							public Boolean isReadOnly() {
-								return readOnly;
-							}
-						};
-					}
+			@Override
+			public String getQueryIdentifier(String sql) {
+				return sql;
+			}
 
-					@Override
-					public String getQueryIdentifier(String sql) {
-						return sql;
-					}
+			@Override
+			public QueryParameterBindings getQueryParameterBindings() {
+				return QueryParameterBindings.NO_PARAM_BINDINGS;
+			}
 
-					@Override
-					public QueryParameterBindings getQueryParameterBindings() {
-						return QueryParameterBindings.NO_PARAM_BINDINGS;
-					}
+			@Override
+			public Callback getCallback() {
+				return callback;
+			}
 
-					@Override
-					public Callback getCallback() {
-						return callback;
-					}
+		};
 
-				},
-				row -> row[0],
-				ListResultsConsumer.UniqueSemantic.FILTER
-		);
-
-		switch ( list.size() ) {
-			case 0:
+		String sql = jdbcSelect.getSql();
+		ReactiveQueryExecutorLookup.extract( session ).getReactiveConnection()
+				.selectJdbc( sql, null );
+//
+//		switch ( list.size() ) {
+//			case 0:
 				return nullFuture();
-			case 1:
-				//noinspection unchecked
-				return completedFuture( (T) list.get( 0 ) );
-		}
-		throw new HibernateException(
-				"More than one row with the given identifier was found: " +
-						ukValue +
-						", for class: " +
-						entityDescriptor.getEntityName()
-		);
+//			case 1:
+//				//noinspection unchecked
+//				return completedFuture( (T) list.get( 0 ) );
+//		}
+//		throw new HibernateException(
+//				"More than one row with the given identifier was found: " +
+//						ukValue +
+//						", for class: " +
+//						entityDescriptor.getEntityName()
+//		);
 	}
 
 	@Override

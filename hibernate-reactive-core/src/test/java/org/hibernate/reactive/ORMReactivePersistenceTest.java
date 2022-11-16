@@ -66,7 +66,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testORMWithStageSession(TestContext context) {
+	public void testReactive(TestContext context) {
 		final Flour almond = new Flour( 1, "Almond", "made from ground almonds.", "Gluten free" );
 
 		try (Session session = ormFactory.openSession()) {
@@ -78,7 +78,30 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 		try (Session session = ormFactory.openSession()) {
 			SelectionQuery<?> from_flour = session.createSelectionQuery( "from Flour" );
 			List<?> list = from_flour.list();
-			System.out.println(list);
+			System.out.println( list );
+		}
+
+		// Check database with Stage session and verify 'almond' flour exists
+		test( context, openSession()
+				.thenCompose( stageSession -> stageSession.createQuery( "from Flour" ).getResultList() )
+				.thenAccept( list -> context.assertTrue( list.size() > 0 ) )
+		);
+	}
+
+	@Test
+	public void testORM(TestContext context) {
+		final Flour almond = new Flour( 1, "Almond", "made from ground almonds.", "Gluten free" );
+
+		try (Session session = ormFactory.openSession()) {
+			session.beginTransaction();
+			session.persist( almond );
+			session.getTransaction().commit();
+		}
+
+		try (Session session = ormFactory.openSession()) {
+			SelectionQuery<?> from_flour = session.createSelectionQuery( "from Flour" );
+			List<?> list = from_flour.list();
+			System.out.println( list );
 		}
 
 		// Check database with Stage session and verify 'almond' flour exists
@@ -86,25 +109,6 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 				.thenCompose( stageSession -> stageSession.find( Flour.class, almond.id ) )
 				.thenAccept( entityFound -> context.assertEquals( almond, entityFound ) )
 		);
-	}
-
-	@Test
-	public void testORMWitMutinySession(TestContext context) {
-		final Flour rose = new Flour( 2, "Rose", "made from ground rose pedals.", "Full fragrance" );
-
-		try (Session ormSession = ormFactory.openSession()) {
-			ormSession.beginTransaction();
-			ormSession.persist( rose );
-			ormSession.getTransaction().commit();
-		}
-
-		try (Session ormSession = ormFactory.openSession()) {
-			List<Flour> flours = ormSession
-					.createQuery( "from Flour", Flour.class )
-					.list();
-			System.out.println( from_flour );
-		}
-
 	}
 
 	@Entity(name = "Flour")

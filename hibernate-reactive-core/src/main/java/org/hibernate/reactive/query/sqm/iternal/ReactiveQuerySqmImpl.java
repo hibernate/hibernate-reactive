@@ -215,20 +215,17 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		return list;
 	}
 
-	private SelectReactiveQueryPlan resolveSelectReactiveQueryPlan() {
-		final QueryInterpretationCache.Key cacheKey = SqmInterpretationsKey
-				.createInterpretationsKey( this );
+	private SelectReactiveQueryPlan<R> resolveSelectReactiveQueryPlan() {
+		final QueryInterpretationCache.Key cacheKey = SqmInterpretationsKey.createInterpretationsKey( this );
 		if ( cacheKey != null ) {
 			SelectQueryPlan<R> queryPlan = getSession().getFactory()
 					.getQueryEngine()
 					.getInterpretationCache()
 					.resolveSelectQueryPlan( cacheKey, this::buildSelectQueryPlan );
-
-			ConcreteSqmSelectReactiveQueryPlan reactiveQueryPlan = new ConcreteSqmSelectReactiveQueryPlan(  )
-			return que;
+			return new ConcreteSqmSelectReactiveQueryPlan( queryPlan );
 		}
 		else {
-			return buildSelectQueryPlan();
+			return new ConcreteSqmSelectReactiveQueryPlan( buildSelectQueryPlan() );
 		}
 	}
 
@@ -272,29 +269,14 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 				getQueryString(),
 				getDomainParameterXref(),
 				resultType,
-				tupleMetadata,
+				getTupleMetadata(),
 				queryOptions
 		);
 	}
 
-	private SelectQueryPlan<R> resolveQueryPlan() {
-		final QueryInterpretationCache.Key cacheKey = SqmInterpretationsKey.createInterpretationsKey( this );
-		if ( cacheKey != null ) {
-			return getSession().getFactory().getQueryEngine().getInterpretationCache().resolveSelectQueryPlan(
-					cacheKey,
-					this::buildQueryPlan
-			);
-		}
-		else {
-			return buildQueryPlan();
-		}
-	}
-
 	private SelectQueryPlan<R> buildQueryPlan() {
-		final SqmSelectStatement<?>[] concreteSqmStatements = QuerySplitter.split(
-				(SqmSelectStatement<?>) getSqmStatement(),
-				getSession().getFactory()
-		);
+		final SqmSelectStatement<?>[] concreteSqmStatements = QuerySplitter
+				.split( (SqmSelectStatement<?>) getSqmStatement(), getSession().getFactory() );
 
 		if ( concreteSqmStatements.length > 1 ) {
 			return buildAggregatedQueryPlan( concreteSqmStatements );
@@ -330,7 +312,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 				getQueryString(),
 				getDomainParameterXref(),
 				resultType,
-				tupleMetadata,
+				getTupleMetadata(),
 				queryOptions
 		);
 	}
