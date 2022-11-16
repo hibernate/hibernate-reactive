@@ -300,7 +300,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			final QueryEngine queryEngine = getFactory().getQueryEngine();
 			final QueryInterpretationCache interpretationCache = queryEngine.getInterpretationCache();
 
-			final ReactiveQuery<R> query = new ReactiveQuerySqmImpl<>(
+			final ReactiveQuery<R> query = new ReactiveQuerySqmImpl<R>(
 					queryString,
 					interpretationCache.resolveHqlInterpretation(
 							queryString,

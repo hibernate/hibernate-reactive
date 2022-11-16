@@ -9,14 +9,14 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.query.spi.DomainQueryExecutionContext;
-import org.hibernate.query.spi.QueryPlan;
+import org.hibernate.query.spi.SelectQueryPlan;
 
 /**
  * @see org.hibernate.query.spi.SelectQueryPlan
  */
-public interface SelectReactiveQueryPlan<R> extends QueryPlan {
+public interface SelectReactiveQueryPlan<R> extends SelectQueryPlan<R> {
 	/**
 	 * Perform (execute) the query returning a List
 	 */
-	CompletionStage<List<R>> performList(DomainQueryExecutionContext executionContext);
+	CompletionStage<List<R>> performReactiveList(DomainQueryExecutionContext executionContext);
 }
