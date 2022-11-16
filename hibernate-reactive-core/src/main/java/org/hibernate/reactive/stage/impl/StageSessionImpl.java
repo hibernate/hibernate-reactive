@@ -15,6 +15,7 @@ import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
@@ -448,89 +449,85 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new NotYetImplementedFor6Exception();
 	}
+
 	@Override
 	public <T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new NotYetImplementedFor6Exception();
 	}
+
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new NotYetImplementedFor6Exception();
 	}
+
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public <R> Query<R> createQuery(String queryString) {
-		// TODO Auto-generated method stub
-		return null;
+		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString ) );
 	}
 	@Override
 	public <R> Query<R> createQuery(String queryString, Class<R> resultType) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public <R> Query<R> createNamedQuery(String queryName) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public <R> Query<R> createNamedQuery(String queryName, Class<R> resultType) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public <R> Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public <R> Query<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public <R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public <R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public <R> Query<R> createNativeQuery(String queryString) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public <R> Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public <R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public <R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public <R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
-		// TODO Auto-generated method stub
-		return null;
+		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ) );
 	}
 
+	@Override
+	public <R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> Query<R> createNamedQuery(String queryName) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> Query<R> createNamedQuery(String queryName, Class<R> resultType) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString, Class<R> resultType) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+		throw new NotYetImplementedFor6Exception();
+	}
 }

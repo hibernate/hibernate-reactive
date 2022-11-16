@@ -41,6 +41,8 @@ import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.Metamodel;
 
@@ -128,7 +130,7 @@ public interface Mutiny {
 
 		/**
 		 * @return the maximum number results, or {@link Integer#MAX_VALUE}
-		 *          if not set
+		 * if not set
 		 */
 		int getMaxResults();
 
@@ -145,9 +147,9 @@ public interface Mutiny {
 		 * {@code Object[]}.
 		 *
 		 * @return the single resulting row
+		 *
 		 * @throws jakarta.persistence.NoResultException if there is no result
 		 * @throws jakarta.persistence.NonUniqueResultException if there are multiple results
-		 *
 		 * @see jakarta.persistence.Query#getSingleResult()
 		 */
 		Uni<R> getSingleResult();
@@ -160,8 +162,8 @@ public interface Mutiny {
 		 * returned in an instance of {@code Object[]}.
 		 *
 		 * @return the single resulting row or {@code null}
-		 * @throws jakarta.persistence.NonUniqueResultException if there are multiple results
 		 *
+		 * @throws jakarta.persistence.NonUniqueResultException if there are multiple results
 		 * @see #getSingleResult()
 		 */
 		Uni<R> getSingleResultOrNull();
@@ -255,7 +257,7 @@ public interface Mutiny {
 		 * is being executed.
 		 */
 		default Query<R> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
-			return setCacheMode( interpretCacheMode( cacheStoreMode, interpretCacheRetrieveMode(getCacheMode()) ) );
+			return setCacheMode( interpretCacheMode( cacheStoreMode, interpretCacheRetrieveMode( getCacheMode() ) ) );
 		}
 
 		/**
@@ -263,7 +265,7 @@ public interface Mutiny {
 		 * is being executed.
 		 */
 		default Query<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
-			return setCacheMode( interpretCacheMode( interpretCacheStoreMode(getCacheMode()), cacheRetrieveMode ) );
+			return setCacheMode( interpretCacheMode( interpretCacheStoreMode( getCacheMode() ), cacheRetrieveMode ) );
 		}
 
 		/**
@@ -287,8 +289,9 @@ public interface Mutiny {
 		 * being executed.
 		 */
 		default Query<R> setFlushMode(FlushModeType flushModeType) {
-			return setFlushMode( FlushModeTypeHelper.getFlushMode(flushModeType) );
+			return setFlushMode( FlushModeTypeHelper.getFlushMode( flushModeType ) );
 		}
+
 		/**
 		 * Obtain the {@link FlushMode} in effect for this query. By default,
 		 * the query inherits the {@code FlushMode} of the {@link Session}
@@ -307,7 +310,7 @@ public interface Mutiny {
 		 * Set the {@link LockModeType} to use for the whole query.
 		 */
 		default Query<R> setLockMode(LockModeType lockModeType) {
-			return setLockMode( convertToLockMode(lockModeType) );
+			return setLockMode( convertToLockMode( lockModeType ) );
 		}
 
 		/**
@@ -317,7 +320,7 @@ public interface Mutiny {
 		 * @param alias the from clause alias
 		 * @param lockMode the requested {@link LockMode}
 		 *
-		 * @see org.hibernate.query.Query#setLockMode(String,LockMode)
+		 * @see org.hibernate.query.Query#setLockMode(String, LockMode)
 		 */
 		Query<R> setLockMode(String alias, LockMode lockMode);
 
@@ -328,10 +331,10 @@ public interface Mutiny {
 		 * @param alias the from clause alias
 		 * @param lockModeType the requested {@link LockModeType}
 		 *
-		 * @see org.hibernate.query.Query#setLockMode(String,LockMode)
+		 * @see org.hibernate.query.Query#setLockMode(String, LockMode)
 		 */
 		default Query<R> setLockMode(String alias, LockModeType lockModeType) {
-			return setLockMode( alias, convertToLockMode(lockModeType) );
+			return setLockMode( alias, convertToLockMode( lockModeType ) );
 		}
 
 //		/**
@@ -404,7 +407,7 @@ public interface Mutiny {
 		 *
 		 * @return a persistent instance or null via a {@code Uni}
 		 *
-		 * @see #find(Class,Object)
+		 * @see #find(Class, Object)
 		 * @see #lock(Object, LockMode) this discussion of lock modes
 		 */
 		<T> Uni<T> find(Class<T> entityClass, Object id, LockMode lockMode);
@@ -419,11 +422,11 @@ public interface Mutiny {
 		 *
 		 * @return a persistent instance or null via a {@code Uni}
 		 *
-		 * @see #find(Class,Object)
+		 * @see #find(Class, Object)
 		 * @see #lock(Object, LockMode) this discussion of lock modes
 		 */
 		default <T> Uni<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
-			return find( entityClass, id, convertToLockMode(lockModeType) );
+			return find( entityClass, id, convertToLockMode( lockModeType ) );
 		}
 
 //		/**
@@ -447,10 +450,10 @@ public interface Mutiny {
 		 * as a fetch plan.
 		 *
 		 * @param entityGraph an {@link EntityGraph} specifying the entity
-		 *                    and associations to be fetched
+		 * and associations to be fetched
 		 * @param id an identifier
 		 *
-		 * @see #find(Class,Object)
+		 * @see #find(Class, Object)
 		 */
 		<T> Uni<T> find(EntityGraph<T> entityGraph, Object id);
 
@@ -554,7 +557,6 @@ public interface Mutiny {
 		 * @param entity the managed persistent instance to be removed
 		 *
 		 * @throws IllegalArgumentException if the given instance is not managed
-		 *
 		 * @see jakarta.persistence.EntityManager#remove(Object)
 		 */
 		Uni<Void> remove(Object entity);
@@ -607,7 +609,6 @@ public interface Mutiny {
 		 * @param entity a managed persistent instance
 		 *
 		 * @throws IllegalArgumentException if the given instance is not managed
-		 *
 		 * @see jakarta.persistence.EntityManager#refresh(Object)
 		 */
 		Uni<Void> refresh(Object entity);
@@ -633,7 +634,7 @@ public interface Mutiny {
 		 * @see #refresh(Object)
 		 */
 		default Uni<Void> refresh(Object entity, LockModeType lockModeType) {
-			return refresh( entity, convertToLockMode(lockModeType) );
+			return refresh( entity, convertToLockMode( lockModeType ) );
 		}
 
 //		/**
@@ -667,7 +668,7 @@ public interface Mutiny {
 		 * <li>schedule a version increment just before the end of the transaction
 		 * with {@link LockMode#OPTIMISTIC_FORCE_INCREMENT}.
 		 * </ul>
-		 *
+		 * <p>
 		 * This operation cascades to associated instances if the association is
 		 * mapped with {@link org.hibernate.annotations.CascadeType#LOCK}.
 		 *
@@ -691,7 +692,7 @@ public interface Mutiny {
 		 * <li>schedule a version increment just before the end of the transaction
 		 * with {@link LockModeType#OPTIMISTIC_FORCE_INCREMENT}.
 		 * </ul>
-		 *
+		 * <p>
 		 * This operation cascades to associated instances if the association is
 		 * mapped with {@link org.hibernate.annotations.CascadeType#LOCK}.
 		 *
@@ -701,7 +702,7 @@ public interface Mutiny {
 		 * @throws IllegalArgumentException if the given instance is not managed
 		 */
 		default Uni<Void> lock(Object entity, LockModeType lockModeType) {
-			return lock( entity, convertToLockMode(lockModeType) );
+			return lock( entity, convertToLockMode( lockModeType ) );
 		}
 
 //		/**
@@ -754,7 +755,7 @@ public interface Mutiny {
 		 * {@code session.fetch(book, Book_.isbn).thenAccept(isbn -> print(isbn))}
 		 * </pre>
 		 */
-		<E,T> Uni<T> fetch(E entity, Attribute<E,T> field);
+		<E, T> Uni<T> fetch(E entity, Attribute<E, T> field);
 
 		/**
 		 * Asynchronously fetch an association that's configured for lazy loading,
@@ -810,6 +811,24 @@ public interface Mutiny {
 		<R> Query<R> createQuery(String queryString, Class<R> resultType);
 
 		/**
+		 * Create an instance of {@link Mutiny.Query} for the given criteria update.
+		 *
+		 * @param criteriaUpdate The {@link CriteriaUpdate}
+		 *
+		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 */
+		<R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
+
+		/**
+		 * Create an instance of {@link Mutiny.Query} for the given criteria delete.
+		 *
+		 * @param criteriaDelete The {@link CriteriaDelete}
+		 *
+		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 */
+		<R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete);
+
+		/**
 		 * Create an instance of {@link Query} for the named query.
 		 *
 		 * @param queryName The name of the query
@@ -863,15 +882,16 @@ public interface Mutiny {
 		 * <li>Otherwise, if the result set has multiple columns, the results will
 		 * be returned as elements of arrays of type {@code Object[]}.</li>
 		 * </ul>
-		 *
+		 * <p>
 		 * Any {@link AffectedEntities affected entities} are synchronized with
 		 * the database before execution of the statement.
 		 *
 		 * @param queryString The SQL select, update, insert, or delete statement
 		 * @param affectedEntities The entities which are affected by the statement
 		 */
-		<R> Query<R> createNativeQuery(String queryString,
-									   AffectedEntities affectedEntities);
+		<R> Query<R> createNativeQuery(
+				String queryString,
+				AffectedEntities affectedEntities);
 
 		/**
 		 * Create an instance of {@link Query} for the given SQL query
@@ -911,7 +931,7 @@ public interface Mutiny {
 		 * case the result set column aliases must map to the fields of the
 		 * entity, and the query will return instances of the entity.
 		 * </ul>
-		 *
+		 * <p>
 		 * Any {@link AffectedEntities affected entities} are synchronized with
 		 * the database before execution of the query.
 		 *
@@ -923,8 +943,9 @@ public interface Mutiny {
 		 *
 		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, Class)
 		 */
-		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType,
-									   AffectedEntities affectedEntities);
+		<R> Query<R> createNativeQuery(
+				String queryString, Class<R> resultType,
+				AffectedEntities affectedEntities);
 
 		/**
 		 * Create an instance of {@link Mutiny.Query} for the given SQL query string,
@@ -956,7 +977,10 @@ public interface Mutiny {
 		 * @see #getResultSetMapping(Class, String)
 		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, String)
 		 */
-		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities);
+		<R> Query<R> createNativeQuery(
+				String queryString,
+				ResultSetMapping<R> resultSetMapping,
+				AffectedEntities affectedEntities);
 
 		/**
 		 * Set the {@link FlushMode flush mode} for this session.
@@ -983,7 +1007,7 @@ public interface Mutiny {
 		 * @param flushModeType the new flush mode
 		 */
 		default Session setFlushMode(FlushModeType flushModeType) {
-			return setFlushMode( FlushModeTypeHelper.getFlushMode(flushModeType) );
+			return setFlushMode( FlushModeTypeHelper.getFlushMode( flushModeType ) );
 		}
 
 		/**
@@ -992,6 +1016,7 @@ public interface Mutiny {
 		 * @return the flush mode
 		 */
 		FlushMode getFlushMode();
+
 		/**
 		 * Remove this instance from the session cache. Changes to the instance
 		 * will not be synchronized with the database.
@@ -1003,7 +1028,6 @@ public interface Mutiny {
 		 *
 		 * @throws NullPointerException if the passed object is {@code null}
 		 * @throws IllegalArgumentException if the passed object is not defined as an entity
-		 *
 		 * @see jakarta.persistence.EntityManager#detach(Object)
 		 */
 		Session detach(Object entity);
@@ -1021,9 +1045,9 @@ public interface Mutiny {
 		 * requested fetch profile is already enabled.
 		 *
 		 * @param name The name of the fetch profile to be enabled.
+		 *
 		 * @throws org.hibernate.UnknownProfileException Indicates that the given name does not
 		 * match any known profile names
-		 *
 		 * @see org.hibernate.engine.profile.FetchProfile for discussion of this feature
 		 */
 		Session enableFetchProfile(String name);
@@ -1054,9 +1078,9 @@ public interface Mutiny {
 		 * the requested fetch profile is not enabled.
 		 *
 		 * @param name The name of the fetch profile to be disabled.
+		 *
 		 * @throws org.hibernate.UnknownProfileException Indicates that the given name does not
 		 * match any known profile names
-		 *
 		 * @see org.hibernate.engine.profile.FetchProfile for discussion of this feature
 		 */
 		Session disableFetchProfile(String name);
@@ -1066,10 +1090,11 @@ public interface Mutiny {
 		 * session.
 		 *
 		 * @param name The name of the profile to be checked.
+		 *
 		 * @return True if fetch profile is enabled; false if not.
+		 *
 		 * @throws org.hibernate.UnknownProfileException Indicates that the given name does not
 		 * match any known profile names
-		 *
 		 * @see org.hibernate.engine.profile.FetchProfile for discussion of this feature
 		 */
 		boolean isFetchProfileEnabled(String name);
@@ -1084,13 +1109,13 @@ public interface Mutiny {
 		 *
 		 * @see org.hibernate.Session#setDefaultReadOnly(boolean)
 		 */
-		 Session setDefaultReadOnly(boolean readOnly);
+		Session setDefaultReadOnly(boolean readOnly);
 
 		/**
 		 * @return the default read-only mode for entities and proxies loaded in
-		 *         this session
+		 * this session
 		 */
-		 boolean isDefaultReadOnly();
+		boolean isDefaultReadOnly();
 
 		/**
 		 * Set an unmodified persistent object to read-only mode, or a read-only
@@ -1099,7 +1124,7 @@ public interface Mutiny {
 		 *
 		 * @see org.hibernate.Session#setReadOnly(Object, boolean)
 		 */
-		 Session setReadOnly(Object entityOrProxy, boolean readOnly);
+		Session setReadOnly(Object entityOrProxy, boolean readOnly);
 
 		/**
 		 * Is the specified entity or proxy read-only?
@@ -1124,7 +1149,7 @@ public interface Mutiny {
 		 * @param cacheStoreMode The new cache store mode.
 		 */
 		default Session setCacheStoreMode(CacheStoreMode cacheStoreMode) {
-			return setCacheMode( interpretCacheMode( cacheStoreMode, interpretCacheRetrieveMode(getCacheMode()) ) );
+			return setCacheMode( interpretCacheMode( cacheStoreMode, interpretCacheRetrieveMode( getCacheMode() ) ) );
 		}
 
 		/**
@@ -1133,7 +1158,7 @@ public interface Mutiny {
 		 * @param cacheRetrieveMode The new cache retrieve mode.
 		 */
 		default Session setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
-			return setCacheMode( interpretCacheMode( interpretCacheStoreMode(getCacheMode()), cacheRetrieveMode ) );
+			return setCacheMode( interpretCacheMode( interpretCacheStoreMode( getCacheMode() ), cacheRetrieveMode ) );
 		}
 
 		/**
@@ -1199,7 +1224,7 @@ public interface Mutiny {
 		 * </il>
 		 *
 		 * @param work a function which accepts {@link Transaction} and returns
-		 *             the result of the work as a {@link Uni}.
+		 * the result of the work as a {@link Uni}.
 		 *
 		 * @see SessionFactory#withTransaction(BiFunction)
 		 */
@@ -1292,14 +1317,14 @@ public interface Mutiny {
 		 * @see org.hibernate.StatelessSession#get(Class, Serializable, LockMode)
 		 */
 		default <T> Uni<T> get(Class<T> entityClass, Object id, LockModeType lockModeType) {
-			return get( entityClass, id, convertToLockMode(lockModeType) );
+			return get( entityClass, id, convertToLockMode( lockModeType ) );
 		}
 
 		/**
 		 * Retrieve a row, using the given {@link EntityGraph} as a fetch plan.
 		 *
 		 * @param entityGraph an {@link EntityGraph} specifying the entity
-		 *                    and associations to be fetched
+		 * and associations to be fetched
 		 * @param id The id of the entity to retrieve
 		 *
 		 * @return a detached entity instance, via a {@code Uni}
@@ -1526,7 +1551,7 @@ public interface Mutiny {
 		 * @see org.hibernate.StatelessSession#refresh(Object, LockMode)
 		 */
 		default Uni<Void> refresh(Object entity, LockModeType lockModeType) {
-			return refresh( entity, convertToLockMode(lockModeType) );
+			return refresh( entity, convertToLockMode( lockModeType ) );
 		}
 
 		/**
@@ -1535,7 +1560,7 @@ public interface Mutiny {
 		 * <pre>
 		 * {@code session.fetch(author.getBook()).thenAccept(book -> print(book.getTitle()))}
 		 * </pre>
-		 *
+		 * <p>
 		 * Warning: this operation in a stateless session is quite sensitive to
 		 * data aliasing effects and should be used with great care.
 		 *
@@ -1583,7 +1608,7 @@ public interface Mutiny {
 		 * </il>
 		 *
 		 * @param work a function which accepts {@link Transaction} and returns
-		 *             the result of the work as a {@link Uni}.
+		 * the result of the work as a {@link Uni}.
 		 *
 		 * @see SessionFactory#withTransaction(BiFunction)
 		 */
@@ -1623,6 +1648,7 @@ public interface Mutiny {
 		 * Mark the current transaction for rollback.
 		 */
 		void markForRollback();
+
 		/**
 		 * Is the current transaction marked for rollback.
 		 */
@@ -1640,7 +1666,7 @@ public interface Mutiny {
 	 * 			createEntityManagerFactory("example")
 	 * 				.unwrap(Mutiny.SessionFactory.class);
 	 * </pre>
-	 *
+	 * <p>
 	 * Here, configuration properties must be specified in
 	 * {@code persistence.xml}.
 	 * <p>
@@ -1658,7 +1684,6 @@ public interface Mutiny {
 	 * 		)
 	 * 		.unwrap(Mutiny.SessionFactory.class);
 	 * </pre>
-	 *
 	 */
 	interface SessionFactory extends AutoCloseable {
 
@@ -1693,7 +1718,7 @@ public interface Mutiny {
 
 		/**
 		 * Obtain a {@link StatelessSession reactive stateless session}
-		 *{@link Uni}.
+		 * {@link Uni}.
 		 * <p>
 		 * When the {@link Uni} completes successfully it returns a newly created session.
 		 * <p>
@@ -1735,7 +1760,7 @@ public interface Mutiny {
 		 * explicitly if necessary.
 		 *
 		 * @param work a function which accepts the session and returns
-		 *             the result of the work as a {@link Uni}.
+		 * the result of the work as a {@link Uni}.
 		 */
 		<T> Uni<T> withSession(Function<Session, Uni<T>> work);
 
@@ -1755,7 +1780,7 @@ public interface Mutiny {
 		 *
 		 * @param tenantId the id of the tenant
 		 * @param work a function which accepts the session and returns
-		 *             the result of the work as a {@link Uni}.
+		 * the result of the work as a {@link Uni}.
 		 */
 		<T> Uni<T> withSession(String tenantId, Function<Session, Uni<T>> work);
 
@@ -1775,7 +1800,7 @@ public interface Mutiny {
 		 * automatically, and the transaction committed automatically.
 		 *
 		 * @param work a function which accepts the session and transaction
-		 *             and returns the result of the work as a {@link Uni}.
+		 * and returns the result of the work as a {@link Uni}.
 		 *
 		 * @see #withSession(Function)
 		 * @see Session#withTransaction(Function)
@@ -1798,7 +1823,7 @@ public interface Mutiny {
 		 * automatically, and the transaction committed automatically.
 		 *
 		 * @param work a function which accepts the session and returns
-		 *             the result of the work as a {@link Uni}.
+		 * the result of the work as a {@link Uni}.
 		 *
 		 * @see #withTransaction(BiFunction)
 		 * @see Session#withTransaction(Function)
@@ -1822,7 +1847,7 @@ public interface Mutiny {
 		 * The session will be closed automatically and the transaction committed automatically.
 		 *
 		 * @param work a function which accepts the stateless session and returns
-		 *             the result of the work as a {@link Uni}.
+		 * the result of the work as a {@link Uni}.
 		 *
 		 * @see #withStatelessSession(Function)
 		 * @see StatelessSession#withTransaction(Function)
@@ -1846,7 +1871,7 @@ public interface Mutiny {
 		 * The session will be closed automatically and the transaction committed automatically.
 		 *
 		 * @param work a function which accepts the stateless session and returns
-		 *             the result of the work as a {@link Uni}.
+		 * the result of the work as a {@link Uni}.
 		 *
 		 * @see #withStatelessSession(Function)
 		 * @see StatelessSession#withTransaction(Function)
@@ -1867,7 +1892,7 @@ public interface Mutiny {
 		 * The session will be closed automatically.
 		 *
 		 * @param work a function which accepts the session and returns
-		 *             the result of the work as a {@link Uni}.
+		 * the result of the work as a {@link Uni}.
 		 */
 		<T> Uni<T> withStatelessSession(Function<StatelessSession, Uni<T>> work);
 
@@ -1886,7 +1911,7 @@ public interface Mutiny {
 		 *
 		 * @param tenantId the id of the tenant
 		 * @param work a function which accepts the session and returns
-		 *             the result of the work as a {@link Uni}.
+		 * the result of the work as a {@link Uni}.
 		 */
 		<T> Uni<T> withStatelessSession(String tenantId, Function<StatelessSession, Uni<T>> work);
 
@@ -1907,7 +1932,7 @@ public interface Mutiny {
 		 *
 		 * @param tenantId the id of the tenant
 		 * @param work a function which accepts the session and returns
-		 *             the result of the work as a {@link Uni}.
+		 * the result of the work as a {@link Uni}.
 		 *
 		 * @see #withSession(String, Function)
 		 * @see Session#withTransaction(Function)
@@ -1930,7 +1955,7 @@ public interface Mutiny {
 		 *
 		 * @param tenantId the id of the tenant
 		 * @param work a function which accepts the stateless session and returns
-		 *             the result of the work as a {@link Uni}.
+		 * the result of the work as a {@link Uni}.
 		 *
 		 * @see #withStatelessSession(String, Function)
 		 * @see StatelessSession#withTransaction(Function)
@@ -1998,17 +2023,18 @@ public interface Mutiny {
 		}
 
 		SharedSessionContractImplementor session;
-		if ( association instanceof HibernateProxy) {
+		if ( association instanceof HibernateProxy ) {
 			session = ( (HibernateProxy) association ).getHibernateLazyInitializer().getSession();
 		}
-		else if ( association instanceof PersistentCollection) {
+		else if ( association instanceof PersistentCollection ) {
 			//this unfortunately doesn't work for stateless session because the session ref gets set to null
 			session = ( (AbstractPersistentCollection<T>) association ).getSession();
 		}
 		else if ( ManagedTypeHelper.isPersistentAttributeInterceptable( association ) ) {
-			final PersistentAttributeInterceptable interceptable = ManagedTypeHelper.asPersistentAttributeInterceptable( association );
+			final PersistentAttributeInterceptable interceptable = ManagedTypeHelper.asPersistentAttributeInterceptable(
+					association );
 			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
-			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor) {
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
 				session = ( (EnhancementAsProxyLazinessInterceptor) interceptor ).getLinkedSession();
 			}
 			else {

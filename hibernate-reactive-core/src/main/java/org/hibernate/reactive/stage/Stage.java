@@ -31,6 +31,7 @@ import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.Statistics;
@@ -815,6 +816,24 @@ public interface Stage {
 		<R> Query<R> createQuery(String queryString, Class<R> resultType);
 
 		/**
+		 * Create an instance of {@link Query} for the given criteria update.
+		 *
+		 * @param criteriaUpdate The {@link CriteriaUpdate}
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 */
+		<R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
+
+		/**
+		 * Create an instance of {@link Mutiny.Query} for the given criteria delete.
+		 *
+		 * @param criteriaDelete The {@link CriteriaDelete}
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 */
+		<R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete);
+
+		/**
 		 * Create an instance of {@link Query} for the named query.
 		 *
 		 * @param queryName The name of the query
@@ -889,8 +908,7 @@ public interface Stage {
 		 *
 		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, Class)
 		 */
-		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType,
-									   AffectedEntities affectedEntities);
+		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities);
 
 		/**
 		 * Create an instance of {@link Query} for the given SQL query string,
@@ -922,8 +940,7 @@ public interface Stage {
 		 * @see #getResultSetMapping(Class, String)
 		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, String)
 		 */
-		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping,
-									   AffectedEntities affectedEntities);
+		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities);
 
 		/**
 		 * Create an instance of {@link Query} for the given SQL query string,
@@ -963,8 +980,7 @@ public interface Stage {
 		 * @param queryString The SQL select, update, insert, or delete statement
 		 * @param affectedEntities The entities which are affected by the statement
 		 */
-		<R> Query<R> createNativeQuery(String queryString,
-									   AffectedEntities affectedEntities);
+		<R> Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities);
 
 		/**
 		 * Create an instance of {@link Query} for the given criteria query.
@@ -976,28 +992,6 @@ public interface Stage {
 		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
 		<R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery);
-
-		/**
-		 * Create an instance of {@link Query} for the given criteria update.
-		 *
-		 * @param criteriaUpdate The {@link CriteriaUpdate}
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		<R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
-
-		/**
-		 * Create an instance of {@link Query} for the given criteria delete.
-		 *
-		 * @param criteriaDelete The {@link CriteriaDelete}
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		<R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete);
 
 		/**
 		 * Set the {@link FlushMode flush mode} for this session.

@@ -16,6 +16,7 @@ import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
@@ -27,7 +28,13 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveSession;
 
 import io.smallrye.mutiny.Uni;
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
@@ -51,7 +58,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
-		return factory.uni(stageSupplier);
+		return factory.uni( stageSupplier );
 	}
 
 	@Override
@@ -62,17 +69,17 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> Uni<T> fetch(T association) {
-		return uni( () -> delegate.reactiveFetch(association, false) );
+		return uni( () -> delegate.reactiveFetch( association, false ) );
 	}
 
 	@Override
 	public <E, T> Uni<T> fetch(E entity, Attribute<E, T> field) {
-		return uni( () -> delegate.reactiveFetch(entity, field) );
+		return uni( () -> delegate.reactiveFetch( entity, field ) );
 	}
 
 	@Override
 	public <T> Uni<T> unproxy(T association) {
-		return uni( () -> delegate.reactiveFetch(association, true) );
+		return uni( () -> delegate.reactiveFetch( association, true ) );
 	}
 
 	@Override
@@ -88,7 +95,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> T getReference(T entity) {
-		return delegate.getReference( delegate.getEntityClass(entity), delegate.getEntityId(entity) );
+		return delegate.getReference( delegate.getEntityClass( entity ), delegate.getEntityId( entity ) );
 	}
 
 	@Override
@@ -112,28 +119,38 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
+	public <R> Mutiny.Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
 	public <R> Mutiny.Query<R> createNamedQuery(String queryName) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNamedQuery(String queryName, Class<R> resultType) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String queryString) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
@@ -141,20 +158,17 @@ public class MutinySessionImpl implements Mutiny.Session {
 			String queryString,
 			Class<R> resultType,
 			AffectedEntities affectedEntities) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(
-			String queryString,
-			ResultSetMapping<R> resultSetMapping,
-			AffectedEntities affectedEntities) {
-		return null;
+	public <R> Mutiny.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
@@ -174,17 +188,22 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey, LockMode lockMode) {
-		return uni( () -> delegate.reactiveFind( entityClass, primaryKey, new LockOptions(lockMode), null ) );
+		return uni( () -> delegate.reactiveFind( entityClass, primaryKey, new LockOptions( lockMode ), null ) );
 	}
 
-//	@Override
+	@Override
+	public <T> Uni<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
+		return Mutiny.Session.super.find( entityClass, id, lockModeType );
+	}
+
+	//	@Override
 	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey, LockOptions lockOptions) {
 		return uni( () -> delegate.reactiveFind( entityClass, primaryKey, lockOptions, null ) );
 	}
 
 	@Override
 	public <T> Uni<T> find(EntityGraph<T> entityGraph, Object id) {
-		Class<T> entityClass = ((RootGraphImplementor<T>) entityGraph).getGraphedType().getJavaType();
+		Class<T> entityClass = ( (RootGraphImplementor<T>) entityGraph ).getGraphedType().getJavaType();
 		return uni( () -> delegate.reactiveFind( entityClass, id, null, entityGraph ) );
 	}
 
@@ -213,7 +232,8 @@ public class MutinySessionImpl implements Mutiny.Session {
 		return uni( () -> delegate.reactiveMerge( entity ) );
 	}
 
-	@Override @SafeVarargs
+	@Override
+	@SafeVarargs
 	public final <T> Uni<Void> mergeAll(T... entity) {
 		return uni( () -> applyToAll( delegate::reactiveMerge, entity ) );
 	}
@@ -225,25 +245,35 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public Uni<Void> refresh(Object entity, LockMode lockMode) {
-		return uni( () -> delegate.reactiveRefresh( entity, new LockOptions(lockMode) ) );
+		return uni( () -> delegate.reactiveRefresh( entity, new LockOptions( lockMode ) ) );
 	}
 
-//	@Override
+	@Override
+	public Uni<Void> refresh(Object entity, LockModeType lockModeType) {
+		return Mutiny.Session.super.refresh( entity, lockModeType );
+	}
+
+	//	@Override
 	public Uni<Void> refresh(Object entity, LockOptions lockOptions) {
 		return uni( () -> delegate.reactiveRefresh( entity, lockOptions ) );
 	}
 
 	@Override
 	public Uni<Void> refreshAll(Object... entity) {
-		return uni( () -> applyToAll( e -> delegate.reactiveRefresh(e, LockOptions.NONE), entity ) );
+		return uni( () -> applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entity ) );
 	}
 
 	@Override
 	public Uni<Void> lock(Object entity, LockMode lockMode) {
-		return uni( () -> delegate.reactiveLock( entity, new LockOptions(lockMode) ) );
+		return uni( () -> delegate.reactiveLock( entity, new LockOptions( lockMode ) ) );
 	}
 
-//	@Override
+	@Override
+	public Uni<Void> lock(Object entity, LockModeType lockModeType) {
+		return Mutiny.Session.super.lock( entity, lockModeType );
+	}
+
+	//	@Override
 	public Uni<Void> lock(Object entity, LockOptions lockOptions) {
 		return uni( () -> delegate.reactiveLock( entity, lockOptions ) );
 	}
@@ -266,26 +296,31 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public Mutiny.Session setFlushMode(FlushMode flushMode) {
-		switch (flushMode) {
+		switch ( flushMode ) {
 			case COMMIT:
-				delegate.setHibernateFlushMode(FlushMode.COMMIT);
+				delegate.setHibernateFlushMode( FlushMode.COMMIT );
 				break;
 			case AUTO:
-				delegate.setHibernateFlushMode(FlushMode.AUTO);
+				delegate.setHibernateFlushMode( FlushMode.AUTO );
 				break;
 			case MANUAL:
-				delegate.setHibernateFlushMode(FlushMode.MANUAL);
+				delegate.setHibernateFlushMode( FlushMode.MANUAL );
 				break;
 			case ALWAYS:
-				delegate.setHibernateFlushMode(FlushMode.ALWAYS);
+				delegate.setHibernateFlushMode( FlushMode.ALWAYS );
 				break;
 		}
 		return this;
 	}
 
 	@Override
+	public Mutiny.Session setFlushMode(FlushModeType flushModeType) {
+		return Mutiny.Session.super.setFlushMode( flushModeType );
+	}
+
+	@Override
 	public Mutiny.Session setDefaultReadOnly(boolean readOnly) {
-		delegate.setDefaultReadOnly(readOnly);
+		delegate.setDefaultReadOnly( readOnly );
 		return this;
 	}
 
@@ -296,13 +331,13 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public Mutiny.Session setReadOnly(Object entityOrProxy, boolean readOnly) {
-		delegate.setReadOnly(entityOrProxy, readOnly);
+		delegate.setReadOnly( entityOrProxy, readOnly );
 		return this;
 	}
 
 	@Override
 	public boolean isReadOnly(Object entityOrProxy) {
-		return delegate.isReadOnly(entityOrProxy);
+		return delegate.isReadOnly( entityOrProxy );
 	}
 
 	public CacheMode getCacheMode() {
@@ -310,13 +345,23 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	public Mutiny.Session setCacheMode(CacheMode cacheMode) {
-		delegate.setCacheMode(cacheMode);
+		delegate.setCacheMode( cacheMode );
 		return this;
 	}
 
 	@Override
+	public Mutiny.Session setCacheStoreMode(CacheStoreMode cacheStoreMode) {
+		return Mutiny.Session.super.setCacheStoreMode( cacheStoreMode );
+	}
+
+	@Override
+	public Mutiny.Session setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+		return Mutiny.Session.super.setCacheRetrieveMode( cacheRetrieveMode );
+	}
+
+	@Override
 	public Mutiny.Session setBatchSize(Integer batchSize) {
-		delegate.setBatchSize(batchSize);
+		delegate.setBatchSize( batchSize );
 		return this;
 	}
 
@@ -327,7 +372,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public Mutiny.Session detach(Object entity) {
-		delegate.detach(entity);
+		delegate.detach( entity );
 		return this;
 	}
 
@@ -339,39 +384,39 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public Mutiny.Session enableFetchProfile(String name) {
-		delegate.enableFetchProfile(name);
+		delegate.enableFetchProfile( name );
 		return this;
 	}
 
 	@Override
 	public Mutiny.Session disableFetchProfile(String name) {
-		delegate.disableFetchProfile(name);
+		delegate.disableFetchProfile( name );
 		return this;
 	}
 
 	@Override
 	public boolean isFetchProfileEnabled(String name) {
-		return delegate.isFetchProfileEnabled(name);
+		return delegate.isFetchProfileEnabled( name );
 	}
 
 	@Override
 	public Filter enableFilter(String filterName) {
-		return delegate.enableFilter(filterName);
+		return delegate.enableFilter( filterName );
 	}
 
 	@Override
 	public void disableFilter(String filterName) {
-		delegate.disableFilter(filterName);
+		delegate.disableFilter( filterName );
 	}
 
 	@Override
 	public Filter getEnabledFilter(String filterName) {
-		return delegate.getEnabledFilter(filterName);
+		return delegate.getEnabledFilter( filterName );
 	}
 
 	@Override
 	public <T> Uni<T> withTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
-		return currentTransaction==null ? new Transaction<T>().execute(work) : work.apply(currentTransaction);
+		return currentTransaction == null ? new Transaction<T>().execute( work ) : work.apply( currentTransaction );
 	}
 
 	private Transaction<?> currentTransaction;
@@ -386,9 +431,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
 			currentTransaction = this;
-			return begin()
-					.chain( () -> executeInTransaction( work ) )
-					.eventually( () -> currentTransaction = null );
+			return begin().chain( () -> executeInTransaction( work ) ).eventually( () -> currentTransaction = null );
 		}
 
 		/**
@@ -399,16 +442,13 @@ public class MutinySessionImpl implements Mutiny.Session {
 		Uni<T> executeInTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
 			return work.apply( this )
 					// only flush() if the work completed with no exception
-					.call( this::flush )
-					.call( this::beforeCompletion )
+					.call( this::flush ).call( this::beforeCompletion )
 					// in the case of an exception or cancellation
 					// we need to rollback the transaction
-					.onFailure().call( this::rollback )
-					.onCancellation().call( this::rollback )
+					.onFailure().call( this::rollback ).onCancellation().call( this::rollback )
 					// finally, when there was no exception,
 					// commit or rollback the transaction
-					.call( () -> rollback ? rollback() : commit() )
-					.call( this::afterCompletion );
+					.call( () -> rollback ? rollback() : commit() ).call( this::afterCompletion );
 		}
 
 		Uni<Void> flush() {
@@ -432,7 +472,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 		}
 
 		private Uni<Void> afterCompletion() {
-			return Uni.createFrom().completionStage( delegate.getReactiveActionQueue().afterTransactionCompletion(!rollback) );
+			return Uni.createFrom().completionStage( delegate.getReactiveActionQueue().afterTransactionCompletion( !rollback ) );
 		}
 
 		@Override
@@ -458,22 +498,21 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
-		throw new UnsupportedOperationException("Not yet implemented");
-	}
-
-	@Override
-	public <T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName) {
-		throw new UnsupportedOperationException("Not yet implemented");
-	}
-
-	@Override
-	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		throw new NotYetImplementedFor6Exception();
 	}
 
+	@Override
+	public <T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType) {
+		throw new NotYetImplementedFor6Exception();
+	}
 }
