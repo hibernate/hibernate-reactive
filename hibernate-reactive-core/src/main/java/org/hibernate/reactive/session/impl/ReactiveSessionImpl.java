@@ -117,8 +117,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	//Lazily initialized
 	private transient ExceptionConverter exceptionConverter;
 
-	public ReactiveSessionImpl(SessionFactoryImpl delegate, SessionCreationOptions options,
-							   ReactiveConnection connection) {
+	public ReactiveSessionImpl(
+			SessionFactoryImpl delegate, SessionCreationOptions options,
+			ReactiveConnection connection) {
 		super( delegate, options );
 		InternalStateAssertions.assertUseOnEventLoop();
 		this.associatedWorkThread = Thread.currentThread();
@@ -186,7 +187,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		final GraphSemantic semantic = effectiveEntityGraph.getSemantic();
 		final RootGraphImplementor<?> graph = effectiveEntityGraph.getGraph();
 		boolean clearedEffectiveGraph;
-		if ( semantic == null || graph.appliesTo(entityName) ) {
+		if ( semantic == null || graph.appliesTo( entityName ) ) {
 			clearedEffectiveGraph = false;
 		}
 		else {
@@ -233,7 +234,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		if ( association instanceof HibernateProxy ) {
-			LazyInitializer initializer = ((HibernateProxy) association).getHibernateLazyInitializer();
+			LazyInitializer initializer = ( (HibernateProxy) association ).getHibernateLazyInitializer();
 			if ( !initializer.isUninitialized() ) {
 				return completedFuture( unproxy ? (T) initializer.getImplementation() : association );
 			}
@@ -264,7 +265,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		else if ( isPersistentAttributeInterceptable( association ) ) {
 			final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( association );
 			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
-			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor) {
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
 				EnhancementAsProxyLazinessInterceptor eapli = (EnhancementAsProxyLazinessInterceptor) interceptor;
 				return forceInitialize( association, null, eapli.getIdentifier(), eapli.getEntityName(), this )
 						.thenApply( i -> association );
@@ -280,7 +281,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <E,T> CompletionStage<T> reactiveFetch(E entity, Attribute<E,T> field) {
+	public <E, T> CompletionStage<T> reactiveFetch(E entity, Attribute<E, T> field) {
 		return ( (ReactiveEntityPersister) getEntityPersister( null, entity ) )
 				.reactiveInitializeLazyProperty( field, entity, this );
 	}
@@ -344,8 +345,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		pulseTransactionCoordinator();
 		InitializeCollectionEvent event = new InitializeCollectionEvent( collection, this );
 
-		return fastSessionServices.eventListenerGroup_INIT_COLLECTION.fireEventOnEachListener( event,
-				(DefaultReactiveInitializeCollectionEventListener l) -> l::onReactiveInitializeCollection )
+		return fastSessionServices.eventListenerGroup_INIT_COLLECTION
+				.fireEventOnEachListener(
+						event,
+						(DefaultReactiveInitializeCollectionEventListener l) -> l::onReactiveInitializeCollection
+				)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -381,32 +385,33 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				.handle( (v, e) -> {
 					checkNoUnresolvedActionsAfterOperation();
 
-					if (e instanceof MappingException) {
+					if ( e instanceof MappingException ) {
 						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage() ) );
 					}
-					else if (e instanceof RuntimeException) {
+					else if ( e instanceof RuntimeException ) {
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
 					return returnNullorRethrow( e );
-				});
+				} );
 	}
 
 	private CompletionStage<Void> firePersist(PersistContext copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
 		return fastSessionServices.eventListenerGroup_PERSIST.fireEventOnEachListener( event, copiedAlready,
-				(ReactivePersistEventListener l) -> l::reactiveOnPersist)
+																					   (ReactivePersistEventListener l) -> l::reactiveOnPersist
+				)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
-					if (e instanceof MappingException) {
+					if ( e instanceof MappingException ) {
 						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage() ) );
 					}
-					else if (e instanceof RuntimeException) {
+					else if ( e instanceof RuntimeException ) {
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
 					return returnNullorRethrow( e );
-				});
+				} );
 	}
 
 	@Override
@@ -419,7 +424,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		pulseTransactionCoordinator();
 
 		return fastSessionServices.eventListenerGroup_PERSIST.fireEventOnEachListener( event, copiedAlready,
-				(ReactivePersistEventListener l) -> l::reactiveOnPersist)
+																					   (ReactivePersistEventListener l) -> l::reactiveOnPersist
+				)
 				.whenComplete( (v, e) -> delayedAfterCompletion() );
 	}
 
@@ -430,14 +436,21 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRemove(String entityName, boolean isCascadeDeleteEnabled, DeleteContext transientEntities)
+	public CompletionStage<Void> reactiveRemove(
+			String entityName,
+			boolean isCascadeDeleteEnabled,
+			DeleteContext transientEntities)
 			throws HibernateException {
 		// I'm not quite sure if we need this method
 		return reactiveRemove( entityName, null, isCascadeDeleteEnabled, transientEntities );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRemove(String entityName, Object child, boolean isCascadeDeleteEnabled, DeleteContext transientEntities) {
+	public CompletionStage<Void> reactiveRemove(
+			String entityName,
+			Object child,
+			boolean isCascadeDeleteEnabled,
+			DeleteContext transientEntities) {
 		checkOpenOrWaitingForAutoClose();
 		final boolean removingOrphanBeforeUpates = persistenceContext().isRemovingOrphanBeforeUpates();
 		if ( log.isTraceEnabled() && removingOrphanBeforeUpates ) {
@@ -458,7 +471,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		if ( log.isTraceEnabled() ) {
 			final EntityEntry entityEntry = persistenceContext().getEntry( entity );
 			log.tracef( "%s remove orphan before updates: [%s]", timing,
-					entityEntry == null ? entityName : MessageHelper.infoString( entityName, entityEntry.getId() ) );
+						entityEntry == null ? entityName : MessageHelper.infoString( entityName, entityEntry.getId() )
+			);
 		}
 	}
 
@@ -466,8 +480,10 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireRemove(DeleteEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_DELETE.fireEventOnEachListener( event,
-				(ReactiveDeleteEventListener l) -> l::reactiveOnDelete)
+		return fastSessionServices.eventListenerGroup_DELETE.fireEventOnEachListener(
+						event,
+						(ReactiveDeleteEventListener l) -> l::reactiveOnDelete
+				)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -482,14 +498,15 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
 					return returnNullorRethrow( e );
-				});
+				} );
 	}
 
 	private CompletionStage<Void> fireRemove(DeleteEvent event, DeleteContext transientEntities) {
 		pulseTransactionCoordinator();
 
 		return fastSessionServices.eventListenerGroup_DELETE.fireEventOnEachListener( event, transientEntities,
-				(ReactiveDeleteEventListener l) -> l::reactiveOnDelete)
+																					  (ReactiveDeleteEventListener l) -> l::reactiveOnDelete
+				)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -504,13 +521,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
 					return returnNullorRethrow( e );
-				});
+				} );
 	}
 
 	@Override
 	public <T> CompletionStage<T> reactiveMerge(T object) throws HibernateException {
 		checkOpen();
-		return fireMerge( new MergeEvent( null, object, this ));
+		return fireMerge( new MergeEvent( null, object, this ) );
 	}
 
 	@Override
@@ -525,18 +542,18 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
-		return fastSessionServices.eventListenerGroup_MERGE.fireEventOnEachListener( event,
-				(ReactiveMergeEventListener l) -> l::reactiveOnMerge)
-				.handle( (v,e) -> {
+		return fastSessionServices.eventListenerGroup_MERGE
+				.fireEventOnEachListener( event, (ReactiveMergeEventListener l) -> l::reactiveOnMerge )
+				.handle( (v, e) -> {
 					checkNoUnresolvedActionsAfterOperation();
 
-					if (e instanceof ObjectDeletedException) {
+					if ( e instanceof ObjectDeletedException ) {
 						throw getExceptionConverter().convert( new IllegalArgumentException( e ) );
 					}
-					else if (e instanceof MappingException) {
+					else if ( e instanceof MappingException ) {
 						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage(), e ) );
 					}
-					else if (e instanceof RuntimeException) {
+					else if ( e instanceof RuntimeException ) {
 						//including HibernateException
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
@@ -548,22 +565,23 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		pulseTransactionCoordinator();
 
 		return fastSessionServices.eventListenerGroup_MERGE.fireEventOnEachListener( event, copiedAlready,
-				(ReactiveMergeEventListener l) -> l::reactiveOnMerge)
-				.handle( (v,e) -> {
+																					 (ReactiveMergeEventListener l) -> l::reactiveOnMerge
+				)
+				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
-					if (e instanceof ObjectDeletedException) {
+					if ( e instanceof ObjectDeletedException ) {
 						throw getExceptionConverter().convert( new IllegalArgumentException( e ) );
 					}
-					else if (e instanceof MappingException) {
+					else if ( e instanceof MappingException ) {
 						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage(), e ) );
 					}
-					else if (e instanceof RuntimeException) {
+					else if ( e instanceof RuntimeException ) {
 						//including HibernateException
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
 					return returnNullorRethrow( e );
-				});
+				} );
 	}
 
 	@Override
@@ -606,9 +624,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		return fastSessionServices.eventListenerGroup_FLUSH.fireEventOnEachListener(
-				new FlushEvent( this ),
-				(ReactiveFlushEventListener l) -> l::reactiveOnFlush
-		)
+						new FlushEvent( this ),
+						(ReactiveFlushEventListener l) -> l::reactiveOnFlush
+				)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -656,37 +674,43 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_REFRESH.fireEventOnEachListener( event,
-				(ReactiveRefreshEventListener l) -> l::reactiveOnRefresh)
+		return fastSessionServices.eventListenerGroup_REFRESH.fireEventOnEachListener(
+						event,
+						(ReactiveRefreshEventListener l) -> l::reactiveOnRefresh
+				)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
-					if (e instanceof RuntimeException) {
+					if ( e instanceof RuntimeException ) {
 						if ( !getSessionFactory().getSessionFactoryOptions().isJpaBootstrap() ) {
 							if ( e instanceof HibernateException ) {
-								return rethrow(e);
+								return rethrow( e );
 							}
 						}
 						//including HibernateException
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
 					return returnNullorRethrow( e );
-				});
+				} );
 	}
 
 	private CompletionStage<Void> fireRefresh(RefreshContext refreshedAlready, RefreshEvent event) {
 		pulseTransactionCoordinator();
 
 		return fastSessionServices.eventListenerGroup_REFRESH
-				.fireEventOnEachListener( event, refreshedAlready, (ReactiveRefreshEventListener l) -> l::reactiveOnRefresh)
+				.fireEventOnEachListener(
+						event,
+						refreshedAlready,
+						(ReactiveRefreshEventListener l) -> l::reactiveOnRefresh
+				)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
-					if (e instanceof RuntimeException) {
+					if ( e instanceof RuntimeException ) {
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
 					return returnNullorRethrow( e );
-				});
+				} );
 	}
 
 	@Override
@@ -698,16 +722,18 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireLock(LockEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_LOCK.fireEventOnEachListener( event,
-				(ReactiveLockEventListener l) -> l::reactiveOnLock )
+		return fastSessionServices.eventListenerGroup_LOCK.fireEventOnEachListener(
+						event,
+						(ReactiveLockEventListener l) -> l::reactiveOnLock
+				)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
-					if (e instanceof RuntimeException) {
+					if ( e instanceof RuntimeException ) {
 						throw getExceptionConverter().convert( (RuntimeException) e );
 					}
 					return returnNullorRethrow( e );
-				});
+				} );
 	}
 
 	@Override
@@ -725,7 +751,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			EntityGraph<T> fetchGraph) {
 		checkOpen();
 
-		if ( fetchGraph!=null ) {
+		if ( fetchGraph != null ) {
 			getLoadQueryInfluencers()
 					.getEffectiveEntityGraph()
 					.applyGraph( (RootGraphImplementor<T>) fetchGraph, GraphSemantic.FETCH );
@@ -735,13 +761,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 //		getLoadQueryInfluencers().setReadOnly( readOnly );
 
 		final ReactiveIdentifierLoadAccessImpl<T> loadAccess =
-				new ReactiveIdentifierLoadAccessImpl<>(entityClass)
-						.with( determineAppropriateLocalCacheMode(null) )
+				new ReactiveIdentifierLoadAccessImpl<>( entityClass )
+						.with( determineAppropriateLocalCacheMode( null ) )
 						.with( lockOptions );
 
 		return loadAccess.load( id )
 				.handle( (result, e) -> {
-					if ( e instanceof EntityNotFoundException) {
+					if ( e instanceof EntityNotFoundException ) {
 						// DefaultLoadEventListener.returnNarrowedProxy may throw ENFE (see HHH-7861 for details),
 						// which find() should not throw. Find() should return null if the entity was not found.
 						//			if ( log.isDebugEnabled() ) {
@@ -751,11 +777,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						//			}
 						return null;
 					}
-					if ( e instanceof ObjectDeletedException) {
+					if ( e instanceof ObjectDeletedException ) {
 						//the spec is silent about people doing remove() find() on the same PC
 						return null;
 					}
-					if ( e instanceof ObjectNotFoundException) {
+					if ( e instanceof ObjectNotFoundException ) {
 						//should not happen on the entity itself with get
 						throw new IllegalArgumentException( e.getMessage(), e );
 					}
@@ -782,14 +808,14 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <T> CompletionStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids) {
-		return new ReactiveMultiIdentifierLoadAccessImpl<>(entityClass).multiLoad(ids);
+		return new ReactiveMultiIdentifierLoadAccessImpl<>( entityClass ).multiLoad( ids );
 		//TODO: copy/paste the exception handling from immediately above?
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Map<String,Object> ids) {
-		EntityPersister persister = getFactory().getMetamodel().locateEntityPersister(entityClass);
-		return new NaturalIdLoadAccessImpl<T>(persister).resolveNaturalId(ids)
+	public <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Map<String, Object> ids) {
+		EntityPersister persister = getFactory().getMetamodel().locateEntityPersister( entityClass );
+		return new NaturalIdLoadAccessImpl<T>( persister ).resolveNaturalId( ids )
 				.thenCompose( id -> reactiveFind( entityClass, id, null, null ) );
 	}
 
@@ -804,13 +830,15 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		pulseTransactionCoordinator();
 
 		return fastSessionServices.eventListenerGroup_LOAD.fireEventOnEachListener( event, loadType,
-				(ReactiveLoadEventListener l) -> l::reactiveOnLoad );
+																					(ReactiveLoadEventListener l) -> l::reactiveOnLoad
+		);
 	}
 
 	private CompletionStage<Void> fireResolveNaturalId(ResolveNaturalIdEvent event) {
 		checkOpenOrWaitingForAutoClose();
-		return fastSessionServices.eventListenerGroup_RESOLVE_NATURAL_ID.fireEventOnEachListener( event,
-				(ReactiveResolveNaturalIdEventListener l) -> l::onReactiveResolveNaturalId
+		return fastSessionServices.eventListenerGroup_RESOLVE_NATURAL_ID.fireEventOnEachListener(
+						event,
+						(ReactiveResolveNaturalIdEventListener l) -> l::onReactiveResolveNaturalId
 				)
 				.whenComplete( (c, e) -> delayedAfterCompletion() );
 	}
@@ -915,11 +943,23 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		@SuppressWarnings("unchecked")
 		protected CompletionStage<T> doGetReference(Object id) {
 			if ( lockOptions != null ) {
-				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
+				LoadEvent event = new LoadEvent(
+						id,
+						entityPersister.getEntityName(),
+						lockOptions,
+						ReactiveSessionImpl.this,
+						getReadOnlyFromLoadQueryInfluencers()
+				);
 				return fireReactiveLoad( event, LoadEventListener.LOAD ).thenApply( v -> (T) event.getResult() );
 			}
 
-			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
+			LoadEvent event = new LoadEvent(
+					id,
+					entityPersister.getEntityName(),
+					false,
+					ReactiveSessionImpl.this,
+					getReadOnlyFromLoadQueryInfluencers()
+			);
 			return fireReactiveLoad( event, LoadEventListener.LOAD )
 					.thenApply( v -> {
 						if ( event.getResult() == null ) {
@@ -933,23 +973,35 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		public final CompletionStage<T> load(Object id) {
-			return perform( () -> doLoad( id, LoadEventListener.GET) );
+			return perform( () -> doLoad( id, LoadEventListener.GET ) );
 		}
 
-//		public final CompletionStage<T> fetch(Object id) {
+		//		public final CompletionStage<T> fetch(Object id) {
 //			return perform( () -> doLoad( id, LoadEventListener.IMMEDIATE_LOAD) );
 //		}
 //
 		@SuppressWarnings("unchecked")
 		protected final CompletionStage<T> doLoad(Object id, LoadEventListener.LoadType loadType) {
-			if (id == null) {
+			if ( id == null ) {
 				return CompletionStages.nullFuture();
 			}
 			if ( lockOptions != null ) {
-				LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), lockOptions, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
+				LoadEvent event = new LoadEvent(
+						id,
+						entityPersister.getEntityName(),
+						lockOptions,
+						ReactiveSessionImpl.this,
+						getReadOnlyFromLoadQueryInfluencers()
+				);
 				return fireReactiveLoad( event, loadType ).thenApply( v -> (T) event.getResult() );
 			}
-			LoadEvent event = new LoadEvent(id, entityPersister.getEntityName(), false, ReactiveSessionImpl.this, getReadOnlyFromLoadQueryInfluencers());
+			LoadEvent event = new LoadEvent(
+					id,
+					entityPersister.getEntityName(),
+					false,
+					ReactiveSessionImpl.this,
+					getReadOnlyFromLoadQueryInfluencers()
+			);
 			return fireReactiveLoad( event, loadType )
 					.whenComplete( (v, t) -> afterOperation( t != null ) )
 					.thenApply( v -> (T) event.getResult() );
@@ -1082,7 +1134,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 			boolean finalCacheModeChanged = cacheModeChanged;
 			return executor.get()
-				.whenComplete( (v, x) -> {
+					.whenComplete( (v, x) -> {
 						if ( graphSemantic != null ) {
 							getLoadQueryInfluencers().getEffectiveEntityGraph().clear();
 						}
@@ -1096,7 +1148,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		@SuppressWarnings("unchecked")
 		public <K extends Object> CompletionStage<List<T>> multiLoad(List<K> ids) {
 			return perform( () -> (CompletionStage<List<T>>)
-					entityPersister.multiLoad( ids.toArray(new Object[0]), ReactiveSessionImpl.this, this ) );
+					entityPersister.multiLoad( ids.toArray( new Object[0] ), ReactiveSessionImpl.this, this ) );
 		}
 	}
 
@@ -1178,7 +1230,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		protected final ReactiveIdentifierLoadAccessImpl getIdentifierLoadAccess() {
-			final ReactiveIdentifierLoadAccessImpl identifierLoadAccess = new ReactiveIdentifierLoadAccessImpl( entityPersister );
+			final ReactiveIdentifierLoadAccessImpl identifierLoadAccess = new ReactiveIdentifierLoadAccessImpl(
+					entityPersister );
 			if ( this.lockOptions != null ) {
 				identifierLoadAccess.with( lockOptions );
 			}
@@ -1193,7 +1246,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public <T> T unwrap(Class<T> clazz) {
 		if ( ReactiveSession.class.isAssignableFrom( clazz ) ) {
-			return clazz.cast(this);
+			return clazz.cast( this );
 		}
 		return super.unwrap( clazz );
 	}
@@ -1227,7 +1280,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		reactiveConnection = reactiveConnection.withBatchSize( batchSize );
 	}
 
-	@Override @SuppressWarnings("unchecked")
+	@Override
+	@SuppressWarnings("unchecked")
 	public <T> Class<T> getEntityClass(T entity) {
 		if ( entity instanceof HibernateProxy ) {
 			return (Class<T>) ( (HibernateProxy) entity )
@@ -1247,7 +1301,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					.getIdentifier();
 		}
 		else {
-			return getEntityPersister(null, entity )
+			return getEntityPersister( null, entity )
 					.getIdentifier( entity, this );
 		}
 	}
@@ -1270,7 +1324,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public CompletionStage<Void> reactiveRemoveOrphanBeforeUpdates(String entityName, Object child) {
 		// TODO: The removeOrphan concept is a temporary "hack" for HHH-6484.  This should be removed once action/task
 		// ordering is improved.
-		final StatefulPersistenceContext persistenceContext = (StatefulPersistenceContext)getPersistenceContextInternal();
+		final StatefulPersistenceContext persistenceContext = (StatefulPersistenceContext) getPersistenceContextInternal();
 		persistenceContext.beginRemoveOrphanBeforeUpdates();
 		return fireRemove( new DeleteEvent( entityName, child, false, true, this ) )
 				.thenAccept( v -> {
@@ -1278,7 +1332,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					if ( log.isTraceEnabled() ) {
 						logRemoveOrphanBeforeUpdates( "end", entityName, child, persistenceContext );
 					}
-				});
+				} );
 	}
 
 	@Override
@@ -1287,7 +1341,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		this.reactiveActionQueue.clear();
 	}
 
-	private void logRemoveOrphanBeforeUpdates(String timing, String entityName, Object entity,  StatefulPersistenceContext persistenceContext) {
+	private void logRemoveOrphanBeforeUpdates(
+			String timing,
+			String entityName,
+			Object entity,
+			StatefulPersistenceContext persistenceContext) {
 		if ( log.isTraceEnabled() ) {
 			final EntityEntry entityEntry = persistenceContext.getEntry( entity );
 			log.tracef(
@@ -1301,12 +1359,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name) {
 		// FIXME [ORM-6]:
-		throw new UnsupportedOperationException("Not done yet");
+		throw new UnsupportedOperationException( "Not done yet" );
 	}
 
 	@Override
 	public <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name) {
 		// FIXME [ORM-6]:
-		throw new UnsupportedOperationException("Not done yet");
+		throw new UnsupportedOperationException( "Not done yet" );
 	}
 }

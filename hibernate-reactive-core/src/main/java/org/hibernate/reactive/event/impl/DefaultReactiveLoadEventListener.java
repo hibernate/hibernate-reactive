@@ -649,10 +649,11 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	private void cacheNaturalId(LoadEvent event, EntityPersister persister, EventSource session, Object entity) {
 		if ( entity != null && persister.hasNaturalIdentifier() ) {
 			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-			persistenceContext.getNaturalIdResolutions().cacheResolutionFromLoad(
-					event.getEntityId(),
-					persister.getNaturalIdMapping().extractNaturalIdFromEntity( entity, session ),
-					persister );
+			persistenceContext.getNaturalIdResolutions()
+					.cacheResolutionFromLoad( event.getEntityId(),
+											  persister.getNaturalIdMapping().extractNaturalIdFromEntity( entity, session ),
+											  persister
+					);
 		}
 	}
 
@@ -666,21 +667,29 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 * @return The object loaded from the datasource, or null if not found.
 	 */
 	protected CompletionStage<Object> loadFromDatasource(LoadEvent event, EntityPersister persister) {
-
-		CompletionStage<Object> entity =
-				( (ReactiveEntityPersister) persister).reactiveLoad(
+		return ( (ReactiveEntityPersister) persister )
+				.reactiveLoad(
 						event.getEntityId(),
 						event.getInstanceToLoad(),
 						event.getLockOptions(),
 						event.getSession()
-				);
+				)
+				.thenApply( entity -> {
+					// todo (6.0) : this is a change from previous versions
+					//		specifically the load call previously always returned a non-proxy
+					//		so we emulate that here.  Longer term we should make the
+					//		persister/loader/initializer sensitive to this fact - possibly
+					//		passing LoadType along
 
-		final StatisticsImplementor statistics = event.getSession().getFactory().getStatistics();
-		if ( event.isAssociationFetch() && statistics.isStatisticsEnabled() ) {
-			statistics.fetchEntity( event.getEntityClassName() );
-		}
+					if ( entity instanceof HibernateProxy ) {
+						entity = ( (HibernateProxy) entity ).getHibernateLazyInitializer().getImplementation();
+					}
 
-		return entity;
+					final StatisticsImplementor statistics = event.getSession().getFactory().getStatistics();
+					if ( event.isAssociationFetch() && statistics.isStatisticsEnabled() ) {
+						statistics.fetchEntity( event.getEntityClassName() );
+					}
+					return entity;
+				} );
 	}
-
 }

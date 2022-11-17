@@ -16,14 +16,20 @@ import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
+import org.hibernate.loader.ast.spi.CollectionLoader;
 import org.hibernate.mapping.Collection;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.collection.OneToManyPersister;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoader;
+import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderBatchKey;
+import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderSingleKey;
 import org.hibernate.reactive.pool.impl.Parameters;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -47,8 +53,20 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 		super( collectionBinding, cacheAccessStrategy, creationContext );
 	}
 
+	@Override
 	public CompletionStage<Void> reactiveInitialize(Object key, SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException( "Not yet implemented" );
+		return ( (ReactiveCollectionLoader) determineLoaderToUse( key, session ) )
+				.reactiveLoad( key, session )
+				.thenCompose( CompletionStages::voidFuture );
+	}
+
+	@Override
+	protected CollectionLoader createCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
+		final int batchSize = getBatchSize();
+		if ( batchSize > 1 ) {
+			return new ReactiveCollectionLoaderBatchKey( getAttributeMapping(), batchSize, loadQueryInfluencers, getFactory() );
+		}
+		return new ReactiveCollectionLoaderSingleKey( getAttributeMapping(), loadQueryInfluencers, getFactory() );
 	}
 
 	@Override

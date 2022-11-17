@@ -11,12 +11,17 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.cache.spi.QueryKey;
+import org.hibernate.cache.spi.QueryResultsCache;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.results.internal.ReactiveResultSetAccess;
 import org.hibernate.sql.ast.spi.SqlSelection;
 import org.hibernate.sql.exec.ExecutionException;
 import org.hibernate.sql.exec.spi.ExecutionContext;
+import org.hibernate.sql.results.caching.QueryCachePutManager;
+import org.hibernate.sql.results.caching.internal.QueryCachePutManagerDisabledImpl;
+import org.hibernate.sql.results.caching.internal.QueryCachePutManagerEnabledImpl;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
 
@@ -30,6 +35,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.trueFuture;
  */
 public class ReactiveValuesResultSet {
 
+	private final QueryCachePutManager queryCachePutManager;
+
 	private final ReactiveResultSetAccess resultSetAccess;
 	private final JdbcValuesMapping valuesMapping;
 	private final ExecutionContext executionContext;
@@ -38,12 +45,13 @@ public class ReactiveValuesResultSet {
 
 	public ReactiveValuesResultSet(
 			ReactiveResultSetAccess resultSetAccess,
-			QueryKey queryResultsCacheKey,
+			QueryKey queryCacheKey,
 			String queryIdentifier,
 			QueryOptions queryOptions,
 			JdbcValuesMapping valuesMapping,
 			JdbcValuesMetadata metadataForCache,
 			ExecutionContext executionContext) {
+		this.queryCachePutManager = resolveQueryCachePutManager( executionContext, queryOptions, queryCacheKey, queryIdentifier, metadataForCache );
 		this.resultSetAccess = resultSetAccess;
 		this.valuesMapping = valuesMapping;
 		this.executionContext = executionContext;
@@ -51,12 +59,33 @@ public class ReactiveValuesResultSet {
 		this.currentRowJdbcValues = new Object[ valuesMapping.getRowSize() ];
 	}
 
+	private static QueryCachePutManager resolveQueryCachePutManager(
+			ExecutionContext executionContext,
+			QueryOptions queryOptions,
+			QueryKey queryCacheKey,
+			String queryIdentifier,
+			JdbcValuesMetadata metadataForCache) {
+		if ( queryCacheKey == null ) {
+			return QueryCachePutManagerDisabledImpl.INSTANCE;
+		}
+
+		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
+		final QueryResultsCache queryCache = factory.getCache()
+				.getQueryResultsCache( queryOptions.getResultCacheRegionName() );
+		return new QueryCachePutManagerEnabledImpl(
+				queryCache,
+				factory.getStatistics(),
+				queryCacheKey,
+				queryIdentifier,
+				metadataForCache
+		);
+	}
+
 	public final CompletionStage<Boolean> next() {
 		return processNext()
 				.thenApply( hadRow -> {
 					if ( hadRow ) {
-						// FIXME:
-			//			queryCachePutManager.registerJdbcRow( getCurrentRowValuesArray() );
+						queryCachePutManager.registerJdbcRow( getCurrentRowValuesArray() );
 					}
 					return hadRow;
 				} );
@@ -65,7 +94,7 @@ public class ReactiveValuesResultSet {
 	protected final CompletionStage<Boolean> processNext() {
 		return advance( () -> resultSetAccess
 				.getReactiveResultSet()
-				.thenCompose( rs -> doNext( rs ) )
+				.thenCompose( this::doNext )
 		);
 	}
 
@@ -73,8 +102,8 @@ public class ReactiveValuesResultSet {
 		try {
 			return completedFuture( resultSet.next() );
 		}
-		catch (SQLException sqle) {
-			return failedFuture( makeExecutionException( "Error advancing (next) ResultSet position", sqle ) );
+		catch (SQLException e) {
+			return failedFuture( makeExecutionException( "Error advancing (next) ResultSet position", e ) );
 		}
 	}
 
@@ -94,7 +123,7 @@ public class ReactiveValuesResultSet {
 	}
 
 	public void finishUp(SharedSessionContractImplementor session) {
-		// FIXME: todo
+		queryCachePutManager.finishUp( session );
 	}
 
 	@FunctionalInterface

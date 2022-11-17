@@ -71,18 +71,16 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 				.thenCompose( lg -> {
 					LOG.tracef( "Executing query to retrieve ResultSet : %s", getFinalSql() );
 
-					// Do I need a statement creator?
-//					PreparedStatement preparedStatement = statementCreator.apply( getFinalSql() );
 					Dialect dialect = executionContext.getSession().getJdbcServices().getDialect();
 					final String sql = Parameters.instance( dialect ).process( getFinalSql() );
 					Object[] parameters = PreparedStatementAdaptor.bind( super::bindParameters );
 
-					final SessionEventListenerManager eventListenerManager = executionContext.getSession()
-							.getEventListenerManager();
+					final SessionEventListenerManager eventListenerManager = executionContext
+							.getSession().getEventListenerManager();
 
 					final long executeStartNanos = executionStartNanos();
 
-
+					eventListenerManager.jdbcExecuteStatementStart();
 					return connection()
 							.selectJdbc( sql, parameters )
 							.whenComplete( (resultSet, throwable) -> {
@@ -91,10 +89,6 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 								sqlStatementLogger.logSlowQuery( getFinalSql(), executeStartNanos );
 							} )
 							.thenCompose( this::reactiveSkipRows )
-							.thenApply( resultSet -> {
-//								lg.getResourceRegistry().register( resultSet, null );
-								return resultSet;
-							} )
 							.handle( this::convertException );
 				} )
 				.whenComplete( (o, throwable) -> logicalConnection.afterStatement() );

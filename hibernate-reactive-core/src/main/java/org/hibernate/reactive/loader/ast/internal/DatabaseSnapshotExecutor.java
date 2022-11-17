@@ -8,7 +8,6 @@ package org.hibernate.reactive.loader.ast.internal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockOptions;
@@ -19,12 +18,13 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.loader.ast.internal.LoaderSqlAstCreationState;
 import org.hibernate.metamodel.mapping.EntityMappingType;
+import org.hibernate.reactive.sql.exec.internal.ReactiveSelectExecutorStandardImpl;
+import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
 import org.hibernate.query.sqm.ComparisonOperator;
 import org.hibernate.query.sqm.sql.FromClauseIndex;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
@@ -45,14 +45,15 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.internal.RowTransformerDatabaseSnapshotImpl;
-import org.hibernate.sql.results.spi.ListResultsConsumer;
 import org.hibernate.type.StandardBasicTypes;
 
 import org.jboss.logging.Logger;
 
 import static org.hibernate.sql.ast.spi.SqlExpressionResolver.createColumnReferenceKey;
 
-// TODO: Make it reactive
+/**
+ * @see org.hibernate.loader.ast.internal.DatabaseSnapshotExecutor
+ */
 class DatabaseSnapshotExecutor {
 	private static final Logger log = Logger.getLogger( DatabaseSnapshotExecutor.class );
 
@@ -185,60 +186,59 @@ class DatabaseSnapshotExecutor {
 		);
 		assert offset == jdbcParameters.size();
 
-		final List<?> list = session.getJdbcServices().getJdbcSelectExecutor().list(
-				jdbcSelect,
-				jdbcParameterBindings,
-				new ExecutionContext() {
-					@Override
-					public SharedSessionContractImplementor getSession() {
-						return session;
-					}
+		// FIXME: use JdbcServices
+		return new ReactiveSelectExecutorStandardImpl()
+				.list( jdbcSelect, jdbcParameterBindings, executionContext( session ), RowTransformerDatabaseSnapshotImpl.instance(), ReactiveListResultsConsumer.UniqueSemantic.FILTER  )
+				.thenApply( list -> {
+					assert list != null;
+					final int size = list.size();
+					assert size <= 1;
 
-					@Override
-					public QueryOptions getQueryOptions() {
-						return QueryOptions.NONE;
-					}
-
-					@Override
-					public String getQueryIdentifier(String sql) {
-						return sql;
-					}
-
-					@Override
-					public QueryParameterBindings getQueryParameterBindings() {
-						return QueryParameterBindings.NO_PARAM_BINDINGS;
-					}
-
-					@Override
-					public Callback getCallback() {
+					if ( size == 0 ) {
 						return null;
 					}
 
-				},
-				RowTransformerDatabaseSnapshotImpl.instance(),
-				ListResultsConsumer.UniqueSemantic.FILTER
-		);
+					final Object[] entitySnapshot = (Object[]) list.get( 0 );
+					// The result of this method is treated like the entity state array which doesn't include the id
+					// So we must exclude it from the array
+					if ( entitySnapshot.length == 1 ) {
+						return ArrayHelper.EMPTY_OBJECT_ARRAY;
+					}
 
-		final int size = list.size();
-		assert size <= 1;
+					final Object[] state = new Object[entitySnapshot.length - 1];
+					System.arraycopy( entitySnapshot, 1, state, 0, state.length );
+					return state;
+				} );
+	}
 
-		// FIXME: Make it really reactive, now I'm just removing compilation errors
-		if ( size == 0 ) {
-			return CompletionStages.nullFuture();
-		}
-		else {
-			final Object[] entitySnapshot = (Object[]) list.get( 0 );
-			// The result of this method is treated like the entity state array which doesn't include the id
-			// So we must exclude it from the array
-			if ( entitySnapshot.length == 1 ) {
-				return CompletableFuture.completedStage( ArrayHelper.EMPTY_OBJECT_ARRAY );
+	private static ExecutionContext executionContext(SharedSessionContractImplementor session) {
+		return new ExecutionContext() {
+			@Override
+			public SharedSessionContractImplementor getSession() {
+				return session;
 			}
-			else {
-				final Object[] state = new Object[entitySnapshot.length - 1];
-				System.arraycopy( entitySnapshot, 1, state, 0, state.length );
-				return CompletableFuture.completedStage( state );
+
+			@Override
+			public QueryOptions getQueryOptions() {
+				return QueryOptions.NONE;
 			}
-		}
+
+			@Override
+			public String getQueryIdentifier(String sql) {
+				return sql;
+			}
+
+			@Override
+			public QueryParameterBindings getQueryParameterBindings() {
+				return QueryParameterBindings.NO_PARAM_BINDINGS;
+			}
+
+			@Override
+			public Callback getCallback() {
+				return null;
+			}
+
+		};
 	}
 
 }

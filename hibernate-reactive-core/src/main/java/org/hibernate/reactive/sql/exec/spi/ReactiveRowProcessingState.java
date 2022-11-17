@@ -8,6 +8,7 @@ package org.hibernate.reactive.sql.exec.spi;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
@@ -57,7 +58,7 @@ public class ReactiveRowProcessingState implements RowProcessingState {
 		else {
 			//noinspection ToArrayCallWithZeroLengthArrayArgument
 			this.initializers = initializers.toArray( new Initializer[initializers.size()] );
-			hasCollectionInitializers = hasCollectionInitializers(this.initializers);
+			hasCollectionInitializers = hasCollectionInitializers( this.initializers );
 		}
 	}
 
@@ -91,13 +92,12 @@ public class ReactiveRowProcessingState implements RowProcessingState {
 
 	@Override
 	public void registerNonExists(EntityFetch fetch) {
-
 	}
 
 	@Override
 	public boolean isQueryCacheHit() {
 //		return jdbcValues instanceof JdbcValuesCacheHit;
-		return false; // Not implemeted yet for reactive
+		return false; // Not implemented yet for reactive
 	}
 
 	public void finishRowProcessing() {
@@ -105,12 +105,12 @@ public class ReactiveRowProcessingState implements RowProcessingState {
 
 	@Override
 	public Initializer resolveInitializer(NavigablePath path) {
-		return null;
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
 	public SharedSessionContractImplementor getSession() {
-		return null;
+		return executionContext.getSession();
 	}
 
 	public QueryOptions getQueryOptions() {
@@ -119,11 +119,11 @@ public class ReactiveRowProcessingState implements RowProcessingState {
 
 	@Override
 	public QueryParameterBindings getQueryParameterBindings() {
-		return null;
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
 	public Callback getCallback() {
-		return null;
+		throw new NotYetImplementedFor6Exception();
 	}
 }

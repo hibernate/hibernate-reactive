@@ -229,6 +229,9 @@ public interface Log extends BasicLogger {
 	@Message(id = 74, value = "ids for this class must be manually assigned before calling save(): %1$s")
 	IdentifierGenerationException idMustBeAssignedBeforeSave(String entityName);
 
+	@Message(id = 75, value = "Detected call to non reactive method. `%1$s` should be used instead")
+	HibernateException nonReactiveMethodCall(String alternativeMethod);
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )

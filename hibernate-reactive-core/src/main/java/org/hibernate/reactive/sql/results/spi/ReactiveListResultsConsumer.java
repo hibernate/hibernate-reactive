@@ -31,6 +31,10 @@ import static org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer
 import static org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer.UniqueSemantic.FILTER;
 import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
 
+/**
+ *
+ * @see org.hibernate.sql.results.spi.ListResultsConsumer
+ */
 public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<List<R>, R> {
 
 	private static final ReactiveListResultsConsumer<?> NEVER_DE_DUP_CONSUMER = new ReactiveListResultsConsumer<>( ReactiveListResultsConsumer.UniqueSemantic.NEVER );
@@ -51,7 +55,6 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 		final TypeConfiguration typeConfiguration = session.getTypeConfiguration();
 		final QueryOptions queryOptions = rowProcessingState.getQueryOptions();
 
-		// FIXME: Move this try catch in a wheComplete
 		persistenceContext.getLoadContexts().register( jdbcValuesSourceProcessingState );
 
 		final JavaType<R> domainResultJavaType = resolveDomainResultJavaType(
@@ -70,9 +73,8 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 
 		return nextState( rowProcessingState, addResultFunction )
 				.thenApply( v -> end( results, jdbcValuesSourceProcessingState, persistenceContext, queryOptions ) )
-				.handle( (list, throwable) -> {
-					// FIXME: Handle exception, we are ignoring them
-					finish( jdbcValues, session, jdbcValuesSourceProcessingState, rowReader, persistenceContext, throwable );
+				.handle( (list, ex) -> {
+					finish( jdbcValues, session, jdbcValuesSourceProcessingState, rowReader, persistenceContext, ex );
 					return list;
 				} ) ;
 	}
@@ -84,16 +86,27 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 			RowReader<R> rowReader,
 			PersistenceContext persistenceContext,
 			Throwable ex) {
-
-		//FIXME catch exceptions
-		rowReader.finishUp( jdbcValuesSourceProcessingState );
-		jdbcValues.finishUp( session );
-		persistenceContext.initializeNonLazyCollections();
+		try {
+			rowReader.finishUp( jdbcValuesSourceProcessingState );
+			jdbcValues.finishUp( session );
+			persistenceContext.initializeNonLazyCollections();
+		}
+		catch (RuntimeException e) {
+			if ( ex != null ) {
+				ex.addSuppressed( e );
+			}
+			else {
+				ex = e;
+			}
+		}
+		finally {
+			if ( ex != null ) {
+				throw new RuntimeException( ex );
+			}
+		}
 	}
 
-	private CompletionStage<Boolean> nextState(
-			ReactiveRowProcessingState rowProcessingState,
-			Runnable addResultFunction) {
+	private CompletionStage<Boolean> nextState(ReactiveRowProcessingState rowProcessingState, Runnable addResultFunction) {
 		return rowProcessingState.next()
 				.thenCompose( hasNext -> {
 					if ( hasNext ) {
@@ -142,11 +155,11 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 			persistenceContext.getLoadContexts().deregister( jdbcValuesSourceProcessingState );
 		}
 
-		final ResultListTransformer<R> resultListTransformer = (ResultListTransformer<R>) queryOptions.getResultListTransformer();
-		if ( resultListTransformer != null ) {
-			return resultListTransformer.transformList( results.getResults() );
-		}
-		return results.getResults();
+		final ResultListTransformer<R> resultListTransformer = (ResultListTransformer<R>) queryOptions
+				.getResultListTransformer();
+		return resultListTransformer != null
+				? resultListTransformer.transformList( results.getResults() )
+				: results.getResults();
 	}
 
 	@SuppressWarnings("unchecked")

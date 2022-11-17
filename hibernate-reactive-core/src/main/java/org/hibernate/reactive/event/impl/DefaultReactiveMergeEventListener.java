@@ -38,6 +38,7 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.MergeContext;
 import org.hibernate.event.spi.MergeEvent;
 import org.hibernate.event.spi.MergeEventListener;
+import org.hibernate.loader.ast.spi.CascadingFetchProfile;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
@@ -324,75 +325,25 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	}
 
 	protected CompletionStage<Void> entityIsDetached(MergeEvent event, MergeContext copyCache) {
-
 		LOG.trace( "Merging detached instance" );
 
 		final Object entity = event.getEntity();
 		final EventSource source = event.getSession();
-
 		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
 		final String entityName = persister.getEntityName();
 
 		Object requestedId = event.getRequestedId();
-		Object id;
-		if ( requestedId == null ) {
-			id = persister.getIdentifier( entity, source );
-		}
-		else {
-			id = requestedId;
-			// check that entity id = requestedId
-			Object entityId = persister.getIdentifier( entity, source );
-			if ( !persister.getIdentifierType().isEqual( id, entityId, source.getFactory() ) ) {
-				throw LOG.mergeRequestedIdNotMatchingIdOfPassedEntity();
-			}
-		}
+		Object id = getDetachedEntityId( event, entity, persister );
 
-		String previousFetchProfile = source.getLoadQueryInfluencers().getInternalFetchProfile();
-		source.getLoadQueryInfluencers().setInternalFetchProfile( "merge" );
+		// we must clone embedded composite identifiers, or we will get back the same instance that we pass in
+		final Object clonedIdentifier = persister.getIdentifierType().deepCopy( id, source.getFactory() );
 
-		//we must clone embedded composite identifiers, or
-		//we will get back the same instance that we pass in
-		final Serializable clonedIdentifier = (Serializable)
-				persister.getIdentifierType().deepCopy( id, source.getFactory() );
-
-		return source.unwrap(ReactiveSession.class)
-				.reactiveGet( (Class<?>) persister.getMappedClass(), clonedIdentifier )
-				.thenCompose(result -> {
-					if ( result!=null ) {
-						// before cascade!
-						copyCache.put(entity, result, true);
-
-						Object target = unproxyManagedForDetachedMerging( entity, result, persister, source );
-						if (target == entity) {
-							throw new AssertionFailure("entity was not detached");
-						}
-						else if ( !source.getEntityName(target).equals(entityName) ) {
-							throw new WrongClassException(
-									"class of the given object did not match class of persistent copy",
-									event.getRequestedId(),
-									entityName
-							);
-						}
-						else if ( isVersionChanged( entity, source, persister, target ) ) {
-							final StatisticsImplementor statistics = source.getFactory().getStatistics();
-							if (statistics.isStatisticsEnabled()) {
-								statistics.optimisticFailure(entityName);
-							}
-							throw new StaleObjectStateException(entityName, id);
-						}
-
-						// cascade first, so that all unsaved objects get their
-						// copy created before we actually copy
-						return cascadeOnMerge( source, persister, entity, copyCache )
-								.thenCompose( v -> fetchAndCopyValues( persister, entity, target, source, copyCache ) )
-								.thenAccept(v -> {
-									// copyValues() (called by fetchAndCopyValues) works by reflection,
-									// so explicitly mark the entity instance dirty
-									markInterceptorDirty(entity, target, persister);
-									event.setResult(result);
-								});
-					}
-					else {
+		return source.getLoadQueryInfluencers()
+				.fromInternalFetchProfile( CascadingFetchProfile.MERGE, () -> source.unwrap( ReactiveSession.class )
+						.reactiveGet( (Class<?>) persister.getMappedClass(), clonedIdentifier )
+				)
+				.thenCompose( result -> {
+					if ( result == null ) {
 						//TODO: we should throw an exception if we really *know* for sure
 						//      that this is a detached instance, rather than just assuming
 						//throw new StaleObjectStateException(entityName, id);
@@ -400,14 +351,69 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 						// we got here because we assumed that an instance
 						// with an assigned id was detached, when it was
 						// really persistent
-						return entityIsTransient(event, copyCache);
+						return entityIsTransient( event, copyCache );
 					}
-				})
-				.whenComplete( (v,e) -> source.getLoadQueryInfluencers().setInternalFetchProfile(previousFetchProfile) );
 
+					// before cascade!
+					copyCache.put( entity, result, true );
+					final Object target = targetEntity( event, entity, persister, id, result );
+					// cascade first, so that all unsaved objects get their
+					// copy created before we actually copy
+					return cascadeOnMerge( source, persister, entity, copyCache )
+							.thenCompose( v -> fetchAndCopyValues( persister, entity, target, source, copyCache ) )
+							.thenAccept( v -> {
+								// copyValues() (called by fetchAndCopyValues) works by reflection,
+								// so explicitly mark the entity instance dirty
+								markInterceptorDirty( entity, target );
+								event.setResult( result );
+							} );
+				} );
 	}
 
-	private Object unproxyManagedForDetachedMerging(
+	private static Object targetEntity(MergeEvent event, Object entity, EntityPersister persister, Object id, Object result) {
+		final EventSource source = event.getSession();
+		final String entityName = persister.getEntityName();
+		final Object target = unproxyManagedForDetachedMerging( entity, result, persister, source );
+		if ( target == entity) {
+			throw new AssertionFailure( "entity was not detached" );
+		}
+		else if ( !source.getEntityName( target ).equals( entityName ) ) {
+			throw new WrongClassException(
+					"class of the given object did not match class of persistent copy",
+					event.getRequestedId(),
+					entityName
+			);
+		}
+		else if ( isVersionChanged( entity, source, persister, target ) ) {
+			final StatisticsImplementor statistics = source.getFactory().getStatistics();
+			if ( statistics.isStatisticsEnabled() ) {
+				statistics.optimisticFailure( entityName );
+			}
+			throw new StaleObjectStateException( entityName, id );
+		}
+		else {
+			return target;
+		}
+	}
+
+	private static Object getDetachedEntityId(MergeEvent event, Object entity, EntityPersister persister) {
+		final EventSource source = event.getSession();
+		final Object id = event.getRequestedId();
+
+		if ( id == null ) {
+			return persister.getIdentifier( entity, source );
+		}
+
+		// check that entity id = requestedId
+		Object entityId = persister.getIdentifier( entity, source );
+		if ( !persister.getIdentifierType().isEqual( id, entityId, source.getFactory() ) ) {
+			throw LOG.mergeRequestedIdNotMatchingIdOfPassedEntity();
+		}
+
+		return id;
+	}
+
+	private static Object unproxyManagedForDetachedMerging(
 			Object incoming,
 			Object managed,
 			EntityPersister persister,
@@ -444,20 +450,19 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		return managed;
 	}
 
-	private void markInterceptorDirty(final Object entity, final Object target, EntityPersister persister) {
+	private static void markInterceptorDirty(final Object entity, final Object target) {
 		// for enhanced entities, copy over the dirty attributes
 		if ( isSelfDirtinessTracker( entity ) && isSelfDirtinessTracker( target ) ) {
 			// clear, because setting the embedded attributes dirties them
-			SelfDirtinessTracker entityTracker = asSelfDirtinessTracker( entity );
-			SelfDirtinessTracker targetTracker = asSelfDirtinessTracker( target );
-			targetTracker.$$_hibernate_clearDirtyAttributes();
-			for ( String fieldName : entityTracker.$$_hibernate_getDirtyAttributes() ) {
-				targetTracker.$$_hibernate_trackChange( fieldName );
+			final SelfDirtinessTracker selfDirtinessTrackerTarget = asSelfDirtinessTracker( target );
+			selfDirtinessTrackerTarget.$$_hibernate_clearDirtyAttributes();
+			for ( String fieldName : asSelfDirtinessTracker( entity ).$$_hibernate_getDirtyAttributes() ) {
+				selfDirtinessTrackerTarget.$$_hibernate_trackChange( fieldName );
 			}
 		}
 	}
 
-	private boolean isVersionChanged(Object entity, EventSource source, EntityPersister persister, Object target) {
+	private static boolean isVersionChanged(Object entity, EventSource source, EntityPersister persister, Object target) {
 		if ( !persister.isVersioned() ) {
 			return false;
 		}
@@ -481,7 +486,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		return changed && existsInDatabase( target, source, persister );
 	}
 
-	private boolean existsInDatabase(Object entity, EventSource source, EntityPersister persister) {
+	private static boolean existsInDatabase(Object entity, EventSource source, EntityPersister persister) {
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		EntityEntry entry = persistenceContext.getEntry( entity );
 		if ( entry == null ) {
@@ -502,25 +507,23 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			final Object target,
 			final SessionImplementor source,
 			final MergeContext mergeContext) {
-		CompletionStage<Void> stage;
-		if (entity == target) {
-			// If entity == target, then nothing needs to be fetched.
-			stage = voidFuture();
+		if ( entity == target ) {
+			return copyValues( persister, entity, target, source, mergeContext );
 		}
 		else {
-			ReactiveSession session = source.unwrap(ReactiveSession.class);
-			final Object[] mergeState = persister.getPropertyValues(entity);
-			final Object[] managedState = persister.getPropertyValues(target);
+			ReactiveSession session = source.unwrap( ReactiveSession.class );
+			final Object[] mergeState = persister.getValues( entity );
+			final Object[] managedState = persister.getValues( target );
 
 			// Cascade-merge mappings do not determine what needs to be fetched.
 			// The value only needs to be fetched if the incoming value (mergeState[i])
 			// is initialized, but its corresponding managed state is not initialized.
 			// Initialization must be done before copyValues() executes.
-			stage = loop(0, mergeState.length,
-					i -> Hibernate.isInitialized( mergeState[i] ) && !Hibernate.isInitialized( managedState[i] ),
-					i -> session.reactiveFetch( managedState[i], true ) );
+			return loop( 0, mergeState.length,
+						  i -> Hibernate.isInitialized( mergeState[i] ) && !Hibernate.isInitialized( managedState[i] ),
+						  i -> session.reactiveFetch( managedState[i], true ) )
+					.thenCompose( v -> copyValues( persister, entity, target, source, mergeContext ) );
 		}
-		return stage.thenCompose( v -> copyValues( persister, entity, target, source, mergeContext ) );
 	}
 
 	protected CompletionStage<Void> copyValues(
@@ -530,13 +533,13 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			final SessionImplementor source,
 			final MergeContext copyCache) {
 		return EntityTypes.replace(
-				persister.getPropertyValues( entity ),
-				persister.getPropertyValues( target ),
+				persister.getValues( entity ),
+				persister.getValues( target ),
 				persister.getPropertyTypes(),
 				source,
 				target,
 				copyCache
-		).thenAccept( copiedValues -> persister.setPropertyValues( target, copiedValues ) );
+		).thenAccept( copiedValues -> persister.setValues( target, copiedValues ) );
 	}
 
 	protected CompletionStage<Void> copyValues(
@@ -552,27 +555,27 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			// replacement to associations types (value types were already replaced
 			// during the first pass)
 			Object[] copiedValues = TypeHelper.replaceAssociations(
-					persister.getPropertyValues( entity ),
-					persister.getPropertyValues( target ),
+					persister.getValues( entity ),
+					persister.getValues( target ),
 					persister.getPropertyTypes(),
 					source,
 					target,
 					copyCache,
 					foreignKeyDirection
 			);
-			persister.setPropertyValues( target, copiedValues );
+			persister.setValues( target, copiedValues );
 			return voidFuture();
 		}
 		else {
 			return EntityTypes.replace(
-					persister.getPropertyValues( entity ),
-					persister.getPropertyValues( target ),
+					persister.getValues( entity ),
+					persister.getValues( target ),
 					persister.getPropertyTypes(),
 					source,
 					target,
 					copyCache,
 					foreignKeyDirection
-			).thenAccept( copiedValues -> persister.setPropertyValues( target, copiedValues ) );
+			).thenAccept( copiedValues -> persister.setValues( target, copiedValues ) );
 		}
 	}
 

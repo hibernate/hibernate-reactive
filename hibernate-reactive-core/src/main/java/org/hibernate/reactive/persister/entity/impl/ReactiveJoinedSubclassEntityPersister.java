@@ -95,6 +95,12 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
+	public String generateIdentityInsertString(boolean[] includeProperty) {
+		String sql =  super.generateIdentityInsertString( includeProperty );
+		return parameters().process( sql, includeProperty.length );
+	}
+
+	@Override
 	public Object insert(
 			Object[] fields, boolean[] notNull, String sql, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {

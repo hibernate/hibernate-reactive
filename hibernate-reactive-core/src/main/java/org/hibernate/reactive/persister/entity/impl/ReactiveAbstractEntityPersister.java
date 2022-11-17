@@ -162,7 +162,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					}
 					else {
 						// For the case of dynamic-insert="false", use the static SQL
-						return insertReactive( fields, delegate().getPropertyInsertability(), delegate().getSQLIdentityInsertString(), session )
+						String sqlIdentityInsertString = delegate().getSQLIdentityInsertString();
+						return insertReactive( fields, delegate().getPropertyInsertability(), sqlIdentityInsertString, session )
 								.thenCompose( id -> loop( 1, span, table -> insertReactive(
 														id,
 														fields,

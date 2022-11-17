@@ -145,7 +145,7 @@ public class EntityTypes {
 			final Type[] types,
 			final SessionImplementor session,
 			final Object owner,
-			final Map copyCache) {
+			final Map<Object, Object> copyCache) {
 		Object[] copied = new Object[original.length];
 		for ( int i = 0; i < types.length; i++ ) {
 			if ( original[i] == UNFETCHED_PROPERTY || original[i] == UNKNOWN ) {
