@@ -68,7 +68,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	}
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
-		return Uni.createFrom().completionStage(stageSupplier).runSubscriptionOn( context );
+		return Uni.createFrom().completionStage( stageSupplier ).runSubscriptionOn( context );
 	}
 
 	@Override

@@ -17,6 +17,9 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.spi.RowTransformer;
 
+/**
+ * @see org.hibernate.sql.exec.spi.JdbcSelectExecutor
+ */
 public interface ReactiveSelectExecutor {
 
 	<T, R> CompletionStage<T> executeQuery(

@@ -62,6 +62,7 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 		final QueryOptions queryOptions = new SimpleQueryOptions( getLockOptions(), readOnly );
 		final Callback callback = new CallbackImpl();
 		ExecutionContext executionContext = executionContext( restrictedValue, entityInstance, session, queryOptions, callback );
+		// FIXME: Should we get this from jdbcServices.getSelectExecutor()?
 		return new ReactiveSelectExecutorStandardImpl()
 				.list( getJdbcSelect(), jdbcParameterBindings, executionContext, getRowTransformer(), resultConsumer( singleResultExpected ) )
 				.thenApply( this::extractEntity )
@@ -78,11 +79,9 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 	}
 
 	private Object extractEntity(List<?> list) {
-		if ( list.isEmpty() ) {
-			return null;
-		}
-
-		return list.get( 0 );
+		return list.isEmpty()
+				? null
+				: list.get( 0 );
 	}
 
 	private static ExecutionContext executionContext(

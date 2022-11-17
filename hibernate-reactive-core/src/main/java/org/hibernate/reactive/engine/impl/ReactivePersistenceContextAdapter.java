@@ -86,7 +86,8 @@ public class ReactivePersistenceContextAdapter extends StatefulPersistenceContex
 			return completedFuture( cached == NO_ROW ? null : cached );
 		}
 		else {
-			return ( (ReactiveEntityPersister) persister ).reactiveGetDatabaseSnapshot( id, session )
+			return ( (ReactiveEntityPersister) persister )
+					.reactiveGetDatabaseSnapshot( id, session )
 					.thenApply( snapshot -> {
 						if ( entitySnapshotsByKey == null ) {
 							entitySnapshotsByKey = new HashMap<>( 8 );

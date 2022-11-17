@@ -116,6 +116,12 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
+	public String generateIdentityInsertString(boolean[] includeProperty) {
+		String sql =  super.generateIdentityInsertString( includeProperty );
+		return parameters().process( sql, includeProperty.length );
+	}
+
+	@Override
 	public boolean hasProxy() {
 		return hasEnhancedProxy();
 	}
