@@ -79,7 +79,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	private CompletionStage<R> reactiveUniqueResultOrFail(List<R> list) {
 		return list.isEmpty()
 				? failedFuture( new NoResultException( String.format( "No result found for query [%s]", getQueryString() ) ) )
-				: completedFuture( uniqueResult() );
+				: completedFuture( uniqueElement( list ) );
 	}
 
 	@Override
@@ -120,6 +120,11 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 				throw getSession().getExceptionConverter()
 						.convert( (HibernateException) e, getQueryOptions().getLockOptions() );
 			}
+			if ( e instanceof RuntimeException ) {
+				throw (RuntimeException) e;
+			}
+
+			throw new HibernateException( e );
 		}
 	}
 

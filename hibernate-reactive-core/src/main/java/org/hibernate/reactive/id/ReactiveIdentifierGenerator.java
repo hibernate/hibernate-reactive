@@ -6,7 +6,6 @@
 package org.hibernate.reactive.id;
 
 import org.hibernate.Incubating;
-import org.hibernate.reactive.id.impl.SequenceReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.impl.TableReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
@@ -23,7 +22,6 @@ import java.util.concurrent.CompletionStage;
  * {@link org.hibernate.annotations.GenericGenerator}.
  *
  * @see TableReactiveIdentifierGenerator
- * @see SequenceReactiveIdentifierGenerator
  */
 @Incubating
 @FunctionalInterface

@@ -12,6 +12,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.EntityEntry;
@@ -31,13 +32,11 @@ import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 
-
 /**
- * An {@link ReactiveEntityPersister} backed by {@link SingleTableEntityPersister}
+ * A {@link ReactiveEntityPersister} backed by {@link SingleTableEntityPersister}
  * and {@link ReactiveAbstractEntityPersister}.
  */
-public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersister
-		implements ReactiveAbstractEntityPersister {
+public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersister implements ReactiveAbstractEntityPersister {
 
 	private final ReactiveAbstractPersisterDelegate reactiveDelegate;
 
@@ -333,8 +332,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 
 	@Override
 	public SingleIdArrayLoadPlan getSQLLazySelectLoadPlan(String fetchGroup) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new NotYetImplementedFor6Exception();
 	}
 
 }

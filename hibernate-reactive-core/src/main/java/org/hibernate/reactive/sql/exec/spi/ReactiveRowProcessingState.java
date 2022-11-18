@@ -96,8 +96,9 @@ public class ReactiveRowProcessingState implements RowProcessingState {
 
 	@Override
 	public boolean isQueryCacheHit() {
+		// TODO [ORM-6]: Implements cached version
 //		return jdbcValues instanceof JdbcValuesCacheHit;
-		return false; // Not implemented yet for reactive
+		return false;
 	}
 
 	public void finishRowProcessing() {

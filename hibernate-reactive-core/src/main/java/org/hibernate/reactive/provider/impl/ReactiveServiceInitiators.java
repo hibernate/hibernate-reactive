@@ -108,8 +108,7 @@ public final class ReactiveServiceInitiators {
 		// serviceInitiators.add( ReactiveQueryTranslatorFactoryInitiator.INSTANCE );
 
 		// Custom for Hibernate Reactive:
-		// FIXME [ORM-6]: Temporarly deleted this class
-		// serviceInitiators.add( ReactiveIdentifierGeneratorFacetoryInitiator.INSTANCE);
+//		serviceInitiators.add( ReactiveIdentifierGeneratorFactoryInitiator.INSTANCE);
 
 		// Custom for Hibernate Reactive:
 		serviceInitiators.add( NoJtaPlatformInitiator.INSTANCE );

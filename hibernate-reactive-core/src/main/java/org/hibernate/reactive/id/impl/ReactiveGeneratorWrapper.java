@@ -12,13 +12,14 @@ import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 /**
  * @author Gavin King
  */
-public class ReactiveGeneratorWrapper<T> implements
-		IdentifierGenerator, ExportableProducer, ReactiveIdentifierGenerator<T> {
+public class ReactiveGeneratorWrapper<T>
+		implements IdentifierGenerator, ExportableProducer, ReactiveIdentifierGenerator<T> {
 
 	private ReactiveIdentifierGenerator<T> reactiveGenerator;
 	private IdentifierGenerator generator;
@@ -34,14 +35,12 @@ public class ReactiveGeneratorWrapper<T> implements
 
 	@Override
 	public CompletionStage<T> generate(ReactiveConnectionSupplier session, Object entity) {
-		return reactiveGenerator.generate(session, entity);
+		return reactiveGenerator.generate( session, entity );
 	}
 
 	@Override
 	public Object generate(SharedSessionContractImplementor session, Object object) {
-		if (generator == null) {
-			throw new UnsupportedOperationException("reactive generator");
-		}
+		Objects.requireNonNull( generator, "Only a reactive generator is available" );
 		return generator.generate( session, object );
 	}
 
@@ -50,8 +49,8 @@ public class ReactiveGeneratorWrapper<T> implements
 		if ( generator != null ) {
 			generator.registerExportables( database );
 		}
-		if (reactiveGenerator instanceof ExportableProducer) {
-			((ExportableProducer) reactiveGenerator).registerExportables( database );
+		if ( reactiveGenerator instanceof ExportableProducer ) {
+			( (ExportableProducer) reactiveGenerator ).registerExportables( database );
 		}
 	}
 }

@@ -107,7 +107,8 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 	}
 
 	private CompletionStage<Boolean> nextState(ReactiveRowProcessingState rowProcessingState, Runnable addResultFunction) {
-		return rowProcessingState.next()
+		return rowProcessingState
+				.next()
 				.thenCompose( hasNext -> {
 					if ( hasNext ) {
 						addResultFunction.run();
@@ -155,8 +156,7 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 			persistenceContext.getLoadContexts().deregister( jdbcValuesSourceProcessingState );
 		}
 
-		final ResultListTransformer<R> resultListTransformer = (ResultListTransformer<R>) queryOptions
-				.getResultListTransformer();
+		final ResultListTransformer<R> resultListTransformer = (ResultListTransformer<R>) queryOptions.getResultListTransformer();
 		return resultListTransformer != null
 				? resultListTransformer.transformList( results.getResults() )
 				: results.getResults();

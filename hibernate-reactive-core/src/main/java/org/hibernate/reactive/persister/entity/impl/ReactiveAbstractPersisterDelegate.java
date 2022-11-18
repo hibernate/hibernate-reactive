@@ -146,7 +146,6 @@ public class ReactiveAbstractPersisterDelegate {
 				: singleIdEntityLoader.load( id, optionalObject, lockOptions, readOnly, session );
 	}
 
-	// FIXME: Is this correct?
 	public IdentifierGenerator reactive(IdentifierGenerator identifierGenerator) {
 		if ( identifierGenerator instanceof IdentityGenerator ) {
 			return new ReactiveIdentityGenerator();
