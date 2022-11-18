@@ -6,11 +6,12 @@
 package org.hibernate.reactive.query.sqm.iternal;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
+import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.ScrollMode;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -40,6 +41,7 @@ import org.hibernate.query.sqm.tree.select.SqmDynamicInstantiation;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.query.sqm.tree.select.SqmSelection;
 import org.hibernate.reactive.query.sqm.spi.SelectReactiveQueryPlan;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.sql.exec.internal.ReactiveSelectExecutorStandardImpl;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.SqlAstTranslator;
@@ -109,29 +111,23 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> implements SelectReactiveQuer
 			RowTransformer<R> rowTransformer) {
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final JdbcSelect jdbcSelect = sqmInterpretation.getJdbcSelect();
-		try {
-			final SubselectFetch.RegistrationHandler subSelectFetchKeyHandler = SubselectFetch
-					.createRegistrationHandler(
-							session.getPersistenceContext().getBatchFetchQueue(),
-							sqmInterpretation.selectStatement,
-							Collections.emptyList(),
-							jdbcParameterBindings
-					);
-
-			session.autoFlushIfRequired( jdbcSelect.getAffectedTableNames() );
-			return new ReactiveSelectExecutorStandardImpl()
-					.list(
-							jdbcSelect,
-							jdbcParameterBindings,
-							adaptExecutionContext( hql, executionContext, jdbcSelect, subSelectFetchKeyHandler ),
-							rowTransformer,
-							ReactiveListResultsConsumer.UniqueSemantic.ALLOW
-					)
-					.whenComplete( (rs, t) -> domainParameterXref.clearExpansions() );
-		}
-		finally {
-			domainParameterXref.clearExpansions();
-		}
+		// I'm using a supplier so that the whenComplete at the end will catch any errors, like a finally block
+		Supplier<SubselectFetch.RegistrationHandler> fetchHandlerSupplier = () -> SubselectFetch
+				.createRegistrationHandler( session.getPersistenceContext().getBatchFetchQueue(), sqmInterpretation.selectStatement, emptyList(), jdbcParameterBindings );
+		return completedFuture( fetchHandlerSupplier )
+				.thenApply( Supplier::get )
+				.thenCompose( subSelectFetchKeyHandler ->  ( (ReactiveSession) session )
+							.reactiveAutoFlushIfRequired( jdbcSelect.getAffectedTableNames() )
+							.thenCompose( required -> new ReactiveSelectExecutorStandardImpl()
+									.list( jdbcSelect,
+										   jdbcParameterBindings,
+										   adaptExecutionContext( hql, executionContext, jdbcSelect, subSelectFetchKeyHandler ),
+										   rowTransformer,
+										   ReactiveListResultsConsumer.UniqueSemantic.ALLOW
+									)
+							)
+				)
+				.whenComplete( (rs, t) -> domainParameterXref.clearExpansions() );
 	}
 
 	private static SqmJdbcExecutionContextAdapter adaptExecutionContext(
@@ -244,7 +240,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> implements SelectReactiveQuer
 
 	@Override
 	public ScrollableResultsImplementor<R> performScroll(ScrollMode scrollMode, DomainQueryExecutionContext executionContext) {
-		throw new UnsupportedOperationException("Not reactive");
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
@@ -280,7 +276,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> implements SelectReactiveQuer
 			}
 		}
 		else {
-			// If the translation depends on parameter bindings or it isn't compatible with the current query options,
+			// If the translation depends on parameter bindings, or it isn't compatible with the current query options,
 			// we have to rebuild the JdbcSelect, which is still better than having to translate from SQM to SQL AST again
 			if ( localCopy.jdbcSelect.dependsOnParameterBindings() ) {
 				jdbcParameterBindings = createJdbcParameterBindings( localCopy, executionContext );
@@ -315,7 +311,6 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> implements SelectReactiveQuer
 				session.getFactory().getRuntimeMetamodels().getMappingMetamodel(),
 				sqmInterpretation.getTableGroupAccess()::findTableGroup,
 				new SqmParameterMappingModelResolutionAccess() {
-					//this is pretty ugly!
 					@Override
 					@SuppressWarnings("unchecked")
 					public <T> MappingModelExpressible<T> getResolvedMappingModelType(SqmParameter<T> parameter) {

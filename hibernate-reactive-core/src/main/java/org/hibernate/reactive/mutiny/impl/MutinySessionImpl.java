@@ -428,7 +428,9 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> Uni<T> withTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
-		return currentTransaction == null ? new Transaction<T>().execute( work ) : work.apply( currentTransaction );
+		return currentTransaction == null
+				? new Transaction<T>().execute( work )
+				: work.apply( currentTransaction );
 	}
 
 	private Transaction<?> currentTransaction;

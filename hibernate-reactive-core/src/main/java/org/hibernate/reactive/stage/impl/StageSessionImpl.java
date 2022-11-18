@@ -17,6 +17,7 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.jpa.internal.util.LockModeTypeHelper;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
@@ -129,17 +130,18 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return find( entityClass, id, LockModeTypeHelper.getLockMode( lockModeType ) );
 	}
 
-	//	@Override
+	// FIXME: Should I delete this?
+//	@Override
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockOptions lockOptions) {
 		return delegate.reactiveFind( entityClass, primaryKey, lockOptions, null );
 	}
 
 	@Override
 	public <T> CompletionStage<T> find(EntityGraph<T> entityGraph, Object id) {
-		Class<T> entityClass = ((RootGraphImplementor<T>) entityGraph).getGraphedType().getJavaType();
+		Class<T> entityClass = ( (RootGraphImplementor<T>) entityGraph ).getGraphedType().getJavaType();
 		return delegate.reactiveFind( entityClass, id, null, entityGraph );
 	}
 

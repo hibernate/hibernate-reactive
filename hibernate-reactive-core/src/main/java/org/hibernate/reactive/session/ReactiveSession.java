@@ -7,6 +7,7 @@ package org.hibernate.reactive.session;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.CacheMode;
@@ -69,6 +70,8 @@ public interface ReactiveSession extends ReactiveQueryExecutor  {
 	CompletionStage<Void> reactiveFlush();
 
 	CompletionStage<Void> reactiveAutoflush();
+
+	CompletionStage<Boolean> reactiveAutoFlushIfRequired(Set<String> querySpaces);
 
 	CompletionStage<Void> reactiveForceFlush(EntityEntry entry);
 

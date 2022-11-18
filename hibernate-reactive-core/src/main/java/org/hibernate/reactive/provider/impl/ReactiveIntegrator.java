@@ -8,6 +8,7 @@ package org.hibernate.reactive.provider.impl;
 import java.lang.invoke.MethodHandles;
 
 import org.hibernate.boot.Metadata;
+import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventType;
@@ -27,6 +28,7 @@ import org.hibernate.reactive.event.impl.DefaultReactiveRefreshEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveResolveNaturalIdEventListener;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 
 /**
@@ -42,26 +44,20 @@ public class ReactiveIntegrator implements Integrator {
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	@Override
-	public void integrate(
-			Metadata metadata,
-			SessionFactoryImplementor sessionFactory,
-			SessionFactoryServiceRegistry serviceRegistry) {
-		attachEventContextManagingListenersIfRequired( serviceRegistry );
+	public void integrate(Metadata metadata, BootstrapContext bootstrapContext, SessionFactoryImplementor sessionFactory) {
+		attachEventContextManagingListenersIfRequired( sessionFactory.getServiceRegistry() );
 	}
 
 	@Override
-	public void disintegrate(
-			SessionFactoryImplementor sessionFactory, SessionFactoryServiceRegistry serviceRegistry) {
+	public void disintegrate(SessionFactoryImplementor sessionFactory, SessionFactoryServiceRegistry serviceRegistry) {
 	}
 
-	private void attachEventContextManagingListenersIfRequired(SessionFactoryServiceRegistry serviceRegistry) {
+	private void attachEventContextManagingListenersIfRequired(ServiceRegistry serviceRegistry) {
 		if ( ReactiveModeCheck.isReactiveRegistry( serviceRegistry ) ) {
-
 			LOG.startHibernateReactive();
 
 			EventListenerRegistry eventListenerRegistry = serviceRegistry.getService( EventListenerRegistry.class );
 			eventListenerRegistry.addDuplicationStrategy( ReplacementDuplicationStrategy.INSTANCE );
-
 			eventListenerRegistry.getEventListenerGroup( EventType.AUTO_FLUSH ).appendListener( new DefaultReactiveAutoFlushEventListener() );
 			eventListenerRegistry.getEventListenerGroup( EventType.FLUSH ).appendListener( new DefaultReactiveFlushEventListener() );
 			eventListenerRegistry.getEventListenerGroup( EventType.FLUSH_ENTITY ).appendListener( new DefaultReactiveFlushEntityEventListener() );
@@ -77,5 +73,4 @@ public class ReactiveIntegrator implements Integrator {
 			eventListenerRegistry.getEventListenerGroup( EventType.RESOLVE_NATURAL_ID ).appendListener( new DefaultReactiveResolveNaturalIdEventListener() );
 		}
 	}
-
 }

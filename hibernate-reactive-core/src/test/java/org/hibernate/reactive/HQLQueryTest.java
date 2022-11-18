@@ -40,7 +40,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	@Test
 	public void testAutoFlushOnSingleResult(TestContext context) {
 		Flour semolina = new Flour( 678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
-		test( context, getSessionFactory().withSession( s -> s
+		test( context, getSessionFactory().withTransaction( s -> s
 				.persist( semolina )
 				.thenCompose( v -> s.createQuery( "from Flour where id = " + semolina.getId() ).getSingleResult() )
 				.thenAccept( found -> context.assertEquals( semolina, found ) ) )
@@ -50,7 +50,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	@Test
 	public void testAutoFlushOnResultList(TestContext context) {
 		Flour semolina = new Flour( 678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
-		test( context, getSessionFactory().withSession( s -> s
+		test( context, getSessionFactory().withTransaction( s -> s
 				.persist( semolina )
 				.thenCompose( v -> s.createQuery( "from Flour order by name" ).getResultList()
 						.thenAccept( results -> {
@@ -66,19 +66,21 @@ public class HQLQueryTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testSelectScalarValues(TestContext context) {
+	public void testSelectScalarString(TestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-				  Stage.Query<Object> qr = s.createQuery( "SELECT 'Prova' FROM Flour WHERE id = " + rye.getId() );
-				  context.assertNotNull( qr );
-				  return qr.getSingleResult();
-			  } ).thenAccept( found -> context.assertEquals( "Prova", found ) )
-		);
+			Stage.Query<Object> qr = s.createQuery( "SELECT 'Prova' FROM Flour WHERE id = " + rye.getId() );
+			context.assertNotNull( qr );
+			return qr.getSingleResult();
+		} ).thenAccept( found -> context.assertEquals( "Prova", found ) ) );
+	}
+
+	@Test
+	public void testSelectScalarCount(TestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-					Stage.Query<Long> qr = s.createQuery( "SELECT count(*) FROM Flour", Long.class );
-					context.assertNotNull( qr );
-					return qr.getSingleResult();
-				} ).thenAccept( found -> context.assertEquals(3L, found ) )
-		);
+			Stage.Query<Long> qr = s.createQuery( "SELECT count(*) FROM Flour", Long.class );
+			context.assertNotNull( qr );
+			return qr.getSingleResult();
+		} ).thenAccept( found -> context.assertEquals( 3L, found ) ) );
 	}
 
 	@Test

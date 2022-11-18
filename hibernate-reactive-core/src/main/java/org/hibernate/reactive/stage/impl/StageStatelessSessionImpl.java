@@ -131,7 +131,9 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	@Override
 	public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
-		return currentTransaction == null ? new Transaction<T>().execute( work ) : work.apply( currentTransaction );
+		return currentTransaction == null
+				? new Transaction<T>().execute( work )
+				: work.apply( currentTransaction );
 	}
 
 	@Override

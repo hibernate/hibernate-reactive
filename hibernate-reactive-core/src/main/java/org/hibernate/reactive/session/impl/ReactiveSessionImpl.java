@@ -8,6 +8,7 @@ package org.hibernate.reactive.session.impl;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
@@ -35,6 +36,7 @@ import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
+import org.hibernate.event.spi.AutoFlushEvent;
 import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.EventSource;
@@ -74,6 +76,7 @@ import org.hibernate.reactive.event.ReactiveMergeEventListener;
 import org.hibernate.reactive.event.ReactivePersistEventListener;
 import org.hibernate.reactive.event.ReactiveRefreshEventListener;
 import org.hibernate.reactive.event.ReactiveResolveNaturalIdEventListener;
+import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveInitializeCollectionEventListener;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -96,6 +99,7 @@ import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnE
 import static org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister.forceInitialize;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
@@ -230,7 +234,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy) {
 		checkOpen();
 		if ( association == null ) {
-			return CompletionStages.nullFuture();
+			return nullFuture();
 		}
 
 		if ( association instanceof HibernateProxy ) {
@@ -272,7 +276,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 			}
 			else {
-				return CompletionStages.completedFuture( association );
+				return completedFuture( association );
 			}
 		}
 		else {
@@ -398,9 +402,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> firePersist(PersistContext copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_PERSIST.fireEventOnEachListener( event, copiedAlready,
-																					   (ReactivePersistEventListener l) -> l::reactiveOnPersist
-				)
+		return fastSessionServices.eventListenerGroup_PERSIST
+				.fireEventOnEachListener( event, copiedAlready, (ReactivePersistEventListener l) -> l::reactiveOnPersist )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -423,9 +426,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> firePersistOnFlush(PersistContext copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_PERSIST.fireEventOnEachListener( event, copiedAlready,
-																					   (ReactivePersistEventListener l) -> l::reactiveOnPersist
-				)
+		return fastSessionServices.eventListenerGroup_PERSIST
+				.fireEventOnEachListener( event, copiedAlready, (ReactivePersistEventListener l) -> l::reactiveOnPersist )
 				.whenComplete( (v, e) -> delayedAfterCompletion() );
 	}
 
@@ -564,9 +566,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireMerge(MergeContext copiedAlready, MergeEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_MERGE.fireEventOnEachListener( event, copiedAlready,
-																					 (ReactiveMergeEventListener l) -> l::reactiveOnMerge
-				)
+		return fastSessionServices.eventListenerGroup_MERGE
+				.fireEventOnEachListener( event, copiedAlready,(ReactiveMergeEventListener l) -> l::reactiveOnMerge )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -593,6 +594,21 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public CompletionStage<Void> reactiveAutoflush() {
 		return getHibernateFlushMode().lessThan( FlushMode.COMMIT ) ? voidFuture() : doFlush();
+	}
+
+	@Override
+	public CompletionStage<Boolean> reactiveAutoFlushIfRequired(Set<String> querySpaces) {
+		checkOpen();
+		// FIXME: Can't we implement this part?
+//		if ( !isTransactionInProgress() ) {
+//			// do not auto-flush while outside a transaction
+//			return CompletionStages.falseFuture();
+//		}
+
+		AutoFlushEvent event = new AutoFlushEvent( querySpaces, this );
+		return fastSessionServices.eventListenerGroup_AUTO_FLUSH
+				.fireEventOnEachListener( event, (DefaultReactiveAutoFlushEventListener l) -> l::reactiveOnAutoFlush )
+				.thenApply( v -> event.isFlushRequired() );
 	}
 
 	@Override
@@ -983,7 +999,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		@SuppressWarnings("unchecked")
 		protected final CompletionStage<T> doLoad(Object id, LoadEventListener.LoadType loadType) {
 			if ( id == null ) {
-				return CompletionStages.nullFuture();
+				return nullFuture();
 			}
 			if ( lockOptions != null ) {
 				LoadEvent event = new LoadEvent(

@@ -20,7 +20,7 @@ public final class ReactiveModeCheck {
 	}
 
 	public static boolean isReactiveRegistry(final ServiceRegistry serviceRegistry) {
-		//TODO improve how we do this check?
+		//FIXME improve how we do this check?
 		try {
 			serviceRegistry.requireService( ReactiveMarkerService.class );
 			return true;
@@ -30,5 +30,4 @@ public final class ReactiveModeCheck {
 			return false;
 		}
 	}
-
 }
