@@ -7,6 +7,7 @@ package org.hibernate.reactive.id.impl;
 
 import org.hibernate.boot.model.relational.Database;
 import org.hibernate.boot.model.relational.ExportableProducer;
+import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
@@ -31,6 +32,13 @@ public class ReactiveGeneratorWrapper<T>
 
 	public ReactiveGeneratorWrapper(ReactiveIdentifierGenerator<T> reactiveGenerator) {
 		this.reactiveGenerator = reactiveGenerator;
+	}
+
+	@Override
+	public void initialize(SqlStringGenerationContext context) {
+		if ( reactiveGenerator instanceof IdentifierGenerator ) {
+			( (IdentifierGenerator) reactiveGenerator ).initialize( context );
+		}
 	}
 
 	@Override

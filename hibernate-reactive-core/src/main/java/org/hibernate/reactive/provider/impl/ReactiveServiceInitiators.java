@@ -21,6 +21,7 @@ import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.context.impl.VertxContextInitiator;
+import org.hibernate.reactive.id.factory.spi.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfigurationInitiator;
 import org.hibernate.reactive.provider.service.NoJdbcMultiTenantConnectionProviderInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
@@ -93,6 +94,9 @@ public final class ReactiveServiceInitiators {
 		// Custom for Hibernate Reactive:
 		serviceInitiators.add( NoJdbcConnectionProviderInitiator.INSTANCE );
 		serviceInitiators.add( NoJdbcMultiTenantConnectionProviderInitiator.INSTANCE );
+
+		//Custom for Hibernate Reactive:
+		serviceInitiators.add( ReactiveIdentifierGeneratorFactoryInitiator.INSTANCE);
 
 		serviceInitiators.add( DialectResolverInitiator.INSTANCE );
 		serviceInitiators.add( DialectFactoryInitiator.INSTANCE );
