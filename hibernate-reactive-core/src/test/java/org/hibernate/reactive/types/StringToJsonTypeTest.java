@@ -47,9 +47,9 @@ public class StringToJsonTypeTest extends BaseReactiveTest {
 	@Test
 	public void testJsonType(TestContext context) {
 		Basic basic = new Basic();
-		basic.json = new JsonObject().put("int", 123).put("str", "hello").encodePrettily();
+		basic.json = new JsonObject().put( "int", 123 ).put( "str", "hello" ).encodePrettily();
 
-		testField( context, basic, found -> context.assertEquals( basic.json, found.json) );
+		testField( context, basic, found -> context.assertEquals( basic.json, found.json ) );
 	}
 
 	@Test
@@ -57,7 +57,7 @@ public class StringToJsonTypeTest extends BaseReactiveTest {
 		Basic basic = new Basic();
 		basic.json = null;
 
-		testField( context, basic, found -> context.assertEquals(basic.json, found.json) );
+		testField( context, basic, found -> context.assertEquals( basic.json, found.json ) );
 	}
 
 	/**
@@ -68,7 +68,7 @@ public class StringToJsonTypeTest extends BaseReactiveTest {
 				context,
 				getSessionFactory().withTransaction( (s, t) -> s.persist( original ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose( s2 -> s2.find( Basic.class,  original.id )
+						.thenCompose( s2 -> s2.find( Basic.class, original.id )
 								.thenAccept( found -> {
 									context.assertNotNull( found );
 									context.assertEquals( original, found );
@@ -77,12 +77,15 @@ public class StringToJsonTypeTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity(name="JsonEntity")
-	@Table(name="JsonEntity")
+	@Entity(name = "JsonEntity")
+	@Table(name = "JsonEntity")
 	private static class Basic {
 
-		@Id @GeneratedValue Integer id;
-		@Version Integer version;
+		@Id
+		@GeneratedValue
+		Integer id;
+		@Version
+		Integer version;
 		String string;
 
 		@Column(columnDefinition = "json")
@@ -123,12 +126,12 @@ public class StringToJsonTypeTest extends BaseReactiveTest {
 				return false;
 			}
 			Basic basic = (Basic) o;
-			return Objects.equals(string, basic.string);
+			return Objects.equals( string, basic.string );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(string);
+			return Objects.hash( string );
 		}
 	}
 }
