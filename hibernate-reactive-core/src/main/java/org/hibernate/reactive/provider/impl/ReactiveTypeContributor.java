@@ -43,7 +43,7 @@ public class ReactiveTypeContributor implements TypeContributor {
 		BasicTypeRegistry basicTypeRegistry = typeContributions.getTypeConfiguration().getBasicTypeRegistry();
 		Dialect dialect = serviceRegistry.getService( JdbcEnvironment.class ).getDialect();
 		// FIXME: [ORM6] I don't think we need these two anymore
-//		basicTypeRegistry.register( new BlobType( dialect ) );
+//		basicTypeRegistry.register( new Bl obType( dialect ) );
 //		basicTypeRegistry.register( new ClobType( dialect ) );
 		basicTypeRegistry.register( new JsonType( dialect ) );
 	}
