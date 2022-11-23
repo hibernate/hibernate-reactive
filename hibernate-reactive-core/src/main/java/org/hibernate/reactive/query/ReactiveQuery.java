@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.query;
 
 import java.time.Instant;
@@ -57,7 +62,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	@Override
 	ReactiveQuery<R> setLockMode(String alias, LockMode lockMode);
 
-	ReactiveQuery<R> setTupleTransformer(TupleTransformer<R> transformer);
+	<T> ReactiveQuery<T> setTupleTransformer(TupleTransformer<T> transformer);
 
 	ReactiveQuery<R> setResultListTransformer(ResultListTransformer<R> transformer);
 
@@ -165,8 +170,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 */
 	<P> ReactiveQuery<R> setParameterList(String parameter, Collection<? extends P> arguments, BindableType<P> type);
 
-
-	/**
+ 	/**
 	 * Bind multiple arguments to a named query parameter.
 	 * <p/>
 	 * The "type mapping" for the binding is inferred from the type of

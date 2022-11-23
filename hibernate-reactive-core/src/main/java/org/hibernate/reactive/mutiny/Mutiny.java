@@ -80,125 +80,125 @@ import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheStor
 public interface Mutiny {
 	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	interface MutationQuery<R> extends CommonQueryContract<R> {
+	interface MutationQuery<R> extends CommonQueryContract {
 		Uni<Integer> executeUpdate();
 
 		@Override
-		Mutiny.MutationQuery setParameter(String name, Object value);
+		Mutiny.MutationQuery<R> setParameter(String name, Object value);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameter(String name, P value, Class<P> type);
+		<P> Mutiny.MutationQuery<R> setParameter(String name, P value, Class<P> type);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameter(String name, P value, BindableType<P> type);
+		<P> Mutiny.MutationQuery<R> setParameter(String name, P value, BindableType<P> type);
 
 		@Override
-		Mutiny.MutationQuery setParameter(String name, Instant value, TemporalType temporalType);
+		Mutiny.MutationQuery<R> setParameter(String name, Instant value, TemporalType temporalType);
 
 		@Override
-		Mutiny.MutationQuery setParameter(String name, Calendar value, TemporalType temporalType);
+		Mutiny.MutationQuery<R> setParameter(String name, Calendar value, TemporalType temporalType);
 
 		@Override
-		Mutiny.MutationQuery setParameter(String name, Date value, TemporalType temporalType);
+		Mutiny.MutationQuery<R> setParameter(String name, Date value, TemporalType temporalType);
 
 		@Override
-		Mutiny.MutationQuery setParameter(int position, Object value);
+		Mutiny.MutationQuery<R> setParameter(int position, Object value);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameter(int position, P value, Class<P> type);
+		<P> Mutiny.MutationQuery<R> setParameter(int position, P value, Class<P> type);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameter(int position, P value, BindableType<P> type);
+		<P> Mutiny.MutationQuery<R> setParameter(int position, P value, BindableType<P> type);
 
 		@Override
-		Mutiny.MutationQuery setParameter(int position, Instant value, TemporalType temporalType);
+		Mutiny.MutationQuery<R> setParameter(int position, Instant value, TemporalType temporalType);
 
 		@Override
-		Mutiny.MutationQuery setParameter(int position, Date value, TemporalType temporalType);
+		Mutiny.MutationQuery<R> setParameter(int position, Date value, TemporalType temporalType);
 
 		@Override
-		Mutiny.MutationQuery setParameter(int position, Calendar value, TemporalType temporalType);
+		Mutiny.MutationQuery<R> setParameter(int position, Calendar value, TemporalType temporalType);
 
 		@Override
-		<T> Mutiny.MutationQuery setParameter(QueryParameter<T> parameter, T value);
+		<T> Mutiny.MutationQuery<R> setParameter(QueryParameter<T> parameter, T value);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameter(QueryParameter<P> parameter, P value, Class<P> type);
+		<P> Mutiny.MutationQuery<R> setParameter(QueryParameter<P> parameter, P value, Class<P> type);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameter(QueryParameter<P> parameter, P val, BindableType<P> type);
+		<P> Mutiny.MutationQuery<R> setParameter(QueryParameter<P> parameter, P val, BindableType<P> type);
 
 		@Override
-		<T> Mutiny.MutationQuery setParameter(Parameter<T> param, T value);
+		<T> Mutiny.MutationQuery<R> setParameter(Parameter<T> param, T value);
 
 		@Override
-		Mutiny.MutationQuery setParameter(Parameter<Calendar> param, Calendar value, TemporalType temporalType);
+		Mutiny.MutationQuery<R> setParameter(Parameter<Calendar> param, Calendar value, TemporalType temporalType);
 
 		@Override
-		Mutiny.MutationQuery setParameter(Parameter<Date> param, Date value, TemporalType temporalType);
+		Mutiny.MutationQuery<R> setParameter(Parameter<Date> param, Date value, TemporalType temporalType);
 
 		@Override
-		Mutiny.MutationQuery setParameterList(String name, @SuppressWarnings("rawtypes") Collection values);
+		Mutiny.MutationQuery<R> setParameterList(String name, @SuppressWarnings("rawtypes") Collection values);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(String name, Collection<? extends P> values, Class<P> javaType);
+		<P> Mutiny.MutationQuery<R> setParameterList(String name, Collection<? extends P> values, Class<P> javaType);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(String name, Collection<? extends P> values, BindableType<P> type);
+		<P> Mutiny.MutationQuery<R> setParameterList(String name, Collection<? extends P> values, BindableType<P> type);
 
 		@Override
-		Mutiny.MutationQuery setParameterList(String name, Object[] values);
+		Mutiny.MutationQuery<R> setParameterList(String name, Object[] values);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(String name, P[] values, Class<P> javaType);
+		<P> Mutiny.MutationQuery<R> setParameterList(String name, P[] values, Class<P> javaType);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(String name, P[] values, BindableType<P> type);
+		<P> Mutiny.MutationQuery<R> setParameterList(String name, P[] values, BindableType<P> type);
 
 		@Override
-		Mutiny.MutationQuery setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
+		Mutiny.MutationQuery<R> setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(int position, Collection<? extends P> values, Class<P> javaType);
+		<P> Mutiny.MutationQuery<R> setParameterList(int position, Collection<? extends P> values, Class<P> javaType);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(int position, Collection<? extends P> values, BindableType<P> type);
+		<P> Mutiny.MutationQuery<R> setParameterList(int position, Collection<? extends P> values, BindableType<P> type);
 
 		@Override
-		Mutiny.MutationQuery setParameterList(int position, Object[] values);
+		Mutiny.MutationQuery<R> setParameterList(int position, Object[] values);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(int position, P[] values, Class<P> javaType);
+		<P> Mutiny.MutationQuery<R> setParameterList(int position, P[] values, Class<P> javaType);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(int position, P[] values, BindableType<P> type);
+		<P> Mutiny.MutationQuery<R> setParameterList(int position, P[] values, BindableType<P> type);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(QueryParameter<P> parameter, Collection<? extends P> values);
+		<P> Mutiny.MutationQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType);
+		<P> Mutiny.MutationQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type);
+		<P> Mutiny.MutationQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(QueryParameter<P> parameter, P[] values);
+		<P> Mutiny.MutationQuery<R> setParameterList(QueryParameter<P> parameter, P[] values);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType);
+		<P> Mutiny.MutationQuery<R> setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType);
 
 		@Override
-		<P> Mutiny.MutationQuery setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type);
+		<P> Mutiny.MutationQuery<R> setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type);
 
 		@Override
-		Mutiny.MutationQuery setProperties(Object bean);
+		Mutiny.MutationQuery<R> setProperties(Object bean);
 
 		@Override
-		Mutiny.MutationQuery setProperties(@SuppressWarnings("rawtypes") Map bean);
+		Mutiny.MutationQuery<R> setProperties(@SuppressWarnings("rawtypes") Map bean);
 
 		@Override
-		Mutiny.MutationQuery setHibernateFlushMode(FlushMode flushMode);
+		Mutiny.MutationQuery<R> setHibernateFlushMode(FlushMode flushMode);
 	}
 
 	interface SelectionQuery<R> extends CommonQueryContract {
@@ -231,11 +231,7 @@ public interface Mutiny {
 		Mutiny.SelectionQuery<R> setHibernateFlushMode(FlushMode flushMode);
 
 		@Override
-		Mutiny.SelectionQuery<R> setTimeout(int timeout);
-
-		Uni<Integer> executeUpdate();
-
-		Mutiny.Session getSession();
+		Mutiny.SelectionQuery<R> setTimeout(int timeout);;
 
 		Integer getFetchSize();
 
@@ -248,7 +244,7 @@ public interface Mutiny {
 		Mutiny.SelectionQuery<R> setMaxResults(int maxResult);
 
 		int getFirstResult();
-		
+
 		Mutiny.SelectionQuery<R> setFirstResult(int startPosition);
 
 		CacheMode getCacheMode();
@@ -405,7 +401,8 @@ public interface Mutiny {
 		Mutiny.SelectionQuery<R> setProperties(@SuppressWarnings("rawtypes") Map bean);
 	}
 
-	interface Query<R> extends Mutiny.SelectionQuery<R> {
+	interface
+	Query<R> extends Mutiny.SelectionQuery<R>, Mutiny.MutationQuery<R> {
 		String getQueryString();
 
 		Mutiny.Query<R> applyGraph(@SuppressWarnings("rawtypes") RootGraph graph, GraphSemantic semantic);
@@ -905,21 +902,6 @@ public interface Mutiny {
 			return find( entityClass, id, convertToLockMode( lockModeType ) );
 		}
 
-//		/**
-//		 * Asynchronously return the persistent instance of the given entity
-//		 * class with the given identifier, requesting the given {@link LockOptions}.
-//		 *
-//		 * @param entityClass The entity type
-//		 * @param id an identifier
-//		 * @param lockOptions the requested {@link LockOptions}
-//		 *
-//		 * @return a persistent instance or null via a {@code Uni}
-//		 *
-//		 * @see #find(Class,Object)
-//		 * @see #lock(Object, LockMode) this discussion of lock modes
-//		 */
-//		<T> Uni<T> find(Class<T> entityClass, Object id, LockOptions lockOptions);
-
 		/**
 		 * Asynchronously return the persistent instance with the given
 		 * identifier of an entity class, using the given {@link EntityGraph}
@@ -1113,17 +1095,6 @@ public interface Mutiny {
 			return refresh( entity, convertToLockMode( lockModeType ) );
 		}
 
-//		/**
-//		 * Re-read the state of the given instance from the underlying database,
-//		 * requesting the given {@link LockOptions}.
-//		 *
-//		 * @param entity a managed persistent entity instance
-//		 * @param lockOptions the requested {@link LockOptions}
-//		 *
-//		 * @see #refresh(Object)
-//		 */
-//		Uni<Void> refresh(Object entity, LockOptions lockOptions);
-
 		/**
 		 * Refresh multiple entity instances at once.
 		 *
@@ -1180,17 +1151,6 @@ public interface Mutiny {
 		default Uni<Void> lock(Object entity, LockModeType lockModeType) {
 			return lock( entity, convertToLockMode( lockModeType ) );
 		}
-
-//		/**
-//		 * Obtain the specified lock level upon the given object, with the given
-//		 * {@link LockOptions}.
-//		 *
-//		 * @param entity a managed persistent instance
-//		 * @param lockOptions the requested {@link LockOptions}
-//		 *
-//		 * @throws IllegalArgumentException if the given instance is not managed
-//		 */
-//		Uni<Void> lock(Object entity, LockOptions lockOptions);
 
 		/**
 		 * Force this session to flush asynchronously. Must be called at the

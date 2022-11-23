@@ -53,6 +53,8 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType);
 
+	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString);
+
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass);
 
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass, String tableAlias);
@@ -96,4 +98,3 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 	@SuppressWarnings("rawtypes")
 	ReactiveNativeQuery getNamedReactiveNativeQuery(String name, String resultSetMapping);
 }
-

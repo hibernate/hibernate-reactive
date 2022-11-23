@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.query;
 
 import java.time.Instant;
@@ -16,7 +21,6 @@ import org.hibernate.LockOptions;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.CommonQueryContract;
 import org.hibernate.query.QueryParameter;
-import org.hibernate.reactive.stage.Stage;
 
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
@@ -50,9 +54,6 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	@Override
 	ReactiveSelectionQuery<R> setTimeout(int timeout);
-
-	CompletionStage<Integer> executeUpdate();
-
 	Integer getFetchSize();
 
 	ReactiveSelectionQuery<R> setFetchSize(int fetchSize);

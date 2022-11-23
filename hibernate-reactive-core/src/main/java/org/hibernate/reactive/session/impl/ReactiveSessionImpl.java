@@ -64,6 +64,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.sql.internal.NativeQueryImpl;
@@ -85,6 +86,10 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.query.ReactiveMutationQuery;
+import org.hibernate.reactive.query.ReactiveNativeQuery;
+import org.hibernate.reactive.query.ReactiveQuery;
+import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.query.sqm.iternal.ReactiveQuerySqmImpl;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -92,6 +97,8 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
@@ -293,12 +300,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <R> ReactiveSqmQueryImplementor<R> createReactiveQuery(String queryString) {
+	public <R> ReactiveQuery<R> createReactiveQuery(String queryString) {
 		return createReactiveQuery( queryString, null );
 	}
 
 	@Override
-	public <R> ReactiveSqmQueryImplementor<R> createReactiveQuery(String queryString, Class<R> expectedResultType) {
+	public <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> expectedResultType) {
 		checkOpen();
 		pulseTransactionCoordinator();
 		delayedAfterCompletion();
@@ -355,7 +362,72 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <T> ReactiveSqmQueryImplementor<T> createReactiveNativeQuery(String sqlString, String resultSetMapping) {
+	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass, String tableAlias) {
+		return null;
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName, Class<R> resultClass) {
+		return null;
+	}
+
+	@Override
+	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString) {
+		return null;
+	}
+
+	@Override
+	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, Class<R> resultType) {
+		return null;
+	}
+
+	@Override
+	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaQuery<R> criteria) {
+		return null;
+	}
+
+	@Override
+	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(String hqlString) {
+		return null;
+	}
+
+	@Override
+	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate updateQuery) {
+		return null;
+	}
+
+	@Override
+	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect insertSelect) {
+		return null;
+	}
+
+	@Override
+	public <R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name, Class<R> resultClass) {
+		return null;
+	}
+
+	@Override
+	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name) {
+		return null;
+	}
+
+	@Override
+	public <R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name) {
+		return null;
+	}
+
+	@Override
+	public <R> ReactiveQuery getNamedReactiveQuery(String queryName) {
+		return null;
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery getNamedReactiveNativeQuery(String name) {
+		return null;
+	}
+
+	@Override
+	public ReactiveNativeQuery getNamedReactiveNativeQuery(String name, String resultSetMapping) {
 		return null;
 	}
 
