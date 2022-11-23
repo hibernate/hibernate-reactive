@@ -103,124 +103,125 @@ public interface Stage {
 		CompletionStage<Integer> executeUpdate();
 
 		@Override
-		Stage.MutationQuery setParameter(String name, Object value);
+		Stage.MutationQuery<R> setParameter(String name, Object value);
 
 		@Override
-		<P> Stage.MutationQuery setParameter(String name, P value, Class<P> type);
+		<P> Stage.MutationQuery<R> setParameter(String name, P value, Class<P> type);
 
 		@Override
-		<P> Stage.MutationQuery setParameter(String name, P value, BindableType<P> type);
+		<P> Stage.MutationQuery<R> setParameter(String name, P value, BindableType<P> type);
 
 		@Override
-		Stage.MutationQuery setParameter(String name, Instant value, TemporalType temporalType);
+		Stage.MutationQuery<R> setParameter(String name, Instant value, TemporalType temporalType);
 
 		@Override
-		Stage.MutationQuery setParameter(String name, Calendar value, TemporalType temporalType);
+		Stage.MutationQuery<R> setParameter(String name, Calendar value, TemporalType temporalType);
 
 		@Override
-		Stage.MutationQuery setParameter(String name, Date value, TemporalType temporalType);
+		Stage.MutationQuery<R> setParameter(String name, Date value, TemporalType temporalType);
 
 		@Override
-		Stage.MutationQuery setParameter(int position, Object value);
+		Stage.MutationQuery<R> setParameter(int position, Object value);
 
 		@Override
-		<P> Stage.MutationQuery setParameter(int position, P value, Class<P> type);
+		<P> Stage.MutationQuery<R> setParameter(int position, P value, Class<P> type);
 
 		@Override
-		<P> Stage.MutationQuery setParameter(int position, P value, BindableType<P> type);
+		<P> Stage.MutationQuery<R> setParameter(int position, P value, BindableType<P> type);
 
 		@Override
-		Stage.MutationQuery setParameter(int position, Instant value, TemporalType temporalType);
+		Stage.MutationQuery<R> setParameter(int position, Instant value, TemporalType temporalType);
 
 		@Override
-		Stage.MutationQuery setParameter(int position, Date value, TemporalType temporalType);
+		Stage.MutationQuery<R> setParameter(int position, Date value, TemporalType temporalType);
 
 		@Override
-		Stage.MutationQuery setParameter(int position, Calendar value, TemporalType temporalType);
+		Stage.MutationQuery<R> setParameter(int position, Calendar value, TemporalType temporalType);
 
 		@Override
-		<T> Stage.MutationQuery setParameter(QueryParameter<T> parameter, T value);
+		<T> Stage.MutationQuery<R> setParameter(QueryParameter<T> parameter, T value);
 
 		@Override
-		<P> Stage.MutationQuery setParameter(QueryParameter<P> parameter, P value, Class<P> type);
+		<P> Stage.MutationQuery<R> setParameter(QueryParameter<P> parameter, P value, Class<P> type);
 
 		@Override
-		<P> Stage.MutationQuery setParameter(QueryParameter<P> parameter, P val, BindableType<P> type);
+		<P> Stage.MutationQuery<R> setParameter(QueryParameter<P> parameter, P val, BindableType<P> type);
 
 		@Override
-		<T> Stage.MutationQuery setParameter(Parameter<T> param, T value);
+		<T> Stage.MutationQuery<R> setParameter(Parameter<T> param, T value);
 
 		@Override
-		Stage.MutationQuery setParameter(Parameter<Calendar> param, Calendar value, TemporalType temporalType);
+		Stage.MutationQuery<R> setParameter(Parameter<Calendar> param, Calendar value, TemporalType temporalType);
 
 		@Override
-		Stage.MutationQuery setParameter(Parameter<Date> param, Date value, TemporalType temporalType);
+		Stage.MutationQuery<R> setParameter(Parameter<Date> param, Date value, TemporalType temporalType);
 
 		@Override
-		Stage.MutationQuery setParameterList(String name, @SuppressWarnings("rawtypes") Collection values);
+		Stage.MutationQuery<R> setParameterList(String name, @SuppressWarnings("rawtypes") Collection values);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(String name, Collection<? extends P> values, Class<P> javaType);
+		<P> Stage.MutationQuery<R> setParameterList(String name, Collection<? extends P> values, Class<P> javaType);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(String name, Collection<? extends P> values, BindableType<P> type);
+		<P> Stage.MutationQuery<R> setParameterList(String name, Collection<? extends P> values, BindableType<P> type);
 
 		@Override
-		Stage.MutationQuery setParameterList(String name, Object[] values);
+		Stage.MutationQuery<R> setParameterList(String name, Object[] values);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(String name, P[] values, Class<P> javaType);
+		<P> Stage.MutationQuery<R> setParameterList(String name, P[] values, Class<P> javaType);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(String name, P[] values, BindableType<P> type);
+		<P> Stage.MutationQuery<R> setParameterList(String name, P[] values, BindableType<P> type);
 
 		@Override
-		Stage.MutationQuery setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
+		Stage.MutationQuery<R> setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(int position, Collection<? extends P> values, Class<P> javaType);
+		<P> Stage.MutationQuery<R> setParameterList(int position, Collection<? extends P> values, Class<P> javaType);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(int position, Collection<? extends P> values, BindableType<P> type);
+		<P> Stage.MutationQuery<R> setParameterList(int position, Collection<? extends P> values, BindableType<P> type);
 
 		@Override
-		Stage.MutationQuery setParameterList(int position, Object[] values);
+		Stage.MutationQuery<R> setParameterList(int position, Object[] values);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(int position, P[] values, Class<P> javaType);
+		<P> Stage.MutationQuery<R> setParameterList(int position, P[] values, Class<P> javaType);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(int position, P[] values, BindableType<P> type);
+		<P> Stage.MutationQuery<R> setParameterList(int position, P[] values, BindableType<P> type);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(QueryParameter<P> parameter, Collection<? extends P> values);
+		<P> Stage.MutationQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType);
+		<P> Stage.MutationQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type);
+		<P> Stage.MutationQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(QueryParameter<P> parameter, P[] values);
+		<P> Stage.MutationQuery<R> setParameterList(QueryParameter<P> parameter, P[] values);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType);
+		<P> Stage.MutationQuery<R> setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType);
 
 		@Override
-		<P> Stage.MutationQuery setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type);
+		<P> Stage.MutationQuery<R> setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type);
 
 		@Override
-		Stage.MutationQuery setProperties(Object bean);
+		Stage.MutationQuery<R> setProperties(Object bean);
 
 		@Override
-		Stage.MutationQuery setProperties(@SuppressWarnings("rawtypes") Map bean);
+		Stage.MutationQuery<R> setProperties(@SuppressWarnings("rawtypes") Map bean);
 
 		@Override
-		Stage.MutationQuery setHibernateFlushMode(FlushMode flushMode);
+		Stage.MutationQuery<R> setHibernateFlushMode(FlushMode flushMode);
 	}
 
 	interface SelectionQuery<R> extends CommonQueryContract {
+
 		CompletionStage<List<R>> list();
 
 		default CompletionStage<List<R>> getResultList() {
@@ -412,7 +413,7 @@ public interface Stage {
 		Stage.SelectionQuery<R> setProperties(@SuppressWarnings("rawtypes") Map bean);
 	}
 
-	interface Query<R> extends Stage.SelectionQuery<R> {
+	interface Query<R> extends Stage.SelectionQuery<R>, Stage.MutationQuery<R> {
 		String getQueryString();
 
 		Stage.Query<R> applyGraph(@SuppressWarnings("rawtypes") RootGraph graph, GraphSemantic semantic);
@@ -440,7 +441,7 @@ public interface Stage {
 		@Override
 		Stage.Query<R> setLockMode(String alias, LockMode lockMode);
 
-		<T> Stage.Query<T> setTupleTransformer(TupleTransformer<T> transformer);
+		Stage.Query<R> setTupleTransformer(TupleTransformer<R> transformer);
 
 		Stage.Query<R> setResultListTransformer(ResultListTransformer<R> transformer);
 
