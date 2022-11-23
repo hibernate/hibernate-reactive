@@ -15,7 +15,6 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.dialect.PostgreSQLDialect;
-import org.hibernate.query.SelectionQuery;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
@@ -74,11 +73,6 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 			session.persist( almond );
 			session.getTransaction().commit();
 		}
-//		try (Session session = ormFactory.openSession()) {
-//			SelectionQuery<?> from_flour = session.createSelectionQuery( "from Flour" );
-//			List<?> list = from_flour.list();
-//			System.out.println( list );
-//		}
 
 		// Check database with Stage session and verify 'almond' flour exists
 		test( context, getMutinySessionFactory()
@@ -100,8 +94,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 		}
 
 		try (Session session = ormFactory.openSession()) {
-			SelectionQuery<?> from_flour = session.createSelectionQuery( "from Flour" );
-			List<?> list = from_flour.list();
+			List<Flour> list = session.createNativeQuery( "select * from Flour", Flour.class ).list();
 			System.out.println( list );
 		}
 

@@ -5,6 +5,9 @@
  */
 package org.hibernate.reactive.provider.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.bytecode.internal.BytecodeProviderInitiator;
@@ -22,25 +25,23 @@ import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.context.impl.VertxContextInitiator;
 import org.hibernate.reactive.id.factory.spi.ReactiveIdentifierGeneratorFactoryInitiator;
+import org.hibernate.reactive.pool.impl.ReactiveConnectionPoolInitiator;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfigurationInitiator;
-import org.hibernate.reactive.provider.service.NoJdbcMultiTenantConnectionProviderInitiator;
-import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.NoJdbcConnectionProviderInitiator;
 import org.hibernate.reactive.provider.service.NoJdbcEnvironmentInitiator;
+import org.hibernate.reactive.provider.service.NoJdbcMultiTenantConnectionProviderInitiator;
 import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
+import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
+import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSchemaManagementToolInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInitiator;
-import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
-import org.hibernate.reactive.pool.impl.ReactiveConnectionPoolInitiator;
 import org.hibernate.reactive.vertx.impl.VertxInstanceInitiator;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
 import org.hibernate.tool.schema.internal.script.SqlScriptExtractorInitiator;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import static java.util.Collections.unmodifiableList;
 
 /**
  * Provides the list of service initiators that Hibernate Reactive needs to integrate with Hibernate ORM.
@@ -95,9 +96,6 @@ public final class ReactiveServiceInitiators {
 		serviceInitiators.add( NoJdbcConnectionProviderInitiator.INSTANCE );
 		serviceInitiators.add( NoJdbcMultiTenantConnectionProviderInitiator.INSTANCE );
 
-		//Custom for Hibernate Reactive:
-		serviceInitiators.add( ReactiveIdentifierGeneratorFactoryInitiator.INSTANCE);
-
 		serviceInitiators.add( DialectResolverInitiator.INSTANCE );
 		serviceInitiators.add( DialectFactoryInitiator.INSTANCE );
 		serviceInitiators.add( BatchBuilderInitiator.INSTANCE );
@@ -108,11 +106,7 @@ public final class ReactiveServiceInitiators {
 		serviceInitiators.add( ReactiveSchemaManagementToolInitiator.INSTANCE );
 
 		// Custom for Hibernate Reactive:
-		// FIXME [ORM-6]: Temporarly deleted this class
-		// serviceInitiators.add( ReactiveQueryTranslatorFactoryInitiator.INSTANCE );
-
-		// Custom for Hibernate Reactive:
-//		serviceInitiators.add( ReactiveIdentifierGeneratorFactoryInitiator.INSTANCE);
+		serviceInitiators.add( ReactiveIdentifierGeneratorFactoryInitiator.INSTANCE);
 
 		// Custom for Hibernate Reactive:
 		serviceInitiators.add( NoJtaPlatformInitiator.INSTANCE );
@@ -128,6 +122,6 @@ public final class ReactiveServiceInitiators {
 
 		serviceInitiators.trimToSize();
 
-		return Collections.unmodifiableList( serviceInitiators );
+		return unmodifiableList( serviceInitiators );
 	}
 }

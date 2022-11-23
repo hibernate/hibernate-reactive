@@ -5,23 +5,23 @@
  */
 package org.hibernate.reactive.id.factory.spi;
 
+import java.util.Map;
+
 import org.hibernate.boot.registry.StandardServiceInitiator;
-import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
+import org.hibernate.id.factory.IdentifierGeneratorFactory;
 import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
-import java.util.Map;
-
-public class ReactiveIdentifierGeneratorFactoryInitiator implements StandardServiceInitiator<MutableIdentifierGeneratorFactory> {
+public class ReactiveIdentifierGeneratorFactoryInitiator implements StandardServiceInitiator<IdentifierGeneratorFactory> {
 	public static final ReactiveIdentifierGeneratorFactoryInitiator INSTANCE = new ReactiveIdentifierGeneratorFactoryInitiator();
 
 	@Override
-	public Class<MutableIdentifierGeneratorFactory> getServiceInitiated() {
-		return MutableIdentifierGeneratorFactory.class;
+	public Class<IdentifierGeneratorFactory> getServiceInitiated() {
+		return IdentifierGeneratorFactory.class;
 	}
 
 	@Override
-	public MutableIdentifierGeneratorFactory initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
+	public IdentifierGeneratorFactory initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
 		return new ReactiveIdentifierGeneratorFactory( registry );
 	}
 }

@@ -244,8 +244,6 @@ public interface Stage {
 
 		CompletionStage<Integer> executeUpdate();
 
-		Stage.Session getSession();
-
 		Integer getFetchSize();
 
 		Stage.SelectionQuery<R> setFetchSize(int fetchSize);

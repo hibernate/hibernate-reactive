@@ -6,7 +6,7 @@
 package org.hibernate.reactive.session.impl;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.reactive.session.ReactiveQueryExecutor;
+import org.hibernate.reactive.session.ReactiveQueryProducer;
 
 /**
  * This is a dirty trick to mitigate the performance impact of JDK-8180450;
@@ -26,12 +26,12 @@ public final class ReactiveQueryExecutorLookup {
 	 * @param session
 	 * @return
 	 */
-	public static ReactiveQueryExecutor extract(final SharedSessionContractImplementor session) {
+	public static ReactiveQueryProducer extract(final SharedSessionContractImplementor session) {
 		if ( session instanceof org.hibernate.reactive.session.impl.ReactiveSessionImpl ) {
 			return (org.hibernate.reactive.session.impl.ReactiveSessionImpl) session;
 		}
 		else {
-			return (ReactiveQueryExecutor) session;
+			return (ReactiveQueryProducer) session;
 		}
 	}
 

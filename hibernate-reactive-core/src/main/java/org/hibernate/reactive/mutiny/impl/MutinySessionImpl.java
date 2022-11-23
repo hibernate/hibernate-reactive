@@ -152,7 +152,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String queryString) {
-		throw new NotYetImplementedFor6Exception();
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( queryString ), factory );
 	}
 
 	@Override

@@ -500,12 +500,12 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <R> Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-		throw new NotYetImplementedFor6Exception();
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ) );
 	}
 
 	@Override
 	public <R> Query<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
-		throw new NotYetImplementedFor6Exception();
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType, affectedEntities ) );
 	}
 
 	@Override

@@ -12,7 +12,7 @@ import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.NotYetImplementedFor6Exception;
-import org.hibernate.reactive.session.ReactiveQuery;
+import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.stage.Stage;
 
 import jakarta.persistence.CacheRetrieveMode;
@@ -28,9 +28,9 @@ import static org.hibernate.jpa.internal.util.LockModeTypeHelper.getLockModeType
  */
 public class StageQueryImpl<R> implements Stage.Query<R> {
 
-	private final ReactiveQuery<R> delegate;
+	private final ReactiveSqmQueryImplementor<R> delegate;
 
-	public StageQueryImpl(ReactiveQuery<R> delegate) {
+	public StageQueryImpl(ReactiveSqmQueryImplementor<R> delegate) {
 		this.delegate = delegate;
 	}
 

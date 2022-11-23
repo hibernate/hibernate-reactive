@@ -41,7 +41,7 @@ import jakarta.persistence.metamodel.Attribute;
  *  @see org.hibernate.reactive.mutiny.Mutiny.Session
  */
 @Incubating
-public interface ReactiveSession extends ReactiveQueryExecutor  {
+public interface ReactiveSession extends ReactiveQueryProducer {
 
 	ReactiveActionQueue getReactiveActionQueue();
 
