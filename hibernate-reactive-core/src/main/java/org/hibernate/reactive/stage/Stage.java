@@ -6,7 +6,13 @@
 package org.hibernate.reactive.stage;
 
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -17,6 +23,7 @@ import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.spi.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
@@ -24,14 +31,22 @@ import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.RootGraph;
 import org.hibernate.jpa.internal.util.FlushModeTypeHelper;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.query.BindableType;
+import org.hibernate.query.CommonQueryContract;
+import org.hibernate.query.ParameterMetadata;
+import org.hibernate.query.QueryParameter;
+import org.hibernate.query.ResultListTransformer;
+import org.hibernate.query.TupleTransformer;
+import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.Statistics;
@@ -42,6 +57,7 @@ import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
+import jakarta.persistence.TemporalType;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -83,274 +99,741 @@ public interface Stage {
 	 *
 	 * @see jakarta.persistence.Query
 	 */
-	interface Query<R> {
-
-		/**
-		 * Set the value of an ordinal parameter. Ordinal parameters
-		 * are numbered from 1, and are specified in the query using
-		 * placeholder tokens of form {@code ?1}, {@code ?2}, etc.
-		 *
-		 * @param parameter an integer identifying the ordinal parameter
-		 * @param argument the argument to set
-		 */
-		Query<R> setParameter(int parameter, Object argument);
-
-		/**
-		 * Set the value of a named parameter. Named parameters are
-		 * specified in the query using placeholder tokens of form
-		 * {@code :name}.
-		 *
-		 * @param parameter the name of the parameter
-		 * @param argument the argument to set
-		 */
-		Query<R> setParameter(String parameter, Object argument);
-
-		/**
-		 * Set the value of a typed parameter. Typed parameters are
-		 * obtained from the JPA {@link CriteriaBuilder}, which may
-		 * itself be obtained by calling
-		 * {@link SessionFactory#getCriteriaBuilder()}.
-		 *
-		 * @param parameter the parameter
-		 * @param argument the argument to set
-		 *
-		 * @see CriteriaBuilder#parameter(Class)
-		 */
-		<T> Query<R> setParameter(Parameter<T> parameter, T argument);
-
-		/**
-		 * Set the maximum number of results that may be returned by this
-		 * query when executed.
-		 */
-		Query<R> setMaxResults(int maxResults);
-
-		/**
-		 * Set the position of the first result that may be returned by
-		 * this query when executed, where the results are numbered from
-		 * 0.
-		 */
-		Query<R> setFirstResult(int firstResult);
-
-		/**
-		 * @return the maximum number results, or {@link Integer#MAX_VALUE}
-		 *          if not set
-		 */
-		int getMaxResults();
-
-		/**
-		 * @return the first result, or 0 if not set
-		 */
-		int getFirstResult();
-
-		/**
-		 * Asynchronously execute this query, returning a single row that
-		 * matches the query, throwing an exception if the query returns
-		 * zero rows or more than one matching row. If the query has multiple
-		 * results per row, the results are returned in an instance of
-		 * {@code Object[]}.
-		 *
-		 * @return the single resulting row
-		 * @throws jakarta.persistence.NoResultException if there is no result
-		 * @throws jakarta.persistence.NonUniqueResultException if there are multiple results
-		 *
-		 * @see jakarta.persistence.Query#getSingleResult()
-		 */
-		CompletionStage<R> getSingleResult();
-
-		/**
-		 * Asynchronously execute this query, returning a single row that
-		 * matches the query, or {@code null} if the query returns no results,
-		 * throwing an exception if the query returns more than one matching
-		 * row. If the query has multiple results per row, the results are
-		 * returned in an instance of {@code Object[]}.
-		 *
-		 * @return the single resulting row or {@code null}
-		 * @throws jakarta.persistence.NonUniqueResultException if there are multiple results
-		 *
-		 * @see #getSingleResult()
-		 */
-		CompletionStage<R> getSingleResultOrNull();
-
-		/**
-		 * Asynchronously execute this query, returning the query results
-		 * as a {@link List}, via a {@link CompletionStage}. If the query
-		 * has multiple results per row, the results are returned in an
-		 * instance of {@code Object[]}.
-		 *
-		 * @return the resulting rows as a {@link List}
-		 *
-		 * @see jakarta.persistence.Query#getResultList()
-		 */
-		CompletionStage<List<R>> getResultList();
-
-		/**
-		 * Asynchronously execute this delete, update, or insert query,
-		 * returning the updated row count.
-		 *
-		 * @return the row count as an integer
-		 *
-		 * @see jakarta.persistence.Query#executeUpdate()
-		 */
+	interface MutationQuery<R> extends CommonQueryContract {
 		CompletionStage<Integer> executeUpdate();
 
-		/**
-		 * Set the read-only/modifiable mode for entities and proxies
-		 * loaded by this Query. This setting overrides the default setting
-		 * for the persistence context.
-		 *
-		 * @see Session#setDefaultReadOnly(boolean)
-		 */
-		Query<R> setReadOnly(boolean readOnly);
+		@Override
+		Stage.MutationQuery setParameter(String name, Object value);
 
-		/**
-		 * @return the read-only/modifiable mode
-		 *
-		 * @see Session#isDefaultReadOnly()
-		 */
+		@Override
+		<P> Stage.MutationQuery setParameter(String name, P value, Class<P> type);
+
+		@Override
+		<P> Stage.MutationQuery setParameter(String name, P value, BindableType<P> type);
+
+		@Override
+		Stage.MutationQuery setParameter(String name, Instant value, TemporalType temporalType);
+
+		@Override
+		Stage.MutationQuery setParameter(String name, Calendar value, TemporalType temporalType);
+
+		@Override
+		Stage.MutationQuery setParameter(String name, Date value, TemporalType temporalType);
+
+		@Override
+		Stage.MutationQuery setParameter(int position, Object value);
+
+		@Override
+		<P> Stage.MutationQuery setParameter(int position, P value, Class<P> type);
+
+		@Override
+		<P> Stage.MutationQuery setParameter(int position, P value, BindableType<P> type);
+
+		@Override
+		Stage.MutationQuery setParameter(int position, Instant value, TemporalType temporalType);
+
+		@Override
+		Stage.MutationQuery setParameter(int position, Date value, TemporalType temporalType);
+
+		@Override
+		Stage.MutationQuery setParameter(int position, Calendar value, TemporalType temporalType);
+
+		@Override
+		<T> Stage.MutationQuery setParameter(QueryParameter<T> parameter, T value);
+
+		@Override
+		<P> Stage.MutationQuery setParameter(QueryParameter<P> parameter, P value, Class<P> type);
+
+		@Override
+		<P> Stage.MutationQuery setParameter(QueryParameter<P> parameter, P val, BindableType<P> type);
+
+		@Override
+		<T> Stage.MutationQuery setParameter(Parameter<T> param, T value);
+
+		@Override
+		Stage.MutationQuery setParameter(Parameter<Calendar> param, Calendar value, TemporalType temporalType);
+
+		@Override
+		Stage.MutationQuery setParameter(Parameter<Date> param, Date value, TemporalType temporalType);
+
+		@Override
+		Stage.MutationQuery setParameterList(String name, @SuppressWarnings("rawtypes") Collection values);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(String name, Collection<? extends P> values, Class<P> javaType);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(String name, Collection<? extends P> values, BindableType<P> type);
+
+		@Override
+		Stage.MutationQuery setParameterList(String name, Object[] values);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(String name, P[] values, Class<P> javaType);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(String name, P[] values, BindableType<P> type);
+
+		@Override
+		Stage.MutationQuery setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(int position, Collection<? extends P> values, Class<P> javaType);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(int position, Collection<? extends P> values, BindableType<P> type);
+
+		@Override
+		Stage.MutationQuery setParameterList(int position, Object[] values);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(int position, P[] values, Class<P> javaType);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(int position, P[] values, BindableType<P> type);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(QueryParameter<P> parameter, Collection<? extends P> values);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(QueryParameter<P> parameter, P[] values);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType);
+
+		@Override
+		<P> Stage.MutationQuery setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type);
+
+		@Override
+		Stage.MutationQuery setProperties(Object bean);
+
+		@Override
+		Stage.MutationQuery setProperties(@SuppressWarnings("rawtypes") Map bean);
+
+		@Override
+		Stage.MutationQuery setHibernateFlushMode(FlushMode flushMode);
+	}
+
+	interface SelectionQuery<R> extends CommonQueryContract {
+		CompletionStage<List<R>> list();
+
+		default CompletionStage<List<R>> getResultList() {
+			return list();
+		}
+
+		CompletionStage<R> uniqueResult();
+
+		CompletionStage<Optional<R>> uniqueResultOptional();
+
+		Stage.SelectionQuery<R> setHint(String hintName, Object value);
+
+		@Override
+		Stage.SelectionQuery<R> setFlushMode(FlushModeType flushMode);
+
+		@Override
+		Stage.SelectionQuery<R> setHibernateFlushMode(FlushMode flushMode);
+
+		@Override
+		Stage.SelectionQuery<R> setTimeout(int timeout);
+
+		CompletionStage<Integer> executeUpdate();
+
+		Stage.Session getSession();
+
+		Integer getFetchSize();
+
+		Stage.SelectionQuery<R> setFetchSize(int fetchSize);
+
 		boolean isReadOnly();
 
-		/**
-		 * Set the comment for this query. This comment will be prepended
-		 * to the SQL query sent to the database.
-		 *
-		 * @param comment The human-readable comment
-		 */
-		Query<R> setComment(String comment);
+		Stage.SelectionQuery<R> setReadOnly(boolean readOnly);
 
-		/**
-		 * Enable or disable caching of this query result set in the
-		 * second-level query cache.
-		 *
-		 * @param cacheable {@code true} if this query is cacheable
-		 */
-		Query<R> setCacheable(boolean cacheable);
+		Stage.SelectionQuery<R> setMaxResults(int maxResult);
 
-		/**
-		 * @return {@code true} if this query is cacheable
-		 *
-		 * @see #setCacheable(boolean)
-		 */
-		boolean isCacheable();
+		int getFirstResult();
 
-		/**
-		 * Set the name of the cache region in which to store this
-		 * query result set if {@link #setCacheable(boolean)
-		 * caching is enabled}.
-		 *
-		 * @param cacheRegion the name of the cache region
-		 */
-		Query<R> setCacheRegion(String cacheRegion);
+		Stage.SelectionQuery<R> setFirstResult(int startPosition);
 
-		/**
-		 * @return the name of the cache region
-		 *
-		 * @see #setCacheRegion(String)
-		 */
-		String getCacheRegion();
-
-		/**
-		 * Set the current {@link CacheMode} in effect while this query
-		 * is being executed.
-		 */
-		Query<R> setCacheMode(CacheMode cacheMode);
-
-		/**
-		 * Set the current {@link CacheStoreMode} in effect while this query
-		 * is being executed.
-		 */
-		default Query<R> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
-			return setCacheMode( interpretCacheMode( cacheStoreMode, interpretCacheRetrieveMode(getCacheMode()) ) );
-		}
-
-		/**
-		 * Set the current {@link CacheRetrieveMode} in effect while this query
-		 * is being executed.
-		 */
-		default Query<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
-			return setCacheMode( interpretCacheMode( interpretCacheStoreMode(getCacheMode()), cacheRetrieveMode ) );
-		}
-
-		/**
-		 * Obtain the {@link CacheMode} in effect for this query. By default,
-		 * the query inherits the {@code CacheMode} of the {@link Session}
-		 * from which is originates.
-		 *
-		 * @see Session#getCacheMode()
-		 */
 		CacheMode getCacheMode();
 
-		/**
-		 * Set the current {@link FlushMode} in effect while this query is
-		 * being executed.
-		 */
-		Query<R> setFlushMode(FlushMode flushMode);
+		CacheStoreMode getCacheStoreMode();
+
+		CacheRetrieveMode getCacheRetrieveMode();
+
+		Stage.SelectionQuery<R> setCacheMode(CacheMode cacheMode);
+
+		Stage.SelectionQuery<R> setCacheStoreMode(CacheStoreMode cacheStoreMode);
 
 		/**
-		 * Set the current {@link FlushModeType} in effect while this query is
-		 * being executed.
+		 * @see #setCacheMode(CacheMode)
 		 */
-		default Query<R> setFlushMode(FlushModeType flushModeType) {
-			return setFlushMode( FlushModeTypeHelper.getFlushMode(flushModeType) );
+		Stage.SelectionQuery<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode);
+
+		boolean isCacheable();
+
+		Stage.SelectionQuery<R> setCacheable(boolean cacheable);
+
+		String getCacheRegion();
+
+		Stage.SelectionQuery<R> setCacheRegion(String cacheRegion);
+
+		LockOptions getLockOptions();
+
+		LockModeType getLockMode();
+
+		Stage.SelectionQuery<R> setLockMode(LockModeType lockMode);
+
+		LockMode getHibernateLockMode();
+
+		Stage.SelectionQuery<R> setHibernateLockMode(LockMode lockMode);
+
+		Stage.SelectionQuery<R> setLockMode(String alias, LockMode lockMode);
+
+		Stage.SelectionQuery<R> setAliasSpecificLockMode(String alias, LockMode lockMode);
+
+		Stage.SelectionQuery<R> setFollowOnLocking(boolean enable);
+
+		@Override
+		Stage.SelectionQuery<R> setParameter(String name, Object value);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameter(String name, P value, Class<P> type);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameter(String name, P value, BindableType<P> type);
+
+		@Override
+		Stage.SelectionQuery<R> setParameter(String name, Instant value, TemporalType temporalType);
+
+		@Override
+		Stage.SelectionQuery<R> setParameter(String name, Calendar value, TemporalType temporalType);
+
+		@Override
+		Stage.SelectionQuery<R> setParameter(String name, Date value, TemporalType temporalType);
+
+		@Override
+		Stage.SelectionQuery<R> setParameter(int position, Object value);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameter(int position, P value, Class<P> type);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameter(int position, P value, BindableType<P> type);
+
+		@Override
+		Stage.SelectionQuery<R> setParameter(int position, Instant value, TemporalType temporalType);
+
+		@Override
+		Stage.SelectionQuery<R> setParameter(int position, Date value, TemporalType temporalType);
+
+		@Override
+		Stage.SelectionQuery<R> setParameter(int position, Calendar value, TemporalType temporalType);
+
+		@Override
+		<T> Stage.SelectionQuery<R> setParameter(QueryParameter<T> parameter, T value);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameter(QueryParameter<P> parameter, P value, Class<P> type);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameter(QueryParameter<P> parameter, P val, BindableType<P> type);
+
+		@Override
+		<T> Stage.SelectionQuery<R> setParameter(Parameter<T> param, T value);
+
+		@Override
+		Stage.SelectionQuery<R> setParameter(Parameter<Calendar> param, Calendar value, TemporalType temporalType);
+
+		@Override
+		Stage.SelectionQuery<R> setParameter(Parameter<Date> param, Date value, TemporalType temporalType);
+
+		@Override
+		Stage.SelectionQuery<R> setParameterList(String name, @SuppressWarnings("rawtypes") Collection values);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(String name, Collection<? extends P> values, Class<P> javaType);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(String name, Collection<? extends P> values, BindableType<P> type);
+
+		@Override
+		Stage.SelectionQuery<R> setParameterList(String name, Object[] values);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(String name, P[] values, Class<P> javaType);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(String name, P[] values, BindableType<P> type);
+
+		@Override
+		Stage.SelectionQuery<R> setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(int position, Collection<? extends P> values, Class<P> javaType);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(int position, Collection<? extends P> values, BindableType<P> type);
+
+		@Override
+		Stage.SelectionQuery<R> setParameterList(int position, Object[] values);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(int position, P[] values, Class<P> javaType);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(int position, P[] values, BindableType<P> type);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(QueryParameter<P> parameter, P[] values);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType);
+
+		@Override
+		<P> Stage.SelectionQuery<R> setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type);
+
+		@Override
+		Stage.SelectionQuery<R> setProperties(Object bean);
+
+		@Override
+		Stage.SelectionQuery<R> setProperties(@SuppressWarnings("rawtypes") Map bean);
+	}
+
+	interface Query<R> extends Stage.SelectionQuery<R> {
+		String getQueryString();
+
+		Stage.Query<R> applyGraph(@SuppressWarnings("rawtypes") RootGraph graph, GraphSemantic semantic);
+
+		default Stage.Query<R> applyFetchGraph(@SuppressWarnings("rawtypes") RootGraph graph) {
+			return applyGraph( graph, GraphSemantic.FETCH );
 		}
 
-		/**
-		 * Obtain the {@link FlushMode} in effect for this query. By default,
-		 * the query inherits the {@code FlushMode} of the {@link Session}
-		 * from which is originates.
-		 *
-		 * @see Session#getFlushMode()
-		 */
-		FlushMode getFlushMode();
-
-		/**
-		 * Set the {@link LockMode} to use for the whole query.
-		 */
-		Query<R> setLockMode(LockMode lockMode);
-
-		/**
-		 * Set the {@link LockModeType} to use for the whole query.
-		 */
-		default Query<R> setLockMode(LockModeType lockModeType) {
-			return setLockMode( convertToLockMode(lockModeType) );
+		@SuppressWarnings("UnusedDeclaration")
+		default Stage.Query<R> applyLoadGraph(@SuppressWarnings("rawtypes") RootGraph graph) {
+			return applyGraph( graph, GraphSemantic.LOAD );
 		}
 
-		/**
-		 * Set the {@link LockMode} to use for specified alias (as defined in
-		 * the query's {@code from} clause).
-		 *
-		 * @param alias the from clause alias
-		 * @param lockMode the requested {@link LockMode}
-		 *
-		 * @see org.hibernate.query.Query#setLockMode(String,LockMode)
-		 */
-		Query<R> setLockMode(String alias, LockMode lockMode);
+		String getComment();
+
+		Stage.Query<R> setComment(String comment);
+
+		Stage.Query<R> addQueryHint(String hint);
+
+		@Override
+		LockOptions getLockOptions();
+
+		Stage.Query<R> setLockOptions(LockOptions lockOptions);
+
+		@Override
+		Stage.Query<R> setLockMode(String alias, LockMode lockMode);
+
+		<T> Stage.Query<T> setTupleTransformer(TupleTransformer<T> transformer);
+
+		Stage.Query<R> setResultListTransformer(ResultListTransformer<R> transformer);
+
+		QueryOptions getQueryOptions();
+
+		ParameterMetadata getParameterMetadata();
+
+		@Override
+		Stage.Query<R> setParameter(String parameter, Object argument);
+
+		@Override
+		<P> Stage.Query<R> setParameter(String parameter, P argument, Class<P> type);
+
+		@Override
+		<P> Stage.Query<R> setParameter(String parameter, P argument, BindableType<P> type);
 
 		/**
-		 * Set the {@link LockModeType} to use for specified alias (as defined in
-		 * the query's {@code from} clause).
-		 *
-		 * @param alias the from clause alias
-		 * @param lockModeType the requested {@link LockModeType}
-		 *
-		 * @see org.hibernate.query.Query#setLockMode(String,LockMode)
+		 * Bind an {@link Instant} value to the named query parameter using
+		 * just the portion indicated by the given {@link TemporalType}.
 		 */
-		default Query<R> setLockMode(String alias, LockModeType lockModeType) {
-			return setLockMode( alias, convertToLockMode(lockModeType) );
-		}
+		Stage.Query<R> setParameter(String parameter, Instant argument, TemporalType temporalType);
 
-//		/**
-//		 * Set the {@link LockOptions} to use for the whole query.
-//		 *
-//		 * @see org.hibernate.query.Query#setLockOptions(LockOptions)
-//		 */
-//		Query<R> setLockOptions(LockOptions lockOptions);
+		@Override
+		Stage.Query<R> setParameter(String parameter, Calendar argument, TemporalType temporalType);
+
+		@Override
+		Stage.Query<R> setParameter(String parameter, Date argument, TemporalType temporalType);
 
 		/**
-		 * Set the {@link EntityGraph} that will be used as a fetch plan for
-		 * the root entity returned by this query.
+		 * Bind the given argument to an ordinal query parameter.
+		 * <p>
+		 * If the type of the parameter cannot be inferred from the context in
+		 * which it occurs, use one of the forms which accepts a "type".
+		 *
+		 * @see #setParameter(int, Object, Class)
+		 * @see #setParameter(int, Object, BindableType)
 		 */
-		Query<R> setPlan(EntityGraph<R> entityGraph);
+		@Override
+		Stage.Query<R> setParameter(int parameter, Object argument);
 
+		/**
+		 * Bind the given argument to an ordinal query parameter using the given
+		 * Class reference to attempt to determine the {@link BindableType}
+		 * to use.  If unable to determine an appropriate {@link BindableType},
+		 * {@link #setParameter(int, Object)} is used.
+		 *
+		 * @see BindableType#parameterType(Class)
+		 * @see #setParameter(int, Object, BindableType)
+		 */
+		<P> Stage.Query<R> setParameter(int parameter, P argument, Class<P> type);
+
+		/**
+		 * Bind the given argument to an ordinal query parameter using the given
+		 * {@link BindableType}.
+		 *
+		 * @see BindableType#parameterType
+		 */
+		<P> Stage.Query<R> setParameter(int parameter, P argument, BindableType<P> type);
+
+		/**
+		 * Bind an {@link Instant} value to the ordinal query parameter using
+		 * just the portion indicated by the given {@link TemporalType}.
+		 */
+		Stage.Query<R> setParameter(int parameter, Instant argument, TemporalType temporalType);
+
+		/**
+		 * {@link jakarta.persistence.Query} override
+		 */
+		@Override
+		Stage.Query<R> setParameter(int parameter, Date argument, TemporalType temporalType);
+
+		/**
+		 * {@link jakarta.persistence.Query} override
+		 */
+		@Override
+		Stage.Query<R> setParameter(int parameter, Calendar argument, TemporalType temporalType);
+
+		<T> Stage.Query<R> setParameter(QueryParameter<T> parameter, T argument);
+
+		<P> Stage.Query<R> setParameter(QueryParameter<P> parameter, P argument, Class<P> type);
+
+		<P> Stage.Query<R> setParameter(QueryParameter<P> parameter, P argument, BindableType<P> type);
+
+		@Override
+		<T> Stage.Query<R> setParameter(Parameter<T> parameter, T argument);
+
+		@Override
+		Stage.Query<R> setParameter(Parameter<Calendar> parameter, Calendar argument, TemporalType temporalType);
+
+		@Override
+		Stage.Query<R> setParameter(Parameter<Date> parameter, Date argument, TemporalType temporalType);
+
+		Stage.Query<R> setParameterList(String parameter, @SuppressWarnings("rawtypes") Collection arguments);
+
+		<P> Stage.Query<R> setParameterList(String parameter, Collection<? extends P> arguments, Class<P> javaType);
+
+		/**
+		 * Bind multiple arguments to a named query parameter using the given
+		 * {@link BindableType}.
+		 *
+		 * @apiNote This is used for binding a list of values to an expression
+		 * such as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		<P> Stage.Query<R> setParameterList(String parameter, Collection<? extends P> arguments, BindableType<P> type);
+
+
+		/**
+		 * Bind multiple arguments to a named query parameter.
+		 * <p/>
+		 * The "type mapping" for the binding is inferred from the type of
+		 * the first collection element.
+		 *
+		 * @apiNote This is used for binding a list of values to an expression s
+		 * uch as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		Stage.Query<R> setParameterList(String parameter, Object[] values);
+
+		/**
+		 * Bind multiple arguments to a named query parameter using the given
+		 * Class reference to attempt to determine the {@link BindableType}
+		 * to use.  If unable to determine an appropriate {@link BindableType},
+		 * {@link #setParameterList(String, Collection)} is used.
+		 *
+		 * @see BindableType#parameterType(Class)
+		 * @see #setParameterList(java.lang.String, Object[], BindableType)
+		 *
+		 * @apiNote This is used for binding a list of values to an expression
+		 * such as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		<P> Stage.Query<R> setParameterList(String parameter, P[] arguments, Class<P> javaType);
+
+
+		/**
+		 * Bind multiple arguments to a named query parameter using the given
+		 * {@link BindableType}.
+		 *
+		 * @apiNote This is used for binding a list of values to an expression
+		 * such as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		<P> Stage.Query<R> setParameterList(String parameter, P[] arguments, BindableType<P> type);
+
+		/**
+		 * Bind multiple arguments to an ordinal query parameter.
+		 * <p/>
+		 * The "type mapping" for the binding is inferred from the type of
+		 * the first collection element.
+		 *
+		 * @apiNote This is used for binding a list of values to an expression
+		 * such as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		Stage.Query<R> setParameterList(int parameter, @SuppressWarnings("rawtypes") Collection arguments);
+
+		/**
+		 * Bind multiple arguments to an ordinal query parameter using the given
+		 * Class reference to attempt to determine the {@link BindableType}
+		 * to use.  If unable to determine an appropriate {@link BindableType},
+		 * {@link #setParameterList(String, Collection)} is used.
+		 *
+		 * @see BindableType#parameterType(Class)
+		 * @see #setParameterList(int, Collection, BindableType)
+		 *
+		 * @apiNote This is used for binding a list of values to an expression
+		 * such as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		<P> Stage.Query<R> setParameterList(int parameter, Collection<? extends P> arguments, Class<P> javaType);
+
+		/**
+		 * Bind multiple arguments to an ordinal query parameter using the given
+		 * {@link BindableType}.
+		 *
+		 * @apiNote This is used for binding a list of values to an expression
+		 * such as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		<P> Stage.Query<R> setParameterList(int parameter, Collection<? extends P> arguments, BindableType<P> type);
+
+		/**
+		 * Bind multiple arguments to an ordinal query parameter.
+		 * <p>
+		 * The "type mapping" for the binding is inferred from the type of the
+		 * first collection element.
+		 *
+		 * @apiNote This is used for binding a list of values to an expression
+		 * such as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		Stage.Query<R> setParameterList(int parameter, Object[] arguments);
+
+		/**
+		 * Bind multiple arguments to an ordinal query parameter using the given
+		 * {@link Class} reference to attempt to determine the {@link BindableType}
+		 * to use. If unable to determine an appropriate {@link BindableType},
+		 * {@link #setParameterList(String, Collection)} is used.
+		 *
+		 * @see BindableType#parameterType(Class)
+		 * @see #setParameterList(int, Object[], BindableType)
+		 *
+		 * @apiNote This is used for binding a list of values to an expression
+		 * such as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		<P> Stage.Query<R> setParameterList(int parameter, P[] arguments, Class<P> javaType);
+
+		/**
+		 * Bind multiple arguments to an ordinal query parameter using the given
+		 * {@link BindableType}.
+		 *
+		 * @apiNote This is used for binding a list of values to an expression
+		 * such as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		<P> Stage.Query<R> setParameterList(int parameter, P[] arguments, BindableType<P> type);
+
+		/**
+		 * Bind multiple arguments to the query parameter represented by the given
+		 * {@link QueryParameter}.
+		 * <p>
+		 * The type of the parameter is inferred from the context in which it occurs,
+		 * and from the type of the first given argument.
+		 *
+		 * @param parameter the parameter memento
+		 * @param arguments a collection of arguments
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		<P> Stage.Query<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> arguments);
+
+		/**
+		 * Bind multiple arguments to the query parameter represented by the given
+		 * {@link QueryParameter} using the given Class reference to attempt to
+		 * determine the {@link BindableType} to use. If unable to determine an
+		 * appropriate {@link BindableType}, {@link #setParameterList(String, Collection)}
+		 * is used.
+		 *
+		 * @see BindableType#parameterType(Class)
+		 * @see #setParameterList(QueryParameter, java.util.Collection, BindableType)
+		 *
+		 * @apiNote This is used for binding a list of values to an expression such
+		 * as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		<P> Stage.Query<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> arguments, Class<P> javaType);
+
+		/**
+		 * Bind multiple arguments to the query parameter represented by the given
+		 * {@link QueryParameter}, inferring the {@link BindableType}.
+		 * <p>
+		 * The "type mapping" for the binding is inferred from the type of the first
+		 * collection element.
+		 *
+		 * @apiNote This is used for binding a list of values to an expression such
+		 * as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		<P> Stage.Query<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> arguments, BindableType<P> type);
+
+		/**
+		 * Bind multiple arguments to the query parameter represented by the
+		 * given {@link QueryParameter}
+		 * <p>
+		 * The type of the parameter is inferred between the context in which it
+		 * occurs, the type associated with the QueryParameter and the type of
+		 * the first given argument.
+		 *
+		 * @param parameter the parameter memento
+		 * @param arguments a collection of arguments
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		<P> Stage.Query<R> setParameterList(QueryParameter<P> parameter, P[] arguments);
+
+		/**
+		 * Bind multiple arguments to the query parameter represented by the
+		 * given {@link QueryParameter} using the given Class reference to attempt
+		 * to determine the {@link BindableType} to use.  If unable to
+		 * determine an appropriate {@link BindableType},
+		 * {@link #setParameterList(String, Collection)} is used
+		 *
+		 * @see BindableType#parameterType(Class)
+		 * @see #setParameterList(QueryParameter, Object[], BindableType)
+		 *
+		 * @apiNote This is used for binding a list of values to an expression such
+		 * as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		<P> Stage.Query<R> setParameterList(QueryParameter<P> parameter, P[] arguments, Class<P> javaType);
+
+		/**
+		 * Bind multiple arguments to the query parameter represented by the
+		 * given {@link QueryParameter}, inferring the {@link BindableType}.
+		 * <p>
+		 * The "type mapping" for the binding is inferred from the type of
+		 * the first collection element
+		 *
+		 * @apiNote This is used for binding a list of values to an expression such
+		 * as {@code entity.field in (:values)}.
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		<P> Stage.Query<R> setParameterList(QueryParameter<P> parameter, P[] arguments, BindableType<P> type);
+
+		/**
+		 * Bind the property values of the given bean to named parameters of the query,
+		 * matching property names with parameter names and mapping property types to
+		 * Hibernate types using heuristics.
+		 *
+		 * @param bean any JavaBean or POJO
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		Stage.Query<R> setProperties(Object bean);
+
+		/**
+		 * Bind the values of the given Map for each named parameters of the query,
+		 * matching key names with parameter names and mapping value types to
+		 * Hibernate types using heuristics.
+		 *
+		 * @param bean a {@link Map} of names to arguments
+		 *
+		 * @return {@code this}, for method chaining
+		 */
+		Stage.Query<R> setProperties(@SuppressWarnings("rawtypes") Map bean);
+
+
+		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		// covariant overrides - CommonQueryContract
+
+		@Override
+		Stage.Query<R> setHibernateFlushMode(FlushMode flushMode);
+
+		@Override
+		Stage.Query<R> setCacheable(boolean cacheable);
+
+		@Override
+		Stage.Query<R> setCacheRegion(String cacheRegion);
+
+		@Override
+		Stage.Query<R> setCacheMode(CacheMode cacheMode);
+
+		@Override
+		Stage.Query<R> setCacheStoreMode(CacheStoreMode cacheStoreMode);
+
+		@Override
+		Stage.Query<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode);
+
+		@Override
+		Stage.Query<R> setTimeout(int timeout);
+
+		@Override
+		Stage.Query<R> setFetchSize(int fetchSize);
+
+		@Override
+		Stage.Query<R> setReadOnly(boolean readOnly);
+
+
+		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		// covariant overrides - jakarta.persistence.Query/TypedQuery
+
+		@Override
+		Stage.Query<R> setMaxResults(int maxResult);
+
+		@Override
+		Stage.Query<R> setFirstResult(int startPosition);
+
+		@Override
+		Stage.Query<R> setHint(String hintName, Object value);
+
+		@Override
+		Stage.Query<R> setFlushMode(FlushModeType flushMode);
+
+		@Override
+		Stage.Query<R> setLockMode(LockModeType lockMode);
 	}
 
 	/**
@@ -825,7 +1308,7 @@ public interface Stage {
 		<R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
 
 		/**
-		 * Create an instance of {@link Mutiny.Query} for the given criteria delete.
+		 * Create an instance of {@link Stage.Query} for the given criteria delete.
 		 *
 		 * @param criteriaDelete The {@link CriteriaDelete}
 		 *
