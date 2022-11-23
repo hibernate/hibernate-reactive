@@ -23,7 +23,7 @@ import java.util.concurrent.CompletionStage;
  * @see org.hibernate.reactive.mutiny.Mutiny.Session
  */
 @Incubating
-public interface ReactiveStatelessSession extends ReactiveQueryExecutor {
+public interface ReactiveStatelessSession extends ReactiveQueryProducer {
 
 	<T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id);
 

@@ -13,8 +13,8 @@ import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.NotYetImplementedFor6Exception;
+import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.session.ReactiveQuery;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.EntityGraph;
@@ -28,14 +28,14 @@ import static org.hibernate.jpa.internal.util.LockModeTypeHelper.getLockModeType
  */
 public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 
-	private final ReactiveQuery<R> delegate;
+	private final QueryImplementor<R> delegate;
 	private final MutinySessionFactoryImpl factory;
 
-	public MutinyQueryImpl(ReactiveQuery<R> delegate, MutinySessionFactoryImpl factory) {
+	public MutinyQueryImpl(QueryImplementor<R> delegate, MutinySessionFactoryImpl factory) {
 		this.delegate = delegate;
 		this.factory = factory;
 	}
-
+|
 	private <T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
 		return factory.uni( stageSupplier );
 	}

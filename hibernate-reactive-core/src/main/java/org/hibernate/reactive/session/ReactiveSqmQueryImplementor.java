@@ -20,7 +20,7 @@ import org.hibernate.query.hql.spi.SqmQueryImplementor;
  * @see ReactiveSession
  */
 @Incubating
-public interface ReactiveQuery<R> extends SqmQueryImplementor<R> {
+public interface ReactiveSqmQueryImplementor<R> extends SqmQueryImplementor<R> {
 
 //	void setParameterMetadata(InterpretedParameterMetadata parameterMetadata);
 

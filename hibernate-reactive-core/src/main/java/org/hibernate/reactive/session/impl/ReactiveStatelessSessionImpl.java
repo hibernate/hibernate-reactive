@@ -40,7 +40,7 @@ import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersis
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.session.ReactiveQuery;
+import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.tuple.entity.EntityMetamodel;
@@ -582,12 +582,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 	}
 
 	@Override
-	public <R> ReactiveQuery<R> createReactiveQuery(String queryString) {
+	public <R> ReactiveSqmQueryImplementor<R> createReactiveQuery(String queryString) {
 		return null;
 	}
 
 	@Override
-	public <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType) {
+	public <R> ReactiveSqmQueryImplementor<R> createReactiveQuery(String queryString, Class<R> resultType) {
 		return null;
 	}
 

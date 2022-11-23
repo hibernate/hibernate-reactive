@@ -29,7 +29,7 @@ import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.reactive.query.sqm.spi.SelectReactiveQueryPlan;
-import org.hibernate.reactive.session.ReactiveQuery;
+import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 
 import jakarta.persistence.NoResultException;
 
@@ -39,7 +39,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 
 
-public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements ReactiveQuery<R> {
+public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements ReactiveSqmQueryImplementor<R> {
 
 	public ReactiveQuerySqmImpl(
 			NamedHqlQueryMementoImpl memento,
