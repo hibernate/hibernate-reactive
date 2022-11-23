@@ -49,6 +49,8 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<T> EntityGraph<T> getEntityGraph(Class<T> entity, String name);
 
+	<R> ReactiveQuery<R> createReactiveQuery(String queryString);
+
 	<R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType);
 
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass);
