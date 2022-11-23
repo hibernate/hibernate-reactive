@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.query;
 
 import java.time.Instant;
@@ -19,7 +24,7 @@ import jakarta.persistence.TemporalType;
  * @see org.hibernate.query.MutationQuery
  */
 public interface ReactiveMutationQuery<R> extends CommonQueryContract {
-	CompletionStage<Integer> executeUpdate();
+	CompletionStage<Integer> executeReactiveUpdate();
 
 	@Override
 	ReactiveMutationQuery<R> setParameter(String name, Object value);

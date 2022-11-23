@@ -243,8 +243,6 @@ public interface Stage {
 		@Override
 		Stage.SelectionQuery<R> setTimeout(int timeout);
 
-		CompletionStage<Integer> executeUpdate();
-
 		Integer getFetchSize();
 
 		Stage.SelectionQuery<R> setFetchSize(int fetchSize);
@@ -441,7 +439,7 @@ public interface Stage {
 		@Override
 		Stage.Query<R> setLockMode(String alias, LockMode lockMode);
 
-		Stage.Query<R> setTupleTransformer(TupleTransformer<R> transformer);
+		<T> Stage.Query<T> setTupleTransformer(TupleTransformer<T> transformer);
 
 		Stage.Query<R> setResultListTransformer(ResultListTransformer<R> transformer);
 

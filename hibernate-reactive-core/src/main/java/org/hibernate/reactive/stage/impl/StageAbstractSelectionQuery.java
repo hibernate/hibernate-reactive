@@ -1,3 +1,8 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.stage.impl;
 
 import java.time.Instant;
@@ -104,11 +109,6 @@ public abstract class StageAbstractSelectionQuery<R> extends AbstractCommonQuery
 
 	@Override
 	public Stage.SelectionQuery<R> setFlushMode(FlushModeType flushMode) {
-		return null;
-	}
-
-	@Override
-	public CompletionStage<Integer> executeUpdate() {
 		return null;
 	}
 

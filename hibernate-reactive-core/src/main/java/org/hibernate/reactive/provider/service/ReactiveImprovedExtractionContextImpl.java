@@ -120,6 +120,11 @@ public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionCon
 		}
 
 		@Override
+		public Connection getIsolatedConnection(boolean autocommit) {
+			return NoopConnection.INSTANCE;
+		}
+
+		@Override
 		public JdbcContext getJdbcContext() {
 			return null;
 		}

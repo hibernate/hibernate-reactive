@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.query.sqm.iternal;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -28,6 +29,8 @@ import org.hibernate.query.sqm.internal.QuerySqmImpl;
 import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sqm.spi.SelectReactiveQueryPlan;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 
@@ -40,6 +43,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 
 
 public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements ReactiveSqmQueryImplementor<R> {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	public ReactiveQuerySqmImpl(
 			NamedHqlQueryMementoImpl memento,
@@ -274,6 +279,11 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 				getTupleMetadata(),
 				queryOptions
 		);
+	}
+
+	@Override
+	public int executeUpdate() {
+		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
 	}
 
 	@Override
