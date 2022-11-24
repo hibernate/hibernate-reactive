@@ -97,6 +97,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.TransactionRequiredException;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
@@ -354,6 +355,20 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		catch (RuntimeException he) {
 			throw getExceptionConverter().convert( he );
 		}
+	}
+
+	@Override
+	public void prepareForQueryExecution(boolean requiresTxn) {
+		checkOpen();
+		checkTransactionSynchStatus();
+
+		// FIXME: this does not work at the moment
+//		if ( requiresTxn && !isTransactionInProgress() ) {
+//			throw new TransactionRequiredException(
+//					"Query requires transaction be in progress, but no transaction is known to be in progress"
+//			);
+//		}
+
 	}
 
 	@Override
