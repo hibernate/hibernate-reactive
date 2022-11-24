@@ -50,17 +50,17 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 
 	@Override
 	public CompletionStage<List<R>> list() {
-		return delegate.list();
+		return delegate.reactiveList();
 	}
 
 	@Override
 	public CompletionStage<R> uniqueResult() {
-		return delegate.uniqueResult();
+		return delegate.reactiveUnique();
 	}
 
 	@Override
 	public CompletionStage<Optional<R>> uniqueResultOptional() {
-		return delegate.uniqueResultOptional();
+		return delegate.reactiveUniqueResultOptional();
 	}
 
 	@Override

@@ -91,6 +91,7 @@ import org.hibernate.reactive.query.ReactiveMutationQuery;
 import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
+import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
 import org.hibernate.reactive.query.sqm.iternal.ReactiveQuerySqmImpl;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -315,7 +316,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			final QueryEngine queryEngine = getFactory().getQueryEngine();
 			final QueryInterpretationCache interpretationCache = queryEngine.getInterpretationCache();
 
-			final ReactiveSqmQueryImplementor<R> query = new ReactiveQuerySqmImpl<R>(
+			final ReactiveQuerySqmImpl<R> query = new ReactiveQuerySqmImpl<R>(
 					queryString,
 					interpretationCache.resolveHqlInterpretation(
 							queryString,
@@ -344,7 +345,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		delayedAfterCompletion();
 
 		try {
-			NativeQueryImpl query = new NativeQueryImpl<>( sqlString, this);
+			ReactiveNativeQueryImpl query = new ReactiveNativeQueryImpl( sqlString, this);
 
 			if ( StringHelper.isEmpty( query.getComment() ) ) {
 				query.setComment( "dynamic native SQL query" );
