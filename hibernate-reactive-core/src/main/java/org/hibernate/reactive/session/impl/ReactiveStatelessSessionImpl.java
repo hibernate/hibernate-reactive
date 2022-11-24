@@ -12,6 +12,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
@@ -33,6 +34,7 @@ import org.hibernate.internal.StatelessSessionImpl;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -40,6 +42,10 @@ import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersis
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.query.ReactiveMutationQuery;
+import org.hibernate.reactive.query.ReactiveNativeQuery;
+import org.hibernate.reactive.query.ReactiveQuery;
+import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -47,6 +53,8 @@ import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.spi.TypeConfiguration;
 
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
@@ -64,8 +72,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
  * preferred to delegation because there are places where
  * Hibernate core compares the identity of session instances.
  */
-public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
-		implements ReactiveStatelessSession {
+public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implements ReactiveStatelessSession {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
@@ -75,10 +82,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
 	private final PersistenceContext persistenceContext;
 
-	public ReactiveStatelessSessionImpl(
-			SessionFactoryImpl factory,
-			SessionCreationOptions options,
-			ReactiveConnection connection) {
+	public ReactiveStatelessSessionImpl(SessionFactoryImpl factory, SessionCreationOptions options, ReactiveConnection connection) {
 		super( factory, options );
 		reactiveConnection = connection;
 		persistenceContext = new ReactivePersistenceContextAdapter( this );
@@ -592,6 +596,103 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 	}
 
 	@Override
+	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(
+			String sqlString,
+			Class<R> resultClass,
+			String tableAlias) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(
+			String sqlString,
+			String resultSetMappingName,
+			Class<R> resultClass) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, Class<R> resultType) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaQuery<R> criteria) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(String hqlString) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate updateQuery) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect insertSelect) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name, Class<R> resultClass) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name) {
+		throw new NotYetImplementedFor6Exception();
+
+	}
+
+	@Override
+	public <R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name, Class<R> resultType) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveMutationQuery<R> createNativeReactiveMutationQuery(String sqlString) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveQuery getNamedReactiveQuery(String queryName) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery getNamedReactiveNativeQuery(String name) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public ReactiveNativeQuery getNamedReactiveNativeQuery(String name, String resultSetMapping) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
 	public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity) {
 		return new RootGraphImpl<>( null,
 				getFactory().getJpaMetamodel().entity( entity ),
@@ -617,7 +718,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl
 
 	@Override
 	public void close() {
-		throw new UnsupportedOperationException( "Non reactive close method called. Use close(CompletableFuture<Void> closing) instead." );
+		throw LOG.nonReactiveMethodCall( "close(CompletableFuture<Void> closing)" );
 	}
 
 	@Override

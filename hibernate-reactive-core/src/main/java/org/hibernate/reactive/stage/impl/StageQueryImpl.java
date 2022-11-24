@@ -65,7 +65,7 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 
 	@Override
 	public CompletionStage<Integer> executeUpdate() {
-		return delegate.executeUpdate();
+		return delegate.executeReactiveUpdate();
 	}
 
 	@Override
@@ -182,9 +182,8 @@ public class StageQueryImpl<R> implements Stage.Query<R> {
 	}
 
 	@Override
-	public Stage.Query<R> setTupleTransformer(TupleTransformer<R> transformer) {
-		delegate.setTupleTransformer( transformer );
-		return this;
+	public <T> Stage.Query<T> setTupleTransformer(TupleTransformer<T> transformer) {
+		return new StageQueryImpl<>( delegate.setTupleTransformer( transformer ) );
 	}
 
 	@Override
