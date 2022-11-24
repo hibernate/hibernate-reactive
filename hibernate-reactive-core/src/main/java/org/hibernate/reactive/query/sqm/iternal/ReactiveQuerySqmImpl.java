@@ -63,8 +63,6 @@ import jakarta.persistence.TemporalType;
 
 import static org.hibernate.query.spi.SqlOmittingQueryOptions.omitSqlQueryOptions;
 import static org.hibernate.query.spi.SqlOmittingQueryOptions.omitSqlQueryOptionsWithUniqueSemanticFilter;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 
 
 public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements ReactiveSqmQueryImplementor<R> {
@@ -107,24 +105,37 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
+	public CompletionStage<R> getReactiveSingleResult() {
+		return reactiveList()
+				.thenApply( this::reactiveSingleResult )
+				.exceptionally( this::convertException );
+	}
+
+	private R reactiveSingleResult(List<R> list) {
+		if ( list.isEmpty() ) {
+			throw new NoResultException( String.format( "No result found for query [%s]", getQueryString() ) );
+		}
+		return uniqueElement( list );
+	}
+
+	@Override
+	public CompletionStage<R> getReactiveSingleResultOrNull() {
+		return reactiveList()
+				.thenApply( AbstractSelectionQuery::uniqueElement )
+				.exceptionally( this::convertException );
+	}
+
+	private R convertException(Throwable t) {
+		if ( t instanceof HibernateException ) {
+			throw getSession().getExceptionConverter().convert( (HibernateException) t, getLockOptions() );
+		}
+		throw getSession().getExceptionConverter().convert( (RuntimeException) t, getLockOptions() );
+	}
+
+	@Override
 	public CompletionStage<Optional<R>> reactiveUniqueResultOptional() {
 		return reactiveUnique()
 				.thenApply( Optional::ofNullable );
-	}
-
-	private CompletionStage<R> reactiveUniqueResultOrFail(List<R> list) {
-		return list.isEmpty()
-				? failedFuture( new NoResultException( String.format( "No result found for query [%s]", getQueryString() ) ) )
-				: completedFuture( uniqueElement( list ) );
-	}
-
-	private CompletionStage<R> reactiveUniqueResultOrNull(List<R> list) {
-		try {
-			return completedFuture( uniqueElement( list ) );
-		}
-		catch (HibernateException e) {
-			return failedFuture( getSession().getExceptionConverter().convert( e, getLockOptions() ) );
-		}
 	}
 
 	@Override

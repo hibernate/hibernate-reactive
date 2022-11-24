@@ -208,6 +208,10 @@ public interface Mutiny {
 			return list();
 		}
 
+		Uni<R> getSingleResult();
+
+		Uni<R> getSingleResultOrNull();
+
 		/**
 		 * Execute the query and return, the single result of the query as a {@link Uni}.
 		 * The {@code Uni} will emit the result of the query, or {@code null}, if the query
@@ -401,8 +405,8 @@ public interface Mutiny {
 		Mutiny.SelectionQuery<R> setProperties(@SuppressWarnings("rawtypes") Map bean);
 	}
 
-	interface
-	Query<R> extends Mutiny.SelectionQuery<R>, Mutiny.MutationQuery<R> {
+	interface Query<R> extends Mutiny.SelectionQuery<R>, Mutiny.MutationQuery<R> {
+
 		String getQueryString();
 
 		Mutiny.Query<R> applyGraph(@SuppressWarnings("rawtypes") RootGraph graph, GraphSemantic semantic);
@@ -1325,9 +1329,7 @@ public interface Mutiny {
 		 * @param queryString The SQL select, update, insert, or delete statement
 		 * @param affectedEntities The entities which are affected by the statement
 		 */
-		<R> Query<R> createNativeQuery(
-				String queryString,
-				AffectedEntities affectedEntities);
+		<R> Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities);
 
 		/**
 		 * Create an instance of {@link Query} for the given SQL query

@@ -210,7 +210,7 @@ public class StageSessionImpl implements Stage.Session {
 		return Stage.Session.super.lock( entity, lockModeType );
 	}
 
-	//	@Override
+	// @Override
 	public CompletionStage<Void> lock(Object entity, LockOptions lockOptions) {
 		return delegate.reactiveLock( entity, lockOptions );
 	}
@@ -501,6 +501,11 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public <R> Query<R> createNativeQuery(String queryString, Class<R> resultType) {
 		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ) );
+	}
+
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
