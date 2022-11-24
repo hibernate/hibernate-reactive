@@ -26,6 +26,8 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.query.ReactiveMutationQuery;
+import org.hibernate.reactive.query.sqm.iternal.ReactiveQuerySqmImpl;
 import org.hibernate.reactive.session.ReactiveSession;
 
 import io.smallrye.mutiny.Uni;
@@ -131,13 +133,19 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
-		throw new NotYetImplementedFor6Exception();
+	public <R> Mutiny.MutationQuery<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
+		return new MutinyQueryImpl<>(
+				(ReactiveQuerySqmImpl<R>) delegate.createReactiveMutationQuery( criteriaUpdate ),
+				factory
+		);
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
-		throw new NotYetImplementedFor6Exception();
+	public <R> Mutiny.MutationQuery<R> createQuery(CriteriaDelete<R> criteriaDelete) {
+		return new MutinyQueryImpl<>(
+				(ReactiveQuerySqmImpl<R>) delegate.createReactiveMutationQuery( criteriaDelete ),
+				factory
+		);
 	}
 
 	@Override

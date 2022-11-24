@@ -1257,7 +1257,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Mutiny.Query} instance for manipulation and execution
 		 */
-		<R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
+		<R> Mutiny.MutationQuery<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
 
 		/**
 		 * Create an instance of {@link Mutiny.Query} for the given criteria delete.
@@ -1266,7 +1266,7 @@ public interface Mutiny {
 		 *
 		 * @return The {@link Mutiny.Query} instance for manipulation and execution
 		 */
-		<R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete);
+		<R> Mutiny.MutationQuery<R> createQuery(CriteriaDelete<R> criteriaDelete);
 
 		/**
 		 * Create an instance of {@link Query} for the named query.

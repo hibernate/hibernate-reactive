@@ -40,7 +40,6 @@ public interface ReactiveNativeQueryImplementor<R> extends ReactiveNativeQuery<R
 	 * indicates unknown
 	 */
 	Boolean isSelectQuery();
-
 	@Override
 	NamedNativeQueryMemento toMemento(String name);
 

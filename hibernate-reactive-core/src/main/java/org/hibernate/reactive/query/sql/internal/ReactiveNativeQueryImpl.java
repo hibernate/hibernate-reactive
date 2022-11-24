@@ -50,9 +50,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	public ReactiveNativeQueryImpl(
-			String memento,
-			SharedSessionContractImplementor session) {
+	public ReactiveNativeQueryImpl(String memento, SharedSessionContractImplementor session) {
 		super( memento, session );
 	}
 
@@ -132,153 +130,151 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public ReactiveNativeQueryImpl<R> applyGraph(RootGraph graph, GraphSemantic semantic) {
-		throw new NotYetImplementedFor6Exception();
+		super.applyGraph( graph, semantic );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> applyFetchGraph(RootGraph graph) {
-		throw new NotYetImplementedFor6Exception();
+		super.applyFetchGraph( graph );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addScalar(String columnAlias) {
-		throw new NotYetImplementedFor6Exception();
+		super.addScalar( columnAlias );
+		return this;
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addScalar(
-			String columnAlias,
-			@SuppressWarnings("rawtypes") BasicDomainType type) {
-		throw new NotYetImplementedFor6Exception();
+	public ReactiveNativeQueryImpl<R> addScalar(String columnAlias, @SuppressWarnings("rawtypes") BasicDomainType type) {
+		super.addScalar( columnAlias, type );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addScalar(String columnAlias, @SuppressWarnings("rawtypes") Class javaType) {
-		throw new NotYetImplementedFor6Exception();
+		super.addScalar( columnAlias, javaType );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addScalar(String columnAlias, BasicTypeReference type) {
-		throw new NotYetImplementedFor6Exception();
+		super.addScalar( columnAlias, type );
+		return this;
 	}
 
 	@Override
-	public <C> ReactiveNativeQueryImpl<R> addScalar(
-			String columnAlias,
-			Class<C> relationalJavaType,
-			AttributeConverter<?, C> converter) {
-		throw new NotYetImplementedFor6Exception();
+	public <C> ReactiveNativeQueryImpl<R> addScalar(String columnAlias, Class<C> relationalJavaType, AttributeConverter<?, C> converter) {
+		super.addScalar( columnAlias, relationalJavaType, converter );
+		return this;
 	}
 
 	@Override
-	public <O, J> ReactiveNativeQueryImpl<R> addScalar(
-			String columnAlias,
-			Class<O> domainJavaType,
-			Class<J> jdbcJavaType,
-			AttributeConverter<O, J> converter) {
-		throw new NotYetImplementedFor6Exception();
+	public <O, J> ReactiveNativeQueryImpl<R> addScalar(String columnAlias, Class<O> domainJavaType, Class<J> jdbcJavaType, AttributeConverter<O, J> converter) {
+		super.addScalar( columnAlias, domainJavaType, jdbcJavaType, converter );
+		return this;
 	}
 
 	@Override
-	public <C> ReactiveNativeQueryImpl<R> addScalar(
-			String columnAlias,
-			Class<C> relationalJavaType,
-			Class<? extends AttributeConverter<?, C>> converter) {
-		throw new NotYetImplementedFor6Exception();
+	public <C> ReactiveNativeQueryImpl<R> addScalar(String columnAlias, Class<C> relationalJavaType, Class<? extends AttributeConverter<?, C>> converter) {
+		super.addScalar( columnAlias, relationalJavaType, converter );
+		return this;
 	}
 
 	@Override
-	public <O, J> ReactiveNativeQueryImpl<R> addScalar(
-			String columnAlias,
-			Class<O> domainJavaType,
-			Class<J> jdbcJavaType,
-			Class<? extends AttributeConverter<O, J>> converter) {
-		throw new NotYetImplementedFor6Exception();
+	public <O, J> ReactiveNativeQueryImpl<R> addScalar(String columnAlias, Class<O> domainJavaType, Class<J> jdbcJavaType, Class<? extends AttributeConverter<O, J>> converter) {
+		super.addScalar( columnAlias, domainJavaType, jdbcJavaType, converter );
+		return this;
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addAttributeResult(
-			String columnAlias,
-			@SuppressWarnings("rawtypes") Class entityJavaType,
-			String attributePath) {
-		throw new NotYetImplementedFor6Exception();
+	public ReactiveNativeQueryImpl<R> addAttributeResult(String columnAlias, @SuppressWarnings("rawtypes") Class entityJavaType, String attributePath) {
+		super.addAttributeResult( columnAlias, entityJavaType, attributePath );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addAttributeResult(String columnAlias, String entityName, String attributePath) {
-		throw new NotYetImplementedFor6Exception();
+		super.addAttributeResult( columnAlias, entityName, attributePath );
+		return this;
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addAttributeResult(
-			String columnAlias,
-			@SuppressWarnings("rawtypes") SingularAttribute attribute) {
-		throw new NotYetImplementedFor6Exception();
+	public ReactiveNativeQueryImpl<R> addAttributeResult(String columnAlias, @SuppressWarnings("rawtypes") SingularAttribute attribute) {
+		super.addAttributeResult( columnAlias, attribute );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addEntity(String entityName) {
-		throw new NotYetImplementedFor6Exception();
+		super.addEntity( entityName );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addEntity(String tableAlias, String entityName) {
-		throw new NotYetImplementedFor6Exception();
+		super.addEntity( tableAlias, entityName );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addEntity(String tableAlias, String entityName, LockMode lockMode) {
-		throw new NotYetImplementedFor6Exception();
+		super.addEntity( tableAlias, entityName, lockMode );
+		return this;
 	}
 	@Override
 	public ReactiveNativeQueryImpl<R> addEntity(@SuppressWarnings("rawtypes") Class entityType) {
-		throw new NotYetImplementedFor6Exception();
+		super.addEntity( entityType );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addEntity(String tableAlias, @SuppressWarnings("rawtypes") Class entityType) {
-		throw new NotYetImplementedFor6Exception();
+		super.addEntity( tableAlias, entityType );
+		return this;
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addEntity(
-			String tableAlias,
-			@SuppressWarnings("rawtypes") Class entityClass,
-			LockMode lockMode) {
-		throw new NotYetImplementedFor6Exception();
+	public ReactiveNativeQueryImpl<R> addEntity(String tableAlias, @SuppressWarnings("rawtypes") Class entityClass, LockMode lockMode) {
+		super.addEntity( tableAlias, entityClass, lockMode );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addJoin(String tableAlias, String path) {
-		throw new NotYetImplementedFor6Exception();
+		super.addJoin( tableAlias, path );
+		return this;
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addJoin(
-			String tableAlias,
-			String ownerTableAlias,
-			String joinPropertyName) {
-		throw new NotYetImplementedFor6Exception();
+	public ReactiveNativeQueryImpl<R> addJoin(String tableAlias, String ownerTableAlias, String joinPropertyName) {
+		super.addJoin( tableAlias, ownerTableAlias, joinPropertyName );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addJoin(String tableAlias, String path, LockMode lockMode) {
-		throw new NotYetImplementedFor6Exception();
+		super.addJoin( tableAlias, path, lockMode );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addSynchronizedQuerySpace(String querySpace) {
-		throw new NotYetImplementedFor6Exception();
+		super.addSynchronizedQuerySpace( querySpace );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addSynchronizedEntityName(String entityName) {
-		throw new NotYetImplementedFor6Exception();
+		super.addSynchronizedEntityName( entityName );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addSynchronizedEntityClass(@SuppressWarnings("rawtypes") Class entityClass) {
-		throw new NotYetImplementedFor6Exception();
+		super.addSynchronizedEntityClass( entityClass );
+		return this;
 	}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -287,112 +283,134 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public ReactiveNativeQueryImpl<R> applyLoadGraph(RootGraph graph) {
-		throw new NotYetImplementedFor6Exception();
+		super.applyLoadGraph( graph );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setAliasSpecificLockMode(String alias, LockMode lockMode) {
-		throw new NotYetImplementedFor6Exception();
+		super.setAliasSpecificLockMode( alias, lockMode );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setHint(String hintName, Object value) {
-		throw new NotYetImplementedFor6Exception();
+		super.setHint( hintName, value );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setHibernateFlushMode(FlushMode flushMode) {
-		throw new NotYetImplementedFor6Exception();
+		super.setHibernateFlushMode( flushMode );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setFlushMode(FlushModeType flushMode) {
-		throw new NotYetImplementedFor6Exception();
+		super.setFlushMode( flushMode );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setFollowOnLocking(boolean enable) {
-		throw new NotYetImplementedFor6Exception();
+		super.setFollowOnLocking( enable );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setCacheMode(CacheMode cacheMode) {
-		throw new NotYetImplementedFor6Exception();
+		super.setCacheMode( cacheMode );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setCacheable(boolean cacheable) {
-		throw new NotYetImplementedFor6Exception();
+		super.setCacheable( cacheable );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setCacheRegion(String cacheRegion) {
-		throw new NotYetImplementedFor6Exception();
+		super.setCacheRegion( cacheRegion );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
-		throw new NotYetImplementedFor6Exception();
+		super.setCacheRetrieveMode( cacheRetrieveMode );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
-		throw new NotYetImplementedFor6Exception();
+		super.setCacheStoreMode( cacheStoreMode );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setTimeout(int timeout) {
-		throw new NotYetImplementedFor6Exception();
+		super.setTimeout( timeout );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setFetchSize(int fetchSize) {
-		throw new NotYetImplementedFor6Exception();
+		super.setFetchSize( fetchSize );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setReadOnly(boolean readOnly) {
-		throw new NotYetImplementedFor6Exception();
+		super.setReadOnly( readOnly );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setLockOptions(LockOptions lockOptions) {
-		throw new NotYetImplementedFor6Exception();
+		super.setLockOptions( lockOptions );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setHibernateLockMode(LockMode lockMode) {
-		throw new NotYetImplementedFor6Exception();
+		super.setHibernateLockMode( lockMode );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setLockMode(LockModeType lockMode) {
-		throw new NotYetImplementedFor6Exception();
+		super.setLockMode( lockMode );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
-		throw new NotYetImplementedFor6Exception();
+		super.setLockMode( alias, lockMode );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setComment(String comment) {
-		throw new NotYetImplementedFor6Exception();
+		super.setComment( comment );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setMaxResults(int maxResult) {
-		throw new NotYetImplementedFor6Exception();
+		super.setMaxResults( maxResult );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setFirstResult(int startPosition) {
-		throw new NotYetImplementedFor6Exception();
+		super.setFirstResult( startPosition );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addQueryHint(String hint) {
-		throw new NotYetImplementedFor6Exception();
+		super.addQueryHint( hint );
+		return this;
 	}
 
 	@Override
@@ -402,228 +420,235 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setResultListTransformer(ResultListTransformer<R> transformer) {
-		throw new NotYetImplementedFor6Exception();
+		super.setResultListTransformer( transformer );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameter(String name, Object val) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( name, val );
+		return this;
 	}
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameter(String name, P val, BindableType<P> type) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( name, val, type );
+		return this;
 	}
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameter(String name, P val, Class<P> type) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( name, val, type );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameter(String name, Instant value, TemporalType temporalType) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( name, value, temporalType );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameter(String name, Date value, TemporalType temporalType) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( name, value, temporalType );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameter(String name, Calendar value, TemporalType temporalType) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( name, value, temporalType );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameter(int position, Object val) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( position, val );
+		return this;
 	}
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameter(int position, P val, Class<P> type) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( position, val, type );
+		return this;
 	}
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameter(int position, P val, BindableType<P> type) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( position, val, type );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameter(int position, Instant value, TemporalType temporalType) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( position, value, temporalType );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameter(int position, Date value, TemporalType temporalType) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( position, value, temporalType );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameter(int position, Calendar value, TemporalType temporalType) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( position, value, temporalType );
+		return this;
 	}
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameter(QueryParameter<P> parameter, P val) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( parameter, val );
+		return this;
 	}
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameter(QueryParameter<P> parameter, P val, Class<P> type) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( parameter, val, type );
+		return this;
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameter(
-			QueryParameter<P> parameter,
-			P val,
-			BindableType<P> type) {
-		throw new NotYetImplementedFor6Exception();
+	public <P> ReactiveNativeQueryImpl<R> setParameter(QueryParameter<P> parameter, P val, BindableType<P> type) {
+		super.setParameter( parameter, val, type );
+		return this;
 	}
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameter(Parameter<P> param, P value) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameter( param, value );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameter(Parameter<Date> param, Date value, TemporalType temporalType) {
-		throw new NotYetImplementedFor6Exception();
-	 }
+		super.setParameter( param, value, temporalType );
+		return this;
+	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> setParameter(
-			Parameter<Calendar> param,
-			Calendar value,
-			TemporalType temporalType) {
-		throw new NotYetImplementedFor6Exception();
+	public ReactiveNativeQueryImpl<R> setParameter(Parameter<Calendar> param, Calendar value, TemporalType temporalType) {
+		super.setParameter( param, value, temporalType );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameterList(String name, @SuppressWarnings("rawtypes") Collection values) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameterList( name, values );
+		return this;
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(
-			String name,
-			Collection<? extends P> values,
-			Class<P> type) {
-		throw new NotYetImplementedFor6Exception();
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(String name, Collection<? extends P> values, Class<P> type) {
+		super.setParameterList( name, values, type );
+		return this;
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(
-			String name,
-			Collection<? extends P> values,
-			BindableType<P> type) {
-		throw new NotYetImplementedFor6Exception();
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(String name, Collection<? extends P> values, BindableType<P> type) {
+		super.setParameterList( name, values, type );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameterList(String name, Object[] values) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameterList( name, values );
+		return this;
 	}
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameterList(String name, P[] values, Class<P> type) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameterList( name, values, type );
+		return this;
 	}
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameterList(String name, P[] values, BindableType<P> type) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameterList( name, values, type );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameterList(int position, @SuppressWarnings("rawtypes") Collection values) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameterList( position, values );
+		return this;
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(
-			int position,
-			Collection<? extends P> values,
-			Class<P> type) {
-		throw new NotYetImplementedFor6Exception();
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(int position, Collection<? extends P> values, Class<P> type) {
+		super.setParameterList( position, values, type );
+		return this;
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(
-			int position,
-			Collection<? extends P> values,
-			BindableType<P> type) {
-		throw new NotYetImplementedFor6Exception();
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(int position, Collection<? extends P> values, BindableType<P> type) {
+		super.setParameterList( position, values, type );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setParameterList(int position, Object[] values) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameterList( position, values );
+		return this;
 	}
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameterList(int position, P[] values, Class<P> javaType) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameterList( position, values, javaType );
+		return this;
 	}
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameterList(int position, P[] values, BindableType<P> type) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameterList( position, values, type );
+		return this;
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(
-			QueryParameter<P> parameter,
-			Collection<? extends P> values) {
-		throw new NotYetImplementedFor6Exception();
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values) {
+		super.setParameterList( position, values );
+		return this;
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(
-			QueryParameter<P> parameter,
-			Collection<? extends P> values,
-			Class<P> javaType) {
-		throw new NotYetImplementedFor6Exception();
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType) {
+		super.setParameterList( position, values, javaType );
+		return this;
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(
-			QueryParameter<P> parameter,
-			Collection<? extends P> values,
-			BindableType<P> type) {
-		throw new NotYetImplementedFor6Exception();
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type) {
+		super.setParameterList( parameter, values, type );
+		return this;
 	}
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values) {
-		throw new NotYetImplementedFor6Exception();
+		super.setParameterList( parameter, values );
+		return this;
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(
-			QueryParameter<P> parameter,
-			P[] values,
-			Class<P> javaType) {
-		throw new NotYetImplementedFor6Exception();
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType) {
+		super.setParameterList( parameter, values, javaType );
+		return this;
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(
-			QueryParameter<P> parameter,
-			P[] values,
-			BindableType<P> type) {
-		throw new NotYetImplementedFor6Exception();
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type) {
+		super.setParameterList( parameter, values, type );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setProperties(Object bean) {
-		throw new NotYetImplementedFor6Exception();
+		super.setProperties( bean );
+		return this;
 	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setProperties(@SuppressWarnings("rawtypes") Map bean) {
-		throw new NotYetImplementedFor6Exception();
+		super.setProperties( bean );
+		return this;
 	}
 }

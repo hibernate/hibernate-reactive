@@ -1306,7 +1306,7 @@ public interface Stage {
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 */
-		<R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
+		<R> MutationQuery<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
 
 		/**
 		 * Create an instance of {@link Stage.Query} for the given criteria delete.
@@ -1315,7 +1315,7 @@ public interface Stage {
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 */
-		<R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete);
+		<R> MutationQuery<R> createQuery(CriteriaDelete<R> criteriaDelete);
 
 		/**
 		 * Create an instance of {@link Query} for the named query.
@@ -1921,7 +1921,7 @@ public interface Stage {
 		 *
 		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
-		<R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
+		<R> Stage.MutationQuery<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
 
 		/**
 		 * Create an instance of {@link Query} for the given criteria delete.
@@ -1932,7 +1932,7 @@ public interface Stage {
 		 *
 		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
-		<R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete);
+		<R> Stage.MutationQuery<R> createQuery(CriteriaDelete<R> criteriaDelete);
 
 		/**
 		 * Insert a row.
