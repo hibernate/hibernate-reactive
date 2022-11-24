@@ -34,15 +34,11 @@ import jakarta.persistence.TemporalType;
  */
 public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
-	CompletionStage<List<R>> list();
+	CompletionStage<List<R>> reactiveList();
 
-	default CompletionStage<List<R>> getResultList() {
-		return list();
-	}
+	CompletionStage<R> reactiveUnique();
 
-	CompletionStage<R> uniqueResult();
-
-	CompletionStage<Optional<R>> uniqueResultOptional();
+	CompletionStage<Optional<R>> reactiveUniqueResultOptional();
 
 	ReactiveSelectionQuery<R> setHint(String hintName, Object value);
 

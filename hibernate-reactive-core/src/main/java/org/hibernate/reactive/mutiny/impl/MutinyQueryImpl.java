@@ -58,17 +58,17 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 
 	@Override
 	public Uni<List<R>> list() {
-		return uni( delegate::list );
+		return uni( delegate::reactiveList );
 	}
 
 	@Override
 	public Uni<R> uniqueResult() {
-		return uni( delegate::uniqueResult );
+		return uni( delegate::reactiveUnique );
 	}
 
 	@Override
 	public Uni<Optional<R>> uniqueResultOptional() {
-		return uni( delegate::uniqueResultOptional );
+		return uni( delegate::reactiveUniqueResultOptional );
 	}
 
 	@Override

@@ -24,6 +24,7 @@ import org.hibernate.query.BindableType;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
+import org.hibernate.query.named.NameableQuery;
 import org.hibernate.query.named.NamedQueryMemento;
 import org.hibernate.query.spi.ParameterMetadataImplementor;
 import org.hibernate.query.sqm.tree.SqmStatement;
@@ -43,7 +44,7 @@ import jakarta.persistence.TemporalType;
  * @see ReactiveSession
  */
 @Incubating
-public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor<R> {
+public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor<R>, NameableQuery {
 
 	CompletionStage<R> getReactiveSingleResult();
 
