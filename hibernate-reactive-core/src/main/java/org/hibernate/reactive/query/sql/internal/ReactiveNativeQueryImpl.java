@@ -20,24 +20,24 @@ import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.MappingException;
 import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.RootGraph;
 import org.hibernate.metamodel.model.domain.BasicDomainType;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
-import org.hibernate.query.results.dynamic.DynamicResultBuilderEntityStandard;
 import org.hibernate.query.sql.internal.NativeQueryImpl;
-import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
+import org.hibernate.type.BasicTypeReference;
 
-import io.smallrye.mutiny.Uni;
 import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
@@ -56,7 +56,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public int executeUpdate() throws HibernateException {
-		throw new LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
+		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
 	}
 
 	@Override
@@ -81,7 +81,6 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public List<R> list() {
-
 		throw new NotYetImplementedFor6Exception();
 	}
 
@@ -92,11 +91,16 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public R uniqueResult() {
-		throw new LOG.nonReactiveMethodCall( "reactiveUniqueResult" );
+		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
 	}
 
 	@Override
-	public CompletionStage<R> reactiveUniqueResult() {
+	public ReactiveNativeQueryImpl<R> applyGraph(RootGraph graph, GraphSemantic semantic) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> applyFetchGraph(RootGraph graph) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
@@ -114,6 +118,11 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public ReactiveNativeQueryImpl<R> addScalar(String columnAlias, @SuppressWarnings("rawtypes") Class javaType) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> addScalar(String columnAlias, BasicTypeReference type) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
@@ -172,11 +181,6 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
-	DynamicResultBuilderEntityStandard addRoot(String tableAlias, String entityName) {
-		throw new NotYetImplementedFor6Exception();
-	}
-
-	@Override
 	public ReactiveNativeQueryImpl<R> addEntity(String entityName) {
 		throw new NotYetImplementedFor6Exception();
 	}
@@ -187,8 +191,9 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addEntity(String tableAlias, String entityName, LockMode lockMode);
-
+	public ReactiveNativeQueryImpl<R> addEntity(String tableAlias, String entityName, LockMode lockMode) {
+		throw new NotYetImplementedFor6Exception();
+	}
 	@Override
 	public ReactiveNativeQueryImpl<R> addEntity(@SuppressWarnings("rawtypes") Class entityType) {
 		throw new NotYetImplementedFor6Exception();
@@ -243,6 +248,17 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // covariant overrides - Query / QueryImplementor
 
+
+	@Override
+	public ReactiveNativeQueryImpl<R> applyLoadGraph(RootGraph graph) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> setAliasSpecificLockMode(String alias, LockMode lockMode) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
 	@Override
 	public ReactiveNativeQueryImpl<R> setHint(String hintName, Object value) {
 		throw new NotYetImplementedFor6Exception();
@@ -259,6 +275,11 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
+	public ReactiveNativeQueryImpl<R> setFollowOnLocking(boolean enable) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
 	public ReactiveNativeQueryImpl<R> setCacheMode(CacheMode cacheMode) {
 		throw new NotYetImplementedFor6Exception();
 	}
@@ -270,6 +291,16 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setCacheRegion(String cacheRegion) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
@@ -329,7 +360,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
-	<T> ReactiveNativeQueryImplementor<T> setTupleTransformer(TupleTransformer<T> transformer) {
+	public <T> ReactiveNativeQueryImpl<T> setTupleTransformer(TupleTransformer<T> transformer) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
@@ -344,16 +375,12 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
-	public <P>
-
-	public ReactiveNativeQueryImpl<R> setParameter(String name, P val, BindableType<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameter(String name, P val, BindableType<P> type) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
-	public <P>
-
-	public ReactiveNativeQueryImpl<R> setParameter(String name, P val, Classpublic<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameter(String name, P val, Class<P> type) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
@@ -378,16 +405,12 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
-	public <P>
-
-	public ReactiveNativeQueryImpl<R> setParameter(int position, P val, Classpublic<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameter(int position, P val, Class<P> type) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
-	public <P>
-
-	public ReactiveNativeQueryImpl<R> setParameter(int position, P val, BindableType<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameter(int position, P val, BindableType<P> type) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
@@ -407,23 +430,17 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
-	public <P>
-
-	public ReactiveNativeQueryImpl<R> setParameter(QueryParameter<P> parameter, P val) {
+	public <P> ReactiveNativeQueryImpl<R> setParameter(QueryParameter<P> parameter, P val) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
-	public <P>
-
-	public ReactiveNativeQueryImpl<R> setParameter(QueryParameter<P> parameter, P val, Classpublic<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameter(QueryParameter<P> parameter, P val, Class<P> type) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
-	public <P>
-
-	public ReactiveNativeQueryImpl<R> setParameter(
+	public <P> ReactiveNativeQueryImpl<R> setParameter(
 			QueryParameter<P> parameter,
 			P val,
 			BindableType<P> type) {
@@ -431,9 +448,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
-	public <P>
-
-	public ReactiveNativeQueryImpl<R> setParameter(Parameterpublic<P> param, P value) {
+	public <P> ReactiveNativeQueryImpl<R> setParameter(Parameter<P> param, P value) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
@@ -477,7 +492,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(String name, P[] values, Classpublic<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(String name, P[] values, Class<P> type) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
@@ -495,7 +510,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	public <P> ReactiveNativeQueryImpl<R> setParameterList(
 			int position,
 			Collection<? extends P> values,
-			Classpublic<P> type) {
+			Class<P> type) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
@@ -513,7 +528,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(int position, P[] values, Classpublic<P> javaType) {
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(int position, P[] values, Class<P> javaType) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
@@ -533,7 +548,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	public <P> ReactiveNativeQueryImpl<R> setParameterList(
 			QueryParameter<P> parameter,
 			Collection<? extends P> values,
-			Classpublic<P> javaType) {
+			Class<P> javaType) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
@@ -546,15 +561,15 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
-	public <p> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values) {
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
-	public <p> ReactiveNativeQueryImpl<R> setParameterList(
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(
 			QueryParameter<P> parameter,
 			P[] values,
-			Classpublic<P> javaType) {
+			Class<P> javaType) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
