@@ -98,6 +98,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.TransactionRequiredException;
+import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
@@ -368,7 +369,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 //					"Query requires transaction be in progress, but no transaction is known to be in progress"
 //			);
 //		}
-
 	}
 
 	@Override
@@ -408,6 +408,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate updateQuery) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete deleteQuery) {
 		throw new NotYetImplementedFor6Exception();
 	}
 

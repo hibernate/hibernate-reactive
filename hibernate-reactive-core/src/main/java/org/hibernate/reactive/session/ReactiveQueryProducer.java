@@ -18,6 +18,7 @@ import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
@@ -69,9 +70,11 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(String hqlString);
 
-	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(@SuppressWarnings("rawtypes") CriteriaUpdate updateQuery);
+	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate updateQuery);
 
-	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(@SuppressWarnings("rawtypes") JpaCriteriaInsertSelect insertSelect);
+	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete deleteQuery);
+
+	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect insertSelect);
 
 	<R> ReactiveMutationQuery<R> createNativeReactiveMutationQuery(String sqlString);
 

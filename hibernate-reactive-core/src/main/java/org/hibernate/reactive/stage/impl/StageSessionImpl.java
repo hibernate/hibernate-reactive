@@ -479,12 +479,12 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <R> Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
+	public <R> Stage.MutationQuery<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
-	public <R> Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
+	public <R> Stage.MutationQuery<R> createQuery(CriteriaDelete<R> criteriaDelete) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
