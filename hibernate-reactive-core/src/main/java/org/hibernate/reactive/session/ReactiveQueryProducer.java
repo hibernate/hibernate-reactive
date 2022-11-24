@@ -59,10 +59,7 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass, String tableAlias);
 
-	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(
-			String sqlString,
-			String resultSetMappingName,
-			Class<R> resultClass);
+	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName, Class<R> resultClass);
 
 	<R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString);
 
@@ -76,13 +73,13 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(@SuppressWarnings("rawtypes") JpaCriteriaInsertSelect insertSelect);
 
-	<R> ReactiveMutationQuery<R> createNativeMutationQuery(String sqlString);
+	<R> ReactiveMutationQuery<R> createNativeReactiveMutationQuery(String sqlString);
 
 	<R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name, Class<R> resultClass);
 
 	<R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name);
 
-	<R> ReactiveSelectionQuery<R> createNamedSelectionQuery(String name, Class<R> resultType);
+	<R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name, Class<R> resultType);
 
 	<R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name);
 
