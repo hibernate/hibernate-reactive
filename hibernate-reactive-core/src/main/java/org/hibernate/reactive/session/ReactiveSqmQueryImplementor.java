@@ -9,9 +9,7 @@ import java.time.Instant;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
@@ -25,8 +23,6 @@ import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
 import org.hibernate.query.named.NameableQuery;
-import org.hibernate.query.named.NamedQueryMemento;
-import org.hibernate.query.spi.ParameterMetadataImplementor;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.reactive.query.ReactiveQueryImplementor;
 
@@ -45,19 +41,6 @@ import jakarta.persistence.TemporalType;
  */
 @Incubating
 public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor<R>, NameableQuery {
-
-	CompletionStage<R> getReactiveSingleResult();
-
-	CompletionStage<List<R>> getReactiveResultList();
-
-	CompletionStage<R> getReactiveSingleResultOrNull();
-
-	CompletionStage<Integer> executeReactiveUpdate();
-
-	NamedQueryMemento toMemento(String name);
-
-	@Override
-	ParameterMetadataImplementor getParameterMetadata();
 
 	SqmStatement<R> getSqmStatement();
 

@@ -68,7 +68,6 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.query.spi.QueryInterpretationCache;
-import org.hibernate.query.sql.internal.NativeQueryImpl;
 import org.hibernate.reactive.common.InternalStateAssertions;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
@@ -93,7 +92,6 @@ import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
 import org.hibernate.reactive.query.sqm.iternal.ReactiveQuerySqmImpl;
-import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
