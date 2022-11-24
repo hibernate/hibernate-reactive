@@ -228,6 +228,10 @@ public interface Stage {
 			return list();
 		}
 
+		CompletionStage<R> getSingleResult();
+
+		CompletionStage<R> getSingleResultOrNull();
+
 		CompletionStage<R> uniqueResult();
 
 		CompletionStage<Optional<R>> uniqueResultOptional();
@@ -1360,6 +1364,36 @@ public interface Stage {
 		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, Class)
 		 */
 		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType);
+
+
+		/**
+		 * Create an instance of {@link Query} for the given SQL query string,
+		 * using the given {@code resultType} to interpret the results.
+		 *
+		 * <ul>
+		 * <li>If the given result type is {@link Object}, or a built-in type
+		 * such as {@link String} or {@link Integer}, the result set must
+		 * have a single column, which will be returned as a scalar.</li>
+		 * <li>If the given result type is {@code Object[]}, then the result set
+		 * must have multiple columns, which will be returned as elements of
+		 * arrays of type {@code Object[]}.</li>
+		 * <li>Otherwise, the given result type must be an entity class, in which
+		 * case the result set column aliases must map to the fields of the
+		 * entity, and the query will return instances of the entity.</li>
+		 * </ul>
+		 *
+		 * Any {@link AffectedEntities affected entities} are synchronized with
+		 * the database before execution of the query.
+		 *
+		 * @param queryString The SQL query
+		 * @param resultType the Java type returned in each row of query results
+		 * @param affectedEntities The entities which are affected by the query
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see javax.persistence.EntityManager#createNativeQuery(String, Class)
+		 */
+		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities);
 
 		/**
 		 * Create an instance of {@link Query} for the given SQL query string,

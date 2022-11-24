@@ -152,7 +152,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String queryString) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( queryString ), factory );
+		return new MutinyQueryImpl<R>( delegate.createReactiveNativeQuery( queryString ), factory );
 	}
 
 	@Override
@@ -166,10 +166,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(
-			String queryString,
-			Class<R> resultType,
-			AffectedEntities affectedEntities) {
+	public <R> Mutiny.Query<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
 		throw new NotYetImplementedFor6Exception();
 	}
 

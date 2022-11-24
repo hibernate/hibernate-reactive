@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.Table;
 import jakarta.persistence.metamodel.EntityType;
@@ -446,7 +447,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 				populateDB()
 						.call( () -> getMutinySessionFactory().withTransaction(
 								(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class)
-										.setLockMode(LockMode.PESSIMISTIC_WRITE)
+										.setLockMode( LockModeType.PESSIMISTIC_WRITE )
 										.getSingleResult()
 										.invoke( actualPig -> {
 											assertThatPigsAreEqual( context, expectedPig, actualPig );

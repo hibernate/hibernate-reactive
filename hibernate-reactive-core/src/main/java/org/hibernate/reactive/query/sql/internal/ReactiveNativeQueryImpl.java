@@ -29,6 +29,7 @@ import org.hibernate.query.BindableType;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
+import org.hibernate.query.spi.AbstractSelectionQuery;
 import org.hibernate.query.sql.internal.NativeQueryImpl;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -40,6 +41,7 @@ import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.Parameter;
 import jakarta.persistence.TemporalType;
 import jakarta.persistence.metamodel.SingularAttribute;
@@ -70,6 +72,40 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 	}
 
 	@Override
+	public CompletionStage<R> getReactiveSingleResult() {
+		return reactiveList()
+				.thenApply( this::reactiveSingleResult )
+				.exceptionally( this::convertException );
+	}
+
+	private R reactiveSingleResult(List<R> list) {
+		if ( list.isEmpty() ) {
+			throw new NoResultException( String.format( "No result found for query [%s]", getQueryString() ) );
+		}
+		return uniqueElement( list );
+	}
+
+
+	@Override
+	public R getSingleResultOrNull() {
+		throw LOG.nonReactiveMethodCall( "getReactiveSingleResultOrNull" );
+	}
+
+	@Override
+	public CompletionStage<R> getReactiveSingleResultOrNull() {
+		return reactiveList()
+				.thenApply( AbstractSelectionQuery::uniqueElement )
+				.exceptionally( this::convertException );
+	}
+
+	private R convertException(Throwable t) {
+		if ( t instanceof HibernateException ) {
+			throw getSession().getExceptionConverter().convert( (HibernateException) t, getLockOptions() );
+		}
+		throw getSession().getExceptionConverter().convert( (RuntimeException) t, getLockOptions() );
+	}
+
+	@Override
 	public CompletionStage<Optional<R>> reactiveUniqueResultOptional() {
 		throw new NotYetImplementedFor6Exception();
 	}
@@ -81,7 +117,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public List<R> list() {
-		throw new NotYetImplementedFor6Exception();
+		throw LOG.nonReactiveMethodCall( "reactiveList" );
 	}
 
 	@Override

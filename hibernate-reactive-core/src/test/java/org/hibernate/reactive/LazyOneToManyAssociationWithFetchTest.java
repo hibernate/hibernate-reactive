@@ -6,6 +6,7 @@
 package org.hibernate.reactive;
 
 import io.vertx.ext.unit.TestContext;
+
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.FetchProfile;
@@ -22,6 +23,7 @@ import jakarta.persistence.NamedAttributeNode;
 import jakarta.persistence.NamedEntityGraph;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -36,38 +38,44 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 
 	@Test
 	public void findBookWithFetchAuthors(TestContext context) {
-		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
-		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
-		final Author terryPratchett = new Author(2132511, "Terry Pratchett", goodOmens);
-		goodOmens.getAuthors().add(neilGaiman);
-		goodOmens.getAuthors().add(terryPratchett);
+		final Book goodOmens = new Book(
+				7242353,
+				"Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch"
+		);
+		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
+		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
+		goodOmens.getAuthors().add( neilGaiman );
+		goodOmens.getAuthors().add( terryPratchett );
 
 		test(
 				context,
 				openSession()
-						.thenCompose(s -> s.persist(goodOmens)
-								.thenCompose(v -> s.persist(neilGaiman))
-								.thenCompose(v -> s.persist(terryPratchett))
-								.thenCompose(v -> s.flush())
+						.thenCompose( s -> s.persist( goodOmens )
+								.thenCompose( v -> s.persist( neilGaiman ) )
+								.thenCompose( v -> s.persist( terryPratchett ) )
+								.thenCompose( v -> s.flush() )
 						)
 						.thenCompose( v -> openSession() )
-						.thenCompose(s -> s.find(Book.class, goodOmens.getId())
+						.thenCompose( s -> s.find( Book.class, goodOmens.getId() )
 								.thenCompose(
-										book -> s.fetch(book.getAuthors())
-								))
-						.thenAccept(optionalAssociation -> {
-							context.assertTrue( Hibernate.isInitialized(optionalAssociation) );
-							context.assertNotNull(optionalAssociation);
-							context.assertTrue(optionalAssociation.contains(neilGaiman));
-							context.assertTrue(optionalAssociation.contains(terryPratchett));
-						})
+										book -> s.fetch( book.getAuthors() )
+								) )
+						.thenAccept( optionalAssociation -> {
+							context.assertTrue( Hibernate.isInitialized( optionalAssociation ) );
+							context.assertNotNull( optionalAssociation );
+							context.assertTrue( optionalAssociation.contains( neilGaiman ) );
+							context.assertTrue( optionalAssociation.contains( terryPratchett ) );
+						} )
 		);
 
 	}
 
 	@Test
 	public void findBookWithStaticFetchAuthors(TestContext context) {
-		final Book goodOmens = new Book( 7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
+		final Book goodOmens = new Book(
+				7242353,
+				"Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch"
+		);
 		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
 		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
 		goodOmens.getAuthors().add( neilGaiman );
@@ -75,172 +83,189 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 		test(
 				context,
 				openSession()
-						.thenCompose( s -> s.persist(goodOmens)
-								.thenCompose( v -> s.persist(neilGaiman) )
-								.thenCompose( v -> s.persist(terryPratchett) )
+						.thenCompose( s -> s.persist( goodOmens )
+								.thenCompose( v -> s.persist( neilGaiman ) )
+								.thenCompose( v -> s.persist( terryPratchett ) )
 								.thenCompose( v -> s.flush() )
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, goodOmens.getId() )
 								.thenCompose(
-										book -> Stage.fetch( book.getAuthors())
+										book -> Stage.fetch( book.getAuthors() )
 								) )
 						.thenAccept( optionalAssociation -> {
-							context.assertTrue( Hibernate.isInitialized(optionalAssociation) );
-							context.assertNotNull(optionalAssociation);
-							context.assertTrue(optionalAssociation.contains(neilGaiman));
-							context.assertTrue(optionalAssociation.contains(terryPratchett));
+							context.assertTrue( Hibernate.isInitialized( optionalAssociation ) );
+							context.assertNotNull( optionalAssociation );
+							context.assertTrue( optionalAssociation.contains( neilGaiman ) );
+							context.assertTrue( optionalAssociation.contains( terryPratchett ) );
 						} )
 		);
 	}
 
 	@Test
 	public void findBookWithNamedEntityGraphFetchAuthors(TestContext context) {
-		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
-		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
-		final Author terryPratchett = new Author(2132511, "Terry Pratchett", goodOmens);
-		goodOmens.getAuthors().add(neilGaiman);
-		goodOmens.getAuthors().add(terryPratchett);
+		final Book goodOmens = new Book(
+				7242353,
+				"Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch"
+		);
+		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
+		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
+		goodOmens.getAuthors().add( neilGaiman );
+		goodOmens.getAuthors().add( terryPratchett );
 
 		test(
 				context,
 				openSession()
-						.thenCompose(s -> s.persist(goodOmens)
-								.thenCompose(v -> s.persist(neilGaiman))
-								.thenCompose(v -> s.persist(terryPratchett))
-								.thenCompose(v -> s.flush())
+						.thenCompose( s -> s.persist( goodOmens )
+								.thenCompose( v -> s.persist( neilGaiman ) )
+								.thenCompose( v -> s.persist( terryPratchett ) )
+								.thenCompose( v -> s.flush() )
 						)
 						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.find( s.getEntityGraph(Book.class, "withAuthors"), goodOmens.getId() ) )
-						.thenAccept(book -> {
-							context.assertTrue( Hibernate.isInitialized(book.authors) );
+						.thenCompose( s -> s.find( s.getEntityGraph( Book.class, "withAuthors" ), goodOmens.getId() ) )
+						.thenAccept( book -> {
+							context.assertTrue( Hibernate.isInitialized( book.authors ) );
 							List<Author> optionalAssociation = book.authors;
-							context.assertNotNull(optionalAssociation);
-							context.assertTrue(optionalAssociation.contains(neilGaiman));
-							context.assertTrue(optionalAssociation.contains(terryPratchett));
-						})
+							context.assertNotNull( optionalAssociation );
+							context.assertTrue( optionalAssociation.contains( neilGaiman ) );
+							context.assertTrue( optionalAssociation.contains( terryPratchett ) );
+						} )
 		);
 
 	}
 
 	@Test
 	public void findBookWithNewEntityGraphFetchAuthors(TestContext context) {
-		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
-		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
-		final Author terryPratchett = new Author(2132511, "Terry Pratchett", goodOmens);
-		goodOmens.getAuthors().add(neilGaiman);
-		goodOmens.getAuthors().add(terryPratchett);
+		final Book goodOmens = new Book(
+				7242353,
+				"Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch"
+		);
+		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
+		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
+		goodOmens.getAuthors().add( neilGaiman );
+		goodOmens.getAuthors().add( terryPratchett );
 
 		test(
 				context,
 				openSession()
-						.thenCompose(s -> s.persist(goodOmens)
-								.thenCompose(v -> s.persist(neilGaiman))
-								.thenCompose(v -> s.persist(terryPratchett))
-								.thenCompose(v -> s.flush())
+						.thenCompose( s -> s.persist( goodOmens )
+								.thenCompose( v -> s.persist( neilGaiman ) )
+								.thenCompose( v -> s.persist( terryPratchett ) )
+								.thenCompose( v -> s.flush() )
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> {
-							EntityGraph<Book> graph = s.createEntityGraph(Book.class);
-							graph.addAttributeNodes("authors");
+							EntityGraph<Book> graph = s.createEntityGraph( Book.class );
+							graph.addAttributeNodes( "authors" );
 							return s.find( graph, goodOmens.getId() );
-						})
-						.thenAccept(book -> {
-							context.assertTrue( Hibernate.isInitialized(book.authors) );
+						} )
+						.thenAccept( book -> {
+							context.assertTrue( Hibernate.isInitialized( book.authors ) );
 							List<Author> optionalAssociation = book.authors;
-							context.assertNotNull(optionalAssociation);
-							context.assertTrue(optionalAssociation.contains(neilGaiman));
-							context.assertTrue(optionalAssociation.contains(terryPratchett));
-						})
+							context.assertNotNull( optionalAssociation );
+							context.assertTrue( optionalAssociation.contains( neilGaiman ) );
+							context.assertTrue( optionalAssociation.contains( terryPratchett ) );
+						} )
 		);
 
 	}
 
 	@Test
 	public void queryBookWithNamedEntityGraphFetchAuthors(TestContext context) {
-		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
-		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
-		final Author terryPratchett = new Author(2132511, "Terry Pratchett", goodOmens);
-		goodOmens.getAuthors().add(neilGaiman);
-		goodOmens.getAuthors().add(terryPratchett);
+		final Book goodOmens = new Book(
+				7242353,
+				"Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch"
+		);
+		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
+		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
+		goodOmens.getAuthors().add( neilGaiman );
+		goodOmens.getAuthors().add( terryPratchett );
 
 		test(
 				context,
 				openSession()
-						.thenCompose(s -> s.persist(goodOmens)
-								.thenCompose(v -> s.persist(neilGaiman))
-								.thenCompose(v -> s.persist(terryPratchett))
-								.thenCompose(v -> s.flush()))
-						.thenCompose(v -> openSession())
-						.thenCompose( s -> s.createQuery( "from Tome b where b.id=?1", Book.class)
-								.setPlan( s.getEntityGraph(Book.class, "withAuthors") )
-								.setParameter(1, goodOmens.getId() )
+						.thenCompose( s -> s.persist( goodOmens )
+								.thenCompose( v -> s.persist( neilGaiman ) )
+								.thenCompose( v -> s.persist( terryPratchett ) )
+								.thenCompose( v -> s.flush() ) )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.createQuery( "from Tome b where b.id=?1", Book.class )
+								// FIXME: EntityGraph [ORM-6]
+//								.setPlan( s.getEntityGraph( Book.class, "withAuthors" ) )
+								.setParameter( 1, goodOmens.getId() )
 								.getSingleResult() )
-						.thenAccept(book -> {
-							context.assertTrue( Hibernate.isInitialized(book.authors) );
+						.thenAccept( book -> {
+							context.assertTrue( Hibernate.isInitialized( book.authors ) );
 							List<Author> optionalAssociation = book.authors;
-							context.assertNotNull(optionalAssociation);
-							context.assertTrue(optionalAssociation.contains(neilGaiman));
-							context.assertTrue(optionalAssociation.contains(terryPratchett));
-						})
-						.thenCompose(v -> openSession())
+							context.assertNotNull( optionalAssociation );
+							context.assertTrue( optionalAssociation.contains( neilGaiman ) );
+							context.assertTrue( optionalAssociation.contains( terryPratchett ) );
+						} )
+						.thenCompose( v -> openSession() )
 						.thenCompose( s -> {
-							EntityGraph<Author> graph = s.createEntityGraph(Author.class);
-							graph.addAttributeNodes("book");
-							return s.createQuery("from Writer w where w.id=?1", Author.class)
-									.setPlan(graph)
-									.setParameter(1, neilGaiman.getId())
+							EntityGraph<Author> graph = s.createEntityGraph( Author.class );
+							graph.addAttributeNodes( "book" );
+							return s.createQuery( "from Writer w where w.id=?1", Author.class )
+									// FIXME: EntityGraph [ORM-6]
+//									.setPlan( graph )
+									.setParameter( 1, neilGaiman.getId() )
 									.getSingleResult();
-						})
-						.thenAccept(author -> context.assertTrue( Hibernate.isInitialized(author.book) ) )
+						} )
+						.thenAccept( author -> context.assertTrue( Hibernate.isInitialized( author.book ) ) )
 		);
 
 	}
 
 	@Test
 	public void findBookWithFetchProfileAuthors(TestContext context) {
-		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
-		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
-		final Author terryPratchett = new Author(2132511, "Terry Pratchett", goodOmens);
-		goodOmens.getAuthors().add(neilGaiman);
-		goodOmens.getAuthors().add(terryPratchett);
+		final Book goodOmens = new Book(
+				7242353,
+				"Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch"
+		);
+		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
+		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
+		goodOmens.getAuthors().add( neilGaiman );
+		goodOmens.getAuthors().add( terryPratchett );
 
 		test(
 				context,
 				openSession()
-						.thenCompose(s -> s.persist(goodOmens)
-								.thenCompose(v -> s.persist(neilGaiman))
-								.thenCompose(v -> s.persist(terryPratchett))
-								.thenCompose(v -> s.flush())
+						.thenCompose( s -> s.persist( goodOmens )
+								.thenCompose( v -> s.persist( neilGaiman ) )
+								.thenCompose( v -> s.persist( terryPratchett ) )
+								.thenCompose( v -> s.flush() )
 						)
 						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.enableFetchProfile("withAuthors").find(Book.class, goodOmens.getId() ) )
-						.thenAccept(book -> {
-							context.assertTrue( Hibernate.isInitialized(book.authors) );
+						.thenCompose( s -> s.enableFetchProfile( "withAuthors" ).find( Book.class, goodOmens.getId() ) )
+						.thenAccept( book -> {
+							context.assertTrue( Hibernate.isInitialized( book.authors ) );
 							List<Author> optionalAssociation = book.authors;
-							context.assertNotNull(optionalAssociation);
-							context.assertTrue(optionalAssociation.contains(neilGaiman));
-							context.assertTrue(optionalAssociation.contains(terryPratchett));
-						})
+							context.assertNotNull( optionalAssociation );
+							context.assertTrue( optionalAssociation.contains( neilGaiman ) );
+							context.assertTrue( optionalAssociation.contains( terryPratchett ) );
+						} )
 		);
 
 	}
 
 	@Test
 	public void getBookWithFetchAuthors(TestContext context) {
-		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
-		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
-		final Author terryPratchett = new Author(2132511, "Terry Pratchett", goodOmens);
-		goodOmens.getAuthors().add(neilGaiman);
-		goodOmens.getAuthors().add(terryPratchett);
+		final Book goodOmens = new Book(
+				7242353,
+				"Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch"
+		);
+		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
+		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
+		goodOmens.getAuthors().add( neilGaiman );
+		goodOmens.getAuthors().add( terryPratchett );
 
 		test( context, getSessionFactory()
 				.withStatelessSession( session -> session
-					.insert( goodOmens, neilGaiman, terryPratchett ) )
+						.insert( goodOmens, neilGaiman, terryPratchett ) )
 				.thenCompose( v -> getSessionFactory().withStatelessSession( session -> session
-						.get( Book.class, goodOmens.getId() ).thenCompose( book -> session
-								.fetch( book.getAuthors() )
-						) )
+								.get( Book.class, goodOmens.getId() ).thenCompose( book -> session
+										.fetch( book.getAuthors() )
+								) )
 						.thenAccept( optionalAssociation -> {
 							context.assertTrue( Hibernate.isInitialized( optionalAssociation ) );
 							context.assertNotNull( optionalAssociation );
@@ -253,11 +278,14 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 
 	@Test
 	public void getBookWithEntityGraphAuthors(TestContext context) {
-		final Book goodOmens = new Book(7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
-		final Author neilGaiman = new Author(21426321, "Neil Gaiman", goodOmens);
-		final Author terryPratchett = new Author(2132511, "Terry Pratchett", goodOmens);
-		goodOmens.getAuthors().add(neilGaiman);
-		goodOmens.getAuthors().add(terryPratchett);
+		final Book goodOmens = new Book(
+				7242353,
+				"Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch"
+		);
+		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
+		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
+		goodOmens.getAuthors().add( neilGaiman );
+		goodOmens.getAuthors().add( terryPratchett );
 
 		test( context, getSessionFactory()
 				.withStatelessSession( session -> session
@@ -282,11 +310,11 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 					entity = Book.class, association = "authors",
 					mode = FetchMode.JOIN))
 
-	@NamedEntityGraph(name="withAuthors",
+	@NamedEntityGraph(name = "withAuthors",
 			attributeNodes = @NamedAttributeNode("authors")
 	)
 
-	@Entity(name =  "Tome")
+	@Entity(name = "Tome")
 	@Table(name = Book.TABLE)
 	public static class Book {
 		public static final String TABLE = "Book4";
@@ -295,7 +323,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 		private Integer id;
 		private String title;
 
-		@OneToMany(fetch = FetchType.LAZY, mappedBy="book")
+		@OneToMany(fetch = FetchType.LAZY, mappedBy = "book")
 		private List<Author> authors = new ArrayList<>();
 
 		public Book() {

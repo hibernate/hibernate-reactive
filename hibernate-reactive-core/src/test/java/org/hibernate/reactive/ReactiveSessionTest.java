@@ -11,6 +11,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
@@ -532,7 +533,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> getSessionFactory()
 								.withTransaction( (session, tx) -> session
 										.createQuery( "from GuineaPig pig", GuineaPig.class )
-										.setLockMode( LockMode.PESSIMISTIC_WRITE )
+										.setLockMode( LockModeType.PESSIMISTIC_WRITE )
 										.getSingleResult()
 										.thenAccept( actualPig -> {
 											assertThatPigsAreEqual( context, expectedPig, actualPig );
@@ -729,11 +730,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				context,
 				openSession().thenCompose( s -> s
 						.persist( pig )
-						.thenCompose( v -> s.createNativeQuery(
-										"select * from pig where name=:n",
-										GuineaPig.class,
-										affectsPigs
-								)
+						.thenCompose( v -> s.createNativeQuery( "select * from pig where name=:n", GuineaPig.class, affectsPigs )
 								.setParameter( "n", pig.name )
 								.getResultList() )
 						.thenAccept( list -> {

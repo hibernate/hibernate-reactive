@@ -57,6 +57,16 @@ public class MutinyQueryImpl<R> implements Mutiny.Query<R> {
 	}
 
 	@Override
+	public Uni<R> getSingleResult() {
+		return uni( delegate::getReactiveSingleResult );
+	}
+
+	@Override
+	public Uni<R> getSingleResultOrNull() {
+		return uni( delegate::getReactiveSingleResultOrNull );
+	}
+
+	@Override
 	public Uni<List<R>> list() {
 		return uni( delegate::reactiveList );
 	}

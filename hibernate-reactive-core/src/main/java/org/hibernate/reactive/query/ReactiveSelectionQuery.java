@@ -34,13 +34,25 @@ import jakarta.persistence.TemporalType;
  */
 public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
+	String getQueryString();
+
+	default CompletionStage<List<R>> getReactiveResultList() {
+		return reactiveList();
+	}
+
 	CompletionStage<List<R>> reactiveList();
+
+	CompletionStage<R> getReactiveSingleResult();
+
+	CompletionStage<R> getReactiveSingleResultOrNull();
 
 	CompletionStage<R> reactiveUnique();
 
 	CompletionStage<Optional<R>> reactiveUniqueResultOptional();
 
 	ReactiveSelectionQuery<R> setHint(String hintName, Object value);
+
+	// Covariant methods
 
 	@Override
 	ReactiveSelectionQuery<R> setFlushMode(FlushModeType flushMode);
