@@ -86,7 +86,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public CompletionStage<List<R>> reactiveList() {
-		return null;
+		throw new NotYetImplementedFor6Exception();
 	}
 
 	@Override
