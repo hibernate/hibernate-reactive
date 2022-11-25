@@ -53,6 +53,7 @@ import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.spi.TypeConfiguration;
 
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
@@ -614,6 +615,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
+	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(
 			String sqlString,
 			String resultSetMappingName,
@@ -644,6 +650,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate updateQuery) {
 		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete deleteQuery) {
+		return null;
 	}
 
 	@Override

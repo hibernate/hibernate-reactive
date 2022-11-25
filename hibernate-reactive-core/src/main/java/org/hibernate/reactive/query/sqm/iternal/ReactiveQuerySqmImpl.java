@@ -22,12 +22,10 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.NotYetImplementedFor6Exception;
-import org.hibernate.TypeMismatchException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.query.BindableType;
-import org.hibernate.query.IllegalQueryOperationException;
 import org.hibernate.query.QueryLogging;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
@@ -49,6 +47,7 @@ import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery;
 import org.hibernate.reactive.query.sqm.spi.SelectReactiveQueryPlan;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.transform.ResultTransformer;
@@ -57,7 +56,6 @@ import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
-import jakarta.persistence.NoResultException;
 import jakarta.persistence.Parameter;
 import jakarta.persistence.TemporalType;
 
@@ -65,15 +63,22 @@ import static org.hibernate.query.spi.SqlOmittingQueryOptions.omitSqlQueryOption
 import static org.hibernate.query.spi.SqlOmittingQueryOptions.omitSqlQueryOptionsWithUniqueSemanticFilter;
 
 
+/**
+ * @see QuerySqmImpl
+ * @param <R>
+ */
 public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements ReactiveSqmQueryImplementor<R> {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
+	private final ReactiveAbstractSelectionQuery<R> selectionQueryDelegate;
 
 	public ReactiveQuerySqmImpl(
 			NamedHqlQueryMementoImpl memento,
 			Class<R> expectedResultType,
 			SharedSessionContractImplementor session) {
 		super( memento, expectedResultType, session );
+		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
 	public ReactiveQuerySqmImpl(
@@ -81,6 +86,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 			Class<R> resultType,
 			SharedSessionContractImplementor session) {
 		super( memento, resultType, session );
+		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
 	public ReactiveQuerySqmImpl(
@@ -89,84 +95,78 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 			Class<R> resultType,
 			SharedSessionContractImplementor session) {
 		super( hql, hqlInterpretation, resultType, session );
+		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
 	public ReactiveQuerySqmImpl(
 			SqmStatement<R> criteria,
 			Class<R> resultType,
-			SharedSessionContractImplementor producer) {
-		super( criteria, resultType, producer );
+			SharedSessionContractImplementor session) {
+		super( criteria, resultType, session );
+		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
+
+
+	private ReactiveAbstractSelectionQuery<R> createSelectionQueryDelegate(SharedSessionContractImplementor session) {
+		return new ReactiveAbstractSelectionQuery<>(
+				this,
+				session,
+				this::doReactiveList,
+				this::getSqmStatement,
+				this::getTupleMetadata,
+				this::getDomainParameterXref,
+				this::getResultType,
+				this::getQueryString,
+				this::beforeQuery,
+				this::afterQuery,
+				AbstractSelectionQuery::uniqueElement
+			);
+	}
+
 
 	@Override
 	public CompletionStage<R> reactiveUnique() {
-		return reactiveList()
-				.thenApply( AbstractSelectionQuery::uniqueElement );
+		return selectionQueryDelegate.reactiveUnique();
 	}
 
 	@Override
 	public CompletionStage<R> getReactiveSingleResult() {
-		return reactiveList()
-				.thenApply( this::reactiveSingleResult )
-				.exceptionally( this::convertException );
-	}
-
-	private R reactiveSingleResult(List<R> list) {
-		if ( list.isEmpty() ) {
-			throw new NoResultException( String.format( "No result found for query [%s]", getQueryString() ) );
-		}
-		return uniqueElement( list );
+		return selectionQueryDelegate.getReactiveSingleResult();
 	}
 
 	@Override
 	public CompletionStage<R> getReactiveSingleResultOrNull() {
-		return reactiveList()
-				.thenApply( AbstractSelectionQuery::uniqueElement )
-				.exceptionally( this::convertException );
-	}
-
-	private R convertException(Throwable t) {
-		if ( t instanceof HibernateException ) {
-			throw getSession().getExceptionConverter().convert( (HibernateException) t, getLockOptions() );
-		}
-		throw getSession().getExceptionConverter().convert( (RuntimeException) t, getLockOptions() );
+		return selectionQueryDelegate.getReactiveSingleResultOrNull();
 	}
 
 	@Override
 	public CompletionStage<Optional<R>> reactiveUniqueResultOptional() {
-		return reactiveUnique()
-				.thenApply( Optional::ofNullable );
+		return selectionQueryDelegate.reactiveUniqueResultOptional();
 	}
 
 	@Override
 	public CompletionStage<List<R>> reactiveList() {
-		beforeQuery();
-		return doReactiveList()
-				.handle( (list, error) -> {
-					handleException( error );
-					return list;
-				} )
-				.whenComplete( (rs, throwable) -> afterQuery( throwable == null ) );
+		return selectionQueryDelegate.reactiveList();
 	}
 
-	private void handleException(Throwable e) {
-		if ( e != null ) {
-			if ( e instanceof IllegalQueryOperationException ) {
-				throw new IllegalStateException( e );
-			}
-			if ( e instanceof TypeMismatchException ) {
-				throw new IllegalStateException( e );
-			}
-			if ( e instanceof HibernateException ) {
-				throw getSession().getExceptionConverter()
-						.convert( (HibernateException) e, getQueryOptions().getLockOptions() );
-			}
-			if ( e instanceof RuntimeException ) {
-				throw (RuntimeException) e;
-			}
+	@Override
+	public R getSingleResult() {
+		return selectionQueryDelegate.getSingleResult();
+	}
 
-			throw new HibernateException( e );
-		}
+	@Override
+	public R getSingleResultOrNull() {
+		return selectionQueryDelegate.getSingleResultOrNull();
+	}
+
+	@Override
+	public List<R> getResultList() {
+		return selectionQueryDelegate.getResultList();
+	}
+
+	@Override
+	public Stream<R> getResultStream() {
+		return selectionQueryDelegate.getResultStream();
 	}
 
 	private CompletionStage<List<R>> doReactiveList() {
@@ -316,16 +316,6 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 				getTupleMetadata(),
 				queryOptions
 		);
-	}
-
-	@Override
-	public List<R> getResultList() {
-		return super.getResultList();
-	}
-
-	@Override
-	public Stream<R> getResultStream() {
-		return super.getResultStream();
 	}
 
 	@Override

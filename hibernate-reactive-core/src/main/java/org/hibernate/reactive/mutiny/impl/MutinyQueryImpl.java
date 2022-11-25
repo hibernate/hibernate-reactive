@@ -29,9 +29,7 @@ import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.query.ReactiveMutationQuery;
 import org.hibernate.reactive.query.ReactiveQuery;
-import org.hibernate.reactive.query.ReactiveSelectionQuery;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.CacheRetrieveMode;

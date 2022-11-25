@@ -6,8 +6,14 @@
 package org.hibernate.reactive.session.impl;
 
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -17,12 +23,14 @@ import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
+import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
 import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.ObjectDeletedException;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
+import org.hibernate.UnknownEntityTypeException;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.spi.PersistentCollection;
@@ -60,14 +68,28 @@ import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
 import org.hibernate.internal.util.StringHelper;
+import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.query.BindableType;
+import org.hibernate.query.CommonQueryContract;
+import org.hibernate.query.IllegalSelectQueryException;
+import org.hibernate.query.ParameterMetadata;
+import org.hibernate.query.QueryParameter;
+import org.hibernate.query.QueryTypeMismatchException;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
+import org.hibernate.query.named.NamedResultSetMappingMemento;
+import org.hibernate.query.spi.HqlInterpretation;
 import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.query.spi.QueryInterpretationCache;
+import org.hibernate.query.spi.QueryOptions;
+import org.hibernate.query.sql.internal.NativeQueryImpl;
+import org.hibernate.query.sqm.internal.SqmUtil;
+import org.hibernate.query.sqm.tree.SqmStatement;
+import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.reactive.common.InternalStateAssertions;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
@@ -91,13 +113,21 @@ import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
+import org.hibernate.reactive.query.sqm.ReactiveSqmSelectionQuery;
 import org.hibernate.reactive.query.sqm.iternal.ReactiveQuerySqmImpl;
+import org.hibernate.reactive.query.sqm.iternal.ReactiveSqmSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.TransactionRequiredException;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.Parameter;
+import jakarta.persistence.TemporalType;
+import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
@@ -222,8 +252,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		threadCheck();
-		LoadEvent event =
-				new LoadEvent( id, entityName, true, this, getReadOnlyFromLoadQueryInfluencers() );
+		LoadEvent event = new LoadEvent( id, entityName, true, this, getReadOnlyFromLoadQueryInfluencers() );
 		return fireLoadNoChecks( event, type )
 				.thenApply( v -> {
 					Object result = event.getResult();
@@ -372,33 +401,81 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultType) {
-		throw new NotYetImplementedFor6Exception();
+	public <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultClass) {
+		ReactiveNativeQuery query = createReactiveNativeQuery( sqlString );
+		if ( Tuple.class.equals( resultClass ) ) {
+			query.setTupleTransformer( new NativeQueryTupleTransformer() );
+		}
+		else if ( getFactory().getMappingMetamodel().isEntityClass( resultClass ) ) {
+			query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
+		}
+		else {
+			( (NativeQueryImpl) query ).addScalar( 1, resultClass );
+		}
+		return query;
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass, String tableAlias) {
-		throw new NotYetImplementedFor6Exception();
+		ReactiveNativeQuery<R> query = createReactiveNativeQuery( sqlString );
+		if ( getFactory().getMappingMetamodel().isEntityClass(resultClass) ) {
+			query.addEntity( tableAlias, resultClass.getName(), LockMode.READ );
+			return query;
+		}
+
+		throw new UnknownEntityTypeException( "unable to locate persister: " + resultClass.getName() );
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName) {
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			if ( StringHelper.isNotEmpty( resultSetMappingName ) ) {
+				final NamedResultSetMappingMemento resultSetMappingMemento = getFactory().getQueryEngine()
+						.getNamedObjectRepository()
+						.getResultSetMappingMemento( resultSetMappingName );
+
+				if ( resultSetMappingMemento == null ) {
+					throw new HibernateException( "Could not resolve specified result-set mapping name : " + resultSetMappingName );
+				}
+				return new ReactiveNativeQueryImpl<>( sqlString, resultSetMappingMemento, this );
+			}
+			else {
+				return new ReactiveNativeQueryImpl<>( sqlString, this );
+			}
+			//TODO: why no applyQuerySettingsAndHints( query ); ???
+		}
+		catch (RuntimeException he) {
+			throw getExceptionConverter().convert( he );
+		}
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName, Class<R> resultClass) {
-		throw new NotYetImplementedFor6Exception();
+		final ReactiveNativeQuery<R> query = createReactiveNativeQuery( sqlString, resultSetMappingName );
+		if ( Tuple.class.equals( resultClass ) ) {
+			query.setTupleTransformer( new NativeQueryTupleTransformer() );
+		}
+		return query;
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString) {
-		throw new NotYetImplementedFor6Exception();
+		return internalCreateReactiveSelectionQuery( hqlString, null );
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, Class<R> resultType) {
-		throw new NotYetImplementedFor6Exception();
+		return internalCreateReactiveSelectionQuery( hqlString, resultType );
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaQuery<R> criteria) {
-		throw new NotYetImplementedFor6Exception();
+		SqmUtil.verifyIsSelectStatement( (SqmStatement<R>) criteria, null );
+		return new ReactiveSqmSelectionQueryImpl<R>( (SqmSelectStatement<R>) criteria, criteria.getResultType(), this );
 	}
 
 	@Override
