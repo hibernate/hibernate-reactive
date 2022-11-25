@@ -6,17 +6,26 @@
 package org.hibernate.reactive.query.sqm.iternal;
 
 
-import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
+import org.hibernate.CacheMode;
+import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
+import org.hibernate.LockMode;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.IdentitySet;
+import org.hibernate.query.BindableType;
 import org.hibernate.query.QueryLogging;
+import org.hibernate.query.QueryParameter;
 import org.hibernate.query.criteria.internal.NamedCriteriaQueryMementoImpl;
 import org.hibernate.query.hql.internal.NamedHqlQueryMementoImpl;
 import org.hibernate.query.internal.DelegatingDomainQueryExecutionContext;
@@ -27,27 +36,30 @@ import org.hibernate.query.spi.MutableQueryOptions;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.sqm.internal.SqmSelectionQueryImpl;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery;
 import org.hibernate.reactive.query.sqm.ReactiveSqmSelectionQuery;
+
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.Parameter;
+import jakarta.persistence.TemporalType;
 
 import static org.hibernate.query.spi.SqlOmittingQueryOptions.omitSqlQueryOptions;
 
 /**
- * @see SqmSelectionQueryImpl
+ * A reactive {@link SqmSelectionQueryImpl}
  * @param <R>
  */
 public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> implements ReactiveSqmSelectionQuery<R> {
-
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveAbstractSelectionQuery<R> selectionQueryDelegate;
 
 	public ReactiveSqmSelectionQueryImpl(
 			String hql,
 			HqlInterpretation hqlInterpretation,
-			Class expectedResultType,
+			Class<R> expectedResultType,
 			SharedSessionContractImplementor session) {
 		super( hql, hqlInterpretation, expectedResultType, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
@@ -55,7 +67,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 
 	public ReactiveSqmSelectionQueryImpl(
 			NamedHqlQueryMementoImpl memento,
-			Class resultType,
+			Class<R> resultType,
 			SharedSessionContractImplementor session) {
 		super( memento, resultType, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
@@ -63,7 +75,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 
 	public ReactiveSqmSelectionQueryImpl(
 			NamedCriteriaQueryMementoImpl memento,
-			Class resultType,
+			Class<R> resultType,
 			SharedSessionContractImplementor session) {
 		super( memento, resultType, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
@@ -71,7 +83,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 
 	public ReactiveSqmSelectionQueryImpl(
 			SqmSelectStatement criteria,
-			Class expectedResultType,
+			Class<R> expectedResultType,
 			SharedSessionContractImplementor session) {
 		super( criteria, expectedResultType, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
@@ -94,7 +106,8 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	}
 
 	private CompletionStage<List<R>> doReactiveList() {
-		getSession().prepareForQueryExecution( requiresTxn( getQueryOptions().getLockOptions().findGreatestLockMode() ) );
+		getSession().prepareForQueryExecution( requiresTxn( getQueryOptions().getLockOptions()
+																	.findGreatestLockMode() ) );
 
 		final SqmSelectStatement<?> sqmStatement = (SqmSelectStatement<?>) getSqmStatement();
 		final boolean containsCollectionFetches = sqmStatement.containsCollectionFetches();
@@ -104,7 +117,8 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 
 		final DomainQueryExecutionContext executionContextToUse;
 		if ( hasLimit && containsCollectionFetches ) {
-			boolean fail = getSessionFactory().getSessionFactoryOptions().isFailOnPaginationOverCollectionFetchEnabled();
+			boolean fail = getSessionFactory().getSessionFactoryOptions()
+					.isFailOnPaginationOverCollectionFetchEnabled();
 			if ( fail ) {
 				throw new HibernateException(
 						"firstResult/maxResults specified with collection fetch. " +
@@ -173,13 +187,14 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	}
 
 	@Override
-	public CompletionStage<R> getReactiveSingleResult() {
-		return selectionQueryDelegate.getReactiveSingleResult();
+	public ReactiveSqmSelectionQueryImpl<R> setFlushMode(FlushModeType flushMode) {
+		super.setFlushMode( flushMode );
+		return this;
 	}
 
 	@Override
-	public CompletionStage<List<R>> getReactiveResultList() {
-		return selectionQueryDelegate.getReactiveResultList();
+	public CompletionStage<R> getReactiveSingleResult() {
+		return selectionQueryDelegate.getReactiveSingleResult();
 	}
 
 	@Override
@@ -188,12 +203,12 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	}
 
 	@Override
-	public CompletionStage getReactiveSingleResultOrNull() {
+	public CompletionStage<R> getReactiveSingleResultOrNull() {
 		return selectionQueryDelegate.getReactiveSingleResultOrNull();
 	}
 
 	@Override
-	public CompletionStage reactiveUnique() {
+	public CompletionStage<R> reactiveUnique() {
 		return selectionQueryDelegate.reactiveUnique();
 	}
 
@@ -220,5 +235,368 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	@Override
 	public Stream<R> getResultStream() {
 		return selectionQueryDelegate.getResultStream();
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setLockMode(LockModeType lockMode) {
+		super.setLockMode( lockMode );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setHibernateLockMode(LockMode lockMode) {
+		super.setHibernateLockMode( lockMode );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setAliasSpecificLockMode(String alias, LockMode lockMode) {
+		super.setAliasSpecificLockMode( alias, lockMode );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
+		super.setLockMode( alias, lockMode );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setFollowOnLocking(boolean enable) {
+		super.setFollowOnLocking( enable );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setFetchSize(int fetchSize) {
+		super.setFetchSize( fetchSize );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setReadOnly(boolean readOnly) {
+		super.setReadOnly( readOnly );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setCacheMode(CacheMode cacheMode) {
+		super.setCacheMode( cacheMode );
+		return this;
+	}
+
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+		super.setCacheRetrieveMode( cacheRetrieveMode );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
+		super.setCacheStoreMode( cacheStoreMode );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setCacheable(boolean cacheable) {
+		super.setCacheable( cacheable );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setCacheRegion(String regionName) {
+		super.setCacheRegion( regionName );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setHibernateFlushMode(FlushMode flushMode) {
+		super.setHibernateFlushMode( flushMode );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setTimeout(int timeout) {
+		super.setTimeout( timeout );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setMaxResults(int maxResult) {
+		super.setMaxResults( maxResult );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setFirstResult(int startPosition) {
+		super.setFirstResult( startPosition );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setHint(String hintName, Object value) {
+		super.setHint( hintName, value );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameter(String name, Object value) {
+		super.setParameter( name, value );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(String name, P value, Class<P> javaType) {
+		super.setParameter( name, value, javaType );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(String name, P value, BindableType<P> type) {
+		super.setParameter( name, value, type );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameter(String name, Instant value, TemporalType temporalType) {
+		super.setParameter( name, value, temporalType );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameter(int position, Object value) {
+		super.setParameter( position, value );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(int position, P value, Class<P> javaType) {
+		super.setParameter( position, value, javaType );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(int position, P value, BindableType<P> type) {
+		super.setParameter( position, value, type );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameter(int position, Instant value, TemporalType temporalType) {
+		super.setParameter( position, value, temporalType );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(QueryParameter<P> parameter, P value) {
+		super.setParameter( parameter, value );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(QueryParameter<P> parameter, P value, Class<P> javaType) {
+		super.setParameter( parameter, value, javaType );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(
+			QueryParameter<P> parameter,
+			P value,
+			BindableType<P> type) {
+		super.setParameter( parameter, value, type );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(Parameter<P> parameter, P value) {
+		super.setParameter( parameter, value );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameter(
+			Parameter<Calendar> param,
+			Calendar value,
+			TemporalType temporalType) {
+		super.setParameter( param, value, temporalType );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameter(Parameter<Date> param, Date value, TemporalType temporalType) {
+		super.setParameter( param, value, temporalType );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameter(String name, Calendar value, TemporalType temporalType) {
+		super.setParameter( name, value, temporalType );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameter(String name, Date value, TemporalType temporalType) {
+		super.setParameter( name, value, temporalType );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameter(int position, Calendar value, TemporalType temporalType) {
+		super.setParameter( position, value, temporalType );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameter(int position, Date value, TemporalType temporalType) {
+		super.setParameter( position, value, temporalType );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameterList(String name, Collection values) {
+		super.setParameterList( name, values );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+			String name,
+			Collection<? extends P> values,
+			Class<P> javaType) {
+		super.setParameterList( name, values, javaType );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+			String name,
+			Collection<? extends P> values,
+			BindableType<P> type) {
+		super.setParameterList( name, values, type );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameterList(String name, Object[] values) {
+		super.setParameterList( name, values );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(String name, P[] values, Class<P> javaType) {
+		super.setParameterList( name, values, javaType );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(String name, P[] values, BindableType<P> type) {
+		super.setParameterList( name, values, type );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameterList(int position, Collection values) {
+		super.setParameterList( position, values );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+			int position,
+			Collection<? extends P> values,
+			Class<P> javaType) {
+		super.setParameterList( position, values, javaType );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+			int position,
+			Collection<? extends P> values,
+			BindableType<P> type) {
+		super.setParameterList( position, values, type );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setParameterList(int position, Object[] values) {
+		super.setParameterList( position, values );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(int position, P[] values, Class<P> javaType) {
+		super.setParameterList( position, values, javaType );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(int position, P[] values, BindableType<P> type) {
+		super.setParameterList( position, values, type );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+			QueryParameter<P> parameter,
+			Collection<? extends P> values) {
+		super.setParameterList( parameter, values );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+			QueryParameter<P> parameter,
+			Collection<? extends P> values,
+			Class<P> javaType) {
+		super.setParameterList( parameter, values, javaType );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+			QueryParameter<P> parameter,
+			Collection<? extends P> values,
+			BindableType<P> type) {
+		super.setParameterList( parameter, values, type );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values) {
+		super.setParameterList( parameter, values );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+			QueryParameter<P> parameter,
+			P[] values,
+			Class<P> javaType) {
+		super.setParameterList( parameter, values, javaType );
+		return this;
+	}
+
+	@Override
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+			QueryParameter<P> parameter,
+			P[] values,
+			BindableType<P> type) {
+		super.setParameterList( parameter, values, type );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setProperties(Map map) {
+		super.setProperties( map );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setProperties(Object bean) {
+		super.setProperties( bean );
+		return this;
 	}
 }

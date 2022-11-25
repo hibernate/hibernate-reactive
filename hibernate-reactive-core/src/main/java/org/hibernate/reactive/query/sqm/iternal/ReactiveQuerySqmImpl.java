@@ -22,32 +22,52 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.NotYetImplementedFor6Exception;
+import org.hibernate.TypeMismatchException;
+import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
+import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
+import org.hibernate.id.IdentifierGenerator;
+import org.hibernate.id.OptimizableGenerator;
+import org.hibernate.id.enhanced.Optimizer;
+import org.hibernate.metamodel.model.domain.EntityDomainType;
+import org.hibernate.persister.entity.AbstractEntityPersister;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.BindableType;
-import org.hibernate.query.QueryLogging;
+import org.hibernate.query.IllegalQueryOperationException;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
 import org.hibernate.query.criteria.internal.NamedCriteriaQueryMementoImpl;
 import org.hibernate.query.hql.internal.NamedHqlQueryMementoImpl;
 import org.hibernate.query.hql.internal.QuerySplitter;
-import org.hibernate.query.internal.DelegatingDomainQueryExecutionContext;
 import org.hibernate.query.spi.AbstractSelectionQuery;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.HqlInterpretation;
-import org.hibernate.query.spi.MutableQueryOptions;
+import org.hibernate.query.spi.NonSelectQueryPlan;
 import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.SelectQueryPlan;
+import org.hibernate.query.sqm.internal.AggregatedNonSelectQueryPlanImpl;
+import org.hibernate.query.sqm.internal.MultiTableDeleteQueryPlan;
+import org.hibernate.query.sqm.internal.MultiTableInsertQueryPlan;
+import org.hibernate.query.sqm.internal.MultiTableUpdateQueryPlan;
 import org.hibernate.query.sqm.internal.QuerySqmImpl;
+import org.hibernate.query.sqm.internal.SimpleDeleteQueryPlan;
+import org.hibernate.query.sqm.internal.SimpleInsertQueryPlan;
+import org.hibernate.query.sqm.internal.SimpleUpdateQueryPlan;
 import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
+import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.query.sqm.tree.SqmStatement;
+import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
+import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
+import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery;
+import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.spi.SelectReactiveQueryPlan;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.transform.ResultTransformer;
@@ -59,13 +79,8 @@ import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
 import jakarta.persistence.TemporalType;
 
-import static org.hibernate.query.spi.SqlOmittingQueryOptions.omitSqlQueryOptions;
-import static org.hibernate.query.spi.SqlOmittingQueryOptions.omitSqlQueryOptionsWithUniqueSemanticFilter;
-
-
 /**
- * @see QuerySqmImpl
- * @param <R>
+ * A reactive {@link QuerySqmImpl}
  */
 public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements ReactiveSqmQueryImplementor<R> {
 
@@ -106,7 +121,6 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
-
 	private ReactiveAbstractSelectionQuery<R> createSelectionQueryDelegate(SharedSessionContractImplementor session) {
 		return new ReactiveAbstractSelectionQuery<>(
 				this,
@@ -122,7 +136,6 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 				AbstractSelectionQuery::uniqueElement
 			);
 	}
-
 
 	@Override
 	public CompletionStage<R> reactiveUnique() {
@@ -171,7 +184,6 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 
 	private CompletionStage<List<R>> doReactiveList() {
 		verifySelect();
-
 		getSession().prepareForQueryExecution( requiresTxn( getQueryOptions().getLockOptions().findGreatestLockMode() ) );
 
 		final SqmSelectStatement<?> sqmStatement = (SqmSelectStatement<?>) getSqmStatement();
@@ -180,61 +192,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		final boolean needsDistinct = containsCollectionFetches
 				&& ( sqmStatement.usesDistinct() || hasAppliedGraph( getQueryOptions() ) || hasLimit );
 
-		final DomainQueryExecutionContext executionContextToUse;
-		if ( hasLimit && containsCollectionFetches ) {
-			boolean fail = getSessionFactory().getSessionFactoryOptions()
-					.isFailOnPaginationOverCollectionFetchEnabled();
-			if ( fail ) {
-				throw new HibernateException(
-						"firstResult/maxResults specified with collection fetch. " +
-								"In memory pagination was about to be applied. " +
-								"Failing because 'Fail on pagination over collection fetch' is enabled."
-				);
-			}
-			else {
-				QueryLogging.QUERY_MESSAGE_LOGGER.firstOrMaxResultsSpecifiedWithCollectionFetch();
-			}
-
-			final MutableQueryOptions originalQueryOptions = getQueryOptions();
-			final QueryOptions normalizedQueryOptions;
-			if ( needsDistinct ) {
-				normalizedQueryOptions = omitSqlQueryOptionsWithUniqueSemanticFilter( originalQueryOptions, true, false );
-			}
-			else {
-				normalizedQueryOptions = omitSqlQueryOptions( originalQueryOptions, true, false );
-			}
-			if ( originalQueryOptions == normalizedQueryOptions ) {
-				executionContextToUse = this;
-			}
-			else {
-				executionContextToUse = new DelegatingDomainQueryExecutionContext( this ) {
-					@Override
-					public QueryOptions getQueryOptions() {
-						return normalizedQueryOptions;
-					}
-				};
-			}
-		}
-		else {
-			if ( needsDistinct ) {
-				final MutableQueryOptions originalQueryOptions = getQueryOptions();
-				final QueryOptions normalizedQueryOptions = uniqueSemanticQueryOptions( originalQueryOptions );
-				if ( originalQueryOptions == normalizedQueryOptions ) {
-					executionContextToUse = this;
-				}
-				else {
-					executionContextToUse = new DelegatingDomainQueryExecutionContext( this ) {
-						@Override
-						public QueryOptions getQueryOptions() {
-							return normalizedQueryOptions;
-						}
-					};
-				}
-			}
-			else {
-				executionContextToUse = this;
-			}
-		}
+		final DomainQueryExecutionContext executionContextToUse = executionContextFordoList( containsCollectionFetches, hasLimit, needsDistinct );
 
 		return resolveSelectReactiveQueryPlan()
 				.performReactiveList( executionContextToUse )
@@ -318,6 +276,10 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		);
 	}
 
+
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// Update / delete / insert query execution
+
 	@Override
 	public int executeUpdate() {
 		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
@@ -325,7 +287,160 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 
 	@Override
 	public CompletionStage<Integer> executeReactiveUpdate() {
-		throw new NotYetImplementedFor6Exception();
+		verifyUpdate();
+		getSession().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
+		beforeQuery();
+		return doExecuteReactiveUpdate()
+				.handle( (count, error) -> {
+					handleException( error );
+					return count;
+				} )
+				.whenComplete( (rs, throwable) -> afterQuery( throwable == null ) );
+	}
+
+	public CompletionStage<Integer> doExecuteReactiveUpdate() {
+		getSession().prepareForQueryExecution( true );
+		return resolveNonSelectQueryPlan().executeReactiveUpdate( this );
+	}
+
+	private void handleException(Throwable e) {
+		if ( e != null ) {
+			if ( e instanceof IllegalQueryOperationException ) {
+				throw new IllegalStateException( e );
+			}
+			if ( e instanceof TypeMismatchException ) {
+				throw new IllegalStateException( e );
+			}
+			if ( e instanceof HibernateException ) {
+				throw getSession().getExceptionConverter()
+						.convert( (HibernateException) e, getLockOptions() );
+			}
+			if ( e instanceof RuntimeException ) {
+				throw (RuntimeException) e;
+			}
+
+			throw new HibernateException( e );
+		}
+	}
+
+	private ReactiveNonSelectQueryPlan resolveNonSelectQueryPlan() {
+		// resolve (or make) the QueryPlan.
+
+		ReactiveNonSelectQueryPlan queryPlan = null;
+
+		final QueryInterpretationCache.Key cacheKey = SqmInterpretationsKey.generateNonSelectKey( this );
+		if ( cacheKey != null ) {
+			queryPlan = (ReactiveNonSelectQueryPlan) getSession().getFactory().getQueryEngine()
+					.getInterpretationCache().getNonSelectQueryPlan( cacheKey );
+		}
+
+		if ( queryPlan == null ) {
+			queryPlan = buildNonSelectQueryPlan();
+			if ( cacheKey != null ) {
+				getSession().getFactory().getQueryEngine().getInterpretationCache().cacheNonSelectQueryPlan( cacheKey, queryPlan );
+			}
+		}
+
+		return queryPlan;
+	}
+
+	private ReactiveNonSelectQueryPlan buildNonSelectQueryPlan() {
+		// to get here the SQM statement has already been validated to be
+		// a non-select variety...
+		if ( getSqmStatement() instanceof SqmDeleteStatement<?> ) {
+			return buildDeleteQueryPlan();
+		}
+
+		if ( getSqmStatement() instanceof SqmUpdateStatement<?> ) {
+			return buildUpdateQueryPlan();
+		}
+
+		if ( getSqmStatement() instanceof SqmInsertStatement<?> ) {
+			return buildInsertQueryPlan();
+		}
+
+		throw new NotYetImplementedException( "Query#executeUpdate for Statements of type [" + getSqmStatement() + "not yet supported" );
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private ReactiveNonSelectQueryPlan buildDeleteQueryPlan() {
+		final SqmDeleteStatement[] concreteSqmStatements = QuerySplitter
+				.split( (SqmDeleteStatement) getSqmStatement(), getSessionFactory() );
+
+		return concreteSqmStatements.length > 1
+				? buildAggregatedDeleteQueryPlan( concreteSqmStatements )
+				: buildConcreteDeleteQueryPlan( concreteSqmStatements[0] );
+	}
+
+	private ReactiveNonSelectQueryPlan buildConcreteDeleteQueryPlan(@SuppressWarnings("rawtypes") SqmDeleteStatement sqmDelete) {
+		final EntityDomainType<?> entityDomainType = sqmDelete.getTarget().getModel();
+		final String entityNameToDelete = entityDomainType.getHibernateEntityName();
+		final EntityPersister entityDescriptor = getSessionFactory().getRuntimeMetamodels()
+				.getMappingMetamodel()
+				.getEntityDescriptor( entityNameToDelete );
+		final SqmMultiTableMutationStrategy multiTableStrategy = entityDescriptor.getSqmMultiTableMutationStrategy();
+		if ( multiTableStrategy == null ) {
+			return new SimpleDeleteQueryPlan( entityDescriptor, sqmDelete, getDomainParameterXref() );
+		}
+		else {
+			return new MultiTableDeleteQueryPlan( sqmDelete, getDomainParameterXref(), multiTableStrategy );
+		}
+	}
+
+	private ReactiveNonSelectQueryPlan buildAggregatedDeleteQueryPlan(@SuppressWarnings("rawtypes") SqmDeleteStatement[] concreteSqmStatements) {
+		final NonSelectQueryPlan[] aggregatedQueryPlans = new NonSelectQueryPlan[ concreteSqmStatements.length ];
+
+		for ( int i = 0, x = concreteSqmStatements.length; i < x; i++ ) {
+			aggregatedQueryPlans[i] = buildConcreteDeleteQueryPlan( concreteSqmStatements[i] );
+		}
+
+		return new AggregatedNonSelectQueryPlanImpl( aggregatedQueryPlans );
+	}
+
+	private ReactiveNonSelectQueryPlan buildUpdateQueryPlan() {
+		//noinspection rawtypes
+		final SqmUpdateStatement sqmUpdate = (SqmUpdateStatement) getSqmStatement();
+
+		final String entityNameToUpdate = sqmUpdate.getTarget().getModel().getHibernateEntityName();
+		final EntityPersister entityDescriptor = getSessionFactory().getRuntimeMetamodels()
+				.getMappingMetamodel()
+				.getEntityDescriptor( entityNameToUpdate );
+
+		final SqmMultiTableMutationStrategy multiTableStrategy = entityDescriptor.getSqmMultiTableMutationStrategy();
+		return multiTableStrategy == null
+			? new SimpleUpdateQueryPlan( sqmUpdate, getDomainParameterXref() )
+			: new MultiTableUpdateQueryPlan( sqmUpdate, getDomainParameterXref(), multiTableStrategy );
+	}
+
+	private ReactiveNonSelectQueryPlan buildInsertQueryPlan() {
+		//noinspection rawtypes
+		final SqmInsertStatement sqmInsert = (SqmInsertStatement) getSqmStatement();
+
+		final String entityNameToInsert = sqmInsert.getTarget().getModel().getHibernateEntityName();
+		final AbstractEntityPersister entityDescriptor = (AbstractEntityPersister) getSessionFactory().getRuntimeMetamodels()
+				.getMappingMetamodel()
+				.getEntityDescriptor( entityNameToInsert );
+
+		boolean useMultiTableInsert = entityDescriptor.isMultiTable();
+		if ( !useMultiTableInsert && !isSimpleValuesInsert( sqmInsert, entityDescriptor ) ) {
+			final IdentifierGenerator identifierGenerator = entityDescriptor.getIdentifierGenerator();
+			if ( identifierGenerator instanceof BulkInsertionCapableIdentifierGenerator && identifierGenerator instanceof OptimizableGenerator ) {
+				final Optimizer optimizer = ( (OptimizableGenerator) identifierGenerator ).getOptimizer();
+				if ( optimizer != null && optimizer.getIncrementSize() > 1 ) {
+					useMultiTableInsert = !hasIdentifierAssigned( sqmInsert, entityDescriptor );
+				}
+			}
+		}
+		if ( !useMultiTableInsert ) {
+			return new SimpleInsertQueryPlan( sqmInsert, getDomainParameterXref() );
+		}
+		else {
+			return new MultiTableInsertQueryPlan(
+					sqmInsert,
+					getDomainParameterXref(),
+					entityDescriptor.getSqmMultiTableInsertStrategy()
+			);
+		}
 	}
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
