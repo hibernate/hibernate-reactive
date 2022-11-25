@@ -50,9 +50,15 @@ import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.BasicType;
 import org.hibernate.type.descriptor.java.JavaType;
 
-public class ReactiveSelectExecutorStandardImpl implements ReactiveSelectExecutor {
+/**
+ * @see org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl
+ */
+public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 
-	public static final ReactiveSelectExecutor INSTANCE = new ReactiveSelectExecutorStandardImpl();
+	public static final StandardReactiveSelectExecutor INSTANCE = new StandardReactiveSelectExecutor();
+
+	private StandardReactiveSelectExecutor() {
+	}
 
 	public <R> CompletionStage<List<R>> list(
 			JdbcSelect jdbcSelect,
@@ -216,9 +222,6 @@ public class ReactiveSelectExecutorStandardImpl implements ReactiveSelectExecuto
 				} );
 	}
 
-	/**
-	 * @see
-	 */
 	public ReactiveValuesResultSet resolveJdbcValuesSource(String queryIdentifier, JdbcSelect jdbcSelect, boolean canBeCached, ExecutionContext executionContext, ReactiveResultSetAccess resultSetAccess) {
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();

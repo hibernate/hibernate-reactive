@@ -45,18 +45,9 @@ import org.hibernate.query.hql.internal.QuerySplitter;
 import org.hibernate.query.spi.AbstractSelectionQuery;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.HqlInterpretation;
-import org.hibernate.query.spi.NonSelectQueryPlan;
 import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.query.spi.SelectQueryPlan;
-import org.hibernate.query.sqm.internal.AggregatedNonSelectQueryPlanImpl;
-import org.hibernate.query.sqm.internal.MultiTableDeleteQueryPlan;
-import org.hibernate.query.sqm.internal.MultiTableInsertQueryPlan;
-import org.hibernate.query.sqm.internal.MultiTableUpdateQueryPlan;
 import org.hibernate.query.sqm.internal.QuerySqmImpl;
-import org.hibernate.query.sqm.internal.SimpleDeleteQueryPlan;
-import org.hibernate.query.sqm.internal.SimpleInsertQueryPlan;
-import org.hibernate.query.sqm.internal.SimpleUpdateQueryPlan;
 import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.query.sqm.tree.SqmStatement;
@@ -68,8 +59,10 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
-import org.hibernate.reactive.query.sqm.spi.SelectReactiveQueryPlan;
+import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
+import org.hibernate.reactive.sql.exec.internal.ReactiveAggregatedNonSelectQueryPlan;
+import org.hibernate.reactive.sql.exec.internal.ReactiveMultiTableDeleteQueryPlan;
 import org.hibernate.transform.ResultTransformer;
 
 import jakarta.persistence.CacheRetrieveMode;
@@ -173,6 +166,16 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
+	public R uniqueResult() {
+		return selectionQueryDelegate.uniqueResult();
+	}
+
+	@Override
+	public Optional<R> uniqueResultOptional() {
+		return selectionQueryDelegate.uniqueResultOptional();
+	}
+
+	@Override
 	public List<R> getResultList() {
 		return selectionQueryDelegate.getResultList();
 	}
@@ -219,10 +222,10 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		return list;
 	}
 
-	private SelectReactiveQueryPlan<R> resolveSelectReactiveQueryPlan() {
+	private ReactiveSelectQueryPlan<R> resolveSelectReactiveQueryPlan() {
 		final QueryInterpretationCache.Key cacheKey = SqmInterpretationsKey.createInterpretationsKey( this );
 		if ( cacheKey != null ) {
-			return (SelectReactiveQueryPlan<R>) getSession().getFactory()
+			return (ReactiveSelectQueryPlan<R>) getSession().getFactory()
 					.getQueryEngine()
 					.getInterpretationCache()
 					.resolveSelectQueryPlan( cacheKey, this::buildSelectQueryPlan );
@@ -232,37 +235,29 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		}
 	}
 
-	private SelectReactiveQueryPlan<R> buildSelectQueryPlan() {
+	private ReactiveSelectQueryPlan<R> buildSelectQueryPlan() {
 		final SqmSelectStatement<R>[] concreteSqmStatements = QuerySplitter
 				.split( (SqmSelectStatement<R>) getSqmStatement(), getSession().getFactory() );
 
-		if ( concreteSqmStatements.length > 1 ) {
-			return buildAggregatedSelectQueryPlan( concreteSqmStatements );
-		}
-		else {
-			return buildConcreteSelectQueryPlan( concreteSqmStatements[0], getResultType(), getQueryOptions() );
-		}
+		return concreteSqmStatements.length > 1
+			? buildAggregatedSelectQueryPlan( concreteSqmStatements )
+			: buildConcreteSelectQueryPlan( concreteSqmStatements[0], getResultType(), getQueryOptions() );
 	}
 
-	private SelectReactiveQueryPlan<R> buildAggregatedSelectQueryPlan(SqmSelectStatement<?>[] concreteSqmStatements) {
+	private ReactiveSelectQueryPlan<R> buildAggregatedSelectQueryPlan(SqmSelectStatement<?>[] concreteSqmStatements) {
 		//noinspection unchecked
-		final SelectQueryPlan<R>[] aggregatedQueryPlans = new SelectQueryPlan[ concreteSqmStatements.length ];
+		final ReactiveSelectQueryPlan<R>[] aggregatedQueryPlans = new ReactiveSelectQueryPlan[ concreteSqmStatements.length ];
 
 		// todo (6.0) : we want to make sure that certain thing (ResultListTransformer, etc) only get applied at the aggregator-level
 
 		for ( int i = 0, x = concreteSqmStatements.length; i < x; i++ ) {
-			aggregatedQueryPlans[i] = buildConcreteSelectQueryPlan(
-					concreteSqmStatements[i],
-					getResultType(),
-					getQueryOptions()
-			);
+			aggregatedQueryPlans[i] = buildConcreteSelectQueryPlan( concreteSqmStatements[i], getResultType(), getQueryOptions() );
 		}
 
-		throw new NotYetImplementedFor6Exception();
-		//		return new AggregatedSelectQueryPlanImpl<>( aggregatedQueryPlans );
+		return new AggregatedSelectReactiveQueryPlan<>( aggregatedQueryPlans );
 	}
 
-	private <T> SelectReactiveQueryPlan<T> buildConcreteSelectQueryPlan(
+	private <T> ReactiveSelectQueryPlan<T> buildConcreteSelectQueryPlan(
 			SqmSelectStatement<?> concreteSqmStatement,
 			Class<T> resultType,
 			QueryOptions queryOptions) {
@@ -380,21 +375,21 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 				.getEntityDescriptor( entityNameToDelete );
 		final SqmMultiTableMutationStrategy multiTableStrategy = entityDescriptor.getSqmMultiTableMutationStrategy();
 		if ( multiTableStrategy == null ) {
-			return new SimpleDeleteQueryPlan( entityDescriptor, sqmDelete, getDomainParameterXref() );
+			return new ReactiveSimpleDeleteQueryPlan( entityDescriptor, sqmDelete, getDomainParameterXref() );
 		}
 		else {
-			return new MultiTableDeleteQueryPlan( sqmDelete, getDomainParameterXref(), multiTableStrategy );
+			return new ReactiveMultiTableDeleteQueryPlan( sqmDelete, getDomainParameterXref(), multiTableStrategy );
 		}
 	}
 
 	private ReactiveNonSelectQueryPlan buildAggregatedDeleteQueryPlan(@SuppressWarnings("rawtypes") SqmDeleteStatement[] concreteSqmStatements) {
-		final NonSelectQueryPlan[] aggregatedQueryPlans = new NonSelectQueryPlan[ concreteSqmStatements.length ];
+		final ReactiveNonSelectQueryPlan[] aggregatedQueryPlans = new ReactiveNonSelectQueryPlan[ concreteSqmStatements.length ];
 
 		for ( int i = 0, x = concreteSqmStatements.length; i < x; i++ ) {
 			aggregatedQueryPlans[i] = buildConcreteDeleteQueryPlan( concreteSqmStatements[i] );
 		}
 
-		return new AggregatedNonSelectQueryPlanImpl( aggregatedQueryPlans );
+		return new ReactiveAggregatedNonSelectQueryPlan( aggregatedQueryPlans );
 	}
 
 	private ReactiveNonSelectQueryPlan buildUpdateQueryPlan() {
@@ -408,8 +403,8 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 
 		final SqmMultiTableMutationStrategy multiTableStrategy = entityDescriptor.getSqmMultiTableMutationStrategy();
 		return multiTableStrategy == null
-			? new SimpleUpdateQueryPlan( sqmUpdate, getDomainParameterXref() )
-			: new MultiTableUpdateQueryPlan( sqmUpdate, getDomainParameterXref(), multiTableStrategy );
+			? new ReactiveSimpleUpdateQueryPlan( sqmUpdate, getDomainParameterXref() )
+			: new ReactiveMultiTableUpdateQueryPlan( sqmUpdate, getDomainParameterXref(), multiTableStrategy );
 	}
 
 	private ReactiveNonSelectQueryPlan buildInsertQueryPlan() {
@@ -432,10 +427,10 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 			}
 		}
 		if ( !useMultiTableInsert ) {
-			return new SimpleInsertQueryPlan( sqmInsert, getDomainParameterXref() );
+			return new ReactiveSimpleInsertQueryPlan( sqmInsert, getDomainParameterXref() );
 		}
 		else {
-			return new MultiTableInsertQueryPlan(
+			return new ReactiveMultiTableInsertQueryPlan(
 					sqmInsert,
 					getDomainParameterXref(),
 					entityDescriptor.getSqmMultiTableInsertStrategy()

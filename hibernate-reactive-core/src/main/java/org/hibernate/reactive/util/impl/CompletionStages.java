@@ -26,7 +26,7 @@ import static org.hibernate.reactive.util.async.impl.AsyncTrampoline.asyncWhile;
 import static org.hibernate.reactive.util.async.impl.AsyncIterator.range;
 import static org.hibernate.reactive.util.async.impl.AsyncIterator.fromIterator;
 
-public class CompletionStages {
+public class  CompletionStages {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, new LogCategory( "org.hibernate.reactive.errors" ) );
 
@@ -340,6 +340,18 @@ public class CompletionStages {
 		return loop( start, end, CompletionStages::alwaysTrue, consumer );
 	}
 
+	public static <T> CompletionStage<Void> whileLoop(T[] array, Function<T, CompletionStage<Boolean>> consumer) {
+		return loop( 0, array.length, index -> consumer.apply( array[index] ) );
+	}
+
+	public static CompletionStage<Void> whileLoop(int start, int end, IntPredicate filter, IntFunction<CompletionStage<Boolean>> consumer) {
+		if ( start < end ) {
+			final ArrayLoop loop = new ArrayLoop( start, end, filter, consumer);
+			return asyncWhile( loop::next );
+		}
+		return voidFuture();
+	}
+
 	/**
 	 * Equivalent to:
 	 * <pre>
@@ -352,7 +364,8 @@ public class CompletionStages {
 	 */
 	public static CompletionStage<Void> loop(int start, int end, IntPredicate filter, IntFunction<CompletionStage<?>> consumer) {
 		if ( start < end ) {
-			final ArrayLoop loop = new ArrayLoop( start, end, filter, consumer);
+			final ArrayLoop loop = new ArrayLoop( start, end, filter, index -> consumer
+					.apply( index ).thenCompose( CompletionStages::alwaysContinue ) );
 			return asyncWhile( loop::next );
 		}
 		return voidFuture();
@@ -364,8 +377,8 @@ public class CompletionStages {
 	 * Equivalent to:
 	 * <pre>
 	 * for ( int i = start; i < end; i++ ) {
-	 *   if ( filter.test( i ) ) {
-	 *   	consumer.apply( i );
+	 *   if ( filter.test( i ) ) && !consumer.apply( i ) {
+	 *      break;
 	 *   }
 	 * }
 	 * </pre>
@@ -378,11 +391,13 @@ public class CompletionStages {
 	private static class ArrayLoop {
 
 		private final IntPredicate filter;
-		private final IntFunction<CompletionStage<?>> consumer;
+
+		private final IntFunction<CompletionStage<Boolean>> consumer;
+
 		private final int end;
 		private int current;
 
-		public ArrayLoop(int start, int end, IntPredicate filter, IntFunction<CompletionStage<?>> consumer) {
+		public ArrayLoop(int start, int end, IntPredicate filter, IntFunction<CompletionStage<Boolean>> consumer) {
 			this.end = end;
 			this.filter = filter;
 			this.consumer = consumer;
@@ -393,8 +408,7 @@ public class CompletionStages {
 			current = next( current );
 			if ( current < end ) {
 				final int index = current++;
-				return consumer.apply( index )
-						.thenCompose( CompletionStages::alwaysContinue );
+				return consumer.apply( index );
 			}
 			return FALSE;
 		}

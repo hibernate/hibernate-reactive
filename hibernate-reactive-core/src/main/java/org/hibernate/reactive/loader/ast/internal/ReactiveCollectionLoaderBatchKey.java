@@ -26,7 +26,7 @@ import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
-import org.hibernate.reactive.sql.exec.internal.ReactiveSelectExecutorStandardImpl;
+import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.ast.Clause;
@@ -229,7 +229,7 @@ public class ReactiveCollectionLoaderBatchKey implements ReactiveCollectionLoade
 						jdbcParameterBindings
 				);
 
-		return new ReactiveSelectExecutorStandardImpl()
+		return StandardReactiveSelectExecutor.INSTANCE
 				.list(
 						jdbcSelect,
 						jdbcParameterBindings,

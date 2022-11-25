@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.query.sqm.iternal;
 
-import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -34,11 +33,9 @@ import org.hibernate.query.sqm.sql.SqmTranslator;
 import org.hibernate.query.sqm.sql.SqmTranslatorFactory;
 import org.hibernate.query.sqm.tree.expression.SqmParameter;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.query.sqm.spi.SelectReactiveQueryPlan;
+import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.sql.exec.internal.ReactiveSelectExecutorStandardImpl;
+import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.SqlAstTranslator;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
@@ -60,9 +57,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  *
  * @see org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan
  */
-public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQueryPlan<R> implements SelectReactiveQueryPlan<R> {
-
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQueryPlan<R> implements
+		ReactiveSelectQueryPlan<R> {
 
 	private final SqmInterpreter<List<R>, Void> listInterpreter;
 	private final RowTransformer<R> rowTransformer;
@@ -103,7 +99,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 				.thenApply( Supplier::get )
 				.thenCompose( subSelectFetchKeyHandler ->  ( (ReactiveSession) session )
 							.reactiveAutoFlushIfRequired( jdbcSelect.getAffectedTableNames() )
-							.thenCompose( required -> new ReactiveSelectExecutorStandardImpl()
+							.thenCompose( required -> StandardReactiveSelectExecutor.INSTANCE
 									.list( jdbcSelect,
 										   jdbcParameterBindings,
 										   ConcreteSqmSelectQueryPlan.listInterpreterExecutionContext( hql, executionContext, jdbcSelect, subSelectFetchKeyHandler ),
@@ -118,11 +114,6 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 	@Override
 	public ScrollableResultsImplementor<R> performScroll(ScrollMode scrollMode, DomainQueryExecutionContext executionContext) {
 		throw new NotYetImplementedFor6Exception();
-	}
-
-	@Override
-	public List<R> performList(DomainQueryExecutionContext executionContext) {
-		throw LOG.nonReactiveMethodCall( "performReactiveList" );
 	}
 
 	@Override
