@@ -18,7 +18,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.loader.ast.internal.LoaderSqlAstCreationState;
 import org.hibernate.metamodel.mapping.EntityMappingType;
-import org.hibernate.reactive.sql.exec.internal.ReactiveSelectExecutorStandardImpl;
+import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.query.spi.QueryOptions;
@@ -179,7 +179,7 @@ class DatabaseSnapshotExecutor {
 		assert offset == jdbcParameters.size();
 
 		// FIXME: use JdbcServices
-		return new ReactiveSelectExecutorStandardImpl()
+		return StandardReactiveSelectExecutor.INSTANCE
 				.list( jdbcSelect, jdbcParameterBindings, executionContext( session ), RowTransformerDatabaseSnapshotImpl.instance(), ReactiveListResultsConsumer.UniqueSemantic.FILTER  )
 				.thenApply( list -> {
 					assert list != null;

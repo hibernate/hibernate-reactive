@@ -17,7 +17,7 @@ import org.hibernate.persister.entity.Loadable;
 import org.hibernate.query.internal.SimpleQueryOptions;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
-import org.hibernate.reactive.sql.exec.internal.ReactiveSelectExecutorStandardImpl;
+import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
@@ -63,7 +63,7 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 		final Callback callback = new CallbackImpl();
 		ExecutionContext executionContext = executionContext( restrictedValue, entityInstance, session, queryOptions, callback );
 		// FIXME: Should we get this from jdbcServices.getSelectExecutor()?
-		return new ReactiveSelectExecutorStandardImpl()
+		return StandardReactiveSelectExecutor.INSTANCE
 				.list( getJdbcSelect(), jdbcParameterBindings, executionContext, getRowTransformer(), resultConsumer( singleResultExpected ) )
 				.thenApply( this::extractEntity )
 				.thenApply( entity -> {

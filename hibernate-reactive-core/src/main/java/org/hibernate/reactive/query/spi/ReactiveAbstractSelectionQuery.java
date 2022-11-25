@@ -16,14 +16,12 @@ import java.util.stream.Stream;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
-import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.IllegalQueryOperationException;
 import org.hibernate.query.hql.internal.QuerySplitter;
 import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.query.spi.SelectQueryPlan;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
 import org.hibernate.query.sqm.internal.SqmInterpretationsKey.InterpretationsKeySource;
@@ -31,8 +29,9 @@ import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.query.sqm.iternal.AggregatedSelectReactiveQueryPlan;
 import org.hibernate.reactive.query.sqm.iternal.ConcreteSqmSelectReactiveQueryPlan;
-import org.hibernate.reactive.query.sqm.spi.SelectReactiveQueryPlan;
+import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.sql.results.internal.TupleMetadata;
 
 import jakarta.persistence.NoResultException;
@@ -68,7 +67,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 	private Function<List<R>, R> uniqueElement;
 
 	// I'm sure we can avoid some of this by making some methods public in ORM,
-	// but this allows me to protype faster. We can refactor the code later.
+	// but this allows me to prototype faster. We can refactor the code later.
 	public ReactiveAbstractSelectionQuery(
 			InterpretationsKeySource interpretationKeySource,
 			SharedSessionContractImplementor session,
@@ -164,10 +163,10 @@ public class ReactiveAbstractSelectionQuery<R> {
 		}
 	}
 
-	public SelectReactiveQueryPlan<R> resolveSelectReactiveQueryPlan() {
+	public ReactiveSelectQueryPlan<R> resolveSelectReactiveQueryPlan() {
 		final QueryInterpretationCache.Key cacheKey = SqmInterpretationsKey.createInterpretationsKey( interpretationsKeySource );
 		if ( cacheKey != null ) {
-			return (SelectReactiveQueryPlan<R>) getSession().getFactory()
+			return (ReactiveSelectQueryPlan<R>) getSession().getFactory()
 					.getQueryEngine()
 					.getInterpretationCache()
 					.resolveSelectQueryPlan( cacheKey, this::buildSelectQueryPlan );
@@ -177,7 +176,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 		}
 	}
 
-	private SelectReactiveQueryPlan<R> buildSelectQueryPlan() {
+	private ReactiveSelectQueryPlan<R> buildSelectQueryPlan() {
 		final SqmSelectStatement<R>[] concreteSqmStatements = QuerySplitter
 				.split( (SqmSelectStatement<R>) getSqmStatement(), getSession().getFactory() );
 
@@ -186,8 +185,8 @@ public class ReactiveAbstractSelectionQuery<R> {
 				: buildConcreteSelectQueryPlan( concreteSqmStatements[0], getResultType(), getQueryOptions() );
 	}
 
-	private SelectReactiveQueryPlan<R> buildAggregatedSelectQueryPlan(SqmSelectStatement<?>[] concreteSqmStatements) {
-		final SelectQueryPlan<R>[] aggregatedQueryPlans = new SelectQueryPlan[ concreteSqmStatements.length ];
+	private ReactiveSelectQueryPlan<R> buildAggregatedSelectQueryPlan(SqmSelectStatement<?>[] concreteSqmStatements) {
+		final ReactiveSelectQueryPlan<R>[] aggregatedQueryPlans = new ReactiveSelectQueryPlan[ concreteSqmStatements.length ];
 
 		// todo (6.0) : we want to make sure that certain thing (ResultListTransformer, etc) only get applied at the aggregator-level
 
@@ -195,11 +194,10 @@ public class ReactiveAbstractSelectionQuery<R> {
 			aggregatedQueryPlans[i] = buildConcreteSelectQueryPlan( concreteSqmStatements[i], getResultType(), getQueryOptions() );
 		}
 
-		throw new NotYetImplementedFor6Exception();
-		//		return new AggregatedSelectQueryPlanImpl<>( aggregatedQueryPlans );
+		return new AggregatedSelectReactiveQueryPlan<>(  aggregatedQueryPlans );
 	}
 
-	private <T> SelectReactiveQueryPlan<T> buildConcreteSelectQueryPlan(
+	private <T> ReactiveSelectQueryPlan<T> buildConcreteSelectQueryPlan(
 			SqmSelectStatement<?> concreteSqmStatement,
 			Class<T> resultType,
 			QueryOptions queryOptions) {
@@ -257,7 +255,20 @@ public class ReactiveAbstractSelectionQuery<R> {
 		throw LOG.nonReactiveMethodCall( "getReactiveResultList" );
 	}
 
+	public List<R> list() {
+		throw LOG.nonReactiveMethodCall( "reactiveList" );
+	}
+
 	public Stream<R> getResultStream() {
 		throw LOG.nonReactiveMethodCall( "<no alterative>" );
 	}
+
+	public R uniqueResult() {
+		throw LOG.nonReactiveMethodCall( "reactiveUniqueResult" );
+	}
+
+	public Optional<R> uniqueResultOptional() {
+		throw LOG.nonReactiveMethodCall( "reactiveUniqueResultOptional" );
+	}
+
 }
