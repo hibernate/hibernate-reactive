@@ -6,14 +6,9 @@
 package org.hibernate.reactive.session.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.time.Instant;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -74,18 +69,13 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.query.BindableType;
-import org.hibernate.query.CommonQueryContract;
 import org.hibernate.query.IllegalSelectQueryException;
-import org.hibernate.query.ParameterMetadata;
-import org.hibernate.query.QueryParameter;
 import org.hibernate.query.QueryTypeMismatchException;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
 import org.hibernate.query.spi.HqlInterpretation;
 import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.query.spi.QueryInterpretationCache;
-import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.sql.internal.NativeQueryImpl;
 import org.hibernate.query.sqm.internal.SqmUtil;
 import org.hibernate.query.sqm.tree.SqmStatement;
@@ -113,20 +103,13 @@ import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
-import org.hibernate.reactive.query.sqm.ReactiveSqmSelectionQuery;
 import org.hibernate.reactive.query.sqm.iternal.ReactiveQuerySqmImpl;
 import org.hibernate.reactive.query.sqm.iternal.ReactiveSqmSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
-import jakarta.persistence.CacheRetrieveMode;
-import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.FlushModeType;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.Parameter;
-import jakarta.persistence.TemporalType;
 import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -464,12 +447,63 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString) {
-		return internalCreateReactiveSelectionQuery( hqlString, null );
+		return internalCreateSelectionQuery( hqlString, null );
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, Class<R> resultType) {
-		return internalCreateReactiveSelectionQuery( hqlString, resultType );
+		return internalCreateSelectionQuery( hqlString, resultType );
+	}
+
+	private <R> ReactiveSelectionQuery<R> internalCreateSelectionQuery(String hqlString, Class<R> expectedResultType) {
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			final QueryEngine queryEngine = getFactory().getQueryEngine();
+			final QueryInterpretationCache interpretationCache = queryEngine.getInterpretationCache();
+			final HqlInterpretation hqlInterpretation = interpretationCache.resolveHqlInterpretation(
+					hqlString,
+					expectedResultType,
+					(s) -> queryEngine.getHqlTranslator().translate( hqlString, expectedResultType )
+			);
+
+			if ( !( hqlInterpretation.getSqmStatement() instanceof SqmSelectStatement ) ) {
+				throw new IllegalSelectQueryException( "Expecting a selection query, but found `" + hqlString + "`", hqlString );
+			}
+
+			final ReactiveSqmSelectionQueryImpl<R> query = new ReactiveSqmSelectionQueryImpl<>(
+					hqlString,
+					hqlInterpretation,
+					expectedResultType,
+					this
+			);
+
+			if ( expectedResultType != null ) {
+				final Class<?> resultType = query.getResultType();
+				if ( ! expectedResultType.isAssignableFrom( resultType ) ) {
+					throw new QueryTypeMismatchException(
+							String.format(
+									Locale.ROOT,
+									"Query result-type error - expecting `%s`, but found `%s`",
+									expectedResultType.getName(),
+									resultType.getName()
+							)
+					);
+				}
+			}
+
+			query.setComment( hqlString );
+			applyQuerySettingsAndHints( query );
+
+			//noinspection unchecked
+			return query;
+		}
+		catch (RuntimeException e) {
+			markForRollbackOnly();
+			throw e;
+		}
 	}
 
 	@Override

@@ -178,6 +178,11 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	}
 
 	@Override
+	public CompletionStage<List<R>> getReactiveResultList() {
+		return selectionQueryDelegate.getReactiveResultList();
+	}
+
+	@Override
 	public CompletionStage<List<R>> reactiveList() {
 		return selectionQueryDelegate.reactiveList();
 	}
