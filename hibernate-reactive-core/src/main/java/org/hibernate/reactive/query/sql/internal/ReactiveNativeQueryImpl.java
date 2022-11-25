@@ -24,13 +24,16 @@ import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
+import org.hibernate.internal.AbstractSharedSessionContract;
 import org.hibernate.metamodel.model.domain.BasicDomainType;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
+import org.hibernate.query.named.NamedResultSetMappingMemento;
 import org.hibernate.query.spi.AbstractSelectionQuery;
 import org.hibernate.query.sql.internal.NativeQueryImpl;
+import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
@@ -52,6 +55,33 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	public ReactiveNativeQueryImpl(String memento, SharedSessionContractImplementor session) {
 		super( memento, session );
+	}
+
+	public ReactiveNativeQueryImpl(
+			NamedNativeQueryMemento memento,
+			SharedSessionContractImplementor session) {
+		super( memento, session );
+	}
+
+	public ReactiveNativeQueryImpl(
+			NamedNativeQueryMemento memento,
+			Class<R> resultJavaType,
+			SharedSessionContractImplementor session) {
+		super( memento, resultJavaType, session );
+	}
+
+	public ReactiveNativeQueryImpl(
+			NamedNativeQueryMemento memento,
+			String resultSetMappingName,
+			SharedSessionContractImplementor session) {
+		super( memento, resultSetMappingName, session );
+	}
+
+	public ReactiveNativeQueryImpl(
+			String sqlString,
+			NamedResultSetMappingMemento resultSetMappingMemento,
+			AbstractSharedSessionContract session) {
+		super( sqlString, resultSetMappingMemento, session );
 	}
 
 	@Override
@@ -606,13 +636,13 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R> implements Re
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values) {
-		super.setParameterList( position, values );
+		super.setParameterList( parameter, values );
 		return this;
 	}
 
 	@Override
 	public <P> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType) {
-		super.setParameterList( position, values, javaType );
+		super.setParameterList( parameter, values, javaType );
 		return this;
 	}
 

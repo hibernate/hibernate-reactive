@@ -26,7 +26,6 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.query.ReactiveMutationQuery;
 import org.hibernate.reactive.query.sqm.iternal.ReactiveQuerySqmImpl;
 import org.hibernate.reactive.session.ReactiveSession;
 

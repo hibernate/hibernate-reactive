@@ -60,6 +60,8 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass, String tableAlias);
 
+	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName);
+
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName, Class<R> resultClass);
 
 	<R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString);
