@@ -12,6 +12,7 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.jdbc.BlobProxy;
+import org.hibernate.engine.jdbc.ClobProxy;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -38,6 +39,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * An adaptor that allows Hibenate core code which expects a JDBC
@@ -689,12 +691,28 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Blob getBlob(int columnIndex) {
-		throw new UnsupportedOperationException();
+		Blob blob = blob( row -> row.getValue( columnIndex ), row -> row.getBuffer( columnIndex ) );
+		wasNull = blob == null;
+		return blob;
 	}
 
 	@Override
 	public Clob getClob(int columnIndex) {
-		throw new UnsupportedOperationException();
+		Clob clob = clob( row -> row.getString( columnIndex ) );
+		wasNull = clob == null;
+		if ( wasNull ) {
+			return null;
+		}
+		return clob;
+	}
+
+	private Clob clob(Function<Row, String> getString) {
+		String value = getString.apply( row );
+		if ( value == null ) {
+			return null;
+		}
+
+		return ClobProxy.generateProxy( ( value ) );
 	}
 
 	@Override
@@ -714,20 +732,23 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Blob getBlob(String columnLabel) {
-		final Object value = row.getValue( columnLabel );
-		wasNull = value == null;
-		if ( wasNull ) {
+		Blob blob = blob( row -> row.getValue( columnLabel), row -> row.getBuffer(columnLabel) );
+		wasNull = blob == null;
+		return blob;
+	}
+
+	private Blob blob(Function<Row, Object> getValue, Function<Row, Buffer> getBuffer) {
+		Object value = getValue.apply( row );
+		if ( value == null ) {
 			return null;
 		}
-
 		if ( value instanceof String ) {
 			return BlobProxy.generateProxy( ( (String) value ).getBytes() );
 		}
 		if ( value instanceof byte[] ) {
 			return BlobProxy.generateProxy( (byte[]) value );
 		}
-
-		return BlobProxy.generateProxy( row.getBuffer( columnLabel ).getBytes() );
+		return BlobProxy.generateProxy( getBuffer.apply( row ).getBytes() );
 	}
 
 	@Override
