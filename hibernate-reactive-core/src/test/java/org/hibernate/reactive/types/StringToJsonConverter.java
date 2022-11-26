@@ -11,7 +11,7 @@ import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
 @Converter
-public class StringToJson implements AttributeConverter<String, JsonObject> {
+public class StringToJsonConverter implements AttributeConverter<String, JsonObject> {
 
     @Override
     public JsonObject convertToDatabaseColumn(String string) {

@@ -89,7 +89,7 @@ public class StringToJsonTypeTest extends BaseReactiveTest {
 		String string;
 
 		@Column(columnDefinition = "json")
-		@Convert(converter = StringToJson.class)
+		@Convert(converter = StringToJsonConverter.class)
 		private String json;
 
 		public Basic() {

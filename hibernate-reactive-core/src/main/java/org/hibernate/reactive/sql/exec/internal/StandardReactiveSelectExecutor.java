@@ -16,6 +16,7 @@ import java.util.function.Function;
 
 import org.hibernate.CacheMode;
 import org.hibernate.LockOptions;
+import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.cache.spi.QueryKey;
 import org.hibernate.cache.spi.QueryResultsCache;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -312,7 +313,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			return new ReactiveValuesResultSet( resultSetAccess, queryResultsCacheKey, queryIdentifier, executionContext.getQueryOptions(), jdbcValuesMapping, metadataForCache, executionContext );
 		}
 		else {
-			throw new UnsupportedOperationException("Not yet implemented");
+			throw new NotYetImplementedFor6Exception();
 //			final JdbcValuesMapping jdbcValuesMapping;
 //			if ( cachedResults.isEmpty() || !( cachedResults.get( 0 ) instanceof JdbcValuesMetadata ) ) {
 //				jdbcValuesMapping = mappingProducer.resolve( resultSetAccess, factory );
