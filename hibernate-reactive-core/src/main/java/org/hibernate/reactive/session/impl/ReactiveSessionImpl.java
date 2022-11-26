@@ -80,7 +80,9 @@ import org.hibernate.query.sql.internal.NativeQueryImpl;
 import org.hibernate.query.sqm.internal.SqmUtil;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
+import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.InternalStateAssertions;
+import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.event.ReactiveDeleteEventListener;
@@ -564,6 +566,32 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public ReactiveNativeQuery getNamedReactiveNativeQuery(String name, String resultSetMapping) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, AffectedEntities affectedEntities) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery createReactiveNativeQuery(
+			String queryString,
+			Class<R> resultType,
+			AffectedEntities affectedEntities) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery createReactiveNativeQuery(
+			String queryString,
+			ResultSetMapping<R> resultSetMapping,
+			AffectedEntities affectedEntities) {
 		throw new NotYetImplementedFor6Exception();
 	}
 

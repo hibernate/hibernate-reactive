@@ -12,6 +12,8 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
+import org.hibernate.reactive.common.AffectedEntities;
+import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.query.ReactiveMutationQuery;
 import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.query.ReactiveQuery;
@@ -99,4 +101,12 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 	@Deprecated(since = "6.0")
 	@SuppressWarnings("rawtypes")
 	ReactiveNativeQuery getNamedReactiveNativeQuery(String name, String resultSetMapping);
+
+	<R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, AffectedEntities affectedEntities);
+
+	<R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities);
+
+	<R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
+
+	<R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities);
 }

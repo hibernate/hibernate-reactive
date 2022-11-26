@@ -35,6 +35,8 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
+import org.hibernate.reactive.common.AffectedEntities;
+import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -601,6 +603,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		throw new NotYetImplementedFor6Exception();
 	}
 
+
 	@Override
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass) {
 		throw new NotYetImplementedFor6Exception();
@@ -700,6 +703,32 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public ReactiveNativeQuery getNamedReactiveNativeQuery(String name, String resultSetMapping) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, AffectedEntities affectedEntities) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery createReactiveNativeQuery(
+			String queryString,
+			Class<R> resultType,
+			AffectedEntities affectedEntities) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
+	public <R> ReactiveNativeQuery createReactiveNativeQuery(
+			String queryString,
+			ResultSetMapping<R> resultSetMapping,
+			AffectedEntities affectedEntities) {
 		throw new NotYetImplementedFor6Exception();
 	}
 

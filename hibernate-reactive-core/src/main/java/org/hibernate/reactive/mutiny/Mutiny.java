@@ -85,7 +85,7 @@ import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheStor
 public interface Mutiny {
 	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	interface NativeQuery<R> extends Query {
+	interface NativeQuery<R> extends Query<R> {
 
 		NativeQuery<R>  addScalar(String columnAlias);
 
@@ -97,11 +97,11 @@ public interface Mutiny {
 
 		<C> NativeQuery<R>  addScalar(String columnAlias, Class<C> relationalJavaType, AttributeConverter<?,C> converter);
 
-		<O,R> NativeQuery<R>  addScalar(String columnAlias, Class<O> domainJavaType, Class<R> jdbcJavaType, AttributeConverter<O,R> converter);
+		<O,T> NativeQuery<R>  addScalar(String columnAlias, Class<O> domainJavaType, Class<T> jdbcJavaType, AttributeConverter<O,T> converter);
 
 		<C> NativeQuery<R>  addScalar(String columnAlias, Class<C> relationalJavaType, Class<? extends AttributeConverter<?,C>> converter);
 
-		<O,R> NativeQuery<R>  addScalar(String columnAlias, Class<O> domainJavaType, Class<R> jdbcJavaType, Class<? extends AttributeConverter<O,R>> converter);
+		<O,T> NativeQuery<R>  addScalar(String columnAlias, Class<O> domainJavaType, Class<T> jdbcJavaType, Class<? extends AttributeConverter<O,T>> converter);
 
 		<J> org.hibernate.query.NativeQuery.InstantiationResultNode<J> addInstantiation(Class<J> targetJavaType);
 
@@ -132,6 +132,228 @@ public interface Mutiny {
 		NativeQuery<R>  addJoin(String tableAlias, String ownerTableAlias, String joinPropertyName);
 
 		NativeQuery<R>  addJoin(String tableAlias, String path, LockMode lockMode);
+
+		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		// covariant overrides - Query
+
+		@Override
+		NativeQuery<R>  setHibernateFlushMode(FlushMode flushMode);
+
+		@Override
+		NativeQuery<R>  setFlushMode(FlushModeType flushMode);
+
+		@Override
+		NativeQuery<R>  setCacheMode(CacheMode cacheMode);
+
+		@Override
+		NativeQuery<R>  setCacheStoreMode(CacheStoreMode cacheStoreMode);
+
+		@Override
+		NativeQuery<R>  setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode);
+
+		@Override
+		NativeQuery<R>  setCacheable(boolean cacheable);
+
+		@Override
+		NativeQuery<R>  setCacheRegion(String cacheRegion);
+
+		@Override
+		NativeQuery<R>  setTimeout(int timeout);
+
+		@Override
+		NativeQuery<R>  setFetchSize(int fetchSize);
+
+		@Override
+		NativeQuery<R>  setReadOnly(boolean readOnly);
+
+		/**
+		 * @inheritDoc
+		 *
+		 * This operation is supported even for native queries.
+		 * Note that specifying an explicit lock mode might
+		 * result in changes to the native SQL query that is
+		 * actually executed.
+		 */
+		@Override
+		LockOptions getLockOptions();
+
+		/**
+		 * @inheritDoc
+		 *
+		 * This operation is supported even for native queries.
+		 * Note that specifying an explicit lock mode might
+		 * result in changes to the native SQL query that is
+		 * actually executed.
+		 */
+		@Override
+		NativeQuery<R>  setLockOptions(LockOptions lockOptions);
+
+		/**
+		 * Not applicable to native SQL queries.
+		 *
+		 * @throws IllegalStateException for consistency with JPA
+		 */
+		@Override
+		NativeQuery<R>  setLockMode(String alias, LockMode lockMode);
+
+		@Override
+		NativeQuery<R>  setComment(String comment);
+
+		@Override
+		NativeQuery<R>  addQueryHint(String hint);
+
+		@Override
+		NativeQuery<R>  setMaxResults(int maxResult);
+
+		@Override
+		NativeQuery<R>  setFirstResult(int startPosition);
+
+		@Override
+		NativeQuery<R>  setHint(String hintName, Object value);
+
+		/**
+		 * Not applicable to native SQL queries, due to an unfortunate
+		 * requirement of the JPA specification.
+		 * <p>
+		 * Use {@link #setHibernateLockMode(LockMode)} or the hint named
+		 * {@value org.hibernate.jpa.HibernateHints#HINT_NATIVE_LOCK_MODE}
+		 * to set the lock mode.
+		 *
+		 * @throws IllegalStateException as required by JPA
+		 */
+		@Override
+		NativeQuery<R>  setLockMode(LockModeType lockMode);
+
+		/**
+		 * @inheritDoc
+		 *
+		 * This operation is supported even for native queries.
+		 * Note that specifying an explicit lock mode might
+		 * result in changes to the native SQL query that is
+		 * actually executed.
+		 */
+		@Override
+		NativeQuery<R>  setHibernateLockMode(LockMode lockMode);
+
+		@Override
+		<T> NativeQuery<T> setTupleTransformer(TupleTransformer<T> transformer);
+
+		@Override
+		NativeQuery<R> setResultListTransformer(ResultListTransformer<R> transformer);
+
+		@Override
+		NativeQuery<R>  setParameter(String name, Object value);
+
+		@Override
+		<P> NativeQuery<R>  setParameter(String name, P val, Class<P> type);
+
+		@Override
+		<P> NativeQuery<R>  setParameter(String name, P val, BindableType<P> type);
+
+		@Override
+		NativeQuery<R>  setParameter(String name, Instant value, TemporalType temporalType);
+
+		@Override
+		NativeQuery<R>  setParameter(String name, Calendar value, TemporalType temporalType);
+
+		@Override
+		NativeQuery<R>  setParameter(String name, Date value, TemporalType temporalType);
+
+		@Override
+		NativeQuery<R>  setParameter(int position, Object value);
+
+		@Override
+		<P> NativeQuery<R>  setParameter(int position, P val, Class<P> type);
+
+		@Override
+		<P> NativeQuery<R>  setParameter(int position, P val, BindableType<P> type);
+
+		@Override
+		NativeQuery<R>  setParameter(int position, Instant value, TemporalType temporalType);
+
+		@Override
+		NativeQuery<R>  setParameter(int position, Calendar value, TemporalType temporalType);
+
+		@Override
+		NativeQuery<R>  setParameter(int position, Date value, TemporalType temporalType);
+
+		@Override
+		<P> NativeQuery<R>  setParameter(QueryParameter<P> parameter, P val);
+
+		@Override
+		<P> NativeQuery<R>  setParameter(QueryParameter<P> parameter, P val, Class<P> type);
+
+		@Override
+		<P> NativeQuery<R>  setParameter(QueryParameter<P> parameter, P val, BindableType<P> type);
+
+		@Override
+		<P> NativeQuery<R>  setParameter(Parameter<P> param, P value);
+
+		@Override
+		NativeQuery<R>  setParameter(Parameter<Calendar> param, Calendar value, TemporalType temporalType);
+
+		@Override
+		NativeQuery<R>  setParameter(Parameter<Date> param, Date value, TemporalType temporalType);
+
+		@Override
+		NativeQuery<R>  setParameterList(String name, @SuppressWarnings("rawtypes") Collection values);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(String name, Collection<? extends P> values, Class<P> type);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(String name, Collection<? extends P> values, BindableType<P> type);
+
+		@Override
+		NativeQuery<R>  setParameterList(String name, Object[] values);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(String name, P[] values, Class<P> type);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(String name, P[] values, BindableType<P> type);
+
+		@Override
+		NativeQuery<R>  setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(int position, Collection<? extends P> values, Class<P> type);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(int position, Collection<? extends P> values, BindableType<P> javaType);
+
+		@Override
+		NativeQuery<R>  setParameterList(int position, Object[] values);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(int position, P[] values, Class<P> javaType);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(int position, P[] values, BindableType<P> javaType);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(QueryParameter<P> parameter, Collection<? extends P> values);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(QueryParameter<P> parameter, P[] values);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType);
+
+		@Override
+		<P> NativeQuery<R>  setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type);
+
+		@Override
+		NativeQuery<R>  setProperties(Object bean);
+
+		@Override
+		NativeQuery<R>  setProperties(@SuppressWarnings("rawtypes") Map bean);
 	}
 
 	interface MutationQuery<R> extends CommonQueryContract {
