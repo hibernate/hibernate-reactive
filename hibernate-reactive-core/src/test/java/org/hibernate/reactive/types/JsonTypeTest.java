@@ -34,7 +34,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQL
 public class JsonTypeTest extends BaseReactiveTest {
 
 	@Rule
-	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, SQLSERVER, ORACLE);
+	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, SQLSERVER, ORACLE );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -44,9 +44,9 @@ public class JsonTypeTest extends BaseReactiveTest {
 	@Test
 	public void testJsonType(TestContext context) {
 		Basic basic = new Basic();
-		basic.jsonObj = new JsonObject().put("int", 123).put("str", "hello");
+		basic.jsonObj = new JsonObject().put( "int", 123 ).put( "str", "hello" );
 
-		testField( context, basic, found -> context.assertEquals( basic.jsonObj, found.jsonObj) );
+		testField( context, basic, found -> context.assertEquals( basic.jsonObj, found.jsonObj ) );
 	}
 
 	@Test
@@ -54,7 +54,7 @@ public class JsonTypeTest extends BaseReactiveTest {
 		Basic basic = new Basic();
 		basic.jsonObj = null;
 
-		testField( context, basic, found -> context.assertEquals(basic.jsonObj, found.jsonObj) );
+		testField( context, basic, found -> context.assertEquals( basic.jsonObj, found.jsonObj ) );
 	}
 
 	/**
@@ -65,7 +65,7 @@ public class JsonTypeTest extends BaseReactiveTest {
 				context,
 				getSessionFactory().withTransaction( (s, t) -> s.persist( original ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose( s2 -> s2.find( Basic.class,  original.id )
+						.thenCompose( s2 -> s2.find( Basic.class, original.id )
 								.thenAccept( found -> {
 									context.assertNotNull( found );
 									context.assertEquals( original, found );
@@ -74,12 +74,15 @@ public class JsonTypeTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity(name="JsonEntity")
-	@Table(name="JsonEntity")
+	@Entity(name = "JsonEntity")
+	@Table(name = "JsonEntity")
 	private static class Basic {
 
-		@Id @GeneratedValue Integer id;
-		@Version Integer version;
+		@Id
+		@GeneratedValue
+		Integer id;
+		@Version
+		Integer version;
 		String string;
 
 		private JsonObject jsonObj;
@@ -118,12 +121,12 @@ public class JsonTypeTest extends BaseReactiveTest {
 				return false;
 			}
 			Basic basic = (Basic) o;
-			return Objects.equals(string, basic.string);
+			return Objects.equals( string, basic.string );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(string);
+			return Objects.hash( string );
 		}
 	}
 }

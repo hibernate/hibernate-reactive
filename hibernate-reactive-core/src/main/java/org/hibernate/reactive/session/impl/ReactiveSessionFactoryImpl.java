@@ -6,6 +6,7 @@
 package org.hibernate.reactive.session.impl;
 
 
+
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.internal.SessionFactoryImpl;
@@ -27,11 +28,6 @@ public class ReactiveSessionFactoryImpl extends SessionFactoryImpl {
 
 	public ReactiveSessionFactoryImpl(MetadataImplementor metadata, SessionFactoryOptions options) {
 		super( metadata, options );
-
-//		Map<Integer, Set<String>> contributions = getMetamodel().getTypeConfiguration()
-//				.getJdbcToHibernateTypeContributionMap();
-//
-//		contributions.put( Types.JAVA_OBJECT, singleton( ObjectJavaType.class.getName() ) );
 	}
 
 	@Override
