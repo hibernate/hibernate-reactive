@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.session.impl;
 
+
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.internal.SessionFactoryImpl;
@@ -14,6 +15,8 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionFactoryImpl;
+
+
 
 /**
  * A Hibernate {@link org.hibernate.SessionFactory} that can be
@@ -25,14 +28,10 @@ public class ReactiveSessionFactoryImpl extends SessionFactoryImpl {
 	public ReactiveSessionFactoryImpl(MetadataImplementor metadata, SessionFactoryOptions options) {
 		super( metadata, options );
 
-		// FIXME: [ORM6] Do we still need this?
 //		Map<Integer, Set<String>> contributions = getMetamodel().getTypeConfiguration()
 //				.getJdbcToHibernateTypeContributionMap();
-		//override the default type mappings for temporal types to return java.time instead of java.sql
-//		contributions.put( Types.TIMESTAMP_WITH_TIMEZONE, singleton( OffsetDateTimeType.class.getName() ) );
-//		contributions.put( Types.TIMESTAMP, singleton( LocalDateTimeType.class.getName() ) );
-//		contributions.put( Types.TIME, singleton( LocalTimeType.class.getName() ) );
-//		contributions.put( Types.DATE, singleton( LocalDateType.class.getName() ) );
+//
+//		contributions.put( Types.JAVA_OBJECT, singleton( ObjectJavaType.class.getName() ) );
 	}
 
 	@Override

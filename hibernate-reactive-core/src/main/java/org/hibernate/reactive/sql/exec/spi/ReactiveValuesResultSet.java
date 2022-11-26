@@ -28,7 +28,6 @@ import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.trueFuture;
 
 /**
  * @see org.hibernate.sql.results.jdbc.internal.JdbcValuesResultSetImpl
@@ -72,13 +71,7 @@ public class ReactiveValuesResultSet {
 		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
 		final QueryResultsCache queryCache = factory.getCache()
 				.getQueryResultsCache( queryOptions.getResultCacheRegionName() );
-		return new QueryCachePutManagerEnabledImpl(
-				queryCache,
-				factory.getStatistics(),
-				queryCacheKey,
-				queryIdentifier,
-				metadataForCache
-		);
+		return new QueryCachePutManagerEnabledImpl( queryCache, factory.getStatistics(), queryCacheKey, queryIdentifier, metadataForCache );
 	}
 
 	public final CompletionStage<Boolean> next() {
@@ -143,7 +136,7 @@ public class ReactiveValuesResultSet {
 		}
 
 		return resultSetAccess.getReactiveResultSet()
-				.thenCompose( resultSet -> {
+				.thenApply( resultSet -> {
 					final SharedSessionContractImplementor session = executionContext.getSession();
 					for ( final SqlSelection sqlSelection : sqlSelections ) {
 						try {
@@ -155,7 +148,7 @@ public class ReactiveValuesResultSet {
 							throw new HibernateException( "Unable to extract JDBC value for position `" + sqlSelection.getJdbcResultSetIndex() + "`", e );
 						}
 					}
-					return trueFuture();
+					return true;
 				} );
 	}
 }
