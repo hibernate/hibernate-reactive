@@ -14,7 +14,6 @@ import java.util.function.Supplier;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
-import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.NotYetImplementedFor6Exception;
@@ -60,18 +59,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
-		// In mutiny, in case of an exception, the stack trace won't have the line where the uni is created.
-		// It makes it hard to figure out whose causing the exception in a real application.
-		// We create an exception beforehand so that, in case of error, we can throw it and have a more helpful stack
-		// trace
-		HibernateException callerStackTrace = new HibernateException( "Failure using the mutiny session" );
-		return factory.uni( stageSupplier )
-				.onFailure()
-				.recoverWithUni( throwable -> {
-					// We want to keep track of the exception, but we also want to know who has created the uni
-					callerStackTrace.initCause( throwable );
-					return Uni.createFrom().failure( callerStackTrace );
-				} );
+		return factory.uni( stageSupplier );
 	}
 
 	@Override

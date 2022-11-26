@@ -345,8 +345,7 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 	}
 
 	@Override
-	protected void addExtractedColumnInformation(
-			TableInformation tableInformation, ResultSet resultSet) throws SQLException {
+	protected void addExtractedColumnInformation(TableInformation tableInformation, ResultSet resultSet) throws SQLException {
 		final String typeName = new StringTokenizer( resultSet.getString( getResultSetTypeNameLabel() ), "() " ).nextToken();
 		final ColumnInformation columnInformation = new ColumnInformationImpl(
 				tableInformation,

@@ -20,6 +20,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
@@ -68,7 +69,8 @@ public class UUIDGeneratorTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name = "TableId")
+	@Table(name = "TableId")
 	public static class TableId {
 		@Id @GeneratedValue @Column(length=16) UUID id;
 		@Version Integer version;

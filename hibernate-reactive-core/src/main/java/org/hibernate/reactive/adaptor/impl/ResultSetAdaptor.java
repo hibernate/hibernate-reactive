@@ -159,11 +159,6 @@ public class ResultSetAdaptor implements ResultSet {
 		return (wasNull=localTime==null) ? null : Time.valueOf(localTime);
 	}
 
-	@Override
-	public Timestamp getTimestamp(int columnIndex) {
-		LocalDateTime localDateTime = row.getLocalDateTime( columnIndex - 1 );
-		return (wasNull=localDateTime==null) ? null : Timestamp.valueOf(localDateTime);
-	}
 
 	@Override
 	public InputStream getAsciiStream(int columnIndex) {
@@ -281,14 +276,14 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel) {
-		Object rawValue = row.getValue(columnLabel);
-		return (wasNull=rawValue==null) ? null : Timestamp.valueOf( toLocalDateTime(rawValue) );
+		Object rawValue = row.getValue( columnLabel );
+		return ( wasNull = rawValue == null ) ? null : Timestamp.valueOf( toLocalDateTime( rawValue ) );
 	}
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel, Calendar cal) {
-		Object rawValue = row.getValue(columnLabel);
-		return (wasNull=rawValue==null) ? null : Timestamp.from( toOffsetDateTime(rawValue, cal).toInstant() );
+		Object rawValue = row.getValue( columnLabel );
+		return ( wasNull = rawValue == null ) ? null : Timestamp.from( toOffsetDateTime( rawValue, cal ).toInstant() );
 	}
 
 	private static LocalDateTime toLocalDateTime(Object rawValue) {
@@ -772,8 +767,15 @@ public class ResultSetAdaptor implements ResultSet {
 	}
 
 	@Override
+	public Timestamp getTimestamp(int columnIndex) {
+		LocalDateTime localDateTime = row.getLocalDateTime( columnIndex - 1 );
+		return ( wasNull = localDateTime == null ) ? null : Timestamp.valueOf( localDateTime );
+	}
+
+	@Override
 	public Timestamp getTimestamp(int columnIndex, Calendar cal) {
-		throw new UnsupportedOperationException();
+		Object rawValue = row.getValue( columnIndex - 1 );
+		return ( wasNull = rawValue == null ) ? null : Timestamp.from( toOffsetDateTime( rawValue, cal ).toInstant() );
 	}
 
 	@Override

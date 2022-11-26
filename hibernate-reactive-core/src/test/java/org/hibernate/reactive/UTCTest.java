@@ -177,7 +177,7 @@ public class UTCTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "ThingInUTC")
-	static class Thing {
+	public static class Thing {
 		@Id
 		@GeneratedValue
 		long id;
