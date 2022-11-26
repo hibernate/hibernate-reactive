@@ -54,7 +54,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 
 	@Override
 	public ResultSet getResultSet() {
-		throw new UnsupportedOperationException("Not reactive");
+		throw LOG.nonReactiveMethodCall( "getReactiveResultSet" );
 	}
 
 	@Override
