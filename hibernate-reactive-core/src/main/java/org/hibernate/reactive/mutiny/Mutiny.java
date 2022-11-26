@@ -34,9 +34,11 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.jpa.internal.util.FlushModeTypeHelper;
+import org.hibernate.metamodel.model.domain.BasicDomainType;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.CommonQueryContract;
+import org.hibernate.query.NativeQuery;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
@@ -49,8 +51,10 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.stat.Statistics;
+import org.hibernate.type.BasicTypeReference;
 
 import io.smallrye.mutiny.Uni;
+import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityGraph;
@@ -63,6 +67,7 @@ import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.Metamodel;
+import jakarta.persistence.metamodel.SingularAttribute;
 
 import static org.hibernate.internal.util.LockModeConverter.convertToLockMode;
 import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheMode;
@@ -79,6 +84,55 @@ import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheStor
  */
 public interface Mutiny {
 	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
+	interface NativeQuery<R> extends Query {
+
+		NativeQuery<R>  addScalar(String columnAlias);
+
+		NativeQuery<R>  addScalar(String columnAlias, @SuppressWarnings("rawtypes") BasicTypeReference type);
+
+		NativeQuery<R>  addScalar(String columnAlias, @SuppressWarnings("rawtypes") BasicDomainType type);
+
+		NativeQuery<R>  addScalar(String columnAlias, @SuppressWarnings("rawtypes") Class javaType);
+
+		<C> NativeQuery<R>  addScalar(String columnAlias, Class<C> relationalJavaType, AttributeConverter<?,C> converter);
+
+		<O,R> NativeQuery<R>  addScalar(String columnAlias, Class<O> domainJavaType, Class<R> jdbcJavaType, AttributeConverter<O,R> converter);
+
+		<C> NativeQuery<R>  addScalar(String columnAlias, Class<C> relationalJavaType, Class<? extends AttributeConverter<?,C>> converter);
+
+		<O,R> NativeQuery<R>  addScalar(String columnAlias, Class<O> domainJavaType, Class<R> jdbcJavaType, Class<? extends AttributeConverter<O,R>> converter);
+
+		<J> org.hibernate.query.NativeQuery.InstantiationResultNode<J> addInstantiation(Class<J> targetJavaType);
+
+		NativeQuery<R>  addAttributeResult(String columnAlias, @SuppressWarnings("rawtypes") Class entityJavaType, String attributePath);
+
+		NativeQuery<R>  addAttributeResult(String columnAlias, String entityName, String attributePath);
+
+		NativeQuery<R>  addAttributeResult(String columnAlias, @SuppressWarnings("rawtypes") SingularAttribute attribute);
+
+		org.hibernate.query.NativeQuery.RootReturn addRoot(String tableAlias, String entityName);
+
+		org.hibernate.query.NativeQuery.RootReturn addRoot(String tableAlias, @SuppressWarnings("rawtypes") Class entityType);
+
+		NativeQuery<R>  addEntity(String entityName);
+		NativeQuery<R>  addEntity(String tableAlias, String entityName);
+
+		NativeQuery<R>  addEntity(String tableAlias, String entityName, LockMode lockMode);
+		NativeQuery<R>  addEntity(@SuppressWarnings("rawtypes") Class entityType);
+
+		NativeQuery<R>  addEntity(String tableAlias, @SuppressWarnings("rawtypes") Class entityType);
+
+		NativeQuery<R>  addEntity(String tableAlias, @SuppressWarnings("rawtypes") Class entityClass, LockMode lockMode);
+
+		org.hibernate.query.NativeQuery.FetchReturn addFetch(String tableAlias, String ownerTableAlias, String joinPropertyName);
+
+		NativeQuery<R>  addJoin(String tableAlias, String path);
+
+		NativeQuery<R>  addJoin(String tableAlias, String ownerTableAlias, String joinPropertyName);
+
+		NativeQuery<R>  addJoin(String tableAlias, String path, LockMode lockMode);
+	}
 
 	interface MutationQuery<R> extends CommonQueryContract {
 		Uni<Integer> executeUpdate();
