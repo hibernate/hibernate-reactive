@@ -25,7 +25,6 @@ import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.Stage.Query;
@@ -485,6 +484,11 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public <R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+		throw new NotYetImplementedFor6Exception();
+	}
+
+	@Override
 	public <R> Stage.MutationQuery<R> createQuery(CriteriaDelete<R> criteriaDelete) {
 		throw new NotYetImplementedFor6Exception();
 	}
@@ -500,37 +504,32 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <R> Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ) );
+	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString, Class<R> resultType) {
+		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ) );
 	}
 
 	@Override
-	public <R> Query<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
-		throw new NotYetImplementedFor6Exception();
+	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
+		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType, affectedEntities ) );
 	}
 
 	@Override
-	public <R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
-		throw new NotYetImplementedFor6Exception();
+	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
+		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping ) );
 	}
 
 	@Override
 	public <R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
-		throw new NotYetImplementedFor6Exception();
+		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping, affectedEntities ) );
 	}
 
 	@Override
-	public <R> Query<R> createNativeQuery(String queryString) {
-		throw new NotYetImplementedFor6Exception();
+	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString) {
+		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString ) );
 	}
 
 	@Override
-	public <R> ReactiveNativeQuery<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
-		throw new NotYetImplementedFor6Exception();
-	}
-
-	@Override
-	public <R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		throw new NotYetImplementedFor6Exception();
+	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
+		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, affectedEntities ) );
 	}
 }
