@@ -20,7 +20,7 @@ import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
-@Ignore
+@Ignore // ORM-6 it gets stuck, I'm not sure why
 public class BlockSequenceGeneratorTest extends BaseReactiveTest {
 
 	@Override
@@ -43,9 +43,6 @@ public class BlockSequenceGeneratorTest extends BaseReactiveTest {
 						.thenCompose( v -> s.persist( b ) )
 						.thenCompose( v -> s.persist( c ) )
 						.thenCompose( v -> s.flush() )
-						.whenComplete( (unused, throwable) -> {
-							System.out.println("");
-						} )
 				)
 				.thenCompose( v -> openSession()
 						.thenCompose( s2 -> s2.find( TableId.class, b.getId() )
@@ -54,7 +51,6 @@ public class BlockSequenceGeneratorTest extends BaseReactiveTest {
 									context.assertEquals( bb.id, 10 );
 									context.assertEquals( bb.string, b.string );
 									context.assertEquals( bb.version, 0 );
-
 									bb.string = "Goodbye";
 								} )
 								.thenCompose( vv -> s2.flush() )
