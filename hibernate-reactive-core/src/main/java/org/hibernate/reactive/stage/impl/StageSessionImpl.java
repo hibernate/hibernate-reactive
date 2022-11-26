@@ -25,6 +25,7 @@ import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.Stage.Query;
@@ -524,7 +525,7 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <R> Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
+	public <R> ReactiveNativeQuery<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
