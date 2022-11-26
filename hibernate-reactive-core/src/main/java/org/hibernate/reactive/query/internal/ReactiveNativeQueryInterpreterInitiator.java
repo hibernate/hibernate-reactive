@@ -1,19 +1,21 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.query.internal;
 
-import java.util.Map;
-
-import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.engine.query.spi.NativeQueryInterpreter;
 import org.hibernate.reactive.query.sqm.spi.ReactiveNativeQueryInterpreter;
-import org.hibernate.service.spi.ServiceRegistryImplementor;
+import org.hibernate.service.spi.SessionFactoryServiceInitiator;
+import org.hibernate.service.spi.SessionFactoryServiceInitiatorContext;
 
-public class ReactiveNativeQueryInterpreterInitiator implements StandardServiceInitiator<NativeQueryInterpreter> {
+public class ReactiveNativeQueryInterpreterInitiator implements SessionFactoryServiceInitiator<NativeQueryInterpreter> {
 
 	public static ReactiveNativeQueryInterpreterInitiator INSTANCE = new ReactiveNativeQueryInterpreterInitiator();
+
 	@Override
-	public NativeQueryInterpreter initiateService(
-			Map<String, Object> configurationValues,
-			ServiceRegistryImplementor registry) {
+	public NativeQueryInterpreter initiateService(SessionFactoryServiceInitiatorContext context) {
 		return ReactiveNativeQueryInterpreter.INSTANCE;
 	}
 

@@ -13,7 +13,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.CacheMode;
@@ -32,20 +31,14 @@ import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
-import org.hibernate.query.results.ResultSetMapping;
 import org.hibernate.query.spi.AbstractSelectionQuery;
-import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.sql.internal.NativeQueryImpl;
 import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
-import org.hibernate.query.sql.spi.NativeSelectQueryDefinition;
-import org.hibernate.query.sql.spi.NativeSelectQueryPlan;
-import org.hibernate.query.sql.spi.ParameterOccurrence;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery;
-import org.hibernate.reactive.query.spi.ReactiveNativeSelectQueryPlan;
 import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.sql.results.internal.TupleMetadata;
@@ -69,6 +62,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	public ReactiveNativeQueryImpl(String memento, SharedSessionContractImplementor session) {
 		super( memento, session );
+		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
 	public ReactiveNativeQueryImpl(NamedNativeQueryMemento memento, SharedSessionContractImplementor session) {
@@ -102,6 +96,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	private ReactiveAbstractSelectionQuery<R> createSelectionQueryDelegate(SharedSessionContractImplementor session) {
 		return new ReactiveAbstractSelectionQuery<>(
+				null,
 				session,
 				this::doReactiveList,
 				this::getSqmStatement,
@@ -114,9 +109,12 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 				AbstractSelectionQuery::uniqueElement
 		);
 	}
-
 	private CompletionStage<List<R>> doReactiveList() {
-		return resolveSelectQueryPlan().performReList( this );
+		return reactivePlan().performReactiveList( this );
+	}
+
+	private ReactiveSelectQueryPlan<R> reactivePlan() {
+		return (ReactiveSelectQueryPlan<R>) resolveSelectQueryPlan();
 	}
 
 	public Class<R> getResultType() {
@@ -195,50 +193,50 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 		return selectionQueryDelegate.uniqueResultOptional();
 	}
 
-	private ReactiveSelectQueryPlan<R> resolveSelectQueryPlan() {
-		if ( isCacheableQuery() ) {
-			final QueryInterpretationCache.Key cacheKey = generateSelectInterpretationsKey( getResultSetMapping() );
-			return (ReactiveSelectQueryPlan<R>) getSession().getFactory().getQueryEngine().getInterpretationCache()
-					.resolveSelectQueryPlan( cacheKey, () -> createQueryPlan( getResultSetMapping() ) );
-		}
-		else {
-			return createQueryPlan( getResultSetMapping() );
-		}
-	}
-
-	private ReactiveNativeSelectQueryPlan<R> createQueryPlan(ResultSetMapping resultSetMapping) {
-		final String sqlString = expandParameterLists();
-		final NativeSelectQueryDefinition<R> queryDefinition = new NativeSelectQueryDefinition<>() {
-			@Override
-			public String getSqlString() {
-				return sqlString;
-			}
-
-			@Override
-			public boolean isCallable() {
-				return false;
-			}
-
-			@Override
-			public List<ParameterOccurrence> getQueryParameterOccurrences() {
-				return NativeQueryImpl.this.parameterOccurrences;
-			}
-
-			@Override
-			public ResultSetMapping getResultSetMapping() {
-				return resultSetMapping;
-			}
-
-			@Override
-			public Set<String> getAffectedTableNames() {
-				return querySpaces;
-			}
-		};
-
-		return (ReactiveNativeSelectQueryPlan<R>) getSessionFactory().getQueryEngine()
-				.getNativeQueryInterpreter()
-				.createQueryPlan( queryDefinition, getSessionFactory() );
-	}
+//	private ReactiveSelectQueryPlan<R> resolveSelectQueryPlan() {
+//		if ( isCacheableQuery() ) {
+//			final QueryInterpretationCache.Key cacheKey = generateSelectInterpretationsKey( getResultSetMapping() );
+//			return (ReactiveSelectQueryPlan<R>) getSession().getFactory().getQueryEngine().getInterpretationCache()
+//					.resolveSelectQueryPlan( cacheKey, () -> createQueryPlan( getResultSetMapping() ) );
+//		}
+//		else {
+//			return ( ReactiveSelectQueryPlan<R>) createQueryPlan( getResultSetMapping() );
+//		}
+//	}
+//
+//	private ReactiveNativeSelectQueryPlan<R> createQueryPlan(ResultSetMapping resultSetMapping) {
+//		final String sqlString = expandParameterLists();
+//		final NativeSelectQueryDefinition<R> queryDefinition = new NativeSelectQueryDefinition<>() {
+//			@Override
+//			public String getSqlString() {
+//				return sqlString;
+//			}
+//
+//			@Override
+//			public boolean isCallable() {
+//				return false;
+//			}
+//
+//			@Override
+//			public List<ParameterOccurrence> getQueryParameterOccurrences() {
+//				return ReactiveNativeQueryImpl.this.parameterOccurrences;
+//			}
+//
+//			@Override
+//			public ResultSetMapping getResultSetMapping() {
+//				return resultSetMapping;
+//			}
+//
+//			@Override
+//			public Set<String> getAffectedTableNames() {
+//				return querySpaces;
+//			}
+//		};
+//
+//		return (ReactiveNativeSelectQueryPlan<R>) getSessionFactory().getQueryEngine()
+//				.getNativeQueryInterpreter()
+//				.createQueryPlan( queryDefinition, getSessionFactory() );
+//	}
 
 	@Override
 	public ReactiveNativeQueryImpl<R> applyGraph(RootGraph graph, GraphSemantic semantic) {

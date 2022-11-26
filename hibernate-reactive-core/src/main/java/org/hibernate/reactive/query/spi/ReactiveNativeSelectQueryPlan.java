@@ -1,8 +1,12 @@
+/* Hibernate, Relational Persistence for Idiomatic Java
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright: Red Hat Inc. and Hibernate Authors
+ */
 package org.hibernate.reactive.query.spi;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.ScrollMode;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
@@ -20,7 +24,7 @@ public interface ReactiveNativeSelectQueryPlan<T> extends NativeSelectQueryPlan,
 	 */
 	@Override
 	@Deprecated
-	default List<R> performList(DomainQueryExecutionContext executionContext) {
+	default List<T> performList(DomainQueryExecutionContext executionContext) {
 		throw LOG.nonReactiveMethodCall( "performReactiveList" );
 	}
 
@@ -32,6 +36,4 @@ public interface ReactiveNativeSelectQueryPlan<T> extends NativeSelectQueryPlan,
 	default ScrollableResultsImplementor<T> performScroll(ScrollMode scrollMode, DomainQueryExecutionContext executionContext) {
 		throw LOG.nonReactiveMethodCall( "<no alternative>" );
 	}
-
-	CompletionStage<List<T>> performReactiveList();
 }

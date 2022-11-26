@@ -24,6 +24,7 @@ public class NoJdbcConnectionProviderInitiator implements StandardServiceInitiat
 
 	public static final NoJdbcConnectionProviderInitiator INSTANCE = new NoJdbcConnectionProviderInitiator();
 
+
 	@Override
 	public ConnectionProvider initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
 		ConnectionProvider provider = ConnectionProviderInitiator.INSTANCE.initiateService(configurationValues, registry);
