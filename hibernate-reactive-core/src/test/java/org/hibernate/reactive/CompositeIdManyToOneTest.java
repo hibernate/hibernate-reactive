@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -23,7 +22,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
-@Ignore
 public class CompositeIdManyToOneTest extends BaseReactiveTest {
 
     @Override
