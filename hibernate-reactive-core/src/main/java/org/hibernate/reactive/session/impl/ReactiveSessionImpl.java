@@ -1395,11 +1395,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			Object[] sids = new Object[ids.length];
 			System.arraycopy( ids, 0, sids, 0, ids.length );
 
-			throw new UnsupportedOperationException( "Not yet implemented" );
-			// TODO:
-//			return perform( () -> (CompletionStage)
-//					((ReactiveEntityPersister) entityPersister)
-//							.reactiveMultiLoad( sids, ReactiveSessionImpl.this, this ) );
+			return perform( () -> (CompletionStage)
+					( (ReactiveEntityPersister) entityPersister )
+							.reactiveMultiLoad( sids, ReactiveSessionImpl.this, this ) );
 		}
 
 		public CompletionStage<List<T>> perform(Supplier<CompletionStage<List<T>>> executor) {
