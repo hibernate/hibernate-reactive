@@ -7,13 +7,44 @@ package org.hibernate.reactive.sql.results.internal;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.concurrent.CompletionStage;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.sql.results.jdbc.internal.DirectResultSetAccess;
 
-public class ReactiveDirectResultSetAccess extends DirectResultSetAccess {
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
-	public ReactiveDirectResultSetAccess(SharedSessionContractImplementor persistenceContext, PreparedStatement resultSetSource, ResultSet resultSet) {
+public class ReactiveDirectResultSetAccess extends DirectResultSetAccess implements ReactiveResultSetAccess {
+
+	private PreparedStatement resultSetSource;
+	private ResultSet resultSet;
+
+	public ReactiveDirectResultSetAccess(
+			SharedSessionContractImplementor persistenceContext,
+			PreparedStatement resultSetSource,
+			ResultSet resultSet) {
 		super( persistenceContext, resultSetSource, resultSet );
+		this.resultSetSource = resultSetSource;
+		this.resultSet = resultSet;
+	}
+
+	@Override
+	public SessionFactoryImplementor getFactory() {
+		return getPersistenceContext().getFactory();
+	}
+
+	@Override
+	public void release() {
+		// Not sure if this is needed for reactive
+		getPersistenceContext().getJdbcCoordinator()
+				.getLogicalConnection()
+				.getResourceRegistry()
+				.release( resultSet, resultSetSource );
+	}
+
+	@Override
+	public CompletionStage<ResultSet> getReactiveResultSet() {
+		return completedFuture( resultSet );
 	}
 }

@@ -158,7 +158,7 @@ public class UTCTest extends BaseReactiveTest {
 
 	private void testField(TestContext context, String columnName, Supplier<?> fieldValue, Consumer<Thing> assertion) {
 		test( context, getMutinySessionFactory()
-				.withSession( session -> session.persist( thing ).call( session::flush ).invoke( session::clear ) )
+				.withTransaction( session -> session.persist( thing ) )
 				.chain( () -> getMutinySessionFactory()
 						.withSession( session -> session.find( Thing.class, thing.id ) )
 						.invoke( t -> {
