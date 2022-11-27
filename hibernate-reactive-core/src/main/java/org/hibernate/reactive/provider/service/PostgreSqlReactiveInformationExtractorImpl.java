@@ -7,6 +7,7 @@ package org.hibernate.reactive.provider.service;
 
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +16,7 @@ import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.tool.schema.extract.spi.ExtractionContext;
+import org.hibernate.type.SqlTypes;
 
 /**
  * An implementation of {@link AbstractReactiveInformationSchemaBasedExtractorImpl}
@@ -136,6 +138,32 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 		sb.append( " order by pkn.nspname, pkc.relname, con.conname, pos.n" );
 
 		return getExtractionContext().getQueryResults( sb.toString(), parameterValues.toArray(), processor );
+	}
+
+	@Override
+	protected int dataTypeCode(String typeName) {
+		// Copied from PostgreSQLDialect.
+		// Not ideal, but ii should work for now
+		// It would be nice to be able to get the correct code some way
+		switch ( typeName ) {
+			case "bool":
+				return Types.BOOLEAN;
+			case "float4":
+				// Use REAL instead of FLOAT to get Float as recommended Java type
+				return Types.REAL;
+			case "float8":
+				return Types.DOUBLE;
+			case "int2":
+				return Types.SMALLINT;
+			case "int4":
+				return Types.INTEGER;
+			case "int8":
+				return Types.BIGINT;
+			case "timestamptz":
+				return SqlTypes.TIMESTAMP_UTC;
+			default:
+				return 0;
+		}
 	}
 
 	@Override
