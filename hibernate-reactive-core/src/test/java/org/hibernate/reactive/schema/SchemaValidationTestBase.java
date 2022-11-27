@@ -15,7 +15,6 @@ import org.hibernate.tool.schema.spi.SchemaManagementException;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,8 +37,6 @@ import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
  */
 public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 
-	@Ignore // [ORM-6] Validation currently doesn't work. We need the correct datatype, but we always return 0 (in Postgres)
-			// See AbstractReactiveInformationSchemaBasedExtractorImpl#addExtractColumnInfo
 	public static class IndividuallyStrategyTest extends SchemaValidationTestBase {
 
 		@Override
@@ -50,8 +47,6 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 		}
 	}
 
-	@Ignore // [ORM-6] Validation currently doesn't work. We need the correct datatype, but we always return 0 (in Postgres)
-			// See AbstractReactiveInformationSchemaBasedExtractorImpl#addExtractColumnInfo
 	public static class GroupedStrategyTest extends SchemaValidationTestBase {
 
 		@Override
