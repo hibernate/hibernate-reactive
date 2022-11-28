@@ -139,37 +139,33 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			throw LOG.unableToLocatePersister( event.getEntityClassName() );
 		}
 
-		CompletionStage<Void> result = checkId( event, loadType, persister )
+		return checkId( event, loadType, persister )
 				.thenCompose( vd -> doOnLoad( persister, event, loadType )
 						.thenAccept( event::setResult )
 						.handle( (v, x) -> {
 							if ( event.getResult() instanceof CompletionStage ) {
 								throw new AssertionFailure("Unexpected CompletionStage");
 							}
-
 							if (x instanceof HibernateException) {
 								LOG.unableToLoadCommand( (HibernateException) x );
 							}
 							return returnNullorRethrow( x );
-						} )
-		);
-
-		// if a pessimistic version increment was requested, we need
-		// to go back to the database immediately and update the row
-		if ( event.getLockMode() == LockMode.PESSIMISTIC_FORCE_INCREMENT ) {
-			// TODO: should we call CachedDomainDataAccess.lockItem() ?
-			return result.thenCompose(
-					v -> persister.reactiveLock(
-							event.getEntityId(),
-							persister.getVersion( event.getResult() ),
-							event.getResult(),
-							event.getLockOptions(),
-							event.getSession()
-					)
-			);
-		}
-
-		return result;
+						} ) )
+				.thenCompose( v -> {
+					// if a pessimistic version increment was requested, we need
+					// to go back to the database immediately and update the row
+					if ( event.getLockMode() == LockMode.PESSIMISTIC_FORCE_INCREMENT ) {
+						// TODO: should we call CachedDomainDataAccess.lockItem() ?
+						return persister.reactiveLock(
+								event.getEntityId(),
+								persister.getVersion( event.getResult() ),
+								event.getResult(),
+								event.getLockOptions(),
+								event.getSession()
+						);
+					}
+					return voidFuture();
+				} );
 	}
 
 	private CompletionStage<Void> checkId(LoadEvent event, LoadType loadType, EntityPersister persister) {
@@ -190,7 +186,8 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			return event.getSession().getEntityPersister( null, instanceToLoad );
 		}
 		else {
-			return event.getSession().getFactory().getMetamodel().entityPersister( event.getEntityClassName() );
+			return event.getSession().getFactory().getMappingMetamodel()
+					.findEntityDescriptor( event.getEntityClassName() );
 		}
 	}
 
@@ -259,8 +256,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 				}
 			}
 		}
-		throw new TypeMismatchException(
-				"Provided id of the wrong type for class " + persister.getEntityName() + ". Expected: " + idClass + ", got " + event.getEntityId().getClass() );
+		throw new TypeMismatchException( "Provided id of the wrong type for class " + persister.getEntityName() + ". Expected: " + idClass + ", got " + event.getEntityId().getClass() );
 	}
 
 	/*
@@ -273,7 +269,6 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		return doLoad( event, parentPersister, parentEntityKey, options )
 				.thenApply( parent -> {
 					checkEntityFound( session, parentEntityKey.getEntityName(), parentEntityKey, parent );
-
 					final Object dependent = dependentIdType.instantiate();
 					dependentIdType.getPartMappingType().setValues( dependent, new Object[] { parent } );
 					event.setEntityId( dependent );

@@ -23,10 +23,10 @@ import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.engine.jdbc.connections.spi.JdbcConnectionAccess;
 import org.hibernate.engine.jdbc.dialect.spi.DatabaseMetaDataDialectResolutionInfoAdapter;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
-import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentImpl;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveJdbcEnvironment;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.provider.Settings;
@@ -50,8 +50,6 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 	@Override
 	@SuppressWarnings("unchecked")
 	public JdbcEnvironment initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-		DialectFactory dialectFactory = registry.getService( DialectFactory.class );
-
 		boolean explicitDialect = configurationValues.containsKey( Settings.DIALECT );
 		String url = configurationValues.getOrDefault( Settings.URL, "" ).toString();
 		if ( !explicitDialect ) {
@@ -69,56 +67,56 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 		// it is used to control whether we should consult the JDBC metadata to determine
 		// certain Settings default values; it is useful to *not* do this when the database
 		// may not be available (mainly in tools usage).
-		boolean useJdbcMetadata = ConfigurationHelper.getBoolean(
-				"hibernate.temp.use_jdbc_metadata_defaults",
-				configurationValues,
-				true
-		);
+		boolean useJdbcMetadata = ConfigurationHelper
+				.getBoolean( "hibernate.temp.use_jdbc_metadata_defaults", configurationValues, true );
 
 		if ( useJdbcMetadata ) {
-			ConnectionProvider connectionProvider = registry.getService( ConnectionProvider.class );
-			final JdbcConnectionAccess jdbcConnectionAccess =
-					new ConnectionProviderJdbcConnectionAccess( connectionProvider );
-			try {
-				final Connection connection = jdbcConnectionAccess.obtainConnection();
-				try {
-					Dialect dialect = dialectFactory.buildDialect(
-							configurationValues,
-							() -> {
-								try {
-									return new DatabaseMetaDataDialectResolutionInfoAdapter( connection.getMetaData() );
-								}
-								catch (SQLException sqlException) {
-									return null;
-								}
-							}
-					);
-					return new JdbcEnvironmentImpl( registry, dialect, connection.getMetaData() );
-				}
-				catch (SQLException e) {
-				}
-				finally {
-					try {
-						jdbcConnectionAccess.releaseConnection( connection );
-					}
-					catch (SQLException ignore) {
-					}
-				}
-			}
-			catch (Exception e) {
+			JdbcEnvironment jdbcEnv = createJdbcEnvironmentWithMetadata( configurationValues, registry );
+			if ( jdbcEnv != null ) {
+				return jdbcEnv;
 			}
 		}
 
 		// if we get here, either we were asked to not use JDBC metadata or accessing the JDBC metadata failed.
 		if ( explicitDialect ) {
-			return new JdbcEnvironmentImpl( registry, dialectFactory.buildDialect( configurationValues, null ) );
+			DialectFactory dialectFactory = registry.getService( DialectFactory.class );
+			return new ReactiveJdbcEnvironment( registry, dialectFactory.buildDialect( configurationValues, null ) );
 		}
-		else if ( url.isEmpty() ) {
+		if ( url.isEmpty() ) {
 			throw LOG.couldNotDetermineDialectFromJdbcDriverMetadata();
 		}
-		else {
-			throw LOG.couldNotDetermineDialectFromConnectionURI( url );
+		throw LOG.couldNotDetermineDialectFromConnectionURI( url );
+	}
+
+	private JdbcEnvironment createJdbcEnvironmentWithMetadata(Map configurationValues, ServiceRegistryImplementor registry) {
+		DialectFactory dialectFactory = registry.getService( DialectFactory.class );
+		ConnectionProvider connectionProvider = registry.getService( ConnectionProvider.class );
+		try {
+			final JdbcConnectionAccess jdbcConnectionAccess = new ConnectionProviderJdbcConnectionAccess( connectionProvider );
+			final Connection connection = jdbcConnectionAccess.obtainConnection();
+			try {
+				Dialect dialect = dialect( configurationValues, dialectFactory, connection );
+				return new ReactiveJdbcEnvironment( registry, dialect, connection.getMetaData() );
+			}
+			finally {
+				jdbcConnectionAccess.releaseConnection( connection );
+			}
 		}
+		catch (Throwable t) {
+			LOG.tracef( "Ignoring error %s", t.getMessage() );
+			return null;
+		}
+	}
+
+	private static Dialect dialect(Map configurationValues, DialectFactory dialectFactory, Connection connection) {
+		return dialectFactory.buildDialect( configurationValues, () -> {
+			try {
+				return new DatabaseMetaDataDialectResolutionInfoAdapter( connection.getMetaData() );
+			}
+			catch (SQLException sqlException) {
+				return null;
+			}
+		} );
 	}
 
 	protected Class<? extends Dialect> guessDialect(String url) {

@@ -25,6 +25,7 @@ import org.hibernate.query.sql.spi.ParameterOccurrence;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.reactive.query.spi.ReactiveNativeSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
+import org.hibernate.reactive.sql.exec.spi.ReactiveJdbcSelect;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.JdbcParameterBinder;
@@ -93,7 +94,7 @@ public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanI
 
 		executionContext.getSession().autoFlushIfRequired( affectedTableNames );
 
-		final JdbcSelect jdbcSelect = new JdbcSelect(
+		final JdbcSelect jdbcSelect = new ReactiveJdbcSelect(
 				sql,
 				jdbcParameterBinders,
 				resultSetMapping,

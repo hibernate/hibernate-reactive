@@ -5,15 +5,6 @@
  */
 package org.hibernate.reactive.adaptor.impl;
 
-import io.vertx.core.buffer.Buffer;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowIterator;
-import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.desc.ColumnDescriptor;
-import org.hibernate.cfg.NotYetImplementedException;
-import org.hibernate.engine.jdbc.BlobProxy;
-import org.hibernate.engine.jdbc.ClobProxy;
-
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -27,6 +18,7 @@ import java.sql.Ref;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.RowId;
+import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Statement;
@@ -41,11 +33,32 @@ import java.util.Calendar;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.hibernate.HibernateException;
+import org.hibernate.cfg.NotYetImplementedException;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.jdbc.BlobProxy;
+import org.hibernate.engine.jdbc.ClobProxy;
+import org.hibernate.engine.jdbc.spi.JdbcServices;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
+import org.hibernate.type.BasicType;
+import org.hibernate.type.descriptor.java.JavaType;
+import org.hibernate.type.descriptor.jdbc.JdbcType;
+import org.hibernate.type.descriptor.jdbc.JdbcTypeIndicators;
+import org.hibernate.type.spi.TypeConfiguration;
+
+import io.vertx.core.buffer.Buffer;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowIterator;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.desc.ColumnDescriptor;
+import jakarta.persistence.EnumType;
+
 /**
  * An adaptor that allows Hibenate core code which expects a JDBC
  * {@code ResultSet} to read values from Vert.x's {@code RowSet}.
  */
-public class ResultSetAdaptor implements ResultSet {
+public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 
 	private final RowIterator<Row> iterator;
 	private final RowSet<Row> rows;
@@ -1248,4 +1261,112 @@ public class ResultSetAdaptor implements ResultSet {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	public int getColumnCount() {
+		return rows.columnsNames().size();
+	}
+
+	@Override
+	public int resolveColumnPosition(String columnName) {
+		int index = 0;
+		for ( String column : rows.columnsNames() ) {
+			if ( column.equals( columnName ) ) {
+				return index;
+			}
+			index++;
+		}
+		throw new HibernateException( "Column not found: " + columnName + ". Columns: " + rows.columnsNames() );
+	}
+
+	@Override
+	public String resolveColumnName(int position) {
+		try {
+			return getMetaData().getColumnName( position );
+		}
+		catch (SQLException e) {
+			throw new HibernateException( e );
+		}
+	}
+
+	/**
+	 * @see ResultSetAdaptor#resolveType(int, JavaType, SessionFactoryImplementor)
+	 */
+	@Override
+	public <J> BasicType<J> resolveType(int position, JavaType<J> explicitJavaType, SessionFactoryImplementor sessionFactory) {
+		final TypeConfiguration typeConfiguration = sessionFactory.getTypeConfiguration();
+		final JdbcServices jdbcServices = sessionFactory.getJdbcServices();
+		try {
+			final ResultSetMetaData metaData = getMetaData();
+			final String columnTypeName = metaData.getColumnTypeName( position );
+			final int columnType = metaData.getColumnType( position );
+			final int scale = metaData.getScale( position );
+			final int precision = metaData.getPrecision( position );
+			final int displaySize = metaData.getColumnDisplaySize( position );
+			final Dialect dialect = jdbcServices.getDialect();
+			final int length = dialect.resolveSqlTypeLength(
+					columnTypeName,
+					columnType,
+					precision,
+					scale,
+					displaySize
+			);
+			final JdbcType resolvedJdbcType = dialect
+					.resolveSqlTypeDescriptor(
+							columnTypeName,
+							columnType,
+							length,
+							scale,
+							typeConfiguration.getJdbcTypeRegistry()
+					);
+			final JavaType<J> javaType;
+			final JdbcType jdbcType;
+			// If there is an explicit JavaType, then prefer its recommended JDBC type
+			if ( explicitJavaType != null ) {
+				javaType = explicitJavaType;
+				jdbcType = explicitJavaType.getRecommendedJdbcType(
+						new JdbcTypeIndicators() {
+							@Override
+							public TypeConfiguration getTypeConfiguration() {
+								return typeConfiguration;
+							}
+
+							@Override
+							public long getColumnLength() {
+								return length;
+							}
+
+							@Override
+							public int getColumnPrecision() {
+								return precision;
+							}
+
+							@Override
+							public int getColumnScale() {
+								return scale;
+							}
+
+							@Override
+							public EnumType getEnumeratedType() {
+								return resolvedJdbcType.isNumber() ? EnumType.ORDINAL : EnumType.STRING;
+							}
+						}
+				);
+			}
+			else {
+				jdbcType = resolvedJdbcType;
+				javaType = jdbcType.getJdbcRecommendedJavaTypeMapping(
+						length,
+						scale,
+						typeConfiguration
+				);
+			}
+			return typeConfiguration.getBasicTypeRegistry().resolve( javaType, jdbcType );
+		}
+		catch (SQLException e) {
+			throw jdbcServices.getSqlExceptionHelper().convert(
+					e,
+					"Unable to determine JDBC type code for ResultSet position " + position
+			);
+		}
+	}
 }
