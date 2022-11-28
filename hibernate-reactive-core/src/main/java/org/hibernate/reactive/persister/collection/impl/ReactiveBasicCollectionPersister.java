@@ -17,6 +17,7 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.spi.CollectionLoader;
@@ -25,6 +26,7 @@ import org.hibernate.persister.collection.BasicCollectionPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoader;
+import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderSubSelectFetch;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
@@ -51,6 +53,16 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	@Override
 	protected CollectionLoader createCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
 		return createReactiveCollectionLoader( loadQueryInfluencers );
+	}
+
+	@Override
+	protected CollectionLoader createSubSelectLoader(SubselectFetch subselect, SharedSessionContractImplementor session) {
+		return new ReactiveCollectionLoaderSubSelectFetch(
+				getAttributeMapping(),
+				null,
+				subselect,
+				session
+		);
 	}
 
 	@Override
