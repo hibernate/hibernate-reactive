@@ -9,7 +9,6 @@ import io.vertx.ext.unit.TestContext;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -23,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 /**
  * Tests @{@link ElementCollection} on a {@link java.util.Set} of basic types.
