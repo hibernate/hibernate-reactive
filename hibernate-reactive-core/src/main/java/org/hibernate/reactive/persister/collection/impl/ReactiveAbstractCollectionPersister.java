@@ -16,10 +16,14 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.HibernateException;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.exception.spi.SQLExceptionConverter;
 import org.hibernate.jdbc.Expectation;
+import org.hibernate.loader.ast.spi.CollectionLoader;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderBatchKey;
+import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderSingleKey;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -39,6 +43,15 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
 
     default ReactiveConnection getReactiveConnection(SharedSessionContractImplementor session) {
         return ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
+    }
+
+    default CollectionLoader createReactiveCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
+        final int batchSize = getBatchSize();
+        if ( batchSize > 1 ) {
+            return new ReactiveCollectionLoaderBatchKey( getAttributeMapping(), batchSize, loadQueryInfluencers, getFactory() );
+        }
+
+        return new ReactiveCollectionLoaderSingleKey( getAttributeMapping(), loadQueryInfluencers, getFactory() );
     }
 
     /**

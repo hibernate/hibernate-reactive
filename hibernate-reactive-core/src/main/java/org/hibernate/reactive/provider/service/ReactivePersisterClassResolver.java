@@ -5,12 +5,12 @@
  */
 package org.hibernate.reactive.provider.service;
 
-import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.internal.StandardPersisterClassResolver;
 import org.hibernate.persister.spi.PersisterClassResolver;
+import org.hibernate.reactive.persister.collection.impl.ReactiveBasicCollectionPersister;
 import org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveJoinedSubclassEntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveSingleTableEntityPersister;
@@ -47,7 +47,6 @@ public class ReactivePersisterClassResolver extends StandardPersisterClassResolv
 	}
 
 	private Class<? extends CollectionPersister> elementCollectionPersister() {
-		throw new NotYetImplementedException("TODO");
-//		return ReactiveBasicCollectionPersister.class;
+		return ReactiveBasicCollectionPersister.class;
 	}
 }

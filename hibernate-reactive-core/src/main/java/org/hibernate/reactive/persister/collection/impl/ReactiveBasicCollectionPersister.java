@@ -11,19 +11,22 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.MappingException;
-import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
+import org.hibernate.loader.ast.spi.CollectionLoader;
 import org.hibernate.mapping.Collection;
 import org.hibernate.persister.collection.BasicCollectionPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoader;
 import org.hibernate.reactive.pool.impl.Parameters;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import static org.hibernate.jdbc.Expectations.appropriateExpectation;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -32,8 +35,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 /**
  * A reactive {@link BasicCollectionPersister}
  */
-public class ReactiveBasicCollectionPersister extends BasicCollectionPersister
-		implements ReactiveAbstractCollectionPersister {
+public class ReactiveBasicCollectionPersister extends BasicCollectionPersister implements ReactiveAbstractCollectionPersister {
 
 	private Parameters parameters() {
 		return Parameters.instance( getFactory().getJdbcServices().getDialect() );
@@ -47,35 +49,16 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInitialize(Object key, SharedSessionContractImplementor session) {
-		// FIXME: [ORM6]
-		throw new NotYetImplementedFor6Exception();
-//		return getAppropriateInitializer( key, session ).reactiveInitialize( key, session );
+	protected CollectionLoader createCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
+		return createReactiveCollectionLoader( loadQueryInfluencers );
 	}
 
-//	@Override
-//	protected ReactiveCollectionInitializer createCollectionInitializer(LoadQueryInfluencers loadQueryInfluencers) {
-//		return ReactiveBatchingCollectionInitializerBuilder.getBuilder( getFactory() )
-//				.createBatchingCollectionInitializer( this, batchSize, getFactory(), loadQueryInfluencers );
-//	}
-//
-//	@Override
-//	protected ReactiveCollectionInitializer createSubselectInitializer(SubselectFetch subselect, SharedSessionContractImplementor session) {
-//		return new ReactiveSubselectCollectionLoader(
-//				this,
-//				subselect.toSubselectString( getCollectionType().getLHSPropertyName() ),
-//				subselect.getResult(),
-//				subselect.getQueryParameters(),
-//				subselect.getNamedParameterLocMap(),
-//				session.getFactory(),
-//				session.getLoadQueryInfluencers()
-//		);
-//	}
-//
-//	protected ReactiveCollectionInitializer getAppropriateInitializer(Object key, SharedSessionContractImplementor session) {
-//		return (ReactiveCollectionInitializer) super.getAppropriateInitializer(key, session);
-//	}
-
+	@Override
+	public CompletionStage<Void> reactiveInitialize(Object key, SharedSessionContractImplementor session) {
+		return ( (ReactiveCollectionLoader) determineLoaderToUse( key, session ) )
+				.reactiveLoad( key, session )
+				.thenCompose( CompletionStages::voidFuture );
+	}
 
 	@Override
 	public boolean isRowDeleteEnabled() {
