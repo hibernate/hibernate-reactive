@@ -1272,7 +1272,7 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 
 	@Override
 	public int resolveColumnPosition(String columnName) {
-		int index = 0;
+		int index = 1; // Same as JDBC positioning
 		for ( String column : rows.columnsNames() ) {
 			if ( column.equals( columnName ) ) {
 				return index;
