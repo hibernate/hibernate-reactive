@@ -14,6 +14,7 @@ import io.vertx.core.Context;
 import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,7 +68,8 @@ public class VertxEventLoopThreadTest extends BaseReactiveTest {
 				} ) ) );
 	}
 
-	@Entity
+	@Entity(name = "Boardgame")
+	@Table(name = "Boardgame")
 	static class Boardgame {
 		@Id
 		String name;
