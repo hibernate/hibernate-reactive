@@ -521,7 +521,7 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
+	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
 		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping, affectedEntities ) );
 	}
 

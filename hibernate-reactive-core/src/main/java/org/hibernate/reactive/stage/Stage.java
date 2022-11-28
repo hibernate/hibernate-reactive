@@ -1682,7 +1682,7 @@ public interface Stage {
 		 * @see #getResultSetMapping(Class, String)
 		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, String)
 		 */
-		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
+		<R> NativeQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
 
 		/**
 		 * Create an instance of {@link Query} for the given SQL query string,
@@ -1700,7 +1700,7 @@ public interface Stage {
 		 * @see #getResultSetMapping(Class, String)
 		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, String)
 		 */
-		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities);
+		<R> NativeQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities);
 
 		/**
 		 * Create an instance of {@link Query} for the given SQL query string,
@@ -1718,7 +1718,7 @@ public interface Stage {
 		 *
 		 * @param queryString The SQL select, update, insert, or delete statement
 		 */
-		<R> Query<R> createNativeQuery(String queryString);
+		<R> NativeQuery<R> createNativeQuery(String queryString);
 
 		/**
 		 * Create an instance of {@link Query} for the given SQL query string,
@@ -1740,7 +1740,7 @@ public interface Stage {
 		 * @param queryString The SQL select, update, insert, or delete statement
 		 * @param affectedEntities The entities which are affected by the statement
 		 */
-		<R> Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities);
+		<R> NativeQuery<R> createNativeQuery(String queryString, AffectedEntities affectedEntities);
 
 		/**
 		 * Create an instance of {@link Query} for the given criteria query.
