@@ -12,6 +12,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.MappingException;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.EntityEntry;
@@ -19,6 +20,7 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.id.IdentifierGenerator;
+import org.hibernate.id.IdentityGenerator;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.internal.SingleIdArrayLoadPlan;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
@@ -47,6 +49,13 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 			final RuntimeModelCreationContext creationContext) throws HibernateException {
 		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext );
 		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, creationContext );
+	}
+
+	@Override
+	protected void validateIdentifierGenerator() {
+		if ( super.getIdentifierGenerator() instanceof IdentityGenerator ) {
+			throw new MappingException( "Cannot use identity column key generation with <union-subclass> mapping for: " + getEntityName() );
+		}
 	}
 
 	@Override
