@@ -146,33 +146,33 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String queryString) {
-		return new MutinyQueryImpl<R>( delegate.createReactiveNativeQuery( queryString ), factory );
+	public <R> Mutiny.NativeQuery<R> createNativeQuery(String queryString) {
+		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
-		throw new NotYetImplementedFor6Exception();
+	public <R> Mutiny.NativeQuery<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
+		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, affectedEntities ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-		throw new NotYetImplementedFor6Exception();
+	public <R> Mutiny.NativeQuery<R> createNativeQuery(String queryString, Class<R> resultType) {
+		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
-		throw new NotYetImplementedFor6Exception();
+	public <R> Mutiny.NativeQuery<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
+		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType, affectedEntities ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
-		throw new NotYetImplementedFor6Exception();
+	public <R> Mutiny.NativeQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
+		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
-		throw new NotYetImplementedFor6Exception();
+	public <R> Mutiny.NativeQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
+		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping, affectedEntities ), factory );
 	}
 
 	@Override
