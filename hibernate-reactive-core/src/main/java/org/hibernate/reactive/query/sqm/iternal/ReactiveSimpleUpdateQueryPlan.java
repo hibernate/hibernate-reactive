@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.action.internal.BulkOperationCleanupAction;
-import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.MappingModelExpressible;
@@ -59,7 +58,6 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmUpdate );
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();
-		final JdbcServices jdbcServices = factory.getJdbcServices();
 		SqlAstTranslator<JdbcUpdate> updateTranslator = null;
 		if ( jdbcUpdate == null ) {
 			updateTranslator = createUpdateTranslator( executionContext );
