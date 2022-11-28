@@ -16,7 +16,6 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 /**
  * A reactive {@link org.hibernate.query.spi.NonSelectQueryPlan}
  */
-//FIXME: Maybe it doesn't need to extend NonSelectQueryPlan (just QueryPlan)
 public interface ReactiveNonSelectQueryPlan extends NonSelectQueryPlan {
 
 	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
@@ -27,5 +26,4 @@ public interface ReactiveNonSelectQueryPlan extends NonSelectQueryPlan {
 	}
 
 	CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext);
-
 }

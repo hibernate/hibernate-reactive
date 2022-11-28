@@ -22,7 +22,7 @@ public class NoJdbcConnectionProvider implements ConnectionProvider {
 
 	@Override
 	public Connection getConnection() throws SQLException {
-		throw new SQLException("Not using JDBC");
+		throw new SQLException( "Not using JDBC" );
 	}
 
 	@Override

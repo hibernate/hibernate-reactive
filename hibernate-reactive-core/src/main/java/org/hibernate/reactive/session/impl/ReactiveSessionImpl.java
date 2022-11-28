@@ -575,10 +575,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <R> ReactiveNativeQuery createReactiveNativeQuery(
-			String queryString,
-			Class<R> resultType,
-			AffectedEntities affectedEntities) {
+	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
 		throw new NotYetImplementedFor6Exception();
 	}
 
@@ -588,10 +585,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <R> ReactiveNativeQuery createReactiveNativeQuery(
-			String queryString,
-			ResultSetMapping<R> resultSetMapping,
-			AffectedEntities affectedEntities) {
+	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
 		throw new NotYetImplementedFor6Exception();
 	}
 

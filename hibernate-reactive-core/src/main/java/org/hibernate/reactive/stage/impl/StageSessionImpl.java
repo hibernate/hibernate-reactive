@@ -233,19 +233,21 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public Stage.Session setFlushMode(FlushMode flushMode) {
-		switch (flushMode) {
+		switch ( flushMode ) {
 			case COMMIT:
-				delegate.setHibernateFlushMode(org.hibernate.FlushMode.COMMIT);
+				delegate.setHibernateFlushMode( org.hibernate.FlushMode.COMMIT );
 				break;
 			case AUTO:
-				delegate.setHibernateFlushMode(org.hibernate.FlushMode.AUTO);
+				delegate.setHibernateFlushMode( org.hibernate.FlushMode.AUTO );
 				break;
 			case MANUAL:
-				delegate.setHibernateFlushMode(org.hibernate.FlushMode.MANUAL);
+				delegate.setHibernateFlushMode( org.hibernate.FlushMode.MANUAL );
 				break;
 			case ALWAYS:
-				delegate.setHibernateFlushMode(org.hibernate.FlushMode.ALWAYS);
+				delegate.setHibernateFlushMode( org.hibernate.FlushMode.ALWAYS );
 				break;
+			default:
+				throw new IllegalArgumentException( "Unsupported flushMode: " + flushMode );
 		}
 		return this;
 	}

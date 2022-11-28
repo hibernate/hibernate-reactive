@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.action.internal.BulkOperationCleanupAction;
-import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.EntityMappingType;
@@ -58,8 +57,6 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 	private SqmDeleteStatement<?> sqmDelete;
 	private DomainParameterXref domainParameterXref;
 
-	private SqmTranslation<DeleteStatement> sqmInterpretation;
-
 	private Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<List<JdbcParameter>>>> jdbcParamsXref;
 
 	public ReactiveSimpleDeleteQueryPlan(
@@ -77,11 +74,14 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmDelete );
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();
-		final JdbcServices jdbcServices = factory.getJdbcServices();
 		SqlAstTranslator<JdbcDelete> deleteTranslator = null;
 		if ( jdbcDelete == null ) {
 			deleteTranslator = createDeleteTranslator( executionContext );
 		}
+
+		// FIXME: These is ugly, but they are both initialized in `super.createDeleteTranslator`
+		SqmTranslation<DeleteStatement> sqmInterpretation = getSqmInterpretation();
+		Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<List<JdbcParameter>>>> jdbcParamsXref1 = getJdbcParamsXref();
 
 		final JdbcParameterBindings jdbcParameterBindings = SqmUtil.createJdbcParameterBindings(
 				executionContext.getQueryParameterBindings(),
@@ -163,7 +163,7 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 
 		// FIXME: Should we get this from the service registry like ORM?
 		return StandardReactiveMutationExecutor.INSTANCE
-				.execute(
+				.executeReactiveUpdate(
 						jdbcDelete,
 						jdbcParameterBindings,
 						session.getJdbcCoordinator().getStatementPreparer()::prepareStatement,
