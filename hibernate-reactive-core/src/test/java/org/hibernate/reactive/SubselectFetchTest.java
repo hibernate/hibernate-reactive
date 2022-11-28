@@ -6,13 +6,13 @@
 package org.hibernate.reactive;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.cfg.Configuration;
 
 import org.junit.Test;
 
@@ -35,20 +35,15 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 
-
 public class SubselectFetchTest extends BaseReactiveTest {
 
 	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( Node.class );
-		configuration.addAnnotatedClass( Element.class );
-		return configuration;
+	protected Collection<Class<?>> annotatedEntities() {
+		return List.of( Element.class, Node.class );
 	}
 
 	@Test
 	public void testQuery(TestContext context) {
-
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
 		basik.elements.add( new Element( basik ) );
