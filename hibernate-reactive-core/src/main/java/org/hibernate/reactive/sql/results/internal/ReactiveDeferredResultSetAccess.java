@@ -8,6 +8,7 @@ package org.hibernate.reactive.sql.results.internal;
 import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -27,6 +28,7 @@ import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.jdbc.internal.DeferredResultSetAccess;
+import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
@@ -63,6 +65,48 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 			resultSetStage = executeQuery();
 		}
 		return resultSetStage;
+	}
+
+	@Override
+	public int getColumnCount() {
+		throw LOG.nonReactiveMethodCall( "getReactiveColumnCount" );
+	}
+
+	public CompletionStage<Integer> getReactiveColumnCount() {
+		return getReactiveResultSet()
+				.thenApply( ReactiveDeferredResultSetAccess::columnCount );
+	}
+
+	public CompletionStage<JdbcValuesMetadata> resolveJdbcValueMetadata() {
+		return getReactiveResultSet()
+				.thenApply( resultSet -> convertToMetadata( resultSet) );
+	}
+
+	private JdbcValuesMetadata convertToMetadata(ResultSet resultSet) {
+		return (JdbcValuesMetadata) resultSet;
+	}
+
+	@Override
+	public CompletionStage<ResultSetMetaData> getReactiveMetadata() {
+		return getReactiveResultSet().thenApply( this::reactiveMetadata );
+	}
+
+	private ResultSetMetaData reactiveMetadata(ResultSet resultSet) {
+		try {
+			return resultSet.getMetaData();
+		}
+		catch (SQLException e) {
+			throw new RuntimeException( e );
+		}
+	}
+
+	private static int columnCount(ResultSet resultSet) {
+		try {
+			return resultSet.getMetaData().getColumnCount();
+		}
+		catch (SQLException e) {
+			throw new RuntimeException( e );
+		}
 	}
 
 	private CompletionStage<ResultSet> executeQuery() {

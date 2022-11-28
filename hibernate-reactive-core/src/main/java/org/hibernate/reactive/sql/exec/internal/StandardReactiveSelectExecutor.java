@@ -31,6 +31,7 @@ import org.hibernate.reactive.sql.results.internal.ReactiveDeferredResultSetAcce
 import org.hibernate.reactive.sql.results.internal.ReactiveResultSetAccess;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.sql.results.spi.ReactiveResultsConsumer;
+import org.hibernate.reactive.sql.results.spi.ReactiveValuesMappingProducer;
 import org.hibernate.sql.exec.SqlExecLogger;
 import org.hibernate.sql.exec.internal.JdbcExecHelper;
 import org.hibernate.sql.exec.spi.ExecutionContext;
@@ -41,8 +42,6 @@ import org.hibernate.sql.results.internal.ResultsHelper;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 import org.hibernate.sql.results.internal.RowTransformerTupleTransformerAdapter;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesSourceProcessingStateStandardImpl;
-import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
-import org.hibernate.sql.results.jdbc.spi.JdbcValuesMappingProducer;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 import org.hibernate.sql.results.spi.RowReader;
@@ -122,7 +121,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			JdbcSelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
-			RowTransformer<R> rowTransformer,
+			RowTransformer<R> transformer,
 			Class<R> domainResultType,
 			Function<String, PreparedStatement> statementCreator,
 			ReactiveResultsConsumer<T, R> resultsConsumer) {
@@ -134,17 +133,91 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 				statementCreator
 		);
 
-		final ReactiveValuesResultSet jdbcValues = resolveJdbcValuesSource(
+		return resolveJdbcValuesSource(
 				executionContext.getQueryIdentifier( deferredResultSetAccess.getFinalSql() ),
 				jdbcSelect,
 				resultsConsumer.canResultsBeCached(),
 				executionContext,
-				deferredResultSetAccess
-		);
+				deferredResultSetAccess )
+				.thenCompose( jdbcValues -> {
+					final RowTransformer<R> rowTransformer = rowTransformer( executionContext, transformer, jdbcValues );
+					final Statistics statistics = new Statistics( executionContext, jdbcValues );
 
+					/*
+					 * Processing options effectively are only used for entity loading.  Here we don't need these values.
+					 */
+					final JdbcValuesSourceProcessingOptions processingOptions = new JdbcValuesSourceProcessingOptions() {
+						@Override
+						public Object getEffectiveOptionalObject() {
+							return executionContext.getEntityInstance();
+						}
+
+						@Override
+						public String getEffectiveOptionalEntityName() {
+							return null;
+						}
+
+						@Override
+						public Object getEffectiveOptionalId() {
+							return executionContext.getEntityId();
+						}
+
+						@Override
+						public boolean shouldReturnProxies() {
+							return true;
+						}
+					};
+
+					final JdbcValuesSourceProcessingStateStandardImpl valuesProcessingState = new JdbcValuesSourceProcessingStateStandardImpl(
+							executionContext,
+							processingOptions,
+							executionContext::registerLoadingEntityEntry
+					);
+
+					final RowReader<R> rowReader = ResultsHelper.createRowReader(
+							executionContext,
+							// If follow-on locking is used, we must omit the lock options here,
+							// because these lock options are only for Initializers.
+							// If we wouldn't omit this, the follow-on lock requests would be no-ops,
+							// because the EntityEntries would already have the desired lock mode
+							deferredResultSetAccess.usesFollowOnLocking()
+									? LockOptions.NONE
+									: executionContext.getQueryOptions().getLockOptions(),
+							rowTransformer,
+							domainResultType,
+							jdbcValues.getValuesMapping()
+					);
+
+					final ReactiveRowProcessingState rowProcessingState = new ReactiveRowProcessingState(
+							valuesProcessingState,
+							executionContext,
+							rowReader,
+							jdbcValues
+					);
+
+					return resultsConsumer
+							.consume(
+									jdbcValues,
+									executionContext.getSession(),
+									processingOptions,
+									valuesProcessingState,
+									rowProcessingState,
+									rowReader
+							)
+							.thenApply( result -> {
+								statistics.end( jdbcSelect, result );
+								return result;
+							} );
+				} );
+	}
+
+	private static <R> RowTransformer<R> rowTransformer(
+			ExecutionContext executionContext,
+			RowTransformer<R> transformer,
+			ReactiveValuesResultSet jdbcValues) {
+		RowTransformer<R> rowTransformer = transformer;
 		if ( rowTransformer == null ) {
-			@SuppressWarnings("unchecked")
-			final TupleTransformer<R> tupleTransformer = (TupleTransformer<R>) executionContext
+			@SuppressWarnings("unchecked") final TupleTransformer<R> tupleTransformer = (TupleTransformer<R>) executionContext
 					.getQueryOptions()
 					.getTupleTransformer();
 
@@ -152,7 +225,8 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 				rowTransformer = RowTransformerStandardImpl.instance();
 			}
 			else {
-				final List<DomainResult<?>> domainResults = jdbcValues.getValuesMapping().getDomainResults();
+				final List<DomainResult<?>> domainResults = jdbcValues.getValuesMapping()
+						.getDomainResults();
 				final String[] aliases = new String[domainResults.size()];
 				for ( int i = 0; i < domainResults.size(); i++ ) {
 					aliases[i] = domainResults.get( i ).getResultVariable();
@@ -160,78 +234,16 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 				rowTransformer = new RowTransformerTupleTransformerAdapter<>( aliases, tupleTransformer );
 			}
 		}
-
-		final Statistics statistics = new Statistics( executionContext, jdbcValues );
-
-		/*
-		 * Processing options effectively are only used for entity loading.  Here we don't need these values.
-		 */
-		final JdbcValuesSourceProcessingOptions processingOptions = new JdbcValuesSourceProcessingOptions() {
-			@Override
-			public Object getEffectiveOptionalObject() {
-				return executionContext.getEntityInstance();
-			}
-
-			@Override
-			public String getEffectiveOptionalEntityName() {
-				return null;
-			}
-
-			@Override
-			public Object getEffectiveOptionalId() {
-				return executionContext.getEntityId();
-			}
-
-			@Override
-			public boolean shouldReturnProxies() {
-				return true;
-			}
-		};
-
-		final JdbcValuesSourceProcessingStateStandardImpl valuesProcessingState = new JdbcValuesSourceProcessingStateStandardImpl(
-				executionContext,
-				processingOptions,
-				executionContext::registerLoadingEntityEntry
-		);
-
-		final RowReader<R> rowReader = ResultsHelper.createRowReader(
-				executionContext,
-				// If follow-on locking is used, we must omit the lock options here,
-				// because these lock options are only for Initializers.
-				// If we wouldn't omit this, the follow-on lock requests would be no-ops,
-				// because the EntityEntries would already have the desired lock mode
-				deferredResultSetAccess.usesFollowOnLocking()
-						? LockOptions.NONE
-						: executionContext.getQueryOptions().getLockOptions(),
-				rowTransformer,
-				domainResultType,
-				jdbcValues.getValuesMapping()
-		);
-
-		final ReactiveRowProcessingState rowProcessingState = new ReactiveRowProcessingState(
-				valuesProcessingState,
-				executionContext,
-				rowReader,
-				jdbcValues
-		);
-
-		return resultsConsumer
-				.consume( jdbcValues, executionContext.getSession(), processingOptions, valuesProcessingState, rowProcessingState, rowReader )
-				.thenApply( result -> {
-					statistics.end( jdbcSelect, result );
-					return result;
-				} );
+		return rowTransformer;
 	}
 
-	public ReactiveValuesResultSet resolveJdbcValuesSource(String queryIdentifier, JdbcSelect jdbcSelect, boolean canBeCached, ExecutionContext executionContext, ReactiveResultSetAccess resultSetAccess) {
+	public CompletionStage<ReactiveValuesResultSet> resolveJdbcValuesSource(String queryIdentifier, JdbcSelect jdbcSelect, boolean canBeCached, ExecutionContext executionContext, ReactiveResultSetAccess resultSetAccess) {
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();
 		final boolean queryCacheEnabled = factory.getSessionFactoryOptions().isQueryCacheEnabled();
 
 		final List<?> cachedResults;
 		final CacheMode cacheMode = JdbcExecHelper.resolveCacheMode( executionContext );
-
-		final JdbcValuesMappingProducer mappingProducer = jdbcSelect.getJdbcValuesMappingProducer();
 		final boolean cacheable = queryCacheEnabled
 				&& canBeCached
 				&& executionContext.getQueryOptions().isResultCachingEnabled() == Boolean.TRUE;
@@ -296,21 +308,21 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			}
 		}
 
+		ReactiveValuesMappingProducer mappingProducer = (ReactiveValuesMappingProducer) jdbcSelect.getJdbcValuesMappingProducer();
 		if ( cachedResults == null ) {
-			final JdbcValuesMetadata metadataForCache;
-			final JdbcValuesMapping jdbcValuesMapping;
 			if ( queryResultsCacheKey == null ) {
-				jdbcValuesMapping = mappingProducer.resolve( resultSetAccess, factory );
-				metadataForCache = null;
+				return mappingProducer
+						.reactiveResolve( resultSetAccess, factory )
+						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet( resultSetAccess, null, queryIdentifier, executionContext.getQueryOptions(), jdbcValuesMapping, null, executionContext ) );
 			}
 			else {
 				// If we need to put the values into the cache, we need to be able to capture the JdbcValuesMetadata
 				final CapturingJdbcValuesMetadata capturingMetadata = new CapturingJdbcValuesMetadata( resultSetAccess );
-				jdbcValuesMapping = mappingProducer.resolve( capturingMetadata, factory );
-				metadataForCache = capturingMetadata.resolveMetadataForCache();
+				JdbcValuesMetadata metadataForCache = capturingMetadata.resolveMetadataForCache();
+				return mappingProducer
+						.reactiveResolve( resultSetAccess, factory )
+						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet( resultSetAccess, queryResultsCacheKey, queryIdentifier, executionContext.getQueryOptions(), jdbcValuesMapping, metadataForCache, executionContext ) );
 			}
-
-			return new ReactiveValuesResultSet( resultSetAccess, queryResultsCacheKey, queryIdentifier, executionContext.getQueryOptions(), jdbcValuesMapping, metadataForCache, executionContext );
 		}
 		else {
 			throw new NotYetImplementedFor6Exception();
