@@ -80,7 +80,8 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 	}
 
 	@Override
-	public void close() {}
+	public void close() {
+	}
 
 	@Override
 	public boolean wasNull() {
@@ -90,12 +91,12 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 	@Override
 	public String getString(int columnIndex) {
 		String string = row.getString( columnIndex - 1 );
-		return (wasNull=string==null) ? null : string;
+		return ( wasNull = string == null ) ? null : string;
 	}
 
 	@Override
 	public boolean getBoolean(int columnIndex) {
-		Boolean bool = row.getBoolean(columnIndex - 1);
+		Boolean bool = row.getBoolean( columnIndex - 1 );
 		wasNull = bool == null;
 		return !wasNull && bool;
 	}
@@ -157,19 +158,19 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 	@Override
 	public Date getDate(int columnIndex) {
 		LocalDate localDate = row.getLocalDate( columnIndex - 1 );
-		return (wasNull=localDate==null) ? null : Date.valueOf(localDate);
+		return ( wasNull = localDate == null ) ? null : Date.valueOf( localDate );
 	}
 
 	@Override
 	public Time getTime(int columnIndex) {
-		LocalTime localTime = row.getLocalTime( columnIndex - 1);
-		return (wasNull=localTime==null) ? null : Time.valueOf(localTime);
+		LocalTime localTime = row.getLocalTime( columnIndex - 1 );
+		return ( wasNull = localTime == null ) ? null : Time.valueOf( localTime );
 	}
 
 	@Override
 	public Time getTime(int columnIndex, Calendar cal) {
 		LocalTime localTime = row.getLocalTime( columnIndex - 1 );
-		return (wasNull=localTime==null) ? null : Time.valueOf(localTime);
+		return ( wasNull = localTime == null ) ? null : Time.valueOf( localTime );
 	}
 
 
@@ -190,8 +191,8 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 
 	@Override
 	public String getString(String columnLabel) {
-		String string = row.getString(columnLabel);
-		return (wasNull=string==null) ? null : string;
+		String string = row.getString( columnLabel );
+		return ( wasNull = string == null ) ? null : string;
 	}
 
 	@Override
@@ -238,7 +239,7 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 
 	@Override
 	public long getLong(String columnLabel) {
-		Long aLong = row.getLong(columnLabel);
+		Long aLong = row.getLong( columnLabel );
 		wasNull = aLong == null;
 		return wasNull ? 0 : aLong;
 	}
@@ -271,14 +272,14 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 
 	@Override
 	public Date getDate(String columnLabel) {
-		LocalDate localDate = row.getLocalDate(columnLabel);
-		return (wasNull=localDate==null) ? null : Date.valueOf(localDate);
+		LocalDate localDate = row.getLocalDate( columnLabel );
+		return ( wasNull = localDate == null ) ? null : Date.valueOf( localDate );
 	}
 
 	@Override
 	public Time getTime(String columnLabel) {
-		LocalTime localTime = row.getLocalTime(columnLabel);
-		return (wasNull=localTime==null) ? null : Time.valueOf(localTime);
+		LocalTime localTime = row.getLocalTime( columnLabel );
+		return ( wasNull = localTime == null ) ? null : Time.valueOf( localTime );
 	}
 
 	@Override
@@ -335,14 +336,14 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 
 	@Override
 	public <T> T getObject(int columnIndex, Class<T> type) {
-		T object = row.get(type, columnIndex - 1);
-		return (wasNull=object==null) ? null : object;
+		T object = row.get( type, columnIndex - 1 );
+		return ( wasNull = object == null ) ? null : object;
 	}
 
 	@Override
 	public <T> T getObject(String columnLabel, Class<T> type) {
-		T object = row.get( type, row.getColumnIndex(columnLabel) );
-		return (wasNull=object==null) ? null : object;
+		T object = row.get( type, row.getColumnIndex( columnLabel ) );
+		return ( wasNull = object == null ) ? null : object;
 	}
 
 	@Override
@@ -361,7 +362,8 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 	}
 
 	@Override
-	public void clearWarnings() {}
+	public void clearWarnings() {
+	}
 
 	@Override
 	public String getCursorName() {
@@ -384,12 +386,12 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 
 			@Override
 			public String getColumnLabel(int column) {
-				return rows.columnsNames().get(column-1);
+				return rows.columnsNames().get( column - 1 );
 			}
 
 			@Override
 			public String getColumnName(int column) {
-				return rows.columnsNames().get(column-1);
+				return rows.columnsNames().get( column - 1 );
 			}
 
 			@Override
@@ -494,35 +496,36 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 	@Override
 	public Object getObject(int columnIndex) {
 		Object object = row.getValue( columnIndex - 1 );
-		return (wasNull=object==null) ? null : object;
+		return ( wasNull = object == null ) ? null : object;
 	}
 
 	@Override
 	public Object getObject(String columnLabel) {
 		Object object = row.getValue( columnLabel );
-		return (wasNull=object==null) ? null : object;
+		return ( wasNull = object == null ) ? null : object;
 	}
 
 	@Override
 	public int findColumn(String columnLabel) {
-		return rows.columnsNames().indexOf(columnLabel)+1;
+		return rows.columnsNames().indexOf( columnLabel ) + 1;
 //		return row.getColumnIndex( columnLabel );
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex) {
-		BigDecimal decimal = row.getBigDecimal(columnIndex - 1);
-		return (wasNull=decimal==null) ? null : decimal;
+		BigDecimal decimal = row.getBigDecimal( columnIndex - 1 );
+		return ( wasNull = decimal == null ) ? null : decimal;
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(String columnLabel) {
-		BigDecimal decimal = row.getBigDecimal(columnLabel);
-		return (wasNull=decimal==null) ? null : decimal;
+		BigDecimal decimal = row.getBigDecimal( columnLabel );
+		return ( wasNull = decimal == null ) ? null : decimal;
 	}
 
 	@Override
-	public void setFetchDirection(int direction) {}
+	public void setFetchDirection(int direction) {
+	}
 
 	@Override
 	public int getFetchDirection() {
@@ -530,7 +533,8 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 	}
 
 	@Override
-	public void setFetchSize(int rows) {}
+	public void setFetchSize(int rows) {
+	}
 
 	@Override
 	public int getFetchSize() {
@@ -740,7 +744,7 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 
 	@Override
 	public Blob getBlob(String columnLabel) {
-		Blob blob = blob( row -> row.getValue( columnLabel), row -> row.getBuffer(columnLabel) );
+		Blob blob = blob( row -> row.getValue( columnLabel ), row -> row.getBuffer( columnLabel ) );
 		wasNull = blob == null;
 		return blob;
 	}
@@ -803,12 +807,12 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 
 	@Override
 	public String getNString(int columnIndex) {
-		return getString(columnIndex);
+		return getString( columnIndex );
 	}
 
 	@Override
 	public String getNString(String columnLabel) {
-		return getString(columnLabel);
+		return getString( columnLabel );
 	}
 
 	@Override
@@ -1292,7 +1296,10 @@ public class ResultSetAdaptor implements ResultSet, JdbcValuesMetadata {
 	 * @see ResultSetAdaptor#resolveType(int, JavaType, SessionFactoryImplementor)
 	 */
 	@Override
-	public <J> BasicType<J> resolveType(int position, JavaType<J> explicitJavaType, SessionFactoryImplementor sessionFactory) {
+	public <J> BasicType<J> resolveType(
+			int position,
+			JavaType<J> explicitJavaType,
+			SessionFactoryImplementor sessionFactory) {
 		final TypeConfiguration typeConfiguration = sessionFactory.getTypeConfiguration();
 		final JdbcServices jdbcServices = sessionFactory.getJdbcServices();
 		try {
