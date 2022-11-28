@@ -55,7 +55,7 @@ public class UTCTest extends BaseReactiveTest {
 
 		testField(
 				context,
-				"dateType",
+				"date",
 				thing::getDate,
 				entity -> context.assertEquals( thing.date, entity.date )
 		);
@@ -67,7 +67,7 @@ public class UTCTest extends BaseReactiveTest {
 
 		testField(
 				context,
-				"calendarType",
+				"calendar",
 				thing::getCalendar,
 				entity -> context.assertEquals( thing.calendar.toInstant(), entity.calendar.toInstant() )
 		);
@@ -79,7 +79,7 @@ public class UTCTest extends BaseReactiveTest {
 
 		testField(
 				context,
-				"localDateType",
+				"localDate",
 				thing::getLocalDate,
 				entity -> context.assertEquals( thing.localDate, entity.localDate )
 		);
@@ -91,7 +91,7 @@ public class UTCTest extends BaseReactiveTest {
 
 		testField(
 				context,
-				"localTimeType",
+				"localTime",
 				thing::getLocalTime,
 				entity -> context.assertEquals( thing.localTime, entity.localTime )
 		);
@@ -104,7 +104,7 @@ public class UTCTest extends BaseReactiveTest {
 
 		testField(
 				context,
-				"localDateTimeType",
+				"localDateTime",
 				thing::getLocalDateTime,
 				entity -> context.assertEquals( thing.localDateTime, entity.localDateTime )
 		);
@@ -118,7 +118,7 @@ public class UTCTest extends BaseReactiveTest {
 
 		testField(
 				context,
-				"offsetDateTimeType",
+				"offsetDateTime",
 				thing::getOffsetDateTime,
 				entity -> {
 					context.assertEquals( thing.offsetDateTime,
@@ -132,9 +132,10 @@ public class UTCTest extends BaseReactiveTest {
 		thing.offsetTime = OffsetTime.now( ZoneOffset.ofHours( 7 ) )
 				.truncatedTo( ChronoUnit.SECONDS );
 
+		System.out.println( this.thing.offsetTime );
 		testField(
 				context,
-				"offsetTimeType",
+				"offsetTime",
 				thing::getOffsetTime,
 				entity -> context.assertEquals( thing.offsetTime.toLocalTime(), entity.offsetTime.toLocalTime() )
 		);
@@ -147,7 +148,7 @@ public class UTCTest extends BaseReactiveTest {
 
 		testField(
 				context,
-				"zonedDateTimeType",
+				"zonedDateTime",
 				thing::getZonedDateTime,
 				// The equals fails on JDK 15+ without the truncated
 				entity -> context.assertEquals(
