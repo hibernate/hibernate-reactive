@@ -129,15 +129,20 @@ public class UTCTest extends BaseReactiveTest {
 
 	@Test
 	public void testOffsetTime(TestContext context) {
-		thing.offsetTime = OffsetTime.now( ZoneOffset.ofHours( 7 ) )
+		thing.offsetTime = OffsetTime
+				.now( ZoneOffset.ofHours( 7 ) )
 				.truncatedTo( ChronoUnit.SECONDS );
 
-		System.out.println( this.thing.offsetTime );
 		testField(
 				context,
 				"offsetTime",
 				thing::getOffsetTime,
-				entity -> context.assertEquals( thing.offsetTime.toLocalTime(), entity.offsetTime.toLocalTime() )
+				entity -> {
+					// UTC is what we have set as the default with AvailableSettings.JDBC_TIME_ZONE
+					context.assertEquals( ZoneOffset.UTC, entity.offsetTime.getOffset() );
+					context.assertEquals( thing.offsetTime, entity.offsetTime.withOffsetSameInstant( ZoneOffset.ofHours( 7 ) )
+					);
+				}
 		);
 	}
 
