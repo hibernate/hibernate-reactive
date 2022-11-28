@@ -20,8 +20,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
-import org.assertj.core.api.Assertions;
+
 import org.hibernate.reactive.BaseReactiveTest;
+import org.hibernate.type.NumericBooleanConverter;
+import org.hibernate.type.TrueFalseConverter;
+import org.hibernate.type.YesNoConverter;
 import org.hibernate.type.descriptor.java.DataHelper;
 
 import org.junit.Test;
@@ -131,20 +134,17 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 
 	@Test
 	public void testBooleanTrueFalseType(TestContext context) {
-		Assertions.fail( "ORM-6: TODO" );
-//		testDatatype( context, "booleanTrueFalse", TrueFalseType.class );
+		testDatatype( context, "booleanTrueFalse", TrueFalseConverter.class );
 	}
 
 	@Test
 	public void testBooleanYesNoType(TestContext context) {
-		Assertions.fail( "ORM-6: TODO" );
-//		testDatatype( context, "booleanYesNo", YesNoType.class );
+		testDatatype( context, "booleanYesNo", YesNoConverter.class );
 	}
 
 	@Test
 	public void testBooleanNumericType(TestContext context) {
-		Assertions.fail( "ORM-6: TODO" );
-		//testDatatype( context, "booleanNumeric", NumericBooleanType.class );
+		testDatatype( context, "booleanNumeric", NumericBooleanConverter.class );
 	}
 
 	@Test
@@ -154,8 +154,7 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 
 	@Test
 	public void testBytesPrimitiveType(TestContext context) {
-		Assertions.fail( "ORM-6: TODO" );
-	//		testDatatype( context, "primitiveBytes", PrimitiveByteArrayTypeDescriptor.class );
+		testDatatype( context, "primitiveBytes", byte[].class );
 	}
 
 	@Test
