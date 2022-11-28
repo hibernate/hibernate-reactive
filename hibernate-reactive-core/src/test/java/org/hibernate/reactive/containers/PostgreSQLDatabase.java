@@ -24,6 +24,10 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import org.hibernate.type.NumericBooleanConverter;
+import org.hibernate.type.TrueFalseConverter;
+import org.hibernate.type.YesNoConverter;
+
 import org.testcontainers.containers.PostgreSQLContainer;
 
 class PostgreSQLDatabase implements TestableDatabase {
@@ -36,11 +40,10 @@ class PostgreSQLDatabase implements TestableDatabase {
 			expectedDBTypeForClass.put( boolean.class, "boolean" );
 			expectedDBTypeForClass.put( Boolean.class, "boolean" );
 
-			// FIXME: [ORM-6] Check if we need alternatives
-			// expectedDBTypeForClass.put( NumericBooleanType.class, "integer" );
-			// expectedDBTypeForClass.put( TrueFalseType.class, "character" );
-			// expectedDBTypeForClass.put( YesNoType.class, "character" );
-			// expectedDBTypeForClass.put( PrimitiveByteArrayTypeDescriptor.class, "bytea" );
+			expectedDBTypeForClass.put( NumericBooleanConverter.class, "integer" );
+			expectedDBTypeForClass.put( YesNoConverter.class, "character" );
+			expectedDBTypeForClass.put( TrueFalseConverter.class, "character" );
+			expectedDBTypeForClass.put( byte[].class, "bytea" );
 			// expectedDBTypeForClass.put( TextType.class, "text" );
 
 			expectedDBTypeForClass.put( int.class, "integer" );
