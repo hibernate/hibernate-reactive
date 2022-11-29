@@ -41,9 +41,11 @@ import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.from.MutatingTableReferenceGroupWrapper;
 import org.hibernate.sql.ast.tree.predicate.InSubQueryPredicate;
 import org.hibernate.sql.ast.tree.select.QuerySpec;
-import org.hibernate.sql.exec.spi.JdbcDelete;
+import org.hibernate.sql.exec.spi.JdbcOperationQueryDelete;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.internal.SqlSelectionImpl;
+
+;
 
 /**
  * @see
@@ -52,7 +54,7 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	private JdbcDelete jdbcDelete;
+	private JdbcOperationQueryDelete jdbcDelete;
 	private EntityMappingType entityDescriptor;
 	private SqmDeleteStatement<?> sqmDelete;
 	private DomainParameterXref domainParameterXref;
@@ -74,7 +76,7 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmDelete );
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();
-		SqlAstTranslator<JdbcDelete> deleteTranslator = null;
+		SqlAstTranslator<JdbcOperationQueryDelete> deleteTranslator = null;
 		if ( jdbcDelete == null ) {
 			deleteTranslator = createDeleteTranslator( executionContext );
 		}

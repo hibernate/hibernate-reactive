@@ -13,7 +13,7 @@ import org.hibernate.sql.ast.spi.StandardSqlAstTranslator;
 import org.hibernate.sql.ast.tree.Statement;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcOperation;
-import org.hibernate.sql.exec.spi.JdbcSelect;
+import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 
 import static org.hibernate.sql.ast.SqlTreePrinter.logSqlAst;
 import static org.hibernate.sql.results.graph.DomainResultGraphPrinter.logDomainResultGraph;
@@ -25,7 +25,7 @@ public class ReactiveSqlAstTranslator<T extends JdbcOperation> extends StandardS
 	}
 
 	@Override
-	protected JdbcSelect translateSelect(SelectStatement selectStatement) {
+	protected JdbcOperationQuerySelect translateSelect(SelectStatement selectStatement) {
 		logDomainResultGraph( selectStatement.getDomainResultDescriptors() );
 		logSqlAst( selectStatement );
 

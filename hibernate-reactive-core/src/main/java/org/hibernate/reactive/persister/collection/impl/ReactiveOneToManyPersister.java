@@ -5,8 +5,6 @@
  */
 package org.hibernate.reactive.persister.collection.impl;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -88,36 +86,6 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	@Override
 	public boolean indexContainsFormula() {
 		return super.indexContainsFormula;
-	}
-
-	@Override
-	public int writeElement(PreparedStatement st, Object element, int loc, SharedSessionContractImplementor session)
-			throws SQLException {
-		return super.writeElement(st, element, loc, session);
-	}
-
-	@Override
-	public int writeIndex(PreparedStatement st, Object index, int loc, SharedSessionContractImplementor session)
-			throws SQLException {
-		return super.writeIndex(st, index, loc, session);
-	}
-
-	@Override
-	public int writeKey(PreparedStatement st, Object id, int offset, SharedSessionContractImplementor session)
-			throws SQLException {
-		return super.writeKey(st, id, offset, session);
-	}
-
-	@Override
-	public int writeElementToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
-			throws SQLException {
-		return super.writeElementToWhere(st, entry, loc, session);
-	}
-
-	@Override
-	public int writeIndexToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
-			throws SQLException {
-		return super.writeIndexToWhere(st, entry, loc, session);
 	}
 
 	@Override

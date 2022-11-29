@@ -42,8 +42,8 @@ import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.spi.FromClauseAccess;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
-import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.internal.TupleMetadata;
 import org.hibernate.sql.results.spi.RowTransformer;
 
@@ -91,7 +91,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 			JdbcParameterBindings jdbcParameterBindings,
 			RowTransformer<R> rowTransformer) {
 		final SharedSessionContractImplementor session = executionContext.getSession();
-		final JdbcSelect jdbcSelect = sqmInterpretation.getJdbcSelect();
+		final JdbcOperationQuerySelect jdbcSelect = sqmInterpretation.getJdbcSelect();
 		// I'm using a supplier so that the whenComplete at the end will catch any errors, like a finally block
 		Supplier<SubselectFetch.RegistrationHandler> fetchHandlerSupplier = () -> SubselectFetch
 				.createRegistrationHandler( session.getPersistenceContext().getBatchFetchQueue(), sqmInterpretation.selectStatement, emptyList(), jdbcParameterBindings );
@@ -217,7 +217,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 		final JdbcServices jdbcServices = sessionFactory.getJdbcServices();
 		final JdbcEnvironment jdbcEnvironment = jdbcServices.getJdbcEnvironment();
 		final SqlAstTranslatorFactory sqlAstTranslatorFactory = jdbcEnvironment.getSqlAstTranslatorFactory();
-		final SqlAstTranslator<JdbcSelect> selectTranslator = sqlAstTranslatorFactory
+		final SqlAstTranslator<JdbcOperationQuerySelect> selectTranslator = sqlAstTranslatorFactory
 				.buildSelectTranslator( sessionFactory, sqmInterpretation.getSqlAst() );
 		final Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<List<JdbcParameter>>>> jdbcParamsXref
 				= SqmUtil.generateJdbcParamsXref( domainParameterXref, sqmInterpretation::getJdbcParamsBySqmParam );
@@ -238,7 +238,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 				},
 				session
 		);
-		final JdbcSelect jdbcSelect = selectTranslator.translate(
+		final JdbcOperationQuerySelect jdbcSelect = selectTranslator.translate(
 				jdbcParameterBindings,
 				executionContext.getQueryOptions()
 		);
@@ -263,7 +263,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 
 	private static class CacheableSqmInterpretation {
 		private final SelectStatement selectStatement;
-		private final JdbcSelect jdbcSelect;
+		private final JdbcOperationQuerySelect jdbcSelect;
 		private final FromClauseAccess tableGroupAccess;
 		private final Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<List<JdbcParameter>>>> jdbcParamsXref;
 		private final Map<SqmParameter<?>, MappingModelExpressible<?>> sqmParameterMappingModelTypes;
@@ -271,7 +271,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 
 		CacheableSqmInterpretation(
 				SelectStatement selectStatement,
-				JdbcSelect jdbcSelect,
+				JdbcOperationQuerySelect jdbcSelect,
 				FromClauseAccess tableGroupAccess,
 				Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<List<JdbcParameter>>>> jdbcParamsXref,
 				Map<SqmParameter<?>, MappingModelExpressible<?>> sqmParameterMappingModelTypes,
@@ -288,7 +288,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 			return selectStatement;
 		}
 
-		JdbcSelect getJdbcSelect() {
+		JdbcOperationQuerySelect getJdbcSelect() {
 			return jdbcSelect;
 		}
 

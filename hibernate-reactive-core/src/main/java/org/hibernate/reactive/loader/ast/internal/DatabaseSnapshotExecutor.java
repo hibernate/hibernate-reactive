@@ -41,8 +41,8 @@ import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterImpl;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.ExecutionContext;
+import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
-import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.internal.RowTransformerDatabaseSnapshotImpl;
 import org.hibernate.type.StandardBasicTypes;
@@ -58,7 +58,7 @@ class DatabaseSnapshotExecutor {
 
 	private final EntityMappingType entityDescriptor;
 
-	private final JdbcSelect jdbcSelect;
+	private final JdbcOperationQuerySelect jdbcSelect;
 	private final List<JdbcParameter> jdbcParameters;
 
 	DatabaseSnapshotExecutor(

@@ -10,7 +10,7 @@ import org.hibernate.sql.ast.SqlAstTranslator;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.spi.StandardSqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
-import org.hibernate.sql.exec.spi.JdbcSelect;
+import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 
 public class ReactiveStandardSqlAstTranslatorFactory extends StandardSqlAstTranslatorFactory {
 
@@ -21,7 +21,7 @@ public class ReactiveStandardSqlAstTranslatorFactory extends StandardSqlAstTrans
 	}
 
 	@Override
-	public SqlAstTranslator<JdbcSelect> buildSelectTranslator(SessionFactoryImplementor sessionFactory, SelectStatement statement) {
+	public SqlAstTranslator<JdbcOperationQuerySelect> buildSelectTranslator(SessionFactoryImplementor sessionFactory, SelectStatement statement) {
 		return new ReactiveSqlAstTranslator<>( sessionFactory, statement );
 
 	}
