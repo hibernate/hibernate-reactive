@@ -13,12 +13,12 @@ import org.hibernate.internal.FilterJdbcParameter;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.exec.spi.JdbcLockStrategy;
 import org.hibernate.sql.exec.spi.JdbcOperation;
+import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBinder;
 import org.hibernate.sql.exec.spi.JdbcParameterBinding;
-import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMappingProducer;
 
-public class ReactiveJdbcSelect extends JdbcSelect implements JdbcOperation {
+public class ReactiveJdbcSelect extends JdbcOperationQuerySelect implements JdbcOperation {
 
 	public ReactiveJdbcSelect(
 			String sql,

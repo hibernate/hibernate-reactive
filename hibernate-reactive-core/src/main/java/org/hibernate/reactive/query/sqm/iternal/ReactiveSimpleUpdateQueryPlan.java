@@ -31,8 +31,8 @@ import org.hibernate.sql.ast.SqlAstTranslator;
 import org.hibernate.sql.ast.spi.FromClauseAccess;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.update.UpdateStatement;
+import org.hibernate.sql.exec.spi.JdbcOperationQueryUpdate;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
-import org.hibernate.sql.exec.spi.JdbcUpdate;
 
 
 /**
@@ -43,7 +43,7 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 	private final SqmUpdateStatement<?> sqmUpdate;
 	private final DomainParameterXref domainParameterXref;
 
-	private JdbcUpdate jdbcUpdate;
+	private JdbcOperationQueryUpdate jdbcUpdate;
 	private FromClauseAccess tableGroupAccess;
 	private Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<List<JdbcParameter>>>> jdbcParamsXref;
 	private Map<SqmParameter<?>, MappingModelExpressible<?>> sqmParamMappingTypeResolutions;
@@ -58,7 +58,7 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmUpdate );
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();
-		SqlAstTranslator<JdbcUpdate> updateTranslator = null;
+		SqlAstTranslator<JdbcOperationQueryUpdate> updateTranslator = null;
 		if ( jdbcUpdate == null ) {
 			updateTranslator = createUpdateTranslator( executionContext );
 		}
@@ -107,7 +107,7 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 	}
 
 	// I cna probably change ORM to reuse this
-	private SqlAstTranslator<JdbcUpdate> createUpdateTranslator(DomainQueryExecutionContext executionContext) {
+	private SqlAstTranslator<JdbcOperationQueryUpdate> createUpdateTranslator(DomainQueryExecutionContext executionContext) {
 		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
 		final QueryEngine queryEngine = factory.getQueryEngine();
 

@@ -22,7 +22,7 @@ import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.sql.exec.spi.ReactiveMutationExecutor;
 import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
 import org.hibernate.sql.exec.spi.ExecutionContext;
-import org.hibernate.sql.exec.spi.JdbcMutation;
+import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBinder;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
@@ -35,7 +35,7 @@ public class StandardReactiveMutationExecutor implements ReactiveMutationExecuto
 
 	@Override
 	public CompletionStage<Integer> executeReactiveUpdate(
-			JdbcMutation jdbcMutation,
+			JdbcOperationQueryMutation jdbcMutation,
 			JdbcParameterBindings jdbcParameterBindings,
 			Function<String, PreparedStatement> statementCreator,
 			BiConsumer<Integer, PreparedStatement> expectationCheck,
@@ -73,7 +73,7 @@ public class StandardReactiveMutationExecutor implements ReactiveMutationExecuto
 	}
 
 	private void prepareStatement(
-			JdbcMutation jdbcMutation,
+			JdbcOperationQueryMutation jdbcMutation,
 			PreparedStatement preparedStatement,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext) {
@@ -104,7 +104,7 @@ public class StandardReactiveMutationExecutor implements ReactiveMutationExecuto
 	}
 
 	private static String finalSql(
-			JdbcMutation jdbcMutation,
+			JdbcOperationQueryMutation jdbcMutation,
 			ExecutionContext executionContext,
 			JdbcServices jdbcServices,
 			QueryOptions queryOptions) {

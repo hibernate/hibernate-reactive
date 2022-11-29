@@ -19,6 +19,7 @@ import org.hibernate.id.IdentityGenerator;
 import org.hibernate.id.PostInsertIdentityPersister;
 import org.hibernate.id.insert.IdentifierGeneratingInsert;
 import org.hibernate.id.insert.InsertGeneratedIdentifierDelegate;
+import org.hibernate.id.insert.InsertReturningDelegate;
 import org.hibernate.sql.Insert;
 
 /**
@@ -33,7 +34,7 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 		return new ReactiveInsertAndSelectDelegate( persister, dialect );
 	}
 
-	public static class ReactiveInsertAndSelectDelegate extends InsertSelectDelegate {
+	public static class ReactiveInsertAndSelectDelegate extends InsertReturningDelegate {
 
 		private final PostInsertIdentityPersister persister;
 		private final Dialect dialect;

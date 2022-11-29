@@ -35,8 +35,8 @@ import org.hibernate.reactive.sql.results.spi.ReactiveValuesMappingProducer;
 import org.hibernate.sql.exec.SqlExecLogger;
 import org.hibernate.sql.exec.internal.JdbcExecHelper;
 import org.hibernate.sql.exec.spi.ExecutionContext;
+import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
-import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.internal.ResultsHelper;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
@@ -61,7 +61,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 	}
 
 	public <R> CompletionStage<List<R>> list(
-			JdbcSelect jdbcSelect,
+			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
 			RowTransformer<R> rowTransformer,
@@ -70,7 +70,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 	}
 
 	public <R> CompletionStage<List<R>> list(
-			JdbcSelect jdbcSelect,
+			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
 			RowTransformer<R> rowTransformer,
@@ -92,7 +92,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 
 	@Override
 	public <T, R> CompletionStage<T> executeQuery(
-			JdbcSelect jdbcSelect,
+			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
 			RowTransformer<R> rowTransformer,
@@ -118,7 +118,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 	}
 
 	private <T, R> CompletionStage<T> doExecuteQuery(
-			JdbcSelect jdbcSelect,
+			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
 			RowTransformer<R> transformer,
@@ -237,7 +237,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		return rowTransformer;
 	}
 
-	public CompletionStage<ReactiveValuesResultSet> resolveJdbcValuesSource(String queryIdentifier, JdbcSelect jdbcSelect, boolean canBeCached, ExecutionContext executionContext, ReactiveResultSetAccess resultSetAccess) {
+	public CompletionStage<ReactiveValuesResultSet> resolveJdbcValuesSource(String queryIdentifier, JdbcOperationQuerySelect jdbcSelect, boolean canBeCached, ExecutionContext executionContext, ReactiveResultSetAccess resultSetAccess) {
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();
 		final boolean queryCacheEnabled = factory.getSessionFactoryOptions().isQueryCacheEnabled();
@@ -499,7 +499,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			}
 		}
 
-		public <T> void end(JdbcSelect jdbcSelect, T result) {
+		public <T> void end(JdbcOperationQuerySelect jdbcSelect, T result) {
 			if ( enabled ) {
 				final long endTime = System.nanoTime();
 				final long milliseconds = TimeUnit.MILLISECONDS

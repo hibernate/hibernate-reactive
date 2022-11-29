@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -25,7 +26,8 @@ import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryOptionsAdapter;
 import org.hibernate.query.spi.QueryParameterBindings;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
-import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
+import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
+import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
@@ -34,13 +36,8 @@ import org.hibernate.sql.exec.internal.CallbackImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.ExecutionContext;
+import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
-import org.hibernate.sql.exec.spi.JdbcSelect;
-import org.hibernate.sql.results.spi.ListResultsConsumer;
-
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
-
-// FIXME: not yet reactive
 
 /**
  *
@@ -99,11 +96,36 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 				session
 		);
 		assert offset == jdbcParameters.size();
-		final JdbcSelect jdbcSelect = sqlAstTranslatorFactory.buildSelectTranslator( sessionFactory, sqlAst )
+		final JdbcOperationQuerySelect jdbcSelect = sqlAstTranslatorFactory
+				.buildSelectTranslator( sessionFactory, sqlAst )
 				.translate( jdbcParameterBindings, QueryOptions.NONE );
 
-		ExecutionContext context = new ExecutionContext() {
+		return StandardReactiveSelectExecutor.INSTANCE
+				.list(
+						jdbcSelect,
+						jdbcParameterBindings,
+						listExecutionContext( readOnly, session ),
+						row -> row[0],
+						ReactiveListResultsConsumer.UniqueSemantic.FILTER
+				)
+				.thenApply( list -> singleResult( ukValue, list ) );
+	}
+
+	private T singleResult(Object ukValue, List<Object> list) {
+		switch ( list.size() ) {
+			case 0:
+				return null;
+			case 1:
+				return (T) list.get( 0 );
+			default:
+				throw new HibernateException( "More than one row with the given identifier was found: " + ukValue + ", for class: " + entityDescriptor.getEntityName() );
+		}
+	}
+
+	private static ExecutionContext listExecutionContext(Boolean readOnly, SharedSessionContractImplementor session) {
+		return new ExecutionContext() {
 			private final Callback callback = new CallbackImpl();
+
 			@Override
 			public SharedSessionContractImplementor getSession() {
 				return session;
@@ -135,24 +157,6 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 			}
 
 		};
-
-		String sql = jdbcSelect.getSql();
-		ReactiveQueryExecutorLookup.extract( session ).getReactiveConnection()
-				.selectJdbc( sql, null );
-//
-//		switch ( list.size() ) {
-//			case 0:
-				return nullFuture();
-//			case 1:
-//				//noinspection unchecked
-//				return completedFuture( (T) list.get( 0 ) );
-//		}
-//		throw new HibernateException(
-//				"More than one row with the given identifier was found: " +
-//						ukValue +
-//						", for class: " +
-//						entityDescriptor.getEntityName()
-//		);
 	}
 
 	@Override
@@ -186,45 +190,51 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 				session
 		);
 		assert offset == jdbcParameters.size();
-		final JdbcSelect jdbcSelect = sqlAstTranslatorFactory.buildSelectTranslator( sessionFactory, sqlAst )
+		final JdbcOperationQuerySelect jdbcSelect = sqlAstTranslatorFactory.buildSelectTranslator( sessionFactory, sqlAst )
 				.translate( jdbcParameterBindings, QueryOptions.NONE );
 
-		final List<Object> list = sessionFactory.getJdbcServices().getJdbcSelectExecutor().list(
-				jdbcSelect,
-				jdbcParameterBindings,
-				new ExecutionContext() {
-					@Override
-					public SharedSessionContractImplementor getSession() {
-						return session;
-					}
+		return StandardReactiveSelectExecutor.INSTANCE
+				.list(
+						jdbcSelect,
+						jdbcParameterBindings,
+						resolveIdExecutionContext( session ),
+						row -> row[0],
+						ReactiveListResultsConsumer.UniqueSemantic.FILTER
+				)
+				.thenApply( list -> {
+					// FIXME: This is what ORM does, but should this be an Hibernate exception?
+					assert list.size() == 1;
+					return list.get( 0 );
+				} );
+	}
 
-					@Override
-					public QueryOptions getQueryOptions() {
-						return QueryOptions.NONE;
-					}
+	private static ExecutionContext resolveIdExecutionContext(SharedSessionContractImplementor session) {
+		return new ExecutionContext() {
+			@Override
+			public SharedSessionContractImplementor getSession() {
+				return session;
+			}
 
-					@Override
-					public String getQueryIdentifier(String sql) {
-						return sql;
-					}
+			@Override
+			public QueryOptions getQueryOptions() {
+				return QueryOptions.NONE;
+			}
 
-					@Override
-					public QueryParameterBindings getQueryParameterBindings() {
-						return QueryParameterBindings.NO_PARAM_BINDINGS;
-					}
+			@Override
+			public String getQueryIdentifier(String sql) {
+				return sql;
+			}
 
-					@Override
-					public Callback getCallback() {
-						throw new UnsupportedOperationException( "Follow-on locking not supported yet" );
-					}
+			@Override
+			public QueryParameterBindings getQueryParameterBindings() {
+				return QueryParameterBindings.NO_PARAM_BINDINGS;
+			}
 
-				},
-				row -> row[0],
-				ListResultsConsumer.UniqueSemantic.FILTER
-		);
+			@Override
+			public Callback getCallback() {
+				throw new UnsupportedOperationException( "Follow-on locking not supported yet" );
+			}
 
-		assert list.size() == 1;
-
-		return list.get( 0 );
+		};
 	}
 }
