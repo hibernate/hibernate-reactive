@@ -10,8 +10,12 @@ import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.jdbc.batch.spi.BatchKey;
+import org.hibernate.engine.jdbc.mutation.MutationExecutor;
+import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.QueryOptions;
@@ -25,16 +29,28 @@ import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBinder;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.model.MutationOperationGroup;
 
-public class StandardReactiveMutationExecutor implements ReactiveJdbcMutationExecutor {
+/**
+ * @see org.hibernate.engine.jdbc.mutation.internal.MutationExecutorStandard
+ */
+public class ReactiveMutationExecutorStandard implements ReactiveJdbcMutationExecutor, MutationExecutorService {
 
-	public static final StandardReactiveMutationExecutor INSTANCE = new StandardReactiveMutationExecutor();
+	public static final ReactiveMutationExecutorStandard INSTANCE = new ReactiveMutationExecutorStandard();
 
-	private StandardReactiveMutationExecutor() {
+	private ReactiveMutationExecutorStandard() {
 	}
 
 	@Override
-	public CompletionStage<Integer> executeReactiveUpdate(
+	public MutationExecutor createExecutor(
+			Supplier<BatchKey> batchKeySupplier,
+			MutationOperationGroup operationGroup,
+			SharedSessionContractImplementor session) {
+		return INSTANCE;
+	}
+
+	@Override
+	public CompletionStage<Integer> executeReactive(
 			JdbcOperationQueryMutation jdbcMutation,
 			JdbcParameterBindings jdbcParameterBindings,
 			Function<String, PreparedStatement> statementCreator,

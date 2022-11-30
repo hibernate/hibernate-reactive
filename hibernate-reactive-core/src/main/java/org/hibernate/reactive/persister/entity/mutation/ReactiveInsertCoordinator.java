@@ -3,14 +3,13 @@ package org.hibernate.reactive.persister.entity.mutation;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.Internal;
-import org.hibernate.engine.jdbc.mutation.MutationExecutor;
 import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.mutation.InsertCoordinator;
-import org.hibernate.reactive.sql.exec.spi.ReactiveMutationExecutor;
+import org.hibernate.reactive.sql.exec.spi.ReactiveJdbcMutationExecutor;
 import org.hibernate.sql.model.MutationOperationGroup;
 
 @Internal
@@ -39,7 +38,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 				.getServiceRegistry()
 				.getService( MutationExecutorService.class );
 
-		final ReactiveMutationExecutor mutationExecutor = (ReactiveMutationExecutor) mutationExecutorService
+		final ReactiveJdbcMutationExecutor mutationExecutor = (ReactiveJdbcMutationExecutor) mutationExecutorService
 				.createExecutor( this::getInsertBatchKey, insertGroup, session );
 
 		final InsertValuesAnalysis insertValuesAnalysis = new InsertValuesAnalysis( entityPersister(), values );
@@ -80,7 +79,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 				.getServiceRegistry()
 				.getService( MutationExecutorService.class );
 
-		final ReactiveMutationExecutor mutationExecutor = (ReactiveMutationExecutor) mutationExecutorService
+		final ReactiveJdbcMutationExecutor mutationExecutor = (ReactiveJdbcMutationExecutor) mutationExecutorService
 				.createExecutor( this::getInsertBatchKey, getStaticInsertGroup(), session );
 
 		decomposeForInsert(
