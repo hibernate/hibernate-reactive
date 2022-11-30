@@ -20,7 +20,7 @@ import org.hibernate.query.sql.internal.SQLQueryParser;
 import org.hibernate.query.sql.spi.ParameterOccurrence;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
-import org.hibernate.reactive.sql.exec.internal.StandardReactiveMutationExecutor;
+import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBinder;
@@ -76,8 +76,8 @@ public class ReactiveNativeNonSelectQueryPlan implements ReactiveNonSelectQueryP
 				affectedTableNames
 		);
 
-		return StandardReactiveMutationExecutor.INSTANCE
-				.executeReactiveUpdate(
+		return StandardReactiveJdbcMutationExecutor.INSTANCE
+				.executeReactive(
 						jdbcMutation,
 						jdbcParameterBindings,
 						sql -> session

@@ -26,15 +26,18 @@ import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBinder;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
-public class StandardReactiveMutationExecutor implements ReactiveJdbcMutationExecutor {
+/**
+ * @see org.hibernate.sql.exec.internal.StandardJdbcMutationExecutor
+ */
+public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutationExecutor {
 
-	public static final StandardReactiveMutationExecutor INSTANCE = new StandardReactiveMutationExecutor();
+	public static final StandardReactiveJdbcMutationExecutor INSTANCE = new StandardReactiveJdbcMutationExecutor();
 
-	private StandardReactiveMutationExecutor() {
+	private StandardReactiveJdbcMutationExecutor() {
 	}
 
 	@Override
-	public CompletionStage<Integer> executeReactiveUpdate(
+	public CompletionStage<Integer> executeReactive(
 			JdbcOperationQueryMutation jdbcMutation,
 			JdbcParameterBindings jdbcParameterBindings,
 			Function<String, PreparedStatement> statementCreator,
@@ -51,21 +54,15 @@ public class StandardReactiveMutationExecutor implements ReactiveJdbcMutationExe
 		final QueryOptions queryOptions = executionContext.getQueryOptions();
 		final String finalSql = finalSql( jdbcMutation, executionContext, jdbcServices, queryOptions );
 
-
-		Object[] parameters = PreparedStatementAdaptor.bind( statement -> prepareStatement(
-				jdbcMutation,
-				statement,
-				jdbcParameterBindings,
-				executionContext
-		) );
+		Object[] parameters = PreparedStatementAdaptor
+				.bind( statement -> prepareStatement( jdbcMutation, statement, jdbcParameterBindings, executionContext ) );
 
 		session.getEventListenerManager().jdbcExecuteStatementStart();
-
 		return connection( executionContext )
 				.update( finalSql, parameters )
 				.thenApply( result -> {
-					// FIXME: Should I have this check?
-					// expectationCheck.accept( result, preparedStatement );
+					// FIXME: I don't have a preparedStatement
+//					expectationCheck.accept( result, preparedStatement );
 					return result;
 				} )
 				.whenComplete( (result, t) -> session.getEventListenerManager().jdbcExecuteStatementEnd() )
@@ -109,10 +106,10 @@ public class StandardReactiveMutationExecutor implements ReactiveJdbcMutationExe
 			JdbcServices jdbcServices,
 			QueryOptions queryOptions) {
 		String sql = queryOptions == null
-				? jdbcMutation.getSql()
+				? jdbcMutation.getSqlString()
 				: jdbcServices.getDialect()
 				.addSqlHintOrComment(
-						jdbcMutation.getSql(),
+						jdbcMutation.getSqlString(),
 						queryOptions,
 						executionContext.getSession()
 								.getFactory()

@@ -19,7 +19,7 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
  */
 public interface ReactiveJdbcMutationExecutor {
 
-	CompletionStage<Integer> executeReactiveUpdate(
+	CompletionStage<Integer> executeReactive(
 			JdbcOperationQueryMutation jdbcMutation,
 			JdbcParameterBindings jdbcParameterBindings,
 			Function<String, PreparedStatement> statementCreator,

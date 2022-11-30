@@ -32,7 +32,7 @@ import org.hibernate.query.sqm.tree.expression.SqmParameter;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
-import org.hibernate.reactive.sql.exec.internal.StandardReactiveMutationExecutor;
+import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.SqlAstTranslator;
 import org.hibernate.sql.ast.tree.delete.DeleteStatement;
@@ -164,8 +164,8 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 		);
 
 		// FIXME: Should we get this from the service registry like ORM?
-		return StandardReactiveMutationExecutor.INSTANCE
-				.executeReactiveUpdate(
+		return StandardReactiveJdbcMutationExecutor.INSTANCE
+				.executeReactive(
 						jdbcDelete,
 						jdbcParameterBindings,
 						session.getJdbcCoordinator().getStatementPreparer()::prepareStatement,
