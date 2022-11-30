@@ -13,7 +13,6 @@ import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
-import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
@@ -104,42 +103,6 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	protected String generateDeleteRowString() {
 		String sql = super.generateDeleteRowString();
 		return parameters().process( sql );
-	}
-
-	@Override
-	protected String generateDeleteString() {
-		String sql = super.generateDeleteString();
-		return parameters().process( sql );
-	}
-
-	@Override
-	public String getSQLInsertRowString() {
-		return super.getSQLInsertRowString();
-	}
-
-	@Override
-	public String getSQLUpdateRowString() {
-		return super.getSQLUpdateRowString();
-	}
-
-	@Override
-	public String getSQLDeleteRowString() {
-		return super.getSQLDeleteRowString();
-	}
-
-	@Override
-	public String getSQLDeleteString() {
-		return super.getSQLDeleteString();
-	}
-
-	@Override
-	public ExecuteUpdateResultCheckStyle getInsertCheckStyle() {
-		return super.getInsertCheckStyle();
-	}
-
-	@Override
-	public ExecuteUpdateResultCheckStyle getDeleteCheckStyle() {
-		return super.getDeleteCheckStyle();
 	}
 
 	/**

@@ -275,11 +275,6 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     int writeIndexToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
             throws SQLException;
 
-    String getSQLInsertRowString();
-    String getSQLDeleteRowString();
-    String getSQLDeleteString();
-    String getSQLUpdateRowString();
-
     default List<Object> entryList(PersistentCollection collection) {
         Iterator<?> entries = collection.entries( this );
         List<Object> elements = new ArrayList<>();
