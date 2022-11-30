@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.sql.exec.internal;
 
+import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
@@ -16,6 +17,8 @@ import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
@@ -30,6 +33,8 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
  * @see org.hibernate.sql.exec.internal.StandardJdbcMutationExecutor
  */
 public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutationExecutor {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	public static final StandardReactiveJdbcMutationExecutor INSTANCE = new StandardReactiveJdbcMutationExecutor();
 
@@ -92,7 +97,8 @@ public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutatio
 			}
 		}
 		catch (SQLException sqle) {
-			// I don't think this can happen
+			// I don't think this can ever happen
+			LOG.tracef( "Ignoring exception: %s", sqle );
 		}
 	}
 
