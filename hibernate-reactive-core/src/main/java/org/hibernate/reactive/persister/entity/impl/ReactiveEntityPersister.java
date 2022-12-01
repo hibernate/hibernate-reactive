@@ -54,39 +54,86 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	 *
 	 * @see EntityPersister#update(Object, Object[], int[], boolean, Object[], Object, Object, Object, SharedSessionContractImplementor)
 	 */
-	CompletionStage<Void> updateReactive(Object id, Object[] fields, int[] dirtyFields, boolean hasDirtyCollection, Object[] oldFields, Object oldVersion,
-			Object object, Object rowId, SharedSessionContractImplementor session);
+	CompletionStage<Void> updateReactive(
+			final Object id,
+			final Object[] values,
+			int[] dirtyAttributeIndexes,
+			final boolean hasDirtyCollection,
+			final Object[] oldValues,
+			final Object oldVersion,
+			final Object object,
+			final Object rowId,
+			final SharedSessionContractImplementor session);
 
 	/**
 	 * Obtain a pessimistic lock without blocking
 	 */
-	CompletionStage<Void> reactiveLock(Object id, Object version, Object object, LockOptions lockOptions, SharedSessionContractImplementor session);
+	CompletionStage<Void> reactiveLock(
+			Object id,
+			Object version,
+			Object object,
+			LockOptions lockOptions,
+			SharedSessionContractImplementor session);
 
-	CompletionStage<? extends List<?>> reactiveMultiLoad(Object[] ids, SessionImplementor session, MultiIdLoadOptions loadOptions);
+	CompletionStage<? extends List<?>> reactiveMultiLoad(
+			Object[] ids,
+			SessionImplementor session,
+			MultiIdLoadOptions loadOptions);
 
-	CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockMode lockMode, SharedSessionContractImplementor session);
+	CompletionStage<Object> reactiveLoad(
+			Object id,
+			Object optionalObject,
+			LockMode lockMode,
+			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session);
+	CompletionStage<Object> reactiveLoad(
+			Object id,
+			Object optionalObject,
+			LockOptions lockOptions,
+			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly);
+	CompletionStage<Object> reactiveLoad(
+			Object id,
+			Object optionalObject,
+			LockOptions lockOptions,
+			SharedSessionContractImplementor session,
+			Boolean readOnly);
 
-	CompletionStage<Object> reactiveLoadByUniqueKey(String propertyName, Object uniqueKey, SharedSessionContractImplementor session);
+	CompletionStage<Object> reactiveLoadByUniqueKey(
+			String propertyName,
+			Object uniqueKey,
+			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoadByUniqueKey(String propertyName, Object uniqueKey, Boolean readOnly, SharedSessionContractImplementor session);
+	CompletionStage<Object> reactiveLoadByUniqueKey(
+			String propertyName,
+			Object uniqueKey,
+			Boolean readOnly,
+			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session);
+	CompletionStage<Object> reactiveLoadEntityIdByNaturalId(
+			Object[] naturalIdValues,
+			LockOptions lockOptions,
+			SharedSessionContractImplementor session);
 
 	CompletionStage<Object> reactiveGetCurrentVersion(Object id, SharedSessionContractImplementor session);
 
 	/**
 	 * @see EntityPersister#processInsertGeneratedProperties(Object, Object, Object[], SharedSessionContractImplementor)
 	 */
-	CompletionStage<Void> reactiveProcessInsertGenerated(Object id, Object entity, Object[] state, SharedSessionContractImplementor session);
+	CompletionStage<Void> reactiveProcessInsertGenerated(
+			Object id,
+			Object entity,
+			Object[] state,
+			SharedSessionContractImplementor session);
 
 	/**
 	 * @see EntityPersister#processUpdateGeneratedProperties(Object, Object, Object[], SharedSessionContractImplementor)
 	 */
-	CompletionStage<Void> reactiveProcessUpdateGenerated(Object id, Object entity, Object[] state, SharedSessionContractImplementor session);
+	CompletionStage<Void> reactiveProcessUpdateGenerated(
+			Object id,
+			Object entity,
+			Object[] state,
+			SharedSessionContractImplementor session);
 
 	/**
 	 * Get the current database state of the object, in a "hydrated" form, without resolving identifiers
@@ -95,13 +142,22 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	 */
 	CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Object id, SharedSessionContractImplementor session);
 
-	default <E, T> CompletionStage<T> reactiveInitializeLazyProperty(Attribute<E, T> field, E entity, SharedSessionContractImplementor session) {
+	default <E, T> CompletionStage<T> reactiveInitializeLazyProperty(
+			Attribute<E, T> field,
+			E entity,
+			SharedSessionContractImplementor session) {
 		return nullFuture();
 	}
 
-	CompletionStage<Object> reactiveInitializeEnhancedEntityUsedAsProxy(Object entity, String nameOfAttributeBeingAccessed, SharedSessionContractImplementor session);
+	CompletionStage<Object> reactiveInitializeEnhancedEntityUsedAsProxy(
+			Object entity,
+			String nameOfAttributeBeingAccessed,
+			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, EventSource session);
+	CompletionStage<Object> reactiveLoadEntityIdByNaturalId(
+			Object[] orderedNaturalIdValues,
+			LockOptions lockOptions,
+			EventSource session);
 
 	/**
 	 * @see org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor#forceInitialize(Object, String, SharedSessionContractImplementor, boolean)

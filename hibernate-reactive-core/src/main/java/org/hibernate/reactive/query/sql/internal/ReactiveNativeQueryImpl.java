@@ -44,7 +44,6 @@ import org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery;
 import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
-import org.hibernate.reactive.sql.results.ReactiveResultSetMapping;
 import org.hibernate.type.BasicTypeReference;
 
 import jakarta.persistence.AttributeConverter;
@@ -64,7 +63,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	private final ReactiveAbstractSelectionQuery<R> selectionQueryDelegate;
 
 	public ReactiveNativeQueryImpl(String memento, SharedSessionContractImplementor session) {
-		super( memento, () -> new ReactiveResultSetMapping( memento, true ), session );
+		super( memento, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 

@@ -124,8 +124,8 @@ public class ReactiveSqlAstTranslator<T extends JdbcOperation> implements SqlAst
 	}
 
 	@Override
-	public JdbcOperation translate(JdbcParameterBindings jdbcParameterBindings, QueryOptions queryOptions) {
-		return delegate.translate( jdbcParameterBindings, queryOptions );
+	public T translate(JdbcParameterBindings jdbcParameterBindings, QueryOptions queryOptions) {
+		return null;
 	}
 
 	@Override

@@ -46,7 +46,7 @@ public class ReactiveMutationExecutorStandard implements ReactiveJdbcMutationExe
 			Supplier<BatchKey> batchKeySupplier,
 			MutationOperationGroup operationGroup,
 			SharedSessionContractImplementor session) {
-		return INSTANCE;
+		return null;
 	}
 
 	@Override
@@ -125,10 +125,10 @@ public class ReactiveMutationExecutorStandard implements ReactiveJdbcMutationExe
 			JdbcServices jdbcServices,
 			QueryOptions queryOptions) {
 		String sql = queryOptions == null
-				? jdbcMutation.getSql()
+				? jdbcMutation.getSqlString()
 				: jdbcServices.getDialect()
 				.addSqlHintOrComment(
-						jdbcMutation.getSql(),
+						jdbcMutation.getSqlString(),
 						queryOptions,
 						executionContext.getSession()
 								.getFactory()

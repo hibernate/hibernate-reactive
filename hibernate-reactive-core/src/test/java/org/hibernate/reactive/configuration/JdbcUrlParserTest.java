@@ -8,6 +8,9 @@ package org.hibernate.reactive.configuration;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.hibernate.HibernateError;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
@@ -33,6 +36,41 @@ import static org.junit.Assert.assertThrows;
 public class JdbcUrlParserTest {
 
 	private static final String DEFAULT_DB = "hreactDB";
+
+	@Test
+	public void test() throws Exception {
+		CompletableFuture<Void> c1 = CompletableFuture
+				.runAsync( () -> {
+					try {
+						System.out.println( "Start CF 1" );
+						Thread.sleep( 2000 );
+						System.out.println( 1 );
+					} catch (InterruptedException e) {
+						throw new RuntimeException(e);
+					}
+				});
+
+		CompletableFuture<Void> c2 = CompletableFuture
+				.runAsync(() -> {
+					try {
+						System.out.println( "Start CF 2" );
+						Thread.sleep( 100 );
+						System.out.println( 2 );
+					} catch (InterruptedException e) {
+						throw new RuntimeException(e);
+					}
+				});
+
+		long start = System.currentTimeMillis();
+		try {
+			c1.get( 50, TimeUnit.MILLISECONDS );
+		}
+		catch (TimeoutException e) {
+			System.out.println( "CF interrupted after " + ( System.currentTimeMillis() - start ) + "ms" );
+			c1.cancel( true );
+		}
+		c2.get();
+	}
 
 	@Test
 	public void exceptionWhenNull() {
