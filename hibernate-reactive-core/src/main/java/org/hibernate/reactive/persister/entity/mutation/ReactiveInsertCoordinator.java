@@ -14,7 +14,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.mutation.InsertCoordinator;
-import org.hibernate.reactive.sql.exec.spi.ReactiveJdbcMutationExecutor;
+import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.sql.model.MutationOperationGroup;
 
 @Internal
@@ -30,92 +30,66 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 	}
 
 	@Override
-	protected Object doDynamicInserts(
-			Object id,
-			Object[] values,
-			Object object,
-			SharedSessionContractImplementor session) {
+	protected Object doDynamicInserts(Object id, Object[] values, Object object, SharedSessionContractImplementor session) {
 		final boolean[] insertability = getPropertiesToInsert( values );
 		final MutationOperationGroup insertGroup = generateDynamicInsertSqlGroup( insertability );
-
-		final MutationExecutorService mutationExecutorService = session
-				.getFactory()
-				.getServiceRegistry()
-				.getService( MutationExecutorService.class );
-
-		final ReactiveJdbcMutationExecutor mutationExecutor = (ReactiveJdbcMutationExecutor) mutationExecutorService
-				.createExecutor( this::getInsertBatchKey, insertGroup, session );
+		final ReactiveMutationExecutor mutationExecutor = getReactiveMutationExecutor( session, insertGroup );
 
 		final InsertValuesAnalysis insertValuesAnalysis = new InsertValuesAnalysis( entityPersister(), values );
-
 		final TableInclusionChecker tableInclusionChecker = getTableInclusionChecker( insertValuesAnalysis );
-
 		decomposeForInsert( mutationExecutor, id, values, insertGroup, insertability, tableInclusionChecker, session );
 
-		try {
-			return mutationExecutor.executeReactive(
-					object,
-					insertValuesAnalysis,
-					tableInclusionChecker,
-					(statementDetails, affectedRowCount, batchPosition) -> {
-						statementDetails.getExpectation()
-								.verifyOutcome( affectedRowCount,
-								statementDetails.getStatement(),
-								batchPosition,
-								statementDetails.getSqlString()
-						);
-						return true;
-					},
-					session
-			);
-		}
-		finally {
-			mutationExecutor.release();
-		}
+		return mutationExecutor.execute(
+						object,
+						insertValuesAnalysis,
+						tableInclusionChecker,
+						(statementDetails, affectedRowCount, batchPosition) -> {
+							statementDetails.getExpectation()
+									.verifyOutcome(
+											affectedRowCount,
+											statementDetails.getStatement(),
+											batchPosition,
+											statementDetails.getSqlString()
+									);
+							return true;
+						},
+						session
+				)
+				.whenComplete( (o, throwable) -> mutationExecutor.release() );
 	}
 
 	@Override
 	protected CompletionStage<Object> doStaticInserts(Object id, Object[] values, Object object, SharedSessionContractImplementor session) {
 		final InsertValuesAnalysis insertValuesAnalysis = new InsertValuesAnalysis( entityPersister(), values );
-
 		final TableInclusionChecker tableInclusionChecker = getTableInclusionChecker( insertValuesAnalysis );
+		final ReactiveMutationExecutor mutationExecutor = getReactiveMutationExecutor( session, getStaticInsertGroup() );
 
-		final MutationExecutorService mutationExecutorService = session.getSessionFactory()
+		decomposeForInsert( mutationExecutor, id, values, getStaticInsertGroup(), entityPersister().getPropertyInsertability(), tableInclusionChecker, session );
+
+		return mutationExecutor.execute(
+				object,
+				insertValuesAnalysis,
+				tableInclusionChecker,
+				(statementDetails, affectedRowCount, batchPosition) -> {
+					statementDetails.getExpectation().verifyOutcome(
+							affectedRowCount,
+							statementDetails.getStatement(),
+							batchPosition,
+							statementDetails.getSqlString()
+					);
+					return true;
+				},
+				session
+		);
+	}
+
+	private ReactiveMutationExecutor getReactiveMutationExecutor(SharedSessionContractImplementor session, MutationOperationGroup operationGroup) {
+		final MutationExecutorService mutationExecutorService = session
+				.getFactory()
 				.getServiceRegistry()
 				.getService( MutationExecutorService.class );
 
-		final ReactiveJdbcMutationExecutor mutationExecutor = (ReactiveJdbcMutationExecutor) mutationExecutorService
-				.createExecutor( this::getInsertBatchKey, getStaticInsertGroup(), session );
-
-		decomposeForInsert(
-				mutationExecutor,
-				id,
-				values,
-				getStaticInsertGroup(),
-				entityPersister().getPropertyInsertability(),
-				tableInclusionChecker,
-				session
-		);
-
-		try {
-			return mutationExecutor.execute(
-					object,
-					insertValuesAnalysis,
-					tableInclusionChecker,
-					(statementDetails, affectedRowCount, batchPosition) -> {
-						statementDetails.getExpectation().verifyOutcome(
-								affectedRowCount,
-								statementDetails.getStatement(),
-								batchPosition,
-								statementDetails.getSqlString()
-						);
-						return true;
-					},
-					session
-			);
-		}
-		finally {
-			mutationExecutor.release();
-		}
+		return  (ReactiveMutationExecutor) mutationExecutorService
+				.createExecutor( this::getInsertBatchKey, operationGroup, session );
 	}
 }

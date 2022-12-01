@@ -29,10 +29,6 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
-import static org.hibernate.jdbc.Expectations.appropriateExpectation;
-import static org.hibernate.pretty.MessageHelper.collectionInfoString;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Reactive version of {@link org.hibernate.persister.collection.AbstractCollectionPersister}
@@ -62,191 +58,79 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
             Object id,
             SharedSessionContractImplementor session)
             throws HibernateException {
-        if ( isInverse() || !isRowInsertEnabled() ) {
-            return voidFuture();
-        }
-
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debugf(
-                    "Inserting collection: %s",
-                    collectionInfoString( this, collection, id, session )
-            );
-        }
-
-        ReactiveConnection connection = getReactiveConnection( session );
-        //TODO: compose() reactive version of collection.preInsert()
-        Iterator<?> entries = collection.entries( this );
-        Expectation expectation = appropriateExpectation( getInsertCheckStyle() );
-        return loop(
-                entries,
-                collection::entryExists,
-                (entry, index) -> connection.update(
-                        getSQLInsertRowString(),
-                        insertRowsParamValues( entry, index, collection, id, session ),
-                        expectation.canBeBatched(),
-                        new ExpectationAdaptor( expectation, getSQLInsertRowString(), getSqlExceptionConverter() )
-                )
-        );
-        //TODO: compose() reactive version of collection.afterRowInsert()
+        return null;
     }
 
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#remove(Object, SharedSessionContractImplementor)
      */
     default CompletionStage<Void> removeReactive(Object id, SharedSessionContractImplementor session) {
-        if ( isInverse() || !isRowDeleteEnabled() ) {
-            return voidFuture();
-        }
-
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debugf( "Deleting collection: %s", collectionInfoString( this, id, getFactory() ) );
-        }
-
-        Expectation expectation = appropriateExpectation( getDeleteCheckStyle() );
-        return getReactiveConnection( session ).update(
-                getSQLDeleteString(),
-                new Object[]{ id },
-                expectation.canBeBatched(),
-                new ExpectationAdaptor( expectation, getSQLDeleteString(), getSqlExceptionConverter() )
-        );
+        return null;
     }
 
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#deleteRows(PersistentCollection, Object, SharedSessionContractImplementor)
      */
     @Override
-    default CompletionStage<Void> reactiveDeleteRows(
-            PersistentCollection collection,
-            Object id,
-            SharedSessionContractImplementor session) {
-        if ( isInverse() || !isRowDeleteEnabled() ) {
-            return voidFuture();
-        }
-
-        Iterator<?> deletes = collection.getDeletes( this, !deleteByIndex() );
-        if ( !deletes.hasNext() ) {
-             return voidFuture();
-        }
-
-        ReactiveConnection connection = getReactiveConnection(session);
-        Expectation expectation = appropriateExpectation( getDeleteCheckStyle() );
-        return loop(
-                deletes,
-                (entry, index) -> connection.update(
-                        getSQLDeleteRowString(),
-                        deleteRowsParamValues( entry, 1, id, session ),
-                        expectation.canBeBatched(),
-                        new ExpectationAdaptor( expectation, getSQLDeleteRowString(), getSqlExceptionConverter() )
-                )
-        );
+    default CompletionStage<Void> reactiveDeleteRows(PersistentCollection collection, Object id, SharedSessionContractImplementor session) {
+        return null;
     }
 
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#insertRows(PersistentCollection, Object, SharedSessionContractImplementor)
      */
     @Override
-    default CompletionStage<Void> reactiveInsertRows(
-            PersistentCollection collection,
-            Object id,
-            SharedSessionContractImplementor session) {
-        if ( isInverse() || !isRowDeleteEnabled() ) {
-            return voidFuture();
-        }
-
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debugf(
-                    "Inserting rows of collection: %s",
-                    collectionInfoString( this, collection, id, session )
-            );
-        }
-
-        ReactiveConnection connection = getReactiveConnection( session );
-        //TODO: compose() reactive version of collection.preInsert()
-        List<Object> entries = entryList( collection );
-        if ( !needsInsert( collection, entries ) ) {
-            return voidFuture();
-        }
-
-        Expectation expectation = appropriateExpectation( getInsertCheckStyle() );
-        return loop(
-                entries.iterator(),
-                (entry, index) -> collection.needsInserting( entry, index, getElementType() ),
-                (entry, index) -> connection.update(
-                        getSQLInsertRowString(),
-                        insertRowsParamValues( entry, index, collection, id, session ),
-                        expectation.canBeBatched(),
-                        new ExpectationAdaptor( expectation, getSQLInsertRowString(), getSqlExceptionConverter() ) )
-                //TODO: compose() a reactive version of collection.afterRowInsert()
-        ).thenAccept( total -> LOG.debugf( "Done inserting rows: %s inserted", total ) );
+    default CompletionStage<Void> reactiveInsertRows(PersistentCollection collection, Object id, SharedSessionContractImplementor session) {
+        return null;
     }
 
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#updateRows(PersistentCollection, Object, SharedSessionContractImplementor)
      */
     @Override
-    default CompletionStage<Void> reactiveUpdateRows(
-            PersistentCollection collection,
-            Object id,
-            SharedSessionContractImplementor session) {
-
-        if ( !isInverse() && collection.isRowUpdatePossible() ) {
-
-            if ( LOG.isDebugEnabled() ) {
-                LOG.debugf(
-                        "Updating rows of collection: %s",
-                        collectionInfoString( this, collection, id, session )
-                );
-            }
-
-            // update all the modified entries
-            return doReactiveUpdateRows( id, collection, session );
-        }
-        return voidFuture();
+    default CompletionStage<Void> reactiveUpdateRows(PersistentCollection collection, Object id, SharedSessionContractImplementor session) {
+        return null;
     }
 
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#doUpdateRows(Object, PersistentCollection, SharedSessionContractImplementor)
      */
-    CompletionStage<Void> doReactiveUpdateRows(Object id, PersistentCollection collection,
-                                                  SharedSessionContractImplementor session);
+    CompletionStage<Void> doReactiveUpdateRows(Object id, PersistentCollection collection, SharedSessionContractImplementor session);
 
-    default Object[] insertRowsParamValues(Object entry, int index,
-                                           PersistentCollection collection, Object id,
-                                           SharedSessionContractImplementor session) {
+    default Object[] insertRowsParamValues(Object entry, int index, PersistentCollection collection, Object id, SharedSessionContractImplementor session) {
         int offset = 1;
-        return PreparedStatementAdaptor.bind(
-                st -> {
-                    int loc = writeKey( st, id, offset , session );
-                    if ( hasIdentifier() ) {
-                        loc = writeIdentifier( st, collection.getIdentifier( entry, index ), loc, session );
-                    }
-                    if ( hasIndex() && !indexContainsFormula() ) {
-                        loc = writeIndex( st, collection.getIndex( entry, index, this ), loc, session );
-                    }
-                    writeElement( st, collection.getElement( entry ), loc, session );
-                }
-        );
+        return PreparedStatementAdaptor
+                .bind( st -> {
+                           int loc = writeKey( st, id, offset, session );
+                           if ( hasIdentifier() ) {
+                               loc = writeIdentifier( st, collection.getIdentifier( entry, index ), loc, session );
+                           }
+                           if ( hasIndex() && !indexContainsFormula() ) {
+                               loc = writeIndex( st, collection.getIndex( entry, index, this ), loc, session );
+                           }
+                           writeElement( st, collection.getElement( entry ), loc, session );
+                       }
+                );
     }
 
-    default Object[] deleteRowsParamValues(Object entry, int offset, Object id,
-                                           SharedSessionContractImplementor session) {
-        return PreparedStatementAdaptor.bind(
-                st -> {
-                    int loc = offset;
-                    if ( hasIdentifier() ) {
-                        writeIdentifier( st, entry, loc, session );
-                    }
-                    else {
-                        loc = writeKey( st, id, loc, session );
-                        if ( deleteByIndex() ) {
-                            writeIndexToWhere( st, entry, loc, session );
-                        }
-                        else {
-                            writeElementToWhere( st, entry, loc, session );
-                        }
-                    }
-                }
-        );
+    default Object[] deleteRowsParamValues(Object entry, int offset, Object id, SharedSessionContractImplementor session) {
+        return PreparedStatementAdaptor
+                .bind( st -> {
+                           int loc = offset;
+                           if ( hasIdentifier() ) {
+                               writeIdentifier( st, entry, loc, session );
+                           }
+                           else {
+                               loc = writeKey( st, id, loc, session );
+                               if ( deleteByIndex() ) {
+                                   writeIndexToWhere( st, entry, loc, session );
+                               }
+                               else {
+                                   writeElementToWhere( st, entry, loc, session );
+                               }
+                           }
+                       }
+                );
     }
 
     default boolean deleteByIndex() {

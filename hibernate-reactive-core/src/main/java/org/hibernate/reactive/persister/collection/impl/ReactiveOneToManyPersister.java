@@ -5,7 +5,8 @@
  */
 package org.hibernate.reactive.persister.collection.impl;
 
-import java.util.List;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
@@ -13,24 +14,33 @@ import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
-import org.hibernate.internal.util.collections.ArrayHelper;
-import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.spi.CollectionLoader;
 import org.hibernate.mapping.Collection;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.collection.OneToManyPersister;
-import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.persister.collection.mutation.DeleteRowsCoordinator;
+import org.hibernate.persister.collection.mutation.DeleteRowsCoordinatorNoOp;
+import org.hibernate.persister.collection.mutation.DeleteRowsCoordinatorStandard;
+import org.hibernate.persister.collection.mutation.InsertRowsCoordinator;
+import org.hibernate.persister.collection.mutation.InsertRowsCoordinatorNoOp;
+import org.hibernate.persister.collection.mutation.InsertRowsCoordinatorStandard;
+import org.hibernate.persister.collection.mutation.RemoveCoordinator;
+import org.hibernate.persister.collection.mutation.RemoveCoordinatorNoOp;
+import org.hibernate.persister.collection.mutation.RemoveCoordinatorStandard;
+import org.hibernate.persister.collection.mutation.UpdateRowsCoordinator;
+import org.hibernate.persister.collection.mutation.UpdateRowsCoordinatorNoOp;
+import org.hibernate.persister.collection.mutation.UpdateRowsCoordinatorOneToMany;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoader;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderSubSelectFetch;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
-import static org.hibernate.jdbc.Expectations.appropriateExpectation;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
+import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_DEBUG_ENABLED;
 
 /**
  * A reactive {@link OneToManyPersister}
@@ -39,15 +49,66 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 public class ReactiveOneToManyPersister extends OneToManyPersister
 		implements ReactiveAbstractCollectionPersister {
 
-	private Parameters parameters() {
-		return Parameters.instance( getFactory().getJdbcServices().getDialect() );
-	}
+	private final InsertRowsCoordinator insertRowsCoordinator;
+	private final UpdateRowsCoordinator updateRowsCoordinator;
+	private final DeleteRowsCoordinator deleteRowsCoordinator;
+	private final RemoveCoordinator removeCoordinator;
 
 	public ReactiveOneToManyPersister(
 			Collection collectionBinding,
 			CollectionDataAccess cacheAccessStrategy,
 			RuntimeModelCreationContext creationContext) throws MappingException, CacheException {
 		super( collectionBinding, cacheAccessStrategy, creationContext );
+
+		this.insertRowsCoordinator = buildInsertCoordinator();
+		this.updateRowsCoordinator = buildUpdateCoordinator();
+		this.deleteRowsCoordinator = buildDeleteCoordinator();
+		this.removeCoordinator = buildDeleteAllCoordinator();
+	}
+
+	private InsertRowsCoordinator buildInsertCoordinator() {
+		if ( isInverse() || !isRowInsertEnabled() ) {
+			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+				MODEL_MUTATION_LOGGER.debugf( "Skipping collection (re)creation - %s", getRolePath() );
+			}
+			return new InsertRowsCoordinatorNoOp( this );
+		}
+		return new InsertRowsCoordinatorStandard( this, getRowMutationOperations() );
+	}
+
+	private UpdateRowsCoordinator buildUpdateCoordinator() {
+		if ( !isRowDeleteEnabled() && !isRowInsertEnabled() ) {
+			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+				MODEL_MUTATION_LOGGER.debugf( "Skipping collection row updates - %s", getRolePath() );
+			}
+			return new UpdateRowsCoordinatorNoOp( this );
+		}
+		return new UpdateRowsCoordinatorOneToMany( this, getRowMutationOperations(), getFactory() );
+	}
+
+	private DeleteRowsCoordinator buildDeleteCoordinator() {
+		if ( !needsRemove() ) {
+			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+				MODEL_MUTATION_LOGGER.debugf( "Skipping collection row deletions - %s", getRolePath() );
+			}
+			return new DeleteRowsCoordinatorNoOp( this );
+		}
+		// never delete by index for one-to-many
+		return new DeleteRowsCoordinatorStandard( this, getRowMutationOperations(), false );
+	}
+
+	private RemoveCoordinator buildDeleteAllCoordinator() {
+		if ( ! needsRemove() ) {
+			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+				MODEL_MUTATION_LOGGER.debugf( "Skipping collection removals - %s", getRolePath() );
+			}
+			return new RemoveCoordinatorNoOp( this );
+		}
+		return new RemoveCoordinatorStandard( this, this::buildDeleteAllOperation );
+	}
+
+	private Parameters parameters() {
+		return Parameters.instance( getFactory().getJdbcServices().getDialect() );
 	}
 
 	@Override
@@ -88,21 +149,55 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	}
 
 	@Override
-	protected String generateInsertRowString() {
-		String sql = super.generateInsertRowString();
-		return parameters().process( sql );
+	public ExecuteUpdateResultCheckStyle getInsertCheckStyle() {
+		return null;
 	}
 
 	@Override
-	protected String generateUpdateRowString() {
-		String sql = super.generateUpdateRowString();
-		return parameters().process( sql );
+	public ExecuteUpdateResultCheckStyle getDeleteCheckStyle() {
+		return null;
 	}
 
 	@Override
-	protected String generateDeleteRowString() {
-		String sql = super.generateDeleteRowString();
-		return parameters().process( sql );
+	public int writeElement(PreparedStatement st, Object element, int loc, SharedSessionContractImplementor session)
+			throws SQLException {
+		return 0;
+	}
+
+	@Override
+	public int writeIndex(PreparedStatement st, Object index, int loc, SharedSessionContractImplementor session)
+			throws SQLException {
+		return 0;
+	}
+
+	@Override
+	public int writeIdentifier(
+			PreparedStatement st,
+			Object identifier,
+			int loc,
+			SharedSessionContractImplementor session) throws SQLException {
+		return 0;
+	}
+
+	@Override
+	public int writeKey(PreparedStatement st, Object id, int offset, SharedSessionContractImplementor session)
+			throws SQLException {
+		return 0;
+	}
+
+	@Override
+	public int writeElementToWhere(
+			PreparedStatement st,
+			Object entry,
+			int loc,
+			SharedSessionContractImplementor session) throws SQLException {
+		return 0;
+	}
+
+	@Override
+	public int writeIndexToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
+			throws SQLException {
+		return 0;
 	}
 
 	/**
@@ -110,119 +205,16 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	 */
 	@Override
 	public CompletionStage<Void> doReactiveUpdateRows(Object id, PersistentCollection collection, SharedSessionContractImplementor session) {
-
-		List<Object> entries = entryList( collection );
-		if ( !needsUpdate( collection, entries ) ) {
-			return voidFuture();
-		}
-
-		CompletionStage<Void> result = voidFuture();
-		if ( isRowDeleteEnabled() ) {
-			Expectation deleteExpectation = appropriateExpectation( getDeleteCheckStyle() );
-			result = result.thenCompose( v -> loop( 0, entries.size(),
-					i -> collection.needsUpdating( entries.get( i ), i, elementType ),  // will still be issued when it used to be null
-					i -> {
-							Object entry = entries.get(i);
-							int offset = 1;
-							return getReactiveConnection( session ).update(
-									getSQLDeleteRowString(),
-									PreparedStatementAdaptor.bind( st -> {
-										int loc = writeKey( st, id, offset, session );
-										writeElementToWhere( st, collection.getSnapshotElement( entry, i ), loc, session );
-									} ),
-									deleteExpectation.canBeBatched(),
-									new ExpectationAdaptor( deleteExpectation, getSQLDeleteRowString(), getSQLExceptionConverter() )
-							);
-					}
-			) );
-		}
-		if ( isRowInsertEnabled() ) {
-			Expectation insertExpectation = appropriateExpectation( getInsertCheckStyle() );
-			result = result.thenCompose( v -> loop( 0, entries.size(),
-					i -> collection.needsUpdating( entries.get( i ), i, elementType ),  // will still be issued when it used to be null
-					i -> {
-						Object entry = entries.get(i);
-						return getReactiveConnection( session ).update(
-								getSQLInsertRowString(),
-								PreparedStatementAdaptor.bind( st -> {
-									int offset = 1;
-									offset += insertExpectation.prepare( st );
-									int loc = writeKey( st, id, offset, session );
-									if ( hasIndex && !indexContainsFormula ) {
-										loc = writeIndexToWhere( st, collection.getIndex( entry, i, this ), loc, session );
-									}
-									writeElementToWhere( st, collection.getElement( entry ), loc, session );
-								} ),
-								insertExpectation.canBeBatched(),
-								new ExpectationAdaptor( insertExpectation, getSQLInsertRowString(), getSQLExceptionConverter() )
-						);
-					}
-			) );
-		}
-		return result;
+		return null;
 	}
 
 	@Override
 	public CompletionStage<Void> recreateReactive(PersistentCollection collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
-		return reactiveWriteIndex( collection, id, session,
-				ReactiveAbstractCollectionPersister.super.recreateReactive( collection, id, session ) );
+		return null;
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveInsertRows(PersistentCollection collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
-		return reactiveWriteIndex( collection, id, session,
-				ReactiveAbstractCollectionPersister.super.reactiveInsertRows( collection, id, session ) );
-	}
-
-	private CompletionStage<Void> reactiveWriteIndex(PersistentCollection collection, Object id,
-													 SharedSessionContractImplementor session,
-													 CompletionStage<Void> stage) {
-		if ( isInverse
-				&& hasIndex && !indexContainsFormula
-				&& ArrayHelper.countTrue( indexColumnIsSettable ) > 0 ) {
-
-			List<Object> entries = entryList( collection );
-			if ( entries.isEmpty() ) {
-				return stage;
-			}
-
-			Expectation expectation = appropriateExpectation( getUpdateCheckStyle() );
-			return stage.thenCompose( v -> loop( 0, entries.size(),
-					index -> {
-						Object entry = entries.get( index );
-						return entry != null && collection.entryExists( entry, index );
-					},
-					index -> {
-						Object entry = entries.get( index );
-						return getReactiveConnection( session ).update(
-								getSQLUpdateRowString(),
-								PreparedStatementAdaptor.bind( st -> {
-									int offset = 1;
-									offset += expectation.prepare( st );
-									if ( hasIdentifier ) {
-										offset = writeIdentifier(
-												st,
-												collection.getIdentifier( entry, index ),
-												offset,
-												session
-										);
-									}
-									offset = writeIndex(
-											st,
-											collection.getIndex( entry, index, this ),
-											offset,
-											session
-									);
-									offset = writeElement( st, collection.getElement(entry), offset, session );
-								} ),
-								expectation.canBeBatched(),
-								new ExpectationAdaptor( expectation, getSQLUpdateRowString(), getSQLExceptionConverter() )
-						);
-					}
-			) );
-		}
-		else {
-			return stage;
-		}
+		return null;
 	}
 }

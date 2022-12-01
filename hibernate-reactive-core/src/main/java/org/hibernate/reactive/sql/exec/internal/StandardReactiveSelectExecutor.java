@@ -263,7 +263,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 					.getQueryResultsCache( executionContext.getQueryOptions().getResultCacheRegionName() );
 
 			queryResultsCacheKey = QueryKey
-					.from( jdbcSelect.getSql(), executionContext.getQueryOptions().getLimit(), executionContext.getQueryParameterBindings(), session );
+					.from( jdbcSelect.getSqlString(), executionContext.getQueryOptions().getLimit(), executionContext.getQueryParameterBindings(), session );
 
 			cachedResults = queryCache.get(
 					// todo (6.0) : QueryCache#get takes the `queryResultsCacheKey` see tat discussion above
@@ -297,7 +297,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			cachedResults = null;
 			if ( cacheable && cacheMode.isPutEnabled() ) {
 				queryResultsCacheKey = QueryKey.from(
-						jdbcSelect.getSql(),
+						jdbcSelect.getSqlString(),
 						executionContext.getQueryOptions().getLimit(),
 						executionContext.getQueryParameterBindings(),
 						session
@@ -505,7 +505,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 				final long milliseconds = TimeUnit.MILLISECONDS
 						.convert( endTime - startTime, TimeUnit.NANOSECONDS );
 				statistics.queryExecuted(
-						executionContext.getQueryIdentifier( jdbcSelect.getSql() ),
+						executionContext.getQueryIdentifier( jdbcSelect.getSqlString() ),
 						getResultSize( result ),
 						milliseconds
 				);

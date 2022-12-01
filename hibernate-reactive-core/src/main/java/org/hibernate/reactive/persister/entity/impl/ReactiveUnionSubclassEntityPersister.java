@@ -32,13 +32,15 @@ import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.UnionSubclassEntityPersister;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 
 /**
  * An {@link ReactiveEntityPersister} backed by {@link UnionSubclassEntityPersister}
  * and {@link ReactiveAbstractEntityPersister}.
  */
-public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPersister
-		implements ReactiveAbstractEntityPersister {
+public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPersister implements ReactiveAbstractEntityPersister {
 
 	private final ReactiveAbstractPersisterDelegate reactiveDelegate;
 
@@ -52,10 +54,40 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
+	public ReactiveInsertCoordinator buildInsertCoordinator() {
+		return ReactiveAbstractEntityPersister.super.buildInsertCoordinator();
+	}
+
+	@Override
+	public ReactiveUpdateCoordinator buildUpdateCoordinator() {
+		return ReactiveAbstractEntityPersister.super.buildUpdateCoordinator();
+	}
+
+	@Override
+	public ReactiveDeleteCoordinator buildDeleteCoordinator() {
+		return ReactiveAbstractEntityPersister.super.buildDeleteCoordinator();
+	}
+
+	@Override
+	public ReactiveInsertCoordinator getInsertCoordinator() {
+		return null;
+	}
+
+	@Override
+	public ReactiveUpdateCoordinator getUpdateCoordinator() {
+		return null;
+	}
+
+	@Override
 	protected void validateIdentifierGenerator() {
 		if ( super.getIdentifierGenerator() instanceof IdentityGenerator ) {
 			throw new MappingException( "Cannot use identity column key generation with <union-subclass> mapping for: " + getEntityName() );
 		}
+	}
+
+	@Override
+	public ReactiveDeleteCoordinator getDeleteCoordinator() {
+		return null;
 	}
 
 	@Override
@@ -74,11 +106,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	public String[] getUpdateStrings(boolean byRowId, boolean hasUninitializedLazyProperties) {
-		return super.getUpdateStrings( byRowId, hasUninitializedLazyProperties );
-	}
-
-	@Override
 	public boolean check(int rows, Object id, int tableNumber, Expectation expectation, PreparedStatement statement, String sql) throws HibernateException {
 		return super.check(rows, id, tableNumber, expectation, statement, sql);
 	}
@@ -89,67 +116,8 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	public String generateSelectVersionString() {
-		String sql = super.generateSelectVersionString();
-		return parameters().process( sql );
-	}
-
-	@Override
-	public String generateDeleteString(int j, boolean includeVersion) {
-		String sql = super.generateDeleteString( j, includeVersion );
-		return parameters().process( sql );
-	}
-
-	@Override
-	public String generateUpdateString(boolean[] includeProperty, int j, boolean useRowId) {
-		String sql = super.generateUpdateString( includeProperty, j, useRowId );
-		return parameters().process( sql );
-	}
-
-	@Override
-	public String generateUpdateString(boolean[] includeProperty, int j, Object[] oldFields, boolean useRowId) {
-		String sql = super.generateUpdateString( includeProperty, j, oldFields, useRowId );
-		return parameters().process( sql );
-	}
-
-	@Override
-	public String generateInsertString(boolean[] includeProperty, int j) {
-		String sql = super.generateInsertString( includeProperty, j );
-		return parameters().process( sql, includeProperty.length );
-	}
-
-	@Override
-	public String generateIdentityInsertString(boolean[] includeProperty) {
-		String sql =  super.generateIdentityInsertString( includeProperty );
-		return parameters().process( sql, includeProperty.length );
-	}
-
-	@Override
 	public boolean hasProxy() {
 		return hasEnhancedProxy();
-	}
-
-	@Override
-	public Object insert(
-			Object[] fields,
-			boolean[] notNull,
-			String sql,
-			Object object,
-			SharedSessionContractImplementor session)
-			throws HibernateException {
-		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
-	}
-
-	@Override
-	public void insert(
-			Object id,
-			Object[] fields,
-			boolean[] notNull,
-			int j,
-			String sql,
-			Object object,
-			SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
 	}
 
 	@Override
@@ -164,50 +132,8 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 
 	@Override
 	public void delete(
-			Object id,
-			Object version,
-			int j,
-			Object object,
-			String sql,
-			SharedSessionContractImplementor session,
-			Object[] loadedState) throws HibernateException {
-		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
-	}
-
-	@Override
-	public void delete(
 			Object id, Object version, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
-		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
-	}
-
-	@Override
-	public void updateOrInsert(
-			Object id,
-			Object[] fields,
-			Object[] oldFields,
-			Object rowId,
-			boolean[] includeProperty,
-			int j,
-			Object oldVersion,
-			Object object,
-			String sql,
-			SharedSessionContractImplementor session) throws HibernateException {
-		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
-	}
-
-	@Override
-	public boolean update(
-			Object id,
-			Object[] fields,
-			Object[] oldFields,
-			Object rowId,
-			boolean[] includeProperty,
-			int j,
-			Object oldVersion,
-			Object object,
-			String sql,
-			SharedSessionContractImplementor session) throws HibernateException {
 		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
 	}
 
@@ -281,17 +207,37 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	public CompletionStage<? extends List<?>> reactiveMultiLoad(Object[] ids, SessionImplementor session, MultiIdLoadOptions loadOptions) {
-		return reactiveDelegate.multiLoad( ids, session, loadOptions );
+	public CompletionStage<Void> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
+		return null;
 	}
 
-	/**
-	 * @deprecated use {@link #reactivePreInsertInMemoryValueGeneration(Object[], Object, SharedSessionContractImplementor)}
-	 */
 	@Override
-	@Deprecated
-	protected void preInsertInMemoryValueGeneration(Object[] fields, Object object, SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException("Use reactivePreInsertInMemoryValueGeneration instead");
+	public CompletionStage<Object> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
+		return null;
+	}
+
+	@Override
+	public CompletionStage<Void> deleteReactive(Object id, Object version, Object object, SharedSessionContractImplementor session) {
+		return null;
+	}
+
+	@Override
+	public CompletionStage<Void> updateReactive(
+			Object id,
+			Object[] values,
+			int[] dirtyAttributeIndexes,
+			boolean hasDirtyCollection,
+			Object[] oldValues,
+			Object oldVersion,
+			Object object,
+			Object rowId,
+			SharedSessionContractImplementor session) {
+		return null;
+	}
+
+	@Override
+	public CompletionStage<? extends List<?>> reactiveMultiLoad(Object[] ids, SessionImplementor session, MultiIdLoadOptions loadOptions) {
+		return reactiveDelegate.multiLoad( ids, session, loadOptions );
 	}
 
 	@Override
