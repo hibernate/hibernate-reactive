@@ -106,27 +106,8 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 			database = database.substring( 0, database.indexOf( ':' ) );
 		}
 
-		String host = scheme.equals( "oracle" )
-				? oracleHost( uri )
-				: uri.getHost();
-
-		int port = scheme.equals( "oracle" )
-				? oraclePort( uri )
-				: uri.getPort();
-
-		int index = uri.toString().indexOf( ';' );
-		if ( scheme.equals( "sqlserver" ) && index > 0 ) {
-			// SQL Server separates parameters in the url with a semicolon (';')
-			// and the URI class doesn't get the right value for host and port when the url
-			// contains parameters
-			URI uriWithoutParams = URI.create( uri.toString().substring( 0, index ) );
-			host = uriWithoutParams.getHost();
-			port = uriWithoutParams.getPort();
-		}
-
-		if ( port == -1 ) {
-			port = defaultPort( scheme );
-		}
+		String host = findHost( uri, scheme );
+		int port = findPort( uri, scheme );
 
 		//see if the credentials were specified via properties
 		String username = user;
@@ -274,7 +255,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 		int end = host.indexOf( ':' );
 		if ( end == -1 ) {
 			end = host.indexOf( '/' );
-			if ( end == -1) {
+			if ( end == -1 ) {
 				end = host.indexOf( '?' );
 			}
 		}
@@ -296,13 +277,93 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 		string = string.substring( i + 1 );
 		// Check the start of the path
 		int start = string.indexOf( '/' );
-		if ( start == -1) {
+		if ( start == -1 ) {
 			return "";
 		}
 		int end = string.indexOf( '?' ) == -1
 				? string.length()
 				: string.indexOf( '?' );
 		return string.substring( start, end );
+	}
+
+	// Example sqlserver://localhost:1433;database=name;user=somename
+	private String sqlServerHost(URI uri) {
+		String s = uri.toString();
+		String remainder = s.substring( s.indexOf( "://" ) + 3 );
+		char endOfHostPortChar = ';';
+		String hostPortString = remainder.substring( 0, remainder.indexOf( endOfHostPortChar ) );
+		int endOfHost = hostPortString.indexOf( ':' );
+		if ( endOfHost == -1 ) {
+			return hostPortString;
+		}
+		return hostPortString.substring( 0, endOfHost );
+	}
+
+	private int sqlServerPort(URI uri) {
+		String s = uri.toString();
+		String remainder = s.substring( s.indexOf( "://" ) + 3 );
+		char endOfHostPortChar = ';';
+		String hostPortString = remainder.substring( 0, remainder.indexOf( endOfHostPortChar ) );
+		int startOfPort = hostPortString.indexOf( ':' );
+		if ( startOfPort == -1 ) {
+			return -1;
+		}
+		return Integer.valueOf( hostPortString.substring( startOfPort + 1 ) );
+	}
+
+	private String extractHost(URI uri) {
+		String s = uri.toString();
+		String remainder = s.substring( s.indexOf( "://" ) + 3 );
+		char endOfHostPortChar = '/';
+		String hostPortString = remainder.substring( 0, remainder.indexOf( endOfHostPortChar ) );
+		int endOfHost = hostPortString.indexOf( ':' );
+		if ( endOfHost == -1 ) {
+			return hostPortString;
+		}
+		return hostPortString.substring( 0, endOfHost );
+	}
+
+	private int extractPort(URI uri) {
+		String s = uri.toString();
+		String remainder = s.substring( s.indexOf( "://" ) + 3 );
+		char endOfHostPortChar = '/';
+		String hostPortString = remainder.substring( 0, remainder.indexOf( endOfHostPortChar ) );
+		int startOfPort = hostPortString.indexOf( ':' );
+		if ( startOfPort == -1 ) {
+			return -1;
+		}
+		return Integer.valueOf( hostPortString.substring( startOfPort + 1 ) );
+	}
+
+	private String findHost(URI uri, String scheme) {
+		if ( uri.getHost() != null ) {
+			return uri.getHost();
+		}
+		if ( "oracle".equals( scheme ) ) {
+			return oracleHost( uri );
+		}
+		if ( "sqlserver".equals( scheme ) ) {
+			// SqlServer host
+			return sqlServerHost( uri );
+		}
+		return extractHost( uri );
+	}
+
+	private int findPort(URI uri, String scheme) {
+		int port = -1;
+		if ( "oracle".equals( scheme ) ) {
+			port = oraclePort( uri );
+		}
+		else if ( "sqlserver".equals( scheme ) ) {
+			port = sqlServerPort( uri );
+		}
+		else {
+			port = extractPort( uri );
+		}
+		if ( port == -1 ) {
+			return defaultPort( scheme );
+		}
+		return port;
 	}
 
 	private int defaultPort(String scheme) {
