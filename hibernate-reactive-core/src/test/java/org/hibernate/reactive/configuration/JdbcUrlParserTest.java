@@ -6,6 +6,7 @@
 package org.hibernate.reactive.configuration;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,6 +14,7 @@ import org.hibernate.HibernateError;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import io.vertx.sqlclient.SqlConnectOptions;
@@ -108,11 +110,59 @@ public class JdbcUrlParserTest {
 		assertOptions( url, "helloDatabase", params );
 	}
 
+	// URI regex does not include the '_' underscore character, so URI parsing will set the `host` and `userInfo`
+	// to NULL.  This test verifies that the processing captures the actual host value and includes it in the
+	// connect options. Example:  postgresql://local_host:5432/my_schema
+	@Test
+	public void testInvalidHostSucceeds() {
+		Map<String, String> params = new HashMap<>();
+		params.put( "user", "hello" );
+
+		String url = createJdbcUrl( "local_host", dbType().getDefaultPort(), "my_db", params );
+		assertOptions( url, "my_db", "local_host", params );
+	}
+
+	@Test
+	public void testInvalidHostWithoutPort() {
+		Map<String, String> params = new HashMap<>();
+		params.put( "user", "hello" );
+
+		// Port -1 so it won't be added to the url
+		String url = createJdbcUrl( "local_host", -1, "my_db", params );
+		assertOptions( url, "my_db", "local_host", params );
+	}
+
+	@Test
+	public void testDefaultPortIsSet() throws URISyntaxException {
+		Map<String, String> params = new HashMap<>();
+		params.put( "user", "hello" );
+
+		String url = createJdbcUrl( "localhost", -1, "my_db", params );
+		assertPort( url, dbType().getDefaultPort() );
+	}
+
+	@Test
+	public void testCustomPortIsSet() throws URISyntaxException {
+		Map<String, String> params = new HashMap<>();
+		params.put( "user", "hello" );
+
+		String url = createJdbcUrl( "localhost", 19191, "my_db", params );
+		assertPort( url, 19191 );
+	}
+
+	@Test
+	public void testUnrecognizedSchemeException() throws URISyntaxException {
+		Assert.assertThrows( IllegalArgumentException.class, () -> {
+			URI uri = new URI( "bogusScheme://localhost/database" );
+			new DefaultSqlClientPoolConfiguration().connectOptions( uri );
+		} );
+	}
+
 	/**
 	 * Create the default {@link SqlConnectOptions} with the given extra properties
 	 * and assert that's correct.
 	 */
-	private void assertOptions(String url, String expectedDbName, Map<String, String> parameters) {
+	private void assertOptions(String url, String expectedDbName, String expectedHost, Map<String, String> parameters) {
 		URI uri = DefaultSqlClientPool.parse( url );
 		SqlConnectOptions options = new DefaultSqlClientPoolConfiguration().connectOptions( uri );
 
@@ -125,10 +175,24 @@ public class JdbcUrlParserTest {
 		assertThat( options.getUser() ).as( "URL: " + url ).isEqualTo( username );
 		assertThat( options.getPassword() ).as( "URL: " + url ).isEqualTo( password );
 		assertThat( options.getDatabase() ).as( "URL: " + url ).isEqualTo( expectedDbName );
-		assertThat( options.getHost() ).as( "URL: " + url ).isEqualTo( "localhost" );
+		assertThat( options.getHost() ).as( "URL: " + url ).isEqualTo( expectedHost );
 		assertThat( options.getPort() ).as( "URL: " + url ).isEqualTo( dbType().getDefaultPort() );
 
 		// Check extra properties
 		assertThat( options.getProperties() ).as( "URL: " + url ).containsExactlyInAnyOrderEntriesOf( parameters );
+	}
+
+	/**
+	 * Create the default {@link SqlConnectOptions} with the given extra properties
+	 * and assert that's correct.
+	 */
+	private void assertOptions(String url, String expectedDbName, Map<String, String> parameters) {
+		assertOptions( url, expectedDbName, "localhost", parameters );
+	}
+
+	private void assertPort(String url, int expectedPort) {
+		URI uri = DefaultSqlClientPool.parse( url );
+		SqlConnectOptions options = new DefaultSqlClientPoolConfiguration().connectOptions( uri );
+		assertThat( options.getPort() ).as( "URL: " + url ).isEqualTo( expectedPort );
 	}
 }
