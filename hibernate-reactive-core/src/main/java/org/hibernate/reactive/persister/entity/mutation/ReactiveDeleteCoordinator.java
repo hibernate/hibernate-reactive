@@ -71,8 +71,8 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 
 		applyId( id, rowId, mutationExecutor, operationGroup, session );
 
-
-		mutationExecutor.execute(
+		mutationExecutor
+				.executeReactive(
 						entity,
 						null,
 						null,
@@ -86,8 +86,8 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 						),
 						session
 				)
-				.whenComplete( (o, throwable) -> mutationExecutor.release() )
-				.whenComplete(this::complete);
+				.whenComplete( (o, t) -> mutationExecutor.release() )
+				.whenComplete( this::complete );
 	}
 
 	private void complete(Object o, Throwable throwable) {
@@ -134,7 +134,7 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 
 		applyId( id, null, mutationExecutor, getStaticDeleteGroup(), session );
 
-		mutationExecutor.execute(
+		mutationExecutor.executeReactive(
 						entity,
 						null,
 						null,

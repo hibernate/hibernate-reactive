@@ -224,6 +224,10 @@ public class  CompletionStages {
 		return voidFuture();
 	}
 
+	public static <U> U nullFuture(Void unused) {
+		return null;
+	}
+
 	/**
 	 * It represents a loop on an iterator that requires
 	 * an index of the current element.

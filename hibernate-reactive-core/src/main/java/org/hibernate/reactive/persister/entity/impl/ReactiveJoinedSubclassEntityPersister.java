@@ -18,7 +18,6 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.internal.SingleIdArrayLoadPlan;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
@@ -28,11 +27,14 @@ import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
+import org.hibernate.persister.entity.mutation.DeleteCoordinator;
+import org.hibernate.persister.entity.mutation.InsertCoordinator;
+import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
+import org.hibernate.tuple.Generator;
 
 /**
  * An {@link ReactiveEntityPersister} backed by {@link JoinedSubclassEntityPersister}
@@ -53,38 +55,23 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public ReactiveUpdateCoordinator buildUpdateCoordinator() {
-		return ReactiveAbstractEntityPersister.super.buildUpdateCoordinator();
+	protected InsertCoordinator buildInsertCoordinator() {
+		return ReactiveCoordinatorFactory.buildInsertCoordinator( this, getFactory() );
 	}
 
 	@Override
-	public ReactiveDeleteCoordinator buildDeleteCoordinator() {
-		return ReactiveAbstractEntityPersister.super.buildDeleteCoordinator();
+	protected UpdateCoordinator buildUpdateCoordinator() {
+		return ReactiveCoordinatorFactory.buildUpdateCoordinator( this, getFactory() );
 	}
 
 	@Override
-	public ReactiveInsertCoordinator buildInsertCoordinator() {
-		return ReactiveAbstractEntityPersister.super.buildInsertCoordinator();
+	protected DeleteCoordinator buildDeleteCoordinator() {
+		return ReactiveCoordinatorFactory.buildDeleteCoordinator( this, getFactory() );
 	}
 
 	@Override
-	public ReactiveInsertCoordinator getInsertCoordinator() {
-		return null;
-	}
-
-	@Override
-	public ReactiveUpdateCoordinator getUpdateCoordinator() {
-		return null;
-	}
-
-	@Override
-	public ReactiveDeleteCoordinator getDeleteCoordinator() {
-		return null;
-	}
-
-	@Override
-	public IdentifierGenerator getIdentifierGenerator() throws HibernateException {
-		return reactiveDelegate.reactive( super.getIdentifierGenerator() );
+	public Generator getGenerator() throws HibernateException {
+		return reactiveDelegate.reactive( super.getGenerator() );
 	}
 
 	@Override
@@ -99,24 +86,17 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 
 	@Override
 	public CompletionStage<Void> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
-		return null;
+		return (CompletionStage<Void>) getInsertCoordinator().coordinateInsert( id, fields, object, session );
 	}
 
 	@Override
-	public CompletionStage<Object> insertReactive(
-			Object[] fields,
-			Object object,
-			SharedSessionContractImplementor session) {
-		return null;
+	public CompletionStage<Object> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
+		return (CompletionStage<Object>) getInsertCoordinator().coordinateInsert( null, fields, object, session );
 	}
 
 	@Override
-	public CompletionStage<Void> deleteReactive(
-			Object id,
-			Object version,
-			Object object,
-			SharedSessionContractImplementor session) {
-		return null;
+	public CompletionStage<Void> deleteReactive(Object id, Object version, Object object, SharedSessionContractImplementor session) {
+		return ( (ReactiveDeleteCoordinator) getDeleteCoordinator() ).coordinateReactiveDelete( id, version, object, session );
 	}
 
 	@Override
@@ -130,7 +110,8 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 			Object object,
 			Object rowId,
 			SharedSessionContractImplementor session) {
-		return null;
+		return ( (ReactiveUpdateCoordinator) getUpdateCoordinator() )
+				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
 	}
 
 	@Override

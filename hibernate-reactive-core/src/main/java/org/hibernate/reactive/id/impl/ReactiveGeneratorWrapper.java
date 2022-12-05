@@ -25,7 +25,7 @@ public class ReactiveGeneratorWrapper<T>
 	private ReactiveIdentifierGenerator<T> reactiveGenerator;
 	private IdentifierGenerator generator;
 
-	public ReactiveGeneratorWrapper(ReactiveIdentifierGenerator<T> reactiveGenerator, IdentifierGenerator generator) {
+	public ReactiveGeneratorWrapper(ReactiveIdentifierGenerator<T> reactiveGenerator, IdentifierGenerator  generator) {
 		this.reactiveGenerator = reactiveGenerator;
 		this.generator = generator;
 	}

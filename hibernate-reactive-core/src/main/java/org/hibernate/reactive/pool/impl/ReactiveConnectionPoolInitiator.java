@@ -33,12 +33,13 @@ public class ReactiveConnectionPoolInitiator implements StandardServiceInitiator
 
 	public static final ReactiveConnectionPoolInitiator INSTANCE = new ReactiveConnectionPoolInitiator();
 
-	public ReactiveConnectionPoolInitiator() {}
+	public ReactiveConnectionPoolInitiator() {
+	}
 
 	@Override
 	public ReactiveConnectionPool initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
 		Object configValue = configurationValues.get( Settings.SQL_CLIENT_POOL );
-		if (configValue==null) {
+		if ( configValue == null ) {
 			return new DefaultSqlClientPool();
 		}
 

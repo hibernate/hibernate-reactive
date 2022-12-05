@@ -14,6 +14,7 @@ import org.hibernate.action.internal.CollectionAction;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.service.spi.EventListenerGroup;
+import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PostCollectionRecreateEvent;
 import org.hibernate.event.spi.PostCollectionRecreateEventListener;
 import org.hibernate.event.spi.PostCollectionUpdateEvent;
@@ -48,7 +49,7 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 			final CollectionPersister persister,
 			final Object key,
 			final boolean emptySnapshot,
-			final SharedSessionContractImplementor session) {
+			final EventSource session) {
 		super( persister, collection, key, session );
 		this.emptySnapshot = emptySnapshot;
 	}

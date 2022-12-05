@@ -26,7 +26,7 @@ import org.hibernate.query.sqm.sql.SqmTranslatorFactory;
 import org.hibernate.query.sqm.tree.expression.SqmParameter;
 import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
-import org.hibernate.reactive.sql.exec.internal.ReactiveMutationExecutorStandard;
+import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
 import org.hibernate.sql.ast.SqlAstTranslator;
 import org.hibernate.sql.ast.spi.FromClauseAccess;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
@@ -79,8 +79,7 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 				session
 		);
 
-		if ( jdbcUpdate != null && !jdbcUpdate
-				.isCompatibleWith( jdbcParameterBindings, executionContext.getQueryOptions() ) ) {
+		if ( jdbcUpdate != null && !jdbcUpdate.isCompatibleWith( jdbcParameterBindings, executionContext.getQueryOptions() ) ) {
 			updateTranslator = createUpdateTranslator( executionContext );
 		}
 
@@ -91,16 +90,12 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 			jdbcUpdate.bindFilterJdbcParameters( jdbcParameterBindings );
 		}
 
-		return ReactiveMutationExecutorStandard.INSTANCE
+		return StandardReactiveJdbcMutationExecutor.INSTANCE
 				.executeReactive(
 						jdbcUpdate,
 						jdbcParameterBindings,
-						sql -> session
-								.getJdbcCoordinator()
-								.getStatementPreparer()
-								.prepareStatement( sql ),
-						(integer, preparedStatement) -> {
-						},
+						session.getJdbcCoordinator().getStatementPreparer()::prepareStatement,
+						(i, ps) -> {},
 						SqmJdbcExecutionContextAdapter.omittingLockingAndPaging( executionContext )
 				);
 	}

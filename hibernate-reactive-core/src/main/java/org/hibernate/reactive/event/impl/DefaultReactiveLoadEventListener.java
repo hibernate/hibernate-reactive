@@ -333,10 +333,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		final boolean traceEnabled = LOG.isTraceEnabled();
 
 		if ( traceEnabled ) {
-			LOG.tracev(
-					"Loading entity: {0}",
-					infoString( persister, event.getEntityId(), factory )
-			);
+			LOG.tracev( "Loading entity: {0}", infoString( persister, event.getEntityId(), factory ) );
 		}
 
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();

@@ -19,7 +19,6 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.IdentityGenerator;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.internal.SingleIdArrayLoadPlan;
@@ -30,11 +29,12 @@ import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.UnionSubclassEntityPersister;
+import org.hibernate.persister.entity.mutation.DeleteCoordinator;
+import org.hibernate.persister.entity.mutation.InsertCoordinator;
+import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
+import org.hibernate.tuple.Generator;
 
 /**
  * An {@link ReactiveEntityPersister} backed by {@link UnionSubclassEntityPersister}
@@ -54,45 +54,30 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	public ReactiveInsertCoordinator buildInsertCoordinator() {
-		return ReactiveAbstractEntityPersister.super.buildInsertCoordinator();
-	}
-
-	@Override
-	public ReactiveUpdateCoordinator buildUpdateCoordinator() {
-		return ReactiveAbstractEntityPersister.super.buildUpdateCoordinator();
-	}
-
-	@Override
-	public ReactiveDeleteCoordinator buildDeleteCoordinator() {
-		return ReactiveAbstractEntityPersister.super.buildDeleteCoordinator();
-	}
-
-	@Override
-	public ReactiveInsertCoordinator getInsertCoordinator() {
-		return null;
-	}
-
-	@Override
-	public ReactiveUpdateCoordinator getUpdateCoordinator() {
-		return null;
-	}
-
-	@Override
-	protected void validateIdentifierGenerator() {
-		if ( super.getIdentifierGenerator() instanceof IdentityGenerator ) {
+	protected void validateGenerator() {
+		if ( super.getGenerator() instanceof IdentityGenerator ) {
 			throw new MappingException( "Cannot use identity column key generation with <union-subclass> mapping for: " + getEntityName() );
 		}
 	}
 
 	@Override
-	public ReactiveDeleteCoordinator getDeleteCoordinator() {
-		return null;
+	protected InsertCoordinator buildInsertCoordinator() {
+		return ReactiveCoordinatorFactory.buildInsertCoordinator( this, getFactory() );
 	}
 
 	@Override
-	public IdentifierGenerator getIdentifierGenerator() throws HibernateException {
-		return reactiveDelegate.reactive( super.getIdentifierGenerator() );
+	protected UpdateCoordinator buildUpdateCoordinator() {
+		return ReactiveCoordinatorFactory.buildUpdateCoordinator( this, getFactory() );
+	}
+
+	@Override
+	protected DeleteCoordinator buildDeleteCoordinator() {
+		return ReactiveCoordinatorFactory.buildDeleteCoordinator( this, getFactory() );
+	}
+
+	@Override
+	public Generator getGenerator() throws HibernateException {
+		return reactiveDelegate.reactive( super.getGenerator() );
 	}
 
 	@Override
@@ -113,11 +98,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	@Override
 	public boolean initializeLazyProperty(String fieldName, Object entity, EntityEntry entry, int lazyIndex, Object selectedValue) {
 		return super.initializeLazyProperty( fieldName, entity, entry, lazyIndex, selectedValue );
-	}
-
-	@Override
-	public boolean hasProxy() {
-		return hasEnhancedProxy();
 	}
 
 	@Override
