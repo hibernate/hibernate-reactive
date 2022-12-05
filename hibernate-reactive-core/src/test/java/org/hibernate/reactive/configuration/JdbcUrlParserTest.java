@@ -6,7 +6,6 @@
 package org.hibernate.reactive.configuration;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -127,42 +126,57 @@ public class JdbcUrlParserTest {
 		Map<String, String> params = new HashMap<>();
 		params.put( "user", "hello" );
 
-		// Port -1 so it won't be added to the url
+		// Port -1, so it won't be added to the url
 		String url = createJdbcUrl( "local_host", -1, "my_db", params );
 		assertOptions( url, "my_db", "local_host", params );
 	}
 
 	@Test
-	public void testDefaultPortIsSet() throws URISyntaxException {
+	public void testDefaultPortIsSet()  {
 		Map<String, String> params = new HashMap<>();
 		params.put( "user", "hello" );
 
+		// Port -1, so it won't be added to the url
 		String url = createJdbcUrl( "localhost", -1, "my_db", params );
-		assertPort( url, dbType().getDefaultPort() );
+		assertOptions( url, "my_db", "localhost", params );
 	}
 
 	@Test
-	public void testCustomPortIsSet() throws URISyntaxException {
+	public void testCustomPortIsSetWithInvalidUri() {
 		Map<String, String> params = new HashMap<>();
 		params.put( "user", "hello" );
 
-		String url = createJdbcUrl( "localhost", 19191, "my_db", params );
-		assertPort( url, 19191 );
+		String url = createJdbcUrl( "local_host", 19191, "my_db", params );
+		assertOptions( url, "my_db", "local_host", 19191, params );
 	}
 
 	@Test
-	public void testUnrecognizedSchemeException() throws URISyntaxException {
+	public void testCustomPortIsSetWithValidUri()  {
+		Map<String, String> params = new HashMap<>();
+		params.put( "user", "hello" );
+
+		String url = createJdbcUrl( "myPersonalHost", 19191, "my_db", params );
+		assertOptions( url, "my_db", "myPersonalHost", 19191, params );
+	}
+
+	@Test
+	public void testUnrecognizedSchemeException()  {
 		Assert.assertThrows( IllegalArgumentException.class, () -> {
 			URI uri = new URI( "bogusScheme://localhost/database" );
 			new DefaultSqlClientPoolConfiguration().connectOptions( uri );
 		} );
 	}
 
-	/**
-	 * Create the default {@link SqlConnectOptions} with the given extra properties
-	 * and assert that's correct.
-	 */
+
+	private void assertOptions(String url, String expectedDbName, Map<String, String> parameters) {
+		assertOptions( url, expectedDbName, "localhost", parameters );
+	}
+
 	private void assertOptions(String url, String expectedDbName, String expectedHost, Map<String, String> parameters) {
+		assertOptions( url, expectedDbName, expectedHost, dbType().getDefaultPort(), parameters );
+	}
+
+	private void assertOptions(String url, String expectedDbName, String expectedHost, int expectedPort, Map<String, String> parameters) {
 		URI uri = DefaultSqlClientPool.parse( url );
 		SqlConnectOptions options = new DefaultSqlClientPoolConfiguration().connectOptions( uri );
 
@@ -176,23 +190,9 @@ public class JdbcUrlParserTest {
 		assertThat( options.getPassword() ).as( "URL: " + url ).isEqualTo( password );
 		assertThat( options.getDatabase() ).as( "URL: " + url ).isEqualTo( expectedDbName );
 		assertThat( options.getHost() ).as( "URL: " + url ).isEqualTo( expectedHost );
-		assertThat( options.getPort() ).as( "URL: " + url ).isEqualTo( dbType().getDefaultPort() );
+		assertThat( options.getPort() ).as( "URL: " + url ).isEqualTo( expectedPort );
 
 		// Check extra properties
 		assertThat( options.getProperties() ).as( "URL: " + url ).containsExactlyInAnyOrderEntriesOf( parameters );
-	}
-
-	/**
-	 * Create the default {@link SqlConnectOptions} with the given extra properties
-	 * and assert that's correct.
-	 */
-	private void assertOptions(String url, String expectedDbName, Map<String, String> parameters) {
-		assertOptions( url, expectedDbName, "localhost", parameters );
-	}
-
-	private void assertPort(String url, int expectedPort) {
-		URI uri = DefaultSqlClientPool.parse( url );
-		SqlConnectOptions options = new DefaultSqlClientPoolConfiguration().connectOptions( uri );
-		assertThat( options.getPort() ).as( "URL: " + url ).isEqualTo( expectedPort );
 	}
 }
