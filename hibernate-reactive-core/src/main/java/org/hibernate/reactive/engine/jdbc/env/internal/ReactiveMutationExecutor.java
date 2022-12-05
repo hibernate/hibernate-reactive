@@ -16,7 +16,6 @@ import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -89,10 +88,8 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 		final TableMapping tableDetails = statementDetails.getMutatingTableDetails();
 		if ( inclusionChecker != null && !inclusionChecker.include( tableDetails ) ) {
 			if ( MODEL_MUTATION_LOGGER_TRACE_ENABLED ) {
-				MODEL_MUTATION_LOGGER.tracef(
-						"Skipping execution of secondary insert : %s",
-						tableDetails.getTableName()
-				);
+				MODEL_MUTATION_LOGGER
+						.tracef( "Skipping execution of secondary insert : %s", tableDetails.getTableName() );
 			}
 			return voidFuture();
 		}
@@ -100,8 +97,8 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 		// If we get here the statement is needed - make sure it is resolved
 		session.getJdbcServices().getSqlStatementLogger().logStatement( statementDetails.getSqlString() );
 
-		Make it reactive
 		valueBindings.beforeStatement( statementDetails, session );
+
 
 		ReactiveConnection reactiveConnection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
 		return reactiveConnection
