@@ -35,10 +35,10 @@ final class ReactiveSessionFactoryBuilderService implements SessionFactoryBuilde
 				metadata.getMetadataBuildingOptions().getServiceRegistry(),
 				bootstrapContext
 		);
-		optionsBuilder.enableCollectionInDefaultFetchGroup(true);
+		optionsBuilder.enableCollectionInDefaultFetchGroup( true );
 		// FIXME [ORM-6]: This method does not exists anymore
 //		optionsBuilder.applyMultiTableBulkIdStrategy( new ReactiveBulkIdStrategy( metadata ) );
-		optionsBuilder.applyJdbcBatchSize(batchSize);
+		optionsBuilder.applyJdbcBatchSize( batchSize );
 		return new ReactiveSessionFactoryBuilder( metadata, new SessionFactoryBuilderImpl( metadata, optionsBuilder ) );
 	}
 

@@ -26,6 +26,7 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.service.ServiceRegistry;
+import org.hibernate.tuple.Generator;
 import org.hibernate.type.Type;
 
 public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGeneratorFactory {
@@ -64,8 +65,8 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 	 */
 	private IdentifierGenerator createIdentifier(String strategy, Type type, Properties config) {
 		try {
-			final Class<? extends IdentifierGenerator> clazz = getIdentifierGeneratorClass( strategy );
-			final IdentifierGenerator generator = clazz.getDeclaredConstructor().newInstance();
+			final Class<? extends Generator> clazz = getIdentifierGeneratorClass( strategy );
+			final IdentifierGenerator generator = (IdentifierGenerator) clazz.getDeclaredConstructor().newInstance();
 			generator.configure( type, config, serviceRegistry );
 			return generator;
 		}

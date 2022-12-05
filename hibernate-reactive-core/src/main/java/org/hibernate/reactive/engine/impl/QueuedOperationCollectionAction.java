@@ -12,10 +12,11 @@ import org.hibernate.action.internal.CollectionAction;
 import org.hibernate.collection.spi.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.CollectionEntry;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.event.spi.EventSource;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
-import org.hibernate.reactive.util.impl.CompletionStages;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Copy of {@link  QueuedOperationCollectionAction}, that adapts to {@link ReactiveExecutable}
@@ -32,11 +33,7 @@ public final class QueuedOperationCollectionAction extends CollectionAction impl
 	 * @param id The collection key
 	 * @param session The session
 	 */
-	public QueuedOperationCollectionAction(
-			final PersistentCollection collection,
-			final CollectionPersister persister,
-			final Object id,
-			final SharedSessionContractImplementor session) {
+	public QueuedOperationCollectionAction(final PersistentCollection collection, final CollectionPersister persister, final Object id, final EventSource session) {
 		super( persister, collection, id, session );
 	}
 
@@ -59,7 +56,7 @@ public final class QueuedOperationCollectionAction extends CollectionAction impl
 		if ( !ce.isDoremove() && !ce.isDoupdate() && !ce.isDorecreate() ) {
 			ce.afterAction( getCollection() );
 		}
-		return CompletionStages.voidFuture();
+		return voidFuture();
 	}
 
 	@Override

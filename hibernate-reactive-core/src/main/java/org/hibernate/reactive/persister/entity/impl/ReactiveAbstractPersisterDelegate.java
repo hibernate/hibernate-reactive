@@ -15,7 +15,6 @@ import org.hibernate.AssertionFailure;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.IdentityGenerator;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.mapping.PersistentClass;
@@ -36,6 +35,7 @@ import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.tuple.Generator;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -146,10 +146,9 @@ public class ReactiveAbstractPersisterDelegate {
 				: singleIdEntityLoader.load( id, optionalObject, lockOptions, readOnly, session );
 	}
 
-	public IdentifierGenerator reactive(IdentifierGenerator identifierGenerator) {
-		if ( identifierGenerator instanceof IdentityGenerator ) {
-			return new ReactiveIdentityGenerator();
-		}
-		return identifierGenerator;
+	public Generator reactive(Generator generator) {
+		return generator instanceof IdentityGenerator
+				? new ReactiveIdentityGenerator()
+				: generator;
 	}
 }

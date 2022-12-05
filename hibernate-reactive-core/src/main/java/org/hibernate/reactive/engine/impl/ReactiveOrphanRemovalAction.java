@@ -5,13 +5,18 @@
  */
 package org.hibernate.reactive.engine.impl;
 
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.event.spi.EventSource;
 import org.hibernate.persister.entity.EntityPersister;
 
 public class ReactiveOrphanRemovalAction extends ReactiveEntityDeleteAction {
-    public ReactiveOrphanRemovalAction(Object id, Object[] state, Object version, Object instance,
-                                       EntityPersister persister, boolean isCascadeDeleteEnabled,
-                                       SessionImplementor session) {
-        super(id, state, version, instance, persister, isCascadeDeleteEnabled, session);
+    public ReactiveOrphanRemovalAction(
+            Object id,
+            Object[] state,
+            Object version,
+            Object instance,
+            EntityPersister persister,
+            boolean isCascadeDeleteEnabled,
+            EventSource session) {
+        super( id, state, version, instance, persister, isCascadeDeleteEnabled, session );
     }
 }

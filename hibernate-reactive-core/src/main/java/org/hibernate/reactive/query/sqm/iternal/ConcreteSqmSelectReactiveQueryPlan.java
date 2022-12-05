@@ -57,8 +57,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  *
  * @see org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan
  */
-public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQueryPlan<R> implements
-		ReactiveSelectQueryPlan<R> {
+public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQueryPlan<R>
+		implements ReactiveSelectQueryPlan<R> {
 
 	private final SqmInterpreter<List<R>, Void> listInterpreter;
 	private final RowTransformer<R> rowTransformer;
@@ -92,7 +92,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 			RowTransformer<R> rowTransformer) {
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final JdbcOperationQuerySelect jdbcSelect = sqmInterpretation.getJdbcSelect();
-		// I'm using a supplier so that the whenComplete at the end will catch any errors, like a finally block
+		// I'm using a supplier so that the whenComplete at the end will catch any errors, like a finally-block
 		Supplier<SubselectFetch.RegistrationHandler> fetchHandlerSupplier = () -> SubselectFetch
 				.createRegistrationHandler( session.getPersistenceContext().getBatchFetchQueue(), sqmInterpretation.selectStatement, emptyList(), jdbcParameterBindings );
 		return completedFuture( fetchHandlerSupplier )
@@ -136,11 +136,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 			synchronized ( this ) {
 				localCopy = cacheableSqmInterpretation;
 				if ( localCopy == null ) {
-					localCopy = buildCacheableSqmInterpretation(
-							sqm,
-							domainParameterXref,
-							executionContext
-					);
+					localCopy = buildCacheableSqmInterpretation( sqm, domainParameterXref, executionContext );
 					jdbcParameterBindings = localCopy.firstParameterBindings;
 					localCopy.firstParameterBindings = null;
 					cacheableSqmInterpretation = localCopy;
@@ -219,8 +215,8 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 		final SqlAstTranslatorFactory sqlAstTranslatorFactory = jdbcEnvironment.getSqlAstTranslatorFactory();
 		final SqlAstTranslator<JdbcOperationQuerySelect> selectTranslator = sqlAstTranslatorFactory
 				.buildSelectTranslator( sessionFactory, sqmInterpretation.getSqlAst() );
-		final Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<List<JdbcParameter>>>> jdbcParamsXref
-				= SqmUtil.generateJdbcParamsXref( domainParameterXref, sqmInterpretation::getJdbcParamsBySqmParam );
+		final Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<List<JdbcParameter>>>> jdbcParamsXref = SqmUtil
+				.generateJdbcParamsXref( domainParameterXref, sqmInterpretation::getJdbcParamsBySqmParam );
 		final JdbcParameterBindings jdbcParameterBindings = SqmUtil.createJdbcParameterBindings(
 				executionContext.getQueryParameterBindings(),
 				domainParameterXref,

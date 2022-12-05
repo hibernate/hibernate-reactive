@@ -16,6 +16,7 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.event.spi.EventSource;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 
@@ -37,7 +38,7 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 			Object version,
 			EntityPersister persister,
 			boolean isVersionIncrementDisabled,
-			SharedSessionContractImplementor session) {
+			EventSource session) {
 		super( id, state, instance, version, persister, isVersionIncrementDisabled, session );
 		this.isVersionIncrementDisabled = isVersionIncrementDisabled;
 	}

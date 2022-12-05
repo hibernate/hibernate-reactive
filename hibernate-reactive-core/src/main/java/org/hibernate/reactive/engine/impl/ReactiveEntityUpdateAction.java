@@ -17,6 +17,7 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
+import org.hibernate.event.spi.EventSource;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
@@ -58,7 +59,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 			final Object instance,
 			final Object rowId,
 			final EntityPersister persister,
-			final SharedSessionContractImplementor session) {
+			final EventSource session) {
 		super( id, state, dirtyProperties, hasDirtyCollection, previousState, previousVersion, nextVersion,
 				instance, rowId, persister, session );
 	}

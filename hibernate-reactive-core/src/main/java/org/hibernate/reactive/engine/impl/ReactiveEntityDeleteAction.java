@@ -16,8 +16,8 @@ import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.event.spi.EventSource;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
@@ -35,7 +35,7 @@ public class ReactiveEntityDeleteAction extends EntityDeleteAction implements Re
 			Object instance,
 			EntityPersister persister,
 			boolean isCascadeDeleteEnabled,
-			SessionImplementor session) {
+			EventSource session) {
 		super( id, state, version, instance, persister, isCascadeDeleteEnabled, session );
 	}
 

@@ -19,7 +19,6 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.internal.SingleIdArrayLoadPlan;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
@@ -29,11 +28,14 @@ import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
+import org.hibernate.persister.entity.mutation.DeleteCoordinator;
+import org.hibernate.persister.entity.mutation.InsertCoordinator;
+import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
+import org.hibernate.tuple.Generator;
 
 /**
  * A {@link ReactiveEntityPersister} backed by {@link SingleTableEntityPersister}
@@ -52,39 +54,25 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, creationContext );
 	}
 
+
 	@Override
-	public ReactiveInsertCoordinator buildInsertCoordinator() {
-		return ReactiveAbstractEntityPersister.super.buildInsertCoordinator();
+	protected UpdateCoordinator buildUpdateCoordinator() {
+		return ReactiveCoordinatorFactory.buildUpdateCoordinator( this, getFactory() );
 	}
 
 	@Override
-	public ReactiveUpdateCoordinator buildUpdateCoordinator() {
-		return ReactiveAbstractEntityPersister.super.buildUpdateCoordinator();
+	protected InsertCoordinator buildInsertCoordinator() {
+		return ReactiveCoordinatorFactory.buildInsertCoordinator( this, getFactory() );
 	}
 
 	@Override
-	public ReactiveDeleteCoordinator buildDeleteCoordinator() {
-		return ReactiveAbstractEntityPersister.super.buildDeleteCoordinator();
+	protected DeleteCoordinator buildDeleteCoordinator() {
+		return ReactiveCoordinatorFactory.buildDeleteCoordinator( this, getFactory() );
 	}
 
 	@Override
-	public ReactiveInsertCoordinator getInsertCoordinator() {
-		return null;
-	}
-
-	@Override
-	public ReactiveUpdateCoordinator getUpdateCoordinator() {
-		return null;
-	}
-
-	@Override
-	public ReactiveDeleteCoordinator getDeleteCoordinator() {
-		return null;
-	}
-
-	@Override
-	public IdentifierGenerator getIdentifierGenerator() throws HibernateException {
-		return reactiveDelegate.reactive( super.getIdentifierGenerator() );
+	public Generator getGenerator() throws HibernateException {
+		return reactiveDelegate.reactive( super.getGenerator() );
 	}
 
 	@Override
@@ -113,24 +101,19 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public boolean hasProxy() {
-		return hasEnhancedProxy();
-	}
-
-	@Override
 	public Object insert(Object[] fields, Object object, SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
+		throw LOG.nonReactiveMethodCall( "insertReactive" );
 	}
 
 	@Override
 	public void insert(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
+		throw LOG.nonReactiveMethodCall( "insertReactive" );
 	}
 
 	@Override
 	public void delete(Object id, Object version, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
-		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
+		throw LOG.nonReactiveMethodCall( "deleteReactive" );
 	}
 
 	@Override
@@ -144,7 +127,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 			Object object,
 			Object rowId,
 			SharedSessionContractImplementor session) throws HibernateException {
-		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
+		throw LOG.nonReactiveMethodCall( "updateReactive" );
 	}
 
 	/**
@@ -198,43 +181,36 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public CompletionStage<Void> insertReactive(
-			Object id,
-			Object[] fields,
-			Object object,
-			SharedSessionContractImplementor session) {
-		return null;
+	public CompletionStage<Object> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
+		return (CompletionStage<Object>) getInsertCoordinator().coordinateInsert( null, fields, object, session );
 	}
 
 	@Override
-	public CompletionStage<Object> insertReactive(
-			Object[] fields,
-			Object object,
-			SharedSessionContractImplementor session) {
-		return null;
+	public CompletionStage<Void> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
+		return (CompletionStage<Void>) getInsertCoordinator().coordinateInsert( id, fields, object, session );
 	}
 
 	@Override
-	public CompletionStage<Void> deleteReactive(
-			Object id,
-			Object version,
-			Object object,
-			SharedSessionContractImplementor session) {
-		return null;
+	public CompletionStage<Void> deleteReactive(Object id, Object version, Object object, SharedSessionContractImplementor session) {
+		return ( (ReactiveDeleteCoordinator) getDeleteCoordinator() ).coordinateReactiveDelete( id, version, object, session );
 	}
 
+	/**
+	 * Update an object
+	 */
 	@Override
 	public CompletionStage<Void> updateReactive(
-			Object id,
-			Object[] values,
+			final Object id,
+			final Object[] values,
 			int[] dirtyAttributeIndexes,
-			boolean hasDirtyCollection,
-			Object[] oldValues,
-			Object oldVersion,
-			Object object,
-			Object rowId,
-			SharedSessionContractImplementor session) {
-		return null;
+			final boolean hasDirtyCollection,
+			final Object[] oldValues,
+			final Object oldVersion,
+			final Object object,
+			final Object rowId,
+			final SharedSessionContractImplementor session) throws HibernateException {
+		return ( (ReactiveUpdateCoordinator) getUpdateCoordinator() )
+				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
 	}
 
 	@Override

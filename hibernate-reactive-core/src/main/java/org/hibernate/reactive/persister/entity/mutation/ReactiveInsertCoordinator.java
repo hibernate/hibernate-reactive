@@ -39,7 +39,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 		final TableInclusionChecker tableInclusionChecker = getTableInclusionChecker( insertValuesAnalysis );
 		decomposeForInsert( mutationExecutor, id, values, insertGroup, insertability, tableInclusionChecker, session );
 
-		return mutationExecutor.execute(
+		return mutationExecutor.executeReactive(
 						object,
 						insertValuesAnalysis,
 						tableInclusionChecker,
@@ -55,7 +55,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 						},
 						session
 				)
-				.whenComplete( (o, throwable) -> mutationExecutor.release() );
+				.whenComplete( (o, t) -> mutationExecutor.release() );
 	}
 
 	@Override
@@ -66,7 +66,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 
 		decomposeForInsert( mutationExecutor, id, values, getStaticInsertGroup(), entityPersister().getPropertyInsertability(), tableInclusionChecker, session );
 
-		return mutationExecutor.execute(
+		return mutationExecutor.executeReactive(
 				object,
 				insertValuesAnalysis,
 				tableInclusionChecker,

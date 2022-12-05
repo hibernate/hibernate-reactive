@@ -27,9 +27,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 
 	private CompletionStage<Void> stage = null;
 
-	public ReactiveUpdateCoordinatorStandard(
-			AbstractEntityPersister entityPersister,
-			SessionFactoryImplementor factory) {
+	public ReactiveUpdateCoordinatorStandard(AbstractEntityPersister entityPersister, SessionFactoryImplementor factory) {
 		super( entityPersister, factory );
 	}
 
@@ -125,7 +123,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				session
 		);
 
-		mutationExecutor.execute(
+		mutationExecutor.executeReactive(
 						entity,
 						null,
 						(tableMapping) -> tableMapping.getTableName().equals( entityPersister().getIdentifierTableName() ),
@@ -139,7 +137,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 						),
 						session
 				)
-				.whenComplete( (o, throwable) -> mutationExecutor.release() )
+				.whenComplete( (o, t) -> mutationExecutor.release() )
 				.whenComplete( this::complete );
 	}
 
@@ -196,7 +194,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				session
 		);
 
-		mutationExecutor.execute(
+		mutationExecutor.executeReactive(
 						entity,
 						valuesAnalysis,
 						(tableMapping) -> {
@@ -253,7 +251,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 		);
 
 
-		mutationExecutor.execute(
+		mutationExecutor.executeReactive(
 						entity,
 						valuesAnalysis,
 						valuesAnalysis.getTablesNeedingUpdate()::contains,

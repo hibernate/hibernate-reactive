@@ -11,6 +11,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.action.internal.CollectionAction;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PostCollectionRecreateEvent;
 import org.hibernate.event.spi.PostCollectionRecreateEventListener;
 import org.hibernate.event.spi.PreCollectionRecreateEvent;
@@ -22,11 +23,7 @@ import org.hibernate.stat.spi.StatisticsImplementor;
 
 public class ReactiveCollectionRecreateAction extends CollectionAction implements ReactiveExecutable {
 
-	public ReactiveCollectionRecreateAction(
-			final PersistentCollection collection,
-			final CollectionPersister persister,
-			final Object key,
-			final SharedSessionContractImplementor session) {
+	public ReactiveCollectionRecreateAction(final PersistentCollection collection, final CollectionPersister persister, final Object key, final EventSource session) {
 		super( persister, collection, key, session );
 	}
 

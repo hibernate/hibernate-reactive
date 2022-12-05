@@ -24,6 +24,7 @@ import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.context.impl.VertxContextInitiator;
+import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorServiceInitiator;
 import org.hibernate.reactive.id.factory.spi.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.pool.impl.ReactiveConnectionPoolInitiator;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfigurationInitiator;
@@ -61,6 +62,8 @@ public final class ReactiveServiceInitiators {
 		final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<>();
 
 		serviceInitiators.add( SqlScriptExtractorInitiator.INSTANCE );
+
+		serviceInitiators.add( ReactiveMutationExecutorServiceInitiator.INSTANCE );
 
 		// Definitely exclusive to Hibernate Reactive, as it marks the registry as Reactive:
 		serviceInitiators.add( ReactiveMarkerServiceInitiator.INSTANCE );

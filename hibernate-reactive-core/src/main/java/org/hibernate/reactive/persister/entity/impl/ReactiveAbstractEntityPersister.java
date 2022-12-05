@@ -19,7 +19,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.Session;
 import org.hibernate.StaleObjectStateException;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.bytecode.enhance.spi.interceptor.BytecodeLazyAttributeInterceptor;
@@ -29,7 +28,6 @@ import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterc
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
@@ -39,14 +37,10 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
-import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.internal.SingleIdArrayLoadPlan;
-import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.loader.entity.CacheEntityLoaderHelper;
-import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.EntityVersionMapping;
-import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.Lockable;
 import org.hibernate.persister.entity.OuterJoinLoadable;
@@ -54,26 +48,12 @@ import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
-import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinatorNoOp;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinatorStandard;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
-import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.stage.impl.StageSessionImpl;
-import org.hibernate.reactive.tuple.MutinyValueGenerator;
-import org.hibernate.reactive.tuple.StageValueGenerator;
 import org.hibernate.sql.SimpleSelect;
 import org.hibernate.sql.Update;
-import org.hibernate.tuple.InMemoryValueGenerationStrategy;
-import org.hibernate.tuple.ValueGenerator;
 import org.hibernate.type.BasicType;
 
 import jakarta.persistence.metamodel.Attribute;
@@ -125,115 +105,12 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return ReactiveQueryExecutorLookup.extract( session ).getReactiveConnection();
 	}
 
-	default ReactiveInsertCoordinator buildInsertCoordinator() {
-		return new ReactiveInsertCoordinator( (AbstractEntityPersister) this, getFactory() );
-	}
-
-	ReactiveInsertCoordinator getInsertCoordinator();
-
-	default ReactiveUpdateCoordinator buildUpdateCoordinator() {
-		// we only have updates to issue for entities with one or more singular attributes
-		for ( AttributeMapping attributeMapping : getAttributeMappings() ) {
-			if ( attributeMapping instanceof SingularAttributeMapping ) {
-				return new ReactiveUpdateCoordinatorStandard( (AbstractEntityPersister) this, getFactory() );
-			}
-		}
-
-		// otherwise, nothing to update
-		return new ReactiveUpdateCoordinatorNoOp( (AbstractEntityPersister) this );
-	}
-
-	ReactiveUpdateCoordinator getUpdateCoordinator();
-
-	default ReactiveDeleteCoordinator buildDeleteCoordinator() {
-		return new ReactiveDeleteCoordinator( (AbstractEntityPersister) this, getFactory() );
-	}
-
-	ReactiveDeleteCoordinator getDeleteCoordinator();
-
-	@Override
-	/**
-	 * @deprecated use the reactive version {@link #reactiveMultiLoad(Object[], SessionImplementor, MultiIdLoadOptions)}
-	 */
-	@Deprecated
-	default List<?> multiLoad(Object[] ids, SharedSessionContractImplementor session, MultiIdLoadOptions loadOptions) {
-		throw new UnsupportedOperationException("Use the reactive version: reactiveMultiLoad");
-	}
-
-	default CompletionStage<Void> reactivePreInsertInMemoryValueGeneration(Object[] fields, Object object, SharedSessionContractImplementor session) {
-		CompletionStage<Void> stage = voidFuture();
-		if ( getEntityMetamodel().hasPreInsertGeneratedValues() ) {
-			final InMemoryValueGenerationStrategy[] strategies = getEntityMetamodel().getInMemoryValueGenerationStrategies();
-			for ( int i = 0; i < strategies.length; i++ ) {
-				final int index = i;
-				final InMemoryValueGenerationStrategy strategy = strategies[i];
-				if ( strategy != null && strategy.getGenerationTiming().includesInsert() ) {
-					stage = stage.thenCompose( v -> generateValue( object, session, strategy )
-							.thenAccept( value -> {
-								fields[index] = value;
-								setValue( object, index, value );
-							} ) );
-				}
-			}
-		}
-		return stage;
-	}
-
-//	/**
-//	 * @see AbstractEntityPersister#insert(Object[], Object, SharedSessionContractImplementor)
-//	 */
-//	default CompletionStage<Void> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
-//		return (CompletionStage<Void>) getInsertCoordinator().coordinateInsert( fields, object, session );
-//	}
-//
-//	/**
-//	 *insertRea
-//	 * @see AbstractEntityPersister#insert(Object, Object[], Object, SharedSessionContractImplementor)
-//	 */
-//	default CompletionStage<Void> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
-//		return (CompletionStage<Void>) getInsertCoordinator().coordinateInsert( id, fields, object, session );
-//	}
-
-	default boolean isAllOrDirtyOptimisticLocking() {
-		OptimisticLockStyle optimisticLockStyle = delegate().getEntityMetamodel().getOptimisticLockStyle();
-		return optimisticLockStyle == OptimisticLockStyle.DIRTY
-				|| optimisticLockStyle == OptimisticLockStyle.ALL;
-	}
-
 	boolean check(
 			int rows,
 			Object id,
 			int tableNumber,
 			Expectation expectation,
 			PreparedStatement statement, String sql) throws HibernateException;
-
-	default CompletionStage<?> generateValue(
-			Object owner,
-			SharedSessionContractImplementor session,
-			InMemoryValueGenerationStrategy valueGenerationStrategy) {
-		final ValueGenerator<?> valueGenerator = valueGenerationStrategy.getValueGenerator();
-		if ( valueGenerator instanceof StageValueGenerator ) {
-			final Stage.Session stageSession = new StageSessionImpl( (ReactiveSession) session );
-			return ( (StageValueGenerator<?>) valueGenerator )
-					.generateValue( stageSession, owner );
-		}
-
-		if ( valueGenerator instanceof MutinyValueGenerator ) {
-			MutinySessionFactoryImpl mutinyFactory = new MutinySessionFactoryImpl( (SessionFactoryImpl) session.getFactory() );
-			Mutiny.Session mutinySession = new MutinySessionImpl( (ReactiveSession) session, mutinyFactory );
-			return ( (MutinyValueGenerator<?>) valueGenerator ).generateValue( mutinySession, owner )
-					.subscribeAsCompletionStage();
-		}
-
-		// We should throw an exception, but I don't want to break things for people using @CreationTimestamp or similar
-		// annotations. We need an alternative for Hibernate Reactive.
-		return completedFuture( valueGenerationStrategy.getValueGenerator().generateValue( (Session) session, owner ) );
-	}
-
-	default void setFieldValue(Object[] fields, Object object, int index, Object value) {
-		fields[index] = value;
-		delegate().setPropertyValue( object, index, fields[index] );
-	}
 
 	default String generateSelectLockString(LockOptions lockOptions) {
 		final SessionFactoryImplementor factory = getFactory();
@@ -265,7 +142,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 		return parameters().process( update.toStatementString() );
 	}
-
 
 	@Override
 	default CompletionStage<Void> reactiveLock(
@@ -425,12 +301,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			//can never happen
 			return failedFuture( new JDBCException( "error reading version", sqle ) );
 		}
-	}
-
-	default boolean hasEnhancedProxy() {
-		// skip proxy instantiation if entity is bytecode enhanced
-		return getEntityMetamodel().isLazy()
-				&& !getEntityMetamodel().getBytecodeEnhancementMetadata().isEnhancedForLazyLoading();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -662,71 +532,4 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	boolean isBatchable();
 
 	// END AbstractEntityPersister methods
-
-	class UpdateExpectation implements ReactiveConnection.Expectation {
-		private boolean successful;
-
-		private final Object id;
-		private final int table;
-		private final Expectation expectation;
-		private final ReactiveAbstractEntityPersister persister;
-
-		public UpdateExpectation(Object id, int table, Expectation expectation,
-								 ReactiveAbstractEntityPersister persister) {
-			this.id = id;
-			this.table = table;
-			this.expectation = expectation;
-			this.persister = persister;
-		}
-
-		@Override
-		public void verifyOutcome(int rowCount, int batchPosition, String batchSql) {
-			successful = persister.check( rowCount, id, table, expectation, new PreparedStatementAdaptor(), batchSql );
-		}
-
-		public boolean isSuccessful() {
-			return successful;
-		}
-	}
-
-	class DeleteExpectation implements ReactiveConnection.Expectation {
-		private final Object id;
-		private final int table;
-		private final Expectation expectation;
-		private final ReactiveAbstractEntityPersister persister;
-
-		public DeleteExpectation(Object id, int table, Expectation expectation,
-								 ReactiveAbstractEntityPersister persister) {
-			this.id = id;
-			this.table = table;
-			this.expectation = expectation;
-			this.persister = persister;
-		}
-
-		@Override
-		public void verifyOutcome(int rowCount, int batchPosition, String batchSql) {
-			persister.check( rowCount, id, table, expectation, null, batchSql );
-		}
-	}
-
-	class InsertExpectation implements ReactiveConnection.Expectation {
-		private final Expectation expectation;
-		private final ReactiveAbstractEntityPersister persister;
-
-		public InsertExpectation(Expectation expectation, ReactiveAbstractEntityPersister persister) {
-			this.expectation = expectation;
-			this.persister = persister;
-		}
-
-		@Override
-		public void verifyOutcome(int rowCount, int batchPosition, String batchSql) {
-			try {
-				expectation.verifyOutcome( rowCount, null, batchPosition, batchSql );
-			} catch (SQLException e) {
-				//can't actually occur!
-				throw new JDBCException("error while verifying result count", e);
-			}
-		}
-	}
-
 }

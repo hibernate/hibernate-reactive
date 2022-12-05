@@ -246,7 +246,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 		test(
 				context,
 				getMutinySessionFactory()
-						.withSession( s -> s.persist( new GuineaPig( 10, "Tulip" ) ).onItem().call(s::flush) )
+						.withSession( s -> s.persist( new GuineaPig( 10, "Tulip" ) ).onItem().call( s::flush ) )
 						.onItem().transformToUni( v -> selectNameFromId(10) )
 						.onItem().invoke( selectRes -> context.assertEquals( "Tulip", selectRes ) )
 		);
@@ -256,8 +256,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 	public void reactivePersist2(TestContext context) {
 		test(
 				context,
-				getMutinySessionFactory()
-						.withSession( s -> s.persist( new GuineaPig( 10, "Tulip" ) ).chain(s::flush) )
+				getMutinySessionFactory().withSession( s -> s.persist( new GuineaPig( 10, "Tulip" ) ).chain( s::flush ) )
 						.chain( () -> selectNameFromId(10) )
 						.invoke( selectRes -> context.assertEquals( "Tulip", selectRes ) )
 		);
