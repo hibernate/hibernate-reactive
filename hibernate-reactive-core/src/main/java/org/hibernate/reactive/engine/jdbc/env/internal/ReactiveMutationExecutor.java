@@ -16,6 +16,8 @@ import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
+import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -97,12 +99,15 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 		// If we get here the statement is needed - make sure it is resolved
 		session.getJdbcServices().getSqlStatementLogger().logStatement( statementDetails.getSqlString() );
 
-		valueBindings.beforeStatement( statementDetails, session );
-
+		Object[] params = PreparedStatementAdaptor.bind( statement -> {
+			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor( statementDetails, statement, session.getJdbcServices() );
+			valueBindings.beforeStatement( details, session );
+		} );
 
 		ReactiveConnection reactiveConnection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
+		String sqlString = statementDetails.getSqlString();
 		return reactiveConnection
-				.update( statementDetails.getSqlString() )
+				.update( sqlString, params )
 				.thenCompose( affectedRowCount -> {
 					if ( affectedRowCount == 0 && tableDetails.isOptional() ) {
 						// the optional table did not have a row
@@ -128,7 +133,8 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 			ModelMutationHelper.checkResults( resultChecker, statementDetails, affectedRowCount, -1 );
 		}
 		catch (SQLException e) {
-			throw session.getJdbcServices().getSqlExceptionHelper().convert(
+			throw session.getJdbcServices().getSqlExceptionHelper()
+					.convert(
 					e,
 					String.format(
 							"Unable to execute mutation PreparedStatement against table `%s`",

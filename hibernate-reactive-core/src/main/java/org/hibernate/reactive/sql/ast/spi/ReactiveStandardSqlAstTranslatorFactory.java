@@ -31,34 +31,43 @@ public class ReactiveStandardSqlAstTranslatorFactory implements SqlAstTranslator
 	public SqlAstTranslator<JdbcOperationQuerySelect> buildSelectTranslator(
 			SessionFactoryImplementor sessionFactory,
 			SelectStatement statement) {
-		return new ReactiveSqlAstTranslator<>( delegate.buildSelectTranslator( sessionFactory, statement ) );
+		SqlAstTranslator<JdbcOperationQuerySelect> translator = delegate
+				.buildSelectTranslator( sessionFactory, statement );
+		return new ReactiveSqlAstTranslator<>( translator, sessionFactory, statement );
 	}
 
 	@Override
 	public SqlAstTranslator<JdbcOperationQueryDelete> buildDeleteTranslator(
 			SessionFactoryImplementor sessionFactory,
 			DeleteStatement statement) {
-		return delegate.buildDeleteTranslator( sessionFactory, statement );
+		SqlAstTranslator<JdbcOperationQueryDelete> translator = delegate
+				.buildDeleteTranslator( sessionFactory, statement );
+		return new ReactiveSqlAstTranslator<>( translator, sessionFactory, statement );
 	}
 
 	@Override
 	public SqlAstTranslator<JdbcOperationQueryInsert> buildInsertTranslator(
 			SessionFactoryImplementor sessionFactory,
 			InsertStatement statement) {
-		return delegate.buildInsertTranslator( sessionFactory, statement );
+		SqlAstTranslator<JdbcOperationQueryInsert> translator = delegate
+				.buildInsertTranslator( sessionFactory, statement );
+		return new ReactiveSqlAstTranslator<>( translator, sessionFactory, statement );
 	}
 
 	@Override
 	public SqlAstTranslator<JdbcOperationQueryUpdate> buildUpdateTranslator(
 			SessionFactoryImplementor sessionFactory,
 			UpdateStatement statement) {
-		return delegate.buildUpdateTranslator( sessionFactory, statement );
+		SqlAstTranslator<JdbcOperationQueryUpdate> translator = delegate
+				.buildUpdateTranslator( sessionFactory, statement );
+		return new ReactiveSqlAstTranslator<>( translator, sessionFactory, statement );
 	}
 
 	@Override
 	public <O extends JdbcMutationOperation> SqlAstTranslator<O> buildModelMutationTranslator(
 			TableMutation<O> mutation,
 			SessionFactoryImplementor sessionFactory) {
-		return delegate.buildModelMutationTranslator( mutation, sessionFactory );
+		SqlAstTranslator<O> translator = delegate.buildModelMutationTranslator( mutation, sessionFactory );
+		return new ReactiveSqlAstTranslator<>( translator, sessionFactory, mutation );
 	}
 }

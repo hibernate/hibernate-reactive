@@ -16,8 +16,7 @@ import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MariaDBDialect;
 import org.hibernate.dialect.MySQLDialect;
-import org.hibernate.dialect.Oracle12cDialect;
-import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.engine.jdbc.connections.spi.JdbcConnectionAccess;
@@ -26,6 +25,7 @@ import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.reactive.dialect.ReactivePostgreSQLDialect;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveJdbcEnvironment;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -80,7 +80,8 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 		// if we get here, either we were asked to not use JDBC metadata or accessing the JDBC metadata failed.
 		if ( explicitDialect ) {
 			DialectFactory dialectFactory = registry.getService( DialectFactory.class );
-			return new ReactiveJdbcEnvironment( registry, dialectFactory.buildDialect( configurationValues, null ) );
+			Dialect dialect = dialectFactory.buildDialect( configurationValues, null );
+			return new ReactiveJdbcEnvironment( registry, dialect );
 		}
 		if ( url.isEmpty() ) {
 			throw LOG.couldNotDetermineDialectFromJdbcDriverMetadata();
@@ -131,7 +132,7 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 			return MariaDBDialect.class;
 		}
 		if ( url.startsWith( "postgresql:" ) || url.startsWith( "postgres:" ) ) {
-			return PostgreSQLDialect.class;
+			return ReactivePostgreSQLDialect.class;
 		}
 		if ( url.startsWith( "db2:" ) ) {
 			return DB2Dialect.class;
@@ -143,7 +144,7 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 			return SQLServerDialect.class;
 		}
 		if ( url.startsWith( "oracle:" ) ) {
-			return Oracle12cDialect.class;
+			return OracleDialect.class;
 		}
 
 		return null;

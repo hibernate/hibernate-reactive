@@ -11,6 +11,7 @@ import java.util.Properties;
 import org.hibernate.MappingException;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
+import org.hibernate.generator.Generator;
 import org.hibernate.id.Configurable;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.PersistentIdentifierGenerator;
@@ -26,7 +27,6 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.service.ServiceRegistry;
-import org.hibernate.tuple.Generator;
 import org.hibernate.type.Type;
 
 public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGeneratorFactory {

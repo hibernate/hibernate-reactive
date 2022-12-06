@@ -12,16 +12,17 @@ import org.hibernate.internal.util.collections.Stack;
 import org.hibernate.persister.internal.SqlFragmentPredicate;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.sqm.tree.expression.Conversion;
+import org.hibernate.reactive.sql.results.internal.ReactiveStandardValuesMappingProducer;
 import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.SqlAstNodeRenderingMode;
 import org.hibernate.sql.ast.SqlAstTranslator;
+import org.hibernate.sql.ast.spi.AbstractSqlAstTranslator;
 import org.hibernate.sql.ast.spi.SqlSelection;
 import org.hibernate.sql.ast.tree.SqlAstNode;
+import org.hibernate.sql.ast.tree.Statement;
 import org.hibernate.sql.ast.tree.delete.DeleteStatement;
 import org.hibernate.sql.ast.tree.expression.Any;
 import org.hibernate.sql.ast.tree.expression.BinaryArithmeticExpression;
-import org.hibernate.sql.ast.tree.expression.CaseSearchedExpression;
-import org.hibernate.sql.ast.tree.expression.CaseSimpleExpression;
 import org.hibernate.sql.ast.tree.expression.CastTarget;
 import org.hibernate.sql.ast.tree.expression.Collation;
 import org.hibernate.sql.ast.tree.expression.ColumnReference;
@@ -76,6 +77,7 @@ import org.hibernate.sql.ast.tree.select.SortSpecification;
 import org.hibernate.sql.ast.tree.update.Assignment;
 import org.hibernate.sql.ast.tree.update.UpdateStatement;
 import org.hibernate.sql.exec.spi.JdbcOperation;
+import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.model.ast.ColumnWriteFragment;
 import org.hibernate.sql.model.internal.TableDeleteCustomSql;
@@ -85,11 +87,15 @@ import org.hibernate.sql.model.internal.TableInsertStandard;
 import org.hibernate.sql.model.internal.TableUpdateCustomSql;
 import org.hibernate.sql.model.internal.TableUpdateStandard;
 
-public class ReactiveSqlAstTranslator<T extends JdbcOperation> implements SqlAstTranslator<T> {
+import static org.hibernate.sql.ast.SqlTreePrinter.logSqlAst;
+import static org.hibernate.sql.results.graph.DomainResultGraphPrinter.logDomainResultGraph;
 
-	private final SqlAstTranslator delegate;
+public class ReactiveSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlAstTranslator<T> implements SqlAstTranslator<T> {
 
-	public ReactiveSqlAstTranslator(SqlAstTranslator delegate) {
+	private final SqlAstTranslator<T> delegate;
+
+	public ReactiveSqlAstTranslator(SqlAstTranslator<T> delegate, SessionFactoryImplementor sessionFactory, Statement statement) {
+		super( sessionFactory, statement );
 		this.delegate = delegate;
 	}
 
@@ -125,7 +131,33 @@ public class ReactiveSqlAstTranslator<T extends JdbcOperation> implements SqlAst
 
 	@Override
 	public T translate(JdbcParameterBindings jdbcParameterBindings, QueryOptions queryOptions) {
-		return null;
+		return delegate.translate( jdbcParameterBindings, queryOptions );
+	}
+
+	@Override
+	protected JdbcOperationQuerySelect translateSelect(SelectStatement selectStatement) {
+		logDomainResultGraph( selectStatement.getDomainResultDescriptors() );
+		logSqlAst( selectStatement );
+
+		visitSelectStatement( selectStatement );
+
+		final int rowsToSkip;
+		return new JdbcOperationQuerySelect(
+				getSql(),
+				getParameterBinders(),
+				new ReactiveStandardValuesMappingProducer(
+						selectStatement.getQuerySpec().getSelectClause().getSqlSelections(),
+						selectStatement.getDomainResultDescriptors()
+				),
+				getAffectedTableNames(),
+				getFilterJdbcParameters(),
+				rowsToSkip = getRowsToSkip( selectStatement, getJdbcParameterBindings() ),
+				getMaxRows( selectStatement, getJdbcParameterBindings(), rowsToSkip ),
+				getAppliedParameterBindings(),
+				getJdbcLockStrategy(),
+				getOffsetParameter(),
+				getLimitParameter()
+		);
 	}
 
 	@Override
@@ -266,16 +298,6 @@ public class ReactiveSqlAstTranslator<T extends JdbcOperation> implements SqlAst
 	@Override
 	public void visitBinaryArithmeticExpression(BinaryArithmeticExpression arithmeticExpression) {
 		delegate.visitBinaryArithmeticExpression( arithmeticExpression );
-	}
-
-	@Override
-	public void visitCaseSearchedExpression(CaseSearchedExpression caseSearchedExpression) {
-		delegate.visitCaseSearchedExpression( caseSearchedExpression );
-	}
-
-	@Override
-	public void visitCaseSimpleExpression(CaseSimpleExpression caseSimpleExpression) {
-		delegate.visitCaseSimpleExpression( caseSimpleExpression );
 	}
 
 	@Override
