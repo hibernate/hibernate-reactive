@@ -18,6 +18,7 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.generator.Generator;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.internal.SingleIdArrayLoadPlan;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
@@ -33,8 +34,10 @@ import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
-import org.hibernate.tuple.Generator;
+import org.hibernate.reactive.util.impl.CompletionStages;
+
 
 /**
  * An {@link ReactiveEntityPersister} backed by {@link JoinedSubclassEntityPersister}
@@ -86,12 +89,13 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 
 	@Override
 	public CompletionStage<Void> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
-		return (CompletionStage<Void>) getInsertCoordinator().coordinateInsert( id, fields, object, session );
+		return ( (ReactiveInsertCoordinator) getInsertCoordinator() ).coordinateReactiveInsert( id, fields, object, session )
+				.thenCompose( CompletionStages::voidFuture );
 	}
 
 	@Override
 	public CompletionStage<Object> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
-		return (CompletionStage<Object>) getInsertCoordinator().coordinateInsert( null, fields, object, session );
+		return ( (ReactiveInsertCoordinator) getInsertCoordinator() ).coordinateReactiveInsert( null, fields, object, session );
 	}
 
 	@Override

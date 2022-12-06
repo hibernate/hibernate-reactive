@@ -6,7 +6,7 @@
 package org.hibernate.reactive.engine.impl;
 
 /**
- * @see MutationStatementPreparerImpl
+ * @see org.hibernate.engine.jdbc.internal.MutationStatementPreparerImpl
  */
 public class ReactiveMutationStatementPreparer {
 }

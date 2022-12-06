@@ -308,7 +308,8 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			}
 		}
 
-		ReactiveValuesMappingProducer mappingProducer = (ReactiveValuesMappingProducer) jdbcSelect.getJdbcValuesMappingProducer();
+		ReactiveValuesMappingProducer mappingProducer = (ReactiveValuesMappingProducer) jdbcSelect
+				.getJdbcValuesMappingProducer();
 		if ( cachedResults == null ) {
 			if ( queryResultsCacheKey == null ) {
 				return mappingProducer
