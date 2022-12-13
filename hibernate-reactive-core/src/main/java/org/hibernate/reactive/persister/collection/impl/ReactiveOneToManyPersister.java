@@ -13,6 +13,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
+import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
@@ -45,7 +46,6 @@ import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER
 /**
  * A reactive {@link OneToManyPersister}
  */
-//TODO: reactive version of writeIndex() for indexed @OneToMany associations with an @OrderColumn
 public class ReactiveOneToManyPersister extends OneToManyPersister
 		implements ReactiveAbstractCollectionPersister {
 
@@ -159,8 +159,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	}
 
 	@Override
-	public int writeElement(PreparedStatement st, Object element, int loc, SharedSessionContractImplementor session)
-			throws SQLException {
+	public int writeElement(PreparedStatement st, Object element, int loc, SharedSessionContractImplementor session) {
 		return 0;
 	}
 
@@ -171,11 +170,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	}
 
 	@Override
-	public int writeIdentifier(
-			PreparedStatement st,
-			Object identifier,
-			int loc,
-			SharedSessionContractImplementor session) throws SQLException {
+	public int writeIdentifier(PreparedStatement st, Object identifier, int loc, SharedSessionContractImplementor session) {
 		return 0;
 	}
 
@@ -186,11 +181,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	}
 
 	@Override
-	public int writeElementToWhere(
-			PreparedStatement st,
-			Object entry,
-			int loc,
-			SharedSessionContractImplementor session) throws SQLException {
+	public int writeElementToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session) {
 		return 0;
 	}
 
@@ -200,21 +191,18 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 		return 0;
 	}
 
-	/**
-	 * @see OneToManyPersister#doUpdateRows(Object, PersistentCollection, SharedSessionContractImplementor)
-	 */
 	@Override
 	public CompletionStage<Void> doReactiveUpdateRows(Object id, PersistentCollection collection, SharedSessionContractImplementor session) {
-		return null;
+		throw new NotYetImplementedException();
 	}
 
 	@Override
 	public CompletionStage<Void> recreateReactive(PersistentCollection collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
-		return null;
+		throw new NotYetImplementedException();
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveInsertRows(PersistentCollection collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
-		return null;
+		throw new NotYetImplementedException();
 	}
 }

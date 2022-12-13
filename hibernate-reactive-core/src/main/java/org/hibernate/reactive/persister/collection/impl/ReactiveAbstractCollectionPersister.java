@@ -92,9 +92,6 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
         return null;
     }
 
-    /**
-     * @see org.hibernate.persister.collection.AbstractCollectionPersister#doUpdateRows(Object, PersistentCollection, SharedSessionContractImplementor)
-     */
     CompletionStage<Void> doReactiveUpdateRows(Object id, PersistentCollection collection, SharedSessionContractImplementor session);
 
     default Object[] insertRowsParamValues(Object entry, int index, PersistentCollection collection, Object id, SharedSessionContractImplementor session) {

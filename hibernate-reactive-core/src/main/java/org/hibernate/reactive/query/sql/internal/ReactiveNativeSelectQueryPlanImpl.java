@@ -23,6 +23,7 @@ import org.hibernate.query.sql.internal.ResultSetMappingProcessor;
 import org.hibernate.query.sql.internal.SQLQueryParser;
 import org.hibernate.query.sql.spi.ParameterOccurrence;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
+import org.hibernate.reactive.query.internal.ReactiveResultSetMappingProcessor;
 import org.hibernate.reactive.query.spi.ReactiveNativeSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.exec.spi.ReactiveJdbcSelect;
@@ -50,7 +51,7 @@ public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanI
 			ResultSetMapping resultSetMapping,
 			SessionFactoryImplementor sessionFactory) {
 		super( sql, affectedTableNames, parameterList, resultSetMapping, sessionFactory );
-		final ResultSetMappingProcessor processor = new ResultSetMappingProcessor( resultSetMapping, sessionFactory );
+		final ResultSetMappingProcessor processor = new ReactiveResultSetMappingProcessor( resultSetMapping, sessionFactory );
 		final SQLQueryParser parser = new SQLQueryParser( sql, processor.process(), sessionFactory );
 		this.resultSetMapping = processor.generateResultMapping( parser.queryHasAliases() );
 		if ( affectedTableNames == null ) {

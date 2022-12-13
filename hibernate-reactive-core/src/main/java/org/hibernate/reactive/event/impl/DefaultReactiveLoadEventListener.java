@@ -5,17 +5,7 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import static org.hibernate.pretty.MessageHelper.infoString;
-import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
-import static org.hibernate.reactive.session.impl.SessionUtil.throwEntityNotFound;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-
-import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
@@ -43,6 +33,7 @@ import org.hibernate.metamodel.mapping.EntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.MappingType;
 import org.hibernate.metamodel.mapping.NonAggregatedIdentifierMapping;
+import org.hibernate.persister.entity.AttributeMappingsList;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
@@ -53,10 +44,18 @@ import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.tuple.entity.EntityMetamodel;
 
+import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
+import static org.hibernate.reactive.session.impl.SessionUtil.throwEntityNotFound;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+
 /**
  * A reactive {@link org.hibernate.event.internal.DefaultLoadEventListener}.
  * <p>
- *     Note that sometimes Hibernate ORM calls {@link org.hibernate.internal.SessionImpl#internalLoad(String, Serializable, boolean, boolean)}
+ *     Note that sometimes Hibernate ORM calls {@link org.hibernate.internal.SessionImpl#internalLoad(String, Object, boolean, boolean)}
  *     and {@link #onLoad(LoadEvent, LoadType)} is called. We only support this case when loading generates a proxy.
  * </p>
  * <p>
@@ -71,10 +70,10 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	/**
-	 * This method is not reactive but we expect it to be called only when a proxy can be returned.
+	 * This method is not reactive, but we expect it to be called only when a proxy can be returned.
 	 * <p>
 	 *     In particular, it should be called only by
-	 *     {@link org.hibernate.internal.SessionImpl#internalLoad(String, Serializable, boolean, boolean)}.
+	 *    {@link org.hibernate.internal.SessionImpl#internalLoad(String, Object, boolean, boolean)}.
 	 * </p>
 	 *
 	 * @see org.hibernate.event.internal.DefaultLoadEventListener#onLoad(LoadEvent, LoadType)
@@ -144,9 +143,9 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 						.thenAccept( event::setResult )
 						.handle( (v, x) -> {
 							if ( event.getResult() instanceof CompletionStage ) {
-								throw new AssertionFailure("Unexpected CompletionStage");
+								throw new AssertionFailure( "Unexpected CompletionStage" );
 							}
-							if (x instanceof HibernateException) {
+							if ( x instanceof HibernateException ) {
 								LOG.unableToLoadCommand( (HibernateException) x );
 							}
 							return returnNullorRethrow( x );
@@ -204,12 +203,11 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			return load( event, persister, keyToLoad, loadType );
 		}
 		//return a proxy if appropriate
-		else if ( event.getLockMode() == LockMode.NONE ) {
+		if ( event.getLockMode() == LockMode.NONE ) {
 			return proxyOrLoad( event, persister, keyToLoad, loadType );
 		}
-		else {
-			return lockAndLoad( event, persister, keyToLoad, loadType, session );
-		}
+
+		return lockAndLoad( event, persister, keyToLoad, loadType, session );
 	}
 
 	private CompletionStage<Void> checkIdClass(
@@ -225,7 +223,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		final EntityIdentifierMapping idMapping = persister.getIdentifierMapping();
 		if ( idMapping instanceof CompositeIdentifierMapping ) {
 			final CompositeIdentifierMapping compositeIdMapping = (CompositeIdentifierMapping) idMapping;
-			final List<AttributeMapping> attributeMappings = compositeIdMapping.getPartMappingType().getAttributeMappings();
+			final AttributeMappingsList attributeMappings = compositeIdMapping.getPartMappingType().getAttributeMappings();
 			if ( attributeMappings.size() == 1 ) {
 				final AttributeMapping singleIdAttribute = attributeMappings.get( 0 );
 				if ( singleIdAttribute.getMappedType() instanceof EntityMappingType ) {
@@ -237,13 +235,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 
 					if ( parentIdType.getMappedJavaType().getJavaTypeClass().isInstance( event.getEntityId() ) ) {
 						// yep that's what we have...
-						return loadByDerivedIdentitySimplePkValue(
-								event,
-								loadType,
-								persister,
-								compositeIdMapping,
-								(EntityPersister) parentIdTargetMapping
-						);
+						return loadByDerivedIdentitySimplePkValue( event, loadType, persister, compositeIdMapping, (EntityPersister) parentIdTargetMapping );
 					}
 				}
 				else if ( idClass.isInstance( event.getEntityId() ) ) {

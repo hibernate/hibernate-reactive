@@ -6,7 +6,6 @@
 package org.hibernate.reactive.persister.entity.mutation;
 
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.Internal;
@@ -20,6 +19,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
+import org.hibernate.persister.entity.AttributeMappingsList;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.persister.entity.mutation.InsertCoordinator;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
@@ -73,7 +73,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 			TableInclusionChecker tableInclusionChecker,
 			SharedSessionContractImplementor session) {
 		final JdbcValueBindings jdbcValueBindings = mutationExecutor.getJdbcValueBindings();
-		final List<AttributeMapping> attributeMappings = entityPersister().getAttributeMappings();
+		final AttributeMappingsList attributeMappings = entityPersister().getAttributeMappings();
 		mutationGroup.forEachOperation( (position, operation) -> {
 			final EntityTableMapping tableDetails = (EntityTableMapping) operation.getTableDetails();
 
