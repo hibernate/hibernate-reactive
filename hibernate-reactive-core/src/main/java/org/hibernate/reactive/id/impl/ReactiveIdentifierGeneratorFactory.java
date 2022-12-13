@@ -12,6 +12,8 @@ import org.hibernate.MappingException;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.generator.Generator;
+import org.hibernate.generator.InDatabaseGenerator;
+import org.hibernate.generator.InMemoryGenerator;
 import org.hibernate.id.Configurable;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.PersistentIdentifierGenerator;
@@ -46,9 +48,14 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 	}
 
 	@Override
-	public IdentifierGenerator createIdentifierGenerator(String strategy, Type type, Properties config) {
-		final IdentifierGenerator generator = createIdentifier( strategy, type, config );
-		if ( generator instanceof IdentifierGenerator ) {
+	public Generator createIdentifierGenerator(String strategy, Type type, Properties config) {
+		final Generator generator = super.createIdentifierGenerator( strategy, type, config );
+		//FIXME: Not sure why we need all these instanceof
+		if ( generator instanceof InMemoryGenerator ) {
+			return augmentWithReactiveGenerator( generator, type, config );
+		}
+
+		if ( generator instanceof InDatabaseGenerator ) {
 			return augmentWithReactiveGenerator( generator, type, config );
 		}
 
@@ -60,27 +67,11 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 		throw new MappingException( String.format( "Not an id generator [entity-name=%s]", entityName ) );
 	}
 
-	/**
-	 * @see StandardIdentifierGeneratorFactory#createIdentifierGenerator(String, Type, Properties)
-	 */
-	private IdentifierGenerator createIdentifier(String strategy, Type type, Properties config) {
-		try {
-			final Class<? extends Generator> clazz = getIdentifierGeneratorClass( strategy );
-			final IdentifierGenerator generator = (IdentifierGenerator) clazz.getDeclaredConstructor().newInstance();
-			generator.configure( type, config, serviceRegistry );
-			return generator;
-		}
-		catch (Exception e) {
-			final String entityName = config.getProperty( IdentifierGenerator.ENTITY_NAME );
-			throw new MappingException( String.format( "Could not instantiate id generator [entity-name=%s]", entityName ), e );
-		}
-	}
-
-	public IdentifierGenerator augmentWithReactiveGenerator(IdentifierGenerator generator, Type type, Properties params) {
+	public Generator augmentWithReactiveGenerator(Generator generator, Type type, Properties params) {
 		return augmentWithReactiveGenerator( serviceRegistry, generator, type, params );
 	}
 
-	public static IdentifierGenerator augmentWithReactiveGenerator(ServiceRegistry serviceRegistry, IdentifierGenerator generator, Type type, Properties params) {
+	public static Generator augmentWithReactiveGenerator(ServiceRegistry serviceRegistry, Generator generator, Type type, Properties params) {
 		ReactiveIdentifierGenerator<?> reactiveGenerator;
 		if ( generator instanceof SequenceStyleGenerator ) {
 			DatabaseStructure structure = ( (SequenceStyleGenerator) generator ).getDatabaseStructure();
@@ -122,7 +113,7 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 		}
 
 		( (Configurable) reactiveGenerator ).configure( type, params, serviceRegistry );
-		return new ReactiveGeneratorWrapper<>( reactiveGenerator, generator );
+		return new ReactiveGeneratorWrapper<>( reactiveGenerator, (IdentifierGenerator) generator );
 	}
 
 }

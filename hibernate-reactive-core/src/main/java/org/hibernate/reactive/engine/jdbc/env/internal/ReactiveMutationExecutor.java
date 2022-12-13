@@ -44,11 +44,7 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 			OperationResultChecker resultChecker,
 			SharedSessionContractImplementor session) {
 		return performReactiveNonBatchedOperations( valuesAnalysis, inclusionChecker, resultChecker, session )
-				.thenCompose( ignore -> performReactiveSelfExecutingOperations(
-						valuesAnalysis,
-						inclusionChecker,
-						session
-				) )
+				.thenCompose( ignore -> performReactiveSelfExecutingOperations( valuesAnalysis, inclusionChecker, session ) )
 				.thenCompose( ignore -> performReactiveBatchedOperations( valuesAnalysis, inclusionChecker ) )
 				.thenApply( CompletionStages::nullFuture );
 	}
@@ -90,8 +86,7 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 		final TableMapping tableDetails = statementDetails.getMutatingTableDetails();
 		if ( inclusionChecker != null && !inclusionChecker.include( tableDetails ) ) {
 			if ( MODEL_MUTATION_LOGGER_TRACE_ENABLED ) {
-				MODEL_MUTATION_LOGGER
-						.tracef( "Skipping execution of secondary insert : %s", tableDetails.getTableName() );
+				MODEL_MUTATION_LOGGER.tracef( "Skipping execution of secondary insert : %s", tableDetails.getTableName() );
 			}
 			return voidFuture();
 		}

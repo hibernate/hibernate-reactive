@@ -126,12 +126,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			Function<String, PreparedStatement> statementCreator,
 			ReactiveResultsConsumer<T, R> resultsConsumer) {
 
-		final ReactiveDeferredResultSetAccess deferredResultSetAccess = new ReactiveDeferredResultSetAccess(
-				jdbcSelect,
-				jdbcParameterBindings,
-				executionContext,
-				statementCreator
-		);
+		final ReactiveDeferredResultSetAccess deferredResultSetAccess = new ReactiveDeferredResultSetAccess( jdbcSelect, jdbcParameterBindings, executionContext, statementCreator );
 
 		return resolveJdbcValuesSource(
 				executionContext.getQueryIdentifier( deferredResultSetAccess.getFinalSql() ),
@@ -308,8 +303,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			}
 		}
 
-		ReactiveValuesMappingProducer mappingProducer = (ReactiveValuesMappingProducer) jdbcSelect
-				.getJdbcValuesMappingProducer();
+		ReactiveValuesMappingProducer mappingProducer = (ReactiveValuesMappingProducer) jdbcSelect.getJdbcValuesMappingProducer();
 		if ( cachedResults == null ) {
 			if ( queryResultsCacheKey == null ) {
 				return mappingProducer
