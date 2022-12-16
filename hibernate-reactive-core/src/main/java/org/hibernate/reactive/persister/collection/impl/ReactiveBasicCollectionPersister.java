@@ -5,15 +5,11 @@
  */
 package org.hibernate.reactive.persister.collection.impl;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
-import org.hibernate.collection.spi.PersistentCollection;
-import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
@@ -82,56 +78,4 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		return super.indexContainsFormula;
 	}
 
-	@Override
-	public ExecuteUpdateResultCheckStyle getInsertCheckStyle() {
-		return null;
-	}
-
-	@Override
-	public ExecuteUpdateResultCheckStyle getDeleteCheckStyle() {
-		return null;
-	}
-
-	@Override
-	public int writeElement(PreparedStatement st, Object element, int loc, SharedSessionContractImplementor session) {
-		return 0;
-	}
-
-	@Override
-	public int writeIndex(PreparedStatement st, Object index, int loc, SharedSessionContractImplementor session) {
-		return 0;
-	}
-
-	@Override
-	public int writeIdentifier(
-			PreparedStatement st,
-			Object identifier,
-			int loc,
-			SharedSessionContractImplementor session) {
-		return 0;
-	}
-
-	@Override
-	public int writeKey(PreparedStatement st, Object id, int offset, SharedSessionContractImplementor session) {
-		return 0;
-	}
-
-	@Override
-	public int writeElementToWhere(
-			PreparedStatement st,
-			Object entry,
-			int loc,
-			SharedSessionContractImplementor session) throws SQLException {
-		return 0;
-	}
-
-	@Override
-	public int writeIndexToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session) {
-		return 0;
-	}
-
-	@Override
-	public CompletionStage<Void> doReactiveUpdateRows(Object id, PersistentCollection collection, SharedSessionContractImplementor session) {
-		return null;
-	}
 }

@@ -6,7 +6,6 @@
 package org.hibernate.reactive.persister.collection.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -15,7 +14,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.collection.spi.PersistentCollection;
-import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.exception.spi.SQLExceptionConverter;
@@ -92,44 +90,6 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
         return null;
     }
 
-    CompletionStage<Void> doReactiveUpdateRows(Object id, PersistentCollection collection, SharedSessionContractImplementor session);
-
-    default Object[] insertRowsParamValues(Object entry, int index, PersistentCollection collection, Object id, SharedSessionContractImplementor session) {
-        int offset = 1;
-        return PreparedStatementAdaptor
-                .bind( st -> {
-                           int loc = writeKey( st, id, offset, session );
-                           if ( hasIdentifier() ) {
-                               loc = writeIdentifier( st, collection.getIdentifier( entry, index ), loc, session );
-                           }
-                           if ( hasIndex() && !indexContainsFormula() ) {
-                               loc = writeIndex( st, collection.getIndex( entry, index, this ), loc, session );
-                           }
-                           writeElement( st, collection.getElement( entry ), loc, session );
-                       }
-                );
-    }
-
-    default Object[] deleteRowsParamValues(Object entry, int offset, Object id, SharedSessionContractImplementor session) {
-        return PreparedStatementAdaptor
-                .bind( st -> {
-                           int loc = offset;
-                           if ( hasIdentifier() ) {
-                               writeIdentifier( st, entry, loc, session );
-                           }
-                           else {
-                               loc = writeKey( st, id, loc, session );
-                               if ( deleteByIndex() ) {
-                                   writeIndexToWhere( st, entry, loc, session );
-                               }
-                               else {
-                                   writeElementToWhere( st, entry, loc, session );
-                               }
-                           }
-                       }
-                );
-    }
-
     default boolean deleteByIndex() {
         return !isOneToMany() && hasIndex() && !indexContainsFormula();
     }
@@ -139,22 +99,6 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
 
     boolean hasIdentifier();
     boolean indexContainsFormula();
-
-    ExecuteUpdateResultCheckStyle getInsertCheckStyle();
-    ExecuteUpdateResultCheckStyle getDeleteCheckStyle();
-
-    int writeElement(PreparedStatement st, Object element, int loc, SharedSessionContractImplementor session)
-            throws SQLException;
-    int writeIndex(PreparedStatement st, Object index, int loc, SharedSessionContractImplementor session)
-            throws SQLException;
-    int writeIdentifier(PreparedStatement st, Object identifier, int loc, SharedSessionContractImplementor session)
-            throws SQLException;
-    int writeKey(PreparedStatement st, Object id, int offset, SharedSessionContractImplementor session)
-            throws SQLException;
-    int writeElementToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
-            throws SQLException;
-    int writeIndexToWhere(PreparedStatement st, Object entry, int loc, SharedSessionContractImplementor session)
-            throws SQLException;
 
     default List<Object> entryList(PersistentCollection collection) {
         Iterator<?> entries = collection.entries( this );

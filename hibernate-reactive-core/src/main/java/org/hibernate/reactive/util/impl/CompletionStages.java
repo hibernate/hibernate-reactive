@@ -71,6 +71,7 @@ public class  CompletionStages {
 	public static CompletionStage<Boolean> trueFuture() {
 		return TRUE;
 	}
+
 	public static CompletionStage<Boolean> falseFuture() {
 		return FALSE;
 	}
