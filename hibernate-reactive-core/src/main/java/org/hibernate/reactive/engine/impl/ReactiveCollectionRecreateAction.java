@@ -38,7 +38,7 @@ public class ReactiveCollectionRecreateAction extends CollectionAction implement
 		preRecreate();
 
 		return persister
-				.recreateReactive( collection, key, session )
+				.reactiveRecreate( collection, key, session )
 				.thenAccept( v -> {
 					// FIXME: I think we could move everything in a method reference call
 					session.getPersistenceContextInternal().getCollectionEntry( collection ).afterAction( collection );

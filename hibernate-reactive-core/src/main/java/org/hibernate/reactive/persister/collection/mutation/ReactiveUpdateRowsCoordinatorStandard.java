@@ -59,12 +59,7 @@ public class ReactiveUpdateRowsCoordinatorStandard extends UpdateRowsCoordinator
 		// update all the modified entries
 		return doReactiveUpdate( key, collection, session )
 				.thenAccept( count -> MODEL_MUTATION_LOGGER
-						.debugf(
-								"Updated `%s` collection rows - %s#%s",
-								count,
-								getMutationTarget().getRolePath(),
-								key
-						) );
+						.debugf( "Updated `%s` collection rows - %s#%s", count, getMutationTarget().getRolePath(), key ) );
 	}
 
 	private CompletionStage<Integer> doReactiveUpdate(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {

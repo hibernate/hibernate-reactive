@@ -6,7 +6,6 @@
 package org.hibernate.reactive.loader.ast.internal;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -44,6 +43,8 @@ import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.graph.DomainResult;
+import org.hibernate.sql.results.graph.FetchParent;
+import org.hibernate.sql.results.graph.internal.ImmutableFetchList;
 import org.hibernate.sql.results.internal.RowTransformerDatabaseSnapshotImpl;
 import org.hibernate.type.StandardBasicTypes;
 
@@ -78,7 +79,7 @@ class DatabaseSnapshotExecutor {
 				sqlAliasBaseManager,
 				new FromClauseIndex( null ),
 				LockOptions.NONE,
-				(fetchParent, creationState) -> Collections.emptyList(),
+				DatabaseSnapshotExecutor::visitEmptyFetchList,
 				true,
 				sessionFactory
 		);
@@ -158,6 +159,10 @@ class DatabaseSnapshotExecutor {
 
 		this.jdbcSelect = sqlAstTranslatorFactory.buildSelectTranslator( sessionFactory, selectStatement )
 				.translate( null, QueryOptions.NONE );
+	}
+
+	private static ImmutableFetchList visitEmptyFetchList(FetchParent fetchParent, LoaderSqlAstCreationState creationState) {
+		return ImmutableFetchList.EMPTY;
 	}
 
 	CompletionStage<Object[]> loadDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {

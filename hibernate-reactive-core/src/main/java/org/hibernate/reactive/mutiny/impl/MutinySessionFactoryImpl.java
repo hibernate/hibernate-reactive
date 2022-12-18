@@ -164,11 +164,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	}
 
 	private SessionCreationOptions options() {
-		return new SessionFactoryImpl.SessionBuilderImpl<>( delegate );
+		return new SessionFactoryImpl.SessionBuilderImpl( delegate );
 	}
 
 	private SessionCreationOptions options(String tenantIdentifier) {
-		return (SessionCreationOptions) new SessionFactoryImpl.SessionBuilderImpl<>( delegate )
+		return (SessionCreationOptions) new SessionFactoryImpl.SessionBuilderImpl( delegate )
 				.tenantIdentifier( tenantIdentifier );
 	}
 

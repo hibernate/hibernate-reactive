@@ -80,7 +80,7 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 		else if ( !affectedByFilters && collection.empty() ) {
 			if ( !emptySnapshot ) {
 				updateStage = updateStage
-						.thenCompose( v -> reactivePersister.removeReactive( key, session ) )
+						.thenCompose( v -> reactivePersister.reactiveRemove( key, session ) )
 						.thenAccept( count -> { /* We don't care, maybe we can log it as debug */} );
 			}
 		}
@@ -90,13 +90,13 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 			}
 			if ( !emptySnapshot ) {
 				updateStage = updateStage
-						.thenCompose( v -> reactivePersister.removeReactive( key, session ) )
+						.thenCompose( v -> reactivePersister.reactiveRemove( key, session ) )
 						.thenAccept( count -> { /* We don't care, maybe we can log it as debug */} );
 			}
 
 			return updateStage
 					.thenCompose( v -> reactivePersister
-							.recreateReactive( collection, key, session )
+							.reactiveRecreate( collection, key, session )
 							.thenAccept( ignore -> {
 								session.getPersistenceContextInternal().getCollectionEntry( collection ).afterAction( collection );
 								evict();

@@ -124,11 +124,11 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	private SessionCreationOptions options() {
-		return new SessionFactoryImpl.SessionBuilderImpl<>( delegate );
+		return new SessionFactoryImpl.SessionBuilderImpl( delegate );
 	}
 
 	private SessionCreationOptions options(String tenantIdentifier) {
-		return (SessionCreationOptions) new SessionFactoryImpl.SessionBuilderImpl<>( delegate )
+		return new SessionFactoryImpl.SessionBuilderImpl( delegate )
 				.tenantIdentifier( tenantIdentifier );
 	}
 
