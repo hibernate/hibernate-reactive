@@ -67,7 +67,7 @@ public class ReactiveCollectionRemoveAction extends CollectionAction implements 
 			// knowing if the collection is actually empty without querying the db)
 			removeStage = removeStage.thenAccept( v -> preRemove() )
 					.thenCompose( v -> reactivePersister
-							.removeReactive( key, session )
+							.reactiveRemove( key, session )
 							.thenAccept( ignore -> {
 								evict();
 								postRemove();

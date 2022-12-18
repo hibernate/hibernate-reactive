@@ -25,7 +25,7 @@ public interface ReactiveCollectionPersister extends CollectionPersister {
 	/**
 	 * Reactive version of {@link CollectionPersister#recreate(PersistentCollection, Object, SharedSessionContractImplementor)}
 	 */
-	CompletionStage<Void> recreateReactive(PersistentCollection collection, Object id, SharedSessionContractImplementor session);
+	CompletionStage<Void> reactiveRecreate(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session);
 
 	@Override
 	default void remove(Object id, SharedSessionContractImplementor session) {
@@ -35,7 +35,7 @@ public interface ReactiveCollectionPersister extends CollectionPersister {
 	/**
 	 * Reactive version of {@link CollectionPersister#remove(Object, SharedSessionContractImplementor)}
 	 */
-	CompletionStage<Void> removeReactive(Object id, SharedSessionContractImplementor session);
+	CompletionStage<Void> reactiveRemove(Object id, SharedSessionContractImplementor session);
 
 	@Override
 	default void deleteRows(PersistentCollection<?> collection, Object key, SharedSessionContractImplementor session) {
@@ -45,7 +45,7 @@ public interface ReactiveCollectionPersister extends CollectionPersister {
 	/**
 	 * Reactive version of {@link CollectionPersister#deleteRows(PersistentCollection, Object, SharedSessionContractImplementor)}
 	 */
-	CompletionStage<Void> reactiveDeleteRows(PersistentCollection collection, Object id, SharedSessionContractImplementor session);
+	CompletionStage<Void> reactiveDeleteRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session);
 
 	@Override
 	default void insertRows(PersistentCollection<?> collection, Object key, SharedSessionContractImplementor session) {
@@ -55,7 +55,7 @@ public interface ReactiveCollectionPersister extends CollectionPersister {
 	/**
 	 * Reactive version of {@link CollectionPersister#insertRows(PersistentCollection, Object, SharedSessionContractImplementor)}
 	 */
-	CompletionStage<Void> reactiveInsertRows( PersistentCollection collection, Object id, SharedSessionContractImplementor session);
+	CompletionStage<Void> reactiveInsertRows( PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session);
 
 	@Override
 	default void updateRows(PersistentCollection<?> collection, Object key, SharedSessionContractImplementor session) {
@@ -65,7 +65,7 @@ public interface ReactiveCollectionPersister extends CollectionPersister {
 	/**
 	 * Reactive version of  {@link CollectionPersister#updateRows(PersistentCollection, Object, SharedSessionContractImplementor)}
 	 */
-	CompletionStage<Void> reactiveUpdateRows(PersistentCollection collection, Object id, SharedSessionContractImplementor session);
+	CompletionStage<Void> reactiveUpdateRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session);
 
 	@Override
 	default void initialize(Object key, SharedSessionContractImplementor session) throws HibernateException {

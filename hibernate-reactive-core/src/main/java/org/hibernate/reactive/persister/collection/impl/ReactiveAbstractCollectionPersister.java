@@ -12,7 +12,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.HibernateException;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -51,44 +50,30 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#recreate(PersistentCollection, Object, SharedSessionContractImplementor)
      */
-    default CompletionStage<Void> recreateReactive(
-            PersistentCollection collection,
-            Object id,
-            SharedSessionContractImplementor session)
-            throws HibernateException {
-        return null;
-    }
+    CompletionStage<Void> reactiveRecreate(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session);
 
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#remove(Object, SharedSessionContractImplementor)
      */
-    default CompletionStage<Void> removeReactive(Object id, SharedSessionContractImplementor session) {
-        return null;
-    }
+    CompletionStage<Void> reactiveRemove(Object id, SharedSessionContractImplementor session);
 
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#deleteRows(PersistentCollection, Object, SharedSessionContractImplementor)
      */
     @Override
-    default CompletionStage<Void> reactiveDeleteRows(PersistentCollection collection, Object id, SharedSessionContractImplementor session) {
-        return null;
-    }
+    CompletionStage<Void> reactiveDeleteRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session);
 
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#insertRows(PersistentCollection, Object, SharedSessionContractImplementor)
      */
     @Override
-    default CompletionStage<Void> reactiveInsertRows(PersistentCollection collection, Object id, SharedSessionContractImplementor session) {
-        return null;
-    }
+    CompletionStage<Void> reactiveInsertRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session);
 
     /**
      * @see org.hibernate.persister.collection.AbstractCollectionPersister#updateRows(PersistentCollection, Object, SharedSessionContractImplementor)
      */
     @Override
-    default CompletionStage<Void> reactiveUpdateRows(PersistentCollection collection, Object id, SharedSessionContractImplementor session) {
-        return null;
-    }
+    CompletionStage<Void> reactiveUpdateRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session);
 
     default boolean deleteByIndex() {
         return !isOneToMany() && hasIndex() && !indexContainsFormula();
@@ -100,7 +85,7 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     boolean hasIdentifier();
     boolean indexContainsFormula();
 
-    default List<Object> entryList(PersistentCollection collection) {
+    default List<Object> entryList(PersistentCollection<?> collection) {
         Iterator<?> entries = collection.entries( this );
         List<Object> elements = new ArrayList<>();
         while ( entries.hasNext() ) {
@@ -109,7 +94,7 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
         return elements;
     }
 
-    default boolean needsUpdate(PersistentCollection collection, List<Object> entries) {
+    default boolean needsUpdate(PersistentCollection<?> collection, List<Object> entries) {
         for ( int i = 0, size = entries.size(); i < size; i++ ) {
             Object element = entries.get(i);
             if ( collection.needsUpdating( element, i, getElementType() ) ) {
@@ -119,7 +104,7 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
         return false;
     }
 
-    default boolean needsInsert(PersistentCollection collection, List<Object> entries) {
+    default boolean needsInsert(PersistentCollection<?> collection, List<Object> entries) {
         for ( int i = 0, size = entries.size(); i < size; i++ ) {
             Object element = entries.get(i);
             if ( collection.needsInserting( element, i, getElementType() ) ) {
