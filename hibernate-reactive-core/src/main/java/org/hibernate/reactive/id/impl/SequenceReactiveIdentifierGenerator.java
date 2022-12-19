@@ -48,7 +48,6 @@ public class SequenceReactiveIdentifierGenerator extends BlockingIdentifierGener
 
 	private String sql;
 	private int increment;
-
 	@Override
 	protected int getBlockSize() {
 		return increment;
@@ -117,12 +116,6 @@ public class SequenceReactiveIdentifierGenerator extends BlockingIdentifierGener
 
 	public QualifiedName getSequenceName() {
 		return qualifiedName;
-	}
-
-	@Override
-	public boolean supportsJdbcBatchInserts() {
-		// TODO: Do we need to implement this?
-		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
 	protected int determineIncrementForSequenceEmulation(Properties params) {

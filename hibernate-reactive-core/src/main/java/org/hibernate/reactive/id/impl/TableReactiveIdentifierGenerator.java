@@ -72,6 +72,7 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 
 	@Override
 	protected CompletionStage<Long> nextHiValue(ReactiveConnectionSupplier session) {
+
 		// We need to read the current hi value from the table
 		// and update it by the specified increment, but we
 		// need to do it atomically, and without depending on
@@ -109,7 +110,7 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 							// 3) check the updated row count to detect simultaneous update
 							.thenCompose(
 									rowCount -> {
-										switch (rowCount) {
+										switch ( rowCount ) {
 											case 1:
 												//we successfully obtained the next hi value
 												return completedFuture( id );
@@ -118,7 +119,11 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 												//so retry everything from scratch
 												return nextHiValue( session );
 											default:
-												throw new TooManyRowsAffectedException( "multiple rows in id table", 1, rowCount );
+												throw new TooManyRowsAffectedException(
+														"multiple rows in id table",
+														1,
+														rowCount
+												);
 										}
 									}
 							);
@@ -154,11 +159,6 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 	@Override
 	public Object generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
 		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean supportsJdbcBatchInserts() {
-		return IdentifierGenerator.super.supportsJdbcBatchInserts();
 	}
 
 	private String applyLocksToSelect(Dialect dialect, String alias, String query) {

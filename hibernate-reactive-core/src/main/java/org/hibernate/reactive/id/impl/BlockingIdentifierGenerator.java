@@ -28,6 +28,7 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 	/**
 	 * The block size (the number of "lo" values for each "hi" value)
 	 */
+
 	protected abstract int getBlockSize();
 
 	/**

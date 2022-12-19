@@ -97,7 +97,7 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 			final Connection connection = jdbcConnectionAccess.obtainConnection();
 			try {
 				Dialect dialect = dialect( configurationValues, dialectFactory, connection );
-				return new ReactiveJdbcEnvironment( registry, dialect, connection.getMetaData() );
+				return new ReactiveJdbcEnvironment( registry, dialect );
 			}
 			finally {
 				jdbcConnectionAccess.releaseConnection( connection );

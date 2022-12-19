@@ -222,12 +222,8 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 				.thenCompose( id -> {
 					Object[] state = persister.getPropertyValues( entity );
 					if ( persister.isVersioned() ) {
-						boolean substitute = Versioning.seedVersion(
-								state,
-								persister.getVersionProperty(),
-								persister.getVersionMapping(),
-								this
-						);
+						boolean substitute = Versioning
+								.seedVersion( state, persister.getVersionProperty(), persister.getVersionMapping(), this );
 						if ( substitute ) {
 							persister.setValues( entity, state );
 						}
@@ -235,18 +231,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 					if ( persister.isIdentifierAssignedByInsert() ) {
 						return persister.insertReactive( state, entity, this )
-								.thenAccept( generatedId -> assignIdIfNecessary(
-										entity,
-										generatedId,
-										persister,
-										this
-								) );
+								.thenAccept( generatedId -> assignIdIfNecessary( entity, generatedId, persister, this ) );
 					}
-					else {
-						id = assignIdIfNecessary( id, entity, persister, this );
-						persister.setIdentifier( entity, id, this );
-						return persister.insertReactive( id, state, entity, this );
-					}
+					id = assignIdIfNecessary( id, entity, persister, this );
+					persister.setIdentifier( entity, id, this );
+					return persister.insertReactive( id, state, entity, this );
 				} );
 	}
 

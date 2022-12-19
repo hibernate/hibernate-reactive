@@ -13,7 +13,6 @@ import org.hibernate.LockMode;
 import org.hibernate.NonUniqueObjectException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.engine.internal.CascadePoint;
-import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityEntryExtraState;
@@ -24,6 +23,9 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.WrapVisitor;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.generator.Generator;
+import org.hibernate.generator.InMemoryGenerator;
+import org.hibernate.id.IdentifierGenerationException;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
@@ -31,18 +33,22 @@ import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityIdentityInsertAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityRegularInsertAction;
+import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
+import static org.hibernate.engine.internal.ManagedTypeHelper.processIfSelfDirtinessTracker;
+import static org.hibernate.generator.EventType.INSERT;
+import static org.hibernate.id.IdentifierGeneratorHelper.SHORT_CIRCUIT_INDICATOR;
 import static org.hibernate.pretty.MessageHelper.infoString;
-import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
-import static org.hibernate.reactive.id.impl.IdentifierGeneration.generateId;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Functionality common to persist and merge event listeners.
@@ -114,20 +120,47 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			boolean requiresImmediateIdAccess) {
 		callbackRegistry.preCreate( entity );
 
-		ManagedTypeHelper.processIfSelfDirtinessTracker( entity, SelfDirtinessTracker::$$_hibernate_clearDirtyAttributes );
+		processIfSelfDirtinessTracker( entity, SelfDirtinessTracker::$$_hibernate_clearDirtyAttributes );
 
-		EntityPersister persister = source.getEntityPersister( entityName, entity );
-		boolean autoincrement = persister.isIdentifierAssignedByInsert();
-		return generateId( entity, persister, (ReactiveSession) source, source.getSession() )
-				.thenCompose( id -> reactivePerformSave(
-						entity,
-						autoincrement ? null : assignIdIfNecessary( id, entity, persister, source.getSession() ),
-						persister,
-						autoincrement,
-						context,
-						source,
-						!autoincrement || requiresImmediateIdAccess
-				) );
+		final EntityPersister persister = source.getEntityPersister( entityName, entity );
+		Generator generator = persister.getGenerator();
+		if ( !generator.generatedByDatabase() ) {
+			if ( generator instanceof ReactiveIdentifierGenerator ) {
+				return ( (ReactiveIdentifierGenerator<?>) generator )
+						.generate( ( ReactiveConnectionSupplier ) source, entity )
+						.thenCompose( generatedId -> performSaveWithId( entity, context, source, persister, generator, generatedId ) );
+			}
+
+			final Object generatedId = ( (InMemoryGenerator) generator )
+					.generate( source, entity, null, INSERT );
+			return performSaveWithId( entity, context, source, persister, generator, generatedId );
+		}
+
+		return reactivePerformSave( entity, null, persister, true, context, source, requiresImmediateIdAccess );
+	}
+
+	private CompletionStage<Void> performSaveWithId(
+			Object entity,
+			C context,
+			EventSource source,
+			EntityPersister persister,
+			Generator generator,
+			Object generatedId) {
+		if ( generatedId == null ) {
+			throw new IdentifierGenerationException( "null id generated for: " + entity.getClass() );
+		}
+		if ( generatedId == SHORT_CIRCUIT_INDICATOR ) {
+			source.getIdentifier( entity );
+			return voidFuture();
+		}
+		if ( LOG.isDebugEnabled() ) {
+			LOG.debugf(
+					"Generated identifier: %s, using strategy: %s",
+					persister.getIdentifierType().toLoggableString( generatedId, source.getFactory() ),
+					generator.getClass().getName()
+			);
+		}
+		return reactivePerformSave( entity, generatedId, persister, false, context, source, true );
 	}
 
 	/**

@@ -9,7 +9,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.id.IdentifierGenerator;
+import org.hibernate.generator.Generator;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.logging.impl.Log;
@@ -29,10 +29,10 @@ public class IdentifierGeneration {
 
 	@SuppressWarnings("unchecked")
 	public static CompletionStage<Object> generateId(Object entity, EntityPersister persister, ReactiveConnectionSupplier connectionSupplier, SharedSessionContractImplementor session) {
-		IdentifierGenerator generator = persister.getIdentifierGenerator();
+		Generator generator = persister.getGenerator();
 		return generator instanceof ReactiveIdentifierGenerator
 				? ( (ReactiveIdentifierGenerator<Object>) generator ).generate( connectionSupplier, entity )
-				: completedFuture( generator.generate( session, entity ) );
+				: completedFuture( generator.generatesSometimes() );
 	}
 
 	public static Object assignIdIfNecessary(Object generatedId, Object entity, EntityPersister persister, SharedSessionContractImplementor session) {
