@@ -64,8 +64,7 @@ public class ReactivePostgreSQLSqlAstTranslator<T extends JdbcOperation> extends
 
 	@Override
 	public String getSql() {
-		String jdbcSql = super.getSql();
-		String sql = PostgresParameters.INSTANCE.process( jdbcSql );
-		return sql;
+		// Not all queries goes through the appendSql
+		return PostgresParameters.INSTANCE.process( super.getSql() );
 	}
 }
