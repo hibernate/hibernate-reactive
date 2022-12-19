@@ -26,6 +26,7 @@ import org.junit.Test;
 import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -65,27 +66,8 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testReactive(TestContext context) {
-		final Flour almond = new Flour( 1, "Almond", "made from ground almonds.", "Gluten free" );
-
-		try (Session session = ormFactory.openSession()) {
-			session.beginTransaction();
-			session.persist( almond );
-			session.getTransaction().commit();
-		}
-
-		// Check database with Stage session and verify 'almond' flour exists
-		test( context, getMutinySessionFactory()
-				.withSession( s -> s
-						.createQuery( "from Flour" )
-						.getResultList() )
-				.invoke( context::assertNotNull )
-		);
-	}
-
-	@Test
 	public void testORM(TestContext context) {
-		final Flour almond = new Flour( 1, "Almond", "made from ground almonds.", "Gluten free" );
+		final Flour almond = new Flour( "Almond", "made from ground almonds.", "Gluten free" );
 
 		try (Session session = ormFactory.openSession()) {
 			session.beginTransaction();
@@ -97,12 +79,6 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 			List<Flour> list = session.createNativeQuery( "select * from Flour", Flour.class ).list();
 			System.out.println( list );
 		}
-
-		// Check database with Stage session and verify 'almond' flour exists
-		test( context, openSession()
-				.thenCompose( stageSession -> stageSession.find( Flour.class, almond.id ) )
-				.thenAccept( entityFound -> context.assertEquals( almond, entityFound ) )
-		);
 	}
 
 	@Entity(name = "Flour")
@@ -118,14 +94,14 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 		public Flour() {
 		}
 
-		public Flour(Integer id, String name, String description, String type) {
-			this.id = id;
+		public Flour(String name, String description, String type) {
 			this.name = name;
 			this.description = description;
 			this.type = type;
 		}
 
 		@Id
+		@GeneratedValue
 		public Integer getId() {
 			return id;
 		}

@@ -42,11 +42,6 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 		this.serviceRegistry = serviceRegistry;
 	}
 
-	public ReactiveIdentifierGeneratorFactory(ServiceRegistry serviceRegistry, boolean ignoreBeanContainer) {
-		super( serviceRegistry, ignoreBeanContainer );
-		this.serviceRegistry = serviceRegistry;
-	}
-
 	@Override
 	public Generator createIdentifierGenerator(String strategy, Type type, Properties config) {
 		final Generator generator = super.createIdentifierGenerator( strategy, type, config );
@@ -59,8 +54,8 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 			return augmentWithReactiveGenerator( generator, type, config );
 		}
 
-		if ( generator instanceof ReactiveIdentifierGenerator) {
-			return  new ReactiveGeneratorWrapper<>( (ReactiveIdentifierGenerator<?>) generator );
+		if ( generator instanceof ReactiveIdentifierGenerator ) {
+			return new ReactiveGeneratorWrapper( (ReactiveIdentifierGenerator) generator, type.getReturnedClass() );
 		}
 
 		final String entityName = config.getProperty( IdentifierGenerator.ENTITY_NAME );
@@ -113,7 +108,7 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 		}
 
 		( (Configurable) reactiveGenerator ).configure( type, params, serviceRegistry );
-		return new ReactiveGeneratorWrapper<>( reactiveGenerator, (IdentifierGenerator) generator );
+		return new ReactiveGeneratorWrapper( reactiveGenerator, (IdentifierGenerator) generator, type.getReturnedClass() );
 	}
 
 }

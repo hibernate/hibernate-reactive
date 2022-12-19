@@ -37,6 +37,16 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 
 	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
+	@Override
+	default Object execute(
+			Object modelReference,
+			ValuesAnalysis valuesAnalysis,
+			TableInclusionChecker inclusionChecker,
+			OperationResultChecker resultChecker,
+			SharedSessionContractImplementor session) {
+		throw LOG.nonReactiveMethodCall( "executeReactive" );
+	}
+
 	default CompletionStage<Object> executeReactive(
 			Object modelReference,
 			ValuesAnalysis valuesAnalysis,

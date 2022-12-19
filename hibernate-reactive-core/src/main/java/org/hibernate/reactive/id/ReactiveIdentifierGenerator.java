@@ -6,7 +6,7 @@
 package org.hibernate.reactive.id;
 
 import org.hibernate.Incubating;
-import org.hibernate.reactive.id.impl.TableReactiveIdentifierGenerator;
+import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
 import java.util.concurrent.CompletionStage;
@@ -21,11 +21,11 @@ import java.util.concurrent.CompletionStage;
  * and declaring the custom implementation class using
  * {@link org.hibernate.annotations.GenericGenerator}.
  *
- * @see TableReactiveIdentifierGenerator
+ * @see IdentifierGenerator
  */
 @Incubating
-@FunctionalInterface
 public interface ReactiveIdentifierGenerator<Id> {
+
 	/**
 	 * Returns a generated identifier, via a {@link CompletionStage}.
 	 *
