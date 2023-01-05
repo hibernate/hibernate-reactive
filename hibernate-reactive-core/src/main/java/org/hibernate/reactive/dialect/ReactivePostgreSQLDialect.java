@@ -8,8 +8,10 @@ package org.hibernate.reactive.dialect;
 import org.hibernate.dialect.DatabaseVersion;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.dialect.PostgreSQLDriverKind;
+import org.hibernate.dialect.identity.IdentityColumnSupport;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.reactive.dialect.identity.ReactiveIdentityColumnSupportAdapter;
 import org.hibernate.reactive.sql.ast.spi.ReactivePostgreSQLSqlAstTranslator;
 import org.hibernate.sql.ast.SqlAstTranslator;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
@@ -42,5 +44,10 @@ public class ReactivePostgreSQLDialect extends PostgreSQLDialect {
 				return new ReactivePostgreSQLSqlAstTranslator<>( sessionFactory, statement );
 			}
 		};
+	}
+
+	@Override
+	public IdentityColumnSupport getIdentityColumnSupport() {
+		return new ReactiveIdentityColumnSupportAdapter( super.getIdentityColumnSupport() );
 	}
 }
