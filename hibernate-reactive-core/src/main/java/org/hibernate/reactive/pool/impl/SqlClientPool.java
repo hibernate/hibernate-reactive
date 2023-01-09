@@ -5,14 +5,14 @@
  */
 package org.hibernate.reactive.pool.impl;
 
-import java.util.concurrent.CompletionStage;
-
+import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.SqlConnection;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
-import io.vertx.sqlclient.Pool;
-import io.vertx.sqlclient.SqlConnection;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A pool of reactive connections backed by a supplier of
@@ -71,11 +71,20 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	}
 
 	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool) {
-		return pool.getConnection()
-				.toCompletionStage().thenApply( this::newConnection );
+		AtomicReference<CompletionStage<ReactiveConnection>> resultReference = new AtomicReference<>();
+		CompletionStage<ReactiveConnection> reactiveConnectionCompletableFuture = pool.getConnection()
+				.map(this::newConnection)
+				.onComplete(handler -> {
+					if (handler.result() != null && resultReference.get() != null && resultReference.get().toCompletableFuture().isCancelled()) {
+						handler.result().close();
+					}
+				})
+				.toCompletionStage();
+		resultReference.set(reactiveConnectionCompletableFuture);
+		return reactiveConnectionCompletableFuture;
 	}
 
-	private SqlClientConnection newConnection(SqlConnection connection) {
+	private ReactiveConnection newConnection(SqlConnection connection) {
 		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger() );
 	}
 
