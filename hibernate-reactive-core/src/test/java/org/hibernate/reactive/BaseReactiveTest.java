@@ -5,14 +5,18 @@
  */
 package org.hibernate.reactive;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-import javax.persistence.criteria.CriteriaQuery;
-
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.RunTestOnContext;
+import io.vertx.ext.unit.junit.Timeout;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.micrometer.MicrometerMetricsOptions;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -28,22 +32,19 @@ import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.SessionFactoryManager;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 
-import io.smallrye.mutiny.Uni;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.RunTestOnContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import javax.persistence.criteria.CriteriaQuery;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -95,7 +96,9 @@ public abstract class BaseReactiveTest {
 
 	@ClassRule
 	public static RunTestOnContext vertxContextRule = new RunTestOnContext( () -> {
-		VertxOptions options = new VertxOptions();
+		Metrics.addRegistry(new SimpleMeterRegistry());
+		VertxOptions options = new VertxOptions().setMetricsOptions(new MicrometerMetricsOptions()
+                .setEnabled(true));
 		options.setBlockedThreadCheckInterval( 5 );
 		options.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
 		return Vertx.vertx( options );
