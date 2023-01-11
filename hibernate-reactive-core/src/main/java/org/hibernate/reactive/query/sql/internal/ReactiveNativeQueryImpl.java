@@ -93,7 +93,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	private ReactiveAbstractSelectionQuery<R> createSelectionQueryDelegate(SharedSessionContractImplementor session) {
 		return new ReactiveAbstractSelectionQuery<>(
-				null,
+				this::getQueryOptions,
 				session,
 				this::doReactiveList,
 				this::getNull,
@@ -103,7 +103,8 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 				this::getQueryString,
 				this::beforeQuery,
 				this::afterQuery,
-				AbstractSelectionQuery::uniqueElement
+				AbstractSelectionQuery::uniqueElement,
+				null
 		);
 	}
 	private CompletionStage<List<R>> doReactiveList() {
