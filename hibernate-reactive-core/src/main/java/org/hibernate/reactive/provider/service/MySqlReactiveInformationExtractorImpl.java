@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.boot.model.naming.Identifier;
-import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.tool.schema.extract.spi.ExtractionContext;
 
 /**
@@ -52,7 +51,7 @@ public class MySqlReactiveInformationExtractorImpl extends AbstractReactiveInfor
 			Identifier tableName,
 			ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
 		// This functionality is not used by ORM.
-		throw new NotYetImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

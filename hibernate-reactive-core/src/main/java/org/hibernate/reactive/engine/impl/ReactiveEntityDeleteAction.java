@@ -5,28 +5,32 @@
  */
 package org.hibernate.reactive.engine.impl;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityDeleteAction;
 import org.hibernate.cache.spi.access.EntityDataAccess;
-import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+
 /**
- * A reactific {@link EntityDeleteAction}.
+ * A reactive {@link EntityDeleteAction}.
  */
 public class ReactiveEntityDeleteAction extends EntityDeleteAction implements ReactiveExecutable {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	public ReactiveEntityDeleteAction(
 			Object id,
@@ -41,7 +45,7 @@ public class ReactiveEntityDeleteAction extends EntityDeleteAction implements Re
 
 	@Override
 	public void execute() throws HibernateException {
-		throw new NotYetImplementedException();
+		throw LOG.nonReactiveMethodCall( "reactiveExecute" );
 	}
 
 	@Override

@@ -11,9 +11,9 @@ import java.util.Properties;
 import org.hibernate.MappingException;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
+import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.Generator;
-import org.hibernate.generator.InDatabaseGenerator;
-import org.hibernate.generator.InMemoryGenerator;
+import org.hibernate.generator.OnExecutionGenerator;
 import org.hibernate.id.Configurable;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.PersistentIdentifierGenerator;
@@ -46,11 +46,11 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 	public Generator createIdentifierGenerator(String strategy, Type type, Properties config) {
 		final Generator generator = super.createIdentifierGenerator( strategy, type, config );
 		//FIXME: Not sure why we need all these instanceof
-		if ( generator instanceof InMemoryGenerator ) {
+		if ( generator instanceof BeforeExecutionGenerator ) {
 			return augmentWithReactiveGenerator( generator, type, config );
 		}
 
-		if ( generator instanceof InDatabaseGenerator ) {
+		if ( generator instanceof OnExecutionGenerator ) {
 			return augmentWithReactiveGenerator( generator, type, config );
 		}
 

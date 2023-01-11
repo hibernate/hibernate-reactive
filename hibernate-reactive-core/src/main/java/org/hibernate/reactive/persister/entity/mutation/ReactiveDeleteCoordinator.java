@@ -111,47 +111,6 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 				.createExecutor( this::getBatchKey, operationGroup, session );
 	}
 
-	@Override
-	protected void doStaticDelete(Object entity, Object id, Object version, SharedSessionContractImplementor session) {
-		final MutationExecutorService mutationExecutorService = session
-				.getFactory()
-				.getServiceRegistry()
-				.getService( MutationExecutorService.class );
-
-		final boolean applyVersion = entity != null;
-		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( entity, session, mutationExecutorService );
-
-		getStaticDeleteGroup().forEachOperation( (position, mutation) -> {
-			if ( mutation != null ) {
-				final String tableName = mutation.getTableDetails().getTableName();
-				mutationExecutor.getPreparedStatementDetails( tableName );
-			}
-		} );
-
-		if ( applyVersion ) {
-			applyLocking( version, null, mutationExecutor, session );
-		}
-
-		applyId( id, null, mutationExecutor, getStaticDeleteGroup(), session );
-
-		mutationExecutor.executeReactive(
-						entity,
-						null,
-						null,
-						(statementDetails, affectedRowCount, batchPosition) -> ModelMutationHelper.identifiedResultsCheck(
-								statementDetails,
-								affectedRowCount,
-								batchPosition,
-								entityPersister(),
-								id,
-								factory()
-						),
-						session
-				)
-				.whenComplete( (o, throwable) -> mutationExecutor.release() )
-				.whenComplete( this::complete );
-	}
-
 	private ReactiveMutationExecutor mutationExecutor(
 			Object entity,
 			SharedSessionContractImplementor session,

@@ -38,8 +38,8 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.jdbc.Expectation;
+import org.hibernate.loader.ast.internal.CacheEntityLoaderHelper;
 import org.hibernate.loader.ast.internal.SingleIdArrayLoadPlan;
-import org.hibernate.loader.entity.CacheEntityLoaderHelper;
 import org.hibernate.metamodel.mapping.EntityVersionMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.Lockable;
@@ -357,12 +357,10 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		LOG.tracef( "Initializing lazy properties from datastore (triggered for `%s`)", fieldName );
 
-		String fetchGroup = getEntityMetamodel()
-				.getBytecodeEnhancementMetadata()
+		final String fetchGroup = getEntityMetamodel().getBytecodeEnhancementMetadata()
 				.getLazyAttributesMetadata()
 				.getFetchGroupName( fieldName );
-		List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors = getEntityMetamodel()
-				.getBytecodeEnhancementMetadata()
+		final List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors = getEntityMetamodel().getBytecodeEnhancementMetadata()
 				.getLazyAttributesMetadata()
 				.getFetchGroupAttributeDescriptors( fetchGroup );
 

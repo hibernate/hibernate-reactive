@@ -8,7 +8,6 @@ package org.hibernate.reactive.query.sqm.iternal;
 
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
@@ -32,6 +31,6 @@ public class ReactiveSimpleInsertQueryPlan implements ReactiveNonSelectQueryPlan
 
 	@Override
 	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 }

@@ -126,7 +126,7 @@ public class SqlClientConnection implements ReactiveConnection {
 	@Override
 	public CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues) {
 		return preparedQueryOutsideTransaction( sql, Tuple.wrap( paramValues ) )
-				.thenApply(ResultSetAdaptor::new);
+				.thenApply( ResultSetAdaptor::new );
 	}
 
 	@Override

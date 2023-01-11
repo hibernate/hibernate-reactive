@@ -7,7 +7,6 @@ package org.hibernate.reactive.query.sqm.iternal;
 
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableInsertStrategy;
@@ -35,6 +34,6 @@ public class ReactiveMultiTableInsertQueryPlan implements ReactiveNonSelectQuery
 	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
 //		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmInsert );
 //		return mutationStrategy.executeInsert( sqmInsert, domainParameterXref, executionContext );
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 }

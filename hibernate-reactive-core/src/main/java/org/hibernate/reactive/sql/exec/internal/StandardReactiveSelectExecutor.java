@@ -6,6 +6,7 @@
 package org.hibernate.reactive.sql.exec.internal;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
@@ -16,7 +17,6 @@ import java.util.function.Function;
 
 import org.hibernate.CacheMode;
 import org.hibernate.LockOptions;
-import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.cache.spi.QueryKey;
 import org.hibernate.cache.spi.QueryResultsCache;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -24,6 +24,8 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.query.TupleTransformer;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.exec.spi.ReactiveSelectExecutor;
 import org.hibernate.reactive.sql.exec.spi.ReactiveValuesResultSet;
@@ -49,11 +51,14 @@ import org.hibernate.sql.results.spi.RowTransformer;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.BasicType;
 import org.hibernate.type.descriptor.java.JavaType;
+import org.hibernate.type.spi.TypeConfiguration;
 
 /**
  * @see org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl
  */
 public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	public static final StandardReactiveSelectExecutor INSTANCE = new StandardReactiveSelectExecutor();
 
@@ -320,7 +325,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			}
 		}
 		else {
-			throw new NotYetImplementedFor6Exception();
+			throw LOG.notYetImplemented();
 //			final JdbcValuesMapping jdbcValuesMapping;
 //			if ( cachedResults.isEmpty() || !( cachedResults.get( 0 ) instanceof JdbcValuesMetadata ) ) {
 //				jdbcValuesMapping = mappingProducer.resolve( resultSetAccess, factory );
@@ -332,7 +337,9 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		}
 	}
 
-
+	/**
+	 * see {@link org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl.CapturingJdbcValuesMetadata}
+	 */
 	public static class CapturingJdbcValuesMetadata implements JdbcValuesMetadata {
 		private final ReactiveResultSetAccess resultSetAccess;
 		private String[] columnNames;
@@ -394,14 +401,14 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		public <J> BasicType<J> resolveType(
 				int position,
 				JavaType<J> explicitJavaType,
-				SessionFactoryImplementor sessionFactory) {
+				TypeConfiguration typeConfiguration) {
 			if ( columnNames == null ) {
 				initializeArrays();
 			}
 			final BasicType<J> basicType = resultSetAccess.resolveType(
 					position,
 					explicitJavaType,
-					sessionFactory
+					typeConfiguration
 			);
 			types[position - 1] = basicType;
 			return basicType;
@@ -451,7 +458,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		public <J> BasicType<J> resolveType(
 				int position,
 				JavaType<J> explicitJavaType,
-				SessionFactoryImplementor sessionFactory) {
+				TypeConfiguration typeConfiguration) {
 			final BasicType<?> type = types[position - 1];
 			if ( type == null ) {
 				throw new IllegalStateException( "Unexpected resolving of unavailable column at position: " + position );
@@ -461,7 +468,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 				return (BasicType<J>) type;
 			}
 			else {
-				return sessionFactory.getTypeConfiguration().getBasicTypeRegistry().resolve(
+				return typeConfiguration.getBasicTypeRegistry().resolve(
 						explicitJavaType,
 						type.getJdbcType()
 				);

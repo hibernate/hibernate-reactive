@@ -5,13 +5,16 @@
  */
 package org.hibernate.reactive.sql.exec.spi;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.NotYetImplementedFor6Exception;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.ExecutionContext;
@@ -28,6 +31,8 @@ import org.hibernate.sql.results.spi.RowReader;
  * @see org.hibernate.sql.results.internal.RowProcessingStateStandardImpl
  */
 public class ReactiveRowProcessingState implements RowProcessingState {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private static final Initializer[] NO_INITIALIZERS = new Initializer[0];
 
@@ -63,8 +68,8 @@ public class ReactiveRowProcessingState implements RowProcessingState {
 	}
 
 	private static boolean hasCollectionInitializers(Initializer[] initializers) {
-		for ( int i = 0; i < initializers.length; i++ ) {
-			if ( initializers[i] instanceof CollectionInitializer ) {
+		for ( Initializer initializer : initializers ) {
+			if ( initializer instanceof CollectionInitializer ) {
 				return true;
 			}
 		}
@@ -106,7 +111,7 @@ public class ReactiveRowProcessingState implements RowProcessingState {
 
 	@Override
 	public Initializer resolveInitializer(NavigablePath path) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -119,12 +124,22 @@ public class ReactiveRowProcessingState implements RowProcessingState {
 	}
 
 	@Override
+	public LoadQueryInfluencers getLoadQueryInfluencers() {
+		return null;
+	}
+
+	@Override
 	public QueryParameterBindings getQueryParameterBindings() {
-		throw new NotYetImplementedFor6Exception();
+		throw LOG.notYetImplemented();
 	}
 
 	@Override
 	public Callback getCallback() {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public String getQueryIdentifier(String sql) {
+		return null;
 	}
 }

@@ -17,6 +17,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.engine.spi.SessionEventListenerManager;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -29,6 +30,9 @@ import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.jdbc.internal.DeferredResultSetAccess;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
+import org.hibernate.type.BasicType;
+import org.hibernate.type.descriptor.java.JavaType;
+import org.hibernate.type.spi.TypeConfiguration;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
@@ -70,6 +74,16 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 	@Override
 	public int getColumnCount() {
 		throw LOG.nonReactiveMethodCall( "getReactiveColumnCount" );
+	}
+
+	@Override
+	public <J> BasicType<J> resolveType(int position, JavaType<J> explicitJavaType, SessionFactoryImplementor sessionFactory) {
+		return super.resolveType( position, explicitJavaType, sessionFactory );
+	}
+
+	@Override
+	public <J> BasicType<J> resolveType(int position, JavaType<J> explicitJavaType, TypeConfiguration typeConfiguration) {
+		return super.resolveType( position, explicitJavaType, typeConfiguration );
 	}
 
 	public CompletionStage<Integer> getReactiveColumnCount() {

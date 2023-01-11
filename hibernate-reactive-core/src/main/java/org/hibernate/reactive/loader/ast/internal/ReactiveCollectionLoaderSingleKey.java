@@ -22,16 +22,14 @@ import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.query.spi.QueryParameterBindings;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.sql.exec.internal.BaseExecutionContext;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
-import org.hibernate.sql.exec.spi.Callback;
-import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
@@ -116,53 +114,38 @@ public class ReactiveCollectionLoaderSingleKey implements ReactiveCollectionLoad
 				.list(
 						jdbcSelect,
 						jdbcParameterBindings,
-						getExecutionContext( session, collectionKey, subSelectFetchableKeysHandler ),
+						new CollectionLoaderSingleKeyExecutionContext( session, collectionKey, subSelectFetchableKeysHandler ),
 						RowTransformerStandardImpl.instance(),
 						ReactiveListResultsConsumer.UniqueSemantic.FILTER
 				)
 				.thenApply( rs -> session.getPersistenceContext().getCollection( collectionKey ) );
 	}
 
-	private static ExecutionContext getExecutionContext(
-			SharedSessionContractImplementor session,
-			CollectionKey collectionKey,
-			SubselectFetch.RegistrationHandler subSelectFetchableKeysHandler) {
-		return new ExecutionContext() {
-			@Override
-			public SharedSessionContractImplementor getSession() {
-				return session;
-			}
+	/**
+	 * Copy and paste of the same class in {@link org.hibernate.loader.ast.internal.CollectionLoaderSingleKey}
+	 */
+	private static class CollectionLoaderSingleKeyExecutionContext extends BaseExecutionContext {
+		private final CollectionKey collectionKey;
+		private final SubselectFetch.RegistrationHandler subSelectFetchableKeysHandler;
 
-			@Override
-			public CollectionKey getCollectionKey() {
-				return collectionKey;
-			}
+		CollectionLoaderSingleKeyExecutionContext(
+				SharedSessionContractImplementor session,
+				CollectionKey collectionKey,
+				SubselectFetch.RegistrationHandler subSelectFetchableKeysHandler) {
+			super( session );
+			this.collectionKey = collectionKey;
+			this.subSelectFetchableKeysHandler = subSelectFetchableKeysHandler;
+		}
 
-			@Override
-			public void registerLoadingEntityEntry(EntityKey entityKey, LoadingEntityEntry entry) {
-				subSelectFetchableKeysHandler.addKey( entityKey, entry );
-			}
+		@Override
+		public CollectionKey getCollectionKey() {
+			return collectionKey;
+		}
 
-			@Override
-			public QueryOptions getQueryOptions() {
-				return QueryOptions.NONE;
-			}
+		@Override
+		public void registerLoadingEntityEntry(EntityKey entityKey, LoadingEntityEntry entry) {
+			subSelectFetchableKeysHandler.addKey( entityKey, entry );
+		}
 
-			@Override
-			public String getQueryIdentifier(String sql) {
-				return sql;
-			}
-
-			@Override
-			public QueryParameterBindings getQueryParameterBindings() {
-				return QueryParameterBindings.NO_PARAM_BINDINGS;
-			}
-
-			@Override
-			public Callback getCallback() {
-				return null;
-			}
-
-		};
 	}
 }

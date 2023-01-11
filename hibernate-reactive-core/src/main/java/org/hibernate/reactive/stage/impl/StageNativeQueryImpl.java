@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.Collection;
@@ -18,7 +19,6 @@ import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.jpa.internal.util.FlushModeTypeHelper;
@@ -30,6 +30,8 @@ import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
 import org.hibernate.query.spi.QueryOptions;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.type.BasicTypeReference;
@@ -47,6 +49,8 @@ import jakarta.persistence.metamodel.SingularAttribute;
  * Implementation of {@link  Stage.NativeQuery}.
  */
 public class StageNativeQueryImpl<R> implements Stage.NativeQuery<R> {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveNativeQuery<R> delegate;
 
@@ -204,7 +208,7 @@ public class StageNativeQueryImpl<R> implements Stage.NativeQuery<R> {
 
 	@Override
 	public <T>  Stage.NativeQuery<T> setTupleTransformer(TupleTransformer<T> transformer) {
-		throw new NotYetImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -501,7 +505,7 @@ public class StageNativeQueryImpl<R> implements Stage.NativeQuery<R> {
 
 	@Override
 	public <J> NativeQuery.InstantiationResultNode<J> addInstantiation(Class<J> targetJavaType) {
-		throw new NotYetImplementedException();
+		throw LOG.notYetImplemented();
 	}
 
 	@Override

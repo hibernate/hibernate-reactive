@@ -226,46 +226,4 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				.whenComplete( (o, throwable) -> mutationExecutor.release() )
 				.whenComplete( this::complete );
 	}
-
-	@Override
-	protected void doStaticUpdate(
-			Object entity,
-			Object id,
-			Object rowId,
-			Object[] values,
-			UpdateCoordinatorStandard.UpdateValuesAnalysisImpl valuesAnalysis,
-			SharedSessionContractImplementor session) {
-		this.stage = new CompletableFuture<>();
-
-		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, getStaticUpdateGroup() );
-
-		decomposeForUpdate(
-				id,
-				rowId,
-				values,
-				valuesAnalysis,
-				mutationExecutor,
-				getStaticUpdateGroup(),
-				(position, attribute) -> true,
-				session
-		);
-
-
-		mutationExecutor.executeReactive(
-						entity,
-						valuesAnalysis,
-						valuesAnalysis.getTablesNeedingUpdate()::contains,
-						(statementDetails, affectedRowCount, batchPosition) -> ModelMutationHelper.identifiedResultsCheck(
-								statementDetails,
-								affectedRowCount,
-								batchPosition,
-								entityPersister(),
-								id,
-								factory()
-						),
-						session
-				)
-				.whenComplete( (o, throwable) -> mutationExecutor.release() )
-				.whenComplete( this::complete );
-	}
 }
