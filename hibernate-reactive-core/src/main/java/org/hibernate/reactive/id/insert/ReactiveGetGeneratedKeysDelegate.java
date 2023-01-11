@@ -5,21 +5,19 @@
  */
 package org.hibernate.reactive.id.insert;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Locale;
 
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
-import org.hibernate.engine.jdbc.spi.JdbcCoordinator;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.PostInsertIdentityPersister;
 import org.hibernate.id.insert.GetGeneratedKeysDelegate;
+import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
+import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
-import static org.hibernate.id.IdentifierGeneratorHelper.getGeneratedIdentity;
 
 public class ReactiveGetGeneratedKeysDelegate extends GetGeneratedKeysDelegate {
 
@@ -29,43 +27,25 @@ public class ReactiveGetGeneratedKeysDelegate extends GetGeneratedKeysDelegate {
 
 	@Override
 	public Object performInsert(PreparedStatementDetails insertStatementDetails, JdbcValueBindings jdbcValueBindings, Object entity, SharedSessionContractImplementor session) {
-		final JdbcServices jdbcServices = session.getJdbcServices();
-		final JdbcCoordinator jdbcCoordinator = session.getJdbcCoordinator();
-		final String insertSql = insertStatementDetails.getSqlString();
+		// FIXME: I should be able to generate the sql string beforehand
+		final Class<?> idType = getPersister().getIdentifierType().getReturnedClass();
+		final String identifierColumnName = getPersister().getIdentifierColumnNames()[0];
+		final String insertSql = adaptQuery( insertStatementDetails, identifierColumnName );
 
+		final JdbcServices jdbcServices = session.getJdbcServices();
 		jdbcServices.getSqlStatementLogger().logStatement( insertSql );
 
-		final PreparedStatement insertStatement = insertStatementDetails.resolveStatement();
-		jdbcValueBindings.beforeStatement( insertStatementDetails, session );
+		Object[] params = PreparedStatementAdaptor.bind( statement -> {
+			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor( insertStatementDetails, statement, session.getJdbcServices() );
+			jdbcValueBindings.beforeStatement( details, session );
+		} );
 
-		try {
-			jdbcCoordinator.getResultSetReturn().executeUpdate( insertStatement, insertSql );
+		ReactiveConnection reactiveConnection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
+		return reactiveConnection.insertAndSelectIdentifier( insertSql, params, idType, identifierColumnName );
+	}
 
-			try {
-				final ResultSet resultSet = insertStatement.getGeneratedKeys();
-				try {
-					return getGeneratedIdentity( getPersister().getNavigableRole().getFullPath(), resultSet, getPersister(), session );
-				}
-				catch (SQLException e) {
-					throw jdbcServices.getSqlExceptionHelper()
-							.convert( e, () -> String.format( Locale.ROOT, "Unable to extract generated key from generated-key for `%s`", getPersister().getNavigableRole().getFullPath() ), insertSql );
-				}
-				finally {
-					if ( resultSet != null ) {
-						jdbcCoordinator
-								.getLogicalConnection()
-								.getResourceRegistry()
-								.release( resultSet, insertStatement );
-					}
-				}
-			}
-			finally {
-				jdbcCoordinator.getLogicalConnection().getResourceRegistry().release( insertStatement );
-			}
-		}
-		catch (SQLException e) {
-			throw jdbcServices.getSqlExceptionHelper()
-					.convert( e, "Unable to extract generated-keys ResultSet", insertSql );
-		}
+	private static String adaptQuery(PreparedStatementDetails insertStatementDetails, String identityColumnName) {
+		final String insertSql = insertStatementDetails.getSqlString();
+		return insertSql + " returning " + identityColumnName ;
 	}
 }

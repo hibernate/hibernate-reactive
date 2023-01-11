@@ -89,6 +89,6 @@ public class ReactiveStandardMutationExecutorService implements MutationExecutor
 			return new ReactiveMutationExecutorSingleNonBatched( jdbcOperation, session );
 		}
 
-		return new ReactiveMutationExecutorStandard(operationGroup, batchKeySupplier, batchSizeToUse, session );
+		return new ReactiveMutationExecutorStandard( operationGroup, batchKeySupplier, batchSizeToUse, session );
 	}
 }
