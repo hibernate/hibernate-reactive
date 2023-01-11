@@ -49,7 +49,8 @@ public class ReactiveAbstractSelectionQuery<R> {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	private final InterpretationsKeySource interpretationsKeySource;
+	private final Supplier<QueryOptions> queryOptionsSupplier;
+
 	private SharedSessionContractImplementor session;
 	private final Supplier<CompletionStage<List<R>>> doList;
 	private final Supplier<SqmStatement> getStatement;
@@ -65,6 +66,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 
 	private final Consumer<Boolean> afterQuery;
 	private Function<List<R>, R> uniqueElement;
+	private final InterpretationsKeySource interpretationsKeySource;
 
 	// I'm sure we can avoid some of this by making some methods public in ORM,
 	// but this allows me to prototype faster. We can refactor the code later.
@@ -80,7 +82,64 @@ public class ReactiveAbstractSelectionQuery<R> {
 			Runnable beforeQuery,
 			Consumer<Boolean> afterQuery,
 			Function<List<R>, R> uniqueElement) {
-		this.interpretationsKeySource = interpretationKeySource;
+		this(
+				interpretationKeySource::getQueryOptions,
+				session,
+				doList,
+				getStatement,
+				getTupleMetadata,
+				getDomainParameterXref,
+				getResultType,
+				getQueryString,
+				beforeQuery,
+				afterQuery,
+				uniqueElement,
+				interpretationKeySource
+		);
+	}
+//
+//	public ReactiveAbstractSelectionQuery(
+//			DomainQueryExecutionContext domainQueryExecutionContext,
+//			SharedSessionContractImplementor session,
+//			Supplier<CompletionStage<List<R>>> doList,
+//			Supplier<SqmStatement> getStatement,
+//			Supplier<TupleMetadata> getTupleMetadata,
+//			Supplier<DomainParameterXref> getDomainParameterXref,
+//			Supplier<Class<R>> getResultType,
+//			Supplier<String> getQueryString,
+//			Runnable beforeQuery,
+//			Consumer<Boolean> afterQuery,
+//			Function<List<R>, R> uniqueElement) {
+//		this(
+//				domainQueryExecutionContext::getQueryOptions,
+//				session,
+//				doList,
+//				getStatement,
+//				getTupleMetadata,
+//				getDomainParameterXref,
+//				getResultType,
+//				getQueryString,
+//				beforeQuery,
+//				afterQuery,
+//				uniqueElement,
+//				null
+//		);
+//	}
+
+	public ReactiveAbstractSelectionQuery(
+			Supplier<QueryOptions> queryOptionsSupplier,
+			SharedSessionContractImplementor session,
+			Supplier<CompletionStage<List<R>>> doList,
+			Supplier<SqmStatement> getStatement,
+			Supplier<TupleMetadata> getTupleMetadata,
+			Supplier<DomainParameterXref> getDomainParameterXref,
+			Supplier<Class<R>> getResultType,
+			Supplier<String> getQueryString,
+			Runnable beforeQuery,
+			Consumer<Boolean> afterQuery,
+			Function<List<R>, R> uniqueElement,
+			InterpretationsKeySource interpretationsKeySource) {
+		this.queryOptionsSupplier = queryOptionsSupplier;
 		this.session = session;
 		this.doList = doList;
 		this.getStatement = getStatement;
@@ -91,6 +150,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 		this.beforeQuery = beforeQuery;
 		this.afterQuery = afterQuery;
 		this.uniqueElement = uniqueElement;
+		this.interpretationsKeySource = interpretationsKeySource;
 	}
 
 	public CompletionStage<R> reactiveUnique() {
@@ -130,7 +190,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	private LockOptions getLockOptions() {
-		return interpretationsKeySource.getQueryOptions().getLockOptions();
+		return getQueryOptions().getLockOptions();
 	}
 
 	public CompletionStage<List<R>> reactiveList() {
@@ -212,7 +272,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	private QueryOptions getQueryOptions() {
-		return interpretationsKeySource.getQueryOptions();
+		return queryOptionsSupplier.get();
 	}
 
 	private SharedSessionContractImplementor getSession() {
