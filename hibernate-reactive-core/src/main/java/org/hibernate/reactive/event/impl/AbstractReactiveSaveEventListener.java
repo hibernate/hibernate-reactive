@@ -23,8 +23,8 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.WrapVisitor;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.Generator;
-import org.hibernate.generator.InMemoryGenerator;
 import org.hibernate.id.IdentifierGenerationException;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
@@ -124,15 +124,15 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 
 		final EntityPersister persister = source.getEntityPersister( entityName, entity );
 		Generator generator = persister.getGenerator();
-		if ( !generator.generatedByDatabase() ) {
+		if ( !generator.generatedOnExecution() ) {
 			if ( generator instanceof ReactiveIdentifierGenerator ) {
 				return ( (ReactiveIdentifierGenerator<?>) generator )
 						.generate( ( ReactiveConnectionSupplier ) source, entity )
 						.thenCompose( generatedId -> performSaveWithId( entity, context, source, persister, generator, generatedId ) );
 			}
 
-			final Object generatedId = ( (InMemoryGenerator) generator )
-					.generate( source, entity, null, INSERT );
+			// FIXME: I think this should be a reactive type
+			final Object generatedId = ( (BeforeExecutionGenerator) generator ).generate( source, entity, null, INSERT );
 			return performSaveWithId( entity, context, source, persister, generator, generatedId );
 		}
 

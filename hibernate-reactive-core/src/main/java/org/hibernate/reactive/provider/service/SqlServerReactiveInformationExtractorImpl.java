@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.boot.model.naming.Identifier;
-import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.tool.schema.extract.spi.ExtractionContext;
 
 /**
@@ -154,7 +153,7 @@ public class SqlServerReactiveInformationExtractorImpl extends AbstractReactiveI
 			String schemaFilter,
 			Identifier tableName,
 			ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
-		throw new NotYetImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

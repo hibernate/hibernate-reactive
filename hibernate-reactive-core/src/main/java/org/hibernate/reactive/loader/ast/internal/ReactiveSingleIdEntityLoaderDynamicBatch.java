@@ -19,17 +19,17 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
+import org.hibernate.loader.ast.internal.SingleIdEntityLoaderDynamicBatch;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryOptionsAdapter;
-import org.hibernate.query.spi.QueryParameterBindings;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.sql.exec.internal.BaseExecutionContext;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
-import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
@@ -197,67 +197,6 @@ public class ReactiveSingleIdEntityLoaderDynamicBatch<T> implements ReactiveSing
 
 	}
 
-	private ExecutionContext getExecutionContext(
-			Object entityId,
-			Object entityInstance,
-			Boolean readOnly,
-			LockOptions lockOptions,
-			SharedSessionContractImplementor session,
-			SubselectFetch.RegistrationHandler subSelectFetchableKeysHandler) {
-		return new ExecutionContext() {
-			@Override
-			public SharedSessionContractImplementor getSession() {
-				return session;
-			}
-
-			@Override
-			public Object getEntityInstance() {
-				return entityInstance;
-			}
-
-			@Override
-			public Object getEntityId() {
-				return entityId;
-			}
-
-			@Override
-			public QueryOptions getQueryOptions() {
-				return new QueryOptionsAdapter() {
-					@Override
-					public Boolean isReadOnly() {
-						return readOnly;
-					}
-
-					@Override
-					public LockOptions getLockOptions() {
-						return lockOptions;
-					}
-				};
-			}
-
-			@Override
-			public String getQueryIdentifier(String sql) {
-				return sql;
-			}
-
-			@Override
-			public void registerLoadingEntityEntry(EntityKey entityKey, LoadingEntityEntry entry) {
-				subSelectFetchableKeysHandler.addKey( entityKey, entry );
-			}
-
-			@Override
-			public QueryParameterBindings getQueryParameterBindings() {
-				return QueryParameterBindings.NO_PARAM_BINDINGS;
-			}
-
-			@Override
-			public Callback getCallback() {
-				return null;
-			}
-
-		};
-	}
-
 	private void initializeSingleIdLoaderIfNeeded(SharedSessionContractImplementor session) {
 		if ( singleIdLoader == null ) {
 			singleIdLoader = new ReactiveSingleIdEntityLoaderStandardImpl<>( getLoadable(), session.getFactory() );
@@ -265,4 +204,72 @@ public class ReactiveSingleIdEntityLoaderDynamicBatch<T> implements ReactiveSing
 		}
 	}
 
+	/**
+	 * Copy and paste of the same method in {@link SingleIdEntityLoaderDynamicBatch}
+	 */
+	private ExecutionContext getExecutionContext(
+			Object entityId,
+			Object entityInstance,
+			Boolean readOnly,
+			LockOptions lockOptions,
+			SharedSessionContractImplementor session,
+			SubselectFetch.RegistrationHandler subSelectFetchableKeysHandler) {
+		return new SingleIdExecutionContext( session, entityInstance, entityId, readOnly, lockOptions, subSelectFetchableKeysHandler );
+	}
+
+	/**
+	 * Copy and paste of the same class in {@link SingleIdEntityLoaderDynamicBatch}
+	 */
+	private static class SingleIdExecutionContext extends BaseExecutionContext {
+		private final Object entityInstance;
+		private final Object entityId;
+		private final Boolean readOnly;
+		private final LockOptions lockOptions;
+		private final SubselectFetch.RegistrationHandler subSelectFetchableKeysHandler;
+
+		public SingleIdExecutionContext(
+				SharedSessionContractImplementor session,
+				Object entityInstance,
+				Object entityId,
+				Boolean readOnly,
+				LockOptions lockOptions,
+				SubselectFetch.RegistrationHandler subSelectFetchableKeysHandler) {
+			super( session );
+			this.entityInstance = entityInstance;
+			this.entityId = entityId;
+			this.readOnly = readOnly;
+			this.lockOptions = lockOptions;
+			this.subSelectFetchableKeysHandler = subSelectFetchableKeysHandler;
+		}
+
+		@Override
+		public Object getEntityInstance() {
+			return entityInstance;
+		}
+
+		@Override
+		public Object getEntityId() {
+			return entityId;
+		}
+
+		@Override
+		public QueryOptions getQueryOptions() {
+			return new QueryOptionsAdapter() {
+				@Override
+				public Boolean isReadOnly() {
+					return readOnly;
+				}
+
+				@Override
+				public LockOptions getLockOptions() {
+					return lockOptions;
+				}
+			};
+		}
+
+		@Override
+		public void registerLoadingEntityEntry(EntityKey entityKey, LoadingEntityEntry entry) {
+			subSelectFetchableKeysHandler.addKey( entityKey, entry );
+		}
+	}
 }

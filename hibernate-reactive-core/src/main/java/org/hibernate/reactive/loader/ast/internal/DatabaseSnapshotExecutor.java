@@ -17,13 +17,12 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.loader.ast.internal.LoaderSqlAstCreationState;
 import org.hibernate.metamodel.mapping.EntityMappingType;
+import org.hibernate.query.spi.QueryOptions;
+import org.hibernate.query.sqm.ComparisonOperator;
+import org.hibernate.query.sqm.sql.FromClauseIndex;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.spi.NavigablePath;
-import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.query.spi.QueryParameterBindings;
-import org.hibernate.query.sqm.ComparisonOperator;
-import org.hibernate.query.sqm.sql.FromClauseIndex;
 import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
@@ -36,10 +35,9 @@ import org.hibernate.sql.ast.tree.from.TableReference;
 import org.hibernate.sql.ast.tree.predicate.ComparisonPredicate;
 import org.hibernate.sql.ast.tree.select.QuerySpec;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.sql.exec.internal.BaseExecutionContext;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterImpl;
-import org.hibernate.sql.exec.spi.Callback;
-import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.graph.DomainResult;
@@ -49,7 +47,6 @@ import org.hibernate.sql.results.internal.RowTransformerDatabaseSnapshotImpl;
 import org.hibernate.type.StandardBasicTypes;
 
 import org.jboss.logging.Logger;
-
 
 /**
  * @see org.hibernate.loader.ast.internal.DatabaseSnapshotExecutor
@@ -137,7 +134,7 @@ class DatabaseSnapshotExecutor {
 		);
 
 
-		entityDescriptor.visitAttributeMappings(
+		entityDescriptor.forEachAttributeMapping(
 				attributeMapping -> {
 					final NavigablePath navigablePath = rootPath.append( attributeMapping.getAttributeName() );
 					domainResults.add(
@@ -185,7 +182,7 @@ class DatabaseSnapshotExecutor {
 
 		// FIXME: use JdbcServices
 		return StandardReactiveSelectExecutor.INSTANCE
-				.list( jdbcSelect, jdbcParameterBindings, executionContext( session ), RowTransformerDatabaseSnapshotImpl.instance(), ReactiveListResultsConsumer.UniqueSemantic.FILTER  )
+				.list( jdbcSelect, jdbcParameterBindings, new BaseExecutionContext( session ), RowTransformerDatabaseSnapshotImpl.instance(), ReactiveListResultsConsumer.UniqueSemantic.FILTER  )
 				.thenApply( list -> {
 					assert list != null;
 					final int size = list.size();
@@ -207,35 +204,4 @@ class DatabaseSnapshotExecutor {
 					return state;
 				} );
 	}
-
-	private static ExecutionContext executionContext(SharedSessionContractImplementor session) {
-		return new ExecutionContext() {
-			@Override
-			public SharedSessionContractImplementor getSession() {
-				return session;
-			}
-
-			@Override
-			public QueryOptions getQueryOptions() {
-				return QueryOptions.NONE;
-			}
-
-			@Override
-			public String getQueryIdentifier(String sql) {
-				return sql;
-			}
-
-			@Override
-			public QueryParameterBindings getQueryParameterBindings() {
-				return QueryParameterBindings.NO_PARAM_BINDINGS;
-			}
-
-			@Override
-			public Callback getCallback() {
-				return null;
-			}
-
-		};
-	}
-
 }

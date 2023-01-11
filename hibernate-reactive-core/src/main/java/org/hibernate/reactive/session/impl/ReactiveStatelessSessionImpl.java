@@ -12,7 +12,6 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
@@ -410,7 +409,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 			// first, check to see if we can use "bytecode proxies"
 
-			EntityMetamodel entityMetamodel = entityDescriptor.getEntityMetamodel();
+				EntityMetamodel entityMetamodel = entityDescriptor.getEntityMetamodel();
 			BytecodeEnhancementMetadata enhancementMetadata = entityMetamodel.getBytecodeEnhancementMetadata();
 			if ( enhancementMetadata.isEnhancedForLazyLoading() ) {
 
@@ -589,13 +588,13 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 
 	@Override
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -603,12 +602,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			String sqlString,
 			Class<R> resultClass,
 			String tableAlias) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -616,32 +615,32 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			String sqlString,
 			String resultSetMappingName,
 			Class<R> resultClass) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, Class<R> resultType) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaQuery<R> criteria) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(String hqlString) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate updateQuery) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -651,53 +650,53 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect insertSelect) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name, Class<R> resultClass) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name, Class<R> resultType) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createNativeReactiveMutationQuery(String sqlString) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveQuery getNamedReactiveQuery(String queryName) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery getNamedReactiveNativeQuery(String name) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public ReactiveNativeQuery getNamedReactiveNativeQuery(String name, String resultSetMapping) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, AffectedEntities affectedEntities) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -705,12 +704,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			String queryString,
 			Class<R> resultType,
 			AffectedEntities affectedEntities) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -718,7 +717,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			String queryString,
 			ResultSetMapping<R> resultSetMapping,
 			AffectedEntities affectedEntities) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

@@ -13,7 +13,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
-import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.EntityEntry;
@@ -264,11 +263,11 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 
 	@Override
 	public CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, EventSource session) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public SingleIdArrayLoadPlan getSQLLazySelectLoadPlan(String fetchGroup) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 }

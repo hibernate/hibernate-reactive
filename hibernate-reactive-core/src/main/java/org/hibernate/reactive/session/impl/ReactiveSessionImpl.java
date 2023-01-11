@@ -21,7 +21,6 @@ import org.hibernate.JDBCException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
-import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.ObjectDeletedException;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.TypeMismatchException;
@@ -516,82 +515,82 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(String hqlString) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate updateQuery) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete deleteQuery) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect insertSelect) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name, Class<R> resultClass) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createNativeReactiveMutationQuery(String sqlString) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveQuery getNamedReactiveQuery(String queryName) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery getNamedReactiveNativeQuery(String name) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public ReactiveNativeQuery getNamedReactiveNativeQuery(String name, String resultSetMapping) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, AffectedEntities affectedEntities) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name, Class<R> resultType) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -1058,11 +1057,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						//				String identifierValue = id != null ? id.toString() : null ;
 						//				log.ignoringEntityNotFound( entityName, identifierValue );
 						//			}
-						throw new NotYetImplementedFor6Exception();
+						throw new UnsupportedOperationException();
 					}
 					if ( e instanceof ObjectDeletedException ) {
 						//the spec is silent about people doing remove() find() on the same PC
-						throw new NotYetImplementedFor6Exception();
+						throw new UnsupportedOperationException();
 					}
 					if ( e instanceof ObjectNotFoundException ) {
 						//should not happen on the entity itself with get
@@ -1076,7 +1075,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					if ( e instanceof JDBCException ) {
 //						if ( accessTransaction().getRollbackOnly() ) {
 //							// assume this is the similar to the WildFly / IronJacamar "feature" described under HHH-12472
-//							throw new NotYetImplementedFor6Exception();
+//							throw new UnsupportedOperationException();
 //						}
 						throw getExceptionConverter().convert( (JDBCException) e, lockOptions );
 					}
@@ -1639,11 +1638,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 }

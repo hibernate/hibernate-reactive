@@ -21,9 +21,7 @@ import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.TypeMismatchException;
-import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
@@ -354,7 +352,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 			return buildInsertQueryPlan();
 		}
 
-		throw new NotYetImplementedException( "Query#executeUpdate for Statements of type [" + getSqmStatement() + "not yet supported" );
+		throw new UnsupportedOperationException( "Query#executeUpdate for Statements of type [" + getSqmStatement() + "not yet supported" );
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -467,7 +465,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 
 	@Override
 	public <T> ReactiveQuerySqmImpl<T> setTupleTransformer(TupleTransformer<T> transformer) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -478,7 +476,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 
 	@Override
 	public <T> ReactiveQuerySqmImpl<T> setResultTransformer(ResultTransformer<T> transformer) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

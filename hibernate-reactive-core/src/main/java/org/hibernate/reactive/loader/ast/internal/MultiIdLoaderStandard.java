@@ -8,7 +8,6 @@ package org.hibernate.reactive.loader.ast.internal;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
@@ -58,13 +57,13 @@ public class MultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLoader<T> 
 			Object[] ids,
 			SharedSessionContractImplementor session,
 			MultiIdLoadOptions loadOptions) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	private CompletionStage<List<T>> performUnorderedMultiLoad(
 			Object[] ids,
 			SharedSessionContractImplementor session,
 			MultiIdLoadOptions loadOptions) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 }

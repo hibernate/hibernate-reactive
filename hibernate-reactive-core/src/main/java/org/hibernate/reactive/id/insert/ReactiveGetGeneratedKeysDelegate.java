@@ -23,8 +23,8 @@ import static org.hibernate.id.IdentifierGeneratorHelper.getGeneratedIdentity;
 
 public class ReactiveGetGeneratedKeysDelegate extends GetGeneratedKeysDelegate {
 
-	public ReactiveGetGeneratedKeysDelegate(PostInsertIdentityPersister persister, Dialect dialect) {
-		super( persister, dialect );
+	public ReactiveGetGeneratedKeysDelegate(PostInsertIdentityPersister persister, Dialect dialect, boolean inferredKeys) {
+		super( persister, dialect, inferredKeys );
 	}
 
 	@Override

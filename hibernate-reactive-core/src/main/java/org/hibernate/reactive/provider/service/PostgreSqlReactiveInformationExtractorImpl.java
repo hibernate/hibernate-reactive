@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.boot.model.naming.Identifier;
-import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.tool.schema.extract.spi.ExtractionContext;
@@ -45,7 +44,7 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 			Identifier tableName,
 			ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
 		// This functionality is not used by ORM.
-		throw new NotYetImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

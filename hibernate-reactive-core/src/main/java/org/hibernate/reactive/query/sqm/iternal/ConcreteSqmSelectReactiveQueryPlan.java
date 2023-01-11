@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.ScrollMode;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -113,7 +112,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 
 	@Override
 	public ScrollableResultsImplementor<R> performScroll(ScrollMode scrollMode, DomainQueryExecutionContext executionContext) {
-		throw new NotYetImplementedFor6Exception();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

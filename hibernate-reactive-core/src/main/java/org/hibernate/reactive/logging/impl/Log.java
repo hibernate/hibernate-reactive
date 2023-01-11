@@ -232,6 +232,11 @@ public interface Log extends BasicLogger {
 	@Message(id = 75, value = "Detected call to non reactive method. Alternative reactive method: `%1$s`")
 	HibernateException nonReactiveMethodCall(String alternativeMethod);
 
+
+	// A helper to keep track of places that still need to be done
+	@Message(id = 76, value = "This method has not been implemented yet")
+	HibernateException notYetImplemented();
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )

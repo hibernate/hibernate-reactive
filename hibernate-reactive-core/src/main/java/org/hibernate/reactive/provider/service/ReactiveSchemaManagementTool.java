@@ -5,8 +5,8 @@
  */
 package org.hibernate.reactive.provider.service;
 
+import org.hibernate.HibernateException;
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
-import org.hibernate.cfg.NotYetImplementedException;
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MariaDBDialect;
@@ -72,7 +72,7 @@ public class ReactiveSchemaManagementTool extends HibernateSchemaManagementTool 
 				return new OracleSqlReactiveInformationExtractorImpl( extractionContext );
 			}
 
-			throw new NotYetImplementedException( "No InformationExtractor for Dialect [" + dialect + "] is implemented yet" );
+			throw new HibernateException( "No InformationExtractor for Dialect [" + dialect + "] is implemented yet" );
 		}
 	}
 }

@@ -16,7 +16,6 @@ import org.hibernate.query.named.NamedResultSetMappingMemento;
 import org.hibernate.query.results.ResultBuilder;
 import org.hibernate.query.results.ResultSetMapping;
 import org.hibernate.query.results.dynamic.DynamicFetchBuilderLegacy;
-import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.sql.results.internal.ReactiveResultSetAccess;
@@ -24,6 +23,9 @@ import org.hibernate.reactive.sql.results.spi.ReactiveValuesMappingProducer;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
 
+/**
+ * @see org.hibernate.query.results.ResultSetMappingImpl
+ */
 public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValuesMappingProducer {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
@@ -46,7 +48,7 @@ public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValue
 	public CompletionStage<JdbcValuesMapping> reactiveResolve(JdbcValuesMetadata jdbcResultsMetadata, SessionFactoryImplementor sessionFactory) {
 		return ( (ReactiveResultSetAccess) jdbcResultsMetadata )
 				.getReactiveResultSet()
-				.thenApply( resultSet -> delegate.resolve( (ResultSetAdaptor) resultSet, sessionFactory ) );
+				.thenApply( resultSet -> delegate.resolve(  jdbcResultsMetadata, sessionFactory ) );
 	}
 
 	@Override

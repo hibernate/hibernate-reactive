@@ -5,12 +5,6 @@
  */
 package org.hibernate.reactive.engine.impl;
 
-import static org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer.UNFETCHED_PROPERTY;
-import static org.hibernate.property.access.internal.PropertyAccessStrategyBackRefImpl.UNKNOWN;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
-
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
@@ -31,6 +25,13 @@ import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.OneToOneType;
 import org.hibernate.type.Type;
 
+import static org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer.UNFETCHED_PROPERTY;
+import static org.hibernate.property.access.internal.PropertyAccessStrategyBackRefImpl.UNKNOWN;
+import static org.hibernate.reactive.engine.impl.ForeignKeys.getEntityIdentifierIfNotUnsaved;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+
 /**
  * Reactive operations that really belong to {@link EntityType}
  *
@@ -38,11 +39,10 @@ import org.hibernate.type.Type;
  */
 public class EntityTypes {
 
-	/**
-	 * Replacement for {@link EntityType#resolve(Object, SharedSessionContractImplementor, Object, Boolean)}
+	/*
+	 * Replacement for {@link EntityType#resolve(Object, SharedSessionContractImplementor, Object)}
 	 */
-	public static CompletionStage<Object> resolve(EntityType entityType, Object idOrUniqueKey, Object owner,
-			SharedSessionContractImplementor session) {
+	public static CompletionStage<Object> resolve(EntityType entityType, Object idOrUniqueKey, Object owner, SharedSessionContractImplementor session) {
 		if ( idOrUniqueKey != null && !isNull( entityType, owner, session ) ) {
 			if ( entityType.isReferenceToPrimaryKey() ) {
 				return ReactiveQueryExecutorLookup.extract( session ).reactiveInternalLoad(
@@ -321,27 +321,24 @@ public class EntityTypes {
 	 */
 	private static CompletionStage<Object> getIdentifier(EntityType entityType, Object value, SessionImplementor session) {
 		if ( entityType.isReferenceToIdentifierProperty() ) {
-			return ForeignKeys.getEntityIdentifierIfNotUnsaved(
-					entityType.getAssociatedEntityName(),
-					value,
-					session ); // tolerates nulls
+			// tolerates nulls
+			return getEntityIdentifierIfNotUnsaved( entityType.getAssociatedEntityName(), value, session );
 		}
-		else if ( value == null ) {
+		if ( value == null ) {
 			return nullFuture();
 		}
-		else {
-			EntityPersister entityPersister = entityType.getAssociatedEntityPersister( session.getFactory() );
-			String uniqueKeyPropertyName = entityType.getRHSUniqueKeyPropertyName();
-			Object propertyValue = entityPersister.getPropertyValue( value, uniqueKeyPropertyName );
-			// We now have the value of the property-ref we reference. However,
-			// we need to dig a little deeper, as that property might also be
-			// an entity type, in which case we need to resolve its identifier
-			Type type = entityPersister.getPropertyType( uniqueKeyPropertyName );
-			if ( type.isEntityType() ) {
-				propertyValue = getIdentifier( (EntityType) type, propertyValue, session );
-			}
-			return completedFuture( propertyValue );
+
+		EntityPersister entityPersister = entityType.getAssociatedEntityPersister( session.getFactory() );
+		String uniqueKeyPropertyName = entityType.getRHSUniqueKeyPropertyName();
+		Object propertyValue = entityPersister.getPropertyValue( value, uniqueKeyPropertyName );
+		// We now have the value of the property-ref we reference. However,
+		// we need to dig a little deeper, as that property might also be
+		// an entity type, in which case we need to resolve its identifier
+		Type type = entityPersister.getPropertyType( uniqueKeyPropertyName );
+		if ( type.isEntityType() ) {
+			propertyValue = getIdentifier( (EntityType) type, propertyValue, session );
 		}
+		return completedFuture( propertyValue );
 	}
 
 }

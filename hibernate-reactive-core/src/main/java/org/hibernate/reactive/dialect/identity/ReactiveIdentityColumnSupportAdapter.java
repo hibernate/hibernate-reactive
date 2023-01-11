@@ -22,7 +22,7 @@ public class ReactiveIdentityColumnSupportAdapter implements IdentityColumnSuppo
 
 	@Override
 	public GetGeneratedKeysDelegate buildGetGeneratedKeysDelegate(PostInsertIdentityPersister persister, Dialect dialect) {
-		return new ReactiveGetGeneratedKeysDelegate( persister, dialect );
+		return new ReactiveGetGeneratedKeysDelegate( persister, dialect, true );
 	}
 
 	@Override

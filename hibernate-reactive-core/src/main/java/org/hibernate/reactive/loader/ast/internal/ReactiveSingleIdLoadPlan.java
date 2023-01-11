@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockOptions;
+import org.hibernate.engine.spi.CollectionKey;
+import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.internal.SingleIdLoadPlan;
@@ -19,6 +22,7 @@ import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
+import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
 import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
@@ -27,6 +31,7 @@ import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
 
 public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStage<T>> {
 
@@ -79,9 +84,7 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 	}
 
 	private Object extractEntity(List<?> list) {
-		return list.isEmpty()
-				? null
-				: list.get( 0 );
+		return list.isEmpty() ? null : list.get( 0 );
 	}
 
 	private static ExecutionContext executionContext(
@@ -91,6 +94,11 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 			QueryOptions queryOptions,
 			Callback callback) {
 		return new ExecutionContext() {
+			@Override
+			public boolean isScrollResult() {
+				return ExecutionContext.super.isScrollResult();
+			}
+
 			@Override
 			public SharedSessionContractImplementor getSession() {
 				return session;
@@ -107,13 +115,38 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 			}
 
 			@Override
+			public void registerLoadingEntityEntry(EntityKey entityKey, LoadingEntityEntry entry) {
+				ExecutionContext.super.registerLoadingEntityEntry( entityKey, entry );
+			}
+
+			@Override
+			public void afterStatement(LogicalConnectionImplementor logicalConnection) {
+				ExecutionContext.super.afterStatement( logicalConnection );
+			}
+
+			@Override
+			public boolean hasQueryExecutionToBeAddedToStatistics() {
+				return ExecutionContext.super.hasQueryExecutionToBeAddedToStatistics();
+			}
+
+			@Override
 			public QueryOptions getQueryOptions() {
 				return queryOptions;
 			}
 
 			@Override
+			public LoadQueryInfluencers getLoadQueryInfluencers() {
+				return null;
+			}
+
+			@Override
 			public String getQueryIdentifier(String sql) {
 				return sql;
+			}
+
+			@Override
+			public CollectionKey getCollectionKey() {
+				return ExecutionContext.super.getCollectionKey();
 			}
 
 			@Override
