@@ -47,6 +47,10 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 
 	private CompletionStage<ResultSet> resultSetStage;
 
+
+	private Integer columnCount;
+	private ResultSet resultSet;
+
 	public ReactiveDeferredResultSetAccess(
 			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
@@ -60,20 +64,39 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 
 	@Override
 	public ResultSet getResultSet() {
-		throw LOG.nonReactiveMethodCall( "getReactiveResultSet" );
+		if ( resultSet == null ) {
+			throw LOG.nonReactiveMethodCall( "getReactiveResultSet" );
+		}
+		return resultSet;
 	}
 
 	@Override
 	public CompletionStage<ResultSet> getReactiveResultSet() {
 		if ( resultSetStage == null ) {
-			resultSetStage = executeQuery();
+			resultSetStage = executeQuery()
+					.thenApply( this::saveResultSet );
 		}
 		return resultSetStage;
 	}
 
 	@Override
 	public int getColumnCount() {
-		throw LOG.nonReactiveMethodCall( "getReactiveColumnCount" );
+		// A bit of a hack
+		if ( columnCount == null ) {
+			throw LOG.nonReactiveMethodCall( "getReactiveColumnCount" );
+		}
+		return columnCount;
+	}
+
+	public CompletionStage<Integer> getReactiveColumnCount() {
+		return getReactiveResultSet()
+				.thenApply( ReactiveDeferredResultSetAccess::columnCount )
+				.thenApply( this::saveColumnCount );
+	}
+
+	private Integer saveColumnCount(Integer columnCount) {
+		this.columnCount = columnCount;
+		return this.columnCount;
 	}
 
 	@Override
@@ -86,14 +109,8 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 		return super.resolveType( position, explicitJavaType, typeConfiguration );
 	}
 
-	public CompletionStage<Integer> getReactiveColumnCount() {
-		return getReactiveResultSet()
-				.thenApply( ReactiveDeferredResultSetAccess::columnCount );
-	}
-
 	public CompletionStage<JdbcValuesMetadata> resolveJdbcValueMetadata() {
-		return getReactiveResultSet()
-				.thenApply( resultSet -> convertToMetadata( resultSet) );
+		return getReactiveResultSet().thenApply( this::convertToMetadata );
 	}
 
 	private JdbcValuesMetadata convertToMetadata(ResultSet resultSet) {
@@ -150,6 +167,17 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 							.handle( this::convertException );
 				} )
 				.whenComplete( (o, throwable) -> logicalConnection.afterStatement() );
+	}
+
+	private ResultSet saveResultSet(ResultSet resultSet) {
+		this.resultSet = resultSet;
+		return saveColumnCount( resultSet );
+	}
+
+	private ResultSet saveColumnCount(ResultSet resultSet) {
+		this.columnCount = columnCount( resultSet );
+		saveColumnCount( columnCount );
+		return resultSet;
 	}
 
 	private ReactiveConnection connection() {
