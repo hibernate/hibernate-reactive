@@ -48,7 +48,7 @@ public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValue
 	public CompletionStage<JdbcValuesMapping> reactiveResolve(JdbcValuesMetadata jdbcResultsMetadata, SessionFactoryImplementor sessionFactory) {
 		return ( (ReactiveResultSetAccess) jdbcResultsMetadata )
 				.getReactiveResultSet()
-				.thenApply( resultSet -> delegate.resolve(  jdbcResultsMetadata, sessionFactory ) );
+				.thenApply( columnCount -> delegate.resolve(  jdbcResultsMetadata, sessionFactory ) );
 	}
 
 	@Override
