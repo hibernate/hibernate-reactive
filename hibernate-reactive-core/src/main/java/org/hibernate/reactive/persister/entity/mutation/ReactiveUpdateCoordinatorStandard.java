@@ -25,7 +25,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard implements ReactiveUpdateCoordinator {
 
-	private CompletionStage<Void> stage = null;
+	private CompletionStage<Void> stage;
 
 	public ReactiveUpdateCoordinatorStandard(AbstractEntityPersister entityPersister, SessionFactoryImplementor factory) {
 		super( entityPersister, factory );
@@ -213,6 +213,49 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 
 							return true;
 						},
+						(statementDetails, affectedRowCount, batchPosition) -> ModelMutationHelper.identifiedResultsCheck(
+								statementDetails,
+								affectedRowCount,
+								batchPosition,
+								entityPersister(),
+								id,
+								factory()
+						),
+						session
+				)
+				.whenComplete( (o, throwable) -> mutationExecutor.release() )
+				.whenComplete( this::complete );
+	}
+
+	@Override
+	protected void doStaticUpdate(
+			Object entity,
+			Object id,
+			Object rowId,
+			Object[] values,
+			Object[] oldValues,
+			UpdateValuesAnalysisImpl valuesAnalysis,
+			SharedSessionContractImplementor session) {
+		this.stage = new CompletableFuture<>();
+
+		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, getStaticUpdateGroup() );
+
+		decomposeForUpdate(
+				id,
+				rowId,
+				values,
+				valuesAnalysis,
+				mutationExecutor,
+				getStaticUpdateGroup(),
+				(position, attribute) -> true,
+				session
+		);
+		bindPartitionColumnValueBindings( oldValues, session, mutationExecutor.getJdbcValueBindings() );
+
+		mutationExecutor.executeReactive(
+						entity,
+						valuesAnalysis,
+						valuesAnalysis.getTablesNeedingUpdate()::contains,
 						(statementDetails, affectedRowCount, batchPosition) -> ModelMutationHelper.identifiedResultsCheck(
 								statementDetails,
 								affectedRowCount,
