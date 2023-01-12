@@ -9,7 +9,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.mutation.ParameterUsage;
-import org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -21,7 +20,7 @@ import org.hibernate.persister.entity.mutation.UpdateCoordinatorStandard;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.sql.model.MutationOperationGroup;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.identifiedResultsCheck;
 
 public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard implements ReactiveUpdateCoordinator {
 
@@ -51,6 +50,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			int[] dirtyAttributeIndexes,
 			boolean hasDirtyCollection,
 			SharedSessionContractImplementor session) {
+		stage = new CompletableFuture<>();
 		try {
 			super.coordinateUpdate(
 					entity,
@@ -63,15 +63,9 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 					hasDirtyCollection,
 					session
 			);
-			if ( stage == null ) {
-				return voidFuture();
-			}
 			return stage;
 		}
 		catch (Throwable t) {
-			if ( stage == null ) {
-				stage = new CompletableFuture<>();
-			}
 			stage.toCompletableFuture().completeExceptionally( t );
 			return stage;
 		}
@@ -127,7 +121,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 						entity,
 						null,
 						(tableMapping) -> tableMapping.getTableName().equals( entityPersister().getIdentifierTableName() ),
-						(statementDetails, affectedRowCount, batchPosition) -> ModelMutationHelper.identifiedResultsCheck(
+						(statementDetails, affectedRowCount, batchPosition) -> identifiedResultsCheck(
 								statementDetails,
 								affectedRowCount,
 								batchPosition,
@@ -162,8 +156,6 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			UpdateCoordinatorStandard.InclusionChecker dirtinessChecker,
 			UpdateCoordinatorStandard.UpdateValuesAnalysisImpl valuesAnalysis,
 			SharedSessionContractImplementor session) {
-		this.stage = new CompletableFuture<>();
-
 		// Create the JDBC operation descriptors
 		final MutationOperationGroup dynamicUpdateGroup = generateDynamicUpdateGroup(
 				id,
@@ -213,7 +205,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 
 							return true;
 						},
-						(statementDetails, affectedRowCount, batchPosition) -> ModelMutationHelper.identifiedResultsCheck(
+						(statementDetails, affectedRowCount, batchPosition) -> identifiedResultsCheck(
 								statementDetails,
 								affectedRowCount,
 								batchPosition,
@@ -236,8 +228,6 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			Object[] oldValues,
 			UpdateValuesAnalysisImpl valuesAnalysis,
 			SharedSessionContractImplementor session) {
-		this.stage = new CompletableFuture<>();
-
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, getStaticUpdateGroup() );
 
 		decomposeForUpdate(
@@ -256,14 +246,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 						entity,
 						valuesAnalysis,
 						valuesAnalysis.getTablesNeedingUpdate()::contains,
-						(statementDetails, affectedRowCount, batchPosition) -> ModelMutationHelper.identifiedResultsCheck(
-								statementDetails,
-								affectedRowCount,
-								batchPosition,
-								entityPersister(),
-								id,
-								factory()
-						),
+						(statementDetails, affectedRowCount, batchPosition) -> identifiedResultsCheck( statementDetails, affectedRowCount, batchPosition, entityPersister(), id, factory() ),
 						session
 				)
 				.whenComplete( (o, throwable) -> mutationExecutor.release() )
