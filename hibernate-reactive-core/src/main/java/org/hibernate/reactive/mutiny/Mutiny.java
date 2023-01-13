@@ -1840,7 +1840,7 @@ public interface Mutiny {
 		 * current reactive stream, then the work will be executed using that
 		 * session.
 		 * <li>Otherwise, if there is no session associated with the
-		 * current stream, a new stateless session will be created.
+		 * current stream, a new session will be created.
 		 * </il>
 		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
@@ -1863,7 +1863,7 @@ public interface Mutiny {
 		 * current reactive stream, then the work will be executed using that
 		 * session.
 		 * <li>Otherwise, if there is no session associated with the
-		 * current stream, a new stateless session will be created.
+		 * current stream, a new session will be created.
 		 * </il>
 		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
