@@ -137,13 +137,13 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 
 	private ReactiveMutationExecutor mutationExecutor(
 			SharedSessionContractImplementor session,
-			MutationOperationGroup dynamicUpdateGroup) {
+			MutationOperationGroup operationGroup) {
 		final MutationExecutorService mutationExecutorService = session.getSessionFactory()
 				.getServiceRegistry()
 				.getService( MutationExecutorService.class );
 
 		return (ReactiveMutationExecutor) mutationExecutorService
-				.createExecutor( this::getBatchKey, getVersionUpdateGroup(), session );
+				.createExecutor( this::getBatchKey, operationGroup, session );
 	}
 
 	@Override
@@ -228,7 +228,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			Object[] oldValues,
 			UpdateValuesAnalysisImpl valuesAnalysis,
 			SharedSessionContractImplementor session) {
-		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, getStaticUpdateGroup() );
+		final MutationOperationGroup staticUpdateGroup = getStaticUpdateGroup();
+		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, staticUpdateGroup );
 
 		decomposeForUpdate(
 				id,
@@ -236,7 +237,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				values,
 				valuesAnalysis,
 				mutationExecutor,
-				getStaticUpdateGroup(),
+				staticUpdateGroup,
 				(position, attribute) -> true,
 				session
 		);
