@@ -102,8 +102,6 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 		}
 
 		// If we get here the statement is needed - make sure it is resolved
-		session.getJdbcServices().getSqlStatementLogger().logStatement( statementDetails.getSqlString() );
-
 		Object[] params = PreparedStatementAdaptor.bind( statement -> {
 			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor( statementDetails, statement, session.getJdbcServices() );
 			valueBindings.beforeStatement( details, session );
