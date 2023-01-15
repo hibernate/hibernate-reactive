@@ -172,42 +172,14 @@ public abstract class BaseReactiveTest {
 	}
 
 	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
-		CompletableFuture<Void> deletedStage = new CompletableFuture<>();
-		connection().thenCompose( connection -> connection
-				.beginTransaction()
-				.thenCompose( v -> loop( entities, entityClass -> connection.execute( "delete from " + entityTable( entityClass ) ) ) )
-				.thenCompose( v -> connection.commitTransaction() )
-				.whenComplete( (d, td) -> {
-					// Close the connection, no matter what
-					connection.close()
-							.whenComplete( (c, tc) -> {
-								if (td == null ) {
-									// Query executed
-									if ( tc == null ) {
-										// All good
-										deletedStage.complete( null );
-									}
-									else {
-										// Error closing the connection
-										deletedStage.completeExceptionally( tc );
-									}
-								}
-								else {
-									// Error during query or commit
-									// I don't care about roll-backing the tx
-									if ( tc != null ) {
-										// Error during connection close
-										td.addSuppressed( tc );
-									}
-									deletedStage.completeExceptionally( td );
-								}
-							} );
-				} )
-		);
-		return deletedStage;
+		return getSessionFactory()
+				.withTransaction( s -> loop( entities, entityClass -> s
+						.createQuery( "from " + entityClass.getSimpleName(), entityClass )
+						.getResultList()
+						.thenCompose( list -> loop( list, entity -> s.remove( entity ) ) ) ) );
 	}
 
-	private static String entityTable(Class<?> entityClass) {
+	protected String entityTable(Class<?> entityClass) {
 		Table annotation = entityClass.getAnnotation( Table.class );
 		return annotation == null ? entityClass.getSimpleName() : annotation.name();
 	}
