@@ -8,10 +8,12 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import org.hibernate.cfg.Configuration;
@@ -38,35 +40,30 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 
 	@Test
 	public void testSequenceGenerator(TestContext context) {
-
 		SequenceId b = new SequenceId();
 		b.string = "Hello World";
 
-		test( context,
-				openSession()
-				.thenCompose(s -> s.persist(b).thenCompose(v -> s.flush()))
+		test( context, openSession()
+				.thenCompose( s -> s.persist( b ).thenCompose( v -> s.flush() ) )
 				.thenCompose( v -> openSession() )
-				.thenCompose( s2 ->
-					s2.find( SequenceId.class, b.getId() )
+				.thenCompose( s2 -> s2
+						.find( SequenceId.class, b.getId() )
 						.thenAccept( bb -> {
 							context.assertNotNull( bb );
 							context.assertEquals( bb.id, 5 );
 							context.assertEquals( bb.string, b.string );
 							context.assertEquals( bb.version, 0 );
-
 							bb.string = "Goodbye";
-						})
-						.thenCompose(vv -> s2.flush())
-						.thenCompose(vv -> s2.find( SequenceId.class, b.getId() ))
-						.thenAccept( bt -> {
-							context.assertEquals( bt.version, 1 );
-						}))
+						} )
+						.thenCompose( vv -> s2.flush() )
+						.thenCompose( vv -> s2.find( SequenceId.class, b.getId() ) )
+						.thenAccept( bt -> context.assertEquals( bt.version, 1 ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( s3 -> s3.find( SequenceId.class, b.getId() ) )
 				.thenAccept( bb -> {
-					context.assertEquals(bb.version, 1);
-					context.assertEquals(bb.string, "Goodbye");
-				})
+					context.assertEquals( bb.version, 1 );
+					context.assertEquals( bb.string, "Goodbye" );
+				} )
 		);
 	}
 
@@ -95,15 +92,15 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
-	@SequenceGenerator(name = "seq",
-			sequenceName = "test_id_seq",
-			initialValue = 5,
-			allocationSize = 1)
+	@Entity(name = "SequenceId")
+	@SequenceGenerator(name = "seq", sequenceName = "test_id_seq", initialValue = 5, allocationSize = 1)
+	@Table(name = "SequenceId")
 	public static class SequenceId {
-		@Id @GeneratedValue(generator = "seq")
+		@Id
+		@GeneratedValue(generator = "seq")
 		Integer id;
-		@Version Integer version;
+		@Version
+		Integer version;
 		String string;
 
 		public SequenceId() {
@@ -144,12 +141,12 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 				return false;
 			}
 			SequenceId sequenceId = (SequenceId) o;
-			return Objects.equals(string, sequenceId.string);
+			return Objects.equals( string, sequenceId.string );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(string);
+			return Objects.hash( string );
 		}
 	}
 }

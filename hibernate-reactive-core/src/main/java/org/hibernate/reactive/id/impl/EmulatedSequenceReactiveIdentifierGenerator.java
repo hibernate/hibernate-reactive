@@ -32,7 +32,7 @@ public class EmulatedSequenceReactiveIdentifierGenerator extends TableReactiveId
 	@Override
 	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) {
 		super.configure( type, params, serviceRegistry );
-		SequenceReactiveIdentifierGenerator generator = new SequenceReactiveIdentifierGenerator();
+		ReactiveSequenceIdentifierGenerator generator = new ReactiveSequenceIdentifierGenerator();
 		generator.configure( type, params, serviceRegistry );
 	}
 
@@ -48,7 +48,7 @@ public class EmulatedSequenceReactiveIdentifierGenerator extends TableReactiveId
 
 	@Override
 	protected String determineTableName(Type type, Properties params, ServiceRegistry serviceRegistry) {
-		SequenceReactiveIdentifierGenerator generator = new SequenceReactiveIdentifierGenerator();
+		ReactiveSequenceIdentifierGenerator generator = new ReactiveSequenceIdentifierGenerator();
 		generator.configure( type, params, serviceRegistry );
 		return generator.getSequenceName().render();
 	}
