@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
+
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -211,9 +212,11 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "Book")
-	@Table(name = "BookST")
+	@Table(name = Book.TABLE)
 	@DiscriminatorValue("N")
 	public static class Book {
+
+		public static final String TABLE = "BookSTIT";
 
 		@Id
 		private Integer id;
@@ -276,7 +279,7 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 	@Table(name = Author.TABLE)
 	public static class Author {
 
-		public static final String TABLE = "Author";
+		public static final String TABLE = "AuthorSTIT";
 
 		@Id
 		@GeneratedValue
