@@ -74,7 +74,7 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 				reactiveGenerator = new EmulatedSequenceReactiveIdentifierGenerator();
 			}
 			else if ( structure instanceof SequenceStructure ) {
-				reactiveGenerator = new SequenceReactiveIdentifierGenerator();
+				reactiveGenerator = new ReactiveSequenceIdentifierGenerator();
 			}
 			else {
 				throw LOG.unknownStructureType();
