@@ -8,6 +8,7 @@ package org.hibernate.reactive.types;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -29,6 +30,7 @@ import io.vertx.ext.unit.TestContext;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 /**
  * Test types that we expect to work only on selected DBs.
@@ -41,6 +43,15 @@ public class UserJsonTypeTest extends BaseReactiveTest {
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Basic.class );
+	}
+
+	@Override
+	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
+		return getSessionFactory()
+				.withTransaction( s -> loop( entities, entityClass -> s
+						.createQuery( "from JsonEntity", entityClass )
+						.getResultList()
+						.thenCompose( list -> loop( list, entity -> s.remove( entity ) ) ) ) );
 	}
 
 	@Test
