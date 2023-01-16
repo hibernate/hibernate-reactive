@@ -117,7 +117,7 @@ public class SecondaryTableTest extends BaseReactiveTest {
 						}));
 	}
 
-	@Entity
+	@Entity(name = "Book")
 	@Table(name = Book.TABLE1)
 	@SecondaryTable(name = Book.TABLE2)
 	@SecondaryTable(name = Book.TABLE3)
@@ -191,7 +191,7 @@ public class SecondaryTableTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
+	@Entity(name = "Author")
 	@Table(name = Author.TABLE)
 	public static class Author {
 

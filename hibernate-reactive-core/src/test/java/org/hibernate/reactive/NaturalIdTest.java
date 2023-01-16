@@ -60,7 +60,7 @@ public class NaturalIdTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name = "Thing")
 	static class Thing {
 		@Id
 		@GeneratedValue

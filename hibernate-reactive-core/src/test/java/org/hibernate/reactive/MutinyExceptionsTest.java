@@ -53,7 +53,7 @@ public class MutinyExceptionsTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name = "Person")
 	public static class Person {
 
 		@Id

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 
 import org.hibernate.Hibernate;
 import org.hibernate.LockMode;
@@ -26,11 +27,29 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+
 public class ReferenceTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Author.class, Book.class );
+	}
+
+	@Override
+	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
+		return getSessionFactory()
+				.withTransaction( s -> loop( entities, entityClass -> s
+						.createQuery( "from " + entityName( entityClass ), entityClass )
+						.getResultList()
+						.thenCompose( list -> loop( list, entity -> s.remove( entity ) ) ) ) );
+	}
+
+	private String entityName(Class<?> entityClass) {
+		if (Author.class.equals( entityClass ) ) {
+			return "Writer";
+		}
+		return "Tome";
 	}
 
 	@Test

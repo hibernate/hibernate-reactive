@@ -61,7 +61,7 @@ public class IdentityGeneratorTypeTest extends BaseReactiveTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		// It's the default but I want to highlight what we are testing
+		// It's the default, but I want to highlight what we are testing
 		configuration.setProperty( AvailableSettings.USE_GET_GENERATED_KEYS, "false" );
 		return configuration;
 	}
