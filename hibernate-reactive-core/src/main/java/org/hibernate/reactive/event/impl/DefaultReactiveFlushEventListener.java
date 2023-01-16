@@ -33,19 +33,15 @@ public class DefaultReactiveFlushEventListener extends AbstractReactiveFlushingE
 		final EventSource source = event.getSession();
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 
-		if ( persistenceContext.getNumberOfManagedEntities() > 0 ||
-				persistenceContext.getCollectionEntriesSize() > 0 ) {
-
+		if ( persistenceContext.getNumberOfManagedEntities() > 0 || persistenceContext.getCollectionEntriesSize() > 0 ) {
 			source.getEventListenerManager().flushStart();
 
-			return flushEverythingToExecutions(event)
-					.thenCompose( v -> performExecutions(source) )
+			return flushEverythingToExecutions( event )
+					.thenCompose( v -> performExecutions( source ) )
 					.thenRun( () -> postFlush( source ) )
-					.whenComplete( (v, x) ->
-							source.getEventListenerManager().flushEnd(
-								event.getNumberOfEntitiesProcessed(),
-								event.getNumberOfCollectionsProcessed()
-					))
+					.whenComplete( (v, x) -> source
+							.getEventListenerManager()
+							.flushEnd( event.getNumberOfEntitiesProcessed(), event.getNumberOfCollectionsProcessed() ) )
 					.thenRun( () -> {
 						postPostFlush( source );
 

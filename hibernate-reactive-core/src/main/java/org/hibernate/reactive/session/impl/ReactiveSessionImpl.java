@@ -905,10 +905,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			throw log.flushDuringCascadeIsDangerous();
 		}
 
-		return fastSessionServices.eventListenerGroup_FLUSH.fireEventOnEachListener(
-						new FlushEvent( this ),
-						(ReactiveFlushEventListener l) -> l::reactiveOnFlush
-				)
+		return fastSessionServices.eventListenerGroup_FLUSH
+				.fireEventOnEachListener( new FlushEvent( this ), (ReactiveFlushEventListener l) -> l::reactiveOnFlush )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 

@@ -21,10 +21,13 @@ import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.sql.model.MutationOperationGroup;
 
 import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.identifiedResultsCheck;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard implements ReactiveUpdateCoordinator {
 
 	private CompletionStage<Void> stage;
+
 
 	public ReactiveUpdateCoordinatorStandard(AbstractEntityPersister entityPersister, SessionFactoryImplementor factory) {
 		super( entityPersister, factory );
@@ -50,7 +53,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			int[] dirtyAttributeIndexes,
 			boolean hasDirtyCollection,
 			SharedSessionContractImplementor session) {
-		stage = new CompletableFuture<>();
+		stage = null;
 		try {
 			super.coordinateUpdate(
 					entity,
@@ -63,9 +66,12 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 					hasDirtyCollection,
 					session
 			);
-			return stage;
+			return stage != null ? stage : voidFuture();
 		}
 		catch (Throwable t) {
+			if ( stage == null ) {
+				return failedFuture( t );
+			}
 			stage.toCompletableFuture().completeExceptionally( t );
 			return stage;
 		}
@@ -156,6 +162,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			UpdateCoordinatorStandard.InclusionChecker dirtinessChecker,
 			UpdateCoordinatorStandard.UpdateValuesAnalysisImpl valuesAnalysis,
 			SharedSessionContractImplementor session) {
+		this.stage = new CompletableFuture<>();
 		// Create the JDBC operation descriptors
 		final MutationOperationGroup dynamicUpdateGroup = generateDynamicUpdateGroup(
 				id,
@@ -228,6 +235,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			Object[] oldValues,
 			UpdateValuesAnalysisImpl valuesAnalysis,
 			SharedSessionContractImplementor session) {
+		this.stage = new CompletableFuture<>();
 		final MutationOperationGroup staticUpdateGroup = getStaticUpdateGroup();
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, staticUpdateGroup );
 
