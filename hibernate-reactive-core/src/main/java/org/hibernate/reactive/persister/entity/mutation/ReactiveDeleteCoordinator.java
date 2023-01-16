@@ -28,12 +28,13 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.sql.model.MutationOperationGroup;
 
 import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.identifiedResultsCheck;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	// We expect this to only be assigned in coordinateReactiveDelete
 	private CompletionStage<Void> stage;
 
 	public ReactiveDeleteCoordinator(AbstractEntityPersister entityPersister, SessionFactoryImplementor factory) {
@@ -46,18 +47,22 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 	}
 
 	public CompletionStage<Void> coordinateReactiveDelete(Object entity, Object id, Object version, SharedSessionContractImplementor session) {
-		stage = new CompletableFuture<>();
 		try {
 			super.coordinateDelete( entity, id, version, session );
+			return stage != null ? stage : voidFuture();
 		}
 		catch (Throwable t) {
+			if ( stage == null ) {
+				return failedFuture( t );
+			}
 			stage.toCompletableFuture().completeExceptionally( t );
+			return stage;
 		}
-		return stage;
 	}
 
 	@Override
 	protected void doDynamicDelete(Object entity, Object id, Object rowId, Object[] loadedState, SharedSessionContractImplementor session) {
+		stage = new CompletableFuture<>();
 		final MutationOperationGroup operationGroup = generateOperationGroup( loadedState, true, session );
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, operationGroup );
 
@@ -116,6 +121,7 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 
 	@Override
 	protected void doStaticDelete(Object entity, Object id, Object[] loadedState, Object version, SharedSessionContractImplementor session) {
+		stage = new CompletableFuture<>();
 		final boolean applyVersion = entity != null;
 		final MutationOperationGroup operationGroupToUse = entity == null
 				? resolveNoVersionDeleteGroup( session )

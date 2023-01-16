@@ -55,7 +55,6 @@ import org.hibernate.reactive.engine.impl.ReactiveOrphanRemovalAction;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.EntityType;
@@ -63,6 +62,7 @@ import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.Type;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -350,7 +350,7 @@ public class ReactiveActionQueue {
 					return comp;
 				}
 				else {
-					return comp.thenCompose( vv -> CompletionStages.loop(
+					return comp.thenCompose( vv -> loop(
 							unresolvedInsertions.resolveDependentActions( insert.getInstance(), session.getSharedContract() ),
 							resolvedAction -> addResolvedEntityInsertAction( (ReactiveEntityRegularInsertAction) resolvedAction )
 					) );
@@ -640,19 +640,19 @@ public class ReactiveActionQueue {
 		// todo : consider ways to improve the double iteration of Executables here:
 		//		1) we explicitly iterate list here to perform Executable#execute()
 		//		2) ExecutableList#getQuerySpaces also iterates the Executables to collect query spaces.
-		return CompletionStages.loop( 0, list.size(),
-				index -> {
-					final ReactiveExecutable e = (ReactiveExecutable) list.get( index );
-					return e.reactiveExecute()
-							.whenComplete( (v2, x1) -> {
-								if ( e.getBeforeTransactionCompletionProcess() != null ) {
-									beforeTransactionProcesses().register( e.getBeforeTransactionCompletionProcess() );
-								}
-								if ( e.getAfterTransactionCompletionProcess() != null ) {
-									afterTransactionProcesses().register( e.getAfterTransactionCompletionProcess() );
-								}
-							} );
-				}
+		return loop( 0, list.size(),
+					 index -> {
+						 final ReactiveExecutable e = list.get( index );
+						 return e.reactiveExecute()
+								 .whenComplete( (v2, x1) -> {
+									 if ( e.getBeforeTransactionCompletionProcess() != null ) {
+										 beforeTransactionProcesses().register( e.getBeforeTransactionCompletionProcess() );
+									 }
+									 if ( e.getAfterTransactionCompletionProcess() != null ) {
+										 afterTransactionProcesses().register( e.getAfterTransactionCompletionProcess() );
+									 }
+								 } );
+					 }
 		)
 		.whenComplete( (v, x) -> {
 			if ( session.getFactory().getSessionFactoryOptions().isQueryCacheEnabled() ) {
@@ -955,7 +955,7 @@ public class ReactiveActionQueue {
 					throw new AssertionFailure( "Unable to perform beforeTransactionCompletion callback", e );
 				}
 			}
-			return CompletionStages.loop(
+			return loop(
 					reactiveProcesses,
 					process -> process.doBeforeTransactionCompletion( session )
 			).whenComplete( (v, e) -> reactiveProcesses.clear() );
@@ -999,7 +999,7 @@ public class ReactiveActionQueue {
 			}
 			querySpacesToInvalidate.clear();
 
-			return CompletionStages.loop(
+			return loop(
 					reactiveProcesses,
 					process -> process.doAfterTransactionCompletion( success, session )
 			).whenComplete( (v, e) -> reactiveProcesses.clear() );
