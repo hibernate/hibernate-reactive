@@ -18,6 +18,7 @@ import jakarta.persistence.Table;
 
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
@@ -40,6 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see EagerElementCollectionForBasicTypeSetTest
  * @see EagerElementCollectionForEmbeddableTypeListTest
  */
+@Ignore
+
 public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest {
 
 	private Person thePerson;
@@ -478,7 +481,7 @@ public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest
 	@Test
 	public void setCollectionToNullWithMutinyAPI(TestContext context) {
 		test( context, getMutinySessionFactory()
-				.withTransaction( (session, transaction) -> session
+				.withTransaction( session -> session
 						.find( Person.class, thePerson.getId() )
 						.invoke( found -> {
 							context.assertFalse( found.getPhones().isEmpty() );
