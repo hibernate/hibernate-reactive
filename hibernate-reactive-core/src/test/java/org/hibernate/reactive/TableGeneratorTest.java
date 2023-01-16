@@ -61,7 +61,7 @@ public class TableGeneratorTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name = "TableId")
 	@TableGenerator(name = "tab",
 			valueColumnName = "nextid",
 			table = "test_id_tab",

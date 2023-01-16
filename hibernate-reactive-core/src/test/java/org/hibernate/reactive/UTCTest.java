@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import jakarta.persistence.Column;
@@ -32,7 +33,18 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+
 public class UTCTest extends BaseReactiveTest {
+
+	@Override
+	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
+		return getSessionFactory()
+				.withTransaction( s -> loop( entities, entityClass -> s
+						.createQuery( "from ThingInUTC", entityClass )
+						.getResultList()
+						.thenCompose( list -> loop( list, entity -> s.remove( entity ) ) ) ) );
+	}
 
 	final Thing thing = new Thing();
 

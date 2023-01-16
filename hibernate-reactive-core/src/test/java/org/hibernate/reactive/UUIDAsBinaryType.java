@@ -58,7 +58,7 @@ public abstract class UUIDAsBinaryType extends BaseReactiveTest {
 			);
 		}
 
-		@Entity
+		@Entity(name = "ExactSizeUUIDEntity")
 		private static class ExactSizeUUIDEntity {
 
 			@Id
@@ -129,7 +129,7 @@ public abstract class UUIDAsBinaryType extends BaseReactiveTest {
 			);
 		}
 
-		@Entity
+		@Entity(name = "UUIDEntity")
 		private static class UUIDEntity {
 
 			@Id

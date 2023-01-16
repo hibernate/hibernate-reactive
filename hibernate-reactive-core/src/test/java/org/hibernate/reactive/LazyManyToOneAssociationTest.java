@@ -225,7 +225,7 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name = "Book")
 	@Table(name = Book.TABLE)
 	@DiscriminatorValue("N")
 	public static class Book {
@@ -285,7 +285,7 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 			attributeNodes = @NamedAttributeNode("book")
 	)
 
-	@Entity
+	@Entity(name = "Author")
 	@Table(name = Author.TABLE)
 	public static class Author {
 
