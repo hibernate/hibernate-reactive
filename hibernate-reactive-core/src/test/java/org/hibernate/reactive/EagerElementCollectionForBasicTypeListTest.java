@@ -18,7 +18,6 @@ import jakarta.persistence.Table;
 
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
@@ -41,8 +40,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see EagerElementCollectionForBasicTypeSetTest
  * @see EagerElementCollectionForEmbeddableTypeListTest
  */
-@Ignore
-
 public class EagerElementCollectionForBasicTypeListTest extends BaseReactiveTest {
 
 	private Person thePerson;
