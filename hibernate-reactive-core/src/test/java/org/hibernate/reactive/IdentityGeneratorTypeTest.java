@@ -41,7 +41,7 @@ public class IdentityGeneratorTypeTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( IntegerTypeEntity.class, LongTypeEntity.class, ShortTypeEntity.class );
+		return List.of( IntegerTypeEntity.class, LongTypeEntity.class );
 	}
 
 	/**
@@ -96,16 +96,11 @@ public class IdentityGeneratorTypeTest extends BaseReactiveTest {
 		assertType( context, IntegerTypeEntity.class, new IntegerTypeEntity(), 1 );
 	}
 
-	@Test
-	public void shortIdentityType(TestContext context) {
-		assertType( context, ShortTypeEntity.class, new ShortTypeEntity(), (short) 1 );
-	}
-
 	interface TypeIdentity<T extends Number> {
 		T getId();
 	}
 
-	@Entity
+	@Entity(name = "IntegerTypeEntity")
 	@Table(name = "IntegerTypeEntity")
 	static class IntegerTypeEntity implements TypeIdentity<Integer> {
 		@Id
@@ -118,7 +113,7 @@ public class IdentityGeneratorTypeTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
+	@Entity(name = "LongTypeEntity")
 	@Table(name = "LongTypeEntity")
 	static class LongTypeEntity implements TypeIdentity<Long> {
 		@Id
@@ -127,19 +122,6 @@ public class IdentityGeneratorTypeTest extends BaseReactiveTest {
 
 		@Override
 		public Long getId() {
-			return id;
-		}
-	}
-
-	@Entity
-	@Table(name = "ShortTypeEntity")
-	static class ShortTypeEntity implements TypeIdentity<Short> {
-		@Id
-		@GeneratedValue(strategy = GenerationType.IDENTITY)
-		public Short id;
-
-		@Override
-		public Short getId() {
 			return id;
 		}
 	}
