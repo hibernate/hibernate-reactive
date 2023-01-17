@@ -659,7 +659,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 			persistenceContext.getNaturalIdResolutions()
 					.cacheResolutionFromLoad( event.getEntityId(),
-											  persister.getNaturalIdMapping().extractNaturalIdFromEntity( entity, session ),
+											  persister.getNaturalIdMapping().extractNaturalIdFromEntity( entity ),
 											  persister
 					);
 		}

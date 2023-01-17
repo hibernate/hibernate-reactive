@@ -152,7 +152,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 					if ( getNaturalIdMapping() != null ) {
 						session.getPersistenceContextInternal().getNaturalIdResolutions().manageSharedResolution(
 								id,
-								getNaturalIdMapping().extractNaturalIdFromEntityState( getState(), session ),
+								getNaturalIdMapping().extractNaturalIdFromEntityState( getState() ),
 								getPreviousNaturalIdValues(),
 								persister,
 								CachedNaturalIdValueSource.UPDATE
