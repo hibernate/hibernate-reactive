@@ -145,11 +145,10 @@ jobs:
         java:
           - { name: "11", java_version_numeric: 11 }
           - { name: "17", java_version_numeric: 17 }
-          - { name: "18", java_version_numeric: 18, from: 'jdk.java.net' }
-          # We want to enable preview features when testing early-access builds of OpenJDK:
+          # We want to enable preview features when testing newer builds of OpenJDK:
           # even if we don't use these features, just enabling them can cause side effects
           # and it's useful to test that.
-          - { name: "19-ea", java_version_numeric: 19, from: 'jdk.java.net', jvm_args: '--enable-preview' }
+          - { name: "19", java_version_numeric: 19, from: 'jdk.java.net', jvm_args: '--enable-preview' }
           - { name: "20-ea", java_version_numeric: 20, from: 'jdk.java.net', jvm_args: '--enable-preview' }
           - { name: "21-ea", java_version_numeric: 21, from: 'jdk.java.net', jvm_args: '--enable-preview' }
     steps:
