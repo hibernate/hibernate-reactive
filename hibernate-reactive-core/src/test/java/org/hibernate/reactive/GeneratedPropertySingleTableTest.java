@@ -139,7 +139,7 @@ public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name = "GeneratedRegular")
 	@Table(name = "GeneratedRegularSingleTable")
 	static class GeneratedRegular {
 		@Id
@@ -178,7 +178,7 @@ public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
+	@Entity(name = "GeneratedWithIdentity")
 	@Table(name = "GeneratedWithIdentitySingleTable")
 	static class GeneratedWithIdentity {
 		@Id
