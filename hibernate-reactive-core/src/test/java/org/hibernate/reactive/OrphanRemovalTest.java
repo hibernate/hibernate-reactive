@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -73,7 +74,7 @@ public class OrphanRemovalTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity(name = "ProductVersion")
+	@Entity(name = "Version")
 	@Table(name = "ORT_ProductVersion")
 	public static class Version {
 		@Id
