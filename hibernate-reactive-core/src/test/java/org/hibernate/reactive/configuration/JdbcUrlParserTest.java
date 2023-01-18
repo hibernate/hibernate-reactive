@@ -99,7 +99,7 @@ public class JdbcUrlParserTest {
 		params.put( "param2", "value2" );
 		params.put( "param3", "===value3===" );
 
-		String url = createJdbcUrl( "local_host", dbType().getDefaultPort(), DEFAULT_DB, params );
+		String url = createJdbcUrl( "localhost", dbType().getDefaultPort(), DEFAULT_DB, params );
 		assertOptions( url, DEFAULT_DB, params );
 	}
 

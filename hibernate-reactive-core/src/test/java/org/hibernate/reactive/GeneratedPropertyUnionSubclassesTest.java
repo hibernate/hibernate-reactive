@@ -100,7 +100,7 @@ public class GeneratedPropertyUnionSubclassesTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name = "GeneratedRegularParent")
 	@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 	static class GeneratedRegularParent {
 		@Id
@@ -127,7 +127,7 @@ public class GeneratedPropertyUnionSubclassesTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
+	@Entity(name = "GeneratedRegular")
 	static class GeneratedRegular extends GeneratedRegularParent {
 		@Temporal(value = TemporalType.TIMESTAMP)
 		@Generated(GenerationTime.INSERT)

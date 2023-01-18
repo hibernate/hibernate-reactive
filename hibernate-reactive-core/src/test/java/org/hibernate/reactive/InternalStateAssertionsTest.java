@@ -130,7 +130,7 @@ public class InternalStateAssertionsTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
+	@Entity(name = "Competition")
 	static class Competition {
 		@Id
 		String name;

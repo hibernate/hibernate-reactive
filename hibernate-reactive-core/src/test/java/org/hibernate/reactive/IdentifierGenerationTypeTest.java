@@ -164,7 +164,7 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name = "LongEntity")
 	private static class LongEntity {
 
 		@Id
@@ -204,7 +204,7 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
+	@Entity(name = "IntegerEntity")
 	private static class IntegerEntity {
 
 		@Id
@@ -244,7 +244,7 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
+	@Entity(name = "ShortEntity")
 	private static class ShortEntity {
 
 		@Id
