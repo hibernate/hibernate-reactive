@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
+import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -35,6 +36,12 @@ import org.hibernate.persister.entity.mutation.InsertCoordinator;
 import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 
 /**
@@ -42,6 +49,8 @@ import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader
  * and {@link ReactiveAbstractEntityPersister}.
  */
 public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPersister implements ReactiveAbstractEntityPersister {
+
+	private static final Log log = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveAbstractPersisterDelegate reactiveDelegate;
 
@@ -101,23 +110,36 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 		return super.initializeLazyProperty( fieldName, entity, entry, lazyIndex, selectedValue );
 	}
 
+	/**
+	 * @see #insertReactive(Object[], Object, SharedSessionContractImplementor)
+	 */
 	@Override
 	public Object insert(Object[] fields, Object object, SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
+		throw LOG.nonReactiveMethodCall( "insertReactive" );
 	}
 
+
+	/**
+	 * @see #insertReactive(Object[], Object, SharedSessionContractImplementor)
+	 */
 	@Override
 	public void insert(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
+		throw LOG.nonReactiveMethodCall( "insertReactive" );
 	}
 
+
+	/**
+	 * @see #deleteReactive(Object, Object, Object, SharedSessionContractImplementor)
+	 */
 	@Override
-	public void delete(
-			Object id, Object version, Object object, SharedSessionContractImplementor session)
-			throws HibernateException {
-		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
+	public void delete(Object id, Object version, Object object, SharedSessionContractImplementor session) {
+		throw LOG.nonReactiveMethodCall( "deleteReactive" );
 	}
 
+
+	/**
+	 * @see #updateReactive(Object, Object[], int[], boolean, Object[], Object, Object, Object, SharedSessionContractImplementor)
+	 */
 	@Override
 	public void update(
 			Object id,
@@ -129,7 +151,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 			Object object,
 			Object rowId,
 			SharedSessionContractImplementor session) throws HibernateException {
-		throw new UnsupportedOperationException( "Wrong method calls. Use the reactive equivalent." );
+		throw LOG.nonReactiveMethodCall( "updateReactive" );
 	}
 
 	/**
@@ -189,17 +211,20 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 
 	@Override
 	public CompletionStage<Void> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
-		return null;
+		return ( (ReactiveInsertCoordinator) getInsertCoordinator() )
+				.coordinateReactiveInsert( id, fields, object, session )
+				.thenCompose( CompletionStages::voidFuture );
 	}
 
 	@Override
 	public CompletionStage<Object> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
-		return null;
+		return ( (ReactiveInsertCoordinator) getInsertCoordinator() )
+				.coordinateReactiveInsert( null, fields, object, session );
 	}
 
 	@Override
 	public CompletionStage<Void> deleteReactive(Object id, Object version, Object object, SharedSessionContractImplementor session) {
-		return null;
+		return ( (ReactiveDeleteCoordinator) getDeleteCoordinator() ).coordinateReactiveDelete( object, id, version, session );
 	}
 
 	@Override
@@ -213,7 +238,8 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 			Object object,
 			Object rowId,
 			SharedSessionContractImplementor session) {
-		return null;
+		return ( (ReactiveUpdateCoordinator) getUpdateCoordinator() )
+				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
 	}
 
 	@Override
@@ -223,7 +249,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 
 	@Override
 	public Object loadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException("not yet implemented");
+		throw LOG.notYetImplemented();
 	}
 
 	@Override
@@ -249,7 +275,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 
 	@Override
 	public CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException("not yet implemented");
+		throw LOG.notYetImplemented();
 	}
 
 	@Override
@@ -263,7 +289,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 
 	@Override
 	public CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, EventSource session) {
-		throw new UnsupportedOperationException();
+		throw LOG.notYetImplemented();
 	}
 
 	@Override
