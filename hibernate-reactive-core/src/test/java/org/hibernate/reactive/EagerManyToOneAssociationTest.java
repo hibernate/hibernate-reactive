@@ -99,7 +99,7 @@ public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name = "Book")
 	@Table(name = Book.TABLE)
 	@DiscriminatorValue("N")
 	//@Inheritance(strategy = InheritanceType.JOINED)
@@ -151,7 +151,7 @@ public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity
+	@Entity(name = "Author")
 	@Table(name = Author.TABLE)
 	public static class Author {
 

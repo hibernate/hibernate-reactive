@@ -73,7 +73,7 @@ public class CustomSqlTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name = "Record")
 	@Table(name = "SqlRecord")
 	@SQLInsert(sql = "insert into sqlrecord (text, updated, id) values ($1, localtimestamp, $2)")
 	@SQLUpdate(sql = "update sqlrecord set text=$1, updated=localtimestamp where id=$2")

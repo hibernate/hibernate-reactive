@@ -83,7 +83,7 @@ public class BlockTableGeneratorTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name="TableId")
 	@Table(name="tab_id")
 	@TableGenerator(name = "tab",
 			valueColumnName = "nextid",

@@ -135,7 +135,7 @@ public class CustomStoredProcedureSqlTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name = "SimpleRecord")
 	@Table(name = "SimpleRecord")
 	@SQLInsert(sql = "SELECT PROC_INSERT_RECORD( $1, $2 );", callable = true)
 	@SQLUpdate(sql = "SELECT PROC_UPDATE_RECORD( $1, $2 );", callable = true)

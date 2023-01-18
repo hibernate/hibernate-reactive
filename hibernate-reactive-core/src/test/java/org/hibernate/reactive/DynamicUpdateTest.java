@@ -60,7 +60,7 @@ public class DynamicUpdateTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity
+	@Entity(name = "Record")
 	@Table(name = "BigRecord")
 	@DynamicInsert
 	@DynamicUpdate
