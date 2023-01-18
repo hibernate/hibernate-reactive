@@ -19,12 +19,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.*;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.Arrays.stream;
 
 public class CancelSignalTest extends BaseReactiveTest {
-    private static final Logger LOG = Logger.getLogger( CancelSignalTest.class );
+    private static final Logger LOG = Logger.getLogger(CancelSignalTest.class);
 
     @Override
     protected Collection<Class<?>> annotatedEntities() {
@@ -33,20 +34,21 @@ public class CancelSignalTest extends BaseReactiveTest {
 
     @Test
     public void cleanupConnectionWhenCancelSignal(TestContext context) {
+        // larger than 'sql pool size' to check entering the 'pool waiting queue'
         int executeSize = 10;
         ExecutorService withSessionExecutor = Executors.newFixedThreadPool(executeSize);
         ExecutorService cancelExecutor = Executors.newFixedThreadPool(executeSize);
         CountDownLatch firstSessionWaiter = new CountDownLatch(1);
         Queue<Cancellable> cancellableQueue = new ConcurrentLinkedQueue<>();
 
-        CompletableFuture[] withSessionFutures = stream(new int[executeSize])
+        CompletableFuture[] withSessionFutures = IntStream.range(0, executeSize)
                 .mapToObj(i ->
                         CompletableFuture.runAsync(
                                 () -> {
                                     CountDownLatch countDownLatch = new CountDownLatch(1);
-                                    String name = Thread.currentThread().getName();
                                     Cancellable cancellable = getMutinySessionFactory().withSession(s -> {
                                                 try {
+                                                    // Add sleep to create a test that delays processing
                                                     Thread.sleep(100);
                                                 } catch (InterruptedException e) {
                                                     throw new RuntimeException(e);
@@ -69,7 +71,7 @@ public class CancelSignalTest extends BaseReactiveTest {
                 )
                 .toArray(CompletableFuture[]::new);
 
-        CompletableFuture[] cancelFutures = stream(new int[executeSize])
+        CompletableFuture[] cancelFutures = IntStream.range(0, executeSize)
                 .mapToObj(i ->
                         CompletableFuture.runAsync(
                                 () -> {
@@ -82,6 +84,7 @@ public class CancelSignalTest extends BaseReactiveTest {
                                     Cancellable cancellable = cancellableQueue.poll();
                                     cancellable.cancel();
                                     try {
+                                        // Wait for vert.x pool waiter processing
                                         Thread.sleep(500);
                                     } catch (InterruptedException e) {
                                         throw new RuntimeException(e);
@@ -92,14 +95,13 @@ public class CancelSignalTest extends BaseReactiveTest {
                 )
                 .toArray(CompletableFuture[]::new);
 
-        CompletableFuture<Void> voidCompletableFuture = CompletableFuture.allOf(
+        CompletableFuture<Void> cancelWithSessionFutures = CompletableFuture.allOf(
                 Stream.concat(stream(withSessionFutures), stream(cancelFutures)).toArray(CompletableFuture[]::new)
         );
 
-        test(context, voidCompletableFuture
-                .thenAccept(x ->{
-                    context.assertEquals(Metrics.globalRegistry.find("vertx.sql.queue.pending").gauge().value(), 0.0);
-                })
+        test(context,
+                cancelWithSessionFutures
+                        .thenAccept(x -> context.assertEquals(Metrics.globalRegistry.find("vertx.sql.queue.pending").gauge().value(), 0.0))
         );
 
     }

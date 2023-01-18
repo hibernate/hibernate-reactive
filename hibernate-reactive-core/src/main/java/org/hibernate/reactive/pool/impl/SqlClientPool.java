@@ -5,14 +5,16 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import io.vertx.core.Future;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.SqlConnection;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * A pool of reactive connections backed by a supplier of
@@ -70,19 +72,30 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 		return getConnectionFromPool( getTenantPool( tenantId ) );
 	}
 
-	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool) {
-		AtomicReference<CompletionStage<ReactiveConnection>> resultReference = new AtomicReference<>();
-		CompletionStage<ReactiveConnection> reactiveConnectionCompletableFuture = pool.getConnection()
-				.map(this::newConnection)
-				.onComplete(handler -> {
-					if (handler.result() != null && resultReference.get() != null && resultReference.get().toCompletableFuture().isCancelled()) {
-						handler.result().close();
-					}
-				})
-				.toCompletionStage();
-		resultReference.set(reactiveConnectionCompletableFuture);
-		return reactiveConnectionCompletableFuture;
-	}
+    private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool) {
+		return completionStage(
+				pool.getConnection().map( this::newConnection ),
+				ReactiveConnection::close
+		);
+    }
+
+	/**
+	 * @param onCancellation invoke when converted {@link java.util.concurrent.CompletionStage} cancellation.
+	 */
+    private <T> CompletionStage<T> completionStage(Future<T> future, Consumer<T> onCancellation) {
+		CompletableFuture<T> completableFuture = new CompletableFuture<>();
+		future.onComplete( ar -> {
+			if ( ar.succeeded() ) {
+				if ( completableFuture.isCancelled() ) {
+					onCancellation.accept( ar.result() );
+				}
+				completableFuture.complete( ar.result() );
+			} else {
+				completableFuture.completeExceptionally( ar.cause() );
+			}
+		});
+		return completableFuture;
+    }
 
 	private ReactiveConnection newConnection(SqlConnection connection) {
 		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger() );

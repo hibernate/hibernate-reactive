@@ -14,7 +14,6 @@ import java.util.function.Supplier;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.metamodel.Metamodel;
 
-import io.vertx.core.Vertx;
 import org.hibernate.Cache;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
@@ -249,29 +248,15 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		}
 	}
 
-	private void runOnVertxContext(io.vertx.core.Context vertxContext, Runnable runnable) {
-		io.vertx.core.Context currentContext = Vertx.currentContext();
-		if (currentContext != null) {
-			runnable.run();
-		} else {
-			vertxContext.runOnContext(x -> runnable.run());
-		}
-	}
-
 	private<S extends Mutiny.Closeable, T> Uni<T> withSession(
 			Uni<S> sessionUni,
 			Function<S, Uni<T>> work,
 			Context.Key<S> contextKey) {
-		return sessionUni.chain( session -> {
-					io.vertx.core.Context currentVertxContext = Vertx.currentContext();
-
-					return Uni.createFrom().voidItem()
-							.invoke(() -> context.put(contextKey, session))
-							.chain(() -> work.apply(session))
-							// when this callback is invoked following a cancellation, it will be called on the thread having called cancel().
-							.onTermination().invoke(() -> runOnVertxContext(currentVertxContext, () -> context.remove(contextKey)))
-							.onTermination().call(session::close);
-				}
+		return sessionUni.chain( session -> Uni.createFrom().voidItem()
+				.invoke( () -> context.put( contextKey, session ) )
+				.chain( () -> work.apply( session ) )
+				.onTermination().invoke( () -> context.remove( contextKey ) )
+				.onTermination().call(session::close)
 		);
 	}
 
