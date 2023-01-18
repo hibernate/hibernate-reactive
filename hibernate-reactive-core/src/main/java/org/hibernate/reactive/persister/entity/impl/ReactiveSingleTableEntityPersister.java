@@ -222,7 +222,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 
 	@Override
 	public Object loadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException("not yet implemented");
+		throw LOG.notYetImplemented();
 	}
 
 	@Override
@@ -248,17 +248,17 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 
 	@Override
 	public CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException("not yet implemented");
+		throw LOG.notYetImplemented();
 	}
 
 	@Override
 	public CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, EventSource session) {
-		throw new UnsupportedOperationException("not yet implemented");
+		throw LOG.notYetImplemented();
 	}
 
 	@Override
 	protected SingleUniqueKeyEntityLoader<?> getUniqueKeyLoader(String attributeName) {
-		throw new UnsupportedOperationException( "use the reactive method: #getReactiveUniqueKeyLoader(String)" );
+		throw LOG.nonReactiveMethodCall( "getReactiveUniqueKeyLoader" );
 	}
 
 	protected ReactiveSingleUniqueKeyEntityLoader<Object> getReactiveUniqueKeyLoader(String attributeName) {
