@@ -11,7 +11,11 @@ import org.hibernate.dialect.PostgreSQLDriverKind;
 import org.hibernate.dialect.identity.IdentityColumnSupport;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.metamodel.mapping.EntityMappingType;
+import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
+import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.reactive.dialect.identity.ReactiveIdentityColumnSupportAdapter;
+import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveCteMutationStrategy;
 import org.hibernate.reactive.sql.ast.spi.ReactivePostgreSQLSqlAstTranslator;
 import org.hibernate.sql.ast.SqlAstTranslator;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
@@ -49,5 +53,10 @@ public class ReactivePostgreSQLDialect extends PostgreSQLDialect {
 	@Override
 	public IdentityColumnSupport getIdentityColumnSupport() {
 		return new ReactiveIdentityColumnSupportAdapter( super.getIdentityColumnSupport() );
+	}
+
+	@Override
+	public SqmMultiTableMutationStrategy getFallbackSqmMutationStrategy(EntityMappingType rootEntityDescriptor, RuntimeModelCreationContext runtimeModelCreationContext) {
+		return new ReactiveCteMutationStrategy( rootEntityDescriptor, runtimeModelCreationContext );
 	}
 }
