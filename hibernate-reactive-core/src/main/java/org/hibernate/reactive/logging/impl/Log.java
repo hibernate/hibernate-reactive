@@ -232,10 +232,15 @@ public interface Log extends BasicLogger {
 	@Message(id = 75, value = "Detected call to non reactive method. Alternative reactive method: `%1$s`")
 	HibernateException nonReactiveMethodCall(String alternativeMethod);
 
-
 	// A helper to keep track of places that still need to be done
 	@Message(id = 76, value = "This method has not been implemented yet")
 	HibernateException notYetImplemented();
+
+	@Message(id = 77, value = "Unable to execute post-insert id selection query: %1$s")
+	HibernateException unableToExecutePostInsertIdSelectionQuery(String selectSQL, @Cause Throwable e);
+
+	@Message(id = 78, value = "Unable to bind parameters for post-insert id selection query: %1$s")
+	HibernateException bindParametersForPostInsertIdSelectQueryError(String selectSQL, @Cause Throwable e);
 
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
