@@ -7,7 +7,6 @@ package org.hibernate.reactive.session;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.CacheMode;
@@ -19,13 +18,13 @@ import org.hibernate.LockOptions;
 import org.hibernate.UnknownProfileException;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.MergeContext;
 import org.hibernate.event.spi.PersistContext;
 import org.hibernate.event.spi.RefreshContext;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
+import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.metamodel.Attribute;
@@ -41,11 +40,9 @@ import jakarta.persistence.metamodel.Attribute;
  *  @see org.hibernate.reactive.mutiny.Mutiny.Session
  */
 @Incubating
-public interface ReactiveSession extends ReactiveQueryProducer {
+public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSessionContractImplementor {
 
 	ReactiveActionQueue getReactiveActionQueue();
-
-	PersistenceContext getPersistenceContext();
 
 	SessionImplementor getSharedContract();
 
@@ -70,8 +67,6 @@ public interface ReactiveSession extends ReactiveQueryProducer {
 	CompletionStage<Void> reactiveFlush();
 
 	CompletionStage<Void> reactiveAutoflush();
-
-	CompletionStage<Boolean> reactiveAutoFlushIfRequired(Set<String> querySpaces);
 
 	CompletionStage<Void> reactiveForceFlush(EntityEntry entry);
 

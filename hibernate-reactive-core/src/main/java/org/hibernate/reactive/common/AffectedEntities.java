@@ -25,39 +25,39 @@ import java.util.List;
  */
 @Incubating
 public class AffectedEntities {
-    private static final Class<?>[] NO_ENTITIES = new Class[0];
-    private static final String[] NO_TABLES = new String[0];
+	private static final Class<?>[] NO_ENTITIES = new Class[0];
+	private static final String[] NO_TABLES = new String[0];
 
-    private final String[] queryTables;
-    private final Class<?>[] queryEntities;
+	private final String[] queryTables;
+	private final Class<?>[] queryEntities;
 
-    public AffectedEntities(Class<?>... queryEntities) {
-        this.queryTables = NO_TABLES;
-        this.queryEntities = queryEntities;
-    }
+	public AffectedEntities(Class<?>... queryEntities) {
+		this.queryTables = NO_TABLES;
+		this.queryEntities = queryEntities;
+	}
 
-    public AffectedEntities(String... queryTables) {
-        this.queryTables = queryTables;
-        this.queryEntities = NO_ENTITIES;
-    }
+	public AffectedEntities(String... queryTables) {
+		this.queryTables = queryTables;
+		this.queryEntities = NO_ENTITIES;
+	}
 
-    public String[] getAffectedTables() {
-        return queryTables;
-    }
+	public String[] getAffectedTables() {
+		return queryTables;
+	}
 
-    public Class<?>[] getAffectedEntities() {
-        return queryEntities;
-    }
+	public Class<?>[] getAffectedEntities() {
+		return queryEntities;
+	}
 
-    public String[] getAffectedSpaces(SessionFactoryImplementor factory) {
-        List<String> spaces = new ArrayList<>();
-        for ( String table: getAffectedTables() ) {
-            spaces.add( table );
-        }
-		for ( Class<?> entity: getAffectedEntities() ) {
-			Serializable[] querySpaces = factory.getMetamodel().entityPersister(entity).getQuerySpaces();
-			spaces.addAll( Arrays.asList( (String[]) querySpaces) );
+	public String[] getAffectedSpaces(SessionFactoryImplementor factory) {
+		List<String> spaces = new ArrayList<>();
+		for ( String table : getAffectedTables() ) {
+			spaces.add( table );
 		}
-        return spaces.toArray(ArrayHelper.EMPTY_STRING_ARRAY);
-    }
+		for ( Class<?> entity : getAffectedEntities() ) {
+			Serializable[] querySpaces = factory.getMetamodel().entityPersister( entity ).getQuerySpaces();
+			spaces.addAll( Arrays.asList( (String[]) querySpaces ) );
+		}
+		return spaces.toArray( ArrayHelper.EMPTY_STRING_ARRAY );
+	}
 }

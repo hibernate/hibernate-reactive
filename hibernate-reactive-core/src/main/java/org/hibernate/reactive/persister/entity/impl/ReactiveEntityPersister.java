@@ -11,7 +11,6 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.bytecode.BytecodeLogging;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
@@ -75,9 +74,9 @@ public interface ReactiveEntityPersister extends EntityPersister {
 			LockOptions lockOptions,
 			SharedSessionContractImplementor session);
 
-	CompletionStage<? extends List<?>> reactiveMultiLoad(
-			Object[] ids,
-			SessionImplementor session,
+	<K> CompletionStage<? extends List<?>> reactiveMultiLoad(
+			K[] ids,
+			EventSource session,
 			MultiIdLoadOptions loadOptions);
 
 	CompletionStage<Object> reactiveLoad(

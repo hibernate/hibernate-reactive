@@ -119,16 +119,6 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 		return delegate.reactiveFetch( association, false );
 	}
 
-//	@Override
-//	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
-//		return delegate.getResultSetMapping( resultType, mappingName );
-//	}
-
-//	@Override
-//	public <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name) {
-//		return delegate.getEntityGraph( entity, name );
-//	}
-
 	@Override
 	public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
 		return currentTransaction == null
@@ -228,52 +218,52 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	@Override
 	public <R> Stage.Query<R> createQuery(String queryString) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString ) );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createQuery(String queryString, Class<R> resultType) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ) );
 	}
 
 	@Override
-	public <R> Stage.Query<R> createNativeQuery(String queryString) {
-		throw new UnsupportedOperationException("Not yet implemented");
+	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString) {
+		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString ) );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createNamedQuery(String queryName) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( queryName, null ) );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createNamedQuery(String queryName, Class<R> resultType) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( queryName, resultType ) );
 	}
 
 	@Override
-	public <R> Stage.Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-		throw new UnsupportedOperationException("Not yet implemented");
+	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString, Class<R> resultType) {
+		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ) );
 	}
 
 	@Override
 	public <R> Stage.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new StageQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ) );
 	}
 
 	@Override
-	public <R> Stage.Query<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
-		throw new UnsupportedOperationException("Not yet implemented");
+	public <R> Stage.MutationQuery<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
+		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( criteriaUpdate ) );
 	}
 
 	@Override
-	public <R> Stage.Query<R> createQuery(CriteriaDelete<R> criteriaDelete) {
-		throw new UnsupportedOperationException("Not yet implemented");
+	public <R> Stage.MutationQuery<R> createQuery(CriteriaDelete<R> criteriaDelete) {
+		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( criteriaDelete ) );
 	}
 
 	@Override
 	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return delegate.getResultSetMapping( resultType, mappingName );
 	}
 
 	@Override

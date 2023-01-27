@@ -15,7 +15,6 @@ import org.hibernate.LockOptions;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
@@ -216,7 +215,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public CompletionStage<? extends List<?>> reactiveMultiLoad(Object[] ids, SessionImplementor session, MultiIdLoadOptions loadOptions) {
+	public <K> CompletionStage<? extends List<?>> reactiveMultiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
 		return reactiveDelegate.multiLoad( ids, session, loadOptions );
 	}
 

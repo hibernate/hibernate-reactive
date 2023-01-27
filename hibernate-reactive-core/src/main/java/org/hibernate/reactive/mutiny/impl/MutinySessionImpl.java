@@ -136,12 +136,12 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <R> Mutiny.Query<R> createNamedQuery(String queryName) {
-		throw new UnsupportedOperationException();
+		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( queryName, null ), factory );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNamedQuery(String queryName, Class<R> resultType) {
-		throw new UnsupportedOperationException();
+		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( queryName, resultType ), factory );
 	}
 
 	@Override

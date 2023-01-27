@@ -47,10 +47,13 @@ public interface ReactiveNativeQueryImplementor<R> extends ReactiveNativeQuery<R
 	ReactiveNativeQueryImplementor<R> addScalar(String columnAlias);
 
 	@Override
-	ReactiveNativeQueryImplementor<R> addScalar(String columnAlias, @SuppressWarnings("rawtypes") BasicDomainType type);
+	ReactiveNativeQueryImplementor<R> addScalar(String columnAlias, BasicDomainType type);
 
 	@Override
 	ReactiveNativeQueryImplementor<R> addScalar(String columnAlias, @SuppressWarnings("rawtypes") Class javaType);
+
+	@Override
+	ReactiveNativeQueryImplementor<R> addScalar(int position, Class<?> type);
 
 	@Override
 	<C> ReactiveNativeQueryImplementor<R> addScalar(String columnAlias, Class<C> relationalJavaType, AttributeConverter<?,C> converter);

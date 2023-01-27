@@ -1545,7 +1545,7 @@ public interface Stage {
 		 */
 		boolean contains(Object entity);
 
-		<R> Query<R> createSelectQuery(String queryString);
+		<R> Stage.SelectionQuery<R> createSelectionQuery(String queryString);
 
 		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query

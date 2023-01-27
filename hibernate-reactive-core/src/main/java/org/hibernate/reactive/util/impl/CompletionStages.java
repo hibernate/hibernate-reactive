@@ -22,9 +22,9 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LogCategory;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 
-import static org.hibernate.reactive.util.async.impl.AsyncTrampoline.asyncWhile;
-import static org.hibernate.reactive.util.async.impl.AsyncIterator.range;
 import static org.hibernate.reactive.util.async.impl.AsyncIterator.fromIterator;
+import static org.hibernate.reactive.util.async.impl.AsyncIterator.range;
+import static org.hibernate.reactive.util.async.impl.AsyncTrampoline.asyncWhile;
 
 public class  CompletionStages {
 
@@ -374,6 +374,33 @@ public class  CompletionStages {
 			return asyncWhile( loop::next );
 		}
 		return voidFuture();
+	}
+
+	public static CompletionStage<Void> whileLoop(Supplier<Boolean> whileCondition, Supplier<CompletionStage<?>> loopSupplier) {
+		if ( whileCondition.get() ) {
+			final WhileLoop whileLoop = new WhileLoop( whileCondition, loopSupplier );
+			return asyncWhile( whileLoop::next );
+		}
+		return voidFuture();
+	}
+
+	private static class WhileLoop {
+
+		private final Supplier<CompletionStage<?>> loopSupplier;
+
+		private final Supplier<Boolean> whileCondition;
+
+		public WhileLoop(Supplier<Boolean> whileCondition, Supplier<CompletionStage<?>> loopSupplier ) {
+			this.loopSupplier = loopSupplier;
+			this.whileCondition = whileCondition;
+		}
+
+		public CompletionStage<Boolean> next() {
+			if ( whileCondition.get() ) {
+				return loopSupplier.get().thenCompose( ignore -> TRUE );
+			}
+			return FALSE;
+		}
 	}
 
 	/**

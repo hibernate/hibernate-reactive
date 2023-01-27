@@ -56,11 +56,11 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
+import org.hibernate.reactive.query.sqm.internal.ReactiveAggregatedNonSelectQueryPlan;
+import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsertStrategy;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
-import org.hibernate.reactive.sql.exec.internal.ReactiveAggregatedNonSelectQueryPlan;
-import org.hibernate.reactive.sql.exec.internal.ReactiveMultiTableDeleteQueryPlan;
 import org.hibernate.transform.ResultTransformer;
 
 import jakarta.persistence.CacheRetrieveMode;
@@ -196,7 +196,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		final DomainQueryExecutionContext executionContextToUse = executionContextFordoList( containsCollectionFetches, hasLimit, needsDistinct );
 
 		return resolveSelectReactiveQueryPlan()
-				.performReactiveList( executionContextToUse )
+				.reactivePerformList( executionContextToUse )
 				.thenApply( (List<R> list) -> needsDistinct
 						? applyDistinct( sqmStatement, hasLimit, list )
 						: list
@@ -401,7 +401,6 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 			? new ReactiveSimpleUpdateQueryPlan( sqmUpdate, getDomainParameterXref() )
 			: new ReactiveMultiTableUpdateQueryPlan( sqmUpdate, getDomainParameterXref(), multiTableStrategy );
 	}
-
 	private ReactiveNonSelectQueryPlan buildInsertQueryPlan() {
 		//noinspection rawtypes
 		final SqmInsertStatement sqmInsert = (SqmInsertStatement) getSqmStatement();
@@ -428,7 +427,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 			return new ReactiveMultiTableInsertQueryPlan(
 					sqmInsert,
 					getDomainParameterXref(),
-					entityDescriptor.getSqmMultiTableInsertStrategy()
+					(ReactiveSqmMultiTableInsertStrategy) entityDescriptor.getSqmMultiTableInsertStrategy()
 			);
 		}
 	}

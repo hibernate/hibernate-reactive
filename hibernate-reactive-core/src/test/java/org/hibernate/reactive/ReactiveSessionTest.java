@@ -752,7 +752,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> s.createNativeQuery( "delete from pig where name='Z'", affectsPigs )
 								.executeUpdate() )
 						.thenAccept( rows -> context.assertEquals( 1, rows ) )
-						.thenCompose( v -> s.createNativeQuery( "select id from pig" ).getResultList() )
+						.thenCompose( v -> s.createNativeQuery( "select id from pig", affectsPigs ).getResultList() )
 						.thenAccept( list -> context.assertTrue( list.isEmpty() ) ) )
 		);
 	}

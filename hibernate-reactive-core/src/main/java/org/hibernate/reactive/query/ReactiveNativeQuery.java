@@ -44,6 +44,8 @@ public interface ReactiveNativeQuery<R> extends ReactiveQuery<R> {
 	ReactiveNativeQuery<R> addScalar(String columnAlias, @SuppressWarnings("rawtypes") BasicDomainType type);
 	ReactiveNativeQuery<R> addScalar(String columnAlias, @SuppressWarnings("rawtypes") Class javaType);
 
+	ReactiveNativeQuery<R> addScalar(int position, Class<?> type);
+
 	<C> ReactiveNativeQuery<R> addScalar(String columnAlias, Class<C> relationalJavaType, AttributeConverter<?,C> converter);
 
 	<O,T> ReactiveNativeQuery<R> addScalar(String columnAlias, Class<O> domainJavaType, Class<T> jdbcJavaType, AttributeConverter<O,T> converter);

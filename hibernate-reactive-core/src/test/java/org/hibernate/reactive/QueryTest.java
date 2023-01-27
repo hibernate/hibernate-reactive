@@ -11,6 +11,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.hibernate.NonUniqueResultException;
+
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.ColumnResult;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -19,7 +24,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedNativeQuery;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.NoResultException;
-import jakarta.persistence.NonUniqueResultException;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.SqlResultSetMapping;
 import jakarta.persistence.Table;
@@ -32,13 +36,10 @@ import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.ParameterExpression;
 import jakarta.persistence.criteria.Root;
 
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
-
 import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.FetchType.LAZY;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
 public class QueryTest extends BaseReactiveTest {
 
@@ -52,7 +53,7 @@ public class QueryTest extends BaseReactiveTest {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
-		Book book2 = new Book( "0-380-97346-4", "Cryptonomicon", author2 );
+		Book book2 = new Book( "0-380-97346-NonUniqueResultException4", "Cryptonomicon", author2 );
 		Book book3 = new Book( "0-553-08853-X", "Snow Crash", author2 );
 		author1.books.add( book1 );
 		author2.books.add( book2 );
@@ -575,33 +576,30 @@ public class QueryTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testSingleResultMultipleException(TestContext context) {
+	public void testSingleResultNonUniqueException(TestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		test( context, openSession()
 				.thenCompose( s -> s.persist( author1, author2 ).thenCompose( v -> s.flush() ) )
 				.thenCompose( v -> openSession() )
-				.thenCompose( s -> s.createQuery( "from Author" ).getSingleResult() )
-				.whenComplete( (r, x) -> {
-					context.assertNull( r );
-					context.assertNotNull( x );
+				.thenCompose( s -> assertThrown(
+						org.hibernate.NonUniqueResultException.class,
+						s.createQuery( "from Author" ).getSingleResult()
+				) )
+		);
+	}
 
-				} )
-				.handle( (r, x) -> {
-					context.assertTrue( x.getCause() instanceof NonUniqueResultException );
-					return null;
-				} )
+	@Test
+	public void testSingleResultOrNullNonUniqueException(TestContext context) {
+		Author author1 = new Author( "Iain M. Banks" );
+		Author author2 = new Author( "Neal Stephenson" );
+		test( context, openSession()
+				.thenCompose( s -> s.persist( author1, author2 ).thenCompose( v -> s.flush() ) )
 				.thenCompose( v -> openSession() )
-				.thenCompose( s -> s.createQuery( "from Author" ).getSingleResultOrNull() )
-				.whenComplete( (r, x) -> {
-					context.assertNull( r );
-					context.assertNotNull( x );
-
-				} )
-				.handle( (r, x) -> {
-					context.assertTrue( x.getCause() instanceof NonUniqueResultException );
-					return null;
-				} )
+				.thenCompose( s -> assertThrown(
+						NonUniqueResultException.class,
+						s.createQuery( "from Author" ).getSingleResultOrNull()
+				) )
 		);
 	}
 

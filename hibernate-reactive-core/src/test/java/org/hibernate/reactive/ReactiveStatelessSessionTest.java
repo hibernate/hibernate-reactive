@@ -8,6 +8,10 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -21,11 +25,6 @@ import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.criteria.Root;
 
 
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
-
-
 public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 
 	@Override
@@ -35,7 +34,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 
 	@Test
 	public void testStatelessSession(TestContext context) {
-		GuineaPig pig = new GuineaPig("Aloi");
+		GuineaPig pig = new GuineaPig( "Aloi" );
 		test( context, getSessionFactory().withStatelessSession( ss -> ss
 				.insert( pig )
 				.thenCompose( v -> ss.createQuery( "from GuineaPig where name=:n", GuineaPig.class )
@@ -65,7 +64,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 
 	@Test
 	public void testStatelessSessionWithNamed(TestContext context) {
-		GuineaPig pig = new GuineaPig("Aloi");
+		GuineaPig pig = new GuineaPig( "Aloi" );
 		test( context, getSessionFactory().withStatelessSession( ss -> ss
 				.insert( pig )
 				.thenCompose( v -> ss.createNamedQuery( "findbyname", GuineaPig.class )
@@ -95,33 +94,34 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 
 	@Test
 	public void testStatelessSessionWithNative(TestContext context) {
-		GuineaPig pig = new GuineaPig("Aloi");
-		test(
-				context,
-				getSessionFactory().openStatelessSession().thenCompose( ss ->
-					ss.insert(pig)
-						.thenCompose( v -> ss.createNativeQuery("select * from Piggy where name=:n", GuineaPig.class)
-								.setParameter("n", pig.name)
+		GuineaPig pig = new GuineaPig( "Aloi" );
+		test( context, getSessionFactory().openStatelessSession()
+				.thenCompose( ss -> ss.insert( pig )
+						.thenCompose( v -> ss
+								.createNativeQuery( "select * from Piggy where name=:n", GuineaPig.class )
+								.setParameter( "n", pig.name )
 								.getResultList() )
 						.thenAccept( list -> {
 							context.assertFalse( list.isEmpty() );
-							context.assertEquals(1, list.size());
-							assertThatPigsAreEqual(context, pig, list.get(0));
+							context.assertEquals( 1, list.size() );
+							assertThatPigsAreEqual( context, pig, list.get( 0 ) );
 						} )
-						.thenCompose( v -> ss.get(GuineaPig.class, pig.id) )
+						.thenCompose( v -> ss.get( GuineaPig.class, pig.id ) )
 						.thenCompose( p -> {
-							assertThatPigsAreEqual(context, pig, p);
+							assertThatPigsAreEqual( context, pig, p );
 							p.name = "X";
-							return ss.update(p);
+							return ss.update( p );
 						} )
-						.thenCompose( v -> ss.refresh(pig) )
-						.thenAccept( v -> context.assertEquals(pig.name, "X") )
-						.thenCompose( v -> ss.createNativeQuery("update Piggy set name='Y'").executeUpdate() )
-						.thenAccept( rows -> context.assertEquals(1, rows) )
-						.thenCompose( v -> ss.refresh(pig) )
-						.thenAccept( v -> context.assertEquals(pig.name, "Y") )
-						.thenCompose( v -> ss.delete(pig) )
-						.thenCompose( v -> ss.createNativeQuery("select id from Piggy").getResultList() )
+						.thenCompose( v -> ss.refresh( pig ) )
+						.thenAccept( v -> context.assertEquals( pig.name, "X" ) )
+						.thenCompose( v -> ss
+								.createNativeQuery( "update Piggy set name='Y'" )
+								.executeUpdate() )
+						.thenAccept( rows -> context.assertEquals( 1, rows ) )
+						.thenCompose( v -> ss.refresh( pig ) )
+						.thenAccept( v -> context.assertEquals( pig.name, "Y" ) )
+						.thenCompose( v -> ss.delete( pig ) )
+						.thenCompose( v -> ss.createNativeQuery( "select id from Piggy" ).getResultList() )
 						.thenAccept( list -> context.assertTrue( list.isEmpty() ) )
 						.thenCompose( v -> ss.close() ) )
 		);
@@ -129,37 +129,35 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 
 	@Test
 	public void testStatelessSessionCriteria(TestContext context) {
-		GuineaPig pig = new GuineaPig("Aloi");
+		GuineaPig pig = new GuineaPig( "Aloi" );
 
 		CriteriaBuilder cb = getSessionFactory().getCriteriaBuilder();
 
-		CriteriaQuery<GuineaPig> query = cb.createQuery(GuineaPig.class);
-		Root<GuineaPig> gp = query.from(GuineaPig.class);
-		query.where( cb.equal( gp.get("name"), cb.parameter(String.class, "n") ) );
+		CriteriaQuery<GuineaPig> query = cb.createQuery( GuineaPig.class );
+		Root<GuineaPig> gp = query.from( GuineaPig.class );
+		query.where( cb.equal( gp.get( "name" ), cb.parameter( String.class, "n" ) ) );
 
-		CriteriaUpdate<GuineaPig> update = cb.createCriteriaUpdate(GuineaPig.class);
-		update.from(GuineaPig.class);
-		update.set("name", "Bob");
+		CriteriaUpdate<GuineaPig> update = cb.createCriteriaUpdate( GuineaPig.class );
+		update.from( GuineaPig.class );
+		update.set( "name", "Bob" );
 
-		CriteriaDelete<GuineaPig> delete = cb.createCriteriaDelete(GuineaPig.class);
-		delete.from(GuineaPig.class);
+		CriteriaDelete<GuineaPig> delete = cb.createCriteriaDelete( GuineaPig.class );
+		delete.from( GuineaPig.class );
 
-		test(
-				context,
-				getSessionFactory().openStatelessSession().thenCompose( ss ->
-					ss.insert(pig)
-						.thenCompose( v -> ss.createQuery(query)
-								.setParameter("n", pig.name)
+		test( context, getSessionFactory().openStatelessSession()
+				.thenCompose( ss -> ss.insert( pig )
+						.thenCompose( v -> ss.createQuery( query )
+								.setParameter( "n", pig.name )
 								.getResultList() )
 						.thenAccept( list -> {
 							context.assertFalse( list.isEmpty() );
-							context.assertEquals(1, list.size());
-							assertThatPigsAreEqual(context, pig, list.get(0));
+							context.assertEquals( 1, list.size() );
+							assertThatPigsAreEqual( context, pig, list.get( 0 ) );
 						} )
-						.thenCompose( v -> ss.createQuery(update).executeUpdate() )
-						.thenAccept( rows -> context.assertEquals(1, rows) )
-						.thenCompose( v -> ss.createQuery(delete).executeUpdate() )
-						.thenAccept( rows -> context.assertEquals(1, rows) )
+						.thenCompose( v -> ss.createQuery( update ).executeUpdate() )
+						.thenAccept( rows -> context.assertEquals( 1, rows ) )
+						.thenCompose( v -> ss.createQuery( delete ).executeUpdate() )
+						.thenAccept( rows -> context.assertEquals( 1, rows ) )
 						.thenCompose( v -> ss.close() ) )
 		);
 	}
@@ -167,7 +165,8 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	@Test
 	public void testTransactionPropagation(TestContext context) {
 		test( context, getSessionFactory().withStatelessSession(
-				session -> session.withTransaction( transaction -> session.createQuery("from GuineaPig").getResultList()
+				session -> session.withTransaction( transaction -> session.createQuery( "from GuineaPig" )
+						.getResultList()
 						.thenCompose( list -> {
 							context.assertNotNull( session.currentTransaction() );
 							context.assertFalse( session.currentTransaction().isMarkedForRollback() );
@@ -176,7 +175,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 							context.assertTrue( transaction.isMarkedForRollback() );
 							return session.withTransaction( t -> {
 								context.assertTrue( t.isMarkedForRollback() );
-								return session.createQuery("from GuineaPig").getResultList();
+								return session.createQuery( "from GuineaPig" ).getResultList();
 							} );
 						} ) )
 		) );
@@ -185,10 +184,10 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	@Test
 	public void testSessionPropagation(TestContext context) {
 		test( context, getSessionFactory().withStatelessSession(
-				session -> session.createQuery("from GuineaPig").getResultList()
+				session -> session.createQuery( "from GuineaPig" ).getResultList()
 						.thenCompose( list -> getSessionFactory().withStatelessSession( s -> {
 							context.assertEquals( session, s );
-							return s.createQuery("from GuineaPig").getResultList();
+							return s.createQuery( "from GuineaPig" ).getResultList();
 						} ) )
 		) );
 	}
@@ -203,10 +202,11 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	@NamedQuery(name = "updatebyname", query = "update GuineaPig set name='Y'")
 	@NamedQuery(name = "findall", query = "from GuineaPig")
 
-	@Entity(name="GuineaPig")
-	@Table(name="Piggy")
+	@Entity(name = "GuineaPig")
+	@Table(name = "Piggy")
 	public static class GuineaPig {
-		@Id @GeneratedValue
+		@Id
+		@GeneratedValue
 		private Integer id;
 		private String name;
 		@Version

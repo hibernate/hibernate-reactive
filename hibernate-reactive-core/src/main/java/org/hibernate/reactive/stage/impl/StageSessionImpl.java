@@ -103,8 +103,8 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <R> Query<R> createSelectQuery(String queryString) {
-		return null;
+	public <R> Stage.SelectionQuery<R> createSelectionQuery(String queryString) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString ) );
 	}
 
 	@Override
@@ -452,7 +452,7 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
-		throw new UnsupportedOperationException();
+		return delegate.getResultSetMapping( resultType, mappingName );
 	}
 
 	@Override
@@ -467,13 +467,14 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
-		return null;
+		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
 	@Override
 	public <R> Query<R> createQuery(String queryString) {
 		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString ) );
 	}
+
 	@Override
 	public <R> Query<R> createQuery(String queryString, Class<R> resultType) {
 		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ) );
@@ -481,27 +482,27 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <R> Stage.MutationQuery<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
-		throw new UnsupportedOperationException();
+		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( criteriaUpdate ) );
 	}
 
 	@Override
 	public <R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		throw new UnsupportedOperationException();
+		return new StageQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ) );
 	}
 
 	@Override
 	public <R> Stage.MutationQuery<R> createQuery(CriteriaDelete<R> criteriaDelete) {
-		throw new UnsupportedOperationException();
+		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( criteriaDelete ) );
 	}
 
 	@Override
 	public <R> Query<R> createNamedQuery(String queryName) {
-		throw new UnsupportedOperationException();
+		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( queryName, null ) );
 	}
 
 	@Override
 	public <R> Query<R> createNamedQuery(String queryName, Class<R> resultType) {
-		throw new UnsupportedOperationException();
+		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( queryName, resultType ) );
 	}
 
 	@Override

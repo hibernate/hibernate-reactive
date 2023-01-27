@@ -26,7 +26,7 @@ final class ReactiveSessionFactoryBuilderService implements SessionFactoryBuilde
 
 	@Override
 	public void configure(Map configurationValues) {
-		batchSize = ConfigurationHelper.getInt(Settings.STATEMENT_BATCH_SIZE, configurationValues, 0);
+		batchSize = ConfigurationHelper.getInt( Settings.STATEMENT_BATCH_SIZE, configurationValues, 0 );
 	}
 
 	@Override
@@ -36,10 +36,16 @@ final class ReactiveSessionFactoryBuilderService implements SessionFactoryBuilde
 				bootstrapContext
 		);
 		optionsBuilder.enableCollectionInDefaultFetchGroup( true );
-		// FIXME [ORM-6]: This method does not exists anymore
-//		optionsBuilder.applyMultiTableBulkIdStrategy( new ReactiveBulkIdStrategy( metadata ) );
 		optionsBuilder.applyJdbcBatchSize( batchSize );
-		return new ReactiveSessionFactoryBuilder( metadata, new SessionFactoryBuilderImpl( metadata, optionsBuilder ) );
+		return new ReactiveSessionFactoryBuilder(
+				metadata,
+				new SessionFactoryBuilderImpl( metadata,
+											   optionsBuilder,
+											   metadata.getTypeConfiguration()
+													   .getMetadataBuildingContext()
+													   .getBootstrapContext()
+				)
+		);
 	}
 
 }

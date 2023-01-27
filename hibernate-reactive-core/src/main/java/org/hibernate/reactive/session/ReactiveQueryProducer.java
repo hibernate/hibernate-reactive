@@ -17,6 +17,7 @@ import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.query.ReactiveMutationQuery;
 import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.query.ReactiveQuery;
+import org.hibernate.reactive.query.ReactiveQueryImplementor;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 
 import jakarta.persistence.EntityGraph;
@@ -26,9 +27,7 @@ import jakarta.persistence.criteria.CriteriaUpdate;
 
 
 /**
- * Executes queries in a non-blocking fashion. An internal contract
- * between the {@link org.hibernate.query.sql.spi.NativeQueryImplementor}s
- * and stateless and stateful reactive sessions.
+ * Executes queries in a non-blocking fashion.
  *
  * @see org.hibernate.query.QueryProducer
  * @see SharedSessionContractImplementor
@@ -54,7 +53,11 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<R> ReactiveQuery<R> createReactiveQuery(String queryString);
 
+	<R> ReactiveQuery<R> createReactiveQuery(CriteriaQuery<R> criteriaQuery);
+
 	<R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> resultType);
+
+	<R> ReactiveQueryImplementor<R> createReactiveNamedQuery(String queryString, Class<R> resultType);
 
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString);
 
@@ -82,8 +85,6 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<R> ReactiveMutationQuery<R> createNativeReactiveMutationQuery(String sqlString);
 
-	<R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name, Class<R> resultClass);
-
 	<R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name);
 
 	<R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name, Class<R> resultType);
@@ -109,4 +110,6 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 	<R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
 
 	<R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities);
+
+	<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
 }

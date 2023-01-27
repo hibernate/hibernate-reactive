@@ -28,7 +28,6 @@ public interface ReactiveSqmMultiTableMutationStrategy extends SqmMultiTableMuta
 		throw LOG.nonReactiveMethodCall( "reactiveExecuteUpdate" );
 	}
 
-	@Override
 	CompletionStage<Integer> reactiveExecuteUpdate(
 			SqmUpdateStatement<?> sqmUpdateStatement,
 			DomainParameterXref domainParameterXref,

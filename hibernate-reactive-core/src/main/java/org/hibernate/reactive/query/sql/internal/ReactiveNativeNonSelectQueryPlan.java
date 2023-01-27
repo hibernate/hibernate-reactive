@@ -19,13 +19,14 @@ import org.hibernate.query.spi.QueryParameterBindings;
 import org.hibernate.query.sql.internal.SQLQueryParser;
 import org.hibernate.query.sql.spi.ParameterOccurrence;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
+import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
+import org.hibernate.sql.exec.spi.JdbcOperationQueryMutationNative;
 import org.hibernate.sql.exec.spi.JdbcParameterBinder;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
-import org.hibernate.sql.exec.spi.JdbcOperationQueryMutationNative;
 
 /**
  * @see org.hibernate.query.sql.internal.NativeNonSelectQueryPlanImpl
@@ -45,48 +46,51 @@ public class ReactiveNativeNonSelectQueryPlan implements ReactiveNonSelectQueryP
 
 	@Override
 	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
-		final SharedSessionContractImplementor session = executionContext.getSession();
-		session.autoFlushIfRequired( affectedTableNames );
-		BulkOperationCleanupAction.schedule( session, affectedTableNames );
-		final List<JdbcParameterBinder> jdbcParameterBinders;
-		final JdbcParameterBindings jdbcParameterBindings;
+		ReactiveSharedSessionContractImplementor reactiveSession = (ReactiveSharedSessionContractImplementor) executionContext.getSession();
+		return reactiveSession.reactiveAutoFlushIfRequired( affectedTableNames )
+						.thenCompose( aBoolean -> {
+							SharedSessionContractImplementor session = executionContext.getSession();
+							BulkOperationCleanupAction.schedule( session, affectedTableNames );
+							final List<JdbcParameterBinder> jdbcParameterBinders;
+							final JdbcParameterBindings jdbcParameterBindings;
 
-		final QueryParameterBindings queryParameterBindings = executionContext.getQueryParameterBindings();
-		if ( parameterList == null || parameterList.isEmpty() ) {
-			jdbcParameterBinders = Collections.emptyList();
-			jdbcParameterBindings = JdbcParameterBindings.NO_BINDINGS;
-		}
-		else {
-			jdbcParameterBinders = new ArrayList<>( parameterList.size() );
-			jdbcParameterBindings = new JdbcParameterBindingsImpl( parameterList.size() );
+							final QueryParameterBindings queryParameterBindings = executionContext.getQueryParameterBindings();
+							if ( parameterList == null || parameterList.isEmpty() ) {
+								jdbcParameterBinders = Collections.emptyList();
+								jdbcParameterBindings = JdbcParameterBindings.NO_BINDINGS;
+							}
+							else {
+								jdbcParameterBinders = new ArrayList<>( parameterList.size() );
+								jdbcParameterBindings = new JdbcParameterBindingsImpl( parameterList.size() );
 
-			jdbcParameterBindings.registerNativeQueryParameters(
-					queryParameterBindings,
-					parameterList,
-					jdbcParameterBinders,
-					session.getFactory()
-			);
-		}
+								jdbcParameterBindings.registerNativeQueryParameters(
+										queryParameterBindings,
+										parameterList,
+										jdbcParameterBinders,
+										session.getFactory()
+								);
+							}
 
-		final SQLQueryParser parser = new SQLQueryParser( sql, null, session.getSessionFactory() );
+							final SQLQueryParser parser = new SQLQueryParser( sql, null, session.getFactory() );
 
-		final JdbcOperationQueryMutation jdbcMutation = new JdbcOperationQueryMutationNative(
-				parser.process(),
-				jdbcParameterBinders,
-				affectedTableNames
-		);
+							final JdbcOperationQueryMutation jdbcMutation = new JdbcOperationQueryMutationNative(
+									parser.process(),
+									jdbcParameterBinders,
+									affectedTableNames
+							);
 
-		return StandardReactiveJdbcMutationExecutor.INSTANCE
-				.executeReactive(
-						jdbcMutation,
-						jdbcParameterBindings,
-						sql -> session
-								.getJdbcCoordinator()
-								.getStatementPreparer()
-								.prepareStatement( sql ),
-						(integer, preparedStatement) -> {
-						},
-						SqmJdbcExecutionContextAdapter.usingLockingAndPaging( executionContext )
-		);
+							return StandardReactiveJdbcMutationExecutor.INSTANCE
+									.executeReactive(
+											jdbcMutation,
+											jdbcParameterBindings,
+											sql -> session
+													.getJdbcCoordinator()
+													.getStatementPreparer()
+													.prepareStatement( sql ),
+											(integer, preparedStatement) -> {
+											},
+											SqmJdbcExecutionContextAdapter.usingLockingAndPaging( executionContext )
+									);
+						} );
 	}
 }
