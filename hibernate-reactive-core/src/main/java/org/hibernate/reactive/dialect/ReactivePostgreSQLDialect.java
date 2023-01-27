@@ -13,8 +13,10 @@ import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
+import org.hibernate.query.sqm.mutation.spi.SqmMultiTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.reactive.dialect.identity.ReactiveIdentityColumnSupportAdapter;
+import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveCteInsertStrategy;
 import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveCteMutationStrategy;
 import org.hibernate.reactive.sql.ast.spi.ReactivePostgreSQLSqlAstTranslator;
 import org.hibernate.sql.ast.SqlAstTranslator;
@@ -58,5 +60,10 @@ public class ReactivePostgreSQLDialect extends PostgreSQLDialect {
 	@Override
 	public SqmMultiTableMutationStrategy getFallbackSqmMutationStrategy(EntityMappingType rootEntityDescriptor, RuntimeModelCreationContext runtimeModelCreationContext) {
 		return new ReactiveCteMutationStrategy( rootEntityDescriptor, runtimeModelCreationContext );
+	}
+
+	@Override
+	public SqmMultiTableInsertStrategy getFallbackSqmInsertStrategy(EntityMappingType rootEntityDescriptor, RuntimeModelCreationContext runtimeModelCreationContext) {
+		return new ReactiveCteInsertStrategy( rootEntityDescriptor, runtimeModelCreationContext );
 	}
 }

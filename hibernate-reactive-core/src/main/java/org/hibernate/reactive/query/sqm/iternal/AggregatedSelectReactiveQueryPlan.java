@@ -30,7 +30,7 @@ public class AggregatedSelectReactiveQueryPlan<R> implements ReactiveSelectQuery
 	}
 
 	@Override
-	public CompletionStage<List<R>> performReactiveList(DomainQueryExecutionContext executionContext) {
+	public CompletionStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext) {
 		final Limit effectiveLimit = executionContext.getQueryOptions().getEffectiveLimit();
 		final int maxRowsJpa = effectiveLimit.getMaxRowsJpa();
 		if ( maxRowsJpa == 0 ) {
@@ -40,7 +40,7 @@ public class AggregatedSelectReactiveQueryPlan<R> implements ReactiveSelectQuery
 		final List<R> overallResults = new ArrayList<>();
 
 		return whileLoop( aggregatedQueryPlans, reactivePlan -> reactivePlan
-				.performReactiveList( executionContext )
+				.reactivePerformList( executionContext )
 				.thenApply( list -> updateResults( elementsToSkip, maxRowsJpa, overallResults, list ) )
 		).thenApply( v -> overallResults );
 	}

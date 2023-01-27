@@ -32,8 +32,8 @@ import org.hibernate.query.sqm.sql.SqmTranslator;
 import org.hibernate.query.sqm.sql.SqmTranslatorFactory;
 import org.hibernate.query.sqm.tree.expression.SqmParameter;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
+import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.SqlAstTranslator;
@@ -89,14 +89,14 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 			CacheableSqmInterpretation sqmInterpretation,
 			JdbcParameterBindings jdbcParameterBindings,
 			RowTransformer<R> rowTransformer) {
-		final SharedSessionContractImplementor session = executionContext.getSession();
+		final ReactiveSharedSessionContractImplementor session = (ReactiveSharedSessionContractImplementor) executionContext.getSession();
 		final JdbcOperationQuerySelect jdbcSelect = sqmInterpretation.getJdbcSelect();
 		// I'm using a supplier so that the whenComplete at the end will catch any errors, like a finally-block
 		Supplier<SubselectFetch.RegistrationHandler> fetchHandlerSupplier = () -> SubselectFetch
 				.createRegistrationHandler( session.getPersistenceContext().getBatchFetchQueue(), sqmInterpretation.selectStatement, emptyList(), jdbcParameterBindings );
 		return completedFuture( fetchHandlerSupplier )
 				.thenApply( Supplier::get )
-				.thenCompose( subSelectFetchKeyHandler ->  ( (ReactiveSession) session )
+				.thenCompose( subSelectFetchKeyHandler ->  session
 							.reactiveAutoFlushIfRequired( jdbcSelect.getAffectedTableNames() )
 							.thenCompose( required -> StandardReactiveSelectExecutor.INSTANCE
 									.list( jdbcSelect,
@@ -116,7 +116,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 	}
 
 	@Override
-	public CompletionStage<List<R>> performReactiveList(DomainQueryExecutionContext executionContext) {
+	public CompletionStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext) {
 		return executionContext.getQueryOptions().getEffectiveLimit().getMaxRowsJpa() == 0
 				? completedFuture( emptyList() )
 				: withCacheableSqmInterpretation( executionContext, null, listInterpreter );

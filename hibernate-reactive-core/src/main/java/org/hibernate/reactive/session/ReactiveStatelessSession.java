@@ -7,6 +7,7 @@ package org.hibernate.reactive.session;
 
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
+import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 
 import jakarta.persistence.EntityGraph;
 import java.util.concurrent.CompletableFuture;
@@ -23,7 +24,7 @@ import java.util.concurrent.CompletionStage;
  * @see org.hibernate.reactive.mutiny.Mutiny.Session
  */
 @Incubating
-public interface ReactiveStatelessSession extends ReactiveQueryProducer {
+public interface ReactiveStatelessSession extends ReactiveQueryProducer, ReactiveSharedSessionContractImplementor {
 
 	<T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id);
 
@@ -62,5 +63,4 @@ public interface ReactiveStatelessSession extends ReactiveQueryProducer {
 	boolean isOpen();
 
 	void close(CompletableFuture<Void> closing);
-
 }

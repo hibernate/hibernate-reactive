@@ -17,7 +17,6 @@ import org.hibernate.MappingException;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
@@ -43,14 +42,13 @@ import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinato
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
-
 /**
  * An {@link ReactiveEntityPersister} backed by {@link UnionSubclassEntityPersister}
  * and {@link ReactiveAbstractEntityPersister}.
  */
 public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPersister implements ReactiveAbstractEntityPersister {
 
-	private static final Log log = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveAbstractPersisterDelegate reactiveDelegate;
 
@@ -243,7 +241,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	public CompletionStage<? extends List<?>> reactiveMultiLoad(Object[] ids, SessionImplementor session, MultiIdLoadOptions loadOptions) {
+	public <K> CompletionStage<? extends List<?>> reactiveMultiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
 		return reactiveDelegate.multiLoad( ids, session, loadOptions );
 	}
 

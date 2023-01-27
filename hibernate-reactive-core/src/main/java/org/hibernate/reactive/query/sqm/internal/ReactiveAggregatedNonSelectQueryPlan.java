@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.sql.exec.internal;
+package org.hibernate.reactive.query.sqm.internal;
 
 import java.util.concurrent.CompletionStage;
 

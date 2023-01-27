@@ -6,12 +6,14 @@
 package org.hibernate.reactive.session.impl;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.UnknownEntityTypeException;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
@@ -30,10 +32,35 @@ import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.StatelessSessionImpl;
+import org.hibernate.internal.util.StringHelper;
+import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.query.IllegalMutationQueryException;
+import org.hibernate.query.IllegalNamedQueryOptionsException;
+import org.hibernate.query.IllegalSelectQueryException;
+import org.hibernate.query.QueryTypeMismatchException;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
+import org.hibernate.query.hql.spi.SqmQueryImplementor;
+import org.hibernate.query.named.NamedResultSetMappingMemento;
+import org.hibernate.query.spi.HqlInterpretation;
+import org.hibernate.query.spi.QueryEngine;
+import org.hibernate.query.spi.QueryImplementor;
+import org.hibernate.query.spi.QueryInterpretationCache;
+import org.hibernate.query.sql.internal.NativeQueryImpl;
+import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
+import org.hibernate.query.sql.spi.NativeQueryImplementor;
+import org.hibernate.query.sqm.internal.SqmUtil;
+import org.hibernate.query.sqm.spi.NamedSqmQueryMemento;
+import org.hibernate.query.sqm.tree.SqmDmlStatement;
+import org.hibernate.query.sqm.tree.SqmStatement;
+import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
+import org.hibernate.query.sqm.tree.insert.SqmInsertSelectStatement;
+import org.hibernate.query.sqm.tree.select.SqmQueryGroup;
+import org.hibernate.query.sqm.tree.select.SqmQuerySpec;
+import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
+import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
@@ -46,7 +73,12 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.query.ReactiveMutationQuery;
 import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.query.ReactiveQuery;
+import org.hibernate.reactive.query.ReactiveQueryImplementor;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
+import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
+import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
+import org.hibernate.reactive.query.sqm.iternal.ReactiveQuerySqmImpl;
+import org.hibernate.reactive.query.sqm.iternal.ReactiveSqmSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -54,12 +86,15 @@ import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.spi.TypeConfiguration;
 
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
+import static java.lang.Boolean.TRUE;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
+import static org.hibernate.internal.util.StringHelper.isEmpty;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.generateId;
 import static org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister.forceInitialize;
@@ -129,7 +164,15 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public void checkOpen() {
+		//The checkOpen check is invoked on all most used public API, making it an
+		//excellent hook to also check for the right thread to be used
+		//(which is an assertion so costs us nothing in terms of performance, after inlining).
+		threadCheck();
 		super.checkOpen();
+	}
+
+	private void threadCheck() {
+		// FIXME: We should check the threads like we do in ReactiveSessionImpl
 	}
 
 	@Override
@@ -145,16 +188,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	@Override
 	public PersistenceContext getPersistenceContextInternal() {
 		return persistenceContext;
-	}
-
-	@Override
-	public boolean isEnforcingFetchGraph() {
-		return super.isEnforcingFetchGraph();
-	}
-
-	@Override
-	public void setEnforcingFetchGraph(boolean enforcingFetchGraph) {
-		super.setEnforcingFetchGraph( enforcingFetchGraph );
 	}
 
 	@Override
@@ -409,7 +442,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 			// first, check to see if we can use "bytecode proxies"
 
-				EntityMetamodel entityMetamodel = entityDescriptor.getEntityMetamodel();
+			EntityMetamodel entityMetamodel = entityDescriptor.getEntityMetamodel();
 			BytecodeEnhancementMetadata enhancementMetadata = entityMetamodel.getBytecodeEnhancementMetadata();
 			if ( enhancementMetadata.isEnhancedForLazyLoading() ) {
 
@@ -578,23 +611,112 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public <R> ReactiveSqmQueryImplementor<R> createReactiveQuery(String queryString) {
-		return null;
+		return createReactiveQuery( queryString, null );
 	}
 
 	@Override
-	public <R> ReactiveSqmQueryImplementor<R> createReactiveQuery(String queryString, Class<R> resultType) {
-		return null;
+	public <R> ReactiveQuery<R> createReactiveQuery(CriteriaQuery<R> criteriaQuery) {
+		checkOpen();
+
+		try {
+			final SqmSelectStatement<R> selectStatement = (SqmSelectStatement<R>) criteriaQuery;
+			if ( ! ( selectStatement.getQueryPart() instanceof SqmQueryGroup ) ) {
+				final SqmQuerySpec<R> querySpec = selectStatement.getQuerySpec();
+				if ( querySpec.getSelectClause().getSelections().isEmpty() ) {
+					if ( querySpec.getFromClause().getRoots().size() == 1 ) {
+						querySpec.getSelectClause().setSelection( querySpec.getFromClause().getRoots().get(0) );
+					}
+				}
+			}
+
+			return new ReactiveQuerySqmImpl<R>( selectStatement, criteriaQuery.getResultType(), this );
+		}
+		catch (RuntimeException e) {
+			if ( getSessionFactory().getJpaMetamodel().getJpaCompliance().isJpaTransactionComplianceEnabled() ) {
+				markForRollbackOnly();
+			}
+			throw getExceptionConverter().convert( e );
+		}
 	}
 
 	@Override
-	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString) {
-		throw new UnsupportedOperationException();
+	public void prepareForQueryExecution(boolean requiresTxn) {
+		checkOpen();
+		checkTransactionSynchStatus();
+
+		// FIXME: this does not work at the moment
+//		if ( requiresTxn && !isTransactionInProgress() ) {
+//			throw new TransactionRequiredException(
+//					"Query requires transaction be in progress, but no transaction is known to be in progress"
+//			);
+//		}
 	}
 
+	@Override
+	public <R> ReactiveSqmQueryImplementor<R> createReactiveQuery(String queryString, Class<R> expectedResultType) {
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			final QueryEngine queryEngine = getFactory().getQueryEngine();
+			final QueryInterpretationCache interpretationCache = queryEngine.getInterpretationCache();
+
+			final ReactiveQuerySqmImpl<R> query = new ReactiveQuerySqmImpl<R>(
+					queryString,
+					interpretationCache.resolveHqlInterpretation(
+							queryString,
+							expectedResultType,
+							s -> queryEngine.getHqlTranslator().translate( queryString, expectedResultType )
+					),
+					expectedResultType,
+					this
+			);
+
+			applyQuerySettingsAndHints( query );
+			query.setComment( queryString );
+
+			return query;
+		}
+		catch (RuntimeException e) {
+			markForRollbackOnly();
+			throw getExceptionConverter().convert( e );
+		}
+	}
+
+	@Override
+	public <R> ReactiveNativeQueryImplementor<R> createReactiveNativeQuery(String sqlString) {
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			ReactiveNativeQueryImpl query = new ReactiveNativeQueryImpl( sqlString, this);
+
+			if ( StringHelper.isEmpty( query.getComment() ) ) {
+				query.setComment( "dynamic native SQL query" );
+			}
+			applyQuerySettingsAndHints( query );
+			return query;
+		}
+		catch (RuntimeException he) {
+			throw getExceptionConverter().convert( he );
+		}
+	}
 
 	@Override
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass) {
-		throw new UnsupportedOperationException();
+		ReactiveNativeQuery query = createReactiveNativeQuery( sqlString );
+		if ( Tuple.class.equals( resultClass ) ) {
+			query.setTupleTransformer( new NativeQueryTupleTransformer() );
+		}
+		else if ( getFactory().getMappingMetamodel().isEntityClass( resultClass ) ) {
+			query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
+		}
+		else {
+			( (NativeQueryImpl) query ).addScalar( 1, resultClass );
+		}
+		return query;
 	}
 
 	@Override
@@ -602,12 +724,40 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			String sqlString,
 			Class<R> resultClass,
 			String tableAlias) {
-		throw new UnsupportedOperationException();
+		ReactiveNativeQuery<R> query = createReactiveNativeQuery( sqlString );
+		if ( getFactory().getMappingMetamodel().isEntityClass(resultClass) ) {
+			query.addEntity( tableAlias, resultClass.getName(), LockMode.READ );
+			return query;
+		}
+
+		throw new UnknownEntityTypeException( "unable to locate persister: " + resultClass.getName() );
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName) {
-		throw new UnsupportedOperationException();
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			if ( StringHelper.isNotEmpty( resultSetMappingName ) ) {
+				final NamedResultSetMappingMemento resultSetMappingMemento = getFactory().getQueryEngine()
+						.getNamedObjectRepository()
+						.getResultSetMappingMemento( resultSetMappingName );
+
+				if ( resultSetMappingMemento == null ) {
+					throw new HibernateException( "Could not resolve specified result-set mapping name : " + resultSetMappingName );
+				}
+				return new ReactiveNativeQueryImpl<>( sqlString, resultSetMappingMemento, this );
+			}
+			else {
+				return new ReactiveNativeQueryImpl<>( sqlString, this );
+			}
+			//TODO: why no applyQuerySettingsAndHints( query ); ???
+		}
+		catch (RuntimeException he) {
+			throw getExceptionConverter().convert( he );
+		}
 	}
 
 	@Override
@@ -615,88 +765,236 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			String sqlString,
 			String resultSetMappingName,
 			Class<R> resultClass) {
-		throw new UnsupportedOperationException();
+		final ReactiveNativeQuery<R> query = createReactiveNativeQuery( sqlString, resultSetMappingName );
+		if ( Tuple.class.equals( resultClass ) ) {
+			query.setTupleTransformer( new NativeQueryTupleTransformer() );
+		}
+		return query;
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString) {
-		throw new UnsupportedOperationException();
+		return internalCreateSelectionQuery( hqlString, null );
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, Class<R> resultType) {
-		throw new UnsupportedOperationException();
+		return internalCreateSelectionQuery( hqlString, resultType );
+	}
+
+
+	private <R> ReactiveSelectionQuery<R> internalCreateSelectionQuery(String hqlString, Class<R> expectedResultType) {
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			final QueryEngine queryEngine = getFactory().getQueryEngine();
+			final QueryInterpretationCache interpretationCache = queryEngine.getInterpretationCache();
+			final HqlInterpretation hqlInterpretation = interpretationCache.resolveHqlInterpretation(
+					hqlString,
+					expectedResultType,
+					(s) -> queryEngine.getHqlTranslator().translate( hqlString, expectedResultType )
+			);
+
+			if ( !( hqlInterpretation.getSqmStatement() instanceof SqmSelectStatement ) ) {
+				throw new IllegalSelectQueryException( "Expecting a selection query, but found `" + hqlString + "`", hqlString );
+			}
+
+			final ReactiveSqmSelectionQueryImpl<R> query = new ReactiveSqmSelectionQueryImpl<>(
+					hqlString,
+					hqlInterpretation,
+					expectedResultType,
+					this
+			);
+
+			if ( expectedResultType != null ) {
+				final Class<?> resultType = query.getResultType();
+				if ( ! expectedResultType.isAssignableFrom( resultType ) ) {
+					throw new QueryTypeMismatchException(
+							String.format(
+									Locale.ROOT,
+									"Query result-type error - expecting `%s`, but found `%s`",
+									expectedResultType.getName(),
+									resultType.getName()
+							)
+					);
+				}
+			}
+
+			query.setComment( hqlString );
+			applyQuerySettingsAndHints( query );
+
+			//noinspection unchecked
+			return query;
+		}
+		catch (RuntimeException e) {
+			markForRollbackOnly();
+			throw e;
+		}
 	}
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaQuery<R> criteria) {
-		throw new UnsupportedOperationException();
+		SqmUtil.verifyIsSelectStatement( (SqmStatement<R>) criteria, null );
+		return new ReactiveSqmSelectionQueryImpl<R>( (SqmSelectStatement<R>) criteria, criteria.getResultType(), this );
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(String hqlString) {
-		throw new UnsupportedOperationException();
+		final QueryImplementor<?> query = createQuery( hqlString );
+		final SqmStatement<R> sqmStatement = ( (SqmQueryImplementor<R>) query ).getSqmStatement();
+		checkMutationQuery( hqlString, sqmStatement );
+		return new ReactiveQuerySqmImpl<R>( sqmStatement, null, this );
+	}
+
+	// Change visibility in ORM
+	private static void checkMutationQuery(String hqlString, SqmStatement<?> sqmStatement) {
+		if ( !( sqmStatement instanceof SqmDmlStatement ) ) {
+			throw new IllegalMutationQueryException( "Expecting a mutation query, but found `" + hqlString + "`" );
+		}
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate updateQuery) {
-		throw new UnsupportedOperationException();
+		checkOpen();
+		try {
+			return new ReactiveQuerySqmImpl<R>( (SqmUpdateStatement<R>) updateQuery, null, this );
+		}
+		catch ( RuntimeException e ) {
+			throw getExceptionConverter().convert( e );
+		}
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete deleteQuery) {
-		return null;
+		checkOpen();
+		try {
+			return new ReactiveQuerySqmImpl<R>( (SqmDeleteStatement<R>) deleteQuery, null, this );
+		}
+		catch ( RuntimeException e ) {
+			throw getExceptionConverter().convert( e );
+		}
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect insertSelect) {
-		throw new UnsupportedOperationException();
+		checkOpen();
+		try {
+			return new ReactiveQuerySqmImpl<>( (SqmInsertSelectStatement<R>) insertSelect, null, this );
+		}
+		catch ( RuntimeException e ) {
+			throw getExceptionConverter().convert( e );
+		}
 	}
 
 	@Override
-	public <R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name, Class<R> resultClass) {
-		throw new UnsupportedOperationException();
+	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String queryName) {
+		return (ReactiveSelectionQuery<R>) createNamedSelectionQuery( queryName, null );
 	}
 
 	@Override
-	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name) {
-		throw new UnsupportedOperationException();
+	public <R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String queryName) {
+		return (ReactiveMutationQuery<R>) buildNamedQuery(
+				queryName,
+				memento -> createSqmQueryImplementor( queryName, memento ),
+				memento -> createNativeQueryImplementor( queryName, memento )
+		);
+	}
 
+	// Copy and paste from ORM: change the visibility instead
+	private NativeQueryImplementor<?> createNativeQueryImplementor(String queryName, NamedNativeQueryMemento memento) {
+		final NativeQueryImplementor<?> query = memento.toQuery( this );
+		final Boolean isUnequivocallySelect = query.isSelectQuery();
+		if ( isUnequivocallySelect == TRUE ) {
+			throw new IllegalMutationQueryException(
+					"Expecting named native query (" + queryName + ") to be a mutation query, but found `"
+							+ memento.getSqlString() + "`"
+			);
+		}
+		if ( isEmpty( query.getComment() ) ) {
+			query.setComment( "dynamic native-SQL query" );
+		}
+		applyQuerySettingsAndHints( query );
+		return query;
+	}
+
+	// Copy and paste from ORM: change the visibility instead
+	private SqmQueryImplementor<?> createSqmQueryImplementor(String queryName, NamedSqmQueryMemento memento) {
+		final SqmQueryImplementor<?> query = memento.toQuery( this );
+		final SqmStatement<?> sqmStatement = query.getSqmStatement();
+		if ( !( sqmStatement instanceof SqmDmlStatement ) ) {
+			throw new IllegalMutationQueryException(
+					"Expecting a named mutation query (" + queryName + "), but found a select statement"
+			);
+		}
+		if ( memento.getLockOptions() != null && ! memento.getLockOptions().isEmpty() ) {
+			throw new IllegalNamedQueryOptionsException(
+					"Named mutation query `" + queryName + "` specified lock-options"
+			);
+		}
+		if ( isEmpty( query.getComment() ) ) {
+			query.setComment( "dynamic HQL query" );
+		}
+		applyQuerySettingsAndHints( query );
+		return query;
 	}
 
 	@Override
-	public <R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name, Class<R> resultType) {
-		throw new UnsupportedOperationException();
+	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String queryName, Class<R> expectedResultType) {
+		return (ReactiveSelectionQuery<R>) createNamedSelectionQuery( queryName , expectedResultType );
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createNativeReactiveMutationQuery(String sqlString) {
-		throw new UnsupportedOperationException();
+		final ReactiveNativeQueryImplementor<R> query = createReactiveNativeQuery( sqlString );
+		if ( query.isSelectQuery() == TRUE ) {
+			throw new IllegalMutationQueryException( "Expecting a native mutation query, but found `" + sqlString + "`" );
+		}
+		return query;
+	}
+
+	@Override
+	public <R> ReactiveQueryImplementor<R> createReactiveNamedQuery(String queryName, Class<R> resultType) {
+		return (ReactiveQueryImplementor<R>) buildNamedQuery( queryName, resultType );
 	}
 
 	@Override
 	public <R> ReactiveQuery getNamedReactiveQuery(String queryName) {
-		throw new UnsupportedOperationException();
+		return (ReactiveQueryImplementor) buildNamedQuery( queryName, null );
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery getNamedReactiveNativeQuery(String name) {
-		throw new UnsupportedOperationException();
+		return (ReactiveNativeQuery) getNamedNativeQuery( name );
 	}
 
 	@Override
 	public ReactiveNativeQuery getNamedReactiveNativeQuery(String name, String resultSetMapping) {
-		throw new UnsupportedOperationException();
+		return (ReactiveNativeQuery) getNamedNativeQuery( name, resultSetMapping );
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, AffectedEntities affectedEntities) {
-		throw new UnsupportedOperationException();
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			ReactiveNativeQueryImpl query = new ReactiveNativeQueryImpl( queryString, this );
+			String[] spaces = affectedEntities.getAffectedSpaces( getFactory() );
+			for ( String space : spaces ) {
+				query.addSynchronizedQuerySpace( space );
+			}
+			if ( StringHelper.isEmpty( query.getComment() ) ) {
+				query.setComment( "dynamic native SQL query" );
+			}
+			applyQuerySettingsAndHints( query );
+			return query;
+		}
+		catch (RuntimeException he) {
+			throw getExceptionConverter().convert( he );
+		}
 	}
 
 	@Override
@@ -704,12 +1002,26 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			String queryString,
 			Class<R> resultType,
 			AffectedEntities affectedEntities) {
-		throw new UnsupportedOperationException();
+		ReactiveNativeQuery query = createReactiveNativeQuery( queryString, affectedEntities );
+		return addResultType( resultType, query );
+	}
+
+	private <T> ReactiveNativeQuery addResultType(Class<T> resultClass, ReactiveNativeQuery query) {
+		if ( Tuple.class.equals( resultClass ) ) {
+			query.setTupleTransformer( new NativeQueryTupleTransformer() );
+		}
+		else if ( getFactory().getMappingMetamodel().isEntityClass( resultClass ) ) {
+			query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
+		}
+		else if ( resultClass != Object.class && resultClass != Object[].class ) {
+			query.addScalar( 1, resultClass );
+		}
+		return query;
 	}
 
 	@Override
 	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
-		throw new UnsupportedOperationException();
+		throw LOG.notYetImplemented();
 	}
 
 	@Override
@@ -717,7 +1029,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			String queryString,
 			ResultSetMapping<R> resultSetMapping,
 			AffectedEntities affectedEntities) {
-		throw new UnsupportedOperationException();
+		throw LOG.notYetImplemented();
 	}
 
 	@Override
@@ -733,6 +1045,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		return named != null
 				? named.makeRootGraph( graphName, true )
 				: null;
+	}
+
+	@Override
+	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
+		throw LOG.notYetImplemented();
 	}
 
 	private RootGraphImplementor<?> getEntityGraph(String graphName) {

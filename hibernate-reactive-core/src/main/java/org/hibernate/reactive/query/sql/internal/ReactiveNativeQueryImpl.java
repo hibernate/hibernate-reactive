@@ -61,6 +61,11 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	private final ReactiveAbstractSelectionQuery<R> selectionQueryDelegate;
 
+	public ReactiveNativeQueryImpl(String memento, SharedSessionContractImplementor session, String[] querySpaces) {
+		this( memento, session );
+		addQuerySpaces( querySpaces );
+	}
+
 	public ReactiveNativeQueryImpl(String memento, SharedSessionContractImplementor session) {
 		super( memento, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
@@ -108,7 +113,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 		);
 	}
 	private CompletionStage<List<R>> doReactiveList() {
-		return reactiveSelectPlan().performReactiveList( this );
+		return reactiveSelectPlan().reactivePerformList( this );
 	}
 
 	private ReactiveSelectQueryPlan<R> reactiveSelectPlan() {
@@ -227,6 +232,12 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	@Override
 	public ReactiveNativeQueryImpl<R> addScalar(String columnAlias, @SuppressWarnings("rawtypes") Class javaType) {
 		super.addScalar( columnAlias, javaType );
+		return this;
+	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> addScalar(int position, Class<?> type) {
+		super.addScalar( position, type );
 		return this;
 	}
 
@@ -487,7 +498,8 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	@Override
 	public <T> ReactiveNativeQueryImpl<T> setTupleTransformer(TupleTransformer<T> transformer) {
-		throw new UnsupportedOperationException();
+		super.setTupleTransformer( transformer );
+		return (ReactiveNativeQueryImpl<T>) this;
 	}
 
 	@Override

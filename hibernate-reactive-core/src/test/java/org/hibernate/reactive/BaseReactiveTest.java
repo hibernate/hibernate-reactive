@@ -44,6 +44,7 @@ import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import jakarta.persistence.Table;
+import jakarta.persistence.criteria.CriteriaQuery;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -174,9 +175,18 @@ public abstract class BaseReactiveTest {
 	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
 		return getSessionFactory()
 				.withTransaction( s -> loop( entities, entityClass -> s
-						.createQuery( "from " + entityClass.getSimpleName(), entityClass )
+						.createQuery( queryForDelete( entityClass ) )
 						.getResultList()
-						.thenCompose( list -> loop( list, entity -> s.remove( entity ) ) ) ) );
+						// This approach will also remove embedded collections and associated entities when possible
+						// (a `delete from` query will only remove the elements from one table)
+						.thenCompose( list -> s.remove( list.toArray( new Object[0] ) ) )
+				) );
+	}
+
+	private <T> CriteriaQuery<T> queryForDelete(Class<T> entityClass) {
+		final CriteriaQuery<T> query = getSessionFactory().getCriteriaBuilder().createQuery( entityClass );
+		query.from( entityClass );
+		return query;
 	}
 
 	protected String entityTable(Class<?> entityClass) {

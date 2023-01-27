@@ -149,7 +149,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 		}
 
 		return selectionQueryDelegate.resolveSelectReactiveQueryPlan()
-				.performReactiveList( executionContextToUse )
+				.reactivePerformList( executionContextToUse )
 				.thenApply( (List<R> list) -> needsDistinct
 						? applyDistinct( sqmStatement, hasLimit, list )
 						: list

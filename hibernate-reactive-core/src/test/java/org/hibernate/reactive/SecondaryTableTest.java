@@ -33,7 +33,7 @@ public class SecondaryTableTest extends BaseReactiveTest {
 
 	@Test
 	public void testRootClassViaAssociation(TestContext context) {
-		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse", new Date(), false);
+		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse", new Date(), false );
 		final Author author = new Author( "Charlie Mackesy", book );
 
 		test(
@@ -48,15 +48,15 @@ public class SecondaryTableTest extends BaseReactiveTest {
 						.thenAccept( auth -> {
 							context.assertNotNull( auth );
 							context.assertEquals( author, auth );
-							context.assertEquals( book.getTitle(), auth.getBook().getTitle()  );
-							context.assertFalse(book.isForbidden());
+							context.assertEquals( book.getTitle(), auth.getBook().getTitle() );
+							context.assertFalse( book.isForbidden() );
 						} )
 		);
 	}
 
 	@Test
 	public void testSubclassViaAssociation(TestContext context) {
-		final Book book = new Book( 6, "Necronomicon", new Date(), true);
+		final Book book = new Book( 6, "Necronomicon", new Date(), true );
 		final Author author = new Author( "Abdul Alhazred", book );
 
 		test(
@@ -70,8 +70,8 @@ public class SecondaryTableTest extends BaseReactiveTest {
 						.thenAccept( auth -> {
 							context.assertNotNull( auth );
 							context.assertEquals( author, auth );
-							context.assertEquals( book.getTitle(), auth.getBook().getTitle()  );
-							context.assertTrue(book.isForbidden());
+							context.assertEquals( book.getTitle(), auth.getBook().getTitle() );
+							context.assertTrue( book.isForbidden() );
 						} )
 		);
 	}
@@ -79,42 +79,46 @@ public class SecondaryTableTest extends BaseReactiveTest {
 	@Test
 	public void testRootClassViaFind(TestContext context) {
 
-		final Book novel = new Book( 6, "The Boy, The Mole, The Fox and The Horse", new Date(), false);
+		final Book novel = new Book( 6, "The Boy, The Mole, The Fox and The Horse", new Date(), false );
 		final Author author = new Author( "Charlie Mackesy", novel );
 
-		test( context,
+		test(
+				context,
 				openSession()
-						.thenCompose(s -> s.persist(novel)
-								.thenCompose(v -> s.persist(author))
-								.thenCompose(v -> s.flush())
+						.thenCompose( s -> s.persist( novel )
+								.thenCompose( v -> s.persist( author ) )
+								.thenCompose( v -> s.flush() )
 						)
 						.thenCompose( v -> openSession() )
-						.thenCompose(s -> s.find(Book.class, 6))
-						.thenAccept(book -> {
-							context.assertNotNull(book);
-							context.assertFalse(book.isForbidden());
-							context.assertEquals(book.getTitle(), "The Boy, The Mole, The Fox and The Horse");
-						}));
+						.thenCompose( s -> s.find( Book.class, 6 ) )
+						.thenAccept( book -> {
+							context.assertNotNull( book );
+							context.assertFalse( book.isForbidden() );
+							context.assertEquals( book.getTitle(), "The Boy, The Mole, The Fox and The Horse" );
+						} )
+		);
 	}
 
 	@Test
 	public void testSubclassViaFind(TestContext context) {
-		final Book spells = new Book( 6, "Necronomicon", new Date(), true);
+		final Book spells = new Book( 6, "Necronomicon", new Date(), true );
 		final Author author = new Author( "Abdul Alhazred", spells );
 
-		test( context,
+		test(
+				context,
 				openSession()
-						.thenCompose(s -> s.persist(spells)
-								.thenCompose(v -> s.persist(author))
-								.thenCompose(v -> s.flush())
+						.thenCompose( s -> s.persist( spells )
+								.thenCompose( v -> s.persist( author ) )
+								.thenCompose( v -> s.flush() )
 						)
 						.thenCompose( v -> openSession() )
-						.thenCompose(s -> s.find(Book.class, 6))
-						.thenAccept(book -> {
-							context.assertNotNull(book);
-							context.assertTrue(book.isForbidden());
-							context.assertEquals(book.getTitle(), "Necronomicon");
-						}));
+						.thenCompose( s -> s.find( Book.class, 6 ) )
+						.thenAccept( book -> {
+							context.assertNotNull( book );
+							context.assertTrue( book.isForbidden() );
+							context.assertEquals( book.getTitle(), "Necronomicon" );
+						} )
+		);
 	}
 
 	@Entity(name = "Book")
@@ -126,7 +130,8 @@ public class SecondaryTableTest extends BaseReactiveTest {
 		public static final String TABLE2 = "SpellBook";
 		public static final String TABLE3 = "Extra";
 
-		@Id private Integer id;
+		@Id
+		private Integer id;
 		private String title;
 
 		@Temporal(TemporalType.DATE)
@@ -197,7 +202,8 @@ public class SecondaryTableTest extends BaseReactiveTest {
 
 		public static final String TABLE = "Author";
 
-		@Id @GeneratedValue
+		@Id
+		@GeneratedValue
 		private Integer id;
 		private String name;
 

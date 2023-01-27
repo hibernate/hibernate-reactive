@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.results.ResultSetMapping;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.QueryOptions;
@@ -23,6 +22,7 @@ import org.hibernate.query.sql.internal.ResultSetMappingProcessor;
 import org.hibernate.query.sql.internal.SQLQueryParser;
 import org.hibernate.query.sql.spi.ParameterOccurrence;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
+import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.query.internal.ReactiveResultSetMappingProcessor;
 import org.hibernate.reactive.query.spi.ReactiveNativeSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
@@ -67,7 +67,7 @@ public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanI
 	}
 
 	@Override
-	public CompletionStage<List<R>> performReactiveList(DomainQueryExecutionContext executionContext) {
+	public CompletionStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext) {
 		final QueryOptions queryOptions = executionContext.getQueryOptions();
 		if ( queryOptions.getEffectiveLimit().getMaxRowsJpa() == 0 ) {
 			return completedFuture( emptyList() );
@@ -93,28 +93,29 @@ public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanI
 			);
 		}
 
-		executionContext.getSession().autoFlushIfRequired( affectedTableNames );
+		final ReactiveSharedSessionContractImplementor reactiveSession = (ReactiveSharedSessionContractImplementor) executionContext.getSession();
+		return reactiveSession.reactiveAutoFlushIfRequired( affectedTableNames )
+						.thenCompose( aBoolean -> {
+							final JdbcOperationQuerySelect jdbcSelect = new ReactiveJdbcSelect(
+									sql,
+									jdbcParameterBinders,
+									resultSetMapping,
+									affectedTableNames,
+									Collections.emptySet()
+							);
 
-		final JdbcOperationQuerySelect jdbcSelect = new ReactiveJdbcSelect(
-				sql,
-				jdbcParameterBinders,
-				resultSetMapping,
-				affectedTableNames,
-				Collections.emptySet()
-		);
+							return StandardReactiveSelectExecutor.INSTANCE
+									.list(
+											jdbcSelect,
+											jdbcParameterBindings,
+											SqmJdbcExecutionContextAdapter.usingLockingAndPaging( executionContext ),
+											null,
+											queryOptions.getUniqueSemantic() == null
+													? ReactiveListResultsConsumer.UniqueSemantic.NEVER
+													: reactiveUniqueSemantic( queryOptions )
+									);
 
-		final SharedSessionContractImplementor session = executionContext.getSession();
-		final SessionFactoryImplementor factory = session.getFactory();
-		return StandardReactiveSelectExecutor.INSTANCE
-				.list(
-						jdbcSelect,
-						jdbcParameterBindings,
-						SqmJdbcExecutionContextAdapter.usingLockingAndPaging( executionContext ),
-						null,
-						queryOptions.getUniqueSemantic() == null
-								? ReactiveListResultsConsumer.UniqueSemantic.NEVER
-								: reactiveUniqueSemantic( queryOptions )
-				);
+						} );
 	}
 
 	private static ReactiveListResultsConsumer.UniqueSemantic reactiveUniqueSemantic(QueryOptions queryOptions) {

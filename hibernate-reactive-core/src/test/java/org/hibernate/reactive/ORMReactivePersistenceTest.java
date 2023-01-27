@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -24,11 +23,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 
@@ -45,7 +43,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( Flour.class );
+		return List.of( GuineaPig.class );
 	}
 
 	@Before
@@ -60,6 +58,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 		StandardServiceRegistry registry = builder.build();
 		ormFactory = configuration.buildSessionFactory( registry );
 	}
+
 	@After
 	public void closeOrmFactory() {
 		ormFactory.close();
@@ -67,41 +66,27 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 
 	@Test
 	public void testORM(TestContext context) {
-		final Flour almond = new Flour( "Almond", "made from ground almonds.", "Gluten free" );
+		GuineaPig pig = new GuineaPig( 3, "Rorshach" );
 
-		try (Session session = ormFactory.openSession()) {
-			session.beginTransaction();
-			session.persist( almond );
-			session.getTransaction().commit();
-		}
-
-		try (Session session = ormFactory.openSession()) {
-			List<Flour> list = session.createNativeQuery( "select * from Flour", Flour.class ).list();
-			System.out.println( list );
-		}
 	}
 
-	@Entity(name = "Flour")
-	@Table(name = "Flour")
-	public static class Flour {
-
-		private Integer id;
-
-		private String name;
-		private String description;
-		private String type;
-
-		public Flour() {
-		}
-
-		public Flour(String name, String description, String type) {
-			this.name = name;
-			this.description = description;
-			this.type = type;
-		}
-
+	@Entity(name = "GuineaPig")
+	@Table(name = "pig")
+	public static class GuineaPig {
 		@Id
-		@GeneratedValue
+		private Integer id;
+		private String name;
+		@Version
+		private int version;
+
+		public GuineaPig() {
+		}
+
+		public GuineaPig(Integer id, String name) {
+			this.id = id;
+			this.name = name;
+		}
+
 		public Integer getId() {
 			return id;
 		}
@@ -110,7 +95,6 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 			this.id = id;
 		}
 
-		@Column(name = "`name`")
 		public String getName() {
 			return name;
 		}
@@ -119,25 +103,9 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 			this.name = name;
 		}
 
-		public String getDescription() {
-			return description;
-		}
-
-		public void setDescription(String description) {
-			this.description = description;
-		}
-
-		public String getType() {
-			return type;
-		}
-
-		public void setType(String type) {
-			this.type = type;
-		}
-
 		@Override
 		public String toString() {
-			return name;
+			return id + ": " + name;
 		}
 
 		@Override
@@ -148,15 +116,13 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 			if ( o == null || getClass() != o.getClass() ) {
 				return false;
 			}
-			Flour flour = (Flour) o;
-			return Objects.equals( name, flour.name ) &&
-					Objects.equals( description, flour.description ) &&
-					Objects.equals( type, flour.type );
+			GuineaPig guineaPig = (GuineaPig) o;
+			return Objects.equals( name, guineaPig.name );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash( name, description, type );
+			return Objects.hash( name );
 		}
 	}
 }

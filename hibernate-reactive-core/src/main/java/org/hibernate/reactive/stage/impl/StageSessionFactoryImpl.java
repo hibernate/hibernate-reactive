@@ -275,8 +275,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 
 	@Override
 	public CriteriaBuilder getCriteriaBuilder() {
-		// TODO Auto-generated method stub
-		return null;
+		return delegate.getCriteriaBuilder();
 	}
 
 }

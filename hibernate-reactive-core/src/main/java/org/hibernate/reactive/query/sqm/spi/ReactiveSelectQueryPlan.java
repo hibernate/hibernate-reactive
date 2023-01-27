@@ -36,5 +36,5 @@ public interface ReactiveSelectQueryPlan<R> extends SelectQueryPlan<R> {
 	/**
 	 * Perform (execute) the query returning a List
 	 */
-	CompletionStage<List<R>> performReactiveList(DomainQueryExecutionContext executionContext);
+	CompletionStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext);
 }

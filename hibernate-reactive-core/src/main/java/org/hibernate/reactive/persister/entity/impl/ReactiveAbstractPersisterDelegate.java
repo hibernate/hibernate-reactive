@@ -15,6 +15,7 @@ import org.hibernate.AssertionFailure;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
 import org.hibernate.id.IdentityGenerator;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
@@ -26,7 +27,7 @@ import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.query.named.NamedQueryMemento;
-import org.hibernate.reactive.loader.ast.internal.MultiIdLoaderStandard;
+import org.hibernate.reactive.loader.ast.internal.ReactiveMultiIdLoaderStandard;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderDynamicBatch;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderProvidedQueryImpl;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderStandardImpl;
@@ -58,14 +59,14 @@ public class ReactiveAbstractPersisterDelegate {
 			final RuntimeModelCreationContext creationContext) {
 		SessionFactoryImplementor factory = creationContext.getSessionFactory();
 		singleIdEntityLoader = createReactiveSingleIdEntityLoader( entityDescriptor, persistentClass, creationContext, factory, entityDescriptor.getEntityName() );
-		multiIdEntityLoader = new MultiIdLoaderStandard<>( entityDescriptor, persistentClass, factory );
+		multiIdEntityLoader = new ReactiveMultiIdLoaderStandard<>( entityDescriptor, persistentClass, factory );
 	}
 
 	public ReactiveSingleIdEntityLoader<Object> getSingleIdEntityLoader() {
 		return singleIdEntityLoader;
 	}
 
-	public CompletionStage<? extends List<?>> multiLoad(Object[] ids, SharedSessionContractImplementor session, MultiIdLoadOptions loadOptions) {
+	public <K> CompletionStage<? extends List<?>> multiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
 		return multiIdEntityLoader.load( ids, loadOptions, session );
 	}
 

@@ -7,11 +7,13 @@ package org.hibernate.reactive.session.impl;
 
 
 
+import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.metamodel.spi.RuntimeMetamodelsImplementor;
 import org.hibernate.query.spi.QueryEngine;
+import org.hibernate.reactive.boot.spi.ReactiveMetadataImplementor;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
 import org.hibernate.reactive.stage.Stage;
@@ -26,8 +28,8 @@ import org.hibernate.reactive.stage.impl.StageSessionFactoryImpl;
  */
 public class ReactiveSessionFactoryImpl extends SessionFactoryImpl {
 
-	public ReactiveSessionFactoryImpl(MetadataImplementor metadata, SessionFactoryOptions options) {
-		super( metadata, options );
+	public ReactiveSessionFactoryImpl(MetadataImplementor bootMetamodel, SessionFactoryOptions options, BootstrapContext bootstrapContext) {
+		super( new ReactiveMetadataImplementor( bootMetamodel ), options, bootstrapContext );
 	}
 
 	@Override

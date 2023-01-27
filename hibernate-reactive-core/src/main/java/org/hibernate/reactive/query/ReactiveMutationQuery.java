@@ -81,7 +81,7 @@ public interface ReactiveMutationQuery<R> extends CommonQueryContract {
 	ReactiveMutationQuery<R> setParameter(Parameter<Date> param, Date value, TemporalType temporalType);
 
 	@Override
-	ReactiveMutationQuery<R> setParameterList(String name, @SuppressWarnings("rawtypes") Collection values);
+	ReactiveMutationQuery<R> setParameterList(String name, Collection values);
 
 	@Override
 	<P> ReactiveMutationQuery<R> setParameterList(String name, Collection<? extends P> values, Class<P> javaType);
@@ -99,7 +99,7 @@ public interface ReactiveMutationQuery<R> extends CommonQueryContract {
 	<P> ReactiveMutationQuery<R> setParameterList(String name, P[] values, BindableType<P> type);
 
 	@Override
-	ReactiveMutationQuery<R> setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
+	ReactiveMutationQuery<R> setParameterList(int position, Collection values);
 
 	@Override
 	<P> ReactiveMutationQuery<R> setParameterList(int position, Collection<? extends P> values, Class<P> javaType);
@@ -138,7 +138,7 @@ public interface ReactiveMutationQuery<R> extends CommonQueryContract {
 	ReactiveMutationQuery<R> setProperties(Object bean);
 
 	@Override
-	ReactiveMutationQuery<R> setProperties(@SuppressWarnings("rawtypes") Map bean);
+	ReactiveMutationQuery<R> setProperties(Map bean);
 
 	@Override
 	ReactiveMutationQuery<R> setHibernateFlushMode(FlushMode flushMode);
