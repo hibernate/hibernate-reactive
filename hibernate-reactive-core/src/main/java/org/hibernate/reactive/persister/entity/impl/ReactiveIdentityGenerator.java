@@ -16,10 +16,11 @@ import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.id.IdentityGenerator;
 import org.hibernate.id.PostInsertIdentityPersister;
-import org.hibernate.id.insert.BasicSelectingDelegate;
 import org.hibernate.id.insert.IdentifierGeneratingInsert;
 import org.hibernate.id.insert.InsertGeneratedIdentifierDelegate;
 import org.hibernate.id.insert.InsertReturningDelegate;
+import org.hibernate.reactive.id.insert.ReactiveBasicSelectingDelegate;
+import org.hibernate.reactive.id.insert.ReactiveInsertReturningDelegate;
 import org.hibernate.sql.Insert;
 
 /**
@@ -34,10 +35,10 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 			return dialect.getIdentityColumnSupport().buildGetGeneratedKeysDelegate( persister, dialect );
 		}
 		else if ( dialect.getIdentityColumnSupport().supportsInsertSelectIdentity() ) {
-			return new InsertReturningDelegate( persister, dialect );
+			return new ReactiveInsertReturningDelegate( persister, dialect );
 		}
 		else {
-			return new BasicSelectingDelegate( persister, dialect );
+			return new ReactiveBasicSelectingDelegate( persister, dialect );
 		}
 	}
 

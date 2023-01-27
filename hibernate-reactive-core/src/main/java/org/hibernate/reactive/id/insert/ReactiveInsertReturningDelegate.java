@@ -5,20 +5,18 @@
  */
 package org.hibernate.reactive.id.insert;
 
-
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.PostInsertIdentityPersister;
 import org.hibernate.id.insert.Binder;
-import org.hibernate.id.insert.GetGeneratedKeysDelegate;
+import org.hibernate.id.insert.InsertReturningDelegate;
 
+public class ReactiveInsertReturningDelegate extends InsertReturningDelegate implements ReactiveAbstractReturningDelegate {
 
-public class ReactiveGetGeneratedKeysDelegate extends GetGeneratedKeysDelegate implements ReactiveAbstractReturningDelegate {
-
-	public ReactiveGetGeneratedKeysDelegate(PostInsertIdentityPersister persister, Dialect dialect, boolean inferredKeys) {
-		super( persister, dialect, inferredKeys );
+	public ReactiveInsertReturningDelegate(PostInsertIdentityPersister persister, Dialect dialect) {
+		super( persister, dialect );
 	}
 
 	@Override

@@ -82,9 +82,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 			}
 
 			final int[] attributeIndexes = tableDetails.getAttributeIndexes();
-			for ( int i = 0; i < attributeIndexes.length; i++ ) {
-				final int attributeIndex = attributeIndexes[ i ];
-
+			for ( final int attributeIndex : attributeIndexes ) {
 				if ( !propertyInclusions[attributeIndex] ) {
 					continue;
 				}
@@ -95,7 +93,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 				}
 
 				attributeMapping.decompose(
-						values[ attributeIndex ],
+						values[attributeIndex],
 						(jdbcValue, selectableMapping) -> {
 							if ( !selectableMapping.isInsertable() ) {
 								return;
@@ -196,7 +194,8 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 				.getServiceRegistry()
 				.getService( MutationExecutorService.class );
 
-		return  (ReactiveMutationExecutor) mutationExecutorService
+		MutationExecutor executor = mutationExecutorService
 				.createExecutor( this::getInsertBatchKey, operationGroup, session );
+		return  (ReactiveMutationExecutor) executor;
 	}
 }

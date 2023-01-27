@@ -16,6 +16,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.persister.entity.mutation.EntityMutationTarget;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
+import org.hibernate.reactive.id.insert.ReactiveInsertGeneratedIdentifierDelegate;
 import org.hibernate.sql.exec.spi.JdbcParameterBinder;
 import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.model.MutationTarget;
@@ -25,7 +26,6 @@ import org.hibernate.sql.model.ValuesAnalysis;
 import org.hibernate.sql.model.jdbc.JdbcInsertMutation;
 
 import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.identityPreparation;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_TRACE_ENABLED;
 
@@ -63,15 +63,14 @@ public class ReactiveMutationExecutorPostInsertSingleTable extends MutationExecu
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,
 			SharedSessionContractImplementor session) {
-		final Object id = mutationTarget.getIdentityInsertDelegate()
-				.performInsert( identityInsertStatementDetails, getJdbcValueBindings(), modelReference, session );
-
-		// We should change the signature of performInsert and always return a CompletionStage.
-		CompletionStage<Object> idStage = id instanceof CompletionStage
-				? (CompletionStage<Object>) id
-				: completedFuture( id );
-
-		return idStage.thenApply( this::logId );
+		return ( (ReactiveInsertGeneratedIdentifierDelegate) mutationTarget.getIdentityInsertDelegate() )
+				.reactivePerformInsert(
+						identityInsertStatementDetails,
+						getJdbcValueBindings(),
+						modelReference,
+						session
+				)
+				.thenApply( this::logId );
 	}
 
 	private Object logId(Object identifier) {
