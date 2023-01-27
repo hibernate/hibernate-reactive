@@ -53,7 +53,7 @@ public class QueryTest extends BaseReactiveTest {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
-		Book book2 = new Book( "0-380-97346-NonUniqueResultException4", "Cryptonomicon", author2 );
+		Book book2 = new Book( "0-380-97346-4", "Cryptonomicon", author2 );
 		Book book3 = new Book( "0-553-08853-X", "Snow Crash", author2 );
 		author1.books.add( book1 );
 		author2.books.add( book2 );
