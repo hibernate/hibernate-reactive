@@ -54,6 +54,11 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, creationContext );
 	}
 
+	@Override
+	public String generateSelectVersionString() {
+		String sql = super.generateSelectVersionString();
+		return parameters().process( sql );
+	}
 
 	@Override
 	protected UpdateCoordinator buildUpdateCoordinator() {

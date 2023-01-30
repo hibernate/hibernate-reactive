@@ -419,15 +419,12 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		test(
 				context,
 				populateDB()
-						.thenCompose( v -> getSessionFactory
-								().withTransaction( (session, transaction) -> session
+						.thenCompose( v -> getSessionFactory().withTransaction( (session, transaction) -> session
 								.find( GuineaPig.class, expectedPig.getId() )
 								.thenCompose( actualPig -> session.lock( actualPig, LockMode.OPTIMISTIC )
 										.thenAccept( vv -> {
 											assertThatPigsAreEqual( context, expectedPig, actualPig );
-											context.assertEquals(
-													session.getLockMode( actualPig ),
-													LockMode.OPTIMISTIC );
+											context.assertEquals( session.getLockMode( actualPig ), LockMode.OPTIMISTIC );
 											context.assertEquals( 0, actualPig.version );
 										} ) ) ) )
 						.thenCompose( v -> openSession() )

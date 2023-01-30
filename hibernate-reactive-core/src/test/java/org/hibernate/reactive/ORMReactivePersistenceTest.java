@@ -9,6 +9,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import org.hibernate.LockMode;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -28,6 +30,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 
 /**
@@ -66,8 +69,19 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 
 	@Test
 	public void testORM(TestContext context) {
-		GuineaPig pig = new GuineaPig( 3, "Rorshach" );
+		final GuineaPig pig1 = new GuineaPig( 5, "Aloi" );
 
+		try (Session session = ormFactory.openSession()) {
+			session.beginTransaction();
+			session.persist( pig1 );
+			session.getTransaction().commit();
+		}
+
+		try (Session session = ormFactory.openSession()) {
+			GuineaPig actualPig = session.find( GuineaPig.class, pig1.id );
+			session.lock( actualPig, LockMode.OPTIMISTIC );
+			assertThat( actualPig.version ).isEqualTo( 0 );
+		}
 	}
 
 	@Entity(name = "GuineaPig")
