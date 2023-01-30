@@ -62,6 +62,12 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
+	public String generateSelectVersionString() {
+		String sql = super.generateSelectVersionString();
+		return parameters().process( sql );
+	}
+
+	@Override
 	protected void validateGenerator() {
 		if ( super.getGenerator() instanceof IdentityGenerator ) {
 			throw new MappingException( "Cannot use identity column key generation with <union-subclass> mapping for: " + getEntityName() );
