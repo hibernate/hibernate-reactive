@@ -26,6 +26,8 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.generator.BeforeExecutionGenerator;
+import org.hibernate.generator.Generator;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.internal.RootGraphImpl;
 import org.hibernate.graph.spi.RootGraphImplementor;
@@ -64,6 +66,7 @@ import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
+import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
@@ -94,9 +97,9 @@ import jakarta.persistence.criteria.CriteriaUpdate;
 import static java.lang.Boolean.TRUE;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
+import static org.hibernate.engine.internal.Versioning.seedVersion;
+import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.internal.util.StringHelper.isEmpty;
-import static org.hibernate.reactive.id.impl.IdentifierGeneration.assignIdIfNecessary;
-import static org.hibernate.reactive.id.impl.IdentifierGeneration.generateId;
 import static org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister.forceInitialize;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
@@ -250,25 +253,30 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	public CompletionStage<Void> reactiveInsert(Object entity) {
 		checkOpen();
 		ReactiveEntityPersister persister = getEntityPersister( null, entity );
-		return generateId( entity, persister, this, this )
-				.thenCompose( id -> {
-					Object[] state = persister.getPropertyValues( entity );
-					if ( persister.isVersioned() ) {
-						boolean substitute = Versioning
-								.seedVersion( state, persister.getVersionProperty(), persister.getVersionMapping(), this );
-						if ( substitute ) {
-							persister.setValues( entity, state );
+		Object[] state = persister.getPropertyValues( entity );
+		Generator generator = persister.getGenerator();
+		if ( !generator.generatedOnExecution() ) {
+			return generateId( entity, generator )
+					.thenCompose( id -> {
+						if ( persister.isVersioned() ) {
+							if ( seedVersion( state, persister.getVersionProperty(), persister.getVersionMapping(), this ) ) {
+								persister.setValues( entity, state );
+							}
 						}
-					}
+						return persister.insertReactive( id, state, entity, this )
+								.thenAccept( ignore -> persister.setIdentifier( entity, id, this ) );
+					} );
+		}
 
-					if ( persister.isIdentifierAssignedByInsert() ) {
-						return persister.insertReactive( state, entity, this )
-								.thenAccept( generatedId -> assignIdIfNecessary( entity, generatedId, persister, this ) );
-					}
-					id = assignIdIfNecessary( id, entity, persister, this );
-					persister.setIdentifier( entity, id, this );
-					return persister.insertReactive( id, state, entity, this );
-				} );
+		return persister.insertReactive( state, entity, this )
+				.thenAccept( id -> persister.setIdentifier( entity, id, this ) );
+	}
+
+	private CompletionStage<Object> generateId(Object entity, Generator generator) {
+		return generator instanceof ReactiveIdentifierGenerator
+				? ( (ReactiveIdentifierGenerator) generator ).generate( this, this )
+				: completedFuture( ( (BeforeExecutionGenerator) generator )
+										   .generate( this, entity, null, INSERT ) );
 	}
 
 	@Override
@@ -581,7 +589,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 			}
 			else {
-				return CompletionStages.completedFuture( association );
+				return completedFuture( association );
 			}
 		}
 		else {
