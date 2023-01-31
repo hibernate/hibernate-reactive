@@ -1284,7 +1284,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public <T> CompletionStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids) {
 		return new ReactiveMultiIdentifierLoadAccessImpl<>( entityClass ).multiLoad( ids );
-		//TODO: copy/paste the exception handling from immediately above?
 	}
 
 	@Override

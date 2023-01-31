@@ -42,6 +42,7 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
@@ -52,6 +53,7 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.whileLoop;
 
@@ -119,47 +121,50 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 		final List<Integer> elementPositionsLoadedByBatch = new ArrayList<>();
 
 		final boolean coerce = !sessionFactory.getJpaMetamodel().getJpaCompliance().isLoadByIdComplianceEnabled();
-		for ( int i = 0; i < ids.length; i++ ) {
-			final Object id = coerce
-					? entityDescriptor.getIdentifierMapping().getJavaType().coerce( ids[i], session )
-					: ids[i];
+		return loop( 0, ids.length, i -> {
+			final Object id = coerce ?
+					entityDescriptor.getIdentifierMapping().getJavaType().coerce( ids[i], session ) :
+					ids[i];
 
 			final EntityKey entityKey = new EntityKey( id, entityDescriptor );
 			if ( loadOptions.isSessionCheckingEnabled() || loadOptions.isSecondLevelCacheCheckingEnabled() ) {
-				LoadEvent loadEvent = new LoadEvent(
-						id,
-						entityDescriptor.getMappedClass().getName(),
-						lockOptions,
-						session,
-						getReadOnlyFromLoadQueryInfluencers( session )
+				LoadEvent loadEvent = new LoadEvent( id,
+													 entityDescriptor.getMappedClass().getName(),
+													 lockOptions,
+													 session,
+													 getReadOnlyFromLoadQueryInfluencers( session )
 				);
 
 				Object managedEntity = null;
 
 				if ( loadOptions.isSessionCheckingEnabled() ) {
 					// look for it in the Session first
-					CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry = CacheEntityLoaderHelper.INSTANCE
-							.loadFromSessionCache( loadEvent, entityKey, LoadEventListener.GET );
+					CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry = CacheEntityLoaderHelper.INSTANCE.loadFromSessionCache(
+							loadEvent,
+							entityKey,
+							LoadEventListener.GET
+					);
 					managedEntity = persistenceContextEntry.getEntity();
 
-					if ( managedEntity != null
-							&& !loadOptions.isReturnOfDeletedEntitiesEnabled()
-							&& !persistenceContextEntry.isManaged() ) {
+					if ( managedEntity != null && !loadOptions.isReturnOfDeletedEntitiesEnabled() && !persistenceContextEntry.isManaged() ) {
 						// put a null in the result
 						result.add( i, null );
-						continue;
+						return voidFuture();
 					}
 				}
 
 				if ( managedEntity == null && loadOptions.isSecondLevelCacheCheckingEnabled() ) {
 					// look for it in the SessionFactory
-					managedEntity = CacheEntityLoaderHelper.INSTANCE
-							.loadFromSecondLevelCache( loadEvent, entityDescriptor, entityKey );
+					managedEntity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache(
+							loadEvent,
+							entityDescriptor,
+							entityKey
+					);
 				}
 
 				if ( managedEntity != null ) {
 					result.add( i, managedEntity );
-					continue;
+					return voidFuture();
 				}
 			}
 
@@ -167,25 +172,27 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 			// load the entity state.
 			idsInBatch.add( id );
 
+			CompletionStage<Void> loopResult = voidFuture();
 			if ( idsInBatch.size() >= maxBatchSize ) {
 				// we've hit the allotted max-batch-size, perform an "intermediate load"
-				loadEntitiesById( idsInBatch, lockOptions, session );
-				idsInBatch.clear();
+				loopResult = loadEntitiesById( idsInBatch, lockOptions, session ).thenAccept( v -> idsInBatch.clear() );
+
 			}
 
-			// Save the EntityKey instance for use later!
-			// todo (6.0) : see below wrt why `elementPositionsLoadedByBatch` probably isn't needed
-			result.add( i, entityKey );
-			elementPositionsLoadedByBatch.add( i );
-		}
-
-		CompletionStage<?> stage = voidFuture();
-		if ( !idsInBatch.isEmpty() ) {
-			// we still have ids to load from the processing above since the last max-batch-size trigger,
-			// perform a load for them
-			stage = loadEntitiesById( idsInBatch, lockOptions, session );
-		}
-		return stage.thenApply( v -> {
+			return loopResult.thenAccept( v -> {
+				// Save the EntityKey instance for use later!
+				// todo (6.0) : see below wrt why `elementPositionsLoadedByBatch` probably isn't needed
+				result.add( i, entityKey );
+				elementPositionsLoadedByBatch.add( i );
+			} );
+		} ).thenCompose( v -> {
+			if ( !idsInBatch.isEmpty() ) {
+				// we still have ids to load from the processing above since the last max-batch-size trigger,
+				// perform a load for them
+				return loadEntitiesById( idsInBatch, lockOptions, session ).thenCompose( CompletionStages::voidFuture );
+			}
+			return voidFuture();
+		} ).thenApply( v -> {
 			// todo (6.0) : can't we just walk all elements of the results looking for EntityKey and replacing here?
 			//		can't imagine
 			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
