@@ -19,7 +19,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 public class OneToManyTest extends BaseReactiveTest {
@@ -169,7 +168,6 @@ public class OneToManyTest extends BaseReactiveTest {
 		String name;
 
 		@OneToMany
-		@OrderBy("id")
 		List<Book> books = new ArrayList<>();
 	}
 }
