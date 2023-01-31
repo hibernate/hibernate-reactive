@@ -209,7 +209,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 									rowNumberColumn.getColumnExpression(),
 									false,
 									null,
-									null,
 									rowNumberColumn.getJdbcMapping()
 							);
 							insertStatement.getTargetColumns().set(
@@ -263,7 +262,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 											columnReference.getColumnExpression(),
 											false,
 											null,
-											null,
 											columnReference.getJdbcMapping()
 									)
 							)
@@ -293,7 +291,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 					(String) null,
 					rowNumberColumn.getColumnExpression(),
 					false,
-					null,
 					null,
 					rowNumberColumn.getJdbcMapping()
 			);
@@ -331,7 +328,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 					"e",
 					rowNumberColumn.getColumnExpression(),
 					false,
-					null,
 					null,
 					rowNumberColumn.getJdbcMapping()
 			);
@@ -439,7 +435,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 												rowNumberColumn.getColumnExpression(),
 												false,
 												null,
-												null,
 												rowNumberColumn.getJdbcMapping()
 										)
 								)
@@ -456,7 +451,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 												idColumn.getColumnExpression(),
 												false,
 												null,
-												null,
 												idColumn.getJdbcMapping()
 										),
 										BinaryArithmeticOperator.ADD,
@@ -467,7 +461,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 														"t",
 														rowNumberColumn.getColumnExpression(),
 														false,
-														null,
 														null,
 														rowNumberColumn.getJdbcMapping()
 												),
@@ -500,7 +493,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 											"e",
 											cteColumn.getColumnExpression(),
 											false,
-											null,
 											null,
 											cteColumn.getJdbcMapping()
 									)

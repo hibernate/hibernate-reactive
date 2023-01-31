@@ -76,67 +76,70 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 		final AttributeMappingsList attributeMappings = entityPersister().getAttributeMappings();
 		mutationGroup.forEachOperation( (position, operation) -> {
 			final EntityTableMapping tableDetails = (EntityTableMapping) operation.getTableDetails();
-
-			if ( !tableInclusionChecker.include( tableDetails ) ) {
-				return;
-			}
-
-			final int[] attributeIndexes = tableDetails.getAttributeIndexes();
-			for ( final int attributeIndex : attributeIndexes ) {
-				if ( !propertyInclusions[attributeIndex] ) {
-					continue;
+			if ( tableInclusionChecker.include( tableDetails ) ) {
+				final int[] attributeIndexes = tableDetails.getAttributeIndexes();
+				for ( final int attributeIndex : attributeIndexes ) {
+					if ( propertyInclusions[attributeIndex] ) {
+						final AttributeMapping mapping = entityPersister().getAttributeMappings().get( attributeIndex );
+						decomposeAttribute( values[attributeIndex], session, jdbcValueBindings, mapping );
+					}
 				}
-
-				final AttributeMapping attributeMapping = attributeMappings.get( attributeIndex );
-				if ( attributeMapping instanceof PluralAttributeMapping ) {
-					continue;
-				}
-
-				attributeMapping.decompose(
-						values[attributeIndex],
-						(jdbcValue, selectableMapping) -> {
-							if ( !selectableMapping.isInsertable() ) {
-								return;
-							}
-
-							final String tableName = entityPersister().physicalTableNameForMutation( selectableMapping );
-							jdbcValueBindings.bindValue(
-									jdbcValue,
-									tableName,
-									selectableMapping.getSelectionExpression(),
-									ParameterUsage.SET,
-									session
-							);
-						},
-						session
-				);
 			}
 		} );
 
 		mutationGroup.forEachOperation( (position, jdbcOperation) -> {
-			final EntityTableMapping tableDetails = (EntityTableMapping) jdbcOperation.getTableDetails();
-
-			final String tableName = tableDetails.getTableName();
-
 			if ( id == null )  {
 				assert entityPersister().getIdentityInsertDelegate() != null;
-				return;
 			}
-
-			EntityTableMapping.KeyMapping keyMapping = tableDetails.getKeyMapping();
-			keyMapping.breakDownKeyJdbcValues(
-					id,
-					(jdbcValue, columnMapping) -> jdbcValueBindings.bindValue(
-							jdbcValue,
-							tableName,
-							columnMapping.getColumnName(),
-							ParameterUsage.SET,
-							session
-					),
-					session
-			);
+			else {
+				final EntityTableMapping tableDetails = (EntityTableMapping) jdbcOperation.getTableDetails();
+				breakDownJdbcValue( id, session, jdbcValueBindings, tableDetails );
+			}
 		} );
 		return voidFuture();
+	}
+
+	// Copy and paste from ORM: InsertCoordinator#decomposeAttribute
+	private void decomposeAttribute(
+			Object value,
+			SharedSessionContractImplementor session,
+			JdbcValueBindings jdbcValueBindings,
+			AttributeMapping mapping) {
+		if ( !(mapping instanceof PluralAttributeMapping) ) {
+			mapping.decompose(
+					value,
+					(jdbcValue, selectableMapping) -> {
+						if ( selectableMapping.isInsertable() ) {
+							jdbcValueBindings.bindValue(
+									jdbcValue,
+									entityPersister().physicalTableNameForMutation( selectableMapping ),
+									selectableMapping.getSelectionExpression(),
+									ParameterUsage.SET
+							);
+						}
+					},
+					session
+			);
+		}
+	}
+
+	// Copy and paste from ORM: InsertCoordinator#breakDownJdbcValue
+	private static void breakDownJdbcValue(
+			Object id,
+			SharedSessionContractImplementor session,
+			JdbcValueBindings jdbcValueBindings,
+			EntityTableMapping tableDetails) {
+		final String tableName = tableDetails.getTableName();
+		tableDetails.getKeyMapping().breakDownKeyJdbcValues(
+				id,
+				(jdbcValue, columnMapping) -> jdbcValueBindings.bindValue(
+						jdbcValue,
+						tableName,
+						columnMapping.getColumnName(),
+						ParameterUsage.SET
+				),
+				session
+		);
 	}
 
 	@Override

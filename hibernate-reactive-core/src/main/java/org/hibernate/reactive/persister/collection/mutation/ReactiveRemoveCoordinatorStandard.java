@@ -70,12 +70,8 @@ public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard
 					final ForeignKeyDescriptor fkDescriptor = getMutationTarget().getTargetPart().getKeyDescriptor();
 					fkDescriptor.getKeyPart().decompose(
 							key,
-							(jdbcValue, jdbcValueMapping) -> jdbcValueBindings.bindValue(
-									jdbcValue,
-									getMutationTarget().getIdentifierTableMapping().getTableName(),
-									jdbcValueMapping.getSelectionExpression(),
-									ParameterUsage.RESTRICT,
-									session
+							(jdbcValue, jdbcValueMapping) -> jdbcValueBindings
+									.bindValue( jdbcValue, jdbcValueMapping, ParameterUsage.RESTRICT
 							),
 							session
 					);

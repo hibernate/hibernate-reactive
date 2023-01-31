@@ -84,12 +84,9 @@ public class ReactiveDeleteRowsCoordinatorStandard extends DeleteRowsCoordinator
 									}
 									jdbcValueBindings.bindValue(
 											jdbcValue,
-											getMutationTarget().getIdentifierTableName(),
-											jdbcValueMapping.getSelectionExpression(),
-											ParameterUsage.RESTRICT,
-											session
-									);
-								}
+											jdbcValueMapping,
+											ParameterUsage.RESTRICT
+									);								}
 						);
 
 						return mutationExecutor.executeReactive( removal, null, null, null, session )
