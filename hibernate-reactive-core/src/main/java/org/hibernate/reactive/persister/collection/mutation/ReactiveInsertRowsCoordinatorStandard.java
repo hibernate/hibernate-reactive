@@ -89,18 +89,17 @@ public class ReactiveInsertRowsCoordinatorStandard implements ReactiveInsertRows
 		final ReactiveMutationExecutor mutationExecutor = reactiveMutationExecutor( session, operationGroup );
 		final JdbcValueBindings jdbcValueBindings = mutationExecutor.getJdbcValueBindings();
 
-		// It's just a counter, this way I don't have to use an Object but I can pass it to a lambda
+		// It's just a counter, this way I don't have to use an Object, and I can pass it to a lambda
 		final int[] counter = { 0 };
 		final RowMutationOperations.Values insertRowValues = rowMutationOperations.getInsertRowValues();
 		return loop( entries, (entry, integer) -> {
 					final int entryCount = counter[0];
 					if ( entryChecker == null || entryChecker.include( entry, entryCount, collection, pluralAttribute ) ) {
 						// if the entry is included, perform the "insert"
-						insertRowValues.applyValues( collection, id, entry, entryCount, session, (value, jdbcValueMapping, usage) ->
-							jdbcValueBindings.bindValue( value, jdbcValueMapping.getContainingTableExpression(), jdbcValueMapping.getSelectionExpression(), usage, session )
-						);
-
-						return mutationExecutor.executeReactive( entry, null, null, null, session );
+						insertRowValues.applyValues( collection, id, entry, entryCount, session, jdbcValueBindings::bindValue );
+						return mutationExecutor
+								.executeReactive( entry, null, null, null, session )
+								.thenAccept( o -> counter[0]++ );
 					}
 					counter[0]++;
 					return voidFuture();

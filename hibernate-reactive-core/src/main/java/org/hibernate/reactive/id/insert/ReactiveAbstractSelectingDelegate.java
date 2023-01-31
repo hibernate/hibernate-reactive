@@ -50,7 +50,7 @@ public interface ReactiveAbstractSelectingDelegate extends ReactiveInsertGenerat
 
 		Object[] updateParams = bind( statement -> {
 			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor( insertStatementDetails, statement, session.getJdbcServices() );
-			jdbcValueBindings.beforeStatement( details, session );
+			jdbcValueBindings.beforeStatement( details );
 		} );
 
 		final String selectSQL = getSelectSQL();
