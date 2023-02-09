@@ -46,7 +46,7 @@ public class MultilineImportsTest extends BaseReactiveTest {
 		// https://github.com/quarkusio/quarkus-workshops/tree/master/quarkus-workshop-super-heroes/super-heroes/rest-hero
 		configuration.setProperty( AvailableSettings.HBM2DDL_IMPORT_FILES, "/complexMultilineImports.sql" );
 		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
-		configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR, "org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor" );
+		configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR, "org.hibernate.tool.schema.internal.script.MultiLineSqlScriptExtractor" );
 		return configuration;
 	}
 
