@@ -52,17 +52,6 @@ public class ReactivePostgreSQLSqlAstTranslator<T extends JdbcOperation> extends
 	}
 
 	@Override
-	public void appendSql(char value) {
-		if ( PARAM_MARKER == value ) {
-			int paramIndex = getParameterBinders().size() + 1;
-			super.appendSql( "$" + paramIndex );
-		}
-		else {
-			super.appendSql( value );
-		}
-	}
-
-	@Override
 	public String getSql() {
 		// Not all queries goes through the appendSql
 		String sql = super.getSql();
