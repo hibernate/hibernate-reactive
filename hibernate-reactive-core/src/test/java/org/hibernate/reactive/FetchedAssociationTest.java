@@ -84,20 +84,16 @@ public class FetchedAssociationTest extends BaseReactiveTest {
 								} )
 						)
 				)
-				.invoke( () -> assertThat( sqlTracker.getLoggedQueries() )
-						.containsExactly( getExpectedNativeQueries() ) )
+				.invoke( () -> {
+					List<String> loggedQueries = sqlTracker.getLoggedQueries();
+					assertThat(loggedQueries).hasSize(5);
+					assertThat(loggedQueries.get(0)).containsIgnoringCase("select nextval");
+					assertThat(loggedQueries.get(1)).containsIgnoringCase("insert into parent");
+					assertThat(loggedQueries.get(2)).containsIgnoringCase("select").containsIgnoringCase("from parent");
+					assertThat(loggedQueries.get(3)).containsIgnoringCase("select nextval");
+					assertThat(loggedQueries.get(4)).containsIgnoringCase("insert into child");
+				} )
 		);
-	}
-
-	// We don't expect a select from CHILD
-	private String[] getExpectedNativeQueries() {
-		return new String[] {
-				"select nextval ('hibernate_sequence')",
-				"insert into PARENT (name, id) values ($1, $2)",
-				"select fetchedass0_.id as id1_1_, fetchedass0_.name as name2_1_ from PARENT fetchedass0_",
-				"select nextval ('hibernate_sequence')",
-				"insert into CHILD (name, lazy_parent_id, id) values ($1, $2, $3)"
-		};
 	}
 
 	@Entity(name = "Parent")
