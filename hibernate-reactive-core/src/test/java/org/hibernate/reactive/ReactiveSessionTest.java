@@ -853,6 +853,77 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		} ) );
 	}
 
+	@Test
+	public void testCreateSelectionQueryMultiple(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig(10, "Aloi");
+		test(
+				context,
+				openSession()
+						.thenCompose(s -> s
+								.withTransaction(t -> s.persist(new GuineaPig(10, "Aloi"), new GuineaPig(11, "Bloi")))
+								.thenCompose(v -> openSession())
+								.thenCompose(session -> session.createSelectionQuery("from GuineaPig", GuineaPig.class)
+										.getResultList()
+										.thenAccept(resultList -> {
+											context.assertTrue(resultList.size() == 2);
+											assertThatPigsAreEqual(context, resultList.get(0), expectedPig);
+										})
+								)
+								.thenCompose(v -> openSession())
+								.thenCompose(session -> session.createSelectionQuery("from GuineaPig")
+										.getResultList()
+										.thenAccept(resultList -> {
+											context.assertTrue(resultList.size() == 2);
+											assertThatPigsAreEqual(context, ((GuineaPig)resultList.get(0)), expectedPig);
+										})
+								)
+						)
+		);
+	}
+
+	@Test
+	public void testCreateSelectionQuerySingle(TestContext context) {
+		final GuineaPig expectedPig = new GuineaPig(10, "Aloi");
+		test(
+				context,
+				openSession()
+						.thenCompose(s -> s
+								.withTransaction(t -> s.persist(new GuineaPig(10, "Aloi")))
+								.thenCompose(v -> openSession())
+								.thenCompose(session -> session.createSelectionQuery("from GuineaPig", GuineaPig.class)
+										.getSingleResult()
+										.thenAccept(actualPig -> assertThatPigsAreEqual(context, expectedPig, actualPig)
+										)
+								)
+								.thenCompose(v -> openSession())
+								.thenCompose(session -> session.createSelectionQuery("from GuineaPig")
+										.getSingleResult()
+										.thenAccept(actualPig -> assertThatPigsAreEqual(context, expectedPig, (GuineaPig)actualPig)
+										)
+								)
+						)
+		);
+	}
+
+	@Test
+	public void testCreateSelectionQueryNull(TestContext context) {
+		test(
+				context,
+				openSession()
+						.thenCompose(session -> session.createSelectionQuery("from GuineaPig", GuineaPig.class)
+								.getSingleResultOrNull()
+								.thenAccept(actualPig -> context.assertNull(actualPig)
+								)
+						)
+						.thenCompose(v -> openSession())
+						.thenCompose(session -> session.createSelectionQuery("from GuineaPig")
+								.getSingleResultOrNull()
+								.thenAccept(actualPig -> context.assertNull(actualPig)
+								)
+						)
+		);
+	}
+
 	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
 		context.assertNotNull( actual );
 		context.assertEquals( expected.getId(), actual.getId() );

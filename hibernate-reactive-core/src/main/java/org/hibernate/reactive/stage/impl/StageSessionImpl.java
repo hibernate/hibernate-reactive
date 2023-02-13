@@ -108,6 +108,11 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public <R> Stage.SelectionQuery<R> createSelectionQuery(String queryString, Class<R> resultType ) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString, resultType ) );
+	}
+
+	@Override
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey) {
 		return delegate.reactiveFind( entityClass, primaryKey, null, null );
 	}
