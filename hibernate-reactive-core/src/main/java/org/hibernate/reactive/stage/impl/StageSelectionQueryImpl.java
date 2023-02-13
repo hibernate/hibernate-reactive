@@ -46,18 +46,6 @@ public class StageSelectionQueryImpl<T> implements Stage.SelectionQuery<T> {
 		return delegate.getReactiveResultList();
 	}
 
-	public CompletionStage<List<T>> reactiveList() {
-		return delegate.reactiveList();
-	}
-
-	public CompletionStage<T> getReactiveSingleResult() {
-		return delegate.getReactiveSingleResult();
-	}
-
-	public CompletionStage<T> getReactiveSingleResultOrNull() {
-		return delegate.getReactiveSingleResultOrNull();
-	}
-
 	public CompletionStage<T> reactiveUnique() {
 		return delegate.reactiveUnique();
 	}
@@ -68,17 +56,17 @@ public class StageSelectionQueryImpl<T> implements Stage.SelectionQuery<T> {
 
 	@Override
 	public CompletionStage<List<T>> list() {
-		return null;
+		return delegate.reactiveList();
 	}
 
 	@Override
 	public CompletionStage<T> getSingleResult() {
-		return null;
+		return delegate.getReactiveSingleResult();
 	}
 
 	@Override
 	public CompletionStage<T> getSingleResultOrNull() {
-		return null;
+		return delegate.getReactiveSingleResultOrNull();
 	}
 
 	@Override
