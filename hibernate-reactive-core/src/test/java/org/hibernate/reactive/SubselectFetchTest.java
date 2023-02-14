@@ -14,6 +14,7 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
+import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -42,6 +43,13 @@ public class SubselectFetchTest extends BaseReactiveTest {
 		return List.of( Element.class, Node.class );
 	}
 
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.createQuery( "delete from Element" ).executeUpdate()
+						.thenCompose( v -> s.createQuery( "delete from Node" ).executeUpdate() ) ) );
+	}
+
 	@Test
 	public void testQuery(TestContext context) {
 		Node basik = new Node( "Child" );
@@ -52,10 +60,8 @@ public class SubselectFetchTest extends BaseReactiveTest {
 		basik.parent.elements.add( new Element( basik.parent ) );
 		basik.parent.elements.add( new Element( basik.parent ) );
 
-		test(
-				context,
-				openSession()
-						.thenCompose( s -> s.persist( basik ).thenCompose( v -> s.flush() ) )
+				test( context, getSessionFactory()
+						.withTransaction( s -> s.persist( basik ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.createQuery( "from Node n order by id", Node.class )
 								.getResultList()
@@ -63,12 +69,12 @@ public class SubselectFetchTest extends BaseReactiveTest {
 									context.assertEquals( list.size(), 2 );
 									Node n1 = list.get( 0 );
 									Node n2 = list.get( 1 );
-									context.assertFalse( Hibernate.isInitialized( n1.elements ) );
-									context.assertFalse( Hibernate.isInitialized( n2.elements ) );
-									return s.fetch( n1.elements ).thenAccept( elements -> {
+									context.assertFalse( Hibernate.isInitialized( n1.getElements() ) );
+									context.assertFalse( Hibernate.isInitialized( n2.getElements() ) );
+									return s.fetch( n1.getElements() ).thenAccept( elements -> {
 										context.assertTrue( Hibernate.isInitialized( elements ) );
-										context.assertTrue( Hibernate.isInitialized( n1.elements ) );
-										context.assertTrue( Hibernate.isInitialized( n2.elements ) );
+										context.assertTrue( Hibernate.isInitialized( n1.getElements() ) );
+										context.assertTrue( Hibernate.isInitialized( n2.getElements() ) );
 									} );
 								} )
 						)
@@ -90,6 +96,22 @@ public class SubselectFetchTest extends BaseReactiveTest {
 		}
 
 		Element() {
+		}
+
+		public Integer getId() {
+			return id;
+		}
+
+		public void setId(Integer id) {
+			this.id = id;
+		}
+
+		public Node getNode() {
+			return node;
+		}
+
+		public void setNode(Node node) {
+			this.node = node;
 		}
 	}
 
@@ -208,6 +230,86 @@ public class SubselectFetchTest extends BaseReactiveTest {
 		@Override
 		public int hashCode() {
 			return Objects.hash( string );
+		}
+
+		public Integer getVersion() {
+			return version;
+		}
+
+		public void setVersion(Integer version) {
+			this.version = version;
+		}
+
+		public Node getParent() {
+			return parent;
+		}
+
+		public void setParent(Node parent) {
+			this.parent = parent;
+		}
+
+		public List<Element> getElements() {
+			return elements;
+		}
+
+		public void setElements(List<Element> elements) {
+			this.elements = elements;
+		}
+
+		public boolean isPrePersisted() {
+			return prePersisted;
+		}
+
+		public void setPrePersisted(boolean prePersisted) {
+			this.prePersisted = prePersisted;
+		}
+
+		public boolean isPostPersisted() {
+			return postPersisted;
+		}
+
+		public void setPostPersisted(boolean postPersisted) {
+			this.postPersisted = postPersisted;
+		}
+
+		public boolean isPreUpdated() {
+			return preUpdated;
+		}
+
+		public void setPreUpdated(boolean preUpdated) {
+			this.preUpdated = preUpdated;
+		}
+
+		public boolean isPostUpdated() {
+			return postUpdated;
+		}
+
+		public void setPostUpdated(boolean postUpdated) {
+			this.postUpdated = postUpdated;
+		}
+
+		public boolean isPostRemoved() {
+			return postRemoved;
+		}
+
+		public void setPostRemoved(boolean postRemoved) {
+			this.postRemoved = postRemoved;
+		}
+
+		public boolean isPreRemoved() {
+			return preRemoved;
+		}
+
+		public void setPreRemoved(boolean preRemoved) {
+			this.preRemoved = preRemoved;
+		}
+
+		public boolean isLoaded() {
+			return loaded;
+		}
+
+		public void setLoaded(boolean loaded) {
+			this.loaded = loaded;
 		}
 	}
 }
