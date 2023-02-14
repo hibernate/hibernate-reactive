@@ -52,7 +52,9 @@ public class ReactiveGeneratorWrapper<T>
 		if ( reactiveGenerator instanceof IdentifierGenerator ) {
 			( (IdentifierGenerator) reactiveGenerator ).initialize( context );
 		}
-		generator.initialize( context );
+		if (generator != null) {
+			generator.initialize( context );
+		}
 	}
 
 	@Override

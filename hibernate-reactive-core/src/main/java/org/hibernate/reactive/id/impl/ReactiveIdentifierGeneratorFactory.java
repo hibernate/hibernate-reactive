@@ -9,6 +9,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.Properties;
 
 import org.hibernate.MappingException;
+import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
+import org.hibernate.boot.registry.classloading.spi.ClassLoadingException;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.generator.BeforeExecutionGenerator;
@@ -44,14 +46,20 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 
 	@Override
 	public Generator createIdentifierGenerator(String strategy, Type type, Properties config) {
-		final Generator generator = super.createIdentifierGenerator( strategy, type, config );
+		Object generator;
+		try {
+			generator = super.createIdentifierGenerator(strategy, type, config);
+		} catch (MappingException ignored) {
+			generator = fallbackCreateIdentifierGenerator( strategy, type, config );
+		}
+
 		//FIXME: Not sure why we need all these instanceof
 		if ( generator instanceof BeforeExecutionGenerator ) {
-			return augmentWithReactiveGenerator( generator, type, config );
+			return augmentWithReactiveGenerator( (BeforeExecutionGenerator)generator, type, config );
 		}
 
 		if ( generator instanceof OnExecutionGenerator ) {
-			return augmentWithReactiveGenerator( generator, type, config );
+			return augmentWithReactiveGenerator( (OnExecutionGenerator)generator, type, config );
 		}
 
 		if ( generator instanceof ReactiveIdentifierGenerator ) {
@@ -60,6 +68,56 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 
 		final String entityName = config.getProperty( IdentifierGenerator.ENTITY_NAME );
 		throw new MappingException( String.format( "Not an id generator [entity-name=%s]", entityName ) );
+	}
+
+	//TODO this was copied from StandardIdentifierGeneratorFactory#createIdentifierGenerator
+	// in order to avoid the !Generator.class.isAssignableFrom( clazz ) check in getIdentifierGeneratorClass
+	// This is suboptimal not only because we are duplicating code, but because this piece cannot access
+	// the private fields of the super method
+	private Object fallbackCreateIdentifierGenerator(String strategy, Type type, Properties parameters) {
+		try {
+			final Class<?> clazz = fallbackGetIdentifierGeneratorClass( strategy );
+			Object result = clazz.getConstructor().newInstance();
+
+			if ( result instanceof Configurable ) {
+				( (Configurable) result ).configure( type, parameters, serviceRegistry );
+			}
+			return result;
+		}
+		catch ( Exception e ) {
+			final String entityName = parameters.getProperty( IdentifierGenerator.ENTITY_NAME );
+			throw new MappingException( String.format( "Could not instantiate id generator [entity-name=%s]", entityName ), e );
+		}
+	}
+
+	@Override
+	public Class<? extends Generator> getIdentifierGeneratorClass(String strategy) {
+		try {
+			return super.getIdentifierGeneratorClass(strategy);
+		} catch (MappingException ignored) {
+			return fallbackGetIdentifierGeneratorClass(strategy);
+		}
+	}
+
+	//TODO this was copied from StandardIdentifierGeneratorFactory#createIdentifierGenerator
+	// in order to avoid the !Generator.class.isAssignableFrom( clazz ) check in getIdentifierGeneratorClass
+	// This is suboptimal not only because we are duplicating code, but because this piece cannot access
+	// the private fields of the super method
+	public Class<? extends Generator> fallbackGetIdentifierGeneratorClass(String strategy) {
+		if ( "hilo".equals( strategy ) ) {
+			throw new UnsupportedOperationException( "Support for 'hilo' generator has been removed" );
+		}
+		final String resolvedStrategy = "native".equals( strategy )
+				? getDialect().getNativeIdentifierGeneratorStrategy()
+				: strategy;
+
+		try {
+			return serviceRegistry.getService( ClassLoaderService.class )
+					.classForName( resolvedStrategy );
+		}
+		catch ( ClassLoadingException e ) {
+			throw new MappingException( String.format( "Could not interpret id generator strategy [%s]", strategy ) );
+		}
 	}
 
 	public Generator augmentWithReactiveGenerator(Generator generator, Type type, Properties params) {
