@@ -149,15 +149,8 @@ public class UTCTest extends BaseReactiveTest {
 				context,
 				"offsetTime",
 				thing::getOffsetTime,
-				entity -> {
-					// UTC is what we have set as the default with AvailableSettings.JDBC_TIME_ZONE
-					// this first check fails due to changes in ORM org.hibernate.type.descriptor.java.OffsetTimeJavaType.unwrap(...)
-					// TODO: investigate whether this first check makes sense
-					// context.assertEquals( ZoneOffset.UTC, entity.offsetTime.getOffset() );
-					context.assertEquals( thing.offsetTime, entity.offsetTime.withOffsetSameInstant( ZoneOffset.ofHours( 7 ) )
-					);
-				}
-		);
+				// Same behavior as ORM
+				entity -> context.assertEquals( thing.offsetTime, entity.offsetTime.withOffsetSameInstant( ZoneOffset.ofHours( 7 ) ) ) );
 	}
 
 	@Test
