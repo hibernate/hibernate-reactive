@@ -9,13 +9,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
-import jakarta.persistence.metamodel.EntityType;
 
 import org.hibernate.LockMode;
 import org.hibernate.reactive.common.AffectedEntities;
@@ -24,6 +17,15 @@ import org.hibernate.reactive.stage.Stage;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import jakarta.persistence.metamodel.EntityType;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReactiveSessionTest extends BaseReactiveTest {
 
@@ -154,13 +156,11 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				.thenCompose( v -> getSessionFactory()
 						.withTransaction( (session, tx) -> session
 								.find( GuineaPig.class, expectedPig.getId() )
-								.thenCompose( pig -> session.refresh( pig, LockMode.PESSIMISTIC_WRITE )
+								.thenCompose( pig -> session
+										.refresh( pig, LockMode.PESSIMISTIC_WRITE )
 										.thenAccept( vv -> {
 											assertThatPigsAreEqual( context, expectedPig, pig );
-											context.assertEquals(
-													session.getLockMode( pig ),
-													LockMode.PESSIMISTIC_WRITE
-											);
+											context.assertEquals( session.getLockMode( pig ), LockMode.PESSIMISTIC_WRITE );
 										} )
 								)
 						) )
@@ -544,23 +544,21 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	@Test
 	public void reactiveQueryWithAliasedLock(TestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
-		test(
-				context,
-				populateDB()
-						.thenCompose(
-								v -> getSessionFactory().withTransaction(
-										(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class )
-												.setLockMode( "pig", LockMode.PESSIMISTIC_WRITE )
-												.getSingleResult()
-												.thenAccept( actualPig -> {
-													assertThatPigsAreEqual( context, expectedPig, actualPig );
-													context.assertEquals(
-															session.getLockMode( actualPig ),
-															LockMode.PESSIMISTIC_WRITE
-													);
-												} )
-								)
+		test( context, populateDB()
+				.thenCompose(
+						v -> getSessionFactory().withTransaction(
+								(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class )
+										.setLockMode( "pig", LockMode.PESSIMISTIC_WRITE )
+										.getSingleResult()
+										.thenAccept( actualPig -> {
+											assertThatPigsAreEqual( context, expectedPig, actualPig );
+											context.assertEquals(
+													session.getLockMode( actualPig ),
+													LockMode.PESSIMISTIC_WRITE
+											);
+										} )
 						)
+				)
 		);
 	}
 
@@ -740,14 +738,12 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 							assertThatPigsAreEqual( context, pig, p );
 							p.name = "X";
 						} )
-						.thenCompose( v -> s.createNativeQuery( "update pig set name='Y' where name='X'", affectsPigs )
-								.executeUpdate() )
+						.thenCompose( v -> s.createNativeQuery( "update pig set name='Y' where name='X'", affectsPigs ).executeUpdate() )
 						.thenAccept( rows -> context.assertEquals( 1, rows ) )
 						.thenCompose( v -> s.refresh( pig ) )
 						.thenAccept( v -> context.assertEquals( pig.name, "Y" ) )
 						.thenAccept( v -> pig.name = "Z" )
-						.thenCompose( v -> s.createNativeQuery( "delete from pig where name='Z'", affectsPigs )
-								.executeUpdate() )
+						.thenCompose( v -> s.createNativeQuery( "delete from pig where name='Z'", affectsPigs ).executeUpdate() )
 						.thenAccept( rows -> context.assertEquals( 1, rows ) )
 						.thenCompose( v -> s.createNativeQuery( "select id from pig", affectsPigs ).getResultList() )
 						.thenAccept( list -> context.assertTrue( list.isEmpty() ) ) )
@@ -855,72 +851,52 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 
 	@Test
 	public void testCreateSelectionQueryMultiple(TestContext context) {
-		final GuineaPig expectedPig = new GuineaPig(10, "Aloi");
-		test(
-				context,
-				openSession()
-						.thenCompose(s -> s
-								.withTransaction(t -> s.persist(new GuineaPig(10, "Aloi"), new GuineaPig(11, "Bloi")))
-								.thenCompose(v -> openSession())
-								.thenCompose(session -> session.createSelectionQuery("from GuineaPig", GuineaPig.class)
-										.getResultList()
-										.thenAccept(resultList -> {
-											context.assertTrue(resultList.size() == 2);
-											assertThatPigsAreEqual(context, resultList.get(0), expectedPig);
-										})
-								)
-								.thenCompose(v -> openSession())
-								.thenCompose(session -> session.createSelectionQuery("from GuineaPig")
-										.getResultList()
-										.thenAccept(resultList -> {
-											context.assertTrue(resultList.size() == 2);
-											assertThatPigsAreEqual(context, ((GuineaPig)resultList.get(0)), expectedPig);
-										})
-								)
+		final GuineaPig aloiPig = new GuineaPig( 10, "Aloi" );
+		final GuineaPig bloiPig = new GuineaPig( 11, "Bloi" );
+
+		test( context, openSession()
+				.thenCompose( s -> s.withTransaction( t -> s.persist( aloiPig, bloiPig ) )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
+								.getResultList()
+								.thenAccept( resultList -> assertThat( resultList ).containsExactlyInAnyOrder( aloiPig, bloiPig ) )
 						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session
+								.createSelectionQuery( "from GuineaPig" )
+								.getResultList()
+								.thenAccept( resultList -> assertThat( resultList ).containsExactlyInAnyOrder( aloiPig, bloiPig ) ) ) )
 		);
 	}
 
 	@Test
 	public void testCreateSelectionQuerySingle(TestContext context) {
-		final GuineaPig expectedPig = new GuineaPig(10, "Aloi");
-		test(
-				context,
-				openSession()
-						.thenCompose(s -> s
-								.withTransaction(t -> s.persist(new GuineaPig(10, "Aloi")))
-								.thenCompose(v -> openSession())
-								.thenCompose(session -> session.createSelectionQuery("from GuineaPig", GuineaPig.class)
-										.getSingleResult()
-										.thenAccept(actualPig -> assertThatPigsAreEqual(context, expectedPig, actualPig)
-										)
-								)
-								.thenCompose(v -> openSession())
-								.thenCompose(session -> session.createSelectionQuery("from GuineaPig")
-										.getSingleResult()
-										.thenAccept(actualPig -> assertThatPigsAreEqual(context, expectedPig, (GuineaPig)actualPig)
-										)
-								)
-						)
+		final GuineaPig expectedPig = new GuineaPig( 10, "Aloi" );
+		test( context, openSession()
+				.thenCompose( s -> s
+						.withTransaction( t -> s.persist( new GuineaPig( 10, "Aloi" ) ) )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
+								.getSingleResult()
+								.thenAccept( actualPig -> assertThatPigsAreEqual( context, expectedPig, actualPig ) ) )
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createSelectionQuery( "from GuineaPig" )
+								.getSingleResult()
+								.thenAccept( actualPig -> assertThatPigsAreEqual( context, expectedPig, (GuineaPig) actualPig ) ) )
+				)
 		);
 	}
 
 	@Test
 	public void testCreateSelectionQueryNull(TestContext context) {
-		test(
-				context,
-				openSession()
-						.thenCompose(session -> session.createSelectionQuery("from GuineaPig", GuineaPig.class)
-								.getSingleResultOrNull()
-								.thenAccept(actualPig -> context.assertNull(actualPig)
-								)
-						)
-						.thenCompose(v -> openSession())
-						.thenCompose(session -> session.createSelectionQuery("from GuineaPig")
-								.getSingleResultOrNull()
-								.thenAccept(actualPig -> context.assertNull(actualPig)
-								)
-						)
+		test( context, openSession()
+				.thenCompose( session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
+						.getSingleResultOrNull()
+						.thenAccept( context::assertNull ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.createSelectionQuery( "from GuineaPig" )
+						.getSingleResultOrNull()
+						.thenAccept( context::assertNull ) )
 		);
 	}
 
