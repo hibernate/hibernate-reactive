@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.hibernate.HibernateException;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import org.junit.Test;
@@ -18,7 +17,6 @@ import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.PersistenceException;
 
 public class MutinyExceptionsTest extends BaseReactiveTest {
 
@@ -27,15 +25,8 @@ public class MutinyExceptionsTest extends BaseReactiveTest {
 		return List.of( Person.class );
 	}
 
-	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( "native_exception_handling_51_compliance", "false" );
-		return configuration;
-	}
-
 	Class<?> getExpectedException() {
-		return PersistenceException.class;
+		return HibernateException.class;
 	}
 
 	@Test
@@ -73,24 +64,6 @@ public class MutinyExceptionsTest extends BaseReactiveTest {
 		@Override
 		public String toString() {
 			return name + ", " + uniqueName;
-		}
-	}
-
-	// TODO: [ORM-6] Check if this property still makes sense
-	// I don't think we need to support this case but at the moment it would require more work to
-	// disable the behaviour.
-	public static class Native51ExceptionHandlingTest extends MutinyExceptionsTest {
-
-		@Override
-		Class<?> getExpectedException() {
-			return HibernateException.class;
-		}
-
-		@Override
-		protected Configuration constructConfiguration() {
-			Configuration configuration = super.constructConfiguration();
-			configuration.setProperty( "native_exception_handling_51_compliance", "true" );
-			return configuration;
 		}
 	}
 }
