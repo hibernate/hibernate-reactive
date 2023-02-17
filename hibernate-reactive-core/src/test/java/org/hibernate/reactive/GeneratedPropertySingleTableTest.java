@@ -12,7 +12,6 @@ import java.util.List;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.GenerationTime;
-import org.hibernate.annotations.GeneratorType;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
@@ -160,10 +159,10 @@ public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 		@ColumnDefault("current_timestamp")
 		public Date createdAt;
 
-		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithMutiny.class, when = GenerationTime.INSERT)
+		@CurrentUser.LoggedUserMutinyInsert
 		public String createdBy;
 
-		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithStage.class, when = GenerationTime.ALWAYS)
+		@CurrentUser.LoggedUserStageAlways
 		public String updatedBy;
 
 		@Generated(GenerationTime.NEVER)
@@ -199,10 +198,10 @@ public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 		@ColumnDefault("current_timestamp")
 		public Date createdAt;
 
-		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithMutiny.class, when = GenerationTime.INSERT)
+		@CurrentUser.LoggedUserMutinyInsert
 		public String createdBy;
 
-		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithStage.class, when = GenerationTime.ALWAYS)
+		@CurrentUser.LoggedUserStageAlways
 		public String updatedBy;
 
 		@Generated(GenerationTime.NEVER)

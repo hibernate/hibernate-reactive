@@ -12,7 +12,6 @@ import java.util.List;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.GenerationTime;
-import org.hibernate.annotations.GeneratorType;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
@@ -156,7 +155,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		@Column(columnDefinition = "varchar(600) generated always as (firstname || ' ' || lastname) stored")
 		public String fullName;
 
-		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithStage.class, when = GenerationTime.INSERT)
+		@CurrentUser.LoggedUserStageInsert
 		public String createdBy;
 
 		public GeneratedRegularParent() {
@@ -176,7 +175,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		@ColumnDefault("current_timestamp")
 		public Date createdAt;
 
-		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithMutiny.class, when = GenerationTime.ALWAYS)
+		@CurrentUser.LoggedUserMutinyAlways
 		public String updatedBy;
 
 		@Generated(GenerationTime.NEVER)
@@ -205,7 +204,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		@Column(columnDefinition = "varchar(600) generated always as (firstname || ' ' || lastname) stored")
 		public String fullName;
 
-		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithMutiny.class, when = GenerationTime.INSERT)
+		@CurrentUser.LoggedUserMutinyInsert
 		public String createdBy;
 
 		public GeneratedWithIdentityParent() {
@@ -225,7 +224,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		@ColumnDefault("current_timestamp")
 		public Date createdAt;
 
-		@GeneratorType(type = CurrentUser.LoggedUserGeneratorWithStage.class, when = GenerationTime.ALWAYS)
+		@CurrentUser.LoggedUserStageAlways
 		public String updatedBy;
 
 		@Generated(GenerationTime.NEVER)

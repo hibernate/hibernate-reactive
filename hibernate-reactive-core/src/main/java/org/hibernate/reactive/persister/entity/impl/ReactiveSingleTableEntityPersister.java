@@ -142,7 +142,8 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	 */
 	@Override
 	public CompletionStage<Void> reactiveProcessInsertGenerated(Object id, Object entity, Object[] state, SharedSessionContractImplementor session) {
-		return reactiveDelegate.processInsertGeneratedProperties( id, entity, state, session, getEntityName() );
+		return reactiveDelegate.processInsertGeneratedProperties( id, entity, state,
+				getInsertGeneratedValuesProcessor(), session, getEntityName() );
 	}
 
 	/**
@@ -152,7 +153,8 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	 */
 	@Override
 	public CompletionStage<Void> reactiveProcessUpdateGenerated(Object id, Object entity, Object[] state, SharedSessionContractImplementor session) {
-		return reactiveDelegate.processUpdateGeneratedProperties( id, entity, state, session, getEntityName() );
+		return reactiveDelegate.processUpdateGeneratedProperties( id, entity, state,
+				getUpdateGeneratedValuesProcessor(), session, getEntityName() );
 
 	}
 
