@@ -71,8 +71,7 @@ public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard
 					fkDescriptor.getKeyPart().decompose(
 							key,
 							(jdbcValue, jdbcValueMapping) -> jdbcValueBindings
-									.bindValue( jdbcValue, jdbcValueMapping, ParameterUsage.RESTRICT
-							),
+									.bindValue( jdbcValue, jdbcValueMapping, ParameterUsage.RESTRICT, session ),
 							session
 					);
 

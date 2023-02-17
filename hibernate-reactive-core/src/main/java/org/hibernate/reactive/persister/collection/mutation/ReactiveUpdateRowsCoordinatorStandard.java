@@ -124,7 +124,8 @@ public class ReactiveUpdateRowsCoordinatorStandard extends UpdateRowsCoordinator
 				.applyValues( collection, key, entry, entryPosition, session, (jdbcValue, jdbcValueMapping, usage) -> mutationExecutor.getJdbcValueBindings().bindValue(
 						jdbcValue,
 						jdbcValueMapping,
-						usage
+						usage,
+						session
 				)
 		);
 
@@ -137,7 +138,8 @@ public class ReactiveUpdateRowsCoordinatorStandard extends UpdateRowsCoordinator
 				(jdbcValue, jdbcValueMapping) -> mutationExecutor.getJdbcValueBindings().bindValue(
 						jdbcValue,
 						jdbcValueMapping,
-						ParameterUsage.RESTRICT
+						ParameterUsage.RESTRICT,
+						session
 				)
 		);
 

@@ -6,14 +6,13 @@
 package org.hibernate.reactive.engine.jdbc.mutation.internal;
 
 import org.hibernate.engine.jdbc.mutation.internal.MutationExecutorSingleSelfExecuting;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.sql.model.SelfExecutingUpdateOperation;
 
 public class ReactiveMutationExecutorSingleSelfExecuting extends MutationExecutorSingleSelfExecuting
 		implements ReactiveMutationExecutor {
 
-	public ReactiveMutationExecutorSingleSelfExecuting(SelfExecutingUpdateOperation operation, SharedSessionContractImplementor session) {
-		super( operation, session );
+	public ReactiveMutationExecutorSingleSelfExecuting(SelfExecutingUpdateOperation operation) {
+		super( operation );
 	}
 }

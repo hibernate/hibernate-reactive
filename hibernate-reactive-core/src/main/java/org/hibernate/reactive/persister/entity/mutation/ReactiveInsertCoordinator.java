@@ -114,7 +114,8 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 									jdbcValue,
 									entityPersister().physicalTableNameForMutation( selectableMapping ),
 									selectableMapping.getSelectionExpression(),
-									ParameterUsage.SET
+									ParameterUsage.SET,
+									session
 							);
 						}
 					},
@@ -136,7 +137,8 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 						jdbcValue,
 						tableName,
 						columnMapping.getColumnName(),
-						ParameterUsage.SET
+						ParameterUsage.SET,
+						session
 				),
 				session
 		);

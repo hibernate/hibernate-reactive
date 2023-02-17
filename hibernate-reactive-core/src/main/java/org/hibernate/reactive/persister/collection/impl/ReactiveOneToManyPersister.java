@@ -208,10 +208,10 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 					return loop( entries, (entry, integer) -> {
 						if ( entry != null && collection.entryExists( entry, nextIndex[0] ) ) {
 							updateRowValues.applyValues( collection, key, entry, nextIndex[0], session, (jdbcValue, jdbcValueMapping, usage) -> jdbcValueBindings
-									.bindValue( jdbcValue, jdbcValueMapping, usage ) );
+									.bindValue( jdbcValue, jdbcValueMapping, usage, session ) );
 
 							updateRowRestrictions.applyRestrictions( collection, key, entry, nextIndex[0], session, (jdbcValue, jdbcValueMapping) -> jdbcValueBindings
-									.bindValue( jdbcValue, jdbcValueMapping, ParameterUsage.RESTRICT ) );
+									.bindValue( jdbcValue, jdbcValueMapping, ParameterUsage.RESTRICT, session ) );
 
 							return mutationExecutor
 									.executeReactive( collection, null, null, null, session )
