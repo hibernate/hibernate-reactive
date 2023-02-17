@@ -77,7 +77,7 @@ public class ReactiveStandardMutationExecutorService implements MutationExecutor
 		if ( numberOfOperations == 1 ) {
 			final MutationOperation singleOperation = operationGroup.getSingleOperation();
 			if ( singleOperation instanceof SelfExecutingUpdateOperation ) {
-				return new ReactiveMutationExecutorSingleSelfExecuting( (SelfExecutingUpdateOperation) singleOperation, session );
+				return new ReactiveMutationExecutorSingleSelfExecuting( (SelfExecutingUpdateOperation) singleOperation );
 			}
 
 			final PreparableMutationOperation jdbcOperation = (PreparableMutationOperation) singleOperation;

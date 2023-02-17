@@ -41,7 +41,7 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 
 		Object[] params = PreparedStatementAdaptor.bind( statement -> {
 			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor( insertStatementDetails, statement, session.getJdbcServices() );
-			jdbcValueBindings.beforeStatement( details );
+			jdbcValueBindings.beforeStatement( details, session );
 		} );
 
 		ReactiveConnection reactiveConnection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();

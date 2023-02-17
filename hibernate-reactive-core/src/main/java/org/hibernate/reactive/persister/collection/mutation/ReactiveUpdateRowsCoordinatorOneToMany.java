@@ -104,7 +104,8 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 											  (jdbcValue, jdbcValueMapping, usage) -> jdbcValueBindings.bindValue(
 													  jdbcValue,
 													  jdbcValueMapping,
-													  usage
+													  usage,
+													  session
 											  )
 								);
 
@@ -153,7 +154,8 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 													(jdbcValue, jdbcValueMapping) -> jdbcValueBindings.bindValue(
 															jdbcValue,
 															jdbcValueMapping,
-															ParameterUsage.RESTRICT
+															ParameterUsage.RESTRICT,
+															session
 													)
 								);
 

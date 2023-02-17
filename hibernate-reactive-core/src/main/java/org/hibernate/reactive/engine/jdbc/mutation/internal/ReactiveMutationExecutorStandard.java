@@ -99,7 +99,7 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 
 		// If we get here the statement is needed - make sure it is resolved
 		session.getJdbcServices().getSqlStatementLogger().logStatement( statementDetails.getSqlString() );
-		valueBindings.beforeStatement( statementDetails );
+		valueBindings.beforeStatement( statementDetails, session );
 
 		return connection( session )
 				.update( statementDetails.getSqlString() )
@@ -108,7 +108,7 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 					if ( statementDetails.getStatement() != null ) {
 						statementDetails.releaseStatement( session );
 					}
-					valueBindings.afterStatement( tableDetails );
+					valueBindings.afterStatement( tableDetails, session );
 				} );
 	}
 
