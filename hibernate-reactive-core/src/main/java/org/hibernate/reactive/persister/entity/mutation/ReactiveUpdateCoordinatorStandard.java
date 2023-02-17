@@ -8,10 +8,14 @@ package org.hibernate.reactive.persister.entity.mutation;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.hibernate.engine.jdbc.mutation.ParameterUsage;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
+import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.generator.BeforeExecutionGenerator;
+import org.hibernate.generator.Generator;
 import org.hibernate.metamodel.mapping.EntityVersionMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
@@ -19,10 +23,16 @@ import org.hibernate.persister.entity.mutation.AttributeAnalysis;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.persister.entity.mutation.UpdateCoordinatorStandard;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.model.MutationOperationGroup;
+import org.hibernate.tuple.entity.EntityMetamodel;
 
 import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.identifiedResultsCheck;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.generator.EventType.INSERT;
+import static org.hibernate.internal.util.collections.ArrayHelper.EMPTY_INT_ARRAY;
+import static org.hibernate.internal.util.collections.ArrayHelper.trim;
+import static org.hibernate.reactive.persister.entity.mutation.GeneratorValueUtil.generateValue;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard implements ReactiveUpdateCoordinator {
@@ -51,31 +61,137 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			Object[] values,
 			Object oldVersion,
 			Object[] incomingOldValues,
-			int[] dirtyAttributeIndexes,
+			int[] incomingDirtyAttributeIndexes,
 			boolean hasDirtyCollection,
 			SharedSessionContractImplementor session) {
-		stage = null;
-		try {
-			super.coordinateUpdate(
+		final EntityVersionMapping versionMapping = entityPersister().getVersionMapping();
+		if ( versionMapping != null ) {
+			final boolean isForcedVersionIncrement = handlePotentialImplicitForcedVersionIncrement(
 					entity,
 					id,
-					rowId,
 					values,
 					oldVersion,
-					incomingOldValues,
-					dirtyAttributeIndexes,
-					hasDirtyCollection,
-					session
+					incomingDirtyAttributeIndexes,
+					session,
+					versionMapping
 			);
-			return stage != null ? stage : voidFuture();
-		}
-		catch (Throwable t) {
-			if ( stage == null ) {
-				return failedFuture( t );
+			if ( isForcedVersionIncrement ) {
+				return voidFuture();
 			}
-			stage.toCompletableFuture().completeExceptionally( t );
-			return stage;
 		}
+
+		final EntityEntry entry = session.getPersistenceContextInternal().getEntry( entity );
+
+		// Ensure that an immutable or non-modifiable entity is not being updated unless it is
+		// in the process of being deleted.
+		if ( entry == null && !entityPersister().isMutable() ) {
+			return CompletionStages.failedFuture(new IllegalStateException( "Updating immutable entity that is not in session yet" ));
+		}
+
+		CompletionStage<Void> s = voidFuture();
+		return s.thenCompose(v -> reactivePreUpdateInMemoryValueGeneration(entity, values, session))
+				.thenCompose(preUpdateGeneratedAttributeIndexes -> {
+					final int[] dirtyAttributeIndexes = dirtyAttributeIndexes( incomingDirtyAttributeIndexes, preUpdateGeneratedAttributeIndexes );
+
+					final boolean[] attributeUpdateability;
+					boolean forceDynamicUpdate;
+
+					if ( entityPersister().getEntityMetamodel().isDynamicUpdate() && dirtyAttributeIndexes != null ) {
+						attributeUpdateability = getPropertiesToUpdate( dirtyAttributeIndexes, hasDirtyCollection );
+						forceDynamicUpdate = true;
+					}
+					else if ( !isModifiableEntity( entry ) ) {
+						// either the entity is mapped as immutable or has been marked as read-only within the Session
+						attributeUpdateability = getPropertiesToUpdate(
+								dirtyAttributeIndexes == null ? EMPTY_INT_ARRAY : dirtyAttributeIndexes,
+								hasDirtyCollection
+						);
+						forceDynamicUpdate = true;
+					}
+					else if ( dirtyAttributeIndexes != null
+							&& entityPersister().hasUninitializedLazyProperties( entity )
+							&& entityPersister().hasLazyDirtyFields( dirtyAttributeIndexes ) ) {
+						// we have an entity with dirty lazy attributes.  we need to use dynamic
+						// delete and add the dirty, lazy attributes plus the non-lazy attributes
+						forceDynamicUpdate = true;
+						attributeUpdateability = getPropertiesToUpdate( dirtyAttributeIndexes, hasDirtyCollection );
+
+						final boolean[] propertyLaziness = entityPersister().getPropertyLaziness();
+						for ( int i = 0; i < propertyLaziness.length; i++ ) {
+							// add also all the non-lazy properties because dynamic update is false
+							if ( !propertyLaziness[i] ) {
+								attributeUpdateability[i] = true;
+							}
+						}
+					}
+					else {
+						attributeUpdateability = getPropertyUpdateability( entity );
+						forceDynamicUpdate = entityPersister().hasUninitializedLazyProperties( entity );
+					}
+
+					performUpdate(
+							entity,
+							id,
+							rowId,
+							values,
+							oldVersion,
+							incomingOldValues,
+							hasDirtyCollection,
+							session,
+							versionMapping,
+							dirtyAttributeIndexes,
+							attributeUpdateability,
+							forceDynamicUpdate
+					);
+
+					// stage gets updated by doDynamicUpdate and doStaticUpdate which get called by performUpdate
+					return stage != null ? stage : voidFuture();
+				});
+	}
+
+	private CompletionStage<int[]> reactivePreUpdateInMemoryValueGeneration(
+			Object entity,
+			Object[] currentValues,
+			SharedSessionContractImplementor session) {
+		final EntityMetamodel entityMetamodel = entityPersister().getEntityMetamodel();
+		if ( !entityMetamodel.hasPreUpdateGeneratedValues() ) {
+			return completedFuture(EMPTY_INT_ARRAY);
+		}
+
+		CompletionStage<Void> result = voidFuture();
+
+		final Generator[] generators = entityMetamodel.getGenerators();
+		if ( generators.length != 0 ) {
+			final int[] fieldsPreUpdateNeeded = new int[generators.length];
+
+			AtomicInteger count = new AtomicInteger(0);
+			for ( int i = 0; i < generators.length; i++ ) {
+				final int index = i;
+				final Generator generator = generators[i];
+				if ( generator != null
+						&& !generator.generatedOnExecution()
+						&& generator.generatesOnUpdate() ) {
+					final Object currentValue = currentValues[i];
+					result = result.thenCompose( v -> generateValue( session, entity, currentValue,
+							(BeforeExecutionGenerator) generator, INSERT)
+							.thenAccept( generatedValue -> {
+								currentValues[index] = generatedValue;
+								entityPersister().setPropertyValue( entity, index, generatedValue );
+								fieldsPreUpdateNeeded[count.getAndIncrement()] = index;
+							} ) );
+				}
+			}
+
+			return result.thenApply(v -> {
+				if (count.get() > 0) {
+					return trim( fieldsPreUpdateNeeded, count.get() );
+				} else {
+					return EMPTY_INT_ARRAY;
+				}
+			});
+		}
+
+		return completedFuture(EMPTY_INT_ARRAY);
 	}
 
 	@Override
