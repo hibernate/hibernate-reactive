@@ -15,7 +15,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.EntityVersionMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
-import org.hibernate.persister.entity.mutation.AttributeAnalysis;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.persister.entity.mutation.UpdateCoordinatorStandard;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
@@ -98,7 +97,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				version,
 				mutatingTableDetails.getTableName(),
 				versionMapping.getSelectionExpression(),
-				ParameterUsage.SET
+				ParameterUsage.SET,
+				session
 		);
 
 		// restrict the key
@@ -108,7 +108,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 						jdbcValue,
 						mutatingTableDetails.getTableName(),
 						columnMapping.getSelectionExpression(),
-						ParameterUsage.RESTRICT
+						ParameterUsage.RESTRICT,
+						session
 				),
 				session
 		);
@@ -118,7 +119,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				oldVersion,
 				mutatingTableDetails.getTableName(),
 				versionMapping.getSelectionExpression(),
-				ParameterUsage.RESTRICT
+				ParameterUsage.RESTRICT,
+				session
 		);
 
 		mutationExecutor.executeReactive(
@@ -184,9 +186,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				valuesAnalysis,
 				mutationExecutor,
 				dynamicUpdateGroup,
-				(attributeIndex, attribute) -> dirtinessChecker.include( attributeIndex, (SingularAttributeMapping) attribute )
-						? AttributeAnalysis.DirtynessStatus.CONSIDER_LIKE_DIRTY
-						: AttributeAnalysis.DirtynessStatus.NOT_DIRTY,
+				(attributeIndex, attribute) -> dirtinessChecker.include( attributeIndex, (SingularAttributeMapping) attribute ),
 				session
 		);
 
@@ -243,7 +243,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				valuesAnalysis,
 				mutationExecutor,
 				staticUpdateGroup,
-				(position, attribute) -> AttributeAnalysis.DirtynessStatus.CONSIDER_LIKE_DIRTY,
+				(position, attribute) -> true,
 				session
 		);
 		bindPartitionColumnValueBindings( oldValues, session, mutationExecutor.getJdbcValueBindings() );

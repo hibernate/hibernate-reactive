@@ -85,7 +85,8 @@ public class ReactiveDeleteRowsCoordinatorStandard extends DeleteRowsCoordinator
 									jdbcValueBindings.bindValue(
 											jdbcValue,
 											jdbcValueMapping,
-											ParameterUsage.RESTRICT
+											ParameterUsage.RESTRICT,
+											session
 									);								}
 						);
 

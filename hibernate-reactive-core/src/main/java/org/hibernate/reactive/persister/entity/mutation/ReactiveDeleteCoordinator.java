@@ -173,7 +173,8 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 					rowId,
 					tableDetails.getTableName(),
 					rowIdMapping.getRowIdName(),
-					ParameterUsage.RESTRICT
+					ParameterUsage.RESTRICT,
+					session
 			);
 		}
 		else {
@@ -183,7 +184,8 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 							jdbcValue,
 							tableDetails.getTableName(),
 							columnMapping.getColumnName(),
-							ParameterUsage.RESTRICT
+							ParameterUsage.RESTRICT,
+							session
 					),
 					session
 			);

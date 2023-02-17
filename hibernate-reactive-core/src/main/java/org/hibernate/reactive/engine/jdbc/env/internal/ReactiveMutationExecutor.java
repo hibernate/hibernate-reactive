@@ -104,7 +104,7 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 		// If we get here the statement is needed - make sure it is resolved
 		Object[] params = PreparedStatementAdaptor.bind( statement -> {
 			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor( statementDetails, statement, session.getJdbcServices() );
-			valueBindings.beforeStatement( details );
+			valueBindings.beforeStatement( details, session );
 		} );
 
 		ReactiveConnection reactiveConnection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
@@ -123,7 +123,7 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 					if ( statementDetails.getStatement() != null ) {
 						statementDetails.releaseStatement( session );
 					}
-					valueBindings.afterStatement( tableDetails );
+					valueBindings.afterStatement( tableDetails, session );
 				} );
 	}
 

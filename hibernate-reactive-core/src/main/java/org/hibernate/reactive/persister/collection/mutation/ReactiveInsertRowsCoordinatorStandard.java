@@ -96,7 +96,13 @@ public class ReactiveInsertRowsCoordinatorStandard implements ReactiveInsertRows
 					final int entryCount = counter[0];
 					if ( entryChecker == null || entryChecker.include( entry, entryCount, collection, pluralAttribute ) ) {
 						// if the entry is included, perform the "insert"
-						insertRowValues.applyValues( collection, id, entry, entryCount, session, jdbcValueBindings::bindValue );
+						insertRowValues.applyValues( collection, id, entry, entryCount, session, (value, jdbcValueMapping, usage) -> jdbcValueBindings.bindValue(
+								value,
+								jdbcValueMapping.getContainingTableExpression(),
+								jdbcValueMapping.getSelectionExpression(),
+								usage,
+								session
+						) );
 						return mutationExecutor
 								.executeReactive( entry, null, null, null, session )
 								.thenAccept( o -> counter[0]++ );
