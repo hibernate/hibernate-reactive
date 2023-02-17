@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.AssertionFailure;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -38,7 +37,6 @@ import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class ReactiveAbstractPersisterDelegate {
 
@@ -48,10 +46,6 @@ public class ReactiveAbstractPersisterDelegate {
 	private final ReactiveMultiIdEntityLoader<?> multiIdEntityLoader;
 
 	private Map<SingularAttributeMapping, ReactiveSingleUniqueKeyEntityLoader<Object>> uniqueKeyLoadersNew;
-
-	// FIXME: not yet initialized
-	private GeneratedValuesProcessor insertGeneratedValuesProcessor;
-	private GeneratedValuesProcessor updateGeneratedValuesProcessor;
 
 	public ReactiveAbstractPersisterDelegate(
 			final EntityPersister entityDescriptor,
@@ -102,28 +96,28 @@ public class ReactiveAbstractPersisterDelegate {
 		return batchSize;
 	}
 
-	public CompletionStage<Void> processInsertGeneratedProperties(Object id, Object entity, Object[] state, SharedSessionContractImplementor session, String entityName) {
-		if ( insertGeneratedValuesProcessor == null ) {
+	public CompletionStage<Void> processInsertGeneratedProperties(Object id, Object entity, Object[] state, GeneratedValuesProcessor processor, SharedSessionContractImplementor session, String entityName) {
+		if ( processor == null ) {
 			throw new UnsupportedOperationException( "Entity has no insert-generated properties - `" + entityName + "`" );
 		}
-		return voidFuture()
-				.thenAccept( v -> insertGeneratedValuesProcessor.processGeneratedValues( entity, id, state, session ) );
+
+		ReactiveGeneratedValuesProcessor reactiveGeneratedValuesProcessor = new ReactiveGeneratedValuesProcessor(
+				processor.getSelectStatement(), processor.getGeneratedValuesToSelect(),
+				processor.getJdbcParameters(), processor.getEntityDescriptor(),
+				processor.getSessionFactory());
+		return reactiveGeneratedValuesProcessor.processGeneratedValues(id, entity, state, session);
 	}
 
-	public CompletionStage<Void> processUpdateGeneratedProperties(Object id, Object entity, Object[] state, SharedSessionContractImplementor session, String entityName) {
-		if ( updateGeneratedValuesProcessor == null ) {
-			throw new AssertionFailure( "Entity has no update-generated properties - `" + entityName + "`" );
+	public CompletionStage<Void> processUpdateGeneratedProperties(Object id, Object entity, Object[] state, GeneratedValuesProcessor processor, SharedSessionContractImplementor session, String entityName) {
+		if ( processor == null ) {
+			throw new UnsupportedOperationException( "Entity has no update-generated properties - `" + entityName + "`" );
 		}
-		return voidFuture()
-				.thenAccept( v -> updateGeneratedValuesProcessor.processGeneratedValues( entity, id, state, session ) );
-	}
 
-	public GeneratedValuesProcessor getInsertGeneratedValuesProcessor() {
-		return insertGeneratedValuesProcessor;
-	}
-
-	public GeneratedValuesProcessor getUpdateGeneratedValuesProcessor() {
-		return updateGeneratedValuesProcessor;
+		ReactiveGeneratedValuesProcessor reactiveGeneratedValuesProcessor = new ReactiveGeneratedValuesProcessor(
+				processor.getSelectStatement(), processor.getGeneratedValuesToSelect(),
+				processor.getJdbcParameters(), processor.getEntityDescriptor(),
+				processor.getSessionFactory());
+		return reactiveGeneratedValuesProcessor.processGeneratedValues(id, entity, state, session);
 	}
 
 	public Map<SingularAttributeMapping, ReactiveSingleUniqueKeyEntityLoader<Object>> getUniqueKeyLoadersNew() {

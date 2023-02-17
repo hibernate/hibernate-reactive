@@ -15,6 +15,8 @@ import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.generator.BeforeExecutionGenerator;
+import org.hibernate.generator.Generator;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.AttributeMappingsList;
@@ -24,7 +26,10 @@ import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.sql.model.MutationOperationGroup;
+import org.hibernate.tuple.entity.EntityMetamodel;
 
+import static org.hibernate.generator.EventType.INSERT;
+import static org.hibernate.reactive.persister.entity.mutation.GeneratorValueUtil.generateValue;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 @Internal
@@ -41,13 +46,39 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 		throw LOG.nonReactiveMethodCall( "coordinateReactiveInsert" );
 	}
 
-	public CompletionStage<Object> coordinateReactiveInsert(Object id, Object[] values, Object entity, SharedSessionContractImplementor session) {
-		// apply any pre-insert in-memory value generation
-		preInsertInMemoryValueGeneration( values, entity, session );
+	public CompletionStage<Object> coordinateReactiveInsert(Object id, Object[] currentValues, Object entity, SharedSessionContractImplementor session) {
+		return reactivePreInsertInMemoryValueGeneration(currentValues, entity, session)
+				.thenCompose( v -> {
+					return entityPersister().getEntityMetamodel().isDynamicInsert()
+				? doDynamicInserts( id, currentValues, entity, session )
+				: doStaticInserts( id, currentValues, entity, session );
+				});
+	}
 
-		return entityPersister().getEntityMetamodel().isDynamicInsert()
-				? doDynamicInserts( id, values, entity, session )
-				: doStaticInserts( id, values, entity, session );
+	private CompletionStage<Void> reactivePreInsertInMemoryValueGeneration(Object[] currentValues, Object entity, SharedSessionContractImplementor session) {
+		CompletionStage<Void> stage = voidFuture();
+
+		final EntityMetamodel entityMetamodel = entityPersister().getEntityMetamodel();
+		if ( entityMetamodel.hasPreInsertGeneratedValues() ) {
+			final Generator[] generators = entityMetamodel.getGenerators();
+			for ( int i = 0; i < generators.length; i++ ) {
+				final int index = i;
+				final Generator generator = generators[i];
+				if ( generator != null
+						&& !generator.generatedOnExecution()
+						&& generator.generatesOnInsert() ) {
+					final Object currentValue = currentValues[i];
+					stage = stage.thenCompose( v -> generateValue( session, entity, currentValue,
+							(BeforeExecutionGenerator) generator, INSERT)
+							.thenAccept( generatedValue -> {
+								currentValues[index] = generatedValue;
+								entityPersister().setPropertyValue( entity, index, generatedValue );
+							} ) );
+				}
+			}
+		}
+
+		return stage;
 	}
 
 	@Override
