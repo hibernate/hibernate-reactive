@@ -210,6 +210,7 @@ jobs:
     - name: Build and Test with Java ${{ matrix.java.name }}
       run: |
         ./gradlew -x test build -PshowStandardOutput -Pdocker -Ptest.jdk.version=${{ matrix.java.java_version_numeric }} \
+            -PskipOrmVersionParsing -PenableJBossSnapshotsRep \
             -Porg.gradle.java.installations.paths=${{ steps.mainjdk-exportpath.outputs.path }},${{ steps.testjdk-exportpath.outputs.path }} \
             ${{ matrix.java.jvm_args && '-Ptest.jdk.launcher.args=' }}${{ matrix.java.jvm_args }}
     - name: Upload reports (if build failed)
