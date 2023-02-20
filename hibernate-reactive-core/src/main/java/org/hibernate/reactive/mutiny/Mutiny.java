@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.mutiny;
 
+import jakarta.persistence.criteria.CriteriaQuery;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Calendar;
@@ -2132,6 +2133,17 @@ public interface Mutiny {
 		 * @see Session#createNativeQuery(String, ResultSetMapping)
 		 */
 		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
+
+		/**
+		 * Create an instance of {@link Query} for the given criteria query.
+		 *
+		 * @param criteriaQuery The {@link CriteriaQuery}
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
+		 */
+		<R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery);
 
 		/**
 		 * Insert a row.

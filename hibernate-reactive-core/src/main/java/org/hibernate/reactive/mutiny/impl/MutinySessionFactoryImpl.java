@@ -284,8 +284,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 
 	@Override
 	public CriteriaBuilder getCriteriaBuilder() {
-		throw new UnsupportedOperationException("Not yet implemented");
-//		return new ReactiveCriteriaBuilderImpl( delegate );
+		return delegate.getCriteriaBuilder();
 	}
 
 	@Override

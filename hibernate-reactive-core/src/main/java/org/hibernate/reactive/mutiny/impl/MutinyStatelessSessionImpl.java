@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.mutiny.impl;
 
+import jakarta.persistence.criteria.CriteriaQuery;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -94,6 +95,11 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
 		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ), factory );
 	}
 
 	@Override
