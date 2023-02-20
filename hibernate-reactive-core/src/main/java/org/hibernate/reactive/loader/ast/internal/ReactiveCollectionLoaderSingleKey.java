@@ -24,7 +24,6 @@ import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
-import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
@@ -92,7 +91,6 @@ public class ReactiveCollectionLoaderSingleKey implements ReactiveCollectionLoad
 		final JdbcParameterBindings jdbcParameterBindings = new JdbcParameterBindingsImpl( keyJdbcCount );
 		int offset = jdbcParameterBindings.registerParametersForEachJdbcValue(
 				key,
-				Clause.WHERE,
 				attributeMapping.getKeyDescriptor(),
 				jdbcParameters,
 				session

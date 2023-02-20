@@ -15,7 +15,6 @@ import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
-import org.hibernate.engine.jdbc.mutation.ParameterUsage;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -207,11 +206,8 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 					final int[] nextIndex = { resetIndex ? 0 : getSize( key, session ) };
 					return loop( entries, (entry, integer) -> {
 						if ( entry != null && collection.entryExists( entry, nextIndex[0] ) ) {
-							updateRowValues.applyValues( collection, key, entry, nextIndex[0], session, (jdbcValue, jdbcValueMapping, usage) -> jdbcValueBindings
-									.bindValue( jdbcValue, jdbcValueMapping, usage, session ) );
-
-							updateRowRestrictions.applyRestrictions( collection, key, entry, nextIndex[0], session, (jdbcValue, jdbcValueMapping) -> jdbcValueBindings
-									.bindValue( jdbcValue, jdbcValueMapping, ParameterUsage.RESTRICT, session ) );
+							updateRowValues.applyValues( collection, key, entry, nextIndex[0], session, jdbcValueBindings );
+							updateRowRestrictions.applyRestrictions( collection, key, entry, nextIndex[0], session, jdbcValueBindings );
 
 							return mutationExecutor
 									.executeReactive( collection, null, null, null, session )

@@ -14,7 +14,6 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
 import org.hibernate.engine.jdbc.batch.spi.BatchKey;
-import org.hibernate.engine.jdbc.mutation.ParameterUsage;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -121,13 +120,7 @@ public class ReactiveUpdateRowsCoordinatorStandard extends UpdateRowsCoordinator
 		}
 
 		rowMutationOperations.getUpdateRowValues()
-				.applyValues( collection, key, entry, entryPosition, session, (jdbcValue, jdbcValueMapping, usage) -> mutationExecutor.getJdbcValueBindings().bindValue(
-						jdbcValue,
-						jdbcValueMapping,
-						usage,
-						session
-				)
-		);
+				.applyValues( collection, key, entry, entryPosition, session, mutationExecutor.getJdbcValueBindings() );
 
 		rowMutationOperations.getUpdateRowRestrictions().applyRestrictions(
 				collection,
@@ -135,12 +128,7 @@ public class ReactiveUpdateRowsCoordinatorStandard extends UpdateRowsCoordinator
 				entry,
 				entryPosition,
 				session,
-				(jdbcValue, jdbcValueMapping) -> mutationExecutor.getJdbcValueBindings().bindValue(
-						jdbcValue,
-						jdbcValueMapping,
-						ParameterUsage.RESTRICT,
-						session
-				)
+				mutationExecutor.getJdbcValueBindings()
 		);
 
 		return mutationExecutor.executeReactive( collection, null, null, null, session )
