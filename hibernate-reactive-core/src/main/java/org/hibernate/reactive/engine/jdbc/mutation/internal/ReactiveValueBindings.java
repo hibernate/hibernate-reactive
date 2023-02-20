@@ -40,7 +40,7 @@ public class ReactiveValueBindings extends JdbcValueBindingsImpl {
 	private final Map<String, BindingGroup> bindingGroupMap = new HashMap<>();
 
 	public ReactiveValueBindings(MutationType mutationType, MutationTarget<?> mutationTarget, JdbcValueBindingsImpl.JdbcValueDescriptorAccess jdbcValueDescriptorAccess, SharedSessionContractImplementor session) {
-		super( mutationType, mutationTarget, jdbcValueDescriptorAccess );
+		super( mutationType, mutationTarget, jdbcValueDescriptorAccess, session );
 		this.mutationType = mutationType;
 		this.mutationTarget = mutationTarget;
 		this.jdbcValueDescriptorAccess = jdbcValueDescriptorAccess;
@@ -48,7 +48,7 @@ public class ReactiveValueBindings extends JdbcValueBindingsImpl {
 	}
 
 	@Override
-	public void bindValue(Object value, String tableName, String columnName, ParameterUsage usage, SharedSessionContractImplementor session) {
+	public void bindValue(Object value, String tableName, String columnName, ParameterUsage usage) {
 		final JdbcValueDescriptor jdbcValueDescriptor = jdbcValueDescriptorAccess.resolveValueDescriptor( tableName, columnName, usage );
 		if ( jdbcValueDescriptor == null ) {
 			throw new UnknownParameterException( mutationType, mutationTarget, tableName, columnName, usage );
@@ -70,7 +70,7 @@ public class ReactiveValueBindings extends JdbcValueBindingsImpl {
 	}
 
 	@Override
-	public void beforeStatement(PreparedStatementDetails statementDetails, SharedSessionContractImplementor session) {
+	public void beforeStatement(PreparedStatementDetails statementDetails) {
 		final BindingGroup bindingGroup = bindingGroupMap.get( statementDetails.getMutatingTableDetails().getTableName() );
 		if ( bindingGroup == null ) {
 			statementDetails.resolveStatement();
@@ -101,7 +101,7 @@ public class ReactiveValueBindings extends JdbcValueBindingsImpl {
 	}
 
 	@Override
-	public void afterStatement(TableMapping mutatingTable, SharedSessionContractImplementor session) {
+	public void afterStatement(TableMapping mutatingTable) {
 		final BindingGroup bindingGroup = bindingGroupMap.remove( mutatingTable.getTableName() );
 		if ( bindingGroup == null ) {
 			return;

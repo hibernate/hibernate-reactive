@@ -24,7 +24,6 @@ import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryOptionsAdapter;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
-import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
@@ -149,7 +148,6 @@ public class ReactiveSingleIdEntityLoaderDynamicBatch<T> implements ReactiveSing
 		for ( int i = 0; i < numberOfIds; i++ ) {
 			offset += jdbcParameterBindings.registerParametersForEachJdbcValue(
 					idsToLoad[i],
-					Clause.WHERE,
 					offset,
 					getLoadable().getIdentifierMapping(),
 					jdbcParameters,

@@ -14,7 +14,6 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
 import org.hibernate.engine.jdbc.batch.spi.BatchKey;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
-import org.hibernate.engine.jdbc.mutation.ParameterUsage;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -100,14 +99,7 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 						}
 
 						rowMutationOperations.getInsertRowValues()
-								.applyValues( collection, key, entry, entryPosition[0], session,
-											  (jdbcValue, jdbcValueMapping, usage) -> jdbcValueBindings.bindValue(
-													  jdbcValue,
-													  jdbcValueMapping,
-													  usage,
-													  session
-											  )
-								);
+								.applyValues( collection, key, entry, entryPosition[0], session, jdbcValueBindings );
 
 						return mutationExecutor.executeReactive( entry, null, null, null, session );
 					} );
@@ -150,14 +142,7 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 						}
 
 						rowMutationOperations.getDeleteRowRestrictions()
-								.applyRestrictions( collection, key, entry, entryPosition[0], session,
-													(jdbcValue, jdbcValueMapping) -> jdbcValueBindings.bindValue(
-															jdbcValue,
-															jdbcValueMapping,
-															ParameterUsage.RESTRICT,
-															session
-													)
-								);
+								.applyRestrictions( collection, key, entry, entryPosition[0], session, jdbcValueBindings );
 
 						return mutationExecutor.executeReactive( entry, null, null, null, session );
 					} );

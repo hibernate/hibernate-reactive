@@ -27,7 +27,6 @@ import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.util.impl.CompletionStages;
-import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
@@ -207,7 +206,6 @@ public class ReactiveCollectionLoaderBatchKey implements ReactiveCollectionLoade
 		for ( int i = smallBatchStart; i < smallBatchStart + smallBatchLength; i++ ) {
 			offset += jdbcParameterBindings.registerParametersForEachJdbcValue(
 					batchIds[i],
-					Clause.WHERE,
 					offset,
 					getLoadable().getKeyDescriptor(),
 					jdbcParameters,
