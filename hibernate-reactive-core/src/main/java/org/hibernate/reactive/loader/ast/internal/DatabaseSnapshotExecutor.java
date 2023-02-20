@@ -23,7 +23,6 @@ import org.hibernate.query.sqm.sql.FromClauseIndex;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.spi.NavigablePath;
-import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
 import org.hibernate.sql.ast.spi.SqlExpressionResolver;
@@ -173,7 +172,6 @@ class DatabaseSnapshotExecutor {
 
 		int offset = jdbcParameterBindings.registerParametersForEachJdbcValue(
 				id,
-				Clause.WHERE,
 				entityDescriptor.getIdentifierMapping(),
 				jdbcParameters,
 				session

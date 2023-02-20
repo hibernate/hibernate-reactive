@@ -23,7 +23,6 @@ import org.hibernate.query.spi.QueryParameterBindings;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
-import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.CallbackImpl;
@@ -56,7 +55,6 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 		while ( offset < getJdbcParameters().size() ) {
 			offset += jdbcParameterBindings.registerParametersForEachJdbcValue(
 					restrictedValue,
-					Clause.WHERE,
 					offset,
 					getRestrictivePart(),
 					getJdbcParameters(),

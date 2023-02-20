@@ -11,13 +11,11 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.Internal;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.MutationExecutor;
-import org.hibernate.engine.jdbc.mutation.ParameterUsage;
 import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.AttributeMapping;
-import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.AttributeMappingsList;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
@@ -97,51 +95,6 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 			}
 		} );
 		return voidFuture();
-	}
-
-	// Copy and paste from ORM: InsertCoordinator#decomposeAttribute
-	private void decomposeAttribute(
-			Object value,
-			SharedSessionContractImplementor session,
-			JdbcValueBindings jdbcValueBindings,
-			AttributeMapping mapping) {
-		if ( !(mapping instanceof PluralAttributeMapping) ) {
-			mapping.decompose(
-					value,
-					(jdbcValue, selectableMapping) -> {
-						if ( selectableMapping.isInsertable() ) {
-							jdbcValueBindings.bindValue(
-									jdbcValue,
-									entityPersister().physicalTableNameForMutation( selectableMapping ),
-									selectableMapping.getSelectionExpression(),
-									ParameterUsage.SET,
-									session
-							);
-						}
-					},
-					session
-			);
-		}
-	}
-
-	// Copy and paste from ORM: InsertCoordinator#breakDownJdbcValue
-	private static void breakDownJdbcValue(
-			Object id,
-			SharedSessionContractImplementor session,
-			JdbcValueBindings jdbcValueBindings,
-			EntityTableMapping tableDetails) {
-		final String tableName = tableDetails.getTableName();
-		tableDetails.getKeyMapping().breakDownKeyJdbcValues(
-				id,
-				(jdbcValue, columnMapping) -> jdbcValueBindings.bindValue(
-						jdbcValue,
-						tableName,
-						columnMapping.getColumnName(),
-						ParameterUsage.SET,
-						session
-				),
-				session
-		);
 	}
 
 	@Override

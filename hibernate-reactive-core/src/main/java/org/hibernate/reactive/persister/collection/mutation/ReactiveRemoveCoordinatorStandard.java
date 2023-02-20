@@ -10,7 +10,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
-import org.hibernate.engine.jdbc.mutation.ParameterUsage;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.ForeignKeyDescriptor;
@@ -27,6 +26,7 @@ import org.hibernate.sql.model.MutationType;
 import org.hibernate.sql.model.ast.MutatingTableReference;
 import org.hibernate.sql.model.internal.MutationOperationGroupSingle;
 
+import static org.hibernate.persister.collection.mutation.RowMutationOperations.DEFAULT_RESTRICTOR;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_DEBUG_ENABLED;
@@ -68,12 +68,8 @@ public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard
 				.thenCompose( unused -> {
 					final JdbcValueBindings jdbcValueBindings = mutationExecutor.getJdbcValueBindings();
 					final ForeignKeyDescriptor fkDescriptor = getMutationTarget().getTargetPart().getKeyDescriptor();
-					fkDescriptor.getKeyPart().decompose(
-							key,
-							(jdbcValue, jdbcValueMapping) -> jdbcValueBindings
-									.bindValue( jdbcValue, jdbcValueMapping, ParameterUsage.RESTRICT, session ),
-							session
-					);
+					fkDescriptor.getKeyPart()
+							.decompose( key, 0, jdbcValueBindings, null, DEFAULT_RESTRICTOR, session );
 
 					return mutationExecutor
 							.executeReactive( key, null, null, null, session );

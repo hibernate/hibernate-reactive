@@ -43,7 +43,6 @@ import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.util.impl.CompletionStages;
-import org.hibernate.sql.ast.Clause;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
@@ -257,7 +256,6 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 
 			offset += jdbcParameterBindings.registerParametersForEachJdbcValue(
 					id,
-					Clause.WHERE,
 					offset,
 					entityDescriptor.getIdentifierMapping(),
 					jdbcParameters,
