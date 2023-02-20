@@ -8,7 +8,6 @@ package org.hibernate.reactive;
 import java.util.List;
 import java.util.Objects;
 
-import org.hibernate.AssertionFailure;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
@@ -124,8 +123,7 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 
 	public static Uni<List<Fruit>> criteriaFindAll() {
 		final Mutiny.SessionFactory sf = getMutinySessionFactory();
-		throw new AssertionFailure("ORM-6: TODO");
-//		return sf.withStatelessSession( s -> s.createQuery( criteriaQuery( sf.getCriteriaBuilder() ) ).getResultList() );
+		return sf.withStatelessSession( s -> s.createQuery( criteriaQuery( sf.getCriteriaBuilder() ) ).getResultList() );
 	}
 
 	public static CriteriaQuery<Fruit> criteriaQuery(CriteriaBuilder criteriaBuilder) {
