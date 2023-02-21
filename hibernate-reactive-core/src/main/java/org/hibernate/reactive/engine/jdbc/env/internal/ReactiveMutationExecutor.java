@@ -6,7 +6,6 @@
 package org.hibernate.reactive.engine.jdbc.env.internal;
 
 import java.lang.invoke.MethodHandles;
-import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
@@ -14,7 +13,6 @@ import org.hibernate.engine.jdbc.mutation.MutationExecutor;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
 import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
-import org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
@@ -26,6 +24,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.model.TableMapping;
 import org.hibernate.sql.model.ValuesAnalysis;
 
+import static org.hibernate.reactive.engine.jdbc.ResultsCheckerUtil.checkResults;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_TRACE_ENABLED;
@@ -55,7 +54,7 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 			SharedSessionContractImplementor session) {
 		return performReactiveNonBatchedOperations( valuesAnalysis, inclusionChecker, resultChecker, session )
 				.thenCompose( ignore -> performReactiveSelfExecutingOperations( valuesAnalysis, inclusionChecker, session ) )
-				.thenCompose( ignore -> performReactiveBatchedOperations( valuesAnalysis, inclusionChecker ) )
+				.thenCompose( ignore -> performReactiveBatchedOperations( valuesAnalysis, inclusionChecker, resultChecker, session ) )
 				.thenApply( CompletionStages::nullFuture );
 	}
 
@@ -76,7 +75,8 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 
 	default CompletionStage<Void> performReactiveBatchedOperations(
 			ValuesAnalysis valuesAnalysis,
-			TableInclusionChecker inclusionChecker) {
+			TableInclusionChecker inclusionChecker, OperationResultChecker resultChecker,
+			SharedSessionContractImplementor session) {
 		return voidFuture();
 	}
 
@@ -116,7 +116,7 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 						// the optional table did not have a row
 						return voidFuture();
 					}
-					checkResults( session, statementDetails, resultChecker, affectedRowCount );
+					checkResults( session, statementDetails, resultChecker, affectedRowCount, -1);
 					return voidFuture();
 				} )
 				.whenComplete( (o, throwable) -> {
@@ -127,24 +127,4 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 				} );
 	}
 
-	private static void checkResults(
-			SharedSessionContractImplementor session,
-			PreparedStatementDetails statementDetails,
-			OperationResultChecker resultChecker,
-			Integer affectedRowCount) {
-		try {
-			ModelMutationHelper.checkResults( resultChecker, statementDetails, affectedRowCount, -1 );
-		}
-		catch (SQLException e) {
-			throw session.getJdbcServices().getSqlExceptionHelper()
-					.convert(
-					e,
-					String.format(
-							"Unable to execute mutation PreparedStatement against table `%s`",
-							statementDetails.getMutatingTableDetails().getTableName()
-					),
-					statementDetails.getSqlString()
-			);
-		}
-	}
 }
