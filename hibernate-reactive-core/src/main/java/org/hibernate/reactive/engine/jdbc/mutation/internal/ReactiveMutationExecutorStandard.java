@@ -49,8 +49,10 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 	@Override
 	public CompletionStage<Void> performReactiveBatchedOperations(
 			ValuesAnalysis valuesAnalysis,
-			TableInclusionChecker inclusionChecker) {
-		return ReactiveMutationExecutor.super.performReactiveBatchedOperations( valuesAnalysis, inclusionChecker );
+			TableInclusionChecker inclusionChecker, OperationResultChecker resultChecker,
+			SharedSessionContractImplementor session) {
+		return ReactiveMutationExecutor.super.performReactiveBatchedOperations( valuesAnalysis, inclusionChecker,
+                resultChecker, session);
 	}
 
 	@Override

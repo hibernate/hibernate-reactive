@@ -71,7 +71,7 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 									assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
 									// Parameters are different for different dbs, so we cannot do an exact match
 									assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
-											.startsWith( "insert into pig (name, version, id) values " );
+											.startsWith( "insert into pig (name,version,id) values " );
 									sqlTracker.clear();
 								} )
 						)
@@ -96,7 +96,7 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 											assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
 											// Parameters are different for different dbs, so we cannot do an exact match
 											assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
-													.startsWith( "insert into pig (name, version, id) values " );
+													.matches("insert into pig \\(name,version,id\\) values (.*)" );
 											sqlTracker.clear();
 										} )
 								)
@@ -111,7 +111,9 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 											context.assertEquals( 3L, count);
 											assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
 											assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
-													.matches( "update pig set name=.+, version=.+ where id=.+ and version=.+" );
+													.matches(
+															"update pig set name=.+,\\s*version=.+ where id=.+ and "
+																	+ "version=.+" );
 											sqlTracker.clear();
 										} )
 								) )
