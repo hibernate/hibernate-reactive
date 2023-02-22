@@ -33,7 +33,7 @@ public final class ReactiveEntityManagerFactoryBuilder extends EntityManagerFact
         super( persistenceUnitDescriptor, integration );
     }
 
-    //Overridden so to use a customized serviceregistry: see ReactiveServiceRegistryBuilder
+    //Overridden so to use a customized service registry: see ReactiveServiceRegistryBuilder
     @Override
     protected StandardServiceRegistryBuilder getStandardServiceRegistryBuilder(BootstrapServiceRegistry bsr) {
         return ReactiveServiceRegistryBuilder.forJpa( bsr );
