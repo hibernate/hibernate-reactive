@@ -14,8 +14,11 @@ import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
 import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
+import org.hibernate.engine.jdbc.mutation.group.PreparedStatementGroup;
 import org.hibernate.engine.jdbc.mutation.internal.MutationExecutorStandard;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
+import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
@@ -51,8 +54,8 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker, OperationResultChecker resultChecker,
 			SharedSessionContractImplementor session) {
-		return ReactiveMutationExecutor.super.performReactiveBatchedOperations( valuesAnalysis, inclusionChecker,
-                resultChecker, session);
+		return ReactiveMutationExecutor.super
+				.performReactiveBatchedOperations( valuesAnalysis, inclusionChecker, resultChecker, session);
 	}
 
 	@Override
@@ -80,6 +83,57 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 	}
 
 	@Override
+	public CompletionStage<Void> performReactiveNonBatchedOperations(
+			ValuesAnalysis valuesAnalysis,
+			TableInclusionChecker inclusionChecker,
+			OperationResultChecker resultChecker,
+			SharedSessionContractImplementor session) {
+
+		if ( getNonBatchedStatementGroup() == null || getNonBatchedStatementGroup().getNumberOfStatements() <= 0 ) {
+			return voidFuture();
+		}
+
+		PreparedStatementGroup nonBatchedStatementGroup = getNonBatchedStatementGroup();
+		final OperationsForEach forEach = new OperationsForEach( inclusionChecker, resultChecker, session, getJdbcValueBindings() );
+		nonBatchedStatementGroup.forEachStatement( forEach::add );
+		return forEach.buildLoop();
+	}
+
+	private class OperationsForEach {
+
+		private final TableInclusionChecker inclusionChecker;
+		private final OperationResultChecker resultChecker;
+		private final SharedSessionContractImplementor session;
+		private final JdbcValueBindings jdbcValueBindings;
+
+		private CompletionStage<Void> loop = voidFuture();
+
+		public OperationsForEach(
+				TableInclusionChecker inclusionChecker,
+				OperationResultChecker resultChecker,
+				SharedSessionContractImplementor session,
+				JdbcValueBindings jdbcValueBindings) {
+			this.inclusionChecker = inclusionChecker;
+			this.resultChecker = resultChecker;
+			this.session = session;
+			this.jdbcValueBindings = jdbcValueBindings;
+		}
+
+		public void add(String tableName, PreparedStatementDetails statementDetails) {
+			loop = loop.thenCompose( v -> performReactiveNonBatchedMutation(
+					statementDetails,
+					getJdbcValueBindings(),
+					inclusionChecker,
+					resultChecker,
+					session
+			) );
+		}
+
+		public CompletionStage<Void> buildLoop() {
+			return loop;
+		}
+	}
+	@Override
 	public CompletionStage<Void> performReactiveNonBatchedMutation(
 			PreparedStatementDetails statementDetails,
 			JdbcValueBindings valueBindings,
@@ -99,12 +153,13 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 			return voidFuture();
 		}
 
-		// If we get here the statement is needed - make sure it is resolved
-		session.getJdbcServices().getSqlStatementLogger().logStatement( statementDetails.getSqlString() );
-		valueBindings.beforeStatement( statementDetails );
+		Object[] params = PreparedStatementAdaptor.bind( statement -> {
+			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor( statementDetails, statement, session.getJdbcServices() );
+			valueBindings.beforeStatement( details );
+		} );
 
 		return connection( session )
-				.update( statementDetails.getSqlString() )
+				.update( statementDetails.getSqlString(), params )
 				.thenCompose( affectedRowCount -> checkResult( session, statementDetails, resultChecker, tableDetails, affectedRowCount ) )
 				.whenComplete( (unused, throwable) -> {
 					if ( statementDetails.getStatement() != null ) {
