@@ -24,6 +24,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.query.TupleTransformer;
+import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
@@ -117,6 +118,11 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		}
 
 		return doExecuteQuery( jdbcSelect, jdbcParameterBindings, executionContext, rowTransformer, domainResultType, statementCreator, resultsConsumer )
+				.thenCompose( list ->
+						// only initialize non-lazy collections after everything else has been refreshed
+						((ReactivePersistenceContextAdapter) persistenceContext ).reactiveInitializeNonLazyCollections()
+								.thenApply(v -> list)
+				)
 				.whenComplete( (o, throwable) -> {
 					if ( readOnly != null ) {
 						persistenceContext.setDefaultReadOnly( defaultReadOnlyOrig );
