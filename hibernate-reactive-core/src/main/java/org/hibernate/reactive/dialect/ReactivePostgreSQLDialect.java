@@ -28,18 +28,15 @@ import org.hibernate.sql.exec.spi.JdbcOperation;
 public class ReactivePostgreSQLDialect extends PostgreSQLDialect {
 
 	public ReactivePostgreSQLDialect() {
+		this( DatabaseVersion.make( 10 ) );
 	}
 
 	public ReactivePostgreSQLDialect(DialectResolutionInfo info) {
-		super( info );
+		super( info, PostgreSQLDriverKind.OTHER );
 	}
 
 	public ReactivePostgreSQLDialect(DatabaseVersion version) {
-		super( version );
-	}
-
-	public ReactivePostgreSQLDialect(DatabaseVersion version, PostgreSQLDriverKind driverKind) {
-		super( version );
+		super( version, PostgreSQLDriverKind.OTHER );
 	}
 
 	@Override
