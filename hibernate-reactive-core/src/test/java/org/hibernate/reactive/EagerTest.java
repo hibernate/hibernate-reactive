@@ -75,10 +75,10 @@ public class EagerTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.find( Node.class, basik.getId() ))
 						.thenAccept( node -> {
-							context.assertTrue( Hibernate.isInitialized( node.elements ) );
-							context.assertEquals( 3, node.elements.size() );
-							for ( Element element : node.elements ) {
-								context.assertTrue( element.node == node );
+							context.assertTrue( Hibernate.isInitialized( node.getElements() ) );
+							context.assertEquals( 3, node.getElements().size() );
+							for ( Element element : node.getElements() ) {
+								context.assertTrue( element.getNode() == node );
 							}
 						} )
 		);
@@ -97,11 +97,11 @@ public class EagerTest extends BaseReactiveTest {
 				openSession()
 						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
 						.thenCompose( v -> openSession() )
-						.thenCompose(s -> s.find( Element.class, basik.elements.get(0).id ))
+						.thenCompose(s -> s.find( Element.class, basik.getElements().get(0).getId() ))
 						.thenAccept( element -> {
-							context.assertTrue( Hibernate.isInitialized( element.node ) );
-							context.assertTrue( Hibernate.isInitialized( element.node.elements ) );
-							context.assertEquals( 3, element.node.elements.size() );
+							context.assertTrue( Hibernate.isInitialized( element.getNode() ) );
+							context.assertTrue( Hibernate.isInitialized( element.getNode().getElements() ) );
+							context.assertEquals( 3, element.getNode().getElements().size() );
 						} )
 		);
 	}
@@ -122,9 +122,9 @@ public class EagerTest extends BaseReactiveTest {
 						.thenCompose(s -> s.createQuery( "from Element", Element.class ).getResultList())
 						.thenAccept( elements -> {
 							for (Element element: elements) {
-								context.assertTrue( Hibernate.isInitialized( element.node ) );
-								context.assertTrue( Hibernate.isInitialized( element.node.elements ) );
-								context.assertEquals( 3, element.node.elements.size() );
+								context.assertTrue( Hibernate.isInitialized( element.getNode() ) );
+								context.assertTrue( Hibernate.isInitialized( element.getNode().getElements() ) );
+								context.assertEquals( 3, element.getNode().getElements().size() );
 							}
 						} )
 		);
@@ -146,17 +146,17 @@ public class EagerTest extends BaseReactiveTest {
 						.thenCompose(s -> s.createQuery("from Node order by id", Node.class).getResultList())
 						.thenAccept(list -> {
 							context.assertEquals(list.size(), 2);
-							context.assertTrue( Hibernate.isInitialized( list.get(0).elements ) );
-							context.assertEquals(list.get(0).elements.size(), 3);
-							context.assertEquals(list.get(1).elements.size(), 0);
+							context.assertTrue( Hibernate.isInitialized( list.get(0).getElements() ) );
+							context.assertEquals(list.get(0).getElements().size(), 3);
+							context.assertEquals(list.get(1).getElements().size(), 0);
 						})
 						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.createQuery("select distinct n, e from Node n join n.elements e order by n.id").getResultList())
 						.thenAccept(list -> {
 							context.assertEquals(list.size(), 3);
 							Object[] tup = (Object[]) list.get(0);
-							context.assertTrue( Hibernate.isInitialized( ((Node) tup[0]).elements ) );
-							context.assertEquals(((Node) tup[0]).elements.size(), 3);
+							context.assertTrue( Hibernate.isInitialized( ((Node) tup[0]).getElements() ) );
+							context.assertEquals(((Node) tup[0]).getElements().size(), 3);
 						})
 		);
 	}
@@ -177,6 +177,22 @@ public class EagerTest extends BaseReactiveTest {
 		}
 
 		Element() {
+		}
+
+		public Integer getId() {
+			return id;
+		}
+
+		public void setId(Integer id) {
+			this.id = id;
+		}
+
+		public Node getNode() {
+			return node;
+		}
+
+		public void setNode(Node node) {
+			this.node = node;
 		}
 	}
 
@@ -298,6 +314,86 @@ public class EagerTest extends BaseReactiveTest {
 		@Override
 		public int hashCode() {
 			return Objects.hash(string);
+		}
+
+		public Integer getVersion() {
+			return version;
+		}
+
+		public void setVersion(Integer version) {
+			this.version = version;
+		}
+
+		public Node getParent() {
+			return parent;
+		}
+
+		public void setParent(Node parent) {
+			this.parent = parent;
+		}
+
+		public List<Element> getElements() {
+			return elements;
+		}
+
+		public void setElements(List<Element> elements) {
+			this.elements = elements;
+		}
+
+		public boolean isPrePersisted() {
+			return prePersisted;
+		}
+
+		public void setPrePersisted(boolean prePersisted) {
+			this.prePersisted = prePersisted;
+		}
+
+		public boolean isPostPersisted() {
+			return postPersisted;
+		}
+
+		public void setPostPersisted(boolean postPersisted) {
+			this.postPersisted = postPersisted;
+		}
+
+		public boolean isPreUpdated() {
+			return preUpdated;
+		}
+
+		public void setPreUpdated(boolean preUpdated) {
+			this.preUpdated = preUpdated;
+		}
+
+		public boolean isPostUpdated() {
+			return postUpdated;
+		}
+
+		public void setPostUpdated(boolean postUpdated) {
+			this.postUpdated = postUpdated;
+		}
+
+		public boolean isPostRemoved() {
+			return postRemoved;
+		}
+
+		public void setPostRemoved(boolean postRemoved) {
+			this.postRemoved = postRemoved;
+		}
+
+		public boolean isPreRemoved() {
+			return preRemoved;
+		}
+
+		public void setPreRemoved(boolean preRemoved) {
+			this.preRemoved = preRemoved;
+		}
+
+		public boolean isLoaded() {
+			return loaded;
+		}
+
+		public void setLoaded(boolean loaded) {
+			this.loaded = loaded;
 		}
 	}
 }
