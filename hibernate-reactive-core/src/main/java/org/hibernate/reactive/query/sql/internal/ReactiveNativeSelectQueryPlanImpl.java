@@ -26,7 +26,6 @@ import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplemento
 import org.hibernate.reactive.query.internal.ReactiveResultSetMappingProcessor;
 import org.hibernate.reactive.query.spi.ReactiveNativeSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
-import org.hibernate.reactive.sql.exec.spi.ReactiveJdbcSelect;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
@@ -96,7 +95,7 @@ public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanI
 		final ReactiveSharedSessionContractImplementor reactiveSession = (ReactiveSharedSessionContractImplementor) executionContext.getSession();
 		return reactiveSession.reactiveAutoFlushIfRequired( affectedTableNames )
 						.thenCompose( aBoolean -> {
-							final JdbcOperationQuerySelect jdbcSelect = new ReactiveJdbcSelect(
+							final JdbcOperationQuerySelect jdbcSelect = new JdbcOperationQuerySelect(
 									sql,
 									jdbcParameterBinders,
 									resultSetMapping,
