@@ -18,7 +18,20 @@ public class ReactiveResultSetMappingProcessor extends ResultSetMappingProcessor
 
 	@Override
 	public ResultSetMapping generateResultMapping(boolean queryHadAliases) {
-		ResultSetMapping resultSetMapping = super.generateResultMapping( queryHadAliases );
-		return new ReactiveResultSetMapping( resultSetMapping );
+		return wrap( super.generateResultMapping( queryHadAliases ) );
 	}
+
+	private static ResultSetMapping wrap(final ResultSetMapping resultSetMapping) {
+		if ( resultSetMapping == null ) {
+			return null;
+		}
+		//Avoid nested wrapping!
+		else if ( resultSetMapping instanceof ReactiveResultSetMapping ) {
+			return resultSetMapping;
+		}
+		else {
+			return new ReactiveResultSetMapping( resultSetMapping );
+		}
+	}
+
 }

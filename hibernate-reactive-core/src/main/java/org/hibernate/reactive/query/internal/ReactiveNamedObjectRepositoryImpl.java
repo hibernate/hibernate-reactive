@@ -32,10 +32,7 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 
 	@Override
 	public NamedSqmQueryMemento getSqmQueryMemento(String queryName) {
-		NamedSqmQueryMemento sqmQueryMemento = delegate.getSqmQueryMemento( queryName );
-		return sqmQueryMemento == null
-				? null
-				: new ReactiveNamedSqmQueryMemento( sqmQueryMemento );
+		return wrap( delegate.getSqmQueryMemento( queryName ) );
 	}
 
 	@Override
@@ -50,10 +47,7 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 
 	@Override
 	public NamedNativeQueryMemento getNativeQueryMemento(String queryName) {
-		NamedNativeQueryMemento nativeQueryMemento = delegate.getNativeQueryMemento( queryName );
-		return nativeQueryMemento == null
-				? null
-				: new ReactiveNamedNativeQueryMemento( nativeQueryMemento );
+		return wrap( delegate.getNativeQueryMemento( queryName ) );
 	}
 
 	@Override
@@ -123,4 +117,31 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 	public void close() {
 		delegate.close();
 	}
+
+	private static NamedSqmQueryMemento wrap(final NamedSqmQueryMemento sqmQueryMemento) {
+		if ( sqmQueryMemento == null ) {
+			return null;
+		}
+		//Avoid nested wrapping!
+		else if ( sqmQueryMemento instanceof ReactiveNamedSqmQueryMemento ) {
+			return sqmQueryMemento;
+		}
+		else {
+			return new ReactiveNamedSqmQueryMemento( sqmQueryMemento );
+		}
+	}
+
+	private static NamedNativeQueryMemento wrap(final NamedNativeQueryMemento nativeQueryMemento) {
+		if ( nativeQueryMemento == null ) {
+			return null;
+		}
+		//Avoid nested wrapping!
+		else if ( nativeQueryMemento instanceof ReactiveNamedNativeQueryMemento ) {
+			return nativeQueryMemento;
+		}
+		else {
+			return new ReactiveNamedNativeQueryMemento( nativeQueryMemento );
+		}
+	}
+
 }
