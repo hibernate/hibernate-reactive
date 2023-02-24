@@ -5,11 +5,10 @@
  */
 package org.hibernate.reactive.dialect;
 
-import org.hibernate.dialect.DatabaseVersion;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.dialect.PostgreSQLDialect;
-import org.hibernate.dialect.PostgreSQLDriverKind;
 import org.hibernate.dialect.identity.IdentityColumnSupport;
-import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
@@ -25,28 +24,34 @@ import org.hibernate.sql.ast.spi.StandardSqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.Statement;
 import org.hibernate.sql.exec.spi.JdbcOperation;
 
-public class ReactivePostgreSQLDialect extends PostgreSQLDialect {
+/**
+ * Wraps the given dialect to make some internal components reactive;
+ * also, potentially applies a SQL syntax workaround if the wrapped Dialect
+ * is extending PostgreSQLDialect.
+ */
+public final class ReactiveDialectWrapper extends DialectDelegateWrapper {
 
-	public ReactivePostgreSQLDialect() {
-		this( DatabaseVersion.make( 10 ) );
-	}
+	//FIXME remove PostgreSQLDialect specific workarounds after HHH-16229
+	private final boolean requiresPostgreSQLSyntaxProcessing;
 
-	public ReactivePostgreSQLDialect(DialectResolutionInfo info) {
-		super( info, PostgreSQLDriverKind.OTHER );
-	}
-
-	public ReactivePostgreSQLDialect(DatabaseVersion version) {
-		super( version, PostgreSQLDriverKind.OTHER );
+	public ReactiveDialectWrapper(Dialect wrapped) {
+		super( wrapped );
+		this.requiresPostgreSQLSyntaxProcessing = ( wrapped instanceof PostgreSQLDialect );
 	}
 
 	@Override
 	public SqlAstTranslatorFactory getSqlAstTranslatorFactory() {
-		return new StandardSqlAstTranslatorFactory() {
-			@Override
-			protected <T extends JdbcOperation> SqlAstTranslator<T> buildTranslator(SessionFactoryImplementor sessionFactory, Statement statement) {
-				return new ReactivePostgreSQLSqlAstTranslator<>( sessionFactory, statement );
-			}
-		};
+		if ( requiresPostgreSQLSyntaxProcessing ) {
+			return new StandardSqlAstTranslatorFactory() {
+				@Override
+				protected <T extends JdbcOperation> SqlAstTranslator<T> buildTranslator(SessionFactoryImplementor sessionFactory, Statement statement) {
+					return new ReactivePostgreSQLSqlAstTranslator<>( sessionFactory, statement );
+				}
+			};
+		}
+		else {
+			return wrapped.getSqlAstTranslatorFactory();
+		}
 	}
 
 	@Override
@@ -63,4 +68,5 @@ public class ReactivePostgreSQLDialect extends PostgreSQLDialect {
 	public SqmMultiTableInsertStrategy getFallbackSqmInsertStrategy(EntityMappingType rootEntityDescriptor, RuntimeModelCreationContext runtimeModelCreationContext) {
 		return new ReactiveCteInsertStrategy( rootEntityDescriptor, runtimeModelCreationContext );
 	}
+
 }
