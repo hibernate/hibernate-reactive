@@ -36,6 +36,7 @@ import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSchemaManagementToolInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInitiator;
+import org.hibernate.reactive.provider.service.ReactiveSqmMultiTableMutationStrategyProviderInitiator;
 import org.hibernate.reactive.provider.service.ReactiveValuesMappingProducerProviderInitiator;
 import org.hibernate.reactive.vertx.impl.VertxInstanceInitiator;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
@@ -128,6 +129,9 @@ public final class ReactiveServiceInitiators {
 
 		//Custom for Hibernate Reactive:
 		serviceInitiators.add( ReactiveValuesMappingProducerProviderInitiator.INSTANCE );
+
+		//Custom for Hibernate Reactive:
+		serviceInitiators.add( ReactiveSqmMultiTableMutationStrategyProviderInitiator.INSTANCE );
 
 		serviceInitiators.trimToSize();
 

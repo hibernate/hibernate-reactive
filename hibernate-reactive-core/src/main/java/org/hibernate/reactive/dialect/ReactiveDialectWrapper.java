@@ -13,8 +13,6 @@ import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.reactive.dialect.identity.ReactiveIdentityColumnSupportAdapter;
-import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveCteInsertStrategy;
-import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveCteMutationStrategy;
 
 /**
  * Wraps the given dialect to make some internal components reactive;
@@ -36,14 +34,17 @@ public final class ReactiveDialectWrapper extends DialectDelegateWrapper {
 	public SqmMultiTableMutationStrategy getFallbackSqmMutationStrategy(
 			EntityMappingType rootEntityDescriptor,
 			RuntimeModelCreationContext runtimeModelCreationContext) {
-		return new ReactiveCteMutationStrategy( rootEntityDescriptor, runtimeModelCreationContext );
+		throw new IllegalStateException(
+				"Should never be called - see ReactiveSqmMultiTableMutationStrategyProvider" );
 	}
 
 	@Override
 	public SqmMultiTableInsertStrategy getFallbackSqmInsertStrategy(
 			EntityMappingType rootEntityDescriptor,
 			RuntimeModelCreationContext runtimeModelCreationContext) {
-		return new ReactiveCteInsertStrategy( rootEntityDescriptor, runtimeModelCreationContext );
+		throw new IllegalStateException(
+				"Should never be called - see ReactiveSqmMultiTableMutationStrategyProvider" );
+
 	}
 
 }
