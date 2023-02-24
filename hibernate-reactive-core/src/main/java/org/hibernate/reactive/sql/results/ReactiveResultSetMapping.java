@@ -6,6 +6,8 @@
 package org.hibernate.reactive.sql.results;
 
 import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
@@ -32,7 +34,8 @@ public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValue
 	private final ResultSetMapping delegate;
 
 	public ReactiveResultSetMapping(ResultSetMapping resultSetMapping) {
-		this.delegate = resultSetMapping;
+		this.delegate = Objects.requireNonNull( resultSetMapping );
+		assert !(resultSetMapping instanceof ReactiveResultSetMapping) : "double wrapping detected!";
 	}
 
 	@Override
@@ -42,7 +45,7 @@ public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValue
 
 	@Override
 	public void addAffectedTableNames(Set<String> affectedTableNames, SessionFactoryImplementor sessionFactory) {
-
+		delegate.addAffectedTableNames( affectedTableNames, sessionFactory );
 	}
 
 	public CompletionStage<JdbcValuesMapping> reactiveResolve(JdbcValuesMetadata jdbcResultsMetadata, SessionFactoryImplementor sessionFactory) {
@@ -52,8 +55,23 @@ public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValue
 	}
 
 	@Override
+	public String getMappingIdentifier() {
+		return delegate.getMappingIdentifier();
+	}
+
+	@Override
+	public boolean isDynamic() {
+		return delegate.isDynamic();
+	}
+
+	@Override
 	public int getNumberOfResultBuilders() {
 		return delegate.getNumberOfResultBuilders();
+	}
+
+	@Override
+	public List<ResultBuilder> getResultBuilders() {
+		return delegate.getResultBuilders();
 	}
 
 	@Override
