@@ -9,6 +9,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.dialect.MariaDBDialect;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.OracleDialect;
@@ -58,7 +59,12 @@ public class ReactiveSchemaManagementTool extends HibernateSchemaManagementTool 
 		}
 
 		public InformationExtractor createInformationExtractor(ExtractionContext extractionContext) {
-			final Dialect dialect = extractionContext.getJdbcEnvironment().getDialect();
+			Dialect dialect = extractionContext.getJdbcEnvironment().getDialect();
+			//Allow for wrapped cases:
+			if ( dialect instanceof DialectDelegateWrapper ) {
+				dialect = ( (DialectDelegateWrapper) dialect ).getWrappedDialect();
+			}
+			//Now detect the kind of Dialect:
 			if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
 				return new PostgreSqlReactiveInformationExtractorImpl( extractionContext );
 			}
