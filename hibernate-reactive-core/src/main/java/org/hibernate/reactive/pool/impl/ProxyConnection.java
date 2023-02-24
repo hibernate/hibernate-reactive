@@ -29,19 +29,22 @@ final class ProxyConnection implements ReactiveConnection {
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveConnectionPool sqlClientPool;
+	private final Parameters sqlCleaner;
 	private ReactiveConnection connection;
 	private boolean connected;
 	private boolean closed;
 	private final String tenantId;
 
-	public ProxyConnection(ReactiveConnectionPool sqlClientPool) {
+	public ProxyConnection(ReactiveConnectionPool sqlClientPool, Parameters parameters) {
 		this.sqlClientPool = sqlClientPool;
-		tenantId = null;
+		this.sqlCleaner = parameters;
+		this.tenantId = null;
 	}
 
-	public ProxyConnection(ReactiveConnectionPool sqlClientPool, String tenantId) {
+	public ProxyConnection(ReactiveConnectionPool sqlClientPool, String tenantId, Parameters parameters) {
 		this.sqlClientPool = sqlClientPool;
 		this.tenantId = tenantId;
+		this.sqlCleaner = parameters;
 	}
 
 	private <T> CompletionStage<T> withConnection(Function<ReactiveConnection, CompletionStage<T>> operation) {
@@ -72,27 +75,32 @@ final class ProxyConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> execute(String sql) {
-		return withConnection( conn -> conn.execute( sql ) );
+		final String processedSql = sqlCleaner.process( sql );
+		return withConnection( conn -> conn.execute( processedSql ) );
 	}
 
 	@Override
 	public CompletionStage<Void> executeUnprepared(String sql) {
-		return withConnection( conn -> conn.executeUnprepared( sql ) );
+		final String processedSql = sqlCleaner.process( sql );
+		return withConnection( conn -> conn.executeUnprepared( processedSql ) );
 	}
 
 	@Override
 	public CompletionStage<Void> executeOutsideTransaction(String sql) {
-		return withConnection( conn -> conn.executeOutsideTransaction( sql ) );
+		final String processedSql = sqlCleaner.process( sql );
+		return withConnection( conn -> conn.executeOutsideTransaction( processedSql ) );
 	}
 
 	@Override
 	public CompletionStage<Integer> update(String sql) {
-		return withConnection( conn -> conn.update( sql ) );
+		final String processedSql = sqlCleaner.process( sql );
+		return withConnection( conn -> conn.update( processedSql ) );
 	}
 
 	@Override
 	public CompletionStage<Integer> update(String sql, Object[] paramValues) {
-		return withConnection( conn -> conn.update( sql, paramValues ) );
+		final String processedSql = sqlCleaner.process( sql );
+		return withConnection( conn -> conn.update( processedSql, paramValues ) );
 	}
 
 	@Override
@@ -101,42 +109,50 @@ final class ProxyConnection implements ReactiveConnection {
 			Object[] paramValues,
 			boolean allowBatching,
 			Expectation expectation) {
-		return withConnection( conn -> conn.update( sql, paramValues, allowBatching, expectation ) );
+		final String processedSql = sqlCleaner.process( sql );
+		return withConnection( conn -> conn.update( processedSql, paramValues, allowBatching, expectation ) );
 	}
 
 	@Override
 	public CompletionStage<int[]> update(String sql, List<Object[]> paramValues) {
-		return withConnection( conn -> conn.update( sql, paramValues ) );
+		final String processedSql = sqlCleaner.process( sql );
+		return withConnection( conn -> conn.update( processedSql, paramValues ) );
 	}
 
 	@Override
 	public <T> CompletionStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass, String idColumnName) {
-		return withConnection( conn -> conn.insertAndSelectIdentifier( sql, paramValues, idClass, idColumnName ) );
+		final String processedSql = sqlCleaner.process( sql );
+		return withConnection( conn -> conn.insertAndSelectIdentifier( processedSql, paramValues, idClass, idColumnName ) );
 	}
 
 	@Override
 	public CompletionStage<Result> select(String sql) {
-		return withConnection( conn -> conn.select( sql ) );
+		final String processedSql = sqlCleaner.process( sql );
+		return withConnection( conn -> conn.select( processedSql ) );
 	}
 
 	@Override
 	public CompletionStage<Result> select(String sql, Object[] paramValues) {
-		return withConnection( conn -> conn.select( sql, paramValues ) );
+		final String processedSql = sqlCleaner.process( sql );
+		return withConnection( conn -> conn.select( processedSql, paramValues ) );
 	}
 
 	@Override
 	public CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues) {
-		return withConnection( conn -> conn.selectJdbc( sql, paramValues ) );
+		final String processedSql = sqlCleaner.process( sql );
+		return withConnection( conn -> conn.selectJdbc( processedSql, paramValues ) );
 	}
 
 	@Override
 	public CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues) {
-		return withConnection( conn -> conn.selectJdbcOutsideTransaction( sql, paramValues ) );
+		final String processedSql = sqlCleaner.process( sql );
+		return withConnection( conn -> conn.selectJdbcOutsideTransaction( processedSql, paramValues ) );
 	}
 
 	@Override
 	public <T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
-		return withConnection( conn -> conn.selectIdentifier( sql, paramValues, idClass ) );
+		final String processedSql = sqlCleaner.process( sql );
+		return withConnection( conn -> conn.selectIdentifier( processedSql, paramValues, idClass ) );
 	}
 
 	@Override
