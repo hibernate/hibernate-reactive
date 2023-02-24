@@ -16,7 +16,6 @@ import org.hibernate.cache.internal.RegionFactoryInitiator;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
 import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
-import org.hibernate.engine.jdbc.dialect.internal.DialectFactoryInitiator;
 import org.hibernate.engine.jdbc.dialect.internal.DialectResolverInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.engine.jndi.internal.JndiServiceInitiator;
@@ -32,6 +31,7 @@ import org.hibernate.reactive.provider.service.NoJdbcConnectionProviderInitiator
 import org.hibernate.reactive.provider.service.NoJdbcEnvironmentInitiator;
 import org.hibernate.reactive.provider.service.NoJdbcMultiTenantConnectionProviderInitiator;
 import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
+import org.hibernate.reactive.provider.service.ReactiveDialectFactoryInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSchemaManagementToolInitiator;
@@ -101,7 +101,9 @@ public final class ReactiveServiceInitiators {
 		serviceInitiators.add( NoJdbcMultiTenantConnectionProviderInitiator.INSTANCE );
 
 		serviceInitiators.add( DialectResolverInitiator.INSTANCE );
-		serviceInitiators.add( DialectFactoryInitiator.INSTANCE );
+
+		//Custom for Hibernate Reactive:
+		serviceInitiators.add( ReactiveDialectFactoryInitiator.INSTANCE );
 		serviceInitiators.add( BatchBuilderInitiator.INSTANCE );
 		serviceInitiators.add( JdbcServicesInitiator.INSTANCE );
 		serviceInitiators.add( RefCursorSupportInitiator.INSTANCE );
@@ -124,6 +126,7 @@ public final class ReactiveServiceInitiators {
 		serviceInitiators.add( ManagedBeanRegistryInitiator.INSTANCE );
 		serviceInitiators.add( EntityCopyObserverFactoryInitiator.INSTANCE );
 
+		//Custom for Hibernate Reactive:
 		serviceInitiators.add( ReactiveValuesMappingProducerProviderInitiator.INSTANCE );
 
 		serviceInitiators.trimToSize();
