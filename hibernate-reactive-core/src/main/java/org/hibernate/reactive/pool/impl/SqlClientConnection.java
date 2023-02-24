@@ -59,12 +59,15 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	private final Pool pool;
 	private final SqlConnection connection;
+	private final Parameters sqlCleaner;
 	private Transaction transaction;
 
-	SqlClientConnection(SqlConnection connection, Pool pool, SqlStatementLogger sqlStatementLogger) {
+	SqlClientConnection(SqlConnection connection, Pool pool, SqlStatementLogger sqlStatementLogger,
+						Parameters parameters) {
 		this.pool = pool;
 		this.sqlStatementLogger = sqlStatementLogger;
 		this.connection = connection;
+		this.sqlCleaner = parameters;
 		LOG.tracef( "Connection created: %s", connection );
 	}
 
@@ -86,15 +89,17 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> update(String sql, Object[] paramValues, boolean allowBatching, Expectation expectation) {
-		return update( sql, paramValues )
-				.thenAccept( rowCount -> expectation.verifyOutcome( rowCount,-1, sql ) );
+		final String readySql = sqlCleaner.process( sql );
+		return update( readySql, paramValues )
+				.thenAccept( rowCount -> expectation.verifyOutcome( rowCount,-1, readySql ) );
 	}
 
 	@Override
 	public <T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
+		final String readySql = sqlCleaner.process( sql );
 		translateNulls( paramValues );
-		return preparedQuery( sql, Tuple.wrap( paramValues ) )
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) )
+		return preparedQuery( readySql, Tuple.wrap( paramValues ) )
+				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) )
 				.thenApply( rowSet -> {
 					for (Row row: rowSet) {
 						return row.get(idClass, 0);
@@ -137,9 +142,10 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> executeUnprepared(String sql) {
-		feedback( sql );
-		return client().query( sql ).execute().toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) )
+		final String readySql = sqlCleaner.process( sql );
+		feedback( readySql );
+		return client().query( readySql ).execute().toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) )
 				.thenCompose( CompletionStages::voidFuture );
 	}
 
@@ -166,7 +172,7 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Integer> update(String sql) {
-		return preparedQuery( sql ).thenApply(SqlResult::rowCount);
+		return preparedQuery( sql ).thenApply( SqlResult::rowCount );
 	}
 
 	public CompletionStage<Integer> update(String sql, Tuple parameters) {
@@ -225,43 +231,49 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters) {
-		feedback( sql );
-		return client().preparedQuery( sql ).execute( parameters ).toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
+		final String readySql = sqlCleaner.process( sql );
+		feedback( readySql );
+		return client().preparedQuery( readySql ).execute( parameters ).toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) );
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters, PrepareOptions options) {
-		feedback( sql );
-		return client().preparedQuery( sql, options ).execute( parameters ).toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
+		final String readySql = sqlCleaner.process( sql );
+		feedback( readySql );
+		return client().preparedQuery( readySql, options ).execute( parameters ).toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) );
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQueryBatch(String sql, List<Tuple> parameters) {
-		feedback( sql );
-		return client().preparedQuery( sql ).executeBatch( parameters ).toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
+		final String readySql = sqlCleaner.process( sql );
+		feedback( readySql );
+		return client().preparedQuery( readySql ).executeBatch( parameters ).toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) );
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql) {
-		feedback( sql );
-		return client().preparedQuery( sql ).execute().toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
+		final String readySql = sqlCleaner.process( sql );
+		feedback( readySql );
+		return client().preparedQuery( readySql ).execute().toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) );
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQueryOutsideTransaction(String sql) {
-		feedback( sql );
-		return pool.preparedQuery( sql ).execute().toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
+		final String readySql = sqlCleaner.process( sql );
+		feedback( readySql );
+		return pool.preparedQuery( readySql ).execute().toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) );
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQueryOutsideTransaction(String sql, Tuple parameters) {
-		feedback( sql );
-		return pool.preparedQuery( sql ).execute( parameters ).toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
+		final String readySql = sqlCleaner.process( sql );
+		feedback( readySql );
+		return pool.preparedQuery( readySql ).execute( parameters ).toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) );
 	}
 
 	private void feedback(String sql) {
-		Objects.requireNonNull(sql, "SQL query cannot be null");
+		Objects.requireNonNull( sql, "SQL query cannot be null" );
 		// DDL already gets formatted by the client, so don't reformat it
 		FormatStyle formatStyle =
 				sqlStatementLogger.isFormat() && !sql.contains( System.lineSeparator() )

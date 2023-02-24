@@ -47,21 +47,22 @@ public final class ExternalSqlClientPool extends SqlClientPool {
 
 	private final Pool pool;
 	private final SqlStatementLogger sqlStatementLogger;
+	private final Parameters parameters;
 
-	public ExternalSqlClientPool(Pool pool, SqlStatementLogger sqlStatementLogger) {
+	public ExternalSqlClientPool(Pool pool, SqlStatementLogger sqlStatementLogger, Parameters parameters) {
 		this.pool = pool;
 		this.sqlStatementLogger = sqlStatementLogger;
-	}
-
-	@Deprecated
-	public ExternalSqlClientPool(Pool pool, SqlStatementLogger sqlStatementLogger, boolean usePostgresStyleParameters) {
-		this.pool = pool;
-		this.sqlStatementLogger = sqlStatementLogger;
+		this.parameters = parameters;
 	}
 
 	@Override
 	protected Pool getPool() {
 		return pool;
+	}
+
+	@Override
+	protected Parameters getParameters() {
+		return parameters;
 	}
 
 	@Override

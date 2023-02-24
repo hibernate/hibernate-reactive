@@ -39,6 +39,12 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	protected abstract Pool getPool();
 
 	/**
+	 * Provide a reference to the Parameters instance matching the current Dialect
+	 * @return
+	 */
+	protected abstract Parameters getParameters();
+
+	/**
 	 * @return a Hibernate {@link SqlStatementLogger} for logging SQL
 	 *         statements as they are executed
 	 */
@@ -76,17 +82,17 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	}
 
 	private SqlClientConnection newConnection(SqlConnection connection) {
-		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger() );
+		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger(), getParameters() );
 	}
 
 	@Override
 	public ReactiveConnection getProxyConnection() {
-		return new ProxyConnection( this );
+		return new ProxyConnection( this, getParameters() );
 	}
 
 	@Override
 	public ReactiveConnection getProxyConnection(String tenantId) {
-		return new ProxyConnection( this, tenantId );
+		return new ProxyConnection( this, tenantId, getParameters() );
 	}
 
 }

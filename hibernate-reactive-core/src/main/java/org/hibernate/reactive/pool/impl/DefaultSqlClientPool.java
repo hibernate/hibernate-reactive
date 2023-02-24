@@ -13,6 +13,8 @@ import java.util.ServiceLoader;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateError;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.internal.util.config.ConfigurationException;
@@ -110,6 +112,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 	private SqlStatementLogger sqlStatementLogger;
 	private URI uri;
 	private ServiceRegistryImplementor serviceRegistry;
+	private Parameters parameters;
 
 	//Asynchronous shutdown promise: we can't return it from #close as we implement a
 	//blocking interface.
@@ -120,7 +123,9 @@ public class DefaultSqlClientPool extends SqlClientPool
 	@Override
 	public void injectServices(ServiceRegistryImplementor serviceRegistry) {
 		this.serviceRegistry = serviceRegistry;
-		sqlStatementLogger = serviceRegistry.getService(JdbcServices.class).getSqlStatementLogger();
+		this.sqlStatementLogger = serviceRegistry.getService(JdbcServices.class).getSqlStatementLogger();
+		final Dialect dialect = serviceRegistry.getService( JdbcEnvironment.class ).getDialect();
+		parameters = Parameters.instance( dialect );
 	}
 
 	@Override
@@ -143,6 +148,11 @@ public class DefaultSqlClientPool extends SqlClientPool
 	@Override
 	protected Pool getPool() {
 		return pools;
+	}
+
+	@Override
+	protected Parameters getParameters() {
+		return parameters;
 	}
 
 	@Override
