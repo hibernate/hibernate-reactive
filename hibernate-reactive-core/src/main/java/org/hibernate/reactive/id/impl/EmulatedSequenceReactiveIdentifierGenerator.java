@@ -5,8 +5,6 @@
  */
 package org.hibernate.reactive.id.impl;
 
-import org.hibernate.boot.model.relational.QualifiedName;
-import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.service.ServiceRegistry;
@@ -27,18 +25,11 @@ import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
  */
 public class EmulatedSequenceReactiveIdentifierGenerator extends TableReactiveIdentifierGenerator {
 
-	private QualifiedName sequenceQualifiedName;
-
 	@Override
 	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) {
 		super.configure( type, params, serviceRegistry );
 		ReactiveSequenceIdentifierGenerator generator = new ReactiveSequenceIdentifierGenerator();
 		generator.configure( type, params, serviceRegistry );
-	}
-
-	@Override
-	public void initialize(SqlStringGenerationContext context) {
-		renderedTableName = context.format( sequenceQualifiedName );
 	}
 
 	@Override
