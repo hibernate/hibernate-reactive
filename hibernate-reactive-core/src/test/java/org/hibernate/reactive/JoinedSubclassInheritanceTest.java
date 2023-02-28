@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
+import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -31,6 +32,15 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Book.class, Author.class, SpellBook.class );
 	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.createQuery( "delete from Author" ).executeUpdate()
+						.thenCompose( v -> s.createQuery( "delete from SpellBook" ).executeUpdate() )
+						.thenCompose( v -> s.createQuery("delete from Book ").executeUpdate())) );
+	}
+
 
 	@Test
 	public void testRootClassViaAssociation(TestContext context) {
