@@ -16,6 +16,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,25 +44,33 @@ public class NonNullableManyToOneTest extends BaseReactiveTest {
 				.withTransaction( s -> s.persistAll( painting, artist, dealer ) ) );
 	}
 
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.createQuery( "delete from Painting" ).executeUpdate()
+						.thenCompose( v -> s.createQuery( "delete from Artist" ).executeUpdate() )
+						.thenCompose( v -> s.createQuery( "delete from Dealer" ).executeUpdate())) );
+	}
+
 	@Test
 	public void testNonNullableSuccess(TestContext context) {
 		test( context, getMutinySessionFactory()
 				.withTransaction( session -> session
 						.createQuery( "from Artist", Artist.class )
-						.getSingleResult().chain( a -> session.fetch( a.paintings ) )
+						.getSingleResult().chain( a -> session.fetch( a.getPaintings() ) )
 						.invoke( paintings -> {
 							context.assertNotNull( paintings );
 							context.assertEquals( 1, paintings.size() );
-							context.assertEquals( "Mona Lisa", paintings.get( 0 ).name );
+							context.assertEquals( "Mona Lisa", paintings.get( 0 ).getName() );
 						} ) )
 				.chain( () -> getMutinySessionFactory()
 						.withTransaction( s1 -> s1
 								.createQuery( "from Dealer", Dealer.class )
-								.getSingleResult().chain( d -> s1.fetch( d.paintings ) )
+								.getSingleResult().chain( d -> s1.fetch( d.getPaintings() ) )
 								.invoke( paintings -> {
 									context.assertNotNull( paintings );
 									context.assertEquals( 1, paintings.size() );
-									context.assertEquals( "Mona Lisa", paintings.get( 0 ).name );
+									context.assertEquals( "Mona Lisa", paintings.get( 0 ).getName() );
 								} )
 						)
 				)
@@ -89,6 +98,39 @@ public class NonNullableManyToOneTest extends BaseReactiveTest {
 		public Painting(String name) {
 			this.name = name;
 		}
+
+
+		public Long getId() {
+			return id;
+		}
+
+		public void setId(Long id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public Artist getAuthor() {
+			return author;
+		}
+
+		public void setAuthor(Artist author) {
+			this.author = author;
+		}
+
+		public Dealer getDealer() {
+			return dealer;
+		}
+
+		public void setDealer(Dealer dealer) {
+			this.dealer = dealer;
+		}
 	}
 
 	@Entity(name = "Artist")
@@ -114,6 +156,29 @@ public class NonNullableManyToOneTest extends BaseReactiveTest {
 			painting.author = this;
 		}
 
+		public Long getId() {
+			return id;
+		}
+
+		public void setId(Long id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public List<Painting> getPaintings() {
+			return paintings;
+		}
+
+		public void setPaintings(List<Painting> paintings) {
+			this.paintings = paintings;
+		}
 	}
 
 	@Entity(name = "Dealer")
@@ -139,5 +204,28 @@ public class NonNullableManyToOneTest extends BaseReactiveTest {
 			painting.dealer = this;
 		}
 
+		public Long getId() {
+			return id;
+		}
+
+		public void setId(Long id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public List<Painting> getPaintings() {
+			return paintings;
+		}
+
+		public void setPaintings(List<Painting> paintings) {
+			this.paintings = paintings;
+		}
 	}
 }
