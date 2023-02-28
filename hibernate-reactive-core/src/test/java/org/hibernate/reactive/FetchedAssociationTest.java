@@ -23,6 +23,7 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.hibernate.reactive.testing.SqlStatementTracker;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -51,6 +52,13 @@ public class FetchedAssociationTest extends BaseReactiveTest {
 		Configuration configuration = super.constructConfiguration();
 		sqlTracker = new SqlStatementTracker( FetchedAssociationTest::isSelectOrInsertQuery, configuration.getProperties() );
 		return configuration;
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.createQuery( "delete from Child" ).executeUpdate()
+						.thenCompose( v -> s.createQuery( "delete from Parent" ).executeUpdate() ) ) );
 	}
 
 	private static boolean isSelectOrInsertQuery(String s) {
@@ -92,11 +100,11 @@ public class FetchedAssociationTest extends BaseReactiveTest {
 	// We don't expect a select from CHILD
 	private String[] getExpectedNativeQueries() {
 		return new String[] {
-				"select nextval ('hibernate_sequence')",
-				"insert into PARENT (name, id) values ($1, $2)",
-				"select fetchedass0_.id as id1_1_, fetchedass0_.name as name2_1_ from PARENT fetchedass0_",
-				"select nextval ('hibernate_sequence')",
-				"insert into CHILD (name, lazy_parent_id, id) values ($1, $2, $3)"
+				"select nextval('PARENT_SEQ')",
+				"insert into PARENT (name,id) values ($1,$2)",
+				"select p1_0.id,p1_0.name from PARENT p1_0",
+				"select nextval('CHILD_SEQ')",
+				"insert into CHILD (name,lazy_parent_id,id) values ($1,$2,$3)"
 		};
 	}
 
