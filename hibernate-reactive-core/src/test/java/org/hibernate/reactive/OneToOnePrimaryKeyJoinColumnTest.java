@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -23,6 +24,13 @@ public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( PersonDetails.class, Person.class );
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.createQuery( "delete from PersonDetails" ).executeUpdate()
+						.thenCompose( v -> s.createQuery( "delete from Person" ).executeUpdate() ) ) );
 	}
 
 	@Test
