@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import org.junit.After;
 import org.junit.Test;
 
 import jakarta.persistence.*;
@@ -23,6 +24,13 @@ public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Author.class, Book.class );
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.createQuery( "delete from Author" ).executeUpdate()
+						.thenCompose( v -> s.createQuery( "delete from Book" ).executeUpdate() ) ) );
 	}
 
 	@Test
