@@ -67,7 +67,6 @@ public final class ReactiveServiceInitiators {
 		serviceInitiators.add( SqlScriptExtractorInitiator.INSTANCE );
 
 		serviceInitiators.add( ReactiveMutationExecutorServiceInitiator.INSTANCE );
-		serviceInitiators.add( JdbcParameterRendererInitiator.INSTANCE );
 
 		// Definitely exclusive to Hibernate Reactive, as it marks the registry as Reactive:
 		serviceInitiators.add( ReactiveMarkerServiceInitiator.INSTANCE );
@@ -134,6 +133,9 @@ public final class ReactiveServiceInitiators {
 
 		//Custom for Hibernate Reactive:
 		serviceInitiators.add( ReactiveSqmMultiTableMutationStrategyProviderInitiator.INSTANCE );
+
+		// Default implementation
+		serviceInitiators.add( JdbcParameterRendererInitiator.INSTANCE );
 
 		serviceInitiators.trimToSize();
 
