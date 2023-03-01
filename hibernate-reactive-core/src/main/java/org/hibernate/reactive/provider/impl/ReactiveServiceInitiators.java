@@ -42,6 +42,7 @@ import org.hibernate.reactive.vertx.impl.VertxInstanceInitiator;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
+import org.hibernate.sql.ast.internal.JdbcParameterRendererInitiator;
 import org.hibernate.tool.schema.internal.script.SqlScriptExtractorInitiator;
 
 import static java.util.Collections.unmodifiableList;
@@ -66,6 +67,7 @@ public final class ReactiveServiceInitiators {
 		serviceInitiators.add( SqlScriptExtractorInitiator.INSTANCE );
 
 		serviceInitiators.add( ReactiveMutationExecutorServiceInitiator.INSTANCE );
+		serviceInitiators.add( JdbcParameterRendererInitiator.INSTANCE );
 
 		// Definitely exclusive to Hibernate Reactive, as it marks the registry as Reactive:
 		serviceInitiators.add( ReactiveMarkerServiceInitiator.INSTANCE );
