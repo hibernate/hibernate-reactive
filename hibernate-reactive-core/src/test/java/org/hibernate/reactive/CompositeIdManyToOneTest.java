@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -28,6 +29,14 @@ public class CompositeIdManyToOneTest extends BaseReactiveTest {
     protected Collection<Class<?>> annotatedEntities() {
         return List.of( GroceryList.class, ShoppingItem.class);
     }
+
+    @After
+    public void cleanDb(TestContext context) {
+        test( context, getSessionFactory()
+                .withTransaction( s -> s.createQuery( "delete from ShoppingItem" ).executeUpdate()
+                        .thenCompose( v -> s.createQuery("delete from GroceryList ").executeUpdate())) );
+    }
+
 
     @Test
     public void reactivePersist(TestContext context) {
@@ -71,7 +80,7 @@ public class CompositeIdManyToOneTest extends BaseReactiveTest {
 //        @Id Long groceryListId;
         @Id private String itemName;
 
-        @Id @ManyToOne
+        @Id @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "grocerylistid")
         private GroceryList groceryList;
 
