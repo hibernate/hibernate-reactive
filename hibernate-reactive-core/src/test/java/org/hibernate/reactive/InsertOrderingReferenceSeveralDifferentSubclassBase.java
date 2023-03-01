@@ -55,10 +55,10 @@ public abstract class InsertOrderingReferenceSeveralDifferentSubclassBase extend
 		@Override
 		public String[] getExpectedNativeQueries() {
 			return new String[] {
-					"insert into UnrelatedEntity (unrelatedValue, id) values ($1, $2)",
-					"insert into BaseEntity (name, TYPE, id) values ($1, 'ZERO', $2)",
-					"insert into BaseEntity (name, PARENT_ID, TYPE, id) values ($1, $2, 'TWO', $3)",
-					"insert into BaseEntity (name, PARENT_ID, TYPE, id) values ($1, $2, 'ONE', $3)"
+					"insert into UnrelatedEntity (unrelatedValue,id) values ($1,$2)",
+					"insert into BaseEntity (name,TYPE,id) values ($1,'ZERO',$2)",
+					"insert into BaseEntity (name,PARENT_ID,TYPE,id) values ($1,$2,'TWO',$3)",
+					"insert into BaseEntity (name,PARENT_ID,TYPE,id) values ($1,$2,'ONE',$3)"
 			};
 		}
 	}
@@ -73,13 +73,13 @@ public abstract class InsertOrderingReferenceSeveralDifferentSubclassBase extend
 		@Override
 		public String[] getExpectedNativeQueries() {
 			return new String[] {
-					"insert into UnrelatedEntity (unrelatedValue, id) values ($1, $2)",
-					"insert into BaseEntity (name, TYPE, id) values ($1, 'ZERO', $2)",
-					"insert into BaseEntity (name, PARENT_ID, TYPE, id) values ($1, $2, 'TWO', $3)",
-					"insert into BaseEntity (name, PARENT_ID, TYPE, id) values ($1, $2, 'ONE', $3)",
-					"insert into UnrelatedEntity (unrelatedValue, id) values ($1, $2)",
-					"insert into BaseEntity (name, PARENT_ID, TYPE, id) values ($1, $2, 'ONE', $3)",
-					"insert into BaseEntity (name, PARENT_ID, TYPE, id) values ($1, $2, 'TWO', $3)"
+					"insert into UnrelatedEntity (unrelatedValue,id) values ($1,$2)",
+					"insert into BaseEntity (name,TYPE,id) values ($1,'ZERO',$2)",
+					"insert into BaseEntity (name,PARENT_ID,TYPE,id) values ($1,$2,'TWO',$3)",
+					"insert into BaseEntity (name,PARENT_ID,TYPE,id) values ($1,$2,'ONE',$3)",
+					"insert into UnrelatedEntity (unrelatedValue,id) values ($1,$2)",
+					"insert into BaseEntity (name,PARENT_ID,TYPE,id) values ($1,$2,'ONE',$3)",
+					"insert into BaseEntity (name,PARENT_ID,TYPE,id) values ($1,$2,'TWO',$3)"
 			};
 		}
 	}
