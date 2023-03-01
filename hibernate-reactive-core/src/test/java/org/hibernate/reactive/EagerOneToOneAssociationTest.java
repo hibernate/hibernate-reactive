@@ -9,6 +9,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+import org.junit.After;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -24,6 +27,13 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Book.class, Author.class );
+	}
+
+	@After
+	public void cleanDb(TestContext context) {
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.createQuery( "delete from Book" ).executeUpdate()
+						.thenCompose( v -> s.createQuery("delete from Author ").executeUpdate())) );
 	}
 
 	@Test
@@ -114,6 +124,7 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 		private String name;
 
 		@ManyToOne(fetch = FetchType.EAGER)
+		@OnDelete(action = OnDeleteAction.CASCADE)
 		private Book mostPopularBook;
 
 		public Author(Integer id, String name) {
