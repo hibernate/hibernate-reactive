@@ -6,19 +6,17 @@
 package org.hibernate.reactive;
 
 
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.Settings;
-
 import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
 
 /**
  * Checks the # of cache hits when the configuration property Settings.GENERATE_STATISTICS is set to TRUE
- *
- * @see CachedQueryResultsTest#testQueryPlanCacheHitsGenerateStatisticsFalse(TestContext)
  */
 public class CachedQueryResultsGenerateStatisticsTest extends BaseReactiveTest {
 
@@ -38,10 +36,15 @@ public class CachedQueryResultsGenerateStatisticsTest extends BaseReactiveTest {
 
 	@Test
 	public void testQueryPlanCacheHitsWithGenerateStatisticsTrue(TestContext context) {
-		test( context, CachedQueryResultsTest.criteriaFindAll()
-				.call( CachedQueryResultsTest::criteriaFindAll )
-				.call( CachedQueryResultsTest::criteriaFindAll )
-				.invoke( () -> context.assertEquals( 2L, CachedQueryResultsTest.statistics().getQueryPlanCacheHitCount() ) )
+		test( context, CachedQueryResultsGenerateStatisticsTest.createFindAllWithNamedQuery()
+				.call( CachedQueryResultsGenerateStatisticsTest::createFindAllWithNamedQuery)
+				.call( CachedQueryResultsGenerateStatisticsTest::createFindAllWithNamedQuery)
+				.invoke( () -> context.assertEquals( 3L, CachedQueryResultsTest.statistics().getQueryPlanCacheHitCount() ) )
 		);
 	}
+
+	private static Uni<Mutiny.Query<CachedQueryResultsTest.Fruit>> createFindAllWithNamedQuery() {
+		return getMutinySessionFactory().withSession(s -> Uni.createFrom().item(s.createNamedQuery( CachedQueryResultsTest.Fruit.FIND_ALL, CachedQueryResultsTest.Fruit.class ) ));
+	}
+
 }
