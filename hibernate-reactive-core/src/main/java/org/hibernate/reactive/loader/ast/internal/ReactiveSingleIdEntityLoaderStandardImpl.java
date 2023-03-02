@@ -38,6 +38,7 @@ public class ReactiveSingleIdEntityLoaderStandardImpl<T> extends SingleIdEntityL
 
 	private AtomicInteger nonReusablePlansGenerated = new AtomicInteger();
 
+	@Override
 	public AtomicInteger getNonReusablePlansGenerated() {
 		return nonReusablePlansGenerated;
 	}
@@ -46,15 +47,12 @@ public class ReactiveSingleIdEntityLoaderStandardImpl<T> extends SingleIdEntityL
 
 	private final EntityMappingType entityDescriptor;
 
-	protected final SessionFactoryImplementor sessionFactory;
-
 	public ReactiveSingleIdEntityLoaderStandardImpl(
 			EntityMappingType entityDescriptor,
 			SessionFactoryImplementor sessionFactory) {
 		super( entityDescriptor, sessionFactory );
 		// todo (6.0) : consider creating a base AST and "cloning" it
 		this.entityDescriptor = entityDescriptor;
-		this.sessionFactory = sessionFactory;
 	}
 
 	@Override
@@ -127,6 +125,7 @@ public class ReactiveSingleIdEntityLoaderStandardImpl<T> extends SingleIdEntityL
 	}
 
 	@Internal
+	@Override
 	public ReactiveSingleIdLoadPlan<T> resolveLoadPlan(
 			LockOptions lockOptions,
 			LoadQueryInfluencers loadQueryInfluencers,

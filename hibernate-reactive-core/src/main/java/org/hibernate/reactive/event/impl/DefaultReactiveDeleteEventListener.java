@@ -27,7 +27,6 @@ import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.DeleteEventListener;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
@@ -75,17 +74,17 @@ public class DefaultReactiveDeleteEventListener
 	@Deprecated
 	@Override
 	public void onDelete(DeleteEvent event) {
-		throw new UnsupportedOperationException("Use the reactive version instead: reactiveOnDelete(DeleteEvent)");
+		throw LOG.nonReactiveMethodCall( "reactiveOnDelete" );
 	}
 
 	/**
 	 * @deprecated only the reactive version is supported
-	 * @see #reactiveOnDelete(DeleteEvent, IdentitySet)
+	 * @see #reactiveOnDelete(DeleteEvent, DeleteContext)
 	 */
 	@Deprecated
 	@Override
 	public void onDelete(DeleteEvent event, DeleteContext transientEntities) throws HibernateException {
-		throw new UnsupportedOperationException("Use the reactive version instead: reactiveOnDelete(DeleteEvent, DeleteContext)");
+		throw LOG.nonReactiveMethodCall( "reactiveOnDelete" );
 	}
 
 	/**
@@ -94,6 +93,7 @@ public class DefaultReactiveDeleteEventListener
 	 * @param event The delete event to be handled.
 	 *
 	 */
+	@Override
 	public CompletionStage<Void> reactiveOnDelete(DeleteEvent event) throws HibernateException {
 		return reactiveOnDelete( event, DeleteContext.create() );
 	}
@@ -105,6 +105,7 @@ public class DefaultReactiveDeleteEventListener
 	 * @param transientEntities The cache of entities already deleted
 	 *
 	 */
+	@Override
 	public CompletionStage<Void> reactiveOnDelete(DeleteEvent event, DeleteContext transientEntities) throws HibernateException {
 		EventSource source = event.getSession();
 		if ( event.getObject() instanceof CompletionStage ) {

@@ -70,27 +70,33 @@ public class EmulatedSequenceReactiveIdentifierGenerator extends TableReactiveId
 		return getInt( SequenceStyleGenerator.INCREMENT_PARAM, params, SequenceStyleGenerator.DEFAULT_INCREMENT_SIZE );
 	}
 
+	@Override
 	protected Object[] updateParameters(long currentValue, long updatedValue) {
 		return new Object[] { updatedValue, currentValue };
 	}
 
+	@Override
 	protected Object[] insertParameters(long insertedValue) {
 		return new Object[] { insertedValue };
 	}
 
+	@Override
 	protected Object[] selectParameters() {
 		return new Object[] {};
 	}
 
+	@Override
 	protected String buildSelectQuery() {
 		return "select tbl." + valueColumnName + " from " + renderedTableName + " tbl";
 	}
 
+	@Override
 	protected String buildUpdateQuery() {
 		return "update " + renderedTableName + " set " + valueColumnName + "=?"
 				+ " where " + valueColumnName + "=?";
 	}
 
+	@Override
 	protected String buildInsertQuery() {
 		return "insert into " + renderedTableName + " (" + valueColumnName + ") "
 				+ " values (?)";
