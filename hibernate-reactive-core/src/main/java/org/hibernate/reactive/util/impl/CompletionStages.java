@@ -376,6 +376,10 @@ public class  CompletionStages {
 		return voidFuture();
 	}
 
+	public static CompletionStage<Void> whileLoop(Supplier<CompletionStage<Boolean>> loopSupplier) {
+		return asyncWhile( loopSupplier::get );
+	}
+
 	public static CompletionStage<Void> whileLoop(Supplier<Boolean> whileCondition, Supplier<CompletionStage<?>> loopSupplier) {
 		if ( whileCondition.get() ) {
 			final WhileLoop whileLoop = new WhileLoop( whileCondition, loopSupplier );
