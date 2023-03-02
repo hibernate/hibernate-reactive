@@ -23,6 +23,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 
+
 public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 
 	@Override
@@ -34,8 +35,8 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 	public void testLoad(TestContext context) {
 		final Endpoint endpoint = new Endpoint();
 		final EndpointWebhook webhook = new EndpointWebhook();
-		endpoint.webhook = webhook;
-		webhook.endpoint = endpoint;
+		endpoint.setWebhook( webhook );
+		webhook.setEndpoint( endpoint );
 
 		test( context, openMutinySession()
 				.chain( session -> session
@@ -43,21 +44,21 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 						.chain( session::flush ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session
-						.find( Endpoint.class, endpoint.id )
+						.find( Endpoint.class, endpoint.getId() )
 						.invoke( optionalAnEntity -> {
 							context.assertNotNull( optionalAnEntity );
-							context.assertNotNull( optionalAnEntity.webhook );
+							context.assertNotNull( optionalAnEntity.getWebhook() );
 							// This is eager because the other table contains the reference
-							context.assertTrue( Hibernate.isInitialized( optionalAnEntity.webhook ) );
+							context.assertTrue( Hibernate.isInitialized( optionalAnEntity.getWebhook() ) );
 						} ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session
-						.find( EndpointWebhook.class, webhook.id )
+						.find( EndpointWebhook.class, webhook.getId() )
 						.invoke( optionalAnEntity -> {
 							context.assertNotNull( optionalAnEntity );
-							context.assertNotNull( optionalAnEntity.endpoint );
-							// This i actually lazy
-							context.assertFalse( Hibernate.isInitialized( optionalAnEntity.endpoint ) );
+							context.assertNotNull( optionalAnEntity.getEndpoint() );
+							// This is actually lazy
+							context.assertFalse( Hibernate.isInitialized( optionalAnEntity.getEndpoint() ) );
 						} ) )
 		);
 	}
@@ -65,10 +66,10 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 	@Test
 	public void testQuery(TestContext context) {
 		final Endpoint endpoint = new Endpoint();
-		endpoint.accountId = "XYZ_123";
+		endpoint.setAccountId( "XYZ_123"  );
 		final EndpointWebhook webhook = new EndpointWebhook();
-		endpoint.webhook = webhook;
-		webhook.endpoint = endpoint;
+		endpoint.setWebhook( webhook );
+		webhook.setEndpoint( endpoint );
 
 		String query = "FROM Endpoint WHERE id = :id AND accountId = :accountId";
 		test( context, openMutinySession()
@@ -78,14 +79,14 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 				.chain( this::openMutinySession )
 				.chain( session -> session
 						.createQuery( query, Endpoint.class )
-						.setParameter( "id", endpoint.id )
-						.setParameter( "accountId", endpoint.accountId )
+						.setParameter( "id", endpoint.getId() )
+						.setParameter( "accountId", endpoint.getAccountId() )
 						.getSingleResultOrNull()
 						.invoke( result -> {
 							context.assertNotNull( result );
-							context.assertTrue( Hibernate.isInitialized( result.webhook ) );
-							context.assertEquals( endpoint.id, result.id );
-							context.assertEquals( webhook.id, result.webhook.id );
+							context.assertTrue( Hibernate.isInitialized( result.getWebhook() ) );
+							context.assertEquals( endpoint.getId(), result.getId() );
+							context.assertEquals( webhook.getId(), result.getWebhook().getId() );
 						} ) )
 		);
 	}
@@ -96,13 +97,36 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 
 		@Id
 		@GeneratedValue
-		public Long id;
+		private Long id;
 
 		@OneToOne(mappedBy = "endpoint", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-		public EndpointWebhook webhook;
+		private EndpointWebhook webhook;
 
-		public String accountId;
+		private String accountId;
 
+		public Long getId() {
+			return id;
+		}
+
+		public void setId(Long id) {
+			this.id = id;
+		}
+
+		public EndpointWebhook getWebhook() {
+			return webhook;
+		}
+
+		public void setWebhook(EndpointWebhook webhook) {
+			this.webhook = webhook;
+		}
+
+		public String getAccountId() {
+			return accountId;
+		}
+
+		public void setAccountId(String accountId) {
+			this.accountId = accountId;
+		}
 
 		@Override
 		public String toString() {
@@ -121,11 +145,27 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 
 		@Id
 		@GeneratedValue
-		public Long id;
+		private Long id;
 
 		@OneToOne(fetch = FetchType.LAZY)
 		@JoinColumn(name = "endpoint_id")
-		public Endpoint endpoint;
+		private Endpoint endpoint;
+
+		public Long getId() {
+			return id;
+		}
+
+		public void setId(Long id) {
+			this.id = id;
+		}
+
+		public Endpoint getEndpoint() {
+			return endpoint;
+		}
+
+		public void setEndpoint(Endpoint endpoint) {
+			this.endpoint = endpoint;
+		}
 
 		@Override
 		public String toString() {
