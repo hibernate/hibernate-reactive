@@ -38,6 +38,8 @@ import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
+import static java.util.Collections.emptyList;
+
 /**
  *
  * @param <T>
@@ -51,12 +53,13 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 			EntityMappingType entityDescriptor,
 			SingularAttributeMapping uniqueKeyAttribute) {
 		this.entityDescriptor = entityDescriptor;
-		if ( uniqueKeyAttribute instanceof ToOneAttributeMapping ) {
-			this.uniqueKeyAttribute = ( (ToOneAttributeMapping) uniqueKeyAttribute ).getForeignKeyDescriptor();
-		}
-		else {
-			this.uniqueKeyAttribute = uniqueKeyAttribute;
-		}
+		this.uniqueKeyAttribute = uniqueKeyAttribute instanceof ToOneAttributeMapping
+				? ( (ToOneAttributeMapping) uniqueKeyAttribute ).getForeignKeyDescriptor()
+				: uniqueKeyAttribute;
+	}
+
+	private static Object transformRow(Object[] row) {
+		return row[0];
 	}
 
 	@Override
@@ -72,7 +75,7 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 		final List<JdbcParameter> jdbcParameters = new ArrayList<>();
 		final SelectStatement sqlAst = LoaderSelectBuilder.createSelectByUniqueKey(
 				entityDescriptor,
-				Collections.emptyList(),
+				emptyList(),
 				uniqueKeyAttribute,
 				null,
 				1,
@@ -103,7 +106,7 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 						jdbcSelect,
 						jdbcParameterBindings,
 						new SingleUKEntityLoaderExecutionContext( session, readOnly ),
-						row -> row[0],
+						ReactiveSingleUniqueKeyEntityLoaderStandard::transformRow,
 						ReactiveListResultsConsumer.UniqueSemantic.FILTER
 				)
 				.thenApply( list -> singleResult( ukValue, list ) );
