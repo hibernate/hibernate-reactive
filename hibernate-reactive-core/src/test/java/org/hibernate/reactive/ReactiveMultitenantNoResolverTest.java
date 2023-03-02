@@ -5,27 +5,25 @@
  */
 package org.hibernate.reactive;
 
-import java.util.Objects;
-import java.util.concurrent.CompletionStage;
-
-import org.assertj.core.api.Assertions;
-import org.hibernate.HibernateException;
-import org.hibernate.LockMode;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-
-import org.junit.Rule;
-import org.junit.Test;
-
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import org.hibernate.HibernateException;
+import org.hibernate.LockMode;
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DEFAULT;
@@ -49,18 +47,19 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 	@Rule
 	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
 
-	@Override
-	protected Configuration constructConfiguration() {
-		Configuration configuration = super.constructConfiguration();
-		configuration.addAnnotatedClass( GuineaPig.class );
-		Assertions.fail( "ORM-6: TODO: Check how multi-tenancy works in ORM 6" );
-		// FIXME: Find new syntax for ORM 6
-		// configuration.setProperty( Settings.MULTI_TENANT, MultiTenancyStrategy.DATABASE.name() );
-		// Contains the SQL scripts for the creation of the additional databases
-		configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES, "/multitenancy-test.sql" );
-		configuration.setProperty( Settings.SQL_CLIENT_POOL, TenantDependentPool.class.getName() );
-		return configuration;
-	}
+    @Override
+    protected Configuration constructConfiguration() {
+        Configuration configuration = super.constructConfiguration();
+        configuration.addAnnotatedClass(GuineaPig.class);
+        configuration.setProperty(
+                AvailableSettings.MULTI_TENANT_CONNECTION_PROVIDER,
+                "anything"
+        );//FIXME this is terrible?
+        // Contains the SQL scripts for the creation of the additional databases
+        configuration.setProperty(Settings.HBM2DDL_IMPORT_FILES, "/multitenancy-test.sql");
+        configuration.setProperty(Settings.SQL_CLIENT_POOL, TenantDependentPool.class.getName());
+        return configuration;
+    }
 
 	@Test
 	public void reactivePersistFindDelete(TestContext context) {

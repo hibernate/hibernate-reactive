@@ -7,8 +7,8 @@ package org.hibernate.reactive;
 
 import java.util.Objects;
 
-import org.assertj.core.api.Assertions;
 import org.hibernate.LockMode;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
@@ -43,9 +43,10 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( GuineaPig.class );
-		Assertions.fail( "ORM-6: TODO: Check how multi-tenancy works in ORM 6" );
-		// FIXME: Find new syntax for ORM 6
-		// configuration.setProperty( Settings.MULTI_TENANT, MultiTenancyStrategy.DATABASE.name() );
+		configuration.setProperty(
+				AvailableSettings.MULTI_TENANT_CONNECTION_PROVIDER,
+				"anything"
+		);//FIXME this is terrible?
 		configuration.getProperties().put( Settings.MULTI_TENANT_IDENTIFIER_RESOLVER, TENANT_RESOLVER );
 		// Contains the SQL scripts for the creation of the additional databases
 		configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES, "/multitenancy-test.sql" );
