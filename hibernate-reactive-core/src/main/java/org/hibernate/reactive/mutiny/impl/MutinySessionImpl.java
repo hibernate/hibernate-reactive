@@ -503,7 +503,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
-		throw new UnsupportedOperationException();
+		return delegate.getResultSetMapping( resultType, mappingName );
 	}
 
 	@Override

@@ -269,7 +269,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
 	@Override
 	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return delegate.getResultSetMapping( resultType, mappingName );
 	}
 
 	@Override
