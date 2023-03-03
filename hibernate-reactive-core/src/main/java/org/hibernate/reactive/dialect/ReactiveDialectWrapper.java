@@ -8,10 +8,6 @@ package org.hibernate.reactive.dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.dialect.identity.IdentityColumnSupport;
-import org.hibernate.metamodel.mapping.EntityMappingType;
-import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
-import org.hibernate.query.sqm.mutation.spi.SqmMultiTableInsertStrategy;
-import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.reactive.dialect.identity.ReactiveIdentityColumnSupportAdapter;
 
 /**
@@ -29,22 +25,4 @@ public final class ReactiveDialectWrapper extends DialectDelegateWrapper {
 	public IdentityColumnSupport getIdentityColumnSupport() {
 		return new ReactiveIdentityColumnSupportAdapter( super.getIdentityColumnSupport() );
 	}
-
-	@Override
-	public SqmMultiTableMutationStrategy getFallbackSqmMutationStrategy(
-			EntityMappingType rootEntityDescriptor,
-			RuntimeModelCreationContext runtimeModelCreationContext) {
-		throw new IllegalStateException(
-				"Should never be called - see ReactiveSqmMultiTableMutationStrategyProvider" );
-	}
-
-	@Override
-	public SqmMultiTableInsertStrategy getFallbackSqmInsertStrategy(
-			EntityMappingType rootEntityDescriptor,
-			RuntimeModelCreationContext runtimeModelCreationContext) {
-		throw new IllegalStateException(
-				"Should never be called - see ReactiveSqmMultiTableMutationStrategyProvider" );
-
-	}
-
 }
