@@ -1829,12 +1829,22 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <T> EntityGraph<T> createEntityGraph(Class<T> entity, String name) {
-		throw new UnsupportedOperationException();
+	@SuppressWarnings("unchecked")
+	public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity, String name) {
+		RootGraphImplementor<?> entityGraph = createEntityGraph( name );
+		if ( !entityGraph.getGraphedType().getJavaType().equals( entity ) ) {
+			throw LOG.wrongEntityType();
+		}
+		return (RootGraphImplementor<T>) entityGraph;
 	}
 
 	@Override
-	public <T> EntityGraph<T> getEntityGraph(Class<T> entity, String name) {
-		throw new UnsupportedOperationException();
+	@SuppressWarnings("unchecked")
+	public <T> RootGraphImplementor<T> getEntityGraph(Class<T> entity, String name) {
+		RootGraphImplementor<?> entityGraph = getEntityGraph( name );
+		if ( !entityGraph.getGraphedType().getJavaType().equals( entity ) ) {
+			throw LOG.wrongEntityType();
+		}
+		return (RootGraphImplementor<T>) entityGraph;
 	}
 }

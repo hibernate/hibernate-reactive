@@ -274,16 +274,16 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
 	@Override
 	public <T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return delegate.getEntityGraph( rootType, graphName );
 	}
 
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return delegate.createEntityGraph( rootType );
 	}
 
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return delegate.createEntityGraph( rootType, graphName );
 	}
 }

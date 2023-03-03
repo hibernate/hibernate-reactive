@@ -507,17 +507,17 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public <T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName) {
-		throw new UnsupportedOperationException();
+		return delegate.getEntityGraph( rootType, graphName );
 	}
 
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType) {
-		throw new UnsupportedOperationException();
+		return delegate.createEntityGraph( rootType );
+	}
+
+	@Override
+	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
+		return delegate.createEntityGraph( rootType, graphName );
 	}
 }

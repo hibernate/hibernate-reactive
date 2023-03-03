@@ -597,6 +597,14 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		}
 	}
 
+
+	@Override
+	public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity) {
+		return new RootGraphImpl<>( null,
+									getFactory().getJpaMetamodel().entity( entity ),
+									getSessionFactory().getJpaMetamodel() );
+	}
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity, String name) {
@@ -607,6 +615,14 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		return (RootGraphImplementor<T>) entityGraph;
 	}
 
+	private RootGraphImplementor<?> createEntityGraph(String graphName) {
+		checkOpen();
+		final RootGraphImplementor<?> named = getFactory().findEntityGraphByName( graphName );
+		return named != null
+				? named.makeRootGraph( graphName, true )
+				: null;
+	}
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T> RootGraphImplementor<T> getEntityGraph(Class<T> entity, String name) {
@@ -615,6 +631,15 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			throw LOG.wrongEntityType();
 		}
 		return (RootGraphImplementor<T>) entityGraph;
+	}
+
+	private RootGraphImplementor<?> getEntityGraph(String graphName) {
+		checkOpen();
+		final RootGraphImplementor<?> named = getFactory().findEntityGraphByName( graphName );
+		if ( named == null ) {
+			throw new IllegalArgumentException( "Could not locate EntityGraph with given name : " + graphName );
+		}
+		return named;
 	}
 
 	@Override
@@ -1041,32 +1066,8 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity) {
-		return new RootGraphImpl<>( null,
-				getFactory().getJpaMetamodel().entity( entity ),
-				getSessionFactory().getJpaMetamodel() );
-	}
-
-	private RootGraphImplementor<?> createEntityGraph(String graphName) {
-		checkOpen();
-		final RootGraphImplementor<?> named = getFactory().findEntityGraphByName( graphName );
-		return named != null
-				? named.makeRootGraph( graphName, true )
-				: null;
-	}
-
-	@Override
 	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
 		throw LOG.notYetImplemented();
-	}
-
-	private RootGraphImplementor<?> getEntityGraph(String graphName) {
-		checkOpen();
-		final RootGraphImplementor<?> named = getFactory().findEntityGraphByName( graphName );
-		if ( named == null ) {
-			throw new IllegalArgumentException( "Could not locate EntityGraph with given name : " + graphName );
-		}
-		return named;
 	}
 
 	@Override

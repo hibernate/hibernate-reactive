@@ -10,6 +10,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import org.hibernate.LockMode;
+import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
@@ -213,7 +214,8 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	@Override
 	public <T> CompletionStage<T> get(EntityGraph<T> entityGraph, Object id) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		Class<T> entityClass = ( (RootGraphImplementor<T>) entityGraph ).getGraphedType().getJavaType();
+		return delegate.reactiveGet( entityClass, id, null, entityGraph );
 	}
 
 	@Override
@@ -268,16 +270,16 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	@Override
 	public <T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return delegate.getEntityGraph( rootType, graphName );
 	}
 
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return delegate.createEntityGraph( rootType );
 	}
 
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return delegate.createEntityGraph( rootType, graphName );
 	}
 }
