@@ -64,37 +64,37 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
 	@Override
 	public <R> Mutiny.Query<R> createQuery(String queryString) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createQuery(String queryString, Class<R> resultType) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ), factory );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNamedQuery(String queryName) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( queryName, null ), factory );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNamedQuery(String queryName, Class<R> resultType) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( queryName, resultType ), factory );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String queryString) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString ), factory );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ), factory );
 	}
 
 	@Override
 	public <R> Mutiny.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping ), factory );
 	}
 
 	@Override
