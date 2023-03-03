@@ -27,6 +27,7 @@ import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExec
 import org.hibernate.reactive.id.factory.spi.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.pool.impl.ReactiveConnectionPoolInitiator;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfigurationInitiator;
+import org.hibernate.reactive.provider.service.NativeParametersRendering;
 import org.hibernate.reactive.provider.service.NoJdbcConnectionProviderInitiator;
 import org.hibernate.reactive.provider.service.NoJdbcEnvironmentInitiator;
 import org.hibernate.reactive.provider.service.NoJdbcMultiTenantConnectionProviderInitiator;
@@ -42,7 +43,6 @@ import org.hibernate.reactive.vertx.impl.VertxInstanceInitiator;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
-import org.hibernate.sql.ast.internal.JdbcParameterRendererInitiator;
 import org.hibernate.tool.schema.internal.script.SqlScriptExtractorInitiator;
 
 import static java.util.Collections.unmodifiableList;
@@ -149,11 +149,11 @@ public final class ReactiveServiceInitiators {
 		// Custom for Hibernate Reactive: JdbcValuesMappingProducerProvider
 		serviceInitiators.add( ReactiveValuesMappingProducerProviderInitiator.INSTANCE );
 
-		//Custom for Hibernate Reactive: SqmMultiTableMutationStrategyProvider
+		// Custom for Hibernate Reactive: SqmMultiTableMutationStrategyProvider
 		serviceInitiators.add( ReactiveSqmMultiTableMutationStrategyProviderInitiator.INSTANCE );
 
-		// [standard] JdbcParameterRenderer FIXME this will need to be replaced
-		serviceInitiators.add( JdbcParameterRendererInitiator.INSTANCE );
+		// Custom for Hibernate Reactive: NativeParametersRendering [Could be used by ORM too? TBD]
+		serviceInitiators.add( NativeParametersRendering.INSTANCE );
 
 		// --- end of services defined by Hibernate ORM
 
