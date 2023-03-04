@@ -85,10 +85,10 @@ Optionally, you might also add any of the following additional features:
 | Optional feature | Dependencies
 
 | An {slf4j}[SLF4J] logging implementation | `org.apache.logging.log4j:log4j-core` or `org.slf4j:slf4j-jdk14`
-| The Hibernate metamodel generator, if you're using the JPA criteria query API | `org.hibernate:hibernate-jpamodelgen`
+| The Hibernate metamodel generator, if you're using the JPA criteria query API | `org.hibernate.orm:hibernate-jpamodelgen`
 | Hibernate Validator | `org.hibernate.validator:hibernate-validator` and `org.glassfish:jakarta.el`
 | Compile-time checking for your HQL queries | `org.hibernate:query-validator`
-| Second-level cache support via JCache and EHCache | `org.hibernate:hibernate-jcache` along with `org.ehcache:ehcache`
+| Second-level cache support via JCache and EHCache | `org.hibernate.orm:hibernate-jcache` along with `org.ehcache:ehcache`
 | SCRAM authentication support for PostgreSQL | `com.ongres.scram:client:2.1`
 |===
 

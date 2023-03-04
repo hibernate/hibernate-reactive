@@ -9,7 +9,7 @@ dependencies {
     implementation project(':hibernate-reactive-core')
 
     // JPA metamodel generation for criteria queries (optional)
-    annotationProcessor "org.hibernate:hibernate-jpamodelgen:${hibernateOrmVersion}"
+    annotationProcessor "org.hibernate.orm:hibernate-jpamodelgen:${hibernateOrmVersion}"
 
     // Testing on one database should be enough
     runtimeOnly "io.vertx:vertx-pg-client:${vertxVersion}"
