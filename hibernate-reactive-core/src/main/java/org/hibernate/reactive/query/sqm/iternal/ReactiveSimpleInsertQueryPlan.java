@@ -94,9 +94,6 @@ public class ReactiveSimpleInsertQueryPlan implements ReactiveNonSelectQueryPlan
 		if ( insertTranslator != null ) {
 			jdbcInsert = insertTranslator.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
 		}
-		else {
-			jdbcInsert.bindFilterJdbcParameters( jdbcParameterBindings );
-		}
 
 		return StandardReactiveJdbcMutationExecutor.INSTANCE
 				.executeReactive(

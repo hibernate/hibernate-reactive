@@ -49,7 +49,6 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 		final int jdbcTypeCount = getRestrictivePart().getJdbcTypeCount();
 		assert getJdbcParameters().size() % jdbcTypeCount == 0;
 		final JdbcParameterBindings jdbcParameterBindings = new JdbcParameterBindingsImpl( jdbcTypeCount );
-		getJdbcSelect().bindFilterJdbcParameters( jdbcParameterBindings );
 
 		int offset = 0;
 		while ( offset < getJdbcParameters().size() ) {
