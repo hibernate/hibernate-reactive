@@ -9,6 +9,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -32,13 +33,19 @@ public class ReactiveStandardValuesMappingProducer extends JdbcValuesMappingProd
 	}
 
 	@Override
-	public JdbcValuesMapping resolve(JdbcValuesMetadata jdbcResultsMetadata, SessionFactoryImplementor sessionFactory) {
+	public JdbcValuesMapping resolve(
+			JdbcValuesMetadata jdbcResultsMetadata,
+			LoadQueryInfluencers loadQueryInfluencers,
+			SessionFactoryImplementor sessionFactory) {
 		// In this class the ValuesMapping has been already resolved, so it should be fine to implement this method
-		return super.resolve( jdbcResultsMetadata, sessionFactory );
+		return super.resolve( jdbcResultsMetadata, loadQueryInfluencers, sessionFactory );
 	}
 
 	@Override
-	public CompletionStage<JdbcValuesMapping> reactiveResolve(JdbcValuesMetadata jdbcResultsMetadata, SessionFactoryImplementor sessionFactory) {
-		return completedFuture( super.resolve( jdbcResultsMetadata, sessionFactory ) );
+		public CompletionStage<JdbcValuesMapping> reactiveResolve(
+				JdbcValuesMetadata jdbcResultsMetadata,
+				LoadQueryInfluencers loadQueryInfluencers,
+				SessionFactoryImplementor sessionFactory) {
+		return completedFuture( super.resolve( jdbcResultsMetadata, loadQueryInfluencers, sessionFactory ) );
 	}
 }
