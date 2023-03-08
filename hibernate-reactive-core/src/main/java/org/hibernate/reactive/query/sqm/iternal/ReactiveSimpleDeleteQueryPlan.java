@@ -129,9 +129,6 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 		if ( deleteTranslator != null ) {
 			jdbcDelete = deleteTranslator.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
 		}
-		else {
-			jdbcDelete.bindFilterJdbcParameters( jdbcParameterBindings );
-		}
 
 		final boolean missingRestriction = sqmDelete.getWhereClause() == null
 				|| sqmDelete.getWhereClause().getPredicate() == null;

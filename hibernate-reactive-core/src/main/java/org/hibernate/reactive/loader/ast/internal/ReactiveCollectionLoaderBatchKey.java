@@ -199,7 +199,6 @@ public class ReactiveCollectionLoaderBatchKey implements ReactiveCollectionLoade
 				.translate( null, QueryOptions.NONE );
 
 		final JdbcParameterBindings jdbcParameterBindings = new JdbcParameterBindingsImpl( keyJdbcCount * smallBatchLength );
-		jdbcSelect.bindFilterJdbcParameters( jdbcParameterBindings );
 
 		int offset = 0;
 

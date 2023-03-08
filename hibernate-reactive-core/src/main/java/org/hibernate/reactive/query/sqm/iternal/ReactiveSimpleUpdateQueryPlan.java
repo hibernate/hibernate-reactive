@@ -86,9 +86,6 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 		if ( updateTranslator != null ) {
 			jdbcUpdate = updateTranslator.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
 		}
-		else {
-			jdbcUpdate.bindFilterJdbcParameters( jdbcParameterBindings );
-		}
 
 		return StandardReactiveJdbcMutationExecutor.INSTANCE
 				.executeReactive(
