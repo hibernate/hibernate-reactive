@@ -35,7 +35,6 @@ import org.hibernate.reactive.sql.results.internal.ReactiveResultSetAccess;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.sql.results.spi.ReactiveResultsConsumer;
 import org.hibernate.reactive.sql.results.spi.ReactiveValuesMappingProducer;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.exec.SqlExecLogger;
 import org.hibernate.sql.exec.internal.JdbcExecHelper;
 import org.hibernate.sql.exec.spi.ExecutionContext;
@@ -320,7 +319,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		if ( cachedResults == null ) {
 			if ( queryResultsCacheKey == null ) {
 				return mappingProducer
-						.reactiveResolve( resultSetAccess, factory )
+						.reactiveResolve( resultSetAccess, session.getLoadQueryInfluencers(), factory )
 						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet( resultSetAccess, null, queryIdentifier, executionContext.getQueryOptions(), jdbcValuesMapping, null, executionContext ) );
 			}
 			else {
@@ -328,21 +327,29 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 				final CapturingJdbcValuesMetadata capturingMetadata = new CapturingJdbcValuesMetadata( resultSetAccess );
 				JdbcValuesMetadata metadataForCache = capturingMetadata.resolveMetadataForCache();
 				return mappingProducer
-						.reactiveResolve( resultSetAccess, factory )
+						.reactiveResolve( resultSetAccess, session.getLoadQueryInfluencers(), factory )
 						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet( resultSetAccess, queryResultsCacheKey, queryIdentifier, executionContext.getQueryOptions(), jdbcValuesMapping, metadataForCache, executionContext ) );
 			}
 		}
 		else {
 			// If we need to put the values into the cache, we need to be able to capture the JdbcValuesMetadata
 			final CapturingJdbcValuesMetadata capturingMetadata = new CapturingJdbcValuesMetadata( resultSetAccess );
-			CompletionStage<JdbcValuesMapping> stage = CompletionStages.nullFuture();
+			final CompletionStage<JdbcValuesMapping> stage;
 			if ( cachedResults.isEmpty() || !( cachedResults.get( 0 ) instanceof JdbcValuesMetadata ) ) {
-				stage = stage.thenCompose(v -> mappingProducer.reactiveResolve(resultSetAccess, factory));
+				stage = mappingProducer.reactiveResolve( resultSetAccess, session.getLoadQueryInfluencers(), factory );
 			}
 			else {
-				stage = stage.thenCompose(v -> mappingProducer.reactiveResolve( (JdbcValuesMetadata) cachedResults.get( 0 ), factory ));
+				stage = mappingProducer.reactiveResolve( (JdbcValuesMetadata) cachedResults.get( 0 ), session.getLoadQueryInfluencers(), factory );
 			}
-			return stage.thenApply(jdbcValuesMapping -> new ReactiveValuesResultSet( resultSetAccess, queryResultsCacheKey, queryIdentifier, executionContext.getQueryOptions(), jdbcValuesMapping, capturingMetadata, executionContext));
+			return stage.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
+					resultSetAccess,
+					queryResultsCacheKey,
+					queryIdentifier,
+					executionContext.getQueryOptions(),
+					jdbcValuesMapping,
+					capturingMetadata,
+					executionContext
+			) );
 		}
 	}
 

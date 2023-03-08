@@ -13,6 +13,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
 import org.hibernate.query.results.ResultBuilder;
@@ -39,7 +40,10 @@ public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValue
 	}
 
 	@Override
-	public JdbcValuesMapping resolve(JdbcValuesMetadata jdbcResultsMetadata, SessionFactoryImplementor sessionFactory) {
+	public JdbcValuesMapping resolve(
+			JdbcValuesMetadata jdbcResultsMetadata,
+			LoadQueryInfluencers loadQueryInfluencers,
+			SessionFactoryImplementor sessionFactory) {
 		throw LOG.nonReactiveMethodCall( "reactiveResolve" );
 	}
 
@@ -48,10 +52,14 @@ public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValue
 		delegate.addAffectedTableNames( affectedTableNames, sessionFactory );
 	}
 
-	public CompletionStage<JdbcValuesMapping> reactiveResolve(JdbcValuesMetadata jdbcResultsMetadata, SessionFactoryImplementor sessionFactory) {
+	@Override
+	public CompletionStage<JdbcValuesMapping> reactiveResolve(
+			JdbcValuesMetadata jdbcResultsMetadata,
+			LoadQueryInfluencers loadQueryInfluencers,
+			SessionFactoryImplementor sessionFactory) {
 		return ( (ReactiveResultSetAccess) jdbcResultsMetadata )
 				.getReactiveResultSet()
-				.thenApply( columnCount -> delegate.resolve(  jdbcResultsMetadata, sessionFactory ) );
+				.thenApply( columnCount -> delegate.resolve( jdbcResultsMetadata, loadQueryInfluencers, sessionFactory ) );
 	}
 
 	@Override
