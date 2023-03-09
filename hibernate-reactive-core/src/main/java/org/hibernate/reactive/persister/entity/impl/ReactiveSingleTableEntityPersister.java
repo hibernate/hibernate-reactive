@@ -5,10 +5,6 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
-import java.sql.PreparedStatement;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -23,19 +19,29 @@ import org.hibernate.loader.ast.internal.SingleIdArrayLoadPlan;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.loader.ast.spi.SingleUniqueKeyEntityLoader;
 import org.hibernate.mapping.PersistentClass;
+import org.hibernate.metamodel.mapping.NaturalIdMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
+import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.persister.entity.mutation.DeleteCoordinator;
 import org.hibernate.persister.entity.mutation.InsertCoordinator;
 import org.hibernate.persister.entity.mutation.UpdateCoordinator;
+import org.hibernate.reactive.loader.ast.spi.ReactiveNaturalIdLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.util.impl.CompletionStages;
+
+import java.sql.PreparedStatement;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
+import static org.hibernate.pretty.MessageHelper.infoString;
 
 /**
  * A {@link ReactiveEntityPersister} backed by {@link SingleTableEntityPersister}
@@ -104,6 +110,11 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	public ReactiveSingleIdEntityLoader<?> getReactiveSingleIdEntityLoader() {
 		return reactiveDelegate.getSingleIdEntityLoader();
 	}
+//
+//	@Override
+//	public boolean didInitializeLazyProperty(String fieldName, Object entity, EntityEntry entry, int lazyIndex, Object selectedValue) {
+//		return ;
+//	}
 
 	@Override
 	public Object insert(Object[] fields, Object object, SharedSessionContractImplementor session) {
@@ -156,6 +167,24 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 		return reactiveDelegate.processUpdateGeneratedProperties( id, entity, state,
 				getUpdateGeneratedValuesProcessor(), session, getEntityName() );
 
+	}
+
+	/**
+	 * @see SingleTableEntityPersister#loadEntityIdByNaturalId(Object[], LockOptions, SharedSessionContractImplementor)
+	 */
+	@Override
+	public CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, EventSource session) {
+		verifyHasNaturalId();
+		if ( LOG.isTraceEnabled() ) {
+			LOG.tracef(
+					"Resolving natural-id [%s] to id : %s ",
+					Arrays.asList( orderedNaturalIdValues ),
+					infoString( this )
+			);
+		}
+
+		return ( (ReactiveNaturalIdLoader) getNaturalIdLoader() )
+				.reactiveResolveNaturalIdToId( orderedNaturalIdValues, session );
 	}
 
 	@Override
@@ -254,12 +283,15 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 
 	@Override
 	public CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
-		throw LOG.notYetImplemented();
-	}
-
-	@Override
-	public CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, EventSource session) {
-		throw LOG.notYetImplemented();
+		verifyHasNaturalId();
+		if ( LOG.isTraceEnabled() ) {
+			LOG.tracef(
+					"Resolving natural-id [%s] to id : %s ",
+					Arrays.asList( naturalIdValues ),
+					infoString( this )
+			);
+		}
+		return CompletionStages.completedFuture( ReactiveAbstractEntityPersister.super.getNaturalIdLoader().resolveNaturalIdToId( naturalIdValues, session ) );
 	}
 
 	@Override
@@ -274,5 +306,10 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	@Override
 	public SingleIdArrayLoadPlan getSQLLazySelectLoadPlan(String fetchGroup) {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public NaturalIdMapping generateNaturalIdMapping(MappingModelCreationProcess creationProcess, PersistentClass bootEntityDescriptor) {
+		return ReactiveAbstractEntityPersister.super.generateNaturalIdMapping(creationProcess, bootEntityDescriptor);
 	}
 }

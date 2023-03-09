@@ -5,12 +5,6 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
-import java.lang.invoke.MethodHandles;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -26,16 +20,19 @@ import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.query.named.NamedQueryMemento;
-import org.hibernate.reactive.loader.ast.internal.ReactiveMultiIdLoaderStandard;
-import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderDynamicBatch;
-import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderProvidedQueryImpl;
-import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderStandardImpl;
-import org.hibernate.reactive.loader.ast.internal.ReactiveSingleUniqueKeyEntityLoaderStandard;
+import org.hibernate.reactive.loader.ast.internal.*;
 import org.hibernate.reactive.loader.ast.spi.ReactiveMultiIdEntityLoader;
+import org.hibernate.reactive.loader.ast.spi.ReactiveNaturalIdLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 
 public class ReactiveAbstractPersisterDelegate {
@@ -45,6 +42,10 @@ public class ReactiveAbstractPersisterDelegate {
 	private final ReactiveSingleIdEntityLoader<Object> singleIdEntityLoader;
 	private final ReactiveMultiIdEntityLoader<?> multiIdEntityLoader;
 
+	private final ReactiveNaturalIdLoader<?> singleNaturalIdLoader;
+
+//	private final ReactiveMultiNaturalIdLoader<?> multiNaturalIdLoader;
+
 	private Map<SingularAttributeMapping, ReactiveSingleUniqueKeyEntityLoader<Object>> uniqueKeyLoadersNew;
 
 	public ReactiveAbstractPersisterDelegate(
@@ -52,12 +53,17 @@ public class ReactiveAbstractPersisterDelegate {
 			final PersistentClass persistentClass,
 			final RuntimeModelCreationContext creationContext) {
 		SessionFactoryImplementor factory = creationContext.getSessionFactory();
-		singleIdEntityLoader = createReactiveSingleIdEntityLoader( entityDescriptor, persistentClass, creationContext, factory, entityDescriptor.getEntityName() );
-		multiIdEntityLoader = new ReactiveMultiIdLoaderStandard<>( entityDescriptor, persistentClass, factory );
+		singleIdEntityLoader = createReactiveSingleIdEntityLoader(entityDescriptor, persistentClass, creationContext, factory, entityDescriptor.getEntityName());
+		multiIdEntityLoader = new ReactiveMultiIdLoaderStandard<>(entityDescriptor, persistentClass, factory);
+		singleNaturalIdLoader = getSingleNaturalLoader(); //new ReactiveSimpleNaturalIdLoader(null, entityDescriptor);
 	}
 
 	public ReactiveSingleIdEntityLoader<Object> getSingleIdEntityLoader() {
 		return singleIdEntityLoader;
+	}
+
+	public ReactiveNaturalIdLoader<?> getSingleNaturalLoader() {
+		return singleNaturalIdLoader;
 	}
 
 	public <K> CompletionStage<? extends List<?>> multiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {

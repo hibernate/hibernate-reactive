@@ -5,10 +5,6 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
-import java.sql.PreparedStatement;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -23,7 +19,9 @@ import org.hibernate.loader.ast.internal.SingleIdArrayLoadPlan;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.loader.ast.spi.SingleUniqueKeyEntityLoader;
 import org.hibernate.mapping.PersistentClass;
+import org.hibernate.metamodel.mapping.NaturalIdMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
+import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
@@ -36,6 +34,10 @@ import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinato
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.util.impl.CompletionStages;
+
+import java.sql.PreparedStatement;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 
 /**
@@ -90,6 +92,11 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	@Override
 	public SingleIdArrayLoadPlan getSQLLazySelectLoadPlan(String fetchGroup) {
 		return null;
+	}
+
+	@Override
+	public NaturalIdMapping generateNaturalIdMapping(MappingModelCreationProcess creationProcess, PersistentClass bootEntityDescriptor) {
+		return ReactiveAbstractEntityPersister.super.generateNaturalIdMapping(creationProcess, bootEntityDescriptor);
 	}
 
 	@Override

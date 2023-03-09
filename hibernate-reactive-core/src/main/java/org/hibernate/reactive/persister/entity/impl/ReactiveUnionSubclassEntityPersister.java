@@ -5,11 +5,6 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
-import java.lang.invoke.MethodHandles;
-import java.sql.PreparedStatement;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -26,7 +21,9 @@ import org.hibernate.loader.ast.internal.SingleIdArrayLoadPlan;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.loader.ast.spi.SingleUniqueKeyEntityLoader;
 import org.hibernate.mapping.PersistentClass;
+import org.hibernate.metamodel.mapping.NaturalIdMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
+import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.UnionSubclassEntityPersister;
@@ -41,6 +38,11 @@ import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinato
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.util.impl.CompletionStages;
+
+import java.lang.invoke.MethodHandles;
+import java.sql.PreparedStatement;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 /**
  * An {@link ReactiveEntityPersister} backed by {@link UnionSubclassEntityPersister}
@@ -301,5 +303,10 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	@Override
 	public SingleIdArrayLoadPlan getSQLLazySelectLoadPlan(String fetchGroup) {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public NaturalIdMapping generateNaturalIdMapping(MappingModelCreationProcess creationProcess, PersistentClass bootEntityDescriptor) {
+		return ReactiveAbstractEntityPersister.super.generateNaturalIdMapping(creationProcess, bootEntityDescriptor);
 	}
 }

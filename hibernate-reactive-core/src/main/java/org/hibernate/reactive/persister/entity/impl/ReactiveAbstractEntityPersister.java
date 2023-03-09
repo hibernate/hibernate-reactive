@@ -5,21 +5,8 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
-import java.lang.invoke.MethodHandles;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
-
-import org.hibernate.AssertionFailure;
-import org.hibernate.HibernateException;
-import org.hibernate.JDBCException;
-import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
-import org.hibernate.StaleObjectStateException;
+import jakarta.persistence.metamodel.Attribute;
+import org.hibernate.*;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.bytecode.enhance.spi.interceptor.BytecodeLazyAttributeInterceptor;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
@@ -29,18 +16,19 @@ import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.ManagedTypeHelper;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.PersistentAttributeInterceptor;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.*;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.internal.CacheEntityLoaderHelper;
 import org.hibernate.loader.ast.internal.SingleIdArrayLoadPlan;
+import org.hibernate.loader.ast.spi.NaturalIdLoader;
+import org.hibernate.mapping.PersistentClass;
+import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.EntityVersionMapping;
+import org.hibernate.metamodel.mapping.NaturalIdMapping;
+import org.hibernate.metamodel.mapping.SingularAttributeMapping;
+import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.Lockable;
 import org.hibernate.persister.entity.OuterJoinLoadable;
@@ -48,6 +36,8 @@ import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.metamodel.mapping.internal.ReactiveCompoundNaturalIdMapping;
+import org.hibernate.reactive.metamodel.mapping.internal.ReactiveSimpleNaturalIdMapping;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -56,14 +46,19 @@ import org.hibernate.sql.SimpleSelect;
 import org.hibernate.sql.Update;
 import org.hibernate.type.BasicType;
 
-import jakarta.persistence.metamodel.Attribute;
+import java.lang.invoke.MethodHandles;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.internal.util.collections.CollectionHelper.setOfSize;
 import static org.hibernate.pretty.MessageHelper.infoString;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.*;
 
 /**
  * An abstract implementation of {@link ReactiveEntityPersister} whose
@@ -529,5 +524,46 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	boolean isBatchable();
 
-	// END AbstractEntityPersister methods
+	// Adapted from AbstractEntityPersister
+	default NaturalIdMapping generateNaturalIdMapping(MappingModelCreationProcess creationProcess, PersistentClass bootEntityDescriptor) {
+		//noinspection AssertWithSideEffects
+		assert bootEntityDescriptor.hasNaturalId();
+
+		final int[] naturalIdAttributeIndexes = getEntityMetamodel().getNaturalIdentifierProperties();
+		assert naturalIdAttributeIndexes.length > 0;
+
+		if ( naturalIdAttributeIndexes.length == 1 ) {
+			final String propertyName = getEntityMetamodel().getPropertyNames()[ naturalIdAttributeIndexes[ 0 ] ];
+			final AttributeMapping attributeMapping = findAttributeMapping( propertyName );
+			final SingularAttributeMapping singularAttributeMapping = (SingularAttributeMapping) attributeMapping;
+			return new ReactiveSimpleNaturalIdMapping( singularAttributeMapping, this, creationProcess );
+		}
+
+		// collect the names of the attributes making up the natural-id.
+		final Set<String> attributeNames = setOfSize( naturalIdAttributeIndexes.length );
+		for ( int naturalIdAttributeIndex : naturalIdAttributeIndexes ) {
+			attributeNames.add( this.getPropertyNames()[ naturalIdAttributeIndex ] );
+		}
+
+		// then iterate over the attribute mappings finding the ones having names
+		// in the collected names.  iterate here because it is already alphabetical
+
+		final List<SingularAttributeMapping> collectedAttrMappings = new ArrayList<>();
+		for ( AttributeMapping attributeMapping : getAttributeMappings() ) {
+			if ( attributeNames.contains( attributeMapping.getAttributeName() ) ) {
+				collectedAttrMappings.add( (SingularAttributeMapping) attributeMapping );
+			}
+		}
+
+		if ( collectedAttrMappings.size() <= 1 ) {
+			throw new MappingException( "Expected multiple natural-id attributes, but found only one: " + getEntityName() );
+		}
+
+		return new ReactiveCompoundNaturalIdMapping(this, collectedAttrMappings, creationProcess );
+	}
+
+	@Override
+	default NaturalIdLoader<?> getNaturalIdLoader() {
+		return getNaturalIdMapping().makeLoader( this );
+	}
 }
