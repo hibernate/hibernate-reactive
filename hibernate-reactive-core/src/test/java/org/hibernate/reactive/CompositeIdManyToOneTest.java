@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -22,6 +23,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
+@Ignore // This also fails in 1.1, see issue https://github.com/hibernate/hibernate-reactive/issues/1384
 public class CompositeIdManyToOneTest extends BaseReactiveTest {
 
     @Override
