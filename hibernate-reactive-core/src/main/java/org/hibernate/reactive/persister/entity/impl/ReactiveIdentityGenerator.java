@@ -14,6 +14,7 @@ import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.dialect.SQLServerDialect;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.IdentityGenerator;
 import org.hibernate.id.PostInsertIdentityPersister;
 import org.hibernate.id.insert.IdentifierGeneratingInsert;
@@ -46,11 +47,13 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 
 		private final PostInsertIdentityPersister persister;
 		private final Dialect dialect;
+		private final SessionFactoryImplementor factory;
 
 		public ReactiveInsertAndSelectDelegate(PostInsertIdentityPersister persister, Dialect dialect) {
 			super( persister, dialect );
 			this.persister = persister;
 			this.dialect = dialect;
+			this.factory = persister.getFactory();
 		}
 
 		@Override
@@ -62,13 +65,13 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 
 		private IdentifierGeneratingInsert createInsert(SqlStringGenerationContext context) {
 			if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
-				return new PostgresIdentifierGeneratingInsert( dialect );
+				return new PostgresIdentifierGeneratingInsert( factory );
 			}
 			if ( dialect instanceof SQLServerDialect ) {
-				return new SqlServerIdentifierGeneratingInsert( dialect );
+				return new SqlServerIdentifierGeneratingInsert( factory );
 			}
 			if ( dialect instanceof DB2Dialect ) {
-				return new Db2IdentifierGeneratingInsert( dialect );
+				return new Db2IdentifierGeneratingInsert( factory );
 			}
 			return super.prepareIdentifierGeneratingInsert( context );
 		}
@@ -78,8 +81,8 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 
 		private String identityColumnName;
 
-		public Db2IdentifierGeneratingInsert(Dialect dialect) {
-			super( dialect );
+		public Db2IdentifierGeneratingInsert(SessionFactoryImplementor sessionFactory) {
+			super( sessionFactory );
 		}
 
 		@Override
@@ -101,8 +104,8 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 
 		private String identityColumnName;
 
-		public PostgresIdentifierGeneratingInsert(Dialect dialect) {
-			super( dialect );
+		public PostgresIdentifierGeneratingInsert(SessionFactoryImplementor sessionFactory) {
+			super( sessionFactory );
 		}
 
 		@Override
@@ -120,8 +123,8 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 	public static class SqlServerIdentifierGeneratingInsert extends IdentifierGeneratingInsert {
 		private String identityColumnName;
 
-		public SqlServerIdentifierGeneratingInsert(Dialect dialect) {
-			super( dialect );
+		public SqlServerIdentifierGeneratingInsert(SessionFactoryImplementor sessionFactory) {
+			super( sessionFactory );
 		}
 
 		@Override
