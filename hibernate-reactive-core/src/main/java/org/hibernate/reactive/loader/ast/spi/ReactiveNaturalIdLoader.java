@@ -12,7 +12,9 @@ import org.hibernate.loader.ast.spi.NaturalIdLoader;
 
 public interface ReactiveNaturalIdLoader<T> extends NaturalIdLoader<CompletionStage<T>> {
 
+    @Override
     CompletionStage<Object> resolveNaturalIdToId(Object naturalIdValue, SharedSessionContractImplementor session);
 
+    @Override
     CompletionStage<Object> resolveIdToNaturalId(Object id, SharedSessionContractImplementor session);
 }
