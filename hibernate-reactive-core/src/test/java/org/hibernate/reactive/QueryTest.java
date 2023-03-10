@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.hibernate.NonUniqueResultException;
 
 import org.junit.Test;
 
@@ -583,7 +582,7 @@ public class QueryTest extends BaseReactiveTest {
 				.thenCompose( s -> s.persist( author1, author2 ).thenCompose( v -> s.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( s -> assertThrown(
-						org.hibernate.NonUniqueResultException.class,
+						jakarta.persistence.NonUniqueResultException.class,
 						s.createQuery( "from Author" ).getSingleResult()
 				) )
 		);
@@ -597,7 +596,7 @@ public class QueryTest extends BaseReactiveTest {
 				.thenCompose( s -> s.persist( author1, author2 ).thenCompose( v -> s.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( s -> assertThrown(
-						NonUniqueResultException.class,
+						jakarta.persistence.NonUniqueResultException.class,
 						s.createQuery( "from Author" ).getSingleResultOrNull()
 				) )
 		);
