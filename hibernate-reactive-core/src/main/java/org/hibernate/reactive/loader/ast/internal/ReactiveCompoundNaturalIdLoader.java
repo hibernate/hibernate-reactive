@@ -18,7 +18,7 @@ import org.hibernate.metamodel.mapping.internal.CompoundNaturalIdMapping;
 import org.hibernate.reactive.loader.ast.spi.ReactiveNaturalIdLoader;
 import org.hibernate.sql.ast.tree.from.TableGroup;
 
-public class ReactiveCompoundNaturalIdLoader<T> extends CompoundNaturalIdLoader implements ReactiveNaturalIdLoader {
+public class ReactiveCompoundNaturalIdLoader<T> extends CompoundNaturalIdLoader<CompletionStage<T>> implements ReactiveNaturalIdLoader<T> {
 
 	private final ReactiveNaturalIdLoaderDelegate<T> delegate;
 
