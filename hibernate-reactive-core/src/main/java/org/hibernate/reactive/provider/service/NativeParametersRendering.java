@@ -9,13 +9,15 @@ import java.util.Map;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.DialectDelegateWrapper;
-import org.hibernate.dialect.PostgreSQLDialect;
-import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
+import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.hibernate.sql.ast.internal.JdbcParameterRendererStandard;
 import org.hibernate.sql.ast.spi.JdbcParameterRenderer;
 
+/**
+ * Replaces the JdbcParameterRendererInitiator so to not require
+ * users to set AvailableSettings.DIALECT_NATIVE_PARAM_MARKERS : this
+ * gets enforces as the Vert.x SQL clients require it.
+ */
 public class NativeParametersRendering implements StandardServiceInitiator<JdbcParameterRenderer> {
 	/**
 	 * Singleton access
@@ -24,13 +26,8 @@ public class NativeParametersRendering implements StandardServiceInitiator<JdbcP
 
 	@Override
 	public JdbcParameterRenderer initiateService(Map<String, Object> configurationValues, ServiceRegistryImplementor registry) {
-		final Dialect dialect = registry.getService( JdbcEnvironment.class ).getDialect();
-		final Dialect realDialect = DialectDelegateWrapper.extractRealDialect( dialect );
-		if ( realDialect instanceof PostgreSQLDialect ) {
-			return PostgreSQLParameterRenderer.INSTANCE;
-		}
-		//TODO: Create optimised implementations for the other most relevant dialects
-		return JdbcParameterRendererStandard.INSTANCE;
+		final Dialect dialect = registry.getService( JdbcServices.class ).getDialect();
+		return dialect.getNativeParameterRenderer();
 	}
 
 	@Override
