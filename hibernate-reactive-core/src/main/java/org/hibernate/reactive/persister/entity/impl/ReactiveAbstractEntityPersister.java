@@ -29,7 +29,6 @@ import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeDescriptor;
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.collection.spi.PersistentCollection;
-import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
@@ -125,14 +124,13 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	default String generateSelectLockString(LockOptions lockOptions) {
 		final SessionFactoryImplementor factory = getFactory();
-		Dialect dialect = factory.getJdbcServices().getDialect();
-		final SimpleSelect select = new SimpleSelect(dialect)
+		final SimpleSelect select = new SimpleSelect( factory )
 				.setLockOptions( lockOptions )
 				.setTableName( getRootTableName() )
 				.addColumn( getRootTableIdentifierColumnNames()[0] )
-				.addCondition( getRootTableIdentifierColumnNames(), "=?" );
+				.addRestriction( getRootTableIdentifierColumnNames() );
 		if ( isVersioned() ) {
-			select.addCondition( getVersionColumnName(), "=?" );
+			select.addRestriction( getVersionColumnName() );
 		}
 		if ( factory.getSessionFactoryOptions().isCommentsEnabled() ) {
 			select.setComment( lockOptions.getLockMode() + " lock " + getEntityName() );
@@ -142,12 +140,11 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	default String generateUpdateLockString(LockOptions lockOptions) {
 		final SessionFactoryImplementor factory = getFactory();
-		Dialect dialect = factory.getJdbcServices().getDialect();
-		final Update update = new Update(dialect);
+		final Update update = new Update( factory );
 		update.setTableName( getRootTableName() );
-		update.addPrimaryKeyColumns( getRootTableIdentifierColumnNames() );
-		update.setVersionColumnName( getVersionColumnName() );
-		update.addColumn( getVersionColumnName() );
+		update.addAssignment( getVersionColumnName() );
+		update.addRestriction( getRootTableIdentifierColumnNames() );
+		update.addRestriction( getVersionColumnName() );
 		if ( factory.getSessionFactoryOptions().isCommentsEnabled() ) {
 			update.setComment( lockOptions.getLockMode() + " lock " + getEntityName() );
 		}
