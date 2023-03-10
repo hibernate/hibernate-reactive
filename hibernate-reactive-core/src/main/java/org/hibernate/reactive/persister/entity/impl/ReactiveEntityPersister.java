@@ -153,11 +153,6 @@ public interface ReactiveEntityPersister extends EntityPersister {
 			String nameOfAttributeBeingAccessed,
 			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoadEntityIdByNaturalId(
-			Object[] orderedNaturalIdValues,
-			LockOptions lockOptions,
-			EventSource session);
-
 	/**
 	 * @see org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor#forceInitialize(Object, String, SharedSessionContractImplementor, boolean)
 	 */
