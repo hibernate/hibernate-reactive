@@ -32,8 +32,10 @@ import org.hibernate.reactive.sql.exec.spi.ReactiveSelectExecutor;
 import org.hibernate.reactive.sql.exec.spi.ReactiveValuesResultSet;
 import org.hibernate.reactive.sql.results.internal.ReactiveDeferredResultSetAccess;
 import org.hibernate.reactive.sql.results.internal.ReactiveResultSetAccess;
+import org.hibernate.reactive.sql.results.internal.ReactiveResultsHelper;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.sql.results.spi.ReactiveResultsConsumer;
+import org.hibernate.reactive.sql.results.spi.ReactiveRowReader;
 import org.hibernate.reactive.sql.results.spi.ReactiveValuesMappingProducer;
 import org.hibernate.sql.exec.SqlExecLogger;
 import org.hibernate.sql.exec.internal.JdbcExecHelper;
@@ -41,14 +43,12 @@ import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.graph.DomainResult;
-import org.hibernate.sql.results.internal.ResultsHelper;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 import org.hibernate.sql.results.internal.RowTransformerTupleTransformerAdapter;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesSourceProcessingStateStandardImpl;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
-import org.hibernate.sql.results.spi.RowReader;
 import org.hibernate.sql.results.spi.RowTransformer;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.BasicType;
@@ -180,7 +180,8 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 							executionContext::registerLoadingEntityEntry
 					);
 
-					final RowReader<R> rowReader = ResultsHelper.createRowReader(
+
+					final ReactiveRowReader<R> rowReader = ReactiveResultsHelper.createRowReader(
 							executionContext,
 							// If follow-on locking is used, we must omit the lock options here,
 							// because these lock options are only for Initializers.

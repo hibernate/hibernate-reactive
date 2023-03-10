@@ -21,6 +21,7 @@ import org.hibernate.id.IdentityGenerator;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.metamodel.mapping.EntityMappingType;
+import org.hibernate.metamodel.mapping.EntityValuedModelPart;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.GeneratedValuesProcessor;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
@@ -38,6 +39,11 @@ import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.sql.results.internal.ReactiveEntityResultImpl;
+import org.hibernate.spi.NavigablePath;
+import org.hibernate.sql.ast.tree.from.TableGroup;
+import org.hibernate.sql.results.graph.DomainResult;
+import org.hibernate.sql.results.graph.DomainResultCreationState;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
 
@@ -65,6 +71,24 @@ public class ReactiveAbstractPersisterDelegate {
 
 	public ReactiveSingleIdEntityLoader<Object> getSingleIdEntityLoader() {
 		return singleIdEntityLoader;
+	}
+
+
+	public <T> DomainResult<T> createDomainResult(
+			EntityValuedModelPart assemblerCreationState,
+			NavigablePath navigablePath,
+			TableGroup tableGroup,
+			String resultVariable,
+			DomainResultCreationState creationState) {
+		final ReactiveEntityResultImpl entityResult = new ReactiveEntityResultImpl(
+				navigablePath,
+				assemblerCreationState,
+				tableGroup,
+				resultVariable
+		);
+		entityResult.afterInitialize( entityResult, creationState );
+		//noinspection unchecked
+		return entityResult;
 	}
 
 	public <K> CompletionStage<? extends List<?>> multiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {

@@ -38,6 +38,10 @@ import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinato
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.spi.NavigablePath;
+import org.hibernate.sql.ast.tree.from.TableGroup;
+import org.hibernate.sql.results.graph.DomainResult;
+import org.hibernate.sql.results.graph.DomainResultCreationState;
 
 import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
@@ -94,6 +98,15 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	@Override
 	protected DeleteCoordinator buildDeleteCoordinator() {
 		return ReactiveCoordinatorFactory.buildDeleteCoordinator( this, getFactory() );
+	}
+
+	@Override
+	public <T> DomainResult<T> createDomainResult(
+			NavigablePath navigablePath,
+			TableGroup tableGroup,
+			String resultVariable,
+			DomainResultCreationState creationState) {
+		return reactiveDelegate.createDomainResult( this, navigablePath, tableGroup, resultVariable, creationState );
 	}
 
 	@Override

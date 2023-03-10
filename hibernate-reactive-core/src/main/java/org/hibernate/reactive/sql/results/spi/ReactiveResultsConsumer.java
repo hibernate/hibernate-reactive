@@ -12,7 +12,6 @@ import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.exec.spi.ReactiveValuesResultSet;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesSourceProcessingStateStandardImpl;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
-import org.hibernate.sql.results.spi.RowReader;
 
 public interface ReactiveResultsConsumer<T, R> {
 
@@ -22,7 +21,7 @@ public interface ReactiveResultsConsumer<T, R> {
 			JdbcValuesSourceProcessingOptions processingOptions,
 			JdbcValuesSourceProcessingStateStandardImpl jdbcValuesSourceProcessingState,
 			ReactiveRowProcessingState rowProcessingState,
-			RowReader<R> rowReader);
+			ReactiveRowReader<R> rowReader);
 
 	boolean canResultsBeCached();
 }

@@ -26,6 +26,11 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.metamodel.mapping.NaturalIdMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
+import org.hibernate.mapping.Property;
+import org.hibernate.metamodel.mapping.AttributeMapping;
+import org.hibernate.metamodel.mapping.SingularAttributeMapping;
+import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
+import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
@@ -34,10 +39,16 @@ import org.hibernate.persister.entity.mutation.InsertCoordinator;
 import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
+import org.hibernate.reactive.metamodel.mapping.internal.ReactiveToOneAttributeMapping;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.spi.NavigablePath;
+import org.hibernate.sql.ast.tree.from.TableGroup;
+import org.hibernate.sql.results.graph.DomainResult;
+import org.hibernate.sql.results.graph.DomainResultCreationState;
+import org.hibernate.tuple.NonIdentifierAttribute;
 
 /**
  * A {@link ReactiveEntityPersister} backed by {@link SingleTableEntityPersister}
@@ -80,6 +91,35 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	@Override
 	public Generator getGenerator() throws HibernateException {
 		return reactiveDelegate.reactive( super.getGenerator() );
+	}
+
+	@Override
+	public <T> DomainResult<T> createDomainResult(
+			NavigablePath navigablePath,
+			TableGroup tableGroup,
+			String resultVariable,
+			DomainResultCreationState creationState) {
+		return reactiveDelegate.createDomainResult( this, navigablePath, tableGroup, resultVariable, creationState );
+	}
+
+	@Override
+	protected AttributeMapping generateNonIdAttributeMapping(
+			NonIdentifierAttribute tupleAttrDefinition,
+			Property bootProperty,
+			int stateArrayPosition,
+			int fetchableIndex,
+			MappingModelCreationProcess creationProcess) {
+		AttributeMapping attributeMapping = super.generateNonIdAttributeMapping(
+				tupleAttrDefinition,
+				bootProperty,
+				stateArrayPosition,
+				fetchableIndex,
+				creationProcess
+		);
+		if ( attributeMapping instanceof ToOneAttributeMapping ) {
+			return new ReactiveToOneAttributeMapping( (ToOneAttributeMapping) attributeMapping );
+		}
+		return attributeMapping;
 	}
 
 	@Override
