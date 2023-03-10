@@ -16,6 +16,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.internal.AbstractNaturalIdLoader;
@@ -238,6 +239,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
                 lockOptions,
                 fetchProcessor,
                 true,
+                LoadQueryInfluencers.NONE,
                 sessionFactory
         );
 
@@ -245,9 +247,9 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
                 true,
                 entityPath,
                 null,
+                null,
                 () -> rootQuerySpec::applyPredicate,
-                sqlAstCreationState,
-                sessionFactory
+                sqlAstCreationState
         );
 
         rootQuerySpec.getFromClause().addRoot( rootTableGroup );
