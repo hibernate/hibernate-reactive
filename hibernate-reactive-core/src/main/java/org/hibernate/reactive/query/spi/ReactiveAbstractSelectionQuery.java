@@ -8,6 +8,7 @@ package org.hibernate.reactive.query.spi;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -183,6 +184,9 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	private R convertException(Throwable t) {
+		if ( t instanceof CompletionException ) {
+			t = t.getCause();
+		}
 		if ( t instanceof HibernateException ) {
 			throw getSession().getExceptionConverter().convert( (HibernateException) t, getLockOptions() );
 		}
