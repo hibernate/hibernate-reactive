@@ -11,12 +11,13 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.sql.results.internal.ReactiveInitializersList;
+import org.hibernate.reactive.sql.results.spi.ReactiveRowReader;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.exec.internal.BaseExecutionContext;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.results.graph.Initializer;
 import org.hibernate.sql.results.graph.entity.EntityFetch;
-import org.hibernate.sql.results.internal.InitializersList;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesSourceProcessingStateStandardImpl;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingState;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
@@ -32,22 +33,22 @@ public class ReactiveRowProcessingState extends BaseExecutionContext implements 
 
 	private final JdbcValuesSourceProcessingStateStandardImpl resultSetProcessingState;
 
-	private final InitializersList initializers;
+	private final ReactiveInitializersList initializers;
 
-	private final RowReader<?> rowReader;
+	private final ReactiveRowReader<?> rowReader;
 	private final ReactiveValuesResultSet jdbcValues;
 	private final ExecutionContext executionContext;
 
 	public ReactiveRowProcessingState(
 			JdbcValuesSourceProcessingStateStandardImpl resultSetProcessingState,
 			ExecutionContext executionContext,
-			RowReader<?> rowReader,
+			ReactiveRowReader<?> rowReader,
 			ReactiveValuesResultSet jdbcValues) {
 		super( resultSetProcessingState.getSession() );
 		this.resultSetProcessingState = resultSetProcessingState;
 		this.executionContext = executionContext;
 		this.rowReader = rowReader;
-		this.initializers = rowReader.getInitializersList();
+		this.initializers = rowReader.getReactiveInitializersList();
 		this.jdbcValues = jdbcValues;
 	}
 

@@ -34,6 +34,11 @@ import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinato
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.spi.NavigablePath;
+import org.hibernate.sql.ast.tree.from.TableGroup;
+import org.hibernate.sql.results.graph.DomainResult;
+import org.hibernate.sql.results.graph.DomainResultCreationState;
+import org.hibernate.sql.results.graph.entity.internal.EntityResultJoinedSubclassImpl;
 
 import java.sql.PreparedStatement;
 import java.util.List;
@@ -87,6 +92,28 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	@Override
 	public ReactiveSingleIdEntityLoader<?> getReactiveSingleIdEntityLoader() {
 		return reactiveDelegate.getSingleIdEntityLoader();
+	}
+
+	@Override
+	public <T> DomainResult<T> createDomainResult(
+			NavigablePath navigablePath,
+			TableGroup tableGroup,
+			String resultVariable,
+			DomainResultCreationState creationState) {
+		if ( hasSubclasses() ) {
+			final EntityResultJoinedSubclassImpl entityResultJoinedSubclass = new EntityResultJoinedSubclassImpl(
+					navigablePath,
+					this,
+					tableGroup,
+					resultVariable
+			);
+			entityResultJoinedSubclass.afterInitialize( entityResultJoinedSubclass, creationState );
+			//noinspection unchecked
+			return entityResultJoinedSubclass;
+		}
+		else {
+			return reactiveDelegate.createDomainResult( this, navigablePath, tableGroup, resultVariable, creationState );
+		}
 	}
 
 	@Override

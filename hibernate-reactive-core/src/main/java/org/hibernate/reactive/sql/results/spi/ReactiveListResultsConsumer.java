@@ -10,6 +10,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -20,7 +21,7 @@ import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.exec.spi.ReactiveValuesResultSet;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesSourceProcessingStateStandardImpl;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
-import org.hibernate.sql.results.spi.RowReader;
+import org.hibernate.sql.results.spi.LoadContexts;
 import org.hibernate.type.descriptor.java.JavaType;
 import org.hibernate.type.descriptor.java.spi.EntityJavaType;
 import org.hibernate.type.descriptor.java.spi.JavaTypeRegistry;
@@ -30,6 +31,7 @@ import static org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer
 import static org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer.UniqueSemantic.ASSERT;
 import static org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer.UniqueSemantic.FILTER;
 import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.whileLoop;
 
 /**
  *
@@ -43,6 +45,35 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 	private static final ReactiveListResultsConsumer<?> DE_DUP_CONSUMER = new ReactiveListResultsConsumer<>( FILTER );
 	private static final ReactiveListResultsConsumer<?> ERROR_DUP_CONSUMER = new ReactiveListResultsConsumer<>( ASSERT );
 
+	private static void validateUniqueResult(Boolean unique) {
+		if ( !unique ) {
+			throw new HibernateException( String.format(
+					Locale.ROOT,
+					"Duplicate row was found and `%s` was specified",
+					ASSERT
+			) );
+		}
+	}
+
+	private static class RegistrationHandler {
+
+		private final LoadContexts contexts;
+		private final JdbcValuesSourceProcessingStateStandardImpl state;
+
+		private RegistrationHandler(LoadContexts contexts, JdbcValuesSourceProcessingStateStandardImpl state) {
+			this.contexts = contexts;
+			this.state = state;
+		}
+
+		public void register() {
+			contexts.register( state );
+		}
+
+		public void deregister() {
+			contexts.deregister( state );
+		}
+	}
+
 	@Override
 	public CompletionStage<List<R>> consume(
 			ReactiveValuesResultSet jdbcValues,
@@ -50,11 +81,12 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 			JdbcValuesSourceProcessingOptions processingOptions,
 			JdbcValuesSourceProcessingStateStandardImpl jdbcValuesSourceProcessingState,
 			ReactiveRowProcessingState rowProcessingState,
-			RowReader<R> rowReader) {
+			ReactiveRowReader<R> rowReader) {
 		final PersistenceContext persistenceContext = session.getPersistenceContext();
 		final TypeConfiguration typeConfiguration = session.getTypeConfiguration();
 		final QueryOptions queryOptions = rowProcessingState.getQueryOptions();
 
+		persistenceContext.beforeLoad();
 		persistenceContext.getLoadContexts().register( jdbcValuesSourceProcessingState );
 
 		final JavaType<R> domainResultJavaType = resolveDomainResultJavaType(
@@ -69,87 +101,83 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 						? new EntityResult<>( domainResultJavaType )
 						: new Results<>( domainResultJavaType );
 
-		Runnable addResultFunction = getAddResultFunction( results, rowReader, rowProcessingState, processingOptions, isEntityResultType );
-
-		return nextState( rowProcessingState, addResultFunction )
-				.thenApply( v -> end( results, jdbcValuesSourceProcessingState, persistenceContext, queryOptions ) )
-				.handle( (list, ex) -> {
-					finish( jdbcValues, session, jdbcValuesSourceProcessingState, rowReader, persistenceContext, ex );
-					return list;
-				} ) ;
+		Supplier<CompletionStage<Void>> addToResultsSupplier = addToResultsSupplier( results, rowReader, rowProcessingState, processingOptions, isEntityResultType );
+		return whileLoop( () -> rowProcessingState.next()
+					.thenCompose( hasNext -> {
+						if ( hasNext ) {
+							return addToResultsSupplier.get()
+									.thenApply( unused -> {
+										rowProcessingState.finishRowProcessing();
+										return true;
+									} );
+						}
+						return falseFuture();
+					} )
+		)
+		.thenApply( v -> finishUp( results, jdbcValuesSourceProcessingState, rowReader, persistenceContext, queryOptions ) )
+		.handle( (list, ex) -> {
+			end( jdbcValues, session, jdbcValuesSourceProcessingState, rowReader, persistenceContext, ex );
+			return list;
+		} );
 	}
 
-	private void finish(
-			ReactiveValuesResultSet jdbcValues,
-			SharedSessionContractImplementor session,
-			JdbcValuesSourceProcessingStateStandardImpl jdbcValuesSourceProcessingState,
-			RowReader<R> rowReader,
-			PersistenceContext persistenceContext,
-			Throwable ex) {
-		try {
-			rowReader.finishUp( jdbcValuesSourceProcessingState );
-			jdbcValues.finishUp( session );
-			persistenceContext.initializeNonLazyCollections();
-		}
-		catch (RuntimeException e) {
-			if ( ex != null ) {
-				ex.addSuppressed( e );
-			}
-			else {
-				ex = e;
-			}
-		}
-		finally {
-			if ( ex != null ) {
-				throw new RuntimeException( ex );
-			}
-		}
-	}
-
-	private CompletionStage<Boolean> nextState(ReactiveRowProcessingState rowProcessingState, Runnable addResultFunction) {
-		return rowProcessingState
-				.next()
-				.thenCompose( hasNext -> {
-					if ( hasNext ) {
-						addResultFunction.run();
-						rowProcessingState.finishRowProcessing();
-						return nextState( rowProcessingState, addResultFunction );
-					}
-					return falseFuture();
-				} );
-	}
-
-	private Runnable getAddResultFunction(
+	private Supplier<CompletionStage<Void>> addToResultsSupplier(
 			ReactiveListResultsConsumer.Results<R> results,
-			RowReader<R> rowReader,
+			ReactiveRowReader<R> rowReader,
 			ReactiveRowProcessingState rowProcessingState,
 			JdbcValuesSourceProcessingOptions processingOptions,
 			boolean isEntityResultType) {
 		if ( this.uniqueSemantic == FILTER
 				|| this.uniqueSemantic == ASSERT && rowProcessingState.hasCollectionInitializers()
 				|| this.uniqueSemantic == ALLOW && isEntityResultType ) {
-			return () -> results.addUnique( rowReader.readRow( rowProcessingState, processingOptions ) );
+			return () -> rowReader
+					.reactiveReadRow( rowProcessingState, processingOptions )
+					.thenAccept( results::addUnique );
 		}
 
 		if ( this.uniqueSemantic == ASSERT ) {
-			return () -> {
-				R row = rowReader.readRow( rowProcessingState, processingOptions );
-				boolean unique = results.addUnique( row );
-				if ( !unique ) {
-					throw new HibernateException( String.format( Locale.ROOT, "Duplicate row was found and `%s` was specified", ASSERT ) );
-				}
-			};
+			return () -> rowReader
+					.reactiveReadRow( rowProcessingState, processingOptions )
+					.thenApply( results::addUnique )
+					.thenAccept( ReactiveListResultsConsumer::validateUniqueResult );
 		}
 
-		return () -> results.add( rowReader.readRow( rowProcessingState, processingOptions ) );
+		return () -> rowReader
+				.reactiveReadRow( rowProcessingState, processingOptions )
+				.thenAccept( results::add );
 	}
 
-	private List<R> end(
-			ReactiveListResultsConsumer.Results<R> results,
+	private void end(
+			ReactiveValuesResultSet jdbcValues,
+			SharedSessionContractImplementor session,
 			JdbcValuesSourceProcessingStateStandardImpl jdbcValuesSourceProcessingState,
+			ReactiveRowReader<R> rowReader,
 			PersistenceContext persistenceContext,
+			Throwable ex) {
+		try {
+			rowReader.finishUp( jdbcValuesSourceProcessingState );
+			persistenceContext.afterLoad();
+			persistenceContext.initializeNonLazyCollections();
+		}
+		catch (Throwable e) {
+			if ( ex != null ) {
+				ex.addSuppressed( e );
+				throw (RuntimeException) ex;
+			}
+			throw e;
+		}
+		if ( ex != null ) {
+			throw (RuntimeException) ex;
+		}
+	}
+
+	private List<R> finishUp(
+			Results<R> results,
+			JdbcValuesSourceProcessingStateStandardImpl jdbcValuesSourceProcessingState,
+			ReactiveRowReader<R> rowReader, PersistenceContext persistenceContext,
 			QueryOptions queryOptions) {
 		try {
+			rowReader.finishUp( jdbcValuesSourceProcessingState );
 			jdbcValuesSourceProcessingState.finishUp();
 		}
 		finally {
@@ -257,8 +285,8 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 		}
 
 		public boolean addUnique(R result) {
-			for ( int i = 0; i < results.size(); i++ ) {
-				if ( resultJavaType.areEqual( results.get( i ), result ) ) {
+			for ( R r : results ) {
+				if ( resultJavaType.areEqual( r, result ) ) {
 					return false;
 				}
 			}
