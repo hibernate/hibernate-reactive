@@ -233,31 +233,17 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	}
 
 	protected CompletionStage<Void> entityIsTransient(MergeEvent event, MergeContext copyCache) {
-
 		LOG.trace( "Merging transient instance" );
 
 		final Object entity = event.getEntity();
 		final EventSource session = event.getSession();
-
 		final String entityName = event.getEntityName();
 		final EntityPersister persister = session.getEntityPersister( entityName, entity );
-
 		final Object id = persister.hasIdentifierProperty()
 				? persister.getIdentifier( entity, session )
 				: null;
 
-		final Object copy;
-		final Object existingCopy = copyCache.get( entity );
-		if ( existingCopy != null ) {
-			persister.setIdentifier( copyCache.get( entity ), id, session );
-			copy = existingCopy;
-		}
-		else {
-			copy = session.instantiate( persister, id );
-
-			//before cascade!
-			copyCache.put( entity, copy, true );
-		}
+		final Object copy = copyEntity( copyCache, entity, session, persister, id );
 
 		// cascade first, so that all unsaved objects get their
 		// copy created before we actually copy
@@ -284,6 +270,20 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 						}
 					}
 				});
+	}
+
+	private static Object copyEntity(MergeContext copyCache, Object entity, EventSource session, EntityPersister persister, Object id) {
+		final Object existingCopy = copyCache.get( entity );
+		if ( existingCopy != null ) {
+			persister.setIdentifier( copyCache.get( entity ), id, session );
+			return existingCopy;
+		}
+		else {
+			final Object copy = session.instantiate( persister, id );
+			//before cascade!
+			copyCache.put( entity, copy, true );
+			return copy;
+		}
 	}
 
 	private static class CollectionVisitor extends WrapVisitor {
