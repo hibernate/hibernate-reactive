@@ -24,6 +24,8 @@ import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryOptionsAdapter;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
+import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
+import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
@@ -34,11 +36,9 @@ import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
-import org.hibernate.sql.results.spi.ListResultsConsumer;
 
 import org.jboss.logging.Logger;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
  * @see org.hibernate.loader.ast.internal.SingleIdEntityLoaderDynamicBatch
@@ -167,7 +167,7 @@ public class ReactiveSingleIdEntityLoaderDynamicBatch<T> implements ReactiveSing
 				jdbcParameterBindings
 		);
 
-		session.getJdbcServices().getJdbcSelectExecutor().list(
+		return StandardReactiveSelectExecutor.INSTANCE.list(
 				jdbcSelect,
 				jdbcParameterBindings,
 				getExecutionContext(
@@ -179,20 +179,21 @@ public class ReactiveSingleIdEntityLoaderDynamicBatch<T> implements ReactiveSing
 						subSelectFetchableKeysHandler
 				),
 				RowTransformerStandardImpl.instance(),
-				ListResultsConsumer.UniqueSemantic.FILTER
-		);
+				ReactiveListResultsConsumer.UniqueSemantic.FILTER
+		)
+		.thenApply( results -> {
+			//noinspection ForLoopReplaceableByForEach
+			for ( int i = 0; i < idsToLoad.length; i++ ) {
+				final Object id = idsToLoad[i];
+				// found or not, remove the key from the batch-fetch queue
+				BatchFetchQueueHelper.removeBatchLoadableEntityKey( id, getLoadable(), session );
+			}
 
-		//noinspection ForLoopReplaceableByForEach
-		for ( int i = 0; i < idsToLoad.length; i++ ) {
-			final Object id = idsToLoad[i];
-			// found or not, remove the key from the batch-fetch queye
-			BatchFetchQueueHelper.removeBatchLoadableEntityKey( id, getLoadable(), session );
-		}
+			final EntityKey entityKey = session.generateEntityKey( pkValue, getLoadable().getEntityPersister() );
+			//noinspection unchecked
+			return (T) session.getPersistenceContext().getEntity( entityKey );
 
-		final EntityKey entityKey = session.generateEntityKey( pkValue, getLoadable().getEntityPersister() );
-		//noinspection unchecked
-		return completedFuture( (T) session.getPersistenceContext().getEntity( entityKey ) );
-
+		} );
 	}
 
 	private void initializeSingleIdLoaderIfNeeded(SharedSessionContractImplementor session) {
