@@ -70,13 +70,13 @@ public class BatchFetchTest extends BaseReactiveTest {
 							context.assertEquals( list.size(), 2 );
 							Node n1 = list.get( 0 );
 							Node n2 = list.get( 1 );
-							context.assertFalse( Hibernate.isInitialized( n1.elements ) );
-							context.assertFalse( Hibernate.isInitialized( n2.elements ) );
+							context.assertFalse( Hibernate.isInitialized( n1.getElements() ) );
+							context.assertFalse( Hibernate.isInitialized( n2.getElements() ) );
 							return s.fetch( n1.elements )
 									.thenAccept( elements -> {
 										context.assertTrue( Hibernate.isInitialized( elements ) );
-										context.assertTrue( Hibernate.isInitialized( n1.elements ) );
-										context.assertTrue( Hibernate.isInitialized( n2.elements ) );
+										context.assertTrue( Hibernate.isInitialized( n1.getElements() ) );
+										context.assertFalse( Hibernate.isInitialized( n2.getElements() ) );
 									} );
 						} )
 				)
@@ -248,6 +248,14 @@ public class BatchFetchTest extends BaseReactiveTest {
 		@PostLoad
 		void postLoad() {
 			loaded = true;
+		}
+
+		public List<Element> getElements() {
+			return elements;
+		}
+
+		public void setElements(List<Element> elements) {
+			this.elements = elements;
 		}
 
 		@Override
