@@ -430,6 +430,9 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	private CompletionStage<Object> proxyImplementation(LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
 		return load( event, persister, keyToLoad, options )
 				.thenApply( optional -> {
+					if (optional != null ) {
+						return optional;
+					}
 					if ( options != LoadEventListener.INTERNAL_LOAD_NULLABLE ) {
 						// throw an appropriate exception
 						event.getSession().getFactory().getEntityNotFoundDelegate()
