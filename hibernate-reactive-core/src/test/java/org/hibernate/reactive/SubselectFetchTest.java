@@ -60,24 +60,24 @@ public class SubselectFetchTest extends BaseReactiveTest {
 		basik.parent.elements.add( new Element( basik.parent ) );
 		basik.parent.elements.add( new Element( basik.parent ) );
 
-				test( context, getSessionFactory()
-						.withTransaction( s -> s.persist( basik ) )
-						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.createQuery( "from Node n order by id", Node.class )
-								.getResultList()
-								.thenCompose( list -> {
-									context.assertEquals( list.size(), 2 );
-									Node n1 = list.get( 0 );
-									Node n2 = list.get( 1 );
-									context.assertFalse( Hibernate.isInitialized( n1.getElements() ) );
-									context.assertFalse( Hibernate.isInitialized( n2.getElements() ) );
-									return s.fetch( n1.getElements() ).thenAccept( elements -> {
-										context.assertTrue( Hibernate.isInitialized( elements ) );
-										context.assertTrue( Hibernate.isInitialized( n1.getElements() ) );
-										context.assertTrue( Hibernate.isInitialized( n2.getElements() ) );
-									} );
-								} )
-						)
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.persist( basik ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( s -> s.createQuery( "from Node n order by id", Node.class )
+						.getResultList()
+						.thenCompose( list -> {
+							context.assertEquals( list.size(), 2 );
+							Node n1 = list.get( 0 );
+							Node n2 = list.get( 1 );
+							context.assertFalse( Hibernate.isInitialized( n1.getElements() ) );
+							context.assertFalse( Hibernate.isInitialized( n2.getElements() ) );
+							return s.fetch( n1.getElements() ).thenAccept( elements -> {
+								context.assertTrue( Hibernate.isInitialized( elements ) );
+								context.assertTrue( Hibernate.isInitialized( n1.getElements() ) );
+								context.assertTrue( Hibernate.isInitialized( n2.getElements() ) );
+							} );
+						} )
+				)
 		);
 	}
 
