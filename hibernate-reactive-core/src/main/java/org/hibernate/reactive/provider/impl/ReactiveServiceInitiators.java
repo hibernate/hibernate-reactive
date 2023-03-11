@@ -60,6 +60,8 @@ public final class ReactiveServiceInitiators {
 	// Note that Quarkus uses a different list for the initialization of the services:
 	// If you update this list makes sure to check that reactive still works with Quarkus.
 	// Also: please try to maintain the same order as Hibernate ORM for sake of comparisons.
+	// See also test ServiceInitiatorsTest; among basic validations it prints a sorted summary
+	// for convenience.
 	private static List<StandardServiceInitiator<?>> buildInitialServiceInitiatorList() {
 		final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<>();
 
@@ -152,22 +154,26 @@ public final class ReactiveServiceInitiators {
 		// Custom for Hibernate Reactive: SqmMultiTableMutationStrategyProvider
 		serviceInitiators.add( ReactiveSqmMultiTableMutationStrategyProviderInitiator.INSTANCE );
 
-		// Custom for Hibernate Reactive: NativeParametersRendering [Could be used by ORM too? TBD]
+		// Custom for Hibernate Reactive: NativeParametersRendering
 		serviceInitiators.add( NativeParametersRendering.INSTANCE );
 
 		// --- end of services defined by Hibernate ORM
 
 		// --- custom ones follow:
 
-		// Definitely exclusive to Hibernate Reactive, as it marks this particular registry as Reactive:
+		// ReactiveMarkerService - Definitely exclusive to Hibernate Reactive, as it marks this particular registry as Reactive:
 		serviceInitiators.add( ReactiveMarkerServiceInitiator.INSTANCE );
 
-		// Exclusive to Hibernate Reactive:
+		// VertxInstance - Exclusive to Hibernate Reactive:
 		serviceInitiators.add( VertxInstanceInitiator.INSTANCE );
+
+		// Context - Exclusive to Hibernate Reactive:
 		serviceInitiators.add( VertxContextInitiator.INSTANCE );
 
-		// Exclusive to Hibernate Reactive:
+		// SqlClientPoolConfiguration - Exclusive to Hibernate Reactive:
 		serviceInitiators.add( SqlClientPoolConfigurationInitiator.INSTANCE );
+
+		// ReactiveConnectionPool - Exclusive to Hibernate Reactive:
 		serviceInitiators.add( ReactiveConnectionPoolInitiator.INSTANCE );
 
 		// --- end of custom services.
@@ -176,4 +182,5 @@ public final class ReactiveServiceInitiators {
 
 		return unmodifiableList( serviceInitiators );
 	}
+
 }
