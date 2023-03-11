@@ -40,37 +40,28 @@ public class ManyToOneMergeTest extends BaseReactiveTest {
 
 		AcademicYearDetailsDBO academicYearDetailsDBO = new AcademicYearDetailsDBO();
 		academicYearDetailsDBO.setId( 69 );
-		academicYearDetailsDBO.setCampusId( campusDBO );
+		academicYearDetailsDBO.setCampusDBO( campusDBO );
 		academicYearDetailsDBO.setCreatedUsersId( 12 );
 		academicYearDetailsDBO.setRecordStatus( 'F' );
 		academicYearDetailsDBO.setModifiedUsersId( 66 );
-		test( context,
-				getMutinySessionFactory()
-						.withTransaction( (session, transaction) -> session.persistAll(
-								campusDBO, campusDBO2,
-								academicYearDetailsDBO
-						) )
-		);
+		test( context, getMutinySessionFactory().withTransaction( session -> session.persistAll(
+				campusDBO, campusDBO2, academicYearDetailsDBO
+		) ) );
 	}
 
 	@Test
 	public void test(TestContext context) {
-		test( context, getMutinySessionFactory()
-				.withSession( session -> session
+		test( context, getMutinySessionFactory().withSession( session -> session
 						.createQuery( "select dbo from AcademicYearDetailsDBO dbo", AcademicYearDetailsDBO.class )
 						.getSingleResult() )
-				.chain( dbo -> {
-					dbo.setRecordStatus( 'A' );
-					System.out.println( dbo.getCampusId().getId() );//for example here campus id is 11
-//					CampusDBO campusDBO = new CampusDBO();
-//					campusDBO.setId( 5 );
-//					dbo.setCampusId( campusDBO ); // need to update as 5
-					return getMutinySessionFactory()
-							.withTransaction( (session, transaction) -> {
-								dbo.setCampusId( session.getReference( CampusDBO.class, 42 ) );
-								return session.merge( dbo );
-							} );
-				} )
+				.invoke( dbo -> dbo.setRecordStatus( 'A' ) )
+				.chain( dbo -> getMutinySessionFactory().withTransaction( session -> {
+					dbo.setCampusDBO( session.getReference( CampusDBO.class, 42 ) );
+					return session.merge( dbo );
+				} ) )
+				.chain( merged -> getMutinySessionFactory()
+						.withTransaction( session -> session.fetch( merged.getCampusDBO() ) ) )
+				.invoke( fetched -> context.assertEquals( "Kuchl", fetched.getCampusName() ) )
 		);
 	}
 
@@ -82,21 +73,18 @@ public class ManyToOneMergeTest extends BaseReactiveTest {
 
 		AcademicYearDetailsDBO dbo = new AcademicYearDetailsDBO();
 		dbo.setId( 88 );
-		dbo.setCampusId( campusDBO );
+		dbo.setCampusDBO( campusDBO );
 		dbo.setCreatedUsersId( 12 );
-		dbo.setRecordStatus( 'F' );
+		dbo.setRecordStatus( 'A' );
 		dbo.setModifiedUsersId( 66 );
 
-		test( context, getMutinySessionFactory()
-				.withSession( session -> {
-					dbo.setRecordStatus( 'A' );
-					System.out.println( dbo.getCampusId().getId() );//for example here campus id is 11
-//					CampusDBO cdbo = new CampusDBO();
-//					cdbo.setId( 5 );
-//					dbo.setCampusId( cdbo ); // need to update as 5
-					dbo.setCampusId( session.getReference( CampusDBO.class, 42 ) );
-					return session.merge( dbo );
-				} )
+		test( context, getMutinySessionFactory().withTransaction( session -> {
+						  dbo.setCampusDBO( session.getReference( CampusDBO.class, 42 ) );
+						  return session.merge( dbo );
+					  } )
+					  .chain( merged -> getMutinySessionFactory()
+							  .withTransaction( session -> session.fetch( merged.getCampusDBO() ) ) )
+					  .invoke( fetched -> context.assertEquals( "Kuchl", fetched.getCampusName() ) )
 		);
 	}
 
@@ -107,10 +95,9 @@ public class ManyToOneMergeTest extends BaseReactiveTest {
 		@Column(name = "erp_academic_year_detail_id")
 		private Integer id;
 
-		// LAZY will work
 		@ManyToOne(fetch = FetchType.EAGER)
 		@JoinColumn(name = "erp_campus_id")
-		private CampusDBO campusId;
+		private CampusDBO campusDBO;
 
 		@Column(name = "record_status")
 		private char recordStatus;
@@ -129,12 +116,12 @@ public class ManyToOneMergeTest extends BaseReactiveTest {
 			this.id = id;
 		}
 
-		public CampusDBO getCampusId() {
-			return campusId;
+		public CampusDBO getCampusDBO() {
+			return campusDBO;
 		}
 
-		public void setCampusId(CampusDBO campusId) {
-			this.campusId = campusId;
+		public void setCampusDBO(CampusDBO campusDBO) {
+			this.campusDBO = campusDBO;
 		}
 
 		public char getRecordStatus() {
