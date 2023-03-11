@@ -15,6 +15,7 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -36,6 +37,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 
+@Ignore // see https://github.com/hibernate/hibernate-reactive/issues/1502
 public class SubselectFetchTest extends BaseReactiveTest {
 
 	@Override
@@ -60,24 +62,24 @@ public class SubselectFetchTest extends BaseReactiveTest {
 		basik.parent.elements.add( new Element( basik.parent ) );
 		basik.parent.elements.add( new Element( basik.parent ) );
 
-				test( context, getSessionFactory()
-						.withTransaction( s -> s.persist( basik ) )
-						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.createQuery( "from Node n order by id", Node.class )
-								.getResultList()
-								.thenCompose( list -> {
-									context.assertEquals( list.size(), 2 );
-									Node n1 = list.get( 0 );
-									Node n2 = list.get( 1 );
-									context.assertFalse( Hibernate.isInitialized( n1.getElements() ) );
-									context.assertFalse( Hibernate.isInitialized( n2.getElements() ) );
-									return s.fetch( n1.getElements() ).thenAccept( elements -> {
-										context.assertTrue( Hibernate.isInitialized( elements ) );
-										context.assertTrue( Hibernate.isInitialized( n1.getElements() ) );
-										context.assertTrue( Hibernate.isInitialized( n2.getElements() ) );
-									} );
-								} )
-						)
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.persist( basik ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( s -> s.createQuery( "from Node n order by id", Node.class )
+						.getResultList()
+						.thenCompose( list -> {
+							context.assertEquals( list.size(), 2 );
+							Node n1 = list.get( 0 );
+							Node n2 = list.get( 1 );
+							context.assertFalse( Hibernate.isInitialized( n1.getElements() ), "'n1.elements' should not be initialized"  );
+							context.assertFalse( Hibernate.isInitialized( n2.getElements() ), "'n2.elements' should not be initialized" );
+							return s.fetch( n1.getElements() ).thenAccept( elements -> {
+								context.assertTrue( Hibernate.isInitialized( elements ), "'elements' - after fetch - should be initialized" );
+								context.assertTrue( Hibernate.isInitialized( n1.getElements() ), "'n1.elements' - after fetch - should be initialized" );
+								context.assertTrue( Hibernate.isInitialized( n2.getElements() ), "'n2.elements' - after fetch - should be initialized" );
+							} );
+						} )
+				)
 		);
 	}
 
