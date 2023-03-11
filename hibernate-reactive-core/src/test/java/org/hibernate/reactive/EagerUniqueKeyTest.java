@@ -12,6 +12,7 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import jakarta.persistence.CascadeType;
@@ -22,6 +23,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
@@ -65,20 +67,38 @@ public class EagerUniqueKeyTest extends BaseReactiveTest {
 						.withTransaction( session -> session.merge( new Foo( bar ) ) ) )
 				.thenCompose( result -> getSessionFactory()
 						.withTransaction( session -> session.fetch( result.getBar() )
-						.thenAccept( b -> context.assertEquals( "unique2", b.getKey()  ) )
-				) ) );
+								.thenAccept( b -> context.assertEquals( "unique2", b.getKey() ) )
+						) ) );
 	}
 
+	@Ignore // This also fails in ORM
 	@Test
 	public void testMergeReference(TestContext context) {
 		Bar bar = new Bar( "unique3" );
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( bar ) )
 				.thenCompose( i -> getSessionFactory()
-						.withTransaction( session -> session.merge( new Foo( session.getReference( Bar.class, bar.id ) )) ) )
+						.withTransaction( session -> session
+								.merge( new Foo( session.getReference( Bar.class, bar.getId() ) ) ) ) )
 				.thenCompose( result -> getSessionFactory().withTransaction( session -> session.fetch( result.getBar() )
 						.thenAccept( b -> context.assertEquals( "unique3", b.getKey() ) )
-				) ) );
+				) )
+		);
+	}
+
+	@Test
+	public void testPersistWithReference(TestContext context) {
+		Bar bar = new Bar( "uniquePersist" );
+		test( context, getSessionFactory()
+				.withTransaction( session -> session.persist( bar ) )
+				.thenCompose( i -> getSessionFactory()
+						.withTransaction( session -> {
+							Foo foo = new Foo( session.getReference( Bar.class, bar.getId() ) );
+							return session.persist( foo ).thenApply( v -> foo );
+						} ) )
+				.thenCompose( result -> getSessionFactory().withTransaction( session -> session.fetch( result.getBar() ) ) )
+				.thenAccept( b -> context.assertEquals( "uniquePersist", b.getKey() ) )
+		);
 	}
 
 	@Entity(name = "Foo")
@@ -90,8 +110,8 @@ public class EagerUniqueKeyTest extends BaseReactiveTest {
 		Foo() {
 		}
 
-		@GeneratedValue
 		@Id
+		@GeneratedValue
 		long id;
 		@ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
 		@Fetch(FetchMode.JOIN)
@@ -124,8 +144,8 @@ public class EagerUniqueKeyTest extends BaseReactiveTest {
 		Bar() {
 		}
 
-		@GeneratedValue
 		@Id
+		@GeneratedValue
 		long id;
 		@Column(name = "nat_key", unique = true)
 		String key;
