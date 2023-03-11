@@ -10,6 +10,7 @@ import io.vertx.ext.unit.TestContext;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import jakarta.persistence.CascadeType;
@@ -24,6 +25,9 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * @see EagerUniqueKeyTest
+ */
 public class LazyUniqueKeyTest extends BaseReactiveTest {
 
 	@Override
@@ -62,6 +66,7 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 				) ) );
 	}
 
+	@Ignore // see https://github.com/hibernate/hibernate-reactive/issues/1504
 	@Test
 	public void testMergeReference(TestContext context) {
 		Bar bar = new Bar( "unique3" );
@@ -74,6 +79,23 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 						.withTransaction( session-> session.fetch( result.bar )
 						.thenAccept( b -> context.assertEquals( "unique3", b.key ) )
 				) ) );
+	}
+
+	@Test
+	public void testPersistReference(TestContext context) {
+		Bar bar = new Bar( "unique3" );
+		test( context, getSessionFactory()
+				.withTransaction( session -> session.persist( bar ) )
+				.thenCompose( i -> getSessionFactory()
+						.withTransaction( session-> {
+							Foo foo = new Foo( session.getReference( Bar.class, bar.id ) );
+							return session.persist( foo ).thenApply( v -> foo );
+						} )
+				)
+				.thenCompose( result -> getSessionFactory()
+						.withTransaction( session-> session.fetch( result.bar )
+								.thenAccept( b -> context.assertEquals( "unique3", b.getKey() ) )
+						) ) );
 	}
 
 	@Entity(name = "Foo")
@@ -108,5 +130,13 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 		long id;
 		@Column(name = "nat_key", unique = true)
 		String key;
+
+		public String getKey() {
+			return key;
+		}
+
+		public void setKey(String key) {
+			this.key = key;
+		}
 	}
 }
