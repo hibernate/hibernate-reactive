@@ -74,7 +74,7 @@ public class SubselectFetchTest extends BaseReactiveTest {
 							return s.fetch( n1.getElements() ).thenAccept( elements -> {
 								context.assertTrue( Hibernate.isInitialized( elements ) );
 								context.assertTrue( Hibernate.isInitialized( n1.getElements() ) );
-								context.assertTrue( Hibernate.isInitialized( n2.getElements() ) );
+								context.assertFalse( Hibernate.isInitialized( n2.getElements() ) );
 							} );
 						} )
 				)
