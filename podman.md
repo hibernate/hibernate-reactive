@@ -154,10 +154,10 @@ and schema to run the tests:
 [db2]:https://www.ibm.com/analytics/db2
 
 ```
-podman run --rm -e LICENSE=accept --privileged=true --name HibernateTestingDB2 \
-    -e DBNAME=hreact -e DB2INSTANCE=hreact -e DB2INST1_PASSWORD=hreact \
-    -e PERSISTENT_HOME=false -e ARCHIVE_LOGS=false -e AUTOCONFIG=false \
-    -p 50000:50000 docker.io/ibmcom/db2:11.5.7.0a
+podman run --rm -e LICENSE=accept --privileged=true --group-add keep-groups \
+    --name HibernateTestingDB2 -e DBNAME=hreact -e DB2INSTANCE=hreact \
+    -e DB2INST1_PASSWORD=hreact -e PERSISTENT_HOME=false -e ARCHIVE_LOGS=false \
+    -e AUTOCONFIG=false -p 50000:50000 docker.io/ibmcom/db2:11.5.8.0
 ```
 
 When the database has started, you can run the tests on Db2 with:

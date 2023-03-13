@@ -65,7 +65,7 @@ public class {baseName} {
 	}
 
     @ClassRule
-    public final static Db2Container database = new Db2Container( imageName( "docker.io", "ibmcom/db2", "11.5.7.0a" ) )
+    public final static Db2Container database = new Db2Container( imageName( "docker.io", "ibmcom/db2", "11.5.8.0" ) )
             .acceptLicense();
 
 	private Mutiny.SessionFactory sessionFactory;
