@@ -1,7 +1,7 @@
 [[getting-started]]
 = Introduction to Hibernate Reactive
 
-:example: https://github.com/hibernate/hibernate-reactive/tree/main/examples/session-example
+:example: https://github.com/hibernate/hibernate-reactive/tree/1.1/examples/session-example
 
 Creating a new project with Hibernate Reactive isn't hard at all. In
 this short guide, we'll cover all the basic work involved in:
@@ -46,7 +46,7 @@ a preconfigured skeleton project {skeleton}[right here].
 
 === Including Hibernate Reactive in your project build
 
-:build: https://github.com/hibernate/hibernate-reactive/blob/main/examples/session-example/build.gradle
+:build: https://github.com/hibernate/hibernate-reactive/blob/1.1/examples/session-example/build.gradle
 
 Add the following dependency to your project:
 
@@ -102,7 +102,7 @@ There's an example {build}[Gradle build] included in the example program.
 
 === Basic configuration
 
-:xml: https://github.com/hibernate/hibernate-reactive/blob/main/examples/session-example/src/main/resources/META-INF/persistence.xml
+:xml: https://github.com/hibernate/hibernate-reactive/blob/1.1/examples/session-example/src/main/resources/META-INF/persistence.xml
 :configuration-properties: https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#configurations
 
 
@@ -232,7 +232,7 @@ startHibernate = vertx.executeBlocking(startHibernate)
 
 === Logging the generated SQL
 
-:log4j: https://github.com/hibernate/hibernate-reactive/blob/main/examples/session-example/src/main/resources/log4j2.properties
+:log4j: https://github.com/hibernate/hibernate-reactive/blob/1.1/examples/session-example/src/main/resources/log4j2.properties
 
 To see the generated SQL as it's sent to the database, either:
 
