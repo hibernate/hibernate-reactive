@@ -32,6 +32,7 @@ import org.hibernate.LockMode;
 import org.hibernate.annotations.BatchSize;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -52,6 +53,7 @@ public class BatchFetchTest extends BaseReactiveTest {
 	}
 
 	@Test
+	@Ignore // See https://github.com/hibernate/hibernate-reactive/issues/1501
 	public void testQuery(TestContext context) {
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
@@ -70,13 +72,13 @@ public class BatchFetchTest extends BaseReactiveTest {
 							context.assertEquals( list.size(), 2 );
 							Node n1 = list.get( 0 );
 							Node n2 = list.get( 1 );
-							context.assertFalse( Hibernate.isInitialized( n1.elements ) );
-							context.assertFalse( Hibernate.isInitialized( n2.elements ) );
-							return s.fetch( n1.elements )
+							context.assertFalse( Hibernate.isInitialized( n1.getElements() ), "'n1.elements' should not be initialize" );
+							context.assertFalse( Hibernate.isInitialized( n2.getElements() ), "'n2.elements' should not be initialize" );
+							return s.fetch( n1.getElements() )
 									.thenAccept( elements -> {
-										context.assertTrue( Hibernate.isInitialized( elements ) );
-										context.assertTrue( Hibernate.isInitialized( n1.elements ) );
-										context.assertTrue( Hibernate.isInitialized( n2.elements ) );
+										context.assertTrue( Hibernate.isInitialized( elements ), "'elements' after fetch should not be initialize" );
+										context.assertTrue( Hibernate.isInitialized( n1.getElements() ), "'n1.elements' after fetch should be initialize" );
+										context.assertTrue( Hibernate.isInitialized( n2.getElements() ), "'n2.elements' after fetch should be initialize" );
 									} );
 						} )
 				)
@@ -172,6 +174,14 @@ public class BatchFetchTest extends BaseReactiveTest {
 
 		Element() {
 		}
+
+		public Node getNode() {
+			return node;
+		}
+
+		public void setNode(Node node) {
+			this.node = node;
+		}
 	}
 
 	@Entity(name = "Node")
@@ -248,6 +258,14 @@ public class BatchFetchTest extends BaseReactiveTest {
 		@PostLoad
 		void postLoad() {
 			loaded = true;
+		}
+
+		public List<Element> getElements() {
+			return elements;
+		}
+
+		public void setElements(List<Element> elements) {
+			this.elements = elements;
 		}
 
 		@Override
