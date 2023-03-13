@@ -27,7 +27,7 @@ import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExec
 import org.hibernate.reactive.id.factory.spi.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.pool.impl.ReactiveConnectionPoolInitiator;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfigurationInitiator;
-import org.hibernate.reactive.provider.service.NativeParametersRendering;
+import org.hibernate.reactive.provider.service.NativeParametersHandling;
 import org.hibernate.reactive.provider.service.NoJdbcConnectionProviderInitiator;
 import org.hibernate.reactive.provider.service.NoJdbcEnvironmentInitiator;
 import org.hibernate.reactive.provider.service.NoJdbcMultiTenantConnectionProviderInitiator;
@@ -154,8 +154,8 @@ public final class ReactiveServiceInitiators {
 		// Custom for Hibernate Reactive: SqmMultiTableMutationStrategyProvider
 		serviceInitiators.add( ReactiveSqmMultiTableMutationStrategyProviderInitiator.INSTANCE );
 
-		// Custom for Hibernate Reactive: NativeParametersRendering
-		serviceInitiators.add( NativeParametersRendering.INSTANCE );
+		// Custom for Hibernate Reactive: NativeParametersHandling
+		serviceInitiators.add( NativeParametersHandling.INSTANCE );
 
 		// --- end of services defined by Hibernate ORM
 
