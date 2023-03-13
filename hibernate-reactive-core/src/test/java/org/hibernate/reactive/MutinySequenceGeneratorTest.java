@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -19,7 +18,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Version;
 
-@Ignore // ORM-6 it gets stuck, I'm not sure why
 public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 
 	@Override
