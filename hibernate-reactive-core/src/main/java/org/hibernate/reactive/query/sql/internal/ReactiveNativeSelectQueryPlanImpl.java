@@ -82,9 +82,7 @@ public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanI
 		}
 		else {
 			jdbcParameterBinders = new ArrayList<>( parameterList.size() );
-			jdbcParameterBindings = new JdbcParameterBindingsImpl( parameterList.size() );
-
-			jdbcParameterBindings.registerNativeQueryParameters(
+			jdbcParameterBindings = new JdbcParameterBindingsImpl(
 					queryParameterBindings,
 					parameterList,
 					jdbcParameterBinders,

@@ -16,7 +16,7 @@ import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.hibernate.sql.ast.spi.JdbcParameterRenderer;
+import org.hibernate.sql.ast.spi.ParameterMarkerStrategy;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 
 /**
@@ -24,42 +24,42 @@ import org.hibernate.type.descriptor.jdbc.JdbcType;
  * users to set AvailableSettings.DIALECT_NATIVE_PARAM_MARKERS : this
  * gets enforces as the Vert.x SQL clients require it.
  */
-public class NativeParametersRendering implements StandardServiceInitiator<JdbcParameterRenderer> {
+public class NativeParametersHandling implements StandardServiceInitiator<ParameterMarkerStrategy> {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	/**
 	 * Singleton access
 	 */
-	public static final NativeParametersRendering INSTANCE = new NativeParametersRendering();
+	public static final NativeParametersHandling INSTANCE = new NativeParametersHandling();
 
 	@Override
-	public JdbcParameterRenderer initiateService(Map<String, Object> configurationValues, ServiceRegistryImplementor registry) {
+	public ParameterMarkerStrategy initiateService(Map<String, Object> configurationValues, ServiceRegistryImplementor registry) {
 		final Dialect dialect = registry.getService( JdbcServices.class ).getDialect();
 		final Dialect realDialect = DialectDelegateWrapper.extractRealDialect( dialect );
-		final JdbcParameterRenderer renderer = recommendRendered( realDialect );
+		final ParameterMarkerStrategy renderer = recommendRendered( realDialect );
 		LOG.debug( "Initializing service JdbcParameterRenderer with implementation: " + renderer.getClass() );
 		return renderer;
 	}
 
-	private JdbcParameterRenderer recommendRendered(Dialect realDialect) {
+	private ParameterMarkerStrategy recommendRendered(Dialect realDialect) {
 		if ( realDialect instanceof PostgreSQLDialect ) {
 			return new PostgreSQLNativeParameterMarkers();
 		}
 		//TBD : Implementations for other DBs
 		else {
-			return realDialect.getNativeParameterRenderer();
+			return realDialect.getNativeParameterMarkerStrategy();
 		}
 	}
 
 	@Override
-	public Class<JdbcParameterRenderer> getServiceInitiated() {
-		return JdbcParameterRenderer.class;
+	public Class<ParameterMarkerStrategy> getServiceInitiated() {
+		return ParameterMarkerStrategy.class;
 	}
 
-	private static class PostgreSQLNativeParameterMarkers implements JdbcParameterRenderer {
+	private static class PostgreSQLNativeParameterMarkers implements ParameterMarkerStrategy {
 		@Override
-		public String renderJdbcParameter(int position, JdbcType jdbcType) {
+		public String createMarker(int position, JdbcType jdbcType) {
 			return "$" + position;
 		}
 	}
