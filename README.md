@@ -90,10 +90,10 @@ Panache Reactive, an active record-style API based on Hibernate Reactive.
 The directory [`examples`][examples] contains several small projects showing
 different features of Hibernate Reactive:
 
-  - [CRUD operations using the session](https://github.com/hibernate/hibernate-reactive/tree/main/examples/session-example)
-  - [Native queries and stateless session](https://github.com/hibernate/hibernate-reactive/tree/main/examples/native-sql-example)
+  - [CRUD operations using the session](https://github.com/hibernate/hibernate-reactive/tree/1.1/examples/session-example)
+  - [Native queries and stateless session](https://github.com/hibernate/hibernate-reactive/tree/1.1/examples/native-sql-example)
 
-[examples]: https://github.com/hibernate/hibernate-reactive/tree/main/examples
+[examples]: https://github.com/hibernate/hibernate-reactive/tree/1.1/examples
 
 ## Quarkus quickstarts
 
