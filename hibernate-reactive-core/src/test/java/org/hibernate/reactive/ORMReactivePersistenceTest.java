@@ -25,8 +25,10 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.assertj.core.api.Assertions;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 
@@ -43,7 +45,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( Flour.class );
+		return List.of( Flour.class, Person.class );
 	}
 
 	@Before
@@ -62,6 +64,68 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	@After
 	public void closeOrmFactory() {
 		ormFactory.close();
+	}
+
+	@Test
+	public void testPersistThenDelete(TestContext context) {
+		try ( Session session = ormFactory.openSession() ) {
+			session.beginTransaction();
+			session.persist( newPerson( "one" ) );
+			session.persist( newPerson( "two" ) );
+			session.persist( newPerson( "three" ) );
+			session.getTransaction().commit();
+		}
+		try ( Session session = ormFactory.openSession() ) {
+			session.beginTransaction();
+			session.persist( newPerson( "critical" ) );
+			session.createMutationQuery( "delete from Person" ).executeUpdate();
+			session.getTransaction().commit();
+		}
+		try ( Session session = ormFactory.openSession() ) {
+			session.beginTransaction();
+			final List fromPerson = session.createQuery( "from Person" ).getResultList();
+			Assertions.assertThat( fromPerson ).isEmpty();
+			session.getTransaction().commit();
+		}
+	}
+
+	@Test
+	public void testDeleteThenPersist(TestContext context) {
+		try ( Session session = ormFactory.openSession() ) {
+			session.beginTransaction();
+			session.persist( newPerson( "one" ) );
+			session.persist( newPerson( "two" ) );
+			session.persist( newPerson( "three" ) );
+			session.getTransaction().commit();
+		}
+		try ( Session session = ormFactory.openSession() ) {
+			session.beginTransaction();
+			session.createMutationQuery( "delete from Person" ).executeUpdate();
+			session.persist( newPerson( "critical" ) );
+			session.getTransaction().commit();
+		}
+		try ( Session session = ormFactory.openSession() ) {
+			session.beginTransaction();
+			final List fromPerson = session.createQuery( "from Person" ).getResultList();
+			Assertions.assertThat( fromPerson ).hasSize( 1 );
+			session.getTransaction().commit();
+		}
+	}
+
+	private static Person newPerson(String name) {
+		final Person person = new Person();
+		person.name = name;
+		return person;
+	}
+
+	@Entity(name="Person")
+	public static class Person {
+
+		@Id
+		@GeneratedValue
+		Integer id;
+
+		String name;
 	}
 
 	@Test
