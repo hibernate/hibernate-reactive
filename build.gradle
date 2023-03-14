@@ -139,7 +139,7 @@ subprojects {
         }
         // Example: ./gradlew build -PenableSonatypeOpenSourceSnapshotsRep
         if ( project.hasProperty('enableSonatypeOpenSourceSnapshotsRep') ) {
-            maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
+            maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
         }
 
         mavenCentral()
