@@ -17,6 +17,7 @@ import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -48,30 +49,34 @@ public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutatio
 			Function<String, PreparedStatement> statementCreator,
 			BiConsumer<Integer, PreparedStatement> expectationCheck,
 			ExecutionContext executionContext) {
-		final SharedSessionContractImplementor session = executionContext.getSession();
-		session.autoFlushIfRequired( jdbcMutation.getAffectedTableNames() );
+		SharedSessionContractImplementor session = executionContext.getSession();
+		ReactiveSharedSessionContractImplementor reactiveSession = (ReactiveSharedSessionContractImplementor) session;
 
-		final LogicalConnectionImplementor logicalConnection = session
-				.getJdbcCoordinator()
-				.getLogicalConnection();
+		return reactiveSession.reactiveAutoFlushIfRequired( jdbcMutation.getAffectedTableNames() )
+				.thenCompose( v -> {
 
-		final JdbcServices jdbcServices = session.getJdbcServices();
-		final QueryOptions queryOptions = executionContext.getQueryOptions();
-		final String finalSql = finalSql( jdbcMutation, executionContext, jdbcServices, queryOptions );
+			final LogicalConnectionImplementor logicalConnection = session
+					.getJdbcCoordinator()
+					.getLogicalConnection();
 
-		Object[] parameters = PreparedStatementAdaptor
-				.bind( statement -> prepareStatement( jdbcMutation, statement, jdbcParameterBindings, executionContext ) );
+			final JdbcServices jdbcServices = session.getJdbcServices();
+			final QueryOptions queryOptions = executionContext.getQueryOptions();
+			final String finalSql = finalSql( jdbcMutation, executionContext, jdbcServices, queryOptions );
 
-		session.getEventListenerManager().jdbcExecuteStatementStart();
-		return connection( executionContext )
-				.update( finalSql, parameters )
-				.thenApply( result -> {
-					// FIXME: I don't have a preparedStatement
-//					expectationCheck.accept( result, preparedStatement );
-					return result;
-				} )
-				.whenComplete( (result, t) -> session.getEventListenerManager().jdbcExecuteStatementEnd() )
-				.whenComplete( (result, t) -> executionContext.afterStatement( logicalConnection ) );
+			Object[] parameters = PreparedStatementAdaptor
+					.bind( statement -> prepareStatement( jdbcMutation, statement, jdbcParameterBindings, executionContext ) );
+
+			session.getEventListenerManager().jdbcExecuteStatementStart();
+			return connection( executionContext )
+					.update( finalSql, parameters )
+					.thenApply( result -> {
+						// FIXME: I don't have a preparedStatement
+	//					expectationCheck.accept( result, preparedStatement );
+						return result;
+					} )
+					.whenComplete( (result, t) -> session.getEventListenerManager().jdbcExecuteStatementEnd() )
+					.whenComplete( (result, t) -> executionContext.afterStatement( logicalConnection ) );
+		} );
 	}
 
 	private void prepareStatement(
