@@ -16,6 +16,7 @@ import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
+import org.hibernate.sql.ast.internal.ParameterMarkerStrategyStandard;
 import org.hibernate.sql.ast.spi.ParameterMarkerStrategy;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 
@@ -38,18 +39,26 @@ public class NativeParametersHandling implements StandardServiceInitiator<Parame
 		final Dialect dialect = registry.getService( JdbcServices.class ).getDialect();
 		final Dialect realDialect = DialectDelegateWrapper.extractRealDialect( dialect );
 		final ParameterMarkerStrategy renderer = recommendRendered( realDialect );
-		LOG.debug( "Initializing service JdbcParameterRenderer with implementation: " + renderer.getClass() );
+		LOG.debugf( "Initializing service JdbcParameterRenderer with implementation: %s", renderer.getClass() );
 		return renderer;
 	}
 
+	/**
+	 * Given a {@link Dialect}, returns the recommended {@link ParameterMarkerStrategy}.
+	 * <p>
+	 *     The default strategy is {@link ParameterMarkerStrategyStandard}.
+	 * </p>
+	 * @return the selected strategy for the dialect, never null
+	 */
 	private ParameterMarkerStrategy recommendRendered(Dialect realDialect) {
 		if ( realDialect instanceof PostgreSQLDialect ) {
 			return new PostgreSQLNativeParameterMarkers();
 		}
 		//TBD : Implementations for other DBs
-		else {
-			return realDialect.getNativeParameterMarkerStrategy();
-		}
+
+		return realDialect.getNativeParameterMarkerStrategy() == null
+				? ParameterMarkerStrategyStandard.INSTANCE
+				: realDialect.getNativeParameterMarkerStrategy();
 	}
 
 	@Override
