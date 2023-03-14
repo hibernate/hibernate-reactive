@@ -47,7 +47,7 @@ dependencies {
     testRuntimeOnly "org.mariadb.jdbc:mariadb-java-client:3.0.7";
 
     // JDBC driver for Testcontainers with MYSQL Server
-    testRuntimeOnly "com.mysql:mysql-connector-j:8.0.31";
+    testRuntimeOnly "com.mysql:mysql-connector-j:8.0.32";
 
     // EHCache
     testRuntimeOnly ("org.ehcache:ehcache:3.10.0-alpha0") {

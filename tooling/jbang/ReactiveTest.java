@@ -22,7 +22,7 @@
 //// Testcontainer needs the JDBC drivers to start the containers
 //// Hibernate Reactive doesn't use them
 //DEPS org.postgresql:postgresql:42.5.0
-//DEPS com.mysql:mysql-connector-j:8.0.31
+//DEPS com.mysql:mysql-connector-j:8.0.32
 //DEPS org.mariadb.jdbc:mariadb-java-client:2.7.3
 //
 
@@ -229,7 +229,7 @@ public class ReactiveTest {
 	 */
 	enum Database {
 		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:14" ) ),
-		MYSQL( () -> new MySQLContainer( "mysql:8.0.31" ) ),
+		MYSQL( () -> new MySQLContainer( "mysql:8.0.32" ) ),
 		DB2( () -> new Db2Container( "docker.io/ibmcom/db2:11.5.8.0" ).acceptLicense() ),
 		MARIADB( () -> new MariaDBContainer( "mariadb:10.9.3" ) ),
 		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v22.1.9" ) );
