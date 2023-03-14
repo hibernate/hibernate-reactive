@@ -141,7 +141,7 @@ this stage are these three:
 | Configuration property name                                         | Purpose
 
 | `jakarta.persistence.jdbc.url`                                        | JDBC URL of your database
-| `jakarta.persistence.jdbc.user` and `javax.persistence.jdbc.password` | Your database credentials
+| `jakarta.persistence.jdbc.user` and `jakarta.persistence.jdbc.password` | Your database credentials
 |===
 
 These configuration properties have `jdbc` in their names, but of course

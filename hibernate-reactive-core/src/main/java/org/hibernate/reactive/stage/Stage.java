@@ -1668,7 +1668,7 @@ public interface Stage {
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 *
-		 * @see javax.persistence.EntityManager#createNativeQuery(String, Class)
+		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, Class)
 		 */
 		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities);
 
