@@ -68,11 +68,11 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	public void testORMWithStageSession(TestContext context) {
 		final Flour almond = new Flour( 1, "Almond", "made from ground almonds.", "Gluten free" );
 
-		Session session = ormFactory.openSession();
-		session.beginTransaction();
-		session.persist( almond );
-		session.getTransaction().commit();
-		session.close();
+		try (Session session = ormFactory.openSession()) {
+			session.beginTransaction();
+			session.persist( almond );
+			session.getTransaction().commit();
+		}
 
 		// Check database with Stage session and verify 'almond' flour exists
 		test( context, openSession()
@@ -85,11 +85,11 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	public void testORMWitMutinySession(TestContext context) {
 		final Flour rose = new Flour( 2, "Rose", "made from ground rose pedals.", "Full fragrance" );
 
-		Session ormSession = ormFactory.openSession();
-		ormSession.beginTransaction();
-		ormSession.persist( rose );
-		ormSession.getTransaction().commit();
-		ormSession.close();
+		try (Session ormSession = ormFactory.openSession()) {
+			ormSession.beginTransaction();
+			ormSession.persist( rose );
+			ormSession.getTransaction().commit();
+		}
 
 		// Check database with Mutiny session and verify 'rose' flour exists
 		test( context, openMutinySession()
