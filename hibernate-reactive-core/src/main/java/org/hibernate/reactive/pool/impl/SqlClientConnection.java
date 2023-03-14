@@ -288,8 +288,12 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> beginTransaction() {
+		if ( transaction != null ) {
+			throw new IllegalStateException( "Can't begin a new transaction as an active transaction is already associated to this connection" );
+		}
 		return connection.begin()
 				.onSuccess( tx -> LOG.tracef( "Transaction started: %s", tx ) )
+				.onFailure( v -> LOG.errorf( "Failed to start a transaction: %s", transaction ) )
 				.toCompletionStage()
 				.thenAccept( tx -> transaction = tx );
 	}
@@ -298,22 +302,28 @@ public class SqlClientConnection implements ReactiveConnection {
 	public CompletionStage<Void> commitTransaction() {
 		return transaction.commit()
 				.onSuccess( v -> LOG.tracef( "Transaction committed: %s", transaction ) )
+				.onFailure( v -> LOG.errorf( "Failed to commit transaction: %s", transaction ) )
 				.toCompletionStage()
-				.whenComplete( (v, x) -> transaction = null );
+				.whenComplete( this::afterTransactionEnd );
 	}
 
 	@Override
 	public CompletionStage<Void> rollbackTransaction() {
 		return transaction.rollback()
+				.onFailure( v -> LOG.errorf( "Failed to rollback transaction: %s", transaction ) )
 				.onSuccess( v -> LOG.tracef( "Transaction rolled back: %s", transaction ) )
 				.toCompletionStage()
-				.whenComplete( (v, x) -> transaction = null );
+				.whenComplete( this::afterTransactionEnd );
 	}
 
 	@Override
 	public CompletionStage<Void> close() {
+		if ( transaction != null ) {
+			throw new IllegalStateException( "Connection being closed with a live transaction associated to it" );
+		}
 		return connection.close()
 				.onSuccess( event -> LOG.tracef( "Connection closed: %s", connection ) )
+				.onFailure( v -> LOG.errorf( "Failed to close a connection: %s", connection ) )
 				.toCompletionStage();
 	}
 
@@ -331,6 +341,11 @@ public class SqlClientConnection implements ReactiveConnection {
 			return oracleKeys.get( idClass, idColumnName );
 		}
 		return null;
+	}
+
+	private void afterTransactionEnd(Void v, Throwable x) {
+		LOG.tracef( "Clearing current transaction instance from connection: %s", transaction );
+		transaction = null;
 	}
 
 	private static class RowSetResult implements Result {
