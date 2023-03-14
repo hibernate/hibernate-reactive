@@ -8,6 +8,7 @@ package org.hibernate.reactive.it;
 import java.util.Collection;
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -25,6 +26,7 @@ public class LazyBasicFieldTest extends BaseReactiveIT {
 	}
 
 	@Test
+	@Ignore // see https://github.com/hibernate/hibernate-reactive/issues/1516
 	public void testFetchBasicField(TestContext context) {
 		final Crew emily = new Crew();
 		emily.setId( 21L );

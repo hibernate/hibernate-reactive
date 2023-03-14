@@ -44,7 +44,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath "org.hibernate:hibernate-gradle-plugin:${hibernateOrmVersion}"
+        classpath "org.hibernate.orm:hibernate-gradle-plugin:${hibernateOrmVersion}"
     }
 }
 
@@ -52,10 +52,10 @@ buildscript {
 apply plugin: 'org.hibernate.orm'
 
 hibernate {
-    enhance {
-        enableLazyInitialization = true
-        enableDirtyTracking = true
-        enableAssociationManagement = false
+    enhancement {
+        lazyInitialization(true)
+        dirtyTracking(true)
+        associationManagement(false)
     }
 }
 
