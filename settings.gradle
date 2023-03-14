@@ -84,6 +84,7 @@ logger.lifecycle "Java versions for tests: " + gradle.ext.javaVersions.test
 include 'hibernate-reactive-core'
 include 'documentation'
 include 'release'
+include 'bytecode-enhancements-it'
 
 // Examples
 for ( project in rootProject.children ) {
