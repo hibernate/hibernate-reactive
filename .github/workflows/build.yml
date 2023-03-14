@@ -123,7 +123,7 @@ jobs:
         distribution: 'temurin'
         java-version: 11
     - name: Build and Test with ${{ matrix.db }}
-      run: ./gradlew build -x test -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
+      run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
     - name: Upload reports (if build failed)
       uses: actions/upload-artifact@v2
       if: failure()
@@ -200,7 +200,7 @@ jobs:
         ${{ steps.testjdk-exportpath.outputs.path }}/bin/java -version
     - name: Build and Test with Java ${{ matrix.java.name }}
       run: |
-        ./gradlew build -x test -PshowStandardOutput -Pdocker -Ptest.jdk.version=${{ matrix.java.java_version_numeric }} \
+        ./gradlew build -PshowStandardOutput -Pdocker -Ptest.jdk.version=${{ matrix.java.java_version_numeric }} \
             -Porg.gradle.java.installations.paths=${{ steps.mainjdk-exportpath.outputs.path }},${{ steps.testjdk-exportpath.outputs.path }} \
             ${{ matrix.java.jvm_args && '-Ptest.jdk.launcher.args=' }}${{ matrix.java.jvm_args }}
     - name: Upload reports (if build failed)
