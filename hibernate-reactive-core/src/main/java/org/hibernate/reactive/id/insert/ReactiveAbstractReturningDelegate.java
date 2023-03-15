@@ -8,6 +8,8 @@ package org.hibernate.reactive.id.insert;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -22,6 +24,7 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
 import static java.util.function.Function.identity;
+import static org.hibernate.dialect.DialectDelegateWrapper.extractRealDialect;
 
 public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGeneratedIdentifierDelegate {
 
@@ -31,16 +34,13 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 
 	@Override
 	default CompletionStage<Object> reactivePerformInsert(PreparedStatementDetails insertStatementDetails, JdbcValueBindings jdbcValueBindings, Object entity, SharedSessionContractImplementor session) {
-		// FIXME: I should be able to generate the sql string beforehand
 		final Class<?> idType = getPersister().getIdentifierType().getReturnedClass();
-		final String identifierColumnName = getPersister().getIdentifierColumnNames()[0];
-		final String insertSql = insertStatementDetails.getSqlString() + " returning " + identifierColumnName;
-
 		final JdbcServices jdbcServices = session.getJdbcServices();
-		jdbcServices.getSqlStatementLogger().logStatement( insertSql );
+		final String identifierColumnName = getPersister().getIdentifierColumnNames()[0];
+		final String insertSql = createInsert( insertStatementDetails, identifierColumnName, jdbcServices.getDialect() );
 
 		Object[] params = PreparedStatementAdaptor.bind( statement -> {
-			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor( insertStatementDetails, statement, session.getJdbcServices() );
+			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor( insertStatementDetails, statement, jdbcServices );
 			jdbcValueBindings.beforeStatement( details );
 		} );
 
@@ -48,6 +48,17 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 		return reactiveConnection
 				.insertAndSelectIdentifier( insertSql, params, idType, identifierColumnName )
 				.thenApply( identity() );
+	}
+
+	private static String createInsert(PreparedStatementDetails insertStatementDetails, String identifierColumnName, Dialect dialect) {
+		if ( instanceOf( dialect, PostgreSQLDialect.class ) ) {
+			return insertStatementDetails.getSqlString() + " returning " + identifierColumnName;
+		}
+		return insertStatementDetails.getSqlString();
+	}
+
+	private static boolean instanceOf(Dialect dialect, Class<?> dialectClass) {
+		return dialectClass.isInstance( extractRealDialect( dialect ) );
 	}
 
 	@Override
