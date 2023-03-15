@@ -31,6 +31,7 @@ import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.expectedDatatype;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.getDatatypeQuery;
 
@@ -47,10 +48,9 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 	private void testDatatype(TestContext context, String columnName, Class<?> type) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createNativeQuery( getDatatypeQuery( BasicTypesTestEntity.TABLE_NAME, columnName ) )
+						.createNativeQuery( getDatatypeQuery( BasicTypesTestEntity.TABLE_NAME, columnName ), String.class )
 						.getSingleResult()
-						.thenAccept( result -> context.assertEquals( expectedDatatype( type ), toString( result ) ) )
-				)
+						.thenAccept( typeOnTheDb -> assertThat( toString( typeOnTheDb ) ).isEqualTo( expectedDatatype( type ) ) ) )
 		);
 	}
 
