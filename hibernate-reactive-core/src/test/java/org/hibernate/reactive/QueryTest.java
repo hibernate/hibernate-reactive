@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ import jakarta.persistence.criteria.Root;
 
 import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.FetchType.LAZY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
@@ -535,7 +537,7 @@ public class QueryTest extends BaseReactiveTest {
 	public void testScalarQuery(TestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s.createNativeQuery( selectCurrentTimestampQuery() ).getSingleResult() )
-				.thenAccept( r -> context.assertTrue( r instanceof OffsetDateTime || r instanceof LocalDateTime ) )
+				.thenAccept( r -> assertThat( r ).isInstanceOfAny( Timestamp.class, OffsetDateTime.class, LocalDateTime.class ) )
 		);
 	}
 
