@@ -24,6 +24,10 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import org.hibernate.type.NumericBooleanConverter;
+import org.hibernate.type.TrueFalseConverter;
+import org.hibernate.type.YesNoConverter;
+
 import org.testcontainers.containers.MySQLContainer;
 
 class MySQLDatabase implements TestableDatabase {
@@ -36,11 +40,10 @@ class MySQLDatabase implements TestableDatabase {
 		expectedDBTypeForClass.put( boolean.class, "bit" );
 		expectedDBTypeForClass.put( Boolean.class, "bit" );
 
-		// FIXME: [ORM-6] Check if we need alternatives
-		// expectedDBTypeForClass.put( NumericBooleanType.class, "int" );
-		// expectedDBTypeForClass.put( TrueFalseType.class, "char" );
-		// expectedDBTypeForClass.put( YesNoType.class, "char" );
-		// expectedDBTypeForClass.put( PrimitiveByteArrayTypeDescriptor.class, "tinyblob" );
+		expectedDBTypeForClass.put( NumericBooleanConverter.class, "int" );
+		expectedDBTypeForClass.put( YesNoConverter.class, "enum" );
+		expectedDBTypeForClass.put( TrueFalseConverter.class, "enum" );
+	 	expectedDBTypeForClass.put( byte[].class, "varbinary" );
 		// expectedDBTypeForClass.put( TextType.class, "text" );
 
 		expectedDBTypeForClass.put( int.class, "int" );
@@ -63,7 +66,7 @@ class MySQLDatabase implements TestableDatabase {
 		expectedDBTypeForClass.put( LocalDateTime.class, "datetime" );
 		expectedDBTypeForClass.put( BigInteger.class, "decimal" );
 		expectedDBTypeForClass.put( BigDecimal.class, "decimal" );
-		expectedDBTypeForClass.put( Serializable.class, "tinyblob" );
+		expectedDBTypeForClass.put( Serializable.class, "varbinary" );
 		expectedDBTypeForClass.put( UUID.class, "binary" );
 		expectedDBTypeForClass.put( Instant.class, "datetime" );
 		expectedDBTypeForClass.put( Duration.class, "bigint" );
