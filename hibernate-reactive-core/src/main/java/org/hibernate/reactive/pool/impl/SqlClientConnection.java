@@ -324,6 +324,9 @@ public class SqlClientConnection implements ReactiveConnection {
 			if ( Long.class.equals( idClass ) ) {
 				return (T) mySqlId;
 			}
+			if ( Integer.class.equals( idClass ) ) {
+				return (T) ( Integer.valueOf( mySqlId.intValue() ) );
+			}
 			throw LOG.nativelyGeneratedValueMustBeLong();
 		}
 		final Row oracleKeys = rows.property( ORACLE_GENERATED_KEYS );
