@@ -16,6 +16,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * Verifies that scheduled changes in the reactive session
  * are being auto-flushed before a mutation query on the same
@@ -30,68 +32,44 @@ public class PersistThenDeleteTest extends BaseReactiveTest {
 
 	@Test
 	public void testPersistThenDelete(TestContext context) {
-		test(context,
-			 getSessionFactory().withTransaction(
-							 (s, t) -> s.persist( newPerson( "foo" ), newPerson( "bar" ), newPerson( "baz" ) )
-					 )
-					 .thenCompose(
-							 v ->
-							 getSessionFactory().withTransaction(
-											 (s, t) -> s.createQuery( "from Person" ).getResultList().thenAccept( l ->
-											 context.assertEquals( 3, l.size() )
-											 )
-							 )
-					 )
-					 .thenCompose(
-							v ->
-							getSessionFactory().withTransaction(
-									(s, t) ->
-										s.persist( newPerson( "critical" ) )
-												.thenCompose( vo -> s.createQuery( "delete from Person" )
-														.executeUpdate() )
-								  )
-					 )
-					 .thenCompose(
-							 v ->
-									 getSessionFactory().withTransaction(
-											 (s, t) -> s.createQuery( "from Person" ).getResultList().thenAccept( l ->
-																														  context.assertEquals( 0, l.size() )
-											 )
-									 )
-					 )
+		test( context, getSessionFactory()
+				.withTransaction( s -> s
+						.persist( newPerson( "foo" ), newPerson( "bar" ), newPerson( "baz" ) ) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
+						.createQuery( "from Person" ).getResultList()
+						.thenAccept( l -> assertThat( l ).hasSize( 3 ) )
+				) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
+						.persist( newPerson( "critical" ) )
+						.thenCompose( vo -> s.createQuery( "delete from Person" ).executeUpdate() )
+				) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
+						.createQuery( "from Person" ).getResultList()
+						.thenAccept( l -> assertThat( l ).isEmpty() )
+				) )
 		);
 	}
 
 	@Test
 	public void testDeleteThenPersist(TestContext context) {
-		test(context,
-			 getSessionFactory().withTransaction(
-							 (s, t) -> s.persist( newPerson( "foo" ), newPerson( "bar" ), newPerson( "baz" ) )
-					 )
-					 .thenCompose(
-							 v ->
-									 getSessionFactory().withTransaction(
-											 (s, t) -> s.createQuery( "from Person" ).getResultList().thenAccept( l ->
-																														  context.assertEquals( 3, l.size() )
-											 )
-									 )
-					 )
-					 .thenCompose(
-							 v ->
-									 getSessionFactory().withTransaction(
-											 (s, t) ->
-													 s.createQuery( "delete from Person" ).executeUpdate()
-															 .thenCompose( vo -> s.persist( newPerson( "critical" ) ) )
-									 )
-					 )
-					 .thenCompose(
-							 v ->
-									 getSessionFactory().withTransaction(
-											 (s, t) -> s.createQuery( "from Person" ).getResultList().thenAccept( l ->
-																														  context.assertEquals( 1, l.size() )
-											 )
-									 )
-					 )
+		test( context, getSessionFactory()
+				.withTransaction( s -> s
+						.persist( newPerson( "foo" ), newPerson( "bar" ), newPerson( "baz" ) ) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
+						.createQuery( "from Person" )
+						.getResultList()
+						.thenAccept( l -> assertThat( l ).hasSize( 3 ) )
+				) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
+						.createQuery( "delete from Person" )
+						.executeUpdate()
+						.thenCompose( vo -> s.persist( newPerson( "critical" ) ) )
+				) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
+						.createQuery( "from Person" )
+						.getResultList()
+						.thenAccept( l -> assertThat( l ).hasSize( 1 ) )
+				) )
 		);
 	}
 
@@ -101,7 +79,7 @@ public class PersistThenDeleteTest extends BaseReactiveTest {
 		return person;
 	}
 
-	@Entity(name="Person")
+	@Entity(name = "Person")
 	public static class Person {
 
 		@Id
@@ -109,6 +87,11 @@ public class PersistThenDeleteTest extends BaseReactiveTest {
 		Integer id;
 
 		String name;
+
+		@Override
+		public String toString() {
+			return name;
+		}
 	}
 
 }
