@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal;
 
+import java.sql.PreparedStatement;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
@@ -229,7 +230,7 @@ public class ReactiveSqmMutationStrategyHelper {
 						jdbcDelete,
 						jdbcParameterBindings,
 						executionContext.getSession().getJdbcCoordinator().getStatementPreparer()::prepareStatement,
-						(i, ps) -> {},
+						ReactiveSqmMutationStrategyHelper::doNothing,
 						executionContext
 				)
 				.thenCompose( CompletionStages::voidFuture );
@@ -242,5 +243,8 @@ public class ReactiveSqmMutationStrategyHelper {
 		else {
 			stage.completeExceptionally( throwable );
 		}
+	}
+
+	private static void doNothing(Integer i, PreparedStatement ps) {
 	}
 }

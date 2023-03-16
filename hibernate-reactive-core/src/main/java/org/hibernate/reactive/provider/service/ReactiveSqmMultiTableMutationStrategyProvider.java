@@ -11,11 +11,15 @@ import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.query.sqm.mutation.internal.cte.CteInsertStrategy;
 import org.hibernate.query.sqm.mutation.internal.cte.CteMutationStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableInsertStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableMutationStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategyProvider;
 import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveCteInsertStrategy;
 import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveCteMutationStrategy;
+import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveLocalTemporaryTableInsertStrategy;
+import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveLocalTemporaryTableMutationStrategy;
 
 public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTableMutationStrategyProvider {
 
@@ -27,6 +31,9 @@ public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTa
 		SqmMultiTableMutationStrategy mutationStrategy = mutationStrategy( rootEntityDescriptor, creationContext );
 		if ( mutationStrategy instanceof CteMutationStrategy ) {
 			return new ReactiveCteMutationStrategy( rootEntityDescriptor, creationContext );
+		}
+		if ( mutationStrategy instanceof LocalTemporaryTableMutationStrategy ) {
+			return new ReactiveLocalTemporaryTableMutationStrategy( (LocalTemporaryTableMutationStrategy) mutationStrategy );
 		}
 		return mutationStrategy;
 	}
@@ -48,6 +55,9 @@ public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTa
 		final SqmMultiTableInsertStrategy insertStrategy = insertStrategy( rootEntityDescriptor, creationContext );
 		if ( insertStrategy instanceof CteInsertStrategy ) {
 			return new ReactiveCteInsertStrategy( rootEntityDescriptor, creationContext );
+		}
+		if ( insertStrategy instanceof LocalTemporaryTableInsertStrategy ) {
+			return new ReactiveLocalTemporaryTableInsertStrategy( (LocalTemporaryTableInsertStrategy) insertStrategy );
 		}
 		return insertStrategy;
 	}

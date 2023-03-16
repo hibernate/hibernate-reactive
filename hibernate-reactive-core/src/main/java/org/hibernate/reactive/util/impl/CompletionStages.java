@@ -229,6 +229,42 @@ public class  CompletionStages {
 		return null;
 	}
 
+	public static <R, T extends Throwable> CompletionStageHandler<R, T> handle(R result, T throwable) {
+		return new CompletionStageHandler<>( result, throwable );
+	}
+
+	public static class CompletionStageHandler<R, T extends Throwable> {
+
+		private final R result;
+		private final T throwable;
+
+		public CompletionStageHandler(R result, T throwable) {
+			this.result = result;
+			this.throwable = throwable;
+		}
+
+		public R getResult() throws T {
+			if ( throwable == null ) {
+				return result;
+			}
+			throw (T) throwable;
+		}
+
+		public CompletionStage<R> getResultAsCompletionStage() {
+			if ( throwable == null ) {
+				return completedFuture( result );
+			}
+			return failedFuture( throwable );
+		}
+
+		/**
+		 * Same as {@link #getResultAsCompletionStage()}, but allows method reference
+		 */
+		public CompletionStage<R> getResultAsCompletionStage(Void unused) {
+			return getResultAsCompletionStage();
+		}
+	}
+
 	/**
 	 * It represents a loop on an iterator that requires
 	 * an index of the current element.
