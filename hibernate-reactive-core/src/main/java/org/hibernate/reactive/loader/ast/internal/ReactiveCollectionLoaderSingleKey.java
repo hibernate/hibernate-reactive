@@ -21,7 +21,9 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
+import org.hibernate.metamodel.mapping.internal.PluralAttributeMappingImpl;
 import org.hibernate.query.spi.QueryOptions;
+import org.hibernate.reactive.metamodel.mapping.internal.ReactivePluralAttributeMapping;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
@@ -47,11 +49,13 @@ public class ReactiveCollectionLoaderSingleKey implements ReactiveCollectionLoad
 	private final List<JdbcParameter> jdbcParameters;
 
 	public ReactiveCollectionLoaderSingleKey(PluralAttributeMapping attributeMapping, LoadQueryInfluencers influencers, SessionFactoryImplementor sessionFactory) {
-		this.attributeMapping = attributeMapping;
-		this.keyJdbcCount = attributeMapping.getKeyDescriptor().getJdbcTypeCount();
+		// PluralAttributeMappingImpl is the only implementation available at the moment in ORM
+		final PluralAttributeMapping reactivePluralAttributeMapping = new ReactivePluralAttributeMapping( (PluralAttributeMappingImpl) attributeMapping );
+		this.attributeMapping = reactivePluralAttributeMapping;
+		this.keyJdbcCount = reactivePluralAttributeMapping.getKeyDescriptor().getJdbcTypeCount();
 		this.jdbcParameters = new ArrayList<>();
 		this.sqlAst = LoaderSelectBuilder.createSelect(
-				attributeMapping,
+				reactivePluralAttributeMapping,
 				null,
 				attributeMapping.getKeyDescriptor(),
 				null,
