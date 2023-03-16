@@ -7,6 +7,8 @@ package org.hibernate.reactive.logging.impl;
 
 
 
+import java.sql.SQLWarning;
+
 import jakarta.persistence.PersistenceException;
 
 import org.hibernate.HibernateException;
@@ -276,4 +278,8 @@ public interface Log extends BasicLogger {
 	@LogMessage(level = WARN)
 	@Message(id = 447, value= "Explicit use of UPGRADE_SKIPLOCKED in lock() calls is not recommended; use normal UPGRADE locking instead")
 	void explicitSkipLockedLockCombo();
+
+	@LogMessage(level = WARN)
+	@Message(id = 448, value = "Warnings creating temp table : %s")
+	void warningsCreatingTempTable(SQLWarning warning);
 }

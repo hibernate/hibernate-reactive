@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.query.sqm.iternal;
 
+import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -139,63 +140,65 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 
 		final SqmJdbcExecutionContextAdapter executionContextAdapter = usingLockingAndPaging( executionContext );
 
-		ReactiveSqmMutationStrategyHelper.cleanUpCollectionTables(
-				entityDescriptor,
-				(tableReference, attributeMapping) -> {
-					if ( missingRestriction ) {
-						return null;
-					}
+		return ReactiveSqmMutationStrategyHelper.cleanUpCollectionTables(
+						entityDescriptor,
+						(tableReference, attributeMapping) -> {
+							if ( missingRestriction ) {
+								return null;
+							}
 
-					final ForeignKeyDescriptor fkDescriptor = attributeMapping.getKeyDescriptor();
-					final Expression fkColumnExpression = MappingModelCreationHelper.buildColumnReferenceExpression(
-							new MutatingTableReferenceGroupWrapper(
+							final ForeignKeyDescriptor fkDescriptor = attributeMapping.getKeyDescriptor();
+							final Expression fkColumnExpression = MappingModelCreationHelper.buildColumnReferenceExpression(
+									new MutatingTableReferenceGroupWrapper(
+											new NavigablePath( attributeMapping.getRootPathName() ),
+											attributeMapping,
+											(NamedTableReference) tableReference
+									),
+									fkDescriptor.getKeyPart(),
+									null,
+									factory
+							);
+
+							final QuerySpec matchingIdSubQuery = new QuerySpec( false );
+
+							final MutatingTableReferenceGroupWrapper tableGroup = new MutatingTableReferenceGroupWrapper(
 									new NavigablePath( attributeMapping.getRootPathName() ),
 									attributeMapping,
-									(NamedTableReference) tableReference
-							),
-							fkDescriptor.getKeyPart(),
-							null,
-							factory
-					);
+									sqmInterpretation.getSqlAst().getTargetTable()
+							);
+							final Expression fkTargetColumnExpression = MappingModelCreationHelper.buildColumnReferenceExpression(
+									tableGroup,
+									fkDescriptor.getTargetPart(),
+									sqmInterpretation.getSqlExpressionResolver(),
+									factory
+							);
+							matchingIdSubQuery.getSelectClause().addSqlSelection( new SqlSelectionImpl(
+									1,
+									0,
+									fkTargetColumnExpression
+							) );
 
-					final QuerySpec matchingIdSubQuery = new QuerySpec( false );
+							matchingIdSubQuery.getFromClause().addRoot(
+									tableGroup
+							);
 
-					final MutatingTableReferenceGroupWrapper tableGroup = new MutatingTableReferenceGroupWrapper(
-							new NavigablePath( attributeMapping.getRootPathName() ),
-							attributeMapping,
-							sqmInterpretation.getSqlAst().getTargetTable()
-					);
-					final Expression fkTargetColumnExpression = MappingModelCreationHelper.buildColumnReferenceExpression(
-							tableGroup,
-							fkDescriptor.getTargetPart(),
-							sqmInterpretation.getSqlExpressionResolver(),
-							factory
-					);
-					matchingIdSubQuery.getSelectClause().addSqlSelection( new SqlSelectionImpl(
-							1,
-							0,
-							fkTargetColumnExpression
-					) );
+							matchingIdSubQuery.applyPredicate( sqmInterpretation.getSqlAst().getRestriction() );
 
-					matchingIdSubQuery.getFromClause().addRoot(
-							tableGroup
-					);
-
-					matchingIdSubQuery.applyPredicate( sqmInterpretation.getSqlAst().getRestriction() );
-
-					return new InSubQueryPredicate( fkColumnExpression, matchingIdSubQuery, false );
-				},
-				( missingRestriction ? JdbcParameterBindings.NO_BINDINGS : jdbcParameterBindings ),
-				executionContextAdapter
-		);
-
-		return StandardReactiveJdbcMutationExecutor.INSTANCE
-				.executeReactive(
-						jdbcDelete,
-						jdbcParameterBindings,
-						session.getJdbcCoordinator().getStatementPreparer()::prepareStatement,
-						(i, ps) -> {},
+							return new InSubQueryPredicate( fkColumnExpression, matchingIdSubQuery, false );
+						},
+						( missingRestriction ? JdbcParameterBindings.NO_BINDINGS : jdbcParameterBindings ),
 						executionContextAdapter
+				)
+				.thenCompose( unused -> StandardReactiveJdbcMutationExecutor.INSTANCE
+						.executeReactive(
+								jdbcDelete,
+								jdbcParameterBindings,
+								session.getJdbcCoordinator().getStatementPreparer()::prepareStatement,
+								ReactiveSimpleDeleteQueryPlan::doNothing,
+								executionContextAdapter )
 				);
+	}
+
+	private static void doNothing(Integer i, PreparedStatement ps) {
 	}
 }
