@@ -142,7 +142,7 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 	@Override
 	protected int dataTypeCode(String typeName) {
 		// Copied from PostgreSQLDialect.
-		// Not ideal, but ii should work for now
+		// Not ideal, but it should work for now
 		// It would be nice to be able to get the correct code some way
 		switch ( typeName ) {
 			case "bool":
