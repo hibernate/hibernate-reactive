@@ -758,7 +758,6 @@ public interface Mutiny {
 		 * to use.  If unable to determine an appropriate {@link BindableType},
 		 * {@link #setParameter(int, Object)} is used.
 		 *
-		 * @see BindableType#parameterType(Class)
 		 * @see #setParameter(int, Object, BindableType)
 		 */
 		<P> Mutiny.Query<R> setParameter(int parameter, P argument, Class<P> type);
@@ -766,8 +765,6 @@ public interface Mutiny {
 		/**
 		 * Bind the given argument to an ordinal query parameter using the given
 		 * {@link BindableType}.
-		 *
-		 * @see BindableType#parameterType
 		 */
 		<P> Mutiny.Query<R> setParameter(int parameter, P argument, BindableType<P> type);
 
@@ -839,7 +836,6 @@ public interface Mutiny {
 		 * to use.  If unable to determine an appropriate {@link BindableType},
 		 * {@link #setParameterList(String, Collection)} is used.
 		 *
-		 * @see BindableType#parameterType(Class)
 		 * @see #setParameterList(java.lang.String, Object[], BindableType)
 		 *
 		 * @apiNote This is used for binding a list of values to an expression
@@ -880,7 +876,6 @@ public interface Mutiny {
 		 * to use.  If unable to determine an appropriate {@link BindableType},
 		 * {@link #setParameterList(String, Collection)} is used.
 		 *
-		 * @see BindableType#parameterType(Class)
 		 * @see #setParameterList(int, Collection, BindableType)
 		 *
 		 * @apiNote This is used for binding a list of values to an expression
@@ -920,7 +915,6 @@ public interface Mutiny {
 		 * to use. If unable to determine an appropriate {@link BindableType},
 		 * {@link #setParameterList(String, Collection)} is used.
 		 *
-		 * @see BindableType#parameterType(Class)
 		 * @see #setParameterList(int, Object[], BindableType)
 		 *
 		 * @apiNote This is used for binding a list of values to an expression
@@ -962,7 +956,6 @@ public interface Mutiny {
 		 * appropriate {@link BindableType}, {@link #setParameterList(String, Collection)}
 		 * is used.
 		 *
-		 * @see BindableType#parameterType(Class)
 		 * @see #setParameterList(QueryParameter, java.util.Collection, BindableType)
 		 *
 		 * @apiNote This is used for binding a list of values to an expression such
@@ -1008,7 +1001,6 @@ public interface Mutiny {
 		 * determine an appropriate {@link BindableType},
 		 * {@link #setParameterList(String, Collection)} is used
 		 *
-		 * @see BindableType#parameterType(Class)
 		 * @see #setParameterList(QueryParameter, Object[], BindableType)
 		 *
 		 * @apiNote This is used for binding a list of values to an expression such

@@ -12,13 +12,10 @@ import org.hibernate.internal.ExceptionConverterImpl;
 /**
  * Handle exceptions and convert them following the logic used in Hibernate ORM.
  * <p>
- * Depending on the value of
- * {@link org.hibernate.cfg.AvailableSettings#NATIVE_EXCEPTION_HANDLING_51_COMPLIANCE}
- * it converts the exception to a {@link HibernateException} or a
+ * It converts the exception to a {@link HibernateException} or a
  * {@link jakarta.persistence.PersistenceException}.
  *
  * @see org.hibernate.engine.spi.ExceptionConverter
- * @see org.hibernate.cfg.AvailableSettings#NATIVE_EXCEPTION_HANDLING_51_COMPLIANCE
  */
 public class ReactiveExceptionConverter extends ExceptionConverterImpl {
 	public ReactiveExceptionConverter(SharedSessionContractImplementor sharedSessionContract) {

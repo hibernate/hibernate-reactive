@@ -125,12 +125,12 @@ public class  CompletionStages {
 
 	/**
 	 * Equivalent to:
-	 * <pre>
+	 * <pre>{@code
 	 * int total = 0;
 	 * for ( int i = start; i < end; i++ ) {
 	 *   total = total + consumer.apply( i );
 	 * }
-	 * </pre>
+	 * }</pre>
 	 */
 	public static CompletionStage<Integer> total(int start, int end, IntFunction<CompletionStage<Integer>> consumer) {
 		return range( start, end )
@@ -140,12 +140,12 @@ public class  CompletionStages {
 
 	/**
 	 * Equivalent to:
-	 * <pre>
+	 * <pre>{@code
 	 * int total = 0;
 	 * while( iterator.hasNext() ) {
 	 *   total += consumer.apply( iterator.next() );
 	 * }
-	 * </pre>
+	 * }</pre>
 	 */
 	public static <T> CompletionStage<Integer> total(Iterator<T> iterator, Function<T,CompletionStage<Integer>> consumer) {
 		return fromIterator( iterator )
@@ -155,12 +155,12 @@ public class  CompletionStages {
 
 	/**
 	 * Equivalent to:
-	 * <pre>
+	 * <pre>{@code
 	 * int total = 0;
 	 * for ( int i = start; i < end; i++ ) {
 	 *   total = total + consumer.apply( array[i] );
 	 * }
-	 * </pre>
+	 * }</pre>
 	 */
 	public static <T> CompletionStage<Integer> total(T[] array, Function<T, CompletionStage<Integer>> consumer) {
 		return total( 0, array.length, index -> consumer.apply( array[index] ) );
@@ -168,11 +168,11 @@ public class  CompletionStages {
 
 	/**
 	 * Equivalent to:
-	 * <pre>
+	 * <pre>{@code
 	 * for ( int i = start; i < end; i++ ) {
 	 *   consumer.apply( array[i] );
 	 * }
-	 * </pre>
+	 * }</pre>
 	 */
 	public static <T> CompletionStage<Void> loop(T[] array, Function<T, CompletionStage<?>> consumer) {
 		return loop( 0, array.length, index -> consumer.apply( array[index] ) );
@@ -180,13 +180,13 @@ public class  CompletionStages {
 
 	/**
 	 * Equivalent to:
-	 * <pre>
+	 * <pre>{@code
 	 * for ( int i = start; i < end; i++ ) {
 	 *   if ( filter.test(i) )  {
 	 *   	consumer.apply( i );
 	 *   }
 	 * }
-	 * </pre>
+	 * }</pre>
 	 */
 	public static <T> CompletionStage<Void> loop(T[] array, IntPredicate filter, IntFunction<CompletionStage<?>> consumer) {
 		return loop( 0, array.length, filter, consumer );
@@ -194,19 +194,19 @@ public class  CompletionStages {
 
 	/**
 	 * Equivalent to:
-	 * <pre>
+	 * <pre>{@code
 	 * int index = 0
 	 * while( iterator.hasNext() ) {
 	 *   consumer.apply( iterator.next(), index++ );
 	 * }
-	 * </pre>
+	 * }</pre>
 	 */
 	public static <T> CompletionStage<Void> loop(Iterator<T> iterator, IntBiFunction<T, CompletionStage<?>> consumer) {
 		return loop( iterator, CompletionStages::alwaysTrue, consumer );
 	}
 	/**
 	 * Equivalent to:
-	 * <pre>
+	 * <pre>{@code
 	 * int index = -1
 	 * while( iterator.hasNext() ) {
 	 *   index++
@@ -215,7 +215,7 @@ public class  CompletionStages {
 	 *     consumer.apply( next, index );
 	 *   }
 	 * }
-	 * </pre>
+	 * }</pre>
 	 */
 	public static <T> CompletionStage<Void> loop(Iterator<T> iterator, IntBiPredicate<T> filter, IntBiFunction<T, CompletionStage<?>> consumer) {
 		if ( iterator.hasNext() ) {
@@ -234,16 +234,16 @@ public class  CompletionStages {
 	 * an index of the current element.
 	 * <p>
 	 * Equivalent to:
-	 * <pre>
+	 * <pre>{@code
 	 *   int index = -1
-	 * 	 while( iterator.hasNext() ) {
-	 * 	   index++
-	 * 	   T next = iterator.next();
-	 * 	   if (filter.test( next, index ) {
-	 * 	     consumer.apply( next, index );
-	 * 	   }
-	 * 	 }
-	 * </pre>
+	 *   while( iterator.hasNext() ) {
+	 *     index++
+	 *     T next = iterator.next();
+	 *     if (filter.test( next, index ) {
+	 *       consumer.apply( next, index );
+	 *     }
+	 *   }
+	 * }</pre>
 	 * </p>
 	 * <p>
 	 * This class keeps track of the state of the loop, allowing us to
@@ -335,11 +335,11 @@ public class  CompletionStages {
 
 	/**
 	 * Equivalent to:
-	 * <pre>
+	 * <pre>{@code
 	 * for ( int i = start; i < end; i++ ) {
 	 *   consumer.apply( i );
 	 * }
-	 * </pre>
+	 * }</pre>
 	 */
 	public static CompletionStage<Void> loop(int start, int end, IntFunction<CompletionStage<?>> consumer) {
 		return loop( start, end, CompletionStages::alwaysTrue, consumer );
@@ -359,13 +359,13 @@ public class  CompletionStages {
 
 	/**
 	 * Equivalent to:
-	 * <pre>
+	 * <pre>{@code
 	 * for ( int i = start; i < end; i++ ) {
 	 *   if ( filter.test(i) ) {
 	 *   	consumer.apply( i );
 	 *   }
 	 * }
-	 * </pre>
+	 * }</pre>
 	 */
 	public static CompletionStage<Void> loop(int start, int end, IntPredicate filter, IntFunction<CompletionStage<?>> consumer) {
 		if ( start < end ) {
