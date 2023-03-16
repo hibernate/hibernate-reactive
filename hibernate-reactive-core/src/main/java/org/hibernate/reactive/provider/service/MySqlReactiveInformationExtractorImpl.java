@@ -6,6 +6,7 @@
 package org.hibernate.reactive.provider.service;
 
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +30,20 @@ public class MySqlReactiveInformationExtractorImpl extends AbstractReactiveInfor
 
 	public MySqlReactiveInformationExtractorImpl(ExtractionContext extractionContext) {
 		super( extractionContext );
+	}
+
+	@Override
+	protected int dataTypeCode(String typeName) {
+		switch ( typeName ) {
+			case "int":
+				return Types.INTEGER;
+			case "enum":
+				return Types.CHAR;
+			case "double":
+				return Types.FLOAT;
+			default:
+				return 0;
+		}
 	}
 
 	@Override
