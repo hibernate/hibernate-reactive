@@ -20,7 +20,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
@@ -119,7 +118,6 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	@Ignore // see https://github.com/hibernate/hibernate-reactive/issues/1506
 	public void removeOneElementWithStageAPI(TestContext context) {
 		test( context, openSession()
 				.thenCompose( session -> session
@@ -134,7 +132,6 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	@Ignore // see https://github.com/hibernate/hibernate-reactive/issues/1506
 	public void removeOneElementWithMutinyAPI(TestContext context) {
 		test( context, getMutinySessionFactory()
 				.withTransaction( (session, transaction) -> session
@@ -178,7 +175,6 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	@Ignore // see https://github.com/hibernate/hibernate-reactive/issues/1506
 	public void removeAndAddElementWithStageAPI(TestContext context) {
 		test( context, getSessionFactory()
 				.withTransaction( (session, transaction) -> session
@@ -195,7 +191,6 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	@Ignore // see https://github.com/hibernate/hibernate-reactive/issues/1506
 	public void removeAndAddElementWithMutinyAPI(TestContext context){
 		test ( context, getMutinySessionFactory()
 				.withTransaction( (session, transaction) -> session
