@@ -7,7 +7,7 @@ package org.hibernate.reactive;
 
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.dialect.PostgreSQL9Dialect;
+import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.stage.Stage;
@@ -21,7 +21,7 @@ public class StandAloneReactiveTest {
 	public void createReactiveSessionFactory() {
 		StandardServiceRegistry registry = new ReactiveServiceRegistryBuilder()
 				.applySetting( Settings.TRANSACTION_COORDINATOR_STRATEGY, "jta" )
-				.applySetting( Settings.DIALECT, PostgreSQL9Dialect.class.getName() )
+				.applySetting( Settings.DIALECT, PostgreSQLDialect.class.getName() )
 				.applySetting( Settings.URL, "jdbc:postgresql://localhost/hreact?user=none" )
 				.build();
 
