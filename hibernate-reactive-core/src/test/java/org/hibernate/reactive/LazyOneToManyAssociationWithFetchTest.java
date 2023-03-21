@@ -215,7 +215,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 								.getSingleResult() )
 						.thenAccept( book -> {
 							context.assertTrue( Hibernate.isInitialized( book.getAuthors() ) );
-							List<Author> optionalAssociation = book.authors;
+							List<Author> optionalAssociation = book.getAuthors();
 							context.assertNotNull( optionalAssociation );
 							context.assertTrue( optionalAssociation.contains( neilGaiman ) );
 							context.assertTrue( optionalAssociation.contains( terryPratchett ) );
@@ -314,7 +314,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 					return session.get( graph, goodOmens.getId() );
 				} ) )
 				.thenAccept( book -> {
-					List<Author> optionalAssociation = book.authors;
+					List<Author> optionalAssociation = book.getAuthors();
 					context.assertTrue( Hibernate.isInitialized( optionalAssociation ) );
 					context.assertNotNull( optionalAssociation );
 					context.assertTrue( optionalAssociation.contains( neilGaiman ) );
