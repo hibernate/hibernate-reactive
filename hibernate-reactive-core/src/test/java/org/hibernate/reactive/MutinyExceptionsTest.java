@@ -17,6 +17,7 @@ import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 public class MutinyExceptionsTest extends BaseReactiveTest {
 
@@ -32,11 +33,11 @@ public class MutinyExceptionsTest extends BaseReactiveTest {
 	@Test
 	public void testDuplicateKeyException(TestContext context) {
 		test( context, openMutinySession()
-				.onItem().call( session -> session.persist( new Person( "testFLush1", "unique" ) ) )
-				.onItem().call( Mutiny.Session::flush )
-				.onItem().call( session -> session.persist( new Person( "testFlush2", "unique" ) ) )
-				.onItem().call( Mutiny.Session::flush )
-				.onItem().invoke( ignore -> context.fail( "Expected exception not thrown" ) )
+				.call( session -> session.persist( new Person( "testFLush1", "unique" ) ) )
+				.call( Mutiny.Session::flush )
+				.call( session -> session.persist( new Person( "testFlush2", "unique" ) ) )
+				.call( Mutiny.Session::flush )
+				.invoke( ignore -> context.fail( "Expected exception not thrown" ) )
 				.onFailure().recoverWithItem( err -> {
 					context.assertEquals( getExpectedException(), err.getClass() );
 					return null;
@@ -45,9 +46,11 @@ public class MutinyExceptionsTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "Person")
+	@Table(name = "PersonForExceptionWithMutiny")
 	public static class Person {
 
 		@Id
+		@Column(name = "[name]")
 		public String name;
 
 		@Column(unique = true)
