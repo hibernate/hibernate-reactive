@@ -27,6 +27,7 @@ import org.junit.Test;
 import io.vertx.ext.unit.TestContext;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
@@ -70,8 +71,9 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 	public static class SequenceGeneratorDefaultSchemaTest extends SequenceGeneratorTest {
 
 		// COCKROACHDB: we don't have permission to create schema in the CI!
+		// MYSQL: See https://github.com/hibernate/hibernate-reactive/issues/1525
 		@Rule
-		public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( COCKROACHDB );
+		public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( COCKROACHDB, MYSQL );
 
 		@Override
 		protected Configuration constructConfiguration() {
