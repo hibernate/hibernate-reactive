@@ -34,6 +34,7 @@ import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
 
@@ -116,6 +117,14 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public <R> Mutiny.Query<R> createQuery(String queryString, Class<R> resultType) {
 		return new MutinyQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ), factory );
+	}
+
+	@Override
+	public <R> Mutiny.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+		return new MutinyQueryImpl<>(
+				(ReactiveQuerySqmImpl<R>) delegate.createReactiveQuery( criteriaQuery ),
+				factory
+		);
 	}
 
 	@Override

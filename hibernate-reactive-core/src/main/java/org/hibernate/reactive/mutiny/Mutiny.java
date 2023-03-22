@@ -1520,6 +1520,17 @@ public interface Mutiny {
 		<R> Query<R> createQuery(String queryString, Class<R> resultType);
 
 		/**
+		 * Create an instance of {@link Mutiny.Query} for the given criteria query.
+		 *
+		 * @param criteriaQuery The {@link CriteriaQuery}
+		 *
+		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
+		 */
+		<R> Mutiny.Query<R> createQuery(CriteriaQuery<R> criteriaQuery);
+
+		/**
 		 * Create an instance of {@link Mutiny.Query} for the given criteria update.
 		 *
 		 * @param criteriaUpdate The {@link CriteriaUpdate}
