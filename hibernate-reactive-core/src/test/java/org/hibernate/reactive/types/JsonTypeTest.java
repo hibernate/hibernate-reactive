@@ -26,6 +26,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -35,8 +36,10 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
  */
 public class JsonTypeTest extends BaseReactiveTest {
 
+	// MARIA: ORM 6 regression, see: https://github.com/hibernate/hibernate-reactive/issues/1529
 	@Rule
-	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, SQLSERVER, ORACLE );
+	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule
+			.skipTestsFor( DB2, SQLSERVER, ORACLE, MARIA );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
