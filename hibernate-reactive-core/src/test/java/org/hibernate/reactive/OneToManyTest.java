@@ -22,6 +22,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class OneToManyTest extends BaseReactiveTest {
 
 	@Override
@@ -30,7 +32,7 @@ public class OneToManyTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void test(TestContext context) {
+	public void testPersistAll(TestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Author author = new Author( "Iain M Banks" );
@@ -41,86 +43,129 @@ public class OneToManyTest extends BaseReactiveTest {
 				.withTransaction( session -> session.persistAll( book1, book2, author ) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.find( Author.class, author.id )
-						.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
-						.chain( a -> session.fetch( a.books ) )
-						.invoke( books -> context.assertEquals( 2, books.size() ) )
+						.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.getBooks() ) ) )
+						.chain( a -> session.fetch( a.getBooks() ) )
+						.invoke( books -> assertThat( books ).containsExactlyInAnyOrder( book1, book2 ) )
 				) )
+		);
+	}
+
+	@Test
+	public void testFetchJoinQueryGetSingleResult(TestContext context) {
+		Book book1 = new Book( "Feersum Endjinn" );
+		Book book2 = new Book( "Use of Weapons" );
+		Author author = new Author( "Iain M Banks" );
+		author.books.add( book1 );
+		author.books.add( book2 );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.persistAll( book1, book2, author ) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.createQuery( "select distinct a from Author a left join fetch a.books", Author.class )
 						.getSingleResult()
-						.invoke( a -> context.assertTrue( Hibernate.isInitialized( a.books ) ) )
-						.invoke( a -> context.assertEquals( 2, a.books.size() ) )
+						.invoke( a -> context.assertTrue( Hibernate.isInitialized( a.getBooks() ) ) )
+						.invoke( a -> assertThat( a.getBooks() ).containsExactlyInAnyOrder( book1, book2 ) )
 				) )
+		);
+	}
+
+	@Test
+	public void testFetchJoinQueryGetSingleResultOrNull(TestContext context) {
+		Book book1 = new Book( "Feersum Endjinn" );
+		Book book2 = new Book( "Use of Weapons" );
+		Author author = new Author( "Iain M Banks" );
+		author.books.add( book1 );
+		author.books.add( book2 );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.persistAll( book1, book2, author ) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
-						.createQuery( "select a from Author a left join fetch a.books", Author.class )
+						.createQuery( "select distinct a from Author a left join fetch a.books", Author.class )
 						.getSingleResultOrNull()
-						.invoke( a -> context.assertTrue( Hibernate.isInitialized( a.books ) ) )
-						.invoke( a -> context.assertEquals( 2, a.books.size() ) )
+						.invoke( a -> context.assertTrue( Hibernate.isInitialized( a.getBooks() ) ) )
+						.invoke( a -> assertThat( a.getBooks() ).containsExactlyInAnyOrder( book1, book2 ) )
 				) )
+		);
+	}
+
+	@Test
+	public void testFetchJoinQueryWithNull(TestContext context) {
+		Book book1 = new Book( "Feersum Endjinn" );
+		Book book2 = new Book( "Use of Weapons" );
+		Author author = new Author( "Iain M Banks" );
+		author.books.add( book1 );
+		author.books.add( book2 );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.persistAll( book1, book2, author ) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.createQuery( "select a from Author a left join fetch a.books where 1=0", Author.class )
 						.getSingleResultOrNull()
 						.invoke( context::assertNull )
 				) )
+		);
+	}
+
+	@Test
+	public void testFetchAndRemove(TestContext context) {
+		Book book1 = new Book( "Feersum Endjinn" );
+		Book book2 = new Book( "Use of Weapons" );
+		Author author = new Author( "Iain M Banks" );
+		author.books.add( book1 );
+		author.books.add( book2 );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.persistAll( book1, book2, author ) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.find( Author.class, author.id )
-						.chain( a -> session.fetch( a.books ) )
+						.chain( a -> session.fetch( a.getBooks() ) )
+						// Remove one book from the fetched collection
 						.invoke( books -> books.remove( book1 ) )
 				) )
+				.chain( () -> getMutinySessionFactory()
+						.withTransaction( session -> session.find( Author.class, author.id )
+								.chain( a -> session.fetch( a.getBooks() ) )
+								.invoke( books -> assertThat( books ).containsExactly( book2 ) )
+						)
+				)
+		);
+	}
+
+	@Test
+	public void testFetchAndAdd(TestContext context) {
+		Book book1 = new Book( "Feersum Endjinn" );
+		Book book2 = new Book( "Use of Weapons" );
+		Author author = new Author( "Iain M Banks" );
+		// Only book2 this time
+		author.books.add( book2 );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.persistAll( book1, book2, author ) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.find( Author.class, author.id )
-						.chain( a -> session.fetch( a.books ) )
-						.invoke( books -> {
-							context.assertEquals( 1, books.size() );
-							context.assertEquals( book2.title, books.get( 0 ).title );
-						} )
-				) )
-				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
-						.find( Author.class, author.id )
-						.chain( a -> session.fetch( a.books ) )
+						.chain( a -> session.fetch( a.getBooks() ) )
+						.invoke( books -> assertThat( books ).containsExactly( book2 ) )
 						.chain( books -> session.find( Book.class, book1.id ).invoke( books::add ) )
 				) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.find( Author.class, author.id )
-						.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
-						.chain( a -> session.fetch( a.books ) )
-						.invoke( books -> context.assertEquals( 2, books.size() ) )
+						.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.getBooks() ) ) )
+						.chain( a -> session.fetch( a.getBooks() ) )
+						.invoke( books -> assertThat( books ).containsExactlyInAnyOrder( book1, book2 ) )
 				) )
-				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
-						.find( Author.class, author.id )
-						.chain( a -> session.fetch( a.books ) )
-						.invoke( books -> books.remove( book2 ) )
-				) )
-				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
-						.find( Author.class, author.id )
-						.chain( a -> session.fetch( a.books ) )
-						.invoke( books -> {
-							context.assertEquals( 1, books.size() );
-							context.assertEquals( book1.title, books.get( 0 ).title );
-						} )
-				) )
-				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
-						.find( Author.class, author.id )
-						.chain( a -> session.fetch( a.books ) )
-						.chain( books -> session.find( Book.class, book2.id ).invoke( books::add ) )
-				) )
-				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
-						.find( Author.class, author.id )
-						.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
-						.chain( a -> session.fetch( a.books ) )
-						.invoke( books -> context.assertEquals( 2, books.size() ) )
-				) )
-				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
-						.find( Author.class, author.id )
-						.chain( a -> session.fetch( a.books ) )
-						.invoke( books -> books.add( books.remove( 0 ) ) )
-				) )
-				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
-						.find( Author.class, author.id )
-						.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
-						.chain( a -> session.fetch( a.books ) )
-						.invoke( books -> context.assertEquals( 2, books.size() ) )
-				) )
+		);
+	}
+
+	@Test
+	public void testSetNullAndFetch(TestContext context) {
+		Book book1 = new Book( "Feersum Endjinn" );
+		Book book2 = new Book( "Use of Weapons" );
+		Author author = new Author( "Iain M Banks" );
+		author.books.add( book1 );
+		author.books.add( book2 );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.persistAll( book1, book2, author ) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.find( Author.class, author.id )
 						.invoke( a -> a.books = null )
@@ -128,10 +173,34 @@ public class OneToManyTest extends BaseReactiveTest {
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.find( Author.class, author.id )
 						.chain( a -> session.fetch( a.books ) )
-						.invoke( books -> context.assertTrue( books.isEmpty() ) )
+						.invoke( books -> assertThat( books ).isEmpty() )
 				) )
 		);
 	}
+
+	@Test
+	public void testFetchAndClear(TestContext context) {
+		Book book1 = new Book( "Feersum Endjinn" );
+		Book book2 = new Book( "Use of Weapons" );
+		Author author = new Author( "Iain M Banks" );
+		author.books.add( book1 );
+		author.books.add( book2 );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.persistAll( book1, book2, author ) )
+				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+						.find( Author.class, author.id )
+						.chain( a -> session.fetch( a.getBooks() ) )
+						.invoke( List::clear )
+				) )
+				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+						.find( Author.class, author.id )
+						.chain( a -> session.fetch( a.books ) )
+						.invoke( books -> assertThat( books ).isEmpty() )
+				) )
+		);
+	}
+
 
 	@Entity(name = "Book")
 	@Table(name = "OTMBook")
@@ -187,6 +256,30 @@ public class OneToManyTest extends BaseReactiveTest {
 
 		@OneToMany
 		List<Book> books = new ArrayList<>();
+
+		public long getId() {
+			return id;
+		}
+
+		public void setId(long id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public List<Book> getBooks() {
+			return books;
+		}
+
+		public void setBooks(List<Book> books) {
+			this.books = books;
+		}
 
 		@Override
 		public boolean equals(Object o) {
