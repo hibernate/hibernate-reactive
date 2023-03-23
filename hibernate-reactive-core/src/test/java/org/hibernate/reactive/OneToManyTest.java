@@ -8,6 +8,7 @@ package org.hibernate.reactive;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import org.hibernate.Hibernate;
 
@@ -64,7 +65,7 @@ public class OneToManyTest extends BaseReactiveTest {
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.find( Author.class, author.id )
 						.chain( a -> session.fetch( a.books ) )
-						.invoke( books -> books.remove( 0 ) )
+						.invoke( books -> books.remove( book1 ) )
 				) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.find( Author.class, author.id )
@@ -88,7 +89,7 @@ public class OneToManyTest extends BaseReactiveTest {
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.find( Author.class, author.id )
 						.chain( a -> session.fetch( a.books ) )
-						.invoke( books -> books.remove( 1 ) )
+						.invoke( books -> books.remove( book2 ) )
 				) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.find( Author.class, author.id )
@@ -148,6 +149,23 @@ public class OneToManyTest extends BaseReactiveTest {
 
 		@Basic(optional = false)
 		String title;
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
+			Book book = (Book) o;
+			return Objects.equals( title, book.title );
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash( title );
+		}
 	}
 
 	@Entity(name = "Author")
@@ -169,5 +187,22 @@ public class OneToManyTest extends BaseReactiveTest {
 
 		@OneToMany
 		List<Book> books = new ArrayList<>();
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
+			Author author = (Author) o;
+			return Objects.equals( name, author.name );
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash( name );
+		}
 	}
 }
