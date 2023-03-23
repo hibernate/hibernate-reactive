@@ -5,7 +5,9 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 import org.hibernate.annotations.Formula;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
@@ -13,14 +15,12 @@ import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.Instant;
-import java.util.Collection;
-import java.util.List;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
@@ -39,15 +39,14 @@ public class FormulaTest extends BaseReactiveTest {
 	public void test(TestContext context) {
 		Record record = new Record();
 		record.text = "initial text";
-		test(
-				context,
-				getMutinySessionFactory()
-						.withSession( session -> session.persist( record )
-								.chain( session::flush )
-						)
-						.chain( () -> getMutinySessionFactory()
-								.withSession( session -> session.find( Record.class, record.id ) ) )
-						.invoke( (r) -> context.assertNotNull( r.current ) )
+		test( context, getMutinySessionFactory()
+				.withSession( session -> session
+						.persist( record )
+						.chain( session::flush ) )
+				.chain( () -> getMutinySessionFactory()
+						.withSession( session -> session.find( Record.class, record.id ) ) )
+				.map( Record::getCurrent )
+				.invoke( context::assertNotNull )
 		);
 	}
 
@@ -60,6 +59,30 @@ public class FormulaTest extends BaseReactiveTest {
 		@Basic(optional = false)
 		String text;
 		@Formula("current_timestamp")
-		Instant current;
+		LocalDateTime current;
+
+		public long getId() {
+			return id;
+		}
+
+		public void setId(long id) {
+			this.id = id;
+		}
+
+		public String getText() {
+			return text;
+		}
+
+		public void setText(String text) {
+			this.text = text;
+		}
+
+		public LocalDateTime getCurrent() {
+			return current;
+		}
+
+		public void setCurrent(LocalDateTime current) {
+			this.current = current;
+		}
 	}
 }
