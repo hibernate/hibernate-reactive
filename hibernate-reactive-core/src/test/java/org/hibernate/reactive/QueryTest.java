@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -39,6 +38,9 @@ import jakarta.persistence.criteria.Root;
 import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.FetchType.LAZY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.QueryTest.Author.*;
+import static org.hibernate.reactive.QueryTest.Author.AUTHOR_TABLE;
+import static org.hibernate.reactive.QueryTest.Book.BOOK_TABLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
@@ -270,7 +272,7 @@ public class QueryTest extends BaseReactiveTest {
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery(
-								"select * from books order by isbn",
+								"select * from " + BOOK_TABLE + " order by isbn",
 								Book.class
 						).getResultList() )
 						.thenAccept( books -> {
@@ -303,7 +305,7 @@ public class QueryTest extends BaseReactiveTest {
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery(
-										"select * from books where title=?1 order by isbn",
+										"select * from " + BOOK_TABLE + " where title=?1 order by isbn",
 										Book.class
 								)
 								.setParameter( 1, "Snow Crash" )
@@ -320,7 +322,7 @@ public class QueryTest extends BaseReactiveTest {
 
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery(
-										"update books set title = ?1 where title = ?2" )
+										"update " + BOOK_TABLE + " set title = ?1 where title = ?2" )
 								.setParameter( 1, "XXX" )
 								.setParameter( 2, "Snow Crash" )
 								.executeUpdate() )
@@ -347,7 +349,7 @@ public class QueryTest extends BaseReactiveTest {
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery(
-										"select * from books where title=:title order by isbn",
+										"select * from " + BOOK_TABLE + " where title=:title order by isbn",
 										Book.class
 								)
 								.setParameter( "title", "Snow Crash" )
@@ -364,7 +366,7 @@ public class QueryTest extends BaseReactiveTest {
 
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createNativeQuery(
-										"update books set title = :newtitle where title = :title" )
+										"update " + BOOK_TABLE + " set title = :newtitle where title = :title" )
 								.setParameter( "newtitle", "XXX" )
 								.setParameter( "title", "Snow Crash" )
 								.executeUpdate() )
@@ -383,82 +385,74 @@ public class QueryTest extends BaseReactiveTest {
 		author2.books.add( book2 );
 		author2.books.add( book3 );
 
-		test(
-				context,
-				openSession()
-						.thenCompose( session -> session.persist( author1, author2 )
-								.thenCompose( v -> session.flush() )
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( author1, author2 )
+						.thenCompose( v -> session.flush() )
+				)
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.createNativeQuery(
+						"select b.title, a.name from " + BOOK_TABLE + " b join " + AUTHOR_TABLE + " a on author_id=a.id order by b.isbn",
+						session.getResultSetMapping( Object[].class, "title,author" )
+				).getResultList() )
+				.thenAccept( books -> {
+					context.assertEquals( 3, books.size() );
+					books.forEach( tuple -> {
+						context.assertTrue( tuple instanceof Object[] );
+						context.assertEquals( 2, tuple.length );
+						context.assertTrue( tuple[0] instanceof String );
+						context.assertTrue( tuple[1] instanceof String );
+					} );
+				} )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session
+						.createQuery( "select title from Book", String.class )
+						.getResultList()
+						.thenAccept( list -> assertThat( list )
+								.containsExactlyInAnyOrder( book1.title, book2.title, book3.title ) )
+						.thenCompose( vv -> session
+								.createQuery( "select title, isbn, id from Book", Object[].class )
+								.getResultList()
+								.thenAccept( list -> {
+									Object[] tuple = list.get( 0 );
+									context.assertEquals( 3, tuple.length );
+									context.assertTrue( tuple[0] instanceof String );
+								} ) )
+						.thenCompose( vv -> session
+								.createNativeQuery( "select title from " + BOOK_TABLE )
+								.getResultList()
+								.thenAccept( list -> context.assertTrue( list.get( 0 ) instanceof String ) )
 						)
-						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.createNativeQuery(
-								"select b.title, a.name from books b join authors a on author_id=a.id order by b.isbn",
-								session.getResultSetMapping( Object[].class, "title,author" )
-						).getResultList() )
-						.thenAccept( books -> {
-							context.assertEquals( 3, books.size() );
-							books.forEach( tuple -> {
-								context.assertTrue( tuple instanceof Object[] );
-								context.assertEquals( 2, tuple.length );
-								context.assertTrue( tuple[0] instanceof String );
-								context.assertTrue( tuple[1] instanceof String );
-							} );
-						} )
-
-						.thenCompose( v -> openSession() ).thenCompose(
-								session -> session.createQuery( "select title from Book", String.class )
-										.getResultList()
-										.thenAccept( list -> context.assertTrue( list.get( 0 ) instanceof String ) )
-										.thenCompose( vv -> session.createQuery(
-																	  "select title, isbn, id from Book",
-																	  Object[].class
-															  )
-															  .getResultList()
-															  .thenAccept( list -> {
-																  Object[] tuple = list.get( 0 );
-																  context.assertEquals( 3, tuple.length );
-																  context.assertTrue( tuple[0] instanceof String );
-															  } )
-										)
-										.thenCompose( vv -> session.createNativeQuery( "select title from books" )
-												.getResultList()
-												.thenAccept( list -> context.assertTrue( list.get( 0 ) instanceof String ) )
-										)
-										.thenCompose( vv -> session.createNativeQuery( "select title from books", String.class )
-												.getResultList()
-												.thenAccept( list -> context.assertTrue( list.get( 0 ) instanceof String ) )
-										)
-										.thenCompose( vv -> session.createNativeQuery( "select title, isbn, id from books" )
-												.getResultList()
-												.thenAccept( list -> {
-													Object[] tuple = (Object[]) list.get( 0 );
-													context.assertEquals( 3, tuple.length );
-													context.assertTrue( tuple[0] instanceof String );
-												} )
-										)
-										.thenCompose( vv -> session.createNativeQuery(
-																	  "select title, isbn, id from books",
-																	  Object[].class
-															  )
-															  .getResultList()
-															  .thenAccept( list -> {
-																  Object[] tuple = list.get( 0 );
-																  context.assertEquals( 3, tuple.length );
-																  context.assertTrue( tuple[0] instanceof String );
-															  } )
-										)
-										.thenCompose( vv -> session.createNativeQuery(
-																	  "select title, isbn, id from books",
-																	  Tuple.class
-															  )
-															  .getResultList()
-															  .thenAccept( list -> {
-																  Tuple tuple = list.get( 0 );
-																  context.assertEquals( 3, tuple.toArray().length );
-																  context.assertTrue( tuple.get( 0 ) instanceof String );
-																  context.assertTrue( tuple.get( "isbn" ) instanceof String );
-															  } )
-										)
-						)
+						.thenCompose( vv -> session
+								.createNativeQuery( "select title from " + BOOK_TABLE, String.class )
+								.getResultList()
+								.thenAccept( list -> context.assertTrue( list.get( 0 ) instanceof String ) ) )
+						.thenCompose( vv -> session
+								.createNativeQuery( "select title, isbn, id from " + BOOK_TABLE )
+								.getResultList()
+								.thenAccept( list -> {
+									Object[] tuple = (Object[]) list.get( 0 );
+									context.assertEquals( 3, tuple.length );
+									context.assertTrue( tuple[0] instanceof String );
+								} ) )
+						.thenCompose( vv -> session
+								.createNativeQuery( "select title, isbn, id from " + BOOK_TABLE, Object[].class )
+								.getResultList()
+								.thenAccept( list -> {
+									Object[] tuple = list.get( 0 );
+									context.assertEquals( 3, tuple.length );
+									context.assertTrue( tuple[0] instanceof String );
+								} ) )
+						.thenCompose( vv -> session
+								.createNativeQuery( "select title, isbn, id from " + BOOK_TABLE, Tuple.class )
+								.getResultList()
+								.thenAccept( list -> {
+									Tuple tuple = list.get( 0 );
+									context.assertEquals( 3, tuple.toArray().length );
+									context.assertTrue( tuple.get( 0 ) instanceof String );
+									context.assertTrue( tuple.get( "isbn" ) instanceof String );
+								} ) )
+				)
 		);
 	}
 
@@ -480,7 +474,7 @@ public class QueryTest extends BaseReactiveTest {
 								.thenCompose( v -> session.flush() )
 						)
 						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.createNamedQuery( "title,author (hql)", Object[].class )
+						.thenCompose( session -> session.createNamedQuery( HQL_NAMED_QUERY, Object[].class )
 								.getResultList() )
 						.thenAccept( books -> {
 							context.assertEquals( 3, books.size() );
@@ -519,7 +513,7 @@ public class QueryTest extends BaseReactiveTest {
 								.thenCompose( v -> session.flush() )
 						)
 						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.createNamedQuery( "title,author (sql)", Object[].class )
+						.thenCompose( session -> session.createNamedQuery( SQL_NAMED_QUERY, Object[].class )
 								.getResultList() )
 						.thenAccept( books -> {
 							context.assertEquals( 3, books.size() );
@@ -605,14 +599,14 @@ public class QueryTest extends BaseReactiveTest {
 	}
 
 	@NamedNativeQuery(
-			name = "title,author (sql)",
+			name = SQL_NAMED_QUERY,
 			resultClass = Object[].class,
-			query = "select b.title, a.name from books b join authors a on author_id=a.id order by b.isbn",
+			query = "select b.title, a.name from " + BOOK_TABLE + " b join " + AUTHOR_TABLE + " a on author_id=a.id order by b.isbn",
 			resultSetMapping = "title,author"
 	)
 
 	@NamedQuery(
-			name = "title,author (hql)",
+			name = HQL_NAMED_QUERY,
 			query = "select b.title, a.name from Book b join b.author a order by b.isbn"
 	)
 
@@ -622,8 +616,13 @@ public class QueryTest extends BaseReactiveTest {
 	})
 
 	@Entity(name = "Author")
-	@Table(name = "authors")
+	@Table(name = AUTHOR_TABLE)
 	static class Author {
+		public static final String HQL_NAMED_QUERY = "title,author (hql)";
+		public static final String SQL_NAMED_QUERY = "title,author (sql)";
+
+		public static final String AUTHOR_TABLE = "AuthorForQueryTest";
+
 		@Id
 		@GeneratedValue
 		Integer id;
@@ -642,8 +641,10 @@ public class QueryTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "Book")
-	@Table(name = "books")
+	@Table(name = BOOK_TABLE)
 	static class Book {
+		public static final String BOOK_TABLE = "BookForQueryTest";
+
 		@Id
 		@GeneratedValue
 		Integer id;
