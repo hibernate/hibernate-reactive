@@ -62,8 +62,14 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 			if ( index > -1 ) {
 				sql = sql.substring( 0, index );
 			}
-			sql = sql.replace( ") values (", ") output inserted." + identifierColumnName + " values (" );
-
+			if ( sql.endsWith( "default values" ) ) {
+				index = sql.indexOf( "default values" );
+				sql = sql.substring( 0, index );
+				sql = sql + "output inserted." + identifierColumnName + " default values";
+			}
+			else {
+				sql = sql.replace( ") values (", ") output inserted." + identifierColumnName + " values (" );
+			}
 			return sql;
 		}
 		return insertStatementDetails.getSqlString();
