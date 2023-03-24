@@ -252,6 +252,9 @@ public class SqlServerReactiveInformationExtractorImpl extends AbstractReactiveI
 				typeName.toLowerCase().startsWith( "double" ) ) {
 			return Types.DOUBLE;
 		}
+		if ( typeName.equalsIgnoreCase( "real" ) ) {
+			return Types.FLOAT;
+		}
 		return super.dataTypeCode( typeName );
 	}
 
