@@ -14,8 +14,6 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.dialect.PostgreSQLDialect;
-import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.After;
@@ -28,7 +26,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+import static org.hibernate.reactive.provider.Settings.DIALECT;
+import static org.hibernate.reactive.provider.Settings.DRIVER;
 
 /**
  * This test class verifies that data can be persisted and queried on the same database
@@ -36,8 +37,9 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POS
  */
 public class ORMReactivePersistenceTest extends BaseReactiveTest {
 
+	// DB2: The CompletionStage test throw java.lang.IllegalStateException: Needed to have 6 in buffer...
 	@Rule
-	public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
+	public DatabaseSelectionRule skip = DatabaseSelectionRule.skipTestsFor( DB2 );
 
 	private SessionFactory ormFactory;
 
@@ -49,8 +51,8 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 	@Before
 	public void prepareOrmFactory() {
 		Configuration configuration = constructConfiguration();
-		configuration.setProperty( Settings.DRIVER, "org.postgresql.Driver" );
-		configuration.setProperty( Settings.DIALECT, PostgreSQLDialect.class.getName() );
+		configuration.setProperty( DRIVER, dbType().getJdbcDriver() );
+		configuration.setProperty( DIALECT, dbType().getDialectClass().getName() );
 
 		StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() );

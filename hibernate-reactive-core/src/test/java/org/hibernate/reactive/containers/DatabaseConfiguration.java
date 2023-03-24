@@ -10,6 +10,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import org.hibernate.dialect.CockroachDialect;
+import org.hibernate.dialect.DB2Dialect;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.MariaDBDialect;
+import org.hibernate.dialect.MySQLDialect;
+import org.hibernate.dialect.OracleDialect;
+import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.SQLServerDialect;
+
 /**
  * Contains the common constants that we need for the configuration of databases
  * during tests.
@@ -19,13 +28,13 @@ public class DatabaseConfiguration {
 	public static final boolean USE_DOCKER = Boolean.getBoolean("docker");
 
 	public enum DBType {
-		DB2( DB2Database.INSTANCE, 50000 ),
-		MYSQL( MySQLDatabase.INSTANCE, 3306 ),
-		MARIA( MariaDatabase.INSTANCE, 3306, "mariadb" ),
-		POSTGRESQL( PostgreSQLDatabase.INSTANCE, 5432, "POSTGRES", "PG" ),
-		COCKROACHDB( CockroachDBDatabase.INSTANCE, 26257, "COCKROACH" ),
-		SQLSERVER( MSSQLServerDatabase.INSTANCE, 1433, "MSSQL", "MSSQLSERVER" ),
-		ORACLE( OracleDatabase.INSTANCE, 1521 );
+		DB2( DB2Database.INSTANCE, 50000, "com.ibm.db2.jcc.DB2Driver", DB2Dialect.class ),
+		MYSQL( MySQLDatabase.INSTANCE, 3306, "com.mysql.cj.jdbc.Driver", MySQLDialect.class ),
+		MARIA( MariaDatabase.INSTANCE, 3306, "org.mariadb.jdbc.Driver", MariaDBDialect.class, "mariadb" ),
+		POSTGRESQL( PostgreSQLDatabase.INSTANCE, 5432, "org.postgresql.Driver", PostgreSQLDialect.class, "POSTGRES", "PG" ),
+		COCKROACHDB( CockroachDBDatabase.INSTANCE, 26257, "org.postgresql.Driver", CockroachDialect.class, "COCKROACH" ),
+		SQLSERVER( MSSQLServerDatabase.INSTANCE, 1433, "com.microsoft.sqlserver.jdbc.SQLServerDriver", SQLServerDialect.class, "MSSQL", "MSSQLSERVER" ),
+		ORACLE( OracleDatabase.INSTANCE, 1521, "oracle.jdbc.OracleDriver", OracleDialect.class );
 
 		private final TestableDatabase configuration;
 		private final int defaultPort;
@@ -33,10 +42,17 @@ public class DatabaseConfiguration {
 		// A list of alternative names that can be used to select the db
 		private final String[] aliases;
 
-		DBType(TestableDatabase configuration, int defaultPort, String... aliases) {
+		// JDBC Configuration for when we need to compare what we are doing with ORM
+		private final String jdbcDriver;
+
+		private final Class<? extends Dialect> dialect;
+
+		DBType(TestableDatabase configuration, int defaultPort, String jdbcDriver, Class<? extends Dialect> dialect, String... aliases) {
 			this.configuration = configuration;
 			this.defaultPort = defaultPort;
 			this.aliases = aliases;
+			this.dialect = dialect;
+			this.jdbcDriver = jdbcDriver;
 		}
 
 		@Override
@@ -67,6 +83,14 @@ public class DatabaseConfiguration {
 
 		public int getDefaultPort() {
 			return defaultPort;
+		}
+
+		public String getJdbcDriver() {
+			return jdbcDriver;
+		}
+
+		public Class<? extends Dialect> getDialectClass() {
+			return dialect;
 		}
 	}
 
