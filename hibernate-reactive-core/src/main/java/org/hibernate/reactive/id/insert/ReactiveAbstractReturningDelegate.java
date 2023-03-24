@@ -10,6 +10,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -53,6 +54,17 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 	private static String createInsert(PreparedStatementDetails insertStatementDetails, String identifierColumnName, Dialect dialect) {
 		if ( instanceOf( dialect, PostgreSQLDialect.class ) ) {
 			return insertStatementDetails.getSqlString() + " returning " + identifierColumnName;
+		}
+		if ( instanceOf( dialect, SQLServerDialect.class ) ) {
+			String sql = insertStatementDetails.getSqlString();
+			int index = sql.lastIndexOf( " returning " + identifierColumnName );
+			// FIXME: this is a hack for HHH-16365
+			if ( index > -1 ) {
+				sql = sql.substring( 0, index );
+			}
+			sql = sql.replace( ") values (", ") output inserted." + identifierColumnName + " values (" );
+
+			return sql;
 		}
 		return insertStatementDetails.getSqlString();
 	}
