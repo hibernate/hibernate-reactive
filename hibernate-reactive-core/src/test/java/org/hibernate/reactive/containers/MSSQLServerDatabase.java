@@ -22,6 +22,10 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import org.hibernate.type.NumericBooleanConverter;
+import org.hibernate.type.TrueFalseConverter;
+import org.hibernate.type.YesNoConverter;
+
 import org.testcontainers.containers.MSSQLServerContainer;
 
 import static org.hibernate.reactive.containers.DockerImage.imageName;
@@ -45,19 +49,18 @@ class MSSQLServerDatabase implements TestableDatabase {
 		expectedDBTypeForClass.put( boolean.class, "bit" );
 		expectedDBTypeForClass.put( Boolean.class, "bit" );
 
-		// FIXME: [ORM-6] Check if we need alternatives
-		// expectedDBTypeForClass.put( NumericBooleanType.class, "int" );
-		// expectedDBTypeForClass.put( TrueFalseType.class, "char" );
-		// expectedDBTypeForClass.put( YesNoType.class, "char" );
-		// expectedDBTypeForClass.put( PrimitiveByteArrayTypeDescriptor.class, "varbinary" );
+		expectedDBTypeForClass.put( NumericBooleanConverter.class, "int" );
+		expectedDBTypeForClass.put( YesNoConverter.class, "char" );
+		expectedDBTypeForClass.put( TrueFalseConverter.class, "char" );
+		expectedDBTypeForClass.put( byte[].class, "varbinary" );
 		// expectedDBTypeForClass.put( TextType.class, "text" );
 
 		expectedDBTypeForClass.put( int.class, "int" );
 		expectedDBTypeForClass.put( Integer.class, "int" );
 		expectedDBTypeForClass.put( long.class, "bigint" );
 		expectedDBTypeForClass.put( Long.class, "bigint" );
-		expectedDBTypeForClass.put( float.class, "float" );
-		expectedDBTypeForClass.put( Float.class, "float" );
+		expectedDBTypeForClass.put( float.class, "real" );
+		expectedDBTypeForClass.put( Float.class, "real" );
 		expectedDBTypeForClass.put( double.class, "float" );
 		expectedDBTypeForClass.put( Double.class, "float" );
 		expectedDBTypeForClass.put( byte.class, "smallint" );
