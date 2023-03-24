@@ -102,7 +102,7 @@ class MSSQLServerDatabase implements TestableDatabase {
 	}
 
 	private String getRegularJdbcUrl() {
-		return "jdbc:sqlserver://localhost:1433";
+		return "jdbc:sqlserver://localhost:1433;Encrypt=false";
 	}
 
 	@Override
