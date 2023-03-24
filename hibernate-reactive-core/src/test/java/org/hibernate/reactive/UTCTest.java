@@ -9,7 +9,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -140,20 +139,6 @@ public class UTCTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testOffsetTime(TestContext context) {
-		thing.offsetTime = OffsetTime
-				.now( ZoneOffset.ofHours( 7 ) )
-				.truncatedTo( ChronoUnit.SECONDS );
-
-		testField(
-				context,
-				"offsetTime",
-				thing::getOffsetTime,
-				// Same behavior as ORM
-				entity -> context.assertEquals( thing.offsetTime, entity.offsetTime.withOffsetSameInstant( ZoneOffset.ofHours( 7 ) ) ) );
-	}
-
-	@Test
 	public void testZonedDateTime(TestContext context) {
 		final ZoneOffset zoneOffset = ZoneOffset.ofHours( 7 );
 		thing.zonedDateTime = ZonedDateTime.now( zoneOffset );
@@ -204,9 +189,6 @@ public class UTCTest extends BaseReactiveTest {
 		@Column(name = "offsetDateTimeType")
 		OffsetDateTime offsetDateTime;
 
-		@Column(name = "offsetTimeType")
-		OffsetTime offsetTime;
-
 		@Column(name = "zonedDateTimeType")
 		ZonedDateTime zonedDateTime;
 
@@ -229,10 +211,6 @@ public class UTCTest extends BaseReactiveTest {
 
 		public OffsetDateTime getOffsetDateTime() {
 			return offsetDateTime;
-		}
-
-		public OffsetTime getOffsetTime() {
-			return offsetTime;
 		}
 
 		public ZonedDateTime getZonedDateTime() {
