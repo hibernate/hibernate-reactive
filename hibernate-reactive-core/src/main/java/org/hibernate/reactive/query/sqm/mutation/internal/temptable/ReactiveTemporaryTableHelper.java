@@ -75,7 +75,7 @@ public class ReactiveTemporaryTableHelper {
 				final String creationCommand = exporter.getSqlCreateCommand( temporaryTable );
 				logStatement( creationCommand, jdbcServices );
 
-				return connection.update( creationCommand )
+				return connection.executeUnprepared( creationCommand )
 						.handle( (integer, throwable) -> {
 							logException( "create", creationCommand, temporaryTable, throwable );
 							return null;
