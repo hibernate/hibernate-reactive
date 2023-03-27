@@ -6,7 +6,6 @@ on:
       - main
     tags:
       - '2.*'
-      - '1.1.*'
   pull_request:
     branches: main
 
