@@ -7,6 +7,9 @@ package org.hibernate.reactive.example.nativesql;
 
 import java.time.LocalDate;
 
+
+import jakarta.persistence.Tuple;
+
 import static jakarta.persistence.Persistence.createEntityManagerFactory;
 import static java.lang.System.out;
 import static java.time.Month.JANUARY;
@@ -97,11 +100,7 @@ public class Main {
 									)
 									.getResultList()
 									.thenAccept( books -> books.forEach(
-											b -> out.printf(
-													"%s: %s\n",
-													b.getIsbn(),
-													b.getTitle()
-											)
+											b -> out.printf( "%s: %s\n", b.getIsbn(), b.getTitle() )
 									) )
 					)
 					.toCompletableFuture().join();
@@ -109,14 +108,13 @@ public class Main {
 			factory.withStatelessSession(
 							// query the Book titles
 							session -> session.createNativeQuery(
-											"select book.title, author.name from books book join authors author on book.author_id = author.id order by book.title desc"
+											"select book.title, author.name from books book join authors author on book.author_id = author.id order by book.title desc",
+											Tuple.class
 									)
 									.getResultList()
-									.thenAccept( rows -> rows.forEach( row -> {
-											final Object[] theRowArray = (Object[])row;
-											out.printf("%s : (%s)\n", theRowArray[0], theRowArray[1]);
-										} )
-									)
+									.thenAccept( tuples -> tuples.forEach(
+											tuple -> out.printf( "%s (%s)\n", tuple.get( 0 ), tuple.get( 1 ) )
+									) )
 					)
 					.toCompletableFuture().join();
 
