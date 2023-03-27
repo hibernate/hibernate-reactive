@@ -371,9 +371,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				statement -> getIdentifierType().nullSafeSet( statement, id, 1, session )
 		);
 
-		final ReactiveSingleIdArrayLoadPlan lazySelect = reactiveGetSQLLazySelectLoadPlan( fetchGroup );
-
-		return lazySelect.load( id, session )
+		return reactiveGetSQLLazySelectLoadPlan( fetchGroup )
+				.load( id, session )
 				.thenCompose( values -> initLazyProperty(
 						fieldName, entity,
 						session, entry,
