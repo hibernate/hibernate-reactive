@@ -30,7 +30,6 @@ public class ReactiveSingleIdArrayLoadPlan extends ReactiveSingleIdLoadPlan<Obje
 		super( null, restrictivePart, sqlAst, jdbcParameters, lockOptions, sessionFactory );
 	}
 
-	//FIXME: This doesn't make much sense... I will change it when I have a test
 	@Override
 	protected RowTransformer<CompletionStage<Object[]>> getRowTransformer() {
 		return RowTransformerDatabaseSnapshotImpl.instance();
