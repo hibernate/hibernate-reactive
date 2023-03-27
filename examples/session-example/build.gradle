@@ -8,7 +8,7 @@ dependencies {
     runtimeOnly 'org.glassfish:jakarta.el:3.0.3'
 
     // JPA metamodel generation for criteria queries (optional)
-    annotationProcessor "org.hibernate:hibernate-jpamodelgen:${hibernateOrmVersion}"
+    annotationProcessor "org.hibernate.orm:hibernate-jpamodelgen:${hibernateOrmVersion}"
 
     // database drivers for PostgreSQL and MySQL
     runtimeOnly "io.vertx:vertx-pg-client:${vertxVersion}"
