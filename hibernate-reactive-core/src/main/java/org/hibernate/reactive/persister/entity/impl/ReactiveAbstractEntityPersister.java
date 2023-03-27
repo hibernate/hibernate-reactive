@@ -9,10 +9,7 @@ import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
@@ -23,35 +20,26 @@ import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
 import org.hibernate.StaleObjectStateException;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
-import org.hibernate.bytecode.enhance.spi.interceptor.BytecodeLazyAttributeInterceptor;
-import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
-import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeDescriptor;
-import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
+import org.hibernate.bytecode.enhance.spi.interceptor.*;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.ManagedTypeHelper;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.PersistentAttributeInterceptor;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.*;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
+import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.internal.CacheEntityLoaderHelper;
-import org.hibernate.loader.ast.internal.SingleIdArrayLoadPlan;
+import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.spi.NaturalIdLoader;
 import org.hibernate.mapping.PersistentClass;
-import org.hibernate.metamodel.mapping.AttributeMapping;
-import org.hibernate.metamodel.mapping.EntityVersionMapping;
-import org.hibernate.metamodel.mapping.NaturalIdMapping;
-import org.hibernate.metamodel.mapping.SingularAttributeMapping;
+import org.hibernate.metamodel.mapping.*;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.Lockable;
 import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -63,10 +51,13 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.sql.SimpleSelect;
 import org.hibernate.sql.Update;
+import org.hibernate.sql.ast.tree.expression.JdbcParameter;
+import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.type.BasicType;
 
 import jakarta.persistence.metamodel.Attribute;
 
+import static java.util.Collections.emptyMap;
 import static org.hibernate.internal.util.collections.CollectionHelper.setOfSize;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
@@ -380,24 +371,17 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				statement -> getIdentifierType().nullSafeSet( statement, id, 1, session )
 		);
 
-		final SingleIdArrayLoadPlan lazySelect = getSQLLazySelectLoadPlan( fetchGroup );
+		final ReactiveSingleIdArrayLoadPlan lazySelect = reactiveGetSQLLazySelectLoadPlan( fetchGroup );
 
-		// null sql means that the only lazy properties
-		// are shared PK one-to-one associations which are
-		// handled differently in the Type#nullSafeGet code...
-		if ( lazySelect == null ) {
-			return initLazyProperty(
-					fieldName, entity,
-					session, entry,
-					interceptor,
-					fetchGroupAttributeDescriptors,
-					initializedLazyAttributeNames,
-					null
-			);
-		}
-
-		// FIXME: We need a reactive version SingleIdArrayLoadPlan
-		return completedFuture( lazySelect.load( id, session ) );
+		return lazySelect.load( id, session )
+				.thenCompose( values -> initLazyProperty(
+						fieldName, entity,
+						session, entry,
+						interceptor,
+						fetchGroupAttributeDescriptors,
+						initializedLazyAttributeNames,
+						values
+				) );
 	}
 
 	default CompletionStage<Object> initLazyProperty(
@@ -533,7 +517,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	String[][] getLazyPropertyColumnAliases();
 
-	SingleIdArrayLoadPlan getSQLLazySelectLoadPlan(String fetchGroup);
+	ReactiveSingleIdArrayLoadPlan reactiveGetSQLLazySelectLoadPlan(String fetchGroup);
 
 	boolean isBatchable();
 
@@ -582,5 +566,64 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	@Override
 	default NaturalIdLoader<?> getNaturalIdLoader() {
 		return getNaturalIdMapping().makeLoader( this );
+	}
+
+	/**
+	 * @see AbstractEntityPersister#getLazyLoadPlanByFetchGroup()
+	 */
+	default Map<String, ReactiveSingleIdArrayLoadPlan> getLazyLoadPlanByFetchGroup(String[] subclassPropertyNameClosure ) {
+		final BytecodeEnhancementMetadata metadata = delegate().getEntityMetamodel().getBytecodeEnhancementMetadata();
+		return metadata.isEnhancedForLazyLoading() && metadata.getLazyAttributesMetadata().hasLazyAttributes()
+				? createLazyLoadPlanByFetchGroup( metadata, subclassPropertyNameClosure )
+				: emptyMap();
+	}
+
+	default Map<String, ReactiveSingleIdArrayLoadPlan> createLazyLoadPlanByFetchGroup(BytecodeEnhancementMetadata metadata,  String[] subclassPropertyNameClosure ) {
+		final Map<String, ReactiveSingleIdArrayLoadPlan> result = new HashMap<>();
+		final LazyAttributesMetadata attributesMetadata = metadata.getLazyAttributesMetadata();
+		for ( String groupName : attributesMetadata.getFetchGroupNames() ) {
+			final ReactiveSingleIdArrayLoadPlan loadPlan =
+					createLazyLoadPlan( attributesMetadata.getFetchGroupAttributeDescriptors( groupName), subclassPropertyNameClosure );
+			if ( loadPlan != null ) {
+				result.put( groupName, loadPlan );
+			}
+		}
+		return result;
+	}
+
+	default ReactiveSingleIdArrayLoadPlan createLazyLoadPlan(List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors, String[] subclassPropertyNameClosure ) {
+		final List<ModelPart> partsToSelect = new ArrayList<>( fetchGroupAttributeDescriptors.size() );
+		for ( LazyAttributeDescriptor lazyAttributeDescriptor : fetchGroupAttributeDescriptors ) {
+			// all this only really needs to consider properties
+			// of this class, not its subclasses, but since we
+			// are reusing code used for sequential selects, we
+			// use the subclass closure
+			partsToSelect.add( getAttributeMapping( getSubclassPropertyIndex( lazyAttributeDescriptor.getName(), subclassPropertyNameClosure ) ) );
+		}
+
+		if ( partsToSelect.isEmpty() ) {
+			// only one-to-one is lazily fetched
+			return null;
+		}
+		else {
+			final SessionFactoryImplementor factory = getFactory();
+			final List<JdbcParameter> jdbcParameters = new ArrayList<>();
+			final SelectStatement select = LoaderSelectBuilder.createSelect(
+					this,
+					partsToSelect,
+					getIdentifierMapping(),
+					null,
+					1,
+					LoadQueryInfluencers.NONE,
+					LockOptions.NONE,
+					jdbcParameters::add,
+					factory
+			);
+			return new ReactiveSingleIdArrayLoadPlan( getIdentifierMapping(), select, jdbcParameters, LockOptions.NONE, factory );
+		}
+	}
+
+	default int getSubclassPropertyIndex(String propertyName,  String[] subclassPropertyNameClosure ) {
+		return ArrayHelper.indexOf( subclassPropertyNameClosure, propertyName );
 	}
 }

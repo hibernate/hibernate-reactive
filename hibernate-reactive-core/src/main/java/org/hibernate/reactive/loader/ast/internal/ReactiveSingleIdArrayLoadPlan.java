@@ -13,6 +13,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.sql.results.internal.RowTransformerDatabaseSnapshotImpl;
 import org.hibernate.sql.results.spi.RowTransformer;
 
 /**
@@ -32,7 +33,7 @@ public class ReactiveSingleIdArrayLoadPlan extends ReactiveSingleIdLoadPlan<Obje
 	//FIXME: This doesn't make much sense... I will change it when I have a test
 	@Override
 	protected RowTransformer<CompletionStage<Object[]>> getRowTransformer() {
-		return super.getRowTransformer();
+		return RowTransformerDatabaseSnapshotImpl.instance();
 	}
 
 }
