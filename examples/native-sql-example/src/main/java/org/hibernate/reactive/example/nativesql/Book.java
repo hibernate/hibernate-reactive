@@ -30,7 +30,7 @@ import static jakarta.persistence.FetchType.LAZY;
 @SQLUpdate(sql = "")
 @SQLDelete(sql = "delete from books where id=$1")
 @Table(name="books")
-class Book {
+public class Book {
 	@Id @GeneratedValue
 	private Integer id;
 
@@ -48,32 +48,32 @@ class Book {
 	@ManyToOne(fetch = LAZY)
 	private Author author;
 
-	Book(String isbn, String title, Author author, LocalDate published) {
+	public Book() {}
+
+	public Book(String isbn, String title, Author author, LocalDate published) {
 		this.title = title;
 		this.isbn = isbn;
 		this.author = author;
 		this.published = published;
 	}
 
-	Book() {}
-
-	Integer getId() {
+	public Integer getId() {
 		return id;
 	}
 
-	String getIsbn() {
+	public String getIsbn() {
 		return isbn;
 	}
 
-	String getTitle() {
+	public String getTitle() {
 		return title;
 	}
 
-	Author getAuthor() {
+	public Author getAuthor() {
 		return author;
 	}
 
-	LocalDate getPublished() {
+	public LocalDate getPublished() {
 		return published;
 	}
 }

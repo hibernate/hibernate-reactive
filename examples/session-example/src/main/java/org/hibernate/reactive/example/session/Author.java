@@ -28,21 +28,21 @@ public class Author {
 	@OneToMany(mappedBy = "author", cascade = PERSIST)
 	private List<Book> books = new ArrayList<>();
 
-	Author(String name) {
+	public Author() {}
+
+	public Author(String name) {
 		this.name = name;
 	}
 
-	Author() {}
-
-	Integer getId() {
+	public Integer getId() {
 		return id;
 	}
 
-	String getName() {
+	public String getName() {
 		return name;
 	}
 
-	List<Book> getBooks() {
+	public List<Book> getBooks() {
 		return books;
 	}
 }

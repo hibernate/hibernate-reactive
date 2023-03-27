@@ -19,7 +19,7 @@ import jakarta.validation.constraints.Size;
 import static jakarta.persistence.FetchType.LAZY;
 
 @Entity
-class Book {
+public class Book {
 	@Id @GeneratedValue
 	private Integer id;
 
@@ -40,7 +40,9 @@ class Book {
 	@ManyToOne(fetch = LAZY)
 	private Author author;
 
-	Book(String isbn, String title, Author author, LocalDate published) {
+	public Book() {}
+
+	public Book(String isbn, String title, Author author, LocalDate published) {
 		this.title = title;
 		this.isbn = isbn;
 		this.author = author;
@@ -48,29 +50,27 @@ class Book {
 		this.coverImage = ("Cover image for '" + title + "'").getBytes();
 	}
 
-	Book() {}
-
-	Integer getId() {
+	public Integer getId() {
 		return id;
 	}
 
-	String getIsbn() {
+	public String getIsbn() {
 		return isbn;
 	}
 
-	String getTitle() {
+	public String getTitle() {
 		return title;
 	}
 
-	Author getAuthor() {
+	public Author getAuthor() {
 		return author;
 	}
 
-	LocalDate getPublished() {
+	public LocalDate getPublished() {
 		return published;
 	}
 
-	byte[] getCoverImage() {
+	public byte[] getCoverImage() {
 		return coverImage;
 	}
 }

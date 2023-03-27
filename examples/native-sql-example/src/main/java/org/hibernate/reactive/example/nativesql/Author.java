@@ -23,7 +23,7 @@ import jakarta.validation.constraints.Size;
 @SQLUpdate(sql = "")
 @SQLDelete(sql = "delete from authors where id = $1")
 @Table(name="authors")
-class Author {
+public class Author {
 	@Id @GeneratedValue
 	private Integer id;
 
@@ -33,21 +33,21 @@ class Author {
 	@OneToMany(mappedBy = "author")
 	private List<Book> books = new ArrayList<>();
 
-	Author(String name) {
+	public Author() {}
+
+	public Author(String name) {
 		this.name = name;
 	}
 
-	Author() {}
-
-	Integer getId() {
+	public Integer getId() {
 		return id;
 	}
 
-	String getName() {
+	public String getName() {
 		return name;
 	}
 
-	List<Book> getBooks() {
+	public List<Book> getBooks() {
 		return books;
 	}
 }
