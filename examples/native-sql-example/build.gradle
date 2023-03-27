@@ -20,6 +20,10 @@ dependencies {
     runtimeOnly 'com.ongres.scram:client:2.1'
 }
 
+// All of the remaining configuration is only necessary to enable
+// the Hibernate bytecode enhancer and field-level lazy fetching.
+// (This is very optional!)
+
 buildscript {
     repositories {
         // Example: ./gradlew build -PenableMavenLocalRepo
@@ -54,6 +58,7 @@ hibernate {
         associationManagement(false)
     }
 }
+
 // The following rules define a task to run
 // the different API available.
 //

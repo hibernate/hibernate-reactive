@@ -7,6 +7,8 @@ package org.hibernate.reactive.example.nativesql;
 
 import java.time.LocalDate;
 
+import jakarta.persistence.Tuple;
+
 import static jakarta.persistence.Persistence.createEntityManagerFactory;
 import static java.lang.System.out;
 import static java.time.Month.JANUARY;
@@ -22,7 +24,7 @@ import static org.hibernate.reactive.mutiny.Mutiny.SessionFactory;
  */
 public class MutinyMain {
 
-	// The first argument can be used to select a persistenceUnit.
+	// The first argument can be used to select a persistence unit.
 	// Check resources/META-INF/persistence.xml for available names.
 	public static void main(String[] args) {
 		out.println( "== Mutiny API Example ==" );
@@ -77,9 +79,9 @@ public class MutinyMain {
 					)
 					.await().indefinitely();
 
-			factory.withSession(
+			factory.withStatelessSession(
 							// retrieve the Author lazily from a Book
-							session -> session.find( Book.class, book1.getId() )
+							session -> session.get( Book.class, book1.getId() )
 									// fetch a lazy field of the Book
 									.chain( book -> session.fetch( book.getAuthor() )
 											// print the lazy field
@@ -89,15 +91,15 @@ public class MutinyMain {
 					.await().indefinitely();
 
 			factory.withStatelessSession(
-						session -> session.createNativeQuery(
-										"select book.title, author.name from books book join authors author on book.author_id = author.id order by book.title desc"
-								)
-								.getResultList()
-								.invoke( rows -> rows.forEach( row -> {
-										final Object[] theRowArray = (Object[])row;
-										out.printf("%s : (%s)\n", theRowArray[0], theRowArray[1]);
-									} )
-								)
+							// query the Book titles
+							session -> session.createNativeQuery(
+											"select book.title, author.name from books book join authors author on book.author_id = author.id order by book.title desc",
+											Tuple.class
+									)
+									.getResultList()
+									.invoke( rows -> rows.forEach(
+											row -> out.printf( "%s (%s)\n", row.get( 0 ), row.get( 1 ) )
+									) )
 					)
 					.await().indefinitely();
 
@@ -109,11 +111,20 @@ public class MutinyMain {
 									)
 									.getResultList()
 									.invoke( books -> books.forEach(
-											b -> out.printf(
-													"%s: %s\n",
-													b.getIsbn(),
-													b.getTitle()
-											)
+											b -> out.printf( "%s: %s\n", b.getIsbn(), b.getTitle() )
+									) )
+					)
+					.await().indefinitely();
+
+			factory.withStatelessSession(
+							// query the Book titles
+							session -> session.createNativeQuery(
+											"select book.title, author.name from books book join authors author on book.author_id = author.id order by book.title desc",
+											Tuple.class
+									)
+									.getResultList()
+									.invoke( tuples -> tuples.forEach(
+											tuple -> out.printf( "%s (%s)\n", tuple.get( 0 ), tuple.get( 1 ) )
 									) )
 					)
 					.await().indefinitely();

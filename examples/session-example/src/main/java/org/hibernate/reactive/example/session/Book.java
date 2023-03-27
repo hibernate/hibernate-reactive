@@ -5,22 +5,20 @@
  */
 package org.hibernate.reactive.example.session;
 
+import java.time.LocalDate;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDate;
-
 import static jakarta.persistence.FetchType.LAZY;
 
 @Entity
-@Table(name="books")
 class Book {
 	@Id @GeneratedValue
 	private Integer id;

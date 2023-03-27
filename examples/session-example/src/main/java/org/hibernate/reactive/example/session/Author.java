@@ -5,20 +5,19 @@
  */
 package org.hibernate.reactive.example.session;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.util.ArrayList;
-import java.util.List;
 
 import static jakarta.persistence.CascadeType.PERSIST;
 
 @Entity
-@Table(name="authors")
 public class Author {
 	@Id @GeneratedValue
 	private Integer id;

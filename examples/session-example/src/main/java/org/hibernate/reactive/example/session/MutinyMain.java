@@ -25,7 +25,7 @@ import static org.hibernate.reactive.mutiny.Mutiny.fetch;
  */
 public class MutinyMain {
 
-	// The first argument can be used to select a persistenceUnit.
+	// The first argument can be used to select a persistence unit.
 	// Check resources/META-INF/persistence.xml for available names.
 	public static void main(String[] args) {
 		out.println( "== Mutiny API Example ==" );
@@ -51,7 +51,7 @@ public class MutinyMain {
 			// obtain a reactive session
 			factory.withTransaction(
 					// persist the Authors with their Books in a transaction
-					(session, tx) -> session.persistAll( author1, author2)
+					(session, tx) -> session.persistAll( author1, author2 )
 			)
 					// wait for it to finish
 					.await().indefinitely();
@@ -147,7 +147,7 @@ public class MutinyMain {
 					session -> session.find( Book.class, book1.getId() )
 							// fetch a lazy field of the Book
 							.call( book -> session.fetch( book, Book_.published )
-									// print one lazy field
+									// print the lazy field
 									.invoke( published -> out.printf(
 											"'%s' was published in %d\n",
 											book.getTitle(),
@@ -172,7 +172,7 @@ public class MutinyMain {
 			factory.withTransaction(
 					// delete all the Books in a transaction
 					(session, tx) -> session.createQuery( "delete Book" ).executeUpdate()
-							//delete all the Authors
+							// delete all the Authors
 							.call( () -> session.createQuery( "delete Author" ).executeUpdate() )
 			)
 					.await().indefinitely();
