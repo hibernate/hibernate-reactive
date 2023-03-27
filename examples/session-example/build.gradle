@@ -1,0 +1,102 @@
+description = 'Hibernate Reactive Session Example'
+
+dependencies {
+    implementation project(':hibernate-reactive-core')
+
+    // Hibernate Validator (optional)
+    implementation 'org.hibernate.validator:hibernate-validator:7.0.2.Final'
+    runtimeOnly 'org.glassfish:jakarta.el:3.0.3'
+
+    // JPA metamodel generation for criteria queries (optional)
+    annotationProcessor "org.hibernate:hibernate-jpamodelgen:${hibernateOrmVersion}"
+
+    // database drivers for PostgreSQL and MySQL
+    runtimeOnly "io.vertx:vertx-pg-client:${vertxVersion}"
+    runtimeOnly "io.vertx:vertx-mysql-client:${vertxVersion}"
+
+    // logging (optional)
+    runtimeOnly "org.apache.logging.log4j:log4j-core:2.17.2"
+
+    // Allow authentication to PostgreSQL using SCRAM:
+    runtimeOnly 'com.ongres.scram:client:2.1'
+}
+
+// All of the remaining configuration is only necessary to enable
+// the Hibernate bytecode enhancer and field-level lazy fetching.
+// (This is very optional!)
+
+buildscript {
+    repositories {
+        // Example: ./gradlew build -PenableMavenLocalRepo
+        if ( project.hasProperty('enableMavenLocalRepo') ) {
+            // Useful for local development, it should be disabled otherwise
+            mavenLocal()
+        }
+        maven {
+            url = uri("https://plugins.gradle.org/m2/")
+        }
+
+        mavenCentral()
+
+        // Example: ./gradlew build -PenableJBossSnapshotsRep
+        if ( project.hasProperty('enableJBossSnapshotsRep') ) {
+            // Used only for testing with the latest Hibernate ORM snapshots.
+            maven { url 'https://repository.jboss.org/nexus/content/repositories/snapshots' }
+        }
+    }
+    dependencies {
+        classpath "org.hibernate.orm:hibernate-gradle-plugin:${hibernateOrmVersion}"
+    }
+}
+
+// Hibernate Gradle plugin to enable bytecode enhancements
+apply plugin: 'org.hibernate.orm'
+
+hibernate {
+    enhancement {
+        lazyInitialization(true)
+        dirtyTracking(true)
+        associationManagement(false)
+    }
+}
+
+// The following rules define a task to run
+// the different API available.
+//
+// They require the selected db ready
+// to accept connections.
+//
+// Examples:
+// gradle runExampleMySQLMain runExamplePostgreSQLMutinyMain
+def mainClasses = ['Main', 'MutinyMain']
+def dbs = ['PostgreSQL', 'MySQL']
+
+dbs.each { db ->
+    tasks.addRule( "Pattern runExampleOn${db}<mainClass>" ) { String taskName ->
+        if ( taskName.startsWith( "runExampleOn${db}" ) ) {
+            task( type: JavaExec, taskName ) {
+                def  mainClass = taskName.substring( "runExampleOn${db}".length() )
+                group = "Execution"
+                description = "Run ${mainClass} on ${db}"
+                classpath = sourceSets.main.runtimeClasspath
+                main = "org.hibernate.reactive.example.session.${mainClass}"
+                // The persistence unit name defined in resources/META-INF/persistence.xml
+                args db.toLowerCase() + '-example'
+            }
+        }
+    }
+}
+
+task runAllExamplesOnPostgreSQL(
+        dependsOn: mainClasses.collect( [] as HashSet ) { mainClass -> "runExampleOnPostgreSQL${mainClass}" } ) {
+    description = "Run ${mainClasses} on PostgreSQL"
+}
+
+task runAllExamplesOnMySQL(
+        dependsOn: mainClasses.collect( [] as HashSet ) { mainClass -> "runExampleOnMySQL${mainClass}" } ) {
+    description = "Run ${mainClasses} on MySQL"
+}
+
+task runAllExamples( dependsOn: ["runAllExamplesOnPostgreSQL", "runAllExamplesOnMySQL"] ) {
+    description = "Run  examples on ${mainClasses}"
+}
