@@ -201,8 +201,8 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 		return reactiveExtractConcreteTypeStateValues( rowProcessingState )
 				.thenCompose( entityState -> loop( 0, entityState.length, i -> {
 								  if ( entityState[i] instanceof CompletionStage ) {
-									  CompletionStage<Object> stateStage = (CompletionStage<Object>) entityState[i];
-									  return stateStage.thenAccept( state -> entityState[i] = state );
+									  return ( (CompletionStage<Object>) entityState[i] )
+											  .thenAccept( state -> entityState[i] = state );
 								  }
 								  return voidFuture();
 							  } ).thenAccept( v -> setResolvedEntityState( entityState ) )
