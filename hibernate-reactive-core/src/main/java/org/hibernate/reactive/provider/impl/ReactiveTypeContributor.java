@@ -99,7 +99,7 @@ public class ReactiveTypeContributor implements TypeContributor {
 	}
 
 	/**
-	 * Some database (MySQL for example) don't like saving temporal types with a timezone.
+	 * Some databases (MySQL for example) don't like saving temporal types with a timezone.
 	 *
 	 * @see TimestampJdbcType
 	 */
@@ -213,7 +213,6 @@ public class ReactiveTypeContributor implements TypeContributor {
 
 		@Override
 		public JdbcType getRecommendedJdbcType(JdbcTypeIndicators context) {
-			// FIXME: Check this
 			// use Types.JAVA_OBJECT instead of Types.JSON because
 			// the Dialects have the type 'json' registered under
 			// that JDBC type code
@@ -244,11 +243,6 @@ public class ReactiveTypeContributor implements TypeContributor {
 	private static class JsonType extends AbstractSingleColumnStandardBasicType<JsonObject> {
 		public JsonType(Dialect dialect) {
 			super( ObjectJdbcType.INSTANCE, JsonObjectJavaType.INSTANCE );
-		}
-
-		@Override
-		public JavaType<?> getJdbcJavaType() {
-			return super.getJdbcJavaType();
 		}
 
 		@Override
