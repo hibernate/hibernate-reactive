@@ -12,6 +12,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.LockMode;
 import org.hibernate.NonUniqueObjectException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
+import org.hibernate.action.internal.EntityIdentityInsertAction;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
@@ -131,7 +132,6 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 						.thenCompose( generatedId -> performSaveWithId( entity, context, source, persister, generator, generatedId ) );
 			}
 
-			// FIXME: I think this should be a reactive type
 			final Object generatedId = ( (BeforeExecutionGenerator) generator ).generate( source, entity, null, INSERT );
 			return performSaveWithId( entity, context, source, persister, generator, generatedId );
 		}
@@ -282,68 +282,69 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		);
 
 		return cascadeBeforeSave( source, persister, entity, context )
-				.thenCompose( v -> {
-					// We have to do this after cascadeBeforeSave completes,
-					// since it could result in generation of parent ids,
-					// which we will need as foreign keys in the insert
+				.thenCompose( v -> addInsertAction(
+							// We have to do this after cascadeBeforeSave completes,
+							// since it could result in generation of parent ids,
+							// which we will need as foreign keys in the insert
+							cloneAndSubstituteValues( entity, persister, context, source, id ),
+							id,
+							entity,
+							persister,
+							useIdentityColumn,
+							source,
+							shouldDelayIdentityInserts
+					) )
+				.thenCompose( insert -> cascadeAfterSave( source, persister, entity, context )
+					.thenAccept( unused -> {
+						final Object finalId = handleGeneratedId( useIdentityColumn, id, insert );
+						EntityEntry newEntry = persistenceContext.getEntry( entity );
 
-					Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap( context ), source );
-					Type[] types = persister.getPropertyTypes();
-
-					boolean substitute = substituteValuesIfNecessary( entity, id, values, persister, source );
-
-					if ( persister.hasCollections() ) {
-						boolean substituteBecauseOfCollections = visitCollectionsBeforeSave( entity, id, values, types, source );
-						substitute = substitute || substituteBecauseOfCollections;
-					}
-
-					if ( substitute ) {
-						persister.setValues( entity, values );
-					}
-
-					TypeHelper.deepCopy(
-							values,
-							types,
-							persister.getPropertyUpdateability(),
-							values,
-							source
-					);
-
-					CompletionStage<AbstractEntityInsertAction> insert = addInsertAction(
-							values, id, entity, persister, useIdentityColumn, source, shouldDelayIdentityInserts
-					);
-
-					EntityEntry newEntry = persistenceContext.getEntry( entity );
-
-					if ( newEntry != original ) {
-						EntityEntryExtraState extraState = newEntry.getExtraState( EntityEntryExtraState.class );
-						if ( extraState == null ) {
-							newEntry.addExtraState( original.getExtraState( EntityEntryExtraState.class ) );
+						if ( newEntry != original ) {
+							EntityEntryExtraState extraState = newEntry.getExtraState( EntityEntryExtraState.class );
+							if ( extraState == null ) {
+								newEntry.addExtraState( original.getExtraState( EntityEntryExtraState.class ) );
+							}
 						}
-					}
+					} )
+				);
+	}
 
-					return insert;
-				} )
-				.thenCompose( vv -> cascadeAfterSave( source, persister, entity, context ) );
+	private static Object handleGeneratedId(boolean useIdentityColumn, Object id, AbstractEntityInsertAction insert) {
+		if ( useIdentityColumn && insert.isEarlyInsert() ) {
+			if ( insert instanceof EntityIdentityInsertAction ) {
+				Object generatedId = ( (EntityIdentityInsertAction) insert ).getGeneratedId();
+				insert.handleNaturalIdPostSaveNotifications( generatedId );
+				return generatedId;
+			}
+			throw new IllegalStateException(
+					"Insert should be using an identity column, but action is of unexpected type: " + insert.getClass()
+							.getName() );
+		}
 
-//				.thenAccept( v -> {
-			// postpone initializing id in case the insert has non-nullable transient dependencies
-			// that are not resolved until cascadeAfterSave() is executed
+		return id;
+	}
 
-//			Object newId = id;
-//			if ( useIdentityColumn && insert.isEarlyInsert() ) {
-//				if ( !EntityIdentityInsertAction.class.isInstance( insert ) ) {
-//					throw new IllegalStateException(
-//							"Insert should be using an identity column, but action is of unexpected type: " +
-//									insert.getClass().getName()
-//					);
-//				}
-//				newId = ( (EntityIdentityInsertAction) insert ).getGeneratedId();
-//
-//				insert.handleNaturalIdPostSaveNotifications( newId );
-//			}
-//			return newId;
-//		} );
+	private Object[] cloneAndSubstituteValues(Object entity, EntityPersister persister, C context, EventSource source, Object id) {
+		Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap(context), source );
+		Type[] types = persister.getPropertyTypes();
+
+		boolean substitute = substituteValuesIfNecessary( entity, id, values, persister, source );
+		if ( persister.hasCollections() ) {
+			substitute = visitCollectionsBeforeSave( entity, id, values, types, source ) || substitute;
+		}
+
+		if ( substitute ) {
+			persister.setValues( entity, values );
+		}
+
+		TypeHelper.deepCopy(
+				values,
+				types,
+				persister.getPropertyUpdateability(),
+				values,
+				source
+		);
+		return values;
 	}
 
 	protected Map<Object,Object> getMergeMap(C anything) {
