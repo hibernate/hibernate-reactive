@@ -33,8 +33,11 @@ import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.ZonedDateTime;
+import java.time.temporal.Temporal;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.function.Function;
 
 /**
  * Collects parameter bindings from Hibernate core code
@@ -168,7 +171,16 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) {
-		put( parameterIndex, x.toInstant().atZone( cal.getTimeZone().toZoneId() ).toLocalDateTime() );
+		setTimestamp( parameterIndex, x, cal, ZonedDateTime::toOffsetDateTime );
+	}
+
+	// Sometimes we need a different approach depending on the database
+	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal, Function<ZonedDateTime, Temporal> converter) {
+		put( parameterIndex, converter.apply( x.toInstant().atZone( cal.getTimeZone().toZoneId() ) ) );
+	}
+
+	public void setTimestamp(String name, Timestamp x, Calendar cal, Function<ZonedDateTime, Temporal> converter) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
