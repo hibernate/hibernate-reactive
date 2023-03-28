@@ -6,13 +6,24 @@
 package org.hibernate.reactive.provider.impl;
 
 import java.lang.reflect.Type;
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.util.Calendar;
+import java.util.TimeZone;
 
 import org.hibernate.boot.model.TypeContributions;
 import org.hibernate.boot.model.TypeContributor;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
+import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.dialect.ReactiveDialectWrapper;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.AbstractSingleColumnStandardBasicType;
 import org.hibernate.type.BasicTypeRegistry;
@@ -24,13 +35,18 @@ import org.hibernate.type.descriptor.java.JavaType;
 import org.hibernate.type.descriptor.java.PrimitiveByteArrayJavaType;
 import org.hibernate.type.descriptor.java.StringJavaType;
 import org.hibernate.type.descriptor.java.spi.JavaTypeRegistry;
+import org.hibernate.type.descriptor.jdbc.BasicBinder;
 import org.hibernate.type.descriptor.jdbc.BlobJdbcType;
 import org.hibernate.type.descriptor.jdbc.ClobJdbcType;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 import org.hibernate.type.descriptor.jdbc.JdbcTypeIndicators;
 import org.hibernate.type.descriptor.jdbc.ObjectJdbcType;
+import org.hibernate.type.descriptor.jdbc.TimestampJdbcType;
+import org.hibernate.type.descriptor.jdbc.TimestampUtcAsJdbcTimestampJdbcType;
+import org.hibernate.type.descriptor.jdbc.spi.JdbcTypeRegistry;
 import org.hibernate.type.descriptor.sql.DdlType;
 import org.hibernate.type.descriptor.sql.spi.DdlTypeRegistry;
+import org.hibernate.type.spi.TypeConfiguration;
 
 import io.vertx.core.json.JsonObject;
 
@@ -52,19 +68,110 @@ public class ReactiveTypeContributor implements TypeContributor {
 	}
 
 	private void registerReactiveChanges(TypeContributions typeContributions, ServiceRegistry serviceRegistry) {
-		BasicTypeRegistry basicTypeRegistry = typeContributions.getTypeConfiguration().getBasicTypeRegistry();
-		DdlTypeRegistry ddlTypeRegistry = typeContributions.getTypeConfiguration().getDdlTypeRegistry();
+		Dialect dialect = dialect( serviceRegistry );
+		TypeConfiguration typeConfiguration = typeContributions.getTypeConfiguration();
+
+		DdlTypeRegistry ddlTypeRegistry = typeConfiguration.getDdlTypeRegistry();
 		ddlTypeRegistry.addDescriptor( Types.JAVA_OBJECT, new JavaObjectDdlType() );
 
-		JavaTypeRegistry javaTypeRegistry = typeContributions.getTypeConfiguration().getJavaTypeRegistry();
+		JavaTypeRegistry javaTypeRegistry = typeConfiguration.getJavaTypeRegistry();
 		javaTypeRegistry.addDescriptor( JsonObjectJavaType.INSTANCE );
 
-		Dialect dialect = serviceRegistry.getService( JdbcEnvironment.class ).getDialect();
+		if ( dialect instanceof MySQLDialect ) {
+			JdbcTypeRegistry jdbcTypeRegistry = typeConfiguration.getJdbcTypeRegistry();
+			jdbcTypeRegistry.addDescriptor( TimestampAsLocalDateTimeJdbcType.INSTANCE );
+			jdbcTypeRegistry.addDescriptor( TimestampUtcAsLocalDateTimeJdbcType.INSTANCE );
+		}
+
+		BasicTypeRegistry basicTypeRegistry = typeConfiguration.getBasicTypeRegistry();
 		basicTypeRegistry.register( new JsonType( dialect ) );
 		// FIXME: I think only Postgres, needs this special type because of the way the driver returns the SQL type
 		// 		  We could only add them for Postgres
 		basicTypeRegistry.register( new BlobType( dialect ) );
 		basicTypeRegistry.register( new ClobType( dialect ) );
+	}
+
+	private Dialect dialect(ServiceRegistry serviceRegistry) {
+		Dialect dialect = serviceRegistry.getService( JdbcEnvironment.class ).getDialect();
+		return dialect instanceof ReactiveDialectWrapper
+				? ( (ReactiveDialectWrapper) dialect ).getWrappedDialect()
+				: dialect;
+	}
+
+	/**
+	 * Some database (MySQL for example) don't like saving temporal types with a timezone.
+	 *
+	 * @see TimestampJdbcType
+	 */
+	private static class TimestampAsLocalDateTimeJdbcType extends TimestampJdbcType {
+		public static final TimestampAsLocalDateTimeJdbcType INSTANCE = new TimestampAsLocalDateTimeJdbcType();
+
+		@Override
+		public <X> ValueBinder<X> getBinder(final JavaType<X> javaType) {
+			return new BasicBinder<>( javaType, this ) {
+				@Override
+				protected void doBind(PreparedStatement st, X value, int index, WrapperOptions options) throws SQLException {
+					final Timestamp timestamp = javaType.unwrap( value, Timestamp.class, options );
+					if ( value instanceof Calendar ) {
+						( (PreparedStatementAdaptor) st )
+								.setTimestamp( index, timestamp, (Calendar) value, ZonedDateTime::toLocalDateTime );
+					}
+					else if ( options.getJdbcTimeZone() != null ) {
+						( (PreparedStatementAdaptor) st )
+								.setTimestamp( index, timestamp, Calendar.getInstance( options.getJdbcTimeZone() ), ZonedDateTime::toLocalDateTime );
+					}
+					else {
+						st.setTimestamp( index, timestamp );
+					}
+				}
+
+				@Override
+				protected void doBind(CallableStatement st, X value, String name, WrapperOptions options)
+						throws SQLException {
+					final Timestamp timestamp = javaType.unwrap( value, Timestamp.class, options );
+					if ( value instanceof Calendar ) {
+						( (PreparedStatementAdaptor) st )
+								.setTimestamp( name, timestamp, (Calendar) value, ZonedDateTime::toLocalDateTime );
+					}
+					else if ( options.getJdbcTimeZone() != null ) {
+						( (PreparedStatementAdaptor) st )
+								.setTimestamp( name, timestamp, Calendar.getInstance( options.getJdbcTimeZone() ), ZonedDateTime::toLocalDateTime );
+					}
+					else {
+						st.setTimestamp( name, timestamp );
+					}
+				}
+			};
+		}
+	}
+
+	/**
+	 * Some database (MySQL for example) don't like saving temporal types with a timezone.
+	 *
+	 * @see TimestampUtcAsJdbcTimestampJdbcType
+	 */
+	private static class TimestampUtcAsLocalDateTimeJdbcType extends TimestampUtcAsJdbcTimestampJdbcType {
+		private static final Calendar UTC_CALENDAR = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
+
+		public static final TimestampUtcAsLocalDateTimeJdbcType INSTANCE = new TimestampUtcAsLocalDateTimeJdbcType();
+
+		@Override
+		public <X> ValueBinder<X> getBinder(final JavaType<X> javaType) {
+			return new BasicBinder<>( javaType, this ) {
+				@Override
+				protected void doBind(PreparedStatement st, X value, int index, WrapperOptions options) throws SQLException {
+					final Instant instant = javaType.unwrap( value, Instant.class, options );
+					( (PreparedStatementAdaptor) st).setTimestamp( index, Timestamp.from( instant ), UTC_CALENDAR, ZonedDateTime::toLocalDateTime );
+				}
+
+				@Override
+				protected void doBind(CallableStatement st, X value, String name, WrapperOptions options)
+						throws SQLException {
+					final Instant instant = javaType.unwrap( value, Instant.class, options );
+					( (PreparedStatementAdaptor) st).setTimestamp( name, Timestamp.from( instant ), UTC_CALENDAR, ZonedDateTime::toLocalDateTime );
+				}
+			};
+		}
 	}
 
 	private static class JavaObjectDdlType implements DdlType {
