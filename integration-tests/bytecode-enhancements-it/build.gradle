@@ -2,7 +2,7 @@ description = 'Bytecode enhancements integration tests'
 
 ext {
     log4jVersion = '2.17.2'
-    assertjVersion = '3.22.0'
+    assertjVersion = '3.24.2'
 }
 
 dependencies {

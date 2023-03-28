@@ -24,7 +24,7 @@ dependencies {
     implementation "io.vertx:vertx-sql-client:${vertxVersion}"
 
     // Testing
-    testImplementation 'org.assertj:assertj-core:3.22.0'
+    testImplementation 'org.assertj:assertj-core:3.24.2'
     testImplementation "io.vertx:vertx-unit:${vertxVersion}"
 
     // Drivers
