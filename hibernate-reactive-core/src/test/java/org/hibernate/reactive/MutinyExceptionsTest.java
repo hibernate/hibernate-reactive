@@ -8,7 +8,7 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 
-import org.hibernate.HibernateException;
+import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import org.junit.Test;
@@ -27,7 +27,7 @@ public class MutinyExceptionsTest extends BaseReactiveTest {
 	}
 
 	Class<?> getExpectedException() {
-		return HibernateException.class;
+		return ConstraintViolationException.class;
 	}
 
 	@Test

@@ -14,6 +14,8 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.engine.jdbc.spi.JdbcServices;
+import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
@@ -109,6 +111,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 
 	private Pool pools;
 	private SqlStatementLogger sqlStatementLogger;
+	private SqlExceptionHelper sqlExceptionHelper;
 	private URI uri;
 	private ServiceRegistryImplementor serviceRegistry;
 
@@ -149,6 +152,15 @@ public class DefaultSqlClientPool extends SqlClientPool
 	@Override
 	protected SqlStatementLogger getSqlStatementLogger() {
 		return sqlStatementLogger;
+	}
+
+	@Override
+	public SqlExceptionHelper getSqlExceptionHelper() {
+		if ( sqlExceptionHelper == null ) {
+			sqlExceptionHelper = serviceRegistry
+					.getService( JdbcServices.class ).getSqlExceptionHelper();
+		}
+		return sqlExceptionHelper;
 	}
 
 	/**
