@@ -318,10 +318,7 @@ public class DefaultReactiveDeleteEventListener
 			final DeleteContext transientEntities) {
 
 		if ( LOG.isTraceEnabled() ) {
-			LOG.tracev(
-					"Deleting {0}",
-					infoString( persister, entityEntry.getId(), session.getFactory() )
-			);
+			LOG.tracev( "Deleting {0}", infoString( persister, entityEntry.getId(), session.getFactory() ) );
 		}
 
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
@@ -335,13 +332,8 @@ public class DefaultReactiveDeleteEventListener
 		final Object[] deletedState = createDeletedState( persister, currentState, session );
 		entityEntry.setDeletedState( deletedState );
 
-		session.getInterceptor().onDelete(
-				entity,
-				entityEntry.getId(),
-				deletedState,
-				persister.getPropertyNames(),
-				propTypes
-		);
+		session.getInterceptor()
+				.onDelete( entity, entityEntry.getId(), deletedState, persister.getPropertyNames(), propTypes );
 
 		// before any callbacks, etc, so subdeletions see that this deletion happened first
 		persistenceContext.setEntryStatus( entityEntry, Status.DELETED );
@@ -409,7 +401,6 @@ public class DefaultReactiveDeleteEventListener
 	private Object[] createDeletedState(EntityPersister persister, Object[] currentState, EventSource session) {
 		Type[] propTypes = persister.getPropertyTypes();
 		final Object[] deletedState = new Object[propTypes.length];
-//      TypeFactory.deepCopy( currentState, propTypes, persister.getPropertyUpdateability(), deletedState, session );
 		boolean[] copyability = new boolean[propTypes.length];
 		java.util.Arrays.fill( copyability, true );
 		TypeHelper.deepCopy( currentState, propTypes, copyability, deletedState, session );
