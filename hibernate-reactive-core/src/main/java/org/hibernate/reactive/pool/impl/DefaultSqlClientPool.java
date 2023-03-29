@@ -14,8 +14,8 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateError;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
+import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
@@ -110,6 +110,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 
 	private Pool pools;
 	private SqlStatementLogger sqlStatementLogger;
+	private SqlExceptionHelper sqlExceptionHelper;
 	private URI uri;
 	private ServiceRegistryImplementor serviceRegistry;
 	private Parameters parameters;
@@ -123,8 +124,10 @@ public class DefaultSqlClientPool extends SqlClientPool
 	@Override
 	public void injectServices(ServiceRegistryImplementor serviceRegistry) {
 		this.serviceRegistry = serviceRegistry;
-		this.sqlStatementLogger = serviceRegistry.getService(JdbcServices.class).getSqlStatementLogger();
-		final Dialect dialect = serviceRegistry.getService( JdbcEnvironment.class ).getDialect();
+		JdbcServices jdbcServices = serviceRegistry.getService(JdbcServices.class);
+		this.sqlStatementLogger = jdbcServices.getSqlStatementLogger();
+		this.sqlExceptionHelper = jdbcServices.getSqlExceptionHelper();
+		final Dialect dialect = jdbcServices.getDialect();
 		parameters = Parameters.instance( dialect );
 	}
 
@@ -158,6 +161,11 @@ public class DefaultSqlClientPool extends SqlClientPool
 	@Override
 	protected SqlStatementLogger getSqlStatementLogger() {
 		return sqlStatementLogger;
+	}
+
+	@Override
+	public SqlExceptionHelper getSqlExceptionHelper() {
+		return sqlExceptionHelper;
 	}
 
 	/**

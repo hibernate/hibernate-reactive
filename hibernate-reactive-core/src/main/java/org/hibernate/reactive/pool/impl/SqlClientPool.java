@@ -7,6 +7,7 @@ package org.hibernate.reactive.pool.impl;
 
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
@@ -51,6 +52,12 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	protected abstract SqlStatementLogger getSqlStatementLogger();
 
 	/**
+	 * @return a Hibernate {@link SqlExceptionHelper} for converting
+	 *         exceptions
+	 */
+	protected abstract SqlExceptionHelper getSqlExceptionHelper();
+
+	/**
 	 * Get a {@link Pool} for the specified tenant.
 	 * <p>
 	 * This is an unimplemented operation which must be overridden by
@@ -82,7 +89,7 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	}
 
 	private SqlClientConnection newConnection(SqlConnection connection) {
-		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger(), getParameters() );
+		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger(), getSqlExceptionHelper(), getParameters() );
 	}
 
 	@Override

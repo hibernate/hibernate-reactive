@@ -13,7 +13,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
+import io.vertx.sqlclient.DatabaseException;
 import org.hibernate.engine.jdbc.internal.FormatStyle;
+import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.adaptor.impl.JdbcNull;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
@@ -53,17 +55,20 @@ public class SqlClientConnection implements ReactiveConnection {
 	private final static PropertyKind<Row> ORACLE_GENERATED_KEYS = PropertyKind.create( "generated-keys", Row.class );
 
 	private final SqlStatementLogger sqlStatementLogger;
+	private final SqlExceptionHelper sqlExceptionHelper;
 
 	private final Pool pool;
 	private final SqlConnection connection;
 	private final Parameters sqlCleaner;
 	private Transaction transaction;
 
-	SqlClientConnection(SqlConnection connection, Pool pool, SqlStatementLogger sqlStatementLogger,
+	SqlClientConnection(SqlConnection connection, Pool pool,
+						SqlStatementLogger sqlStatementLogger, SqlExceptionHelper sqlExceptionHelper,
 						Parameters parameters) {
 		this.pool = pool;
 		this.sqlStatementLogger = sqlStatementLogger;
 		this.connection = connection;
+		this.sqlExceptionHelper = sqlExceptionHelper;
 		this.sqlCleaner = parameters;
 		LOG.tracef( "Connection created: %s", connection );
 	}
@@ -152,6 +157,14 @@ public class SqlClientConnection implements ReactiveConnection {
 	private <T> T convertException(T rows, String sql, Throwable sqlException) {
 		if ( sqlException == null ) {
 			return rows;
+		}
+		else if ( sqlException instanceof DatabaseException ) {
+			DatabaseException de = (DatabaseException) sqlException;
+			sqlException = sqlExceptionHelper.convert(
+					new SQLException( de.getMessage(), de.getSqlState(), de.getErrorCode() ),
+					"error executing SQL statement",
+					sql
+			);
 		}
 		return rethrow( sqlException );
 	}
