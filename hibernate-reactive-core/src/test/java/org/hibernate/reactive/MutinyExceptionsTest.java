@@ -11,6 +11,8 @@ import java.util.List;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -19,7 +21,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
+
 public class MutinyExceptionsTest extends BaseReactiveTest {
+
+	@Rule
+	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( SQLSERVER );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

@@ -11,13 +11,20 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
+
 public class ReactiveConstraintViolationTest extends BaseReactiveTest {
+
+	@Rule
+	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( SQLSERVER );
 
 	@Override
 	protected Set<Class<?>> annotatedEntities() {
