@@ -13,6 +13,8 @@ import org.hibernate.query.sqm.mutation.internal.cte.CteInsertStrategy;
 import org.hibernate.query.sqm.mutation.internal.cte.CteMutationStrategy;
 import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableMutationStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableInsertStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableMutationStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategyProvider;
@@ -20,6 +22,8 @@ import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveCteInsertS
 import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveCteMutationStrategy;
 import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveLocalTemporaryTableInsertStrategy;
 import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveLocalTemporaryTableMutationStrategy;
+import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactivePersistentTableInsertStrategy;
+import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactivePersistentTableMutationStrategy;
 
 public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTableMutationStrategyProvider {
 
@@ -34,6 +38,9 @@ public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTa
 		}
 		if ( mutationStrategy instanceof LocalTemporaryTableMutationStrategy ) {
 			return new ReactiveLocalTemporaryTableMutationStrategy( (LocalTemporaryTableMutationStrategy) mutationStrategy );
+		}
+		if ( mutationStrategy instanceof PersistentTableMutationStrategy ) {
+			return new ReactivePersistentTableMutationStrategy( (PersistentTableMutationStrategy) mutationStrategy );
 		}
 		return mutationStrategy;
 	}
@@ -58,6 +65,9 @@ public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTa
 		}
 		if ( insertStrategy instanceof LocalTemporaryTableInsertStrategy ) {
 			return new ReactiveLocalTemporaryTableInsertStrategy( (LocalTemporaryTableInsertStrategy) insertStrategy );
+		}
+		if ( insertStrategy instanceof PersistentTableInsertStrategy ) {
+			return new ReactivePersistentTableInsertStrategy( (PersistentTableInsertStrategy) insertStrategy );
 		}
 		return insertStrategy;
 	}
