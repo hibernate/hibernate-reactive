@@ -7,16 +7,15 @@ package org.hibernate.reactive.it;
 
 import java.util.Collection;
 import java.util.List;
-import jakarta.persistence.metamodel.Attribute;
 
 import org.hibernate.reactive.it.lazytoone.Captain;
 import org.hibernate.reactive.it.lazytoone.Ship;
 import org.hibernate.reactive.mutiny.Mutiny;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.metamodel.Attribute;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,7 +30,6 @@ public class LazyOneToOneBETest extends BaseReactiveIT {
 	}
 
 	@Test
-	@Ignore //see https://github.com/hibernate/hibernate-reactive/issues/1517
 	public void testCascadeDelete(TestContext context) {
 		Captain robert = new Captain( "Robert Witterel" );
 		Ship obraDinn = new Ship( "Obra Dinn" );
@@ -57,7 +55,6 @@ public class LazyOneToOneBETest extends BaseReactiveIT {
 	}
 
 	@Test
-	@Ignore //see https://github.com/hibernate/hibernate-reactive/issues/1517
 	public void testFetchOnChildSide(TestContext context) {
 		Captain robert = new Captain( "Robert Witterel" );
 		Ship obraDinn = new Ship( "Obra Dinn" );
@@ -83,7 +80,6 @@ public class LazyOneToOneBETest extends BaseReactiveIT {
 	}
 
 	@Test
-	@Ignore //see https://github.com/hibernate/hibernate-reactive/issues/1517
 	public void testFetchOnParentSide(TestContext context) {
 		Captain robert = new Captain( "Robert Witterel" );
 		Ship obraDinn = new Ship( "Obra Dinn" );
