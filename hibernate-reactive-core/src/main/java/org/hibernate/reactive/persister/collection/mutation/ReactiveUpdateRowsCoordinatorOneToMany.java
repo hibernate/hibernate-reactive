@@ -8,12 +8,11 @@ package org.hibernate.reactive.persister.collection.mutation;
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
-import org.hibernate.engine.jdbc.batch.spi.BatchKey;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
+import org.hibernate.engine.jdbc.mutation.spi.BatchKeyAccess;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -151,7 +150,7 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 				.thenCompose( CompletionStages::voidFuture );
 	}
 
-	private ReactiveMutationExecutor reactiveMutationExecutor(SharedSessionContractImplementor session, MutationOperationGroupSingle operationGroup, Supplier<BatchKey> batchKeySupplier) {
+	private ReactiveMutationExecutor reactiveMutationExecutor(SharedSessionContractImplementor session, MutationOperationGroupSingle operationGroup, BatchKeyAccess batchKeySupplier) {
 		final MutationExecutorService mutationExecutorService = session
 				.getFactory()
 				.getServiceRegistry()

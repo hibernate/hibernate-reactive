@@ -7,15 +7,14 @@ package org.hibernate.reactive.engine.jdbc.mutation.internal;
 
 import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
-import org.hibernate.engine.jdbc.batch.spi.BatchKey;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
 import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementGroup;
 import org.hibernate.engine.jdbc.mutation.internal.MutationExecutorStandard;
+import org.hibernate.engine.jdbc.mutation.spi.BatchKeyAccess;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
@@ -39,7 +38,7 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 
 	public ReactiveMutationExecutorStandard(
 			MutationOperationGroup mutationOperationGroup,
-			Supplier<BatchKey> batchKeySupplier,
+			BatchKeyAccess batchKeySupplier,
 			int batchSize,
 			SharedSessionContractImplementor session) {
 		super( mutationOperationGroup, batchKeySupplier, batchSize, session );
