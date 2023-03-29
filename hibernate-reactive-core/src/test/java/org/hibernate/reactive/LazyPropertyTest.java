@@ -5,14 +5,18 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import org.hibernate.Hibernate;
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
-import org.junit.Ignore;
+
 import org.junit.Test;
 
+import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -21,16 +25,16 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.metamodel.Attribute;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
-import static java.util.Collections.singleton;
 import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.FetchType.LAZY;
+import static java.util.Collections.singleton;
 
-
-@Ignore // this fails with Hibernate ORM too
+/**
+ * Lazy properties only work when the related bytecode enhancement is enabled.
+ * We test bytecode enhancements in a separate module, new related tests should be created there.
+ * I'm keeping this one because it seems to work and might highlight if something changes in the future.
+ */
 public class LazyPropertyTest extends BaseReactiveTest {
 
 	@Override
@@ -40,94 +44,146 @@ public class LazyPropertyTest extends BaseReactiveTest {
 
 	@Test
 	public void testLazyProperty(TestContext context) {
-		Author author1 = new Author("Iain M. Banks");
-		Author author2 = new Author("Neal Stephenson");
-		Book book1 = new Book("1-85723-235-6", "Feersum Endjinn", author1);
-		Book book2 = new Book("0-380-97346-4", "Cryptonomicon", author2);
-		Book book3 = new Book("0-553-08853-X", "Snow Crash", author2);
-		author1.books.add(book1);
-		author2.books.add(book2);
-		author2.books.add(book3);
+		Author author1 = new Author( "Iain M. Banks" );
+		Author author2 = new Author( "Neal Stephenson" );
+		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
+		Book book2 = new Book( "0-380-97346-4", "Cryptonomicon", author2 );
+		Book book3 = new Book( "0-553-08853-X", "Snow Crash", author2 );
+		author1.getBooks().add( book1 );
+		author2.getBooks().add( book2 );
+		author2.getBooks().add( book3 );
 
 		Attribute<? super Book, ?> Book_isbn = getSessionFactory().getMetamodel()
-				.entity(Book.class).getAttribute("isbn");
+				.entity( Book.class ).getAttribute( "isbn" );
 
-		test( context,
-				getSessionFactory().withTransaction(
-						//persist the Authors with their Books in a transaction
-						(session, tx) -> session.persist(author1, author2)
-				).thenCompose (
-						v -> getSessionFactory().withSession(
-								//retrieve a Book
-								session -> session.find(Book.class, book1.id)
-										//print its title
-										.thenCompose( book -> {
-											context.assertFalse( Hibernate.isPropertyInitialized(book, "isbn") );
-											return session.fetch( book, Book_isbn )
-													.thenAccept( isbn -> {
-														context.assertNotNull( isbn );
-														context.assertTrue( Hibernate.isPropertyInitialized(book, "isbn") );
-													} );
-										} )
+		test( context, getSessionFactory()
+				.withTransaction( session -> session.persist( author1, author2 ) )
+				.thenCompose( v -> getSessionFactory()
+						.withSession( session -> session
+								.find( Book.class, book1.id )
+								.thenCompose( book -> {
+									context.assertFalse( Hibernate.isPropertyInitialized( book, "isbn" ) );
+									return session.fetch( book, Book_isbn )
+											.thenAccept( isbn -> {
+												context.assertNotNull( isbn );
+												context.assertTrue( Hibernate.isPropertyInitialized( book, "isbn" ) );
+											} );
+								} )
 						)
 				)
 		);
 	}
 
-	@Entity(name="Author")
-	@Table(name="authors")
+	@Entity(name = "Author")
+	@Table(name = "authors")
 	static class Author {
-		@Id @GeneratedValue
-		Integer id;
+		@Id
+		@GeneratedValue
+		private Integer id;
 
-		String name;
+		private String name;
 
 		@OneToMany(mappedBy = "author", cascade = PERSIST)
-		List<Book> books = new ArrayList<>();
+		private List<Book> books = new ArrayList<>();
 
-		Author(String name) {
+		public Author(String name) {
 			this.name = name;
 		}
 
-		Author() {}
+		public Author() {
+		}
+
+		public Integer getId() {
+			return id;
+		}
+
+		public void setId(Integer id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public List<Book> getBooks() {
+			return books;
+		}
+
+		public void setBooks(List<Book> books) {
+			this.books = books;
+		}
 	}
 
-	@Entity(name="Book")
-	@Table(name="books")
+	@Entity(name = "Book")
+	@Table(name = "books")
 	static class Book extends LazyAttributeLoadingInterceptor
 			implements PersistentAttributeInterceptable {
 		@Id
 		@GeneratedValue
-		Integer id;
+		private Integer id;
 
 		@Basic(fetch = LAZY)
-		String isbn;
+		private String isbn;
 
-		public String getIsbn() {
+		private String getIsbn() {
 			return isbn;
 		}
 
-		String title;
+		private String title;
 
 		@ManyToOne(fetch = LAZY)
-		Author author;
+		private Author author;
 
-		Book(String isbn, String title, Author author) {
-			super("Book", 1, singleton("isbn"), null);
+		public Book(String isbn, String title, Author author) {
+			super( "Book", 1, singleton( "isbn" ), null );
 			this.title = title;
 			this.isbn = isbn;
 			this.author = author;
 		}
 
-		Book() {
-			super("Book", 1, singleton("isbn"), null);
+		public Book() {
+			super( "Book", 1, singleton( "isbn" ), null );
 		}
 
 		@Override
 		public PersistentAttributeInterceptor $$_hibernate_getInterceptor() {
 			return this;
 		}
+
 		@Override
-		public void $$_hibernate_setInterceptor(PersistentAttributeInterceptor interceptor) {}
+		public void $$_hibernate_setInterceptor(PersistentAttributeInterceptor interceptor) {
+		}
+
+		public Integer getId() {
+			return id;
+		}
+
+		public void setId(Integer id) {
+			this.id = id;
+		}
+
+		public void setIsbn(String isbn) {
+			this.isbn = isbn;
+		}
+
+		public String getTitle() {
+			return title;
+		}
+
+		public void setTitle(String title) {
+			this.title = title;
+		}
+
+		public Author getAuthor() {
+			return author;
+		}
+
+		public void setAuthor(Author author) {
+			this.author = author;
+		}
 	}
 }
