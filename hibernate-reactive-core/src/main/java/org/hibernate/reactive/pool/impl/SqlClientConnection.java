@@ -8,7 +8,6 @@ package org.hibernate.reactive.pool.impl;
 import java.lang.invoke.MethodHandles;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -18,8 +17,6 @@ import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.adaptor.impl.JdbcNull;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
-import org.hibernate.reactive.exception.ConstraintViolationException;
-import org.hibernate.reactive.exception.VertxSqlClientException;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.BatchingConnection;
@@ -155,12 +152,6 @@ public class SqlClientConnection implements ReactiveConnection {
 	private <T> T convertException(T rows, String sql, Throwable sqlException) {
 		if ( sqlException == null ) {
 			return rows;
-		}
-		if ( sqlException instanceof SQLIntegrityConstraintViolationException ) {
-			throw new ConstraintViolationException( "could not execute statement", (SQLException) sqlException, sql );
-		}
-		if ( sqlException instanceof SQLException ) {
-			throw new VertxSqlClientException( "could not execute statement", (SQLException) sqlException, sql );
 		}
 		return rethrow( sqlException );
 	}
