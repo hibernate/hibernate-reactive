@@ -15,6 +15,7 @@ import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
+import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveJdbcEnvironment;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LogCategory;
@@ -27,6 +28,7 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 import io.vertx.sqlclient.spi.DatabaseMetadata;
 
+import static java.util.function.Function.identity;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
@@ -95,8 +97,12 @@ public class NoJdbcEnvironmentInitiator implements StandardServiceInitiator<Jdbc
 
 		private DialectResolutionInfo dialectResolutionInfo() {
 			ReactiveConnectionPool connectionPool = registry.getService( ReactiveConnectionPool.class );
-			return connectionPool.getConnection()
-					.thenCompose( DialectBuilder::buildResolutionInfo ).toCompletableFuture().join();
+			return connectionPool
+					// The default SqlExceptionHelper in ORM requires the dialect, but we haven't create a dialect yet
+					// so we need to override it at this stage, or we will have an exception.
+					.getConnection( new SqlExceptionHelper( true ) )
+					.thenCompose( DialectBuilder::buildResolutionInfo )
+					.toCompletableFuture().join();
 		}
 
 		private static CompletionStage<ReactiveDialectResolutionInfo> buildResolutionInfo(ReactiveConnection connection) {
@@ -106,7 +112,7 @@ public class NoJdbcEnvironmentInitiator implements StandardServiceInitiator<Jdbc
 					.thenCompose( handled -> {
 						if ( handled.hasFailed() ) {
 							// Something has already gone wrong: try to close the connection
-							// and returns the original failure
+							// and return the original failure
 							return connection.close()
 									.handle( (unused, throwable) -> handled.getResultAsCompletionStage() )
 									.thenCompose( identity() );

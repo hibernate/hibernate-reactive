@@ -6,6 +6,7 @@
 package org.hibernate.reactive.pool;
 
 import org.hibernate.Incubating;
+import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.service.Service;
 
@@ -42,10 +43,25 @@ public interface ReactiveConnectionPool extends Service {
 	CompletionStage<ReactiveConnection> getConnection();
 
 	/**
+	 * Obtain a reactive connection, returning the connection
+	 * via a {@link CompletionStage} and overriding the default
+	 * {@link SqlExceptionHelper} for the pool.
+	 */
+	CompletionStage<ReactiveConnection> getConnection(SqlExceptionHelper sqlExceptionHelper);
+
+	/**
 	 * Obtain a reactive connection for the given tenant id,
 	 * returning the connection via a {@link CompletionStage}.
 	 */
 	CompletionStage<ReactiveConnection> getConnection(String tenantId);
+
+	/**
+	 * Obtain a reactive connection for the given tenant id,
+	 * returning the connection via a {@link CompletionStage}
+	 * and overriding the default {@link SqlExceptionHelper}
+	 * for the pool.
+	 */
+	CompletionStage<ReactiveConnection> getConnection(String tenantId, SqlExceptionHelper sqlExceptionHelper);
 
 	/**
 	 * Obtain a lazily-initializing reactive connection. The

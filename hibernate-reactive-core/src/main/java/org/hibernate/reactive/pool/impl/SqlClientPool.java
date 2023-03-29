@@ -7,6 +7,7 @@ package org.hibernate.reactive.pool.impl;
 
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
@@ -45,6 +46,12 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	protected abstract SqlStatementLogger getSqlStatementLogger();
 
 	/**
+	 * @return a Hibernate {@link SqlExceptionHelper} for converting
+	 *         exceptions
+	 */
+	protected abstract SqlExceptionHelper getSqlExceptionHelper();
+
+	/**
 	 * Get a {@link Pool} for the specified tenant.
 	 * <p>
 	 * This is an unimplemented operation which must be overridden by
@@ -57,7 +64,7 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	 * @see ReactiveConnectionPool#getConnection(String)
 	 */
 	protected Pool getTenantPool(String tenantId) {
-		throw new UnsupportedOperationException("multitenancy not supported by built-in SqlClientPool");
+		throw new UnsupportedOperationException( "multitenancy not supported by built-in SqlClientPool" );
 	}
 
 	@Override
@@ -66,8 +73,18 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	}
 
 	@Override
+	public CompletionStage<ReactiveConnection> getConnection(SqlExceptionHelper sqlExceptionHelper) {
+		return getConnectionFromPool( getPool(), sqlExceptionHelper );
+	}
+
+	@Override
 	public CompletionStage<ReactiveConnection> getConnection(String tenantId) {
 		return getConnectionFromPool( getTenantPool( tenantId ) );
+	}
+
+	@Override
+	public CompletionStage<ReactiveConnection> getConnection(String tenantId, SqlExceptionHelper sqlExceptionHelper) {
+		return getConnectionFromPool( getTenantPool( tenantId ), sqlExceptionHelper );
 	}
 
 	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool) {
@@ -75,8 +92,17 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 				.toCompletionStage().thenApply( this::newConnection );
 	}
 
+	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool, SqlExceptionHelper sqlExceptionHelper) {
+		return pool.getConnection()
+				.toCompletionStage().thenApply( sqlConnection -> newConnection( sqlConnection, sqlExceptionHelper ) );
+	}
+
 	private SqlClientConnection newConnection(SqlConnection connection) {
-		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger() );
+		return newConnection( connection, getSqlExceptionHelper() );
+	}
+
+	private SqlClientConnection newConnection(SqlConnection connection, SqlExceptionHelper sqlExceptionHelper) {
+		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger(), sqlExceptionHelper );
 	}
 
 	@Override

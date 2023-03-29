@@ -7,6 +7,7 @@ package org.hibernate.reactive.pool.impl;
 
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
@@ -47,10 +48,12 @@ public final class ExternalSqlClientPool extends SqlClientPool {
 
 	private final Pool pool;
 	private final SqlStatementLogger sqlStatementLogger;
+	private SqlExceptionHelper sqlExceptionHelper;
 
-	public ExternalSqlClientPool(Pool pool, SqlStatementLogger sqlStatementLogger) {
+	public ExternalSqlClientPool(Pool pool, SqlStatementLogger sqlStatementLogger, SqlExceptionHelper sqlExceptionHelper) {
 		this.pool = pool;
 		this.sqlStatementLogger = sqlStatementLogger;
+		this.sqlExceptionHelper = sqlExceptionHelper;
 	}
 
 	@Override
@@ -63,13 +66,17 @@ public final class ExternalSqlClientPool extends SqlClientPool {
 		return sqlStatementLogger;
 	}
 
+	@Override
+	public SqlExceptionHelper getSqlExceptionHelper() {
+		return sqlExceptionHelper;
+	}
+
 	/**
 	 * Since this Service implementation does not implement @{@link org.hibernate.service.spi.Stoppable}
 	 * and we're only adapting an externally provided pool, we will not actually close such provided pool
 	 * when Hibernate ORM is shutdown (it doesn't own the lifecycle of this external component).
-	 * Therefore there is no need to wait for its shutdown and this method returns an already
+	 * Therefore, there is no need to wait for its shutdown and this method returns an already
 	 * successfully completed CompletionStage.
-	 * @return
 	 */
 	@Override
 	public CompletionStage<Void> getCloseFuture() {
