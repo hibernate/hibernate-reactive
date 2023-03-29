@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
 public class ReactiveConstraintViolationTest extends BaseReactiveTest {
 
@@ -40,12 +41,12 @@ public class ReactiveConstraintViolationTest extends BaseReactiveTest {
 	public void reactiveConstraintViolation(TestContext context) {
 		test(
 				context,
-				populateDB()
+				assertThrown( ConstraintViolationException.class,
+						populateDB()
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.persist( new GuineaPig( 5, "Aloi" ) )
 								.thenCompose( i -> s.flush() ) )
-						.handle( (r,ce) -> context.assertTrue( ce != null && ce.getCause() instanceof ConstraintViolationException ) )
-
+				)
 		);
 	}
 
