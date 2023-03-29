@@ -28,26 +28,26 @@ dependencies {
 buildscript {
     repositories {
         // Example: ./gradlew build -PenableMavenLocalRepo
-        if ( project.hasProperty('enableMavenLocalRepo') ) {
+        if ( project.hasProperty( 'enableMavenLocalRepo' ) ) {
             // Useful for local development, it should be disabled otherwise
             mavenLocal()
         }
         maven {
-            url = uri("https://plugins.gradle.org/m2/")
+            url 'https://plugins.gradle.org/m2/'
         }
-
         mavenCentral()
 
         // Example: ./gradlew build -PenableJBossSnapshotsRep
-        if ( project.hasProperty('enableJBossSnapshotsRep') ) {
+        if ( project.hasProperty( 'enableJBossSnapshotsRep' ) ) {
             // Used only for testing with the latest Hibernate ORM snapshots.
             maven { url 'https://repository.jboss.org/nexus/content/repositories/snapshots' }
         }
     }
     dependencies {
-        classpath "org.hibernate.orm:hibernate-gradle-plugin:${hibernateOrmVersion}"
+        classpath "org.hibernate.orm:hibernate-gradle-plugin:${hibernateOrmGradlePluginVersion}"
     }
 }
+
 
 // Hibernate Gradle plugin to enable bytecode enhancements
 apply plugin: 'org.hibernate.orm'

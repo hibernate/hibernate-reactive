@@ -55,6 +55,10 @@ ext {
     if ( !project.hasProperty('hibernateOrmVersion') ) {
         hibernateOrmVersion = '6.2.0.CR4'
     }
+    if ( !project.hasProperty( 'hibernateOrmGradlePluginVersion' ) ) {
+        // Same as ORM as default
+        hibernateOrmGradlePluginVersion = project.hibernateOrmVersion
+    }
     // For ORM, we need a parsed version (to get the family, ...)
 
     // For ORM, we need a parsed version (to get the family for the documentation during release).
@@ -85,6 +89,7 @@ ext {
     testcontainersVersion = '1.17.5'
 
     logger.lifecycle "Hibernate ORM Version: " + project.hibernateOrmVersion
+    logger.lifecycle "Hibernate ORM Gradle plugin Version: " + project.hibernateOrmGradlePluginVersion
     logger.lifecycle "Vert.x Version: " + project.vertxVersion
     logger.lifecycle "Hibernate Reactive: " + project.version
 }
