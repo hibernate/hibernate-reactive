@@ -83,8 +83,9 @@ public abstract class BaseReactiveTest {
 			configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES, "/db2.sql" );
 			doneTablespace = true;
 		}
-		//Use JAVA_TOOL_OPTIONS='-Dhibernate.show_sql=true'
-		configuration.setProperty( Settings.SHOW_SQL, System.getProperty( Settings.SHOW_SQL, "true" ) );
+		// Use JAVA_TOOL_OPTIONS='-Dhibernate.show_sql=true'
+		// Keep the default to false, otherwise the log on CI becomes too big
+		configuration.setProperty( Settings.SHOW_SQL, System.getProperty( Settings.SHOW_SQL, "false" ) );
 		configuration.setProperty( Settings.FORMAT_SQL, System.getProperty( Settings.FORMAT_SQL, "false" ) );
 		configuration.setProperty( Settings.HIGHLIGHT_SQL, System.getProperty( Settings.HIGHLIGHT_SQL, "true" ) );
 	}
