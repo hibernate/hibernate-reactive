@@ -26,6 +26,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.provider.Settings.DIALECT;
@@ -38,8 +39,9 @@ import static org.hibernate.reactive.provider.Settings.DRIVER;
 public class ORMReactivePersistenceTest extends BaseReactiveTest {
 
 	// DB2: The CompletionStage test throw java.lang.IllegalStateException: Needed to have 6 in buffer...
+	// Cockroach: We need to change the URL schema we normally use for testing
 	@Rule
-	public DatabaseSelectionRule skip = DatabaseSelectionRule.skipTestsFor( DB2 );
+	public DatabaseSelectionRule skip = DatabaseSelectionRule.skipTestsFor( DB2, COCKROACHDB );
 
 	private SessionFactory ormFactory;
 
