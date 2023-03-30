@@ -161,7 +161,7 @@ public class SqlClientConnection implements ReactiveConnection {
 		else if ( sqlException instanceof DatabaseException ) {
 			DatabaseException de = (DatabaseException) sqlException;
 			sqlException = sqlExceptionHelper.convert(
-					new SQLException( de.getMessage(), de.getSqlState(), de.getErrorCode() ),
+					new SQLException( de.getMessage(), de.getSqlState(), de.getErrorCode(), de ),
 					"error executing SQL statement",
 					sql
 			);
