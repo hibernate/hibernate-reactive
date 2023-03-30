@@ -46,8 +46,6 @@ public interface ReactiveAbstractSelectingDelegate extends ReactiveInsertGenerat
 		final JdbcCoordinator jdbcCoordinator = session.getJdbcCoordinator();
 		final JdbcServices jdbcServices = session.getJdbcServices();
 
-		jdbcServices.getSqlStatementLogger().logStatement( insertStatementDetails.getSqlString() );
-
 		Object[] updateParams = bind( statement -> {
 			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor( insertStatementDetails, statement, session.getJdbcServices() );
 			jdbcValueBindings.beforeStatement( details );

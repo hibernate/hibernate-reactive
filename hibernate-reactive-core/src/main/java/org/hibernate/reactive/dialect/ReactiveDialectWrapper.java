@@ -17,6 +17,20 @@ import org.hibernate.reactive.dialect.identity.ReactiveIdentityColumnSupportAdap
  */
 public final class ReactiveDialectWrapper extends DialectDelegateWrapper {
 
+	/**
+	 * A utility method to help checking the actual dialect class.
+	 * @return true, if the dialect is an instance of one of the classes
+	 */
+	public static boolean instanceOf(Dialect dialect, Class<?>... dialectClasses) {
+		Dialect realDialect = extractRealDialect( dialect );
+		for ( Class<?> dialectClass : dialectClasses ) {
+			if ( dialectClass.isInstance( realDialect ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public ReactiveDialectWrapper(Dialect wrapped) {
 		super( wrapped );
 	}

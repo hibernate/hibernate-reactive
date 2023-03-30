@@ -8,6 +8,7 @@ package org.hibernate.reactive.id.insert;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.dialect.SQLServerDialect;
@@ -23,9 +24,10 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.type.Type;
 
-import static java.util.function.Function.identity;
-import static org.hibernate.dialect.DialectDelegateWrapper.extractRealDialect;
+
+import static org.hibernate.reactive.dialect.ReactiveDialectWrapper.instanceOf;
 
 public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGeneratedIdentifierDelegate {
 
@@ -48,16 +50,36 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 		ReactiveConnection reactiveConnection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
 		return reactiveConnection
 				.insertAndSelectIdentifier( insertSql, params, idType, identifierColumnName )
-				.thenApply( identity() );
+				.thenApply( this::validateGeneratedIdentityId );
+	}
+
+	private Object validateGeneratedIdentityId(Object generatedId) {
+		if ( generatedId == null ) {
+			throw LOG.noNativelyGeneratedValueReturned();
+		}
+
+		// CockroachDB might generate an identifier that fits an integer (and maybe a short) from time to time.
+		// Users should not rely on it, or they might have random, hard to debug failures.
+		Type identifierType = getPersister().getIdentifierType();
+		if ( ( identifierType.getReturnedClass().equals( Short.class ) || identifierType.getReturnedClass().equals( Integer.class ) )
+				&& instanceOf( getPersister().getFactory().getJdbcServices().getDialect(), CockroachDialect.class ) ) {
+			throw LOG.invalidIdentifierTypeForCockroachDB( identifierType.getReturnedClass(), getPersister().getEntityName() );
+		}
+		return generatedId;
 	}
 
 	private static String createInsert(PreparedStatementDetails insertStatementDetails, String identifierColumnName, Dialect dialect) {
+		final String sqlEnd = " returning " + identifierColumnName;
 		if ( instanceOf( dialect, PostgreSQLDialect.class ) ) {
-			return insertStatementDetails.getSqlString() + " returning " + identifierColumnName;
+			return insertStatementDetails.getSqlString() + sqlEnd;
+		}
+		if ( instanceOf( dialect, CockroachDialect.class )
+				&& !insertStatementDetails.getSqlString().endsWith( sqlEnd ) ) {
+			return insertStatementDetails.getSqlString() + sqlEnd;
 		}
 		if ( instanceOf( dialect, SQLServerDialect.class ) ) {
 			String sql = insertStatementDetails.getSqlString();
-			int index = sql.lastIndexOf( " returning " + identifierColumnName );
+			int index = sql.lastIndexOf( sqlEnd );
 			// FIXME: this is a hack for HHH-16365
 			if ( index > -1 ) {
 				sql = sql.substring( 0, index );
@@ -73,10 +95,6 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 			return sql;
 		}
 		return insertStatementDetails.getSqlString();
-	}
-
-	private static boolean instanceOf(Dialect dialect, Class<?> dialectClass) {
-		return dialectClass.isInstance( extractRealDialect( dialect ) );
 	}
 
 	@Override
