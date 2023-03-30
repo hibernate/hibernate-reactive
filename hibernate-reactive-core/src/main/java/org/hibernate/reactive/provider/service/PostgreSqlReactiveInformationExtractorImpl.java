@@ -160,6 +160,8 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 				return Types.BIGINT;
 			case "timestamptz":
 				return SqlTypes.TIMESTAMP_UTC;
+			case "bytea":
+				return Types.VARBINARY;
 			default:
 				return 0;
 		}
