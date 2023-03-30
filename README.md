@@ -174,24 +174,30 @@ with, and then get an instance of the test database running on your
 machine.
 
 By default, the tests will be run against PostgreSQL. To test against 
-MySQL, MariaDB, or Db2, you must explicitly specify `-Pdb=mysql`,
-`-Pdb=maria`, or `-Pdb=db2`, for example:
+a different database, you must explicitly specify it using the property
+`-Pdb`, as shown in the table below.
 
-    ./gradlew test -Pdb=db2
-    
-It's also possible to run all tests or only selected tests on
+| Database   | Command                      |
+|------------|------------------------------|
+| PostgreSQL | `./gradlew test -Pdb=pg`     |
+| MySQL      | `./gradlew test -Pdb=mysql`  |
+| MariaDB    | `./gradlew test -Pdb=maria`  |
+| DB2        | `./gradlew test -Pdb=db2`    |
+| SQL Server | `./gradlew test -Pdb=mssql`  |
+| Oracle     | `./gradlew test -Pdb=oracle` |
+
+It's even possible to run all tests or certain selected tests on
 all available databases:
 
     ./gradlew testAll -PincludeTests=DefaultPortTest
 
-the property `includeTests` represents the name of the test to run
-and can contain the wildcard '*'. The property is optional but
-running all tests on all databases might take a lot of time.
+The property `includeTests` specifies the name of the test to run
+and may contain the wildcard `*`. This property is optional, but
+very useful, since running all tests on all databases might take 
+a lot of time.
 
-You can also enable/disable logging standard output streams for your
-tests by adding the following property:
-
-    -PshowStandardOutput
+To enable logging of the standard output streams, add the property 
+`-PshowStandardOutput`.
 
 There are three ways to start the test database.
     
@@ -202,23 +208,18 @@ don't need to create the test databases manually. Just type:
 
     ./gradlew test -Pdocker
 
-The above command will start a PostgreSQL instance, which is the default target.
+The above command will start an instance of PostgreSQL in a Docker
+container. You may specify a different database using one of the
+commands show in the table below.
 
-Or:
-
-    ./gradlew test -Pdocker -Pdb=mysql
-
-Or:
-
-    ./gradlew test -Pdocker -Pdb=maria
-
-Or:
-
-    ./gradlew test -Pdocker -Pdb=db2
-
-Or:
-
-    ./gradlew test -Pdocker -Pdb=oracle
+| Database   | Command                               |
+|------------|---------------------------------------|
+| PostgreSQL | `./gradlew test -Pdocker -Pdb=pg`     |
+| MySQL      | `./gradlew test -Pdocker -Pdb=mysql`  |
+| MariaDB    | `./gradlew test -Pdocker -Pdb=maria`  |
+| DB2        | `./gradlew test -Pdocker -Pdb=db2`    |
+| SQL Server | `./gradlew test -Pdocker -Pdb=mssql`  |
+| Oracle     | `./gradlew test -Pdocker -Pdb=oracle` |
 
 The tests will run faster if you reuse the same containers across 
 multiple test runs. To do this, edit the testcontainers configuration 
