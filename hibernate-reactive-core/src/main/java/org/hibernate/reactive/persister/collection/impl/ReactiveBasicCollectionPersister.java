@@ -173,11 +173,6 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	}
 
 	@Override
-	public boolean hasIdentifier() {
-		return super.hasIdentifier;
-	}
-
-	@Override
 	public boolean indexContainsFormula() {
 		return super.indexContainsFormula;
 	}
