@@ -100,7 +100,7 @@ jobs:
     strategy:
       matrix:
 #        db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer', 'Oracle' ]
-        db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'MSSQLServer' ]
+        db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'MSSQLServer', 'CockroachDB' ]
     steps:
     - uses: actions/checkout@v2
     - name: Get year/month for cache key
