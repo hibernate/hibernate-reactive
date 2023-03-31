@@ -168,11 +168,6 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	}
 
 	@Override
-	public boolean hasIdentifier() {
-		return super.hasIdentifier;
-	}
-
-	@Override
 	public boolean indexContainsFormula() {
 		return super.indexContainsFormula;
 	}
@@ -189,7 +184,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 		}
 
 		// If one-to-many and inverse, still need to create the index.  See HHH-5732.
-		final boolean doWrite = isInverse && hasIndex && !indexContainsFormula && ArrayHelper.countTrue( indexColumnIsSettable ) > 0;
+		final boolean doWrite = isInverse && hasIndex() && !indexContainsFormula && ArrayHelper.countTrue( indexColumnIsSettable ) > 0;
 		if ( !doWrite ) {
 			return voidFuture();
 		}

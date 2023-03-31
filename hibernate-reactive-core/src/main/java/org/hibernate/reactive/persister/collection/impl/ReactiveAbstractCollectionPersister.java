@@ -82,7 +82,6 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
     boolean isRowDeleteEnabled();
     boolean isRowInsertEnabled();
 
-    boolean hasIdentifier();
     boolean indexContainsFormula();
 
     default List<Object> entryList(PersistentCollection<?> collection) {
