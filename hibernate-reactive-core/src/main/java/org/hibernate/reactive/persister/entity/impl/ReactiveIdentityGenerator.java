@@ -6,12 +6,12 @@
 package org.hibernate.reactive.persister.entity.impl;
 
 
-import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.identity.CockroachDBIdentityColumnSupport;
 import org.hibernate.id.IdentityGenerator;
 import org.hibernate.id.PostInsertIdentityPersister;
 import org.hibernate.id.insert.InsertGeneratedIdentifierDelegate;
+import org.hibernate.reactive.id.insert.ReactiveInsertReturningDelegate;
 import org.hibernate.reactive.logging.impl.Log;
 
 import static java.lang.invoke.MethodHandles.lookup;
@@ -30,13 +30,8 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 	@Override
 	public InsertGeneratedIdentifierDelegate getGeneratedIdentifierDelegate(PostInsertIdentityPersister persister) {
 		Dialect dialect = persister.getFactory().getJdbcServices().getDialect();
-		boolean generatedKeysEnabled = persister.getFactory().getSessionFactoryOptions().isGetGeneratedKeysEnabled();
-		if ( !generatedKeysEnabled ) {
-			LOG.debugf( "Ignoring property `%s`", AvailableSettings.USE_GET_GENERATED_KEYS );
-		}
-		// With JDBC, it's possible to select different type of queries for the retrieval of the id after
-		// an insert. But, we don't need this in Hibernate Reactive, and it's easier to just run the most efficient query
-		// for the selected database.
-		return dialect.getIdentityColumnSupport().buildGetGeneratedKeysDelegate( persister, dialect );
+		// Hibernate ORM allows the selection of different strategies based on the property `hibernate.jdbc.use_get_generated_keys`.
+		// But that's a specific JDBC property and with Vert.x we only have one viable option for each supported database.
+		return new ReactiveInsertReturningDelegate( persister, dialect );
 	}
 }
