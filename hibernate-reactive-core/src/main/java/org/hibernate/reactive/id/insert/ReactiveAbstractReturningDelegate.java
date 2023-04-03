@@ -26,9 +26,6 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.type.Type;
 
-
-import static org.hibernate.reactive.dialect.ReactiveDialectWrapper.instanceOf;
-
 public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGeneratedIdentifierDelegate {
 
 	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
@@ -62,7 +59,7 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 		// Users should not rely on it, or they might have random, hard to debug failures.
 		Type identifierType = getPersister().getIdentifierType();
 		if ( ( identifierType.getReturnedClass().equals( Short.class ) || identifierType.getReturnedClass().equals( Integer.class ) )
-				&& instanceOf( getPersister().getFactory().getJdbcServices().getDialect(), CockroachDialect.class ) ) {
+				&& getPersister().getFactory().getJdbcServices().getDialect() instanceof CockroachDialect ) {
 			throw LOG.invalidIdentifierTypeForCockroachDB( identifierType.getReturnedClass(), getPersister().getEntityName() );
 		}
 		return generatedId;
@@ -70,7 +67,7 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 
 	private static String createInsert(PreparedStatementDetails insertStatementDetails, String identifierColumnName, Dialect dialect) {
 		final String sqlEnd = " returning " + identifierColumnName;
-		if ( instanceOf( dialect, MySQLDialect.class ) ) {
+		if ( dialect instanceof MySQLDialect ) {
 			// For some reasons ORM generates a query with an invalid syntax
 			String sql = insertStatementDetails.getSqlString();
 			int index = sql.lastIndexOf( sqlEnd );
@@ -78,7 +75,7 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 					? sql.substring( 0, index )
 					: sql;
 		}
-		if ( instanceOf( dialect, SQLServerDialect.class ) ) {
+		if ( dialect instanceof SQLServerDialect ) {
 			String sql = insertStatementDetails.getSqlString();
 			int index = sql.lastIndexOf( sqlEnd );
 			// FIXME: this is a hack for HHH-16365
