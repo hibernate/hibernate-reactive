@@ -23,7 +23,6 @@ import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
-import org.hibernate.reactive.dialect.ReactiveDialectWrapper;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.AbstractSingleColumnStandardBasicType;
 import org.hibernate.type.BasicTypeRegistry;
@@ -92,10 +91,7 @@ public class ReactiveTypeContributor implements TypeContributor {
 	}
 
 	private Dialect dialect(ServiceRegistry serviceRegistry) {
-		Dialect dialect = serviceRegistry.getService( JdbcEnvironment.class ).getDialect();
-		return dialect instanceof ReactiveDialectWrapper
-				? ( (ReactiveDialectWrapper) dialect ).getWrappedDialect()
-				: dialect;
+		return serviceRegistry.getService( JdbcEnvironment.class ).getDialect();
 	}
 
 	/**
