@@ -10,7 +10,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
@@ -70,12 +70,13 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 
 	private static String createInsert(PreparedStatementDetails insertStatementDetails, String identifierColumnName, Dialect dialect) {
 		final String sqlEnd = " returning " + identifierColumnName;
-		if ( instanceOf( dialect, PostgreSQLDialect.class ) ) {
-			return insertStatementDetails.getSqlString() + sqlEnd;
-		}
-		if ( instanceOf( dialect, CockroachDialect.class )
-				&& !insertStatementDetails.getSqlString().endsWith( sqlEnd ) ) {
-			return insertStatementDetails.getSqlString() + sqlEnd;
+		if ( instanceOf( dialect, MySQLDialect.class ) ) {
+			// For some reasons ORM generates a query with an invalid syntax
+			String sql = insertStatementDetails.getSqlString();
+			int index = sql.lastIndexOf( sqlEnd );
+			return index > -1
+					? sql.substring( 0, index )
+					: sql;
 		}
 		if ( instanceOf( dialect, SQLServerDialect.class ) ) {
 			String sql = insertStatementDetails.getSqlString();
