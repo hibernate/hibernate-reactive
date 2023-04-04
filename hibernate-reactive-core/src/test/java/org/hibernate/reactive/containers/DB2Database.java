@@ -22,6 +22,10 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import org.hibernate.type.NumericBooleanConverter;
+import org.hibernate.type.TrueFalseConverter;
+import org.hibernate.type.YesNoConverter;
+
 import org.testcontainers.containers.Db2Container;
 
 import static org.hibernate.reactive.containers.DockerImage.imageName;
@@ -36,19 +40,18 @@ class DB2Database implements TestableDatabase {
 		expectedDBTypeForClass.put( boolean.class, "SMALLINT" );
 		expectedDBTypeForClass.put( Boolean.class, "SMALLINT" );
 
-		// FIXME: [ORM-6] Check if we need alternatives
-		// expectedDBTypeForClass.put( NumericBooleanType.class, "INTEGER" );
-		// expectedDBTypeForClass.put( TrueFalseType.class, "CHARACTER" );
-		// expectedDBTypeForClass.put( YesNoType.class, "CHARACTER" );
-		// expectedDBTypeForClass.put( PrimitiveByteArrayTypeDescriptor.class, "VARCHAR" );
+		expectedDBTypeForClass.put( NumericBooleanConverter.class, "INTEGER" );
+		expectedDBTypeForClass.put( YesNoConverter.class, "CHARACTER" );
+		expectedDBTypeForClass.put( TrueFalseConverter.class, "CHARACTER" );
+		expectedDBTypeForClass.put( byte[].class, "VARCHAR" );
 		// expectedDBTypeForClass.put( TextType.class, "VARCHAR" );
 
 		expectedDBTypeForClass.put( int.class, "INTEGER" );
 		expectedDBTypeForClass.put( Integer.class, "INTEGER" );
 		expectedDBTypeForClass.put( long.class, "BIGINT" );
 		expectedDBTypeForClass.put( Long.class, "BIGINT" );
-		expectedDBTypeForClass.put( float.class, "DOUBLE" );
-		expectedDBTypeForClass.put( Float.class, "DOUBLE" );
+		expectedDBTypeForClass.put( float.class, "REAL" );
+		expectedDBTypeForClass.put( Float.class, "REAL" );
 		expectedDBTypeForClass.put( double.class, "DOUBLE" );
 		expectedDBTypeForClass.put( Double.class, "DOUBLE" );
 		expectedDBTypeForClass.put( byte.class, "SMALLINT" );
