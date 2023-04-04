@@ -494,8 +494,16 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public int findColumn(String columnLabel) {
-		return rows.columnsNames().indexOf( columnLabel ) + 1;
-//		return row.getColumnIndex( columnLabel );
+		// JDBC parameters index start from 1
+		int index = 1;
+		for ( String column : rows.columnsNames() ) {
+			// Some dbs, like Oracle and Db2, return the column names always in uppercase
+			if ( column.equalsIgnoreCase( columnLabel ) ) {
+				return index;
+			}
+			index++;
+		}
+		return -1;
 	}
 
 	@Override
