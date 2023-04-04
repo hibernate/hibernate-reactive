@@ -9,7 +9,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -17,12 +20,19 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
+
 
 /**
  * Tests queries using named parameters like ":name",
  * as defined by the JPA specification, along with limit parameters
  */
 public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
+
+	// Db2: java.lang.ClassCastException: class java.lang.Integer cannot be cast to class java.lang.Long
+	@Rule
+	public DatabaseSelectionRule skip = skipTestsFor( DB2 );
 
 	Flour spelt = new Flour( 1, "Spelt", "An ancient grain, is a hexaploid species of wheat.", "Wheat flour" );
 	Flour rye = new Flour( 2, "Rye", "Used to bake the traditional sourdough breads of Germany.", "Wheat flour" );

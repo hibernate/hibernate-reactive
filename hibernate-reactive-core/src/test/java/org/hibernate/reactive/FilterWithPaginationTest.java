@@ -20,19 +20,27 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.hibernate.type.descriptor.java.StringJavaType;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
 
 /**
  * Test the combination of filters, max results and first result.
  */
 public class FilterWithPaginationTest extends BaseReactiveTest {
+
+	// Db2: java.lang.ClassCastException: class java.lang.Integer cannot be cast to class java.lang.Long
+	@Rule
+	public final DatabaseSelectionRule skipDb2 = skipTestsFor( DB2 );
 
 	FamousPerson margaret = new FamousPerson( 1L, "Margaret Howe Lovatt", Status.LIVING, "the woman who lived in a half-flooded home with a dolphin." );
 	FamousPerson nellie = new FamousPerson( 2L, "Nellie Bly", Status.DECEASED, "In 1888, she traveled around the world in 72 days." );

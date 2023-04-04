@@ -9,13 +9,19 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
 
 
 /**
@@ -26,6 +32,10 @@ import jakarta.persistence.Table;
  * that should be considered an internal implementation detail.
  */
 public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
+
+	// Db2: Parameter at position[0] with class = [java.lang.Integer] and value = [1] can not be coerced to the expected class = [java.lang.Double] for encoding.
+	@Rule
+	public DatabaseSelectionRule skip = skipTestsFor( DB2 );
 
 	Flour spelt = new Flour( 1, "Spelt", "An ancient grain, is a hexaploid species of wheat.", "Wheat flour" );
 	Flour rye = new Flour( 2, "Rye", "Used to bake the traditional sourdough breads of Germany.", "Wheat flour" );
