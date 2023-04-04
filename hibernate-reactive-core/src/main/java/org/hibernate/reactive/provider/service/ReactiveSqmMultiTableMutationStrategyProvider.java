@@ -11,6 +11,9 @@ import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.query.sqm.mutation.internal.cte.CteInsertStrategy;
 import org.hibernate.query.sqm.mutation.internal.cte.CteMutationStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableInsertStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableMutationStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableStrategy;
 import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableMutationStrategy;
 import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableInsertStrategy;
@@ -20,6 +23,8 @@ import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategyProvider;
 import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveCteInsertStrategy;
 import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveCteMutationStrategy;
+import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveGlobalTemporaryTableInsertStrategy;
+import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveGlobalTemporaryTableMutationStrategy;
 import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveLocalTemporaryTableInsertStrategy;
 import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveLocalTemporaryTableMutationStrategy;
 import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactivePersistentTableInsertStrategy;
@@ -41,6 +46,9 @@ public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTa
 		}
 		if ( mutationStrategy instanceof PersistentTableMutationStrategy ) {
 			return new ReactivePersistentTableMutationStrategy( (PersistentTableMutationStrategy) mutationStrategy );
+		}
+		if ( mutationStrategy instanceof GlobalTemporaryTableMutationStrategy ) {
+			return new ReactiveGlobalTemporaryTableMutationStrategy( (GlobalTemporaryTableStrategy) mutationStrategy );
 		}
 		return mutationStrategy;
 	}
@@ -68,6 +76,9 @@ public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTa
 		}
 		if ( insertStrategy instanceof PersistentTableInsertStrategy ) {
 			return new ReactivePersistentTableInsertStrategy( (PersistentTableInsertStrategy) insertStrategy );
+		}
+		if ( insertStrategy instanceof GlobalTemporaryTableInsertStrategy ) {
+			return new ReactiveGlobalTemporaryTableInsertStrategy( (GlobalTemporaryTableStrategy) insertStrategy );
 		}
 		return insertStrategy;
 	}
