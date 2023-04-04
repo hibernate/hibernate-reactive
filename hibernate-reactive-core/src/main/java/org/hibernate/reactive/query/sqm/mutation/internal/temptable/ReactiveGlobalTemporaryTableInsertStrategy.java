@@ -13,12 +13,15 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
-import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableInsertStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableStrategy;
 import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsertStrategy;
 
-public class ReactivePersistentTableInsertStrategy extends PersistentTableInsertStrategy
-		implements ReactivePersistentTableStrategy, ReactiveSqmMultiTableInsertStrategy {
+/**
+ * @see org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableInsertStrategy
+ */
+public class ReactiveGlobalTemporaryTableInsertStrategy extends GlobalTemporaryTableStrategy
+		implements ReactiveGlobalTemporaryTableStrategy, ReactiveSqmMultiTableInsertStrategy {
 
 	private final CompletableFuture<Void> tableCreatedStage = new CompletableFuture();
 
@@ -28,7 +31,7 @@ public class ReactivePersistentTableInsertStrategy extends PersistentTableInsert
 
 	private boolean dropIdTables;
 
-	public ReactivePersistentTableInsertStrategy(PersistentTableInsertStrategy strategy) {
+	public ReactiveGlobalTemporaryTableInsertStrategy(GlobalTemporaryTableStrategy strategy) {
 		super( strategy.getTemporaryTable(), strategy.getSessionFactory() );
 	}
 
@@ -54,7 +57,9 @@ public class ReactivePersistentTableInsertStrategy extends PersistentTableInsert
 				domainParameterXref,
 				getTemporaryTable(),
 				getSessionFactory().getJdbcServices().getDialect().getTemporaryTableAfterUseAction(),
-				ReactivePersistentTableStrategy::sessionIdentifier,
+				// generally a global temp table should already track a Connection-specific uid,
+				// but just in case a particular env needs it...
+				ReactiveGlobalTemporaryTableStrategy::sessionIdentifier,
 				getSessionFactory()
 		).reactiveExecute( context ) );
 	}

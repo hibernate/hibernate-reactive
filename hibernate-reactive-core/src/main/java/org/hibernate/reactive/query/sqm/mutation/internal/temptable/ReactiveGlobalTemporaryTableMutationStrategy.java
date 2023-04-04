@@ -13,14 +13,16 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
-import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableMutationStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableStrategy;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
 
-
-public class ReactivePersistentTableMutationStrategy extends PersistentTableMutationStrategy
-		implements ReactivePersistentTableStrategy, ReactiveSqmMultiTableMutationStrategy {
+/**
+ * @see org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableMutationStrategy
+ */
+public class ReactiveGlobalTemporaryTableMutationStrategy extends GlobalTemporaryTableStrategy
+		implements ReactiveGlobalTemporaryTableStrategy, ReactiveSqmMultiTableMutationStrategy {
 
 	private final CompletableFuture<Void> tableCreatedStage = new CompletableFuture();
 
@@ -30,9 +32,10 @@ public class ReactivePersistentTableMutationStrategy extends PersistentTableMuta
 
 	private boolean dropIdTables;
 
-	public ReactivePersistentTableMutationStrategy(PersistentTableMutationStrategy original) {
-		super( original.getTemporaryTable(), original.getSessionFactory() );
+	public ReactiveGlobalTemporaryTableMutationStrategy(GlobalTemporaryTableStrategy strategy) {
+		super( strategy.getTemporaryTable(), strategy.getSessionFactory() );
 	}
+
 
 	@Override
 	public void prepare(
@@ -73,7 +76,7 @@ public class ReactivePersistentTableMutationStrategy extends PersistentTableMuta
 						domainParameterXref,
 						getTemporaryTable(),
 						getSessionFactory().getJdbcServices().getDialect().getTemporaryTableAfterUseAction(),
-						ReactivePersistentTableStrategy::sessionIdentifier,
+						ReactiveGlobalTemporaryTableStrategy::sessionIdentifier,
 						getSessionFactory()
 				).reactiveExecute( context ) );
 	}

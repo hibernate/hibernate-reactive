@@ -15,7 +15,7 @@ import org.hibernate.engine.jdbc.connections.spi.JdbcConnectionAccess;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
-import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableStrategy;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
@@ -25,12 +25,13 @@ import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
-/**
- * @see org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableStrategy
- */
-public interface ReactivePersistentTableStrategy {
+public interface ReactiveGlobalTemporaryTableStrategy {
 
 	Log LOG = make( Log.class, lookup() );
+
+	static String sessionIdentifier(SharedSessionContractImplementor session) {
+		return session.getSessionIdentifier().toString();
+	}
 
 	boolean isPrepared();
 
@@ -48,10 +49,6 @@ public interface ReactivePersistentTableStrategy {
 
 	SessionFactoryImplementor getSessionFactory();
 
-	static String sessionIdentifier(SharedSessionContractImplementor session) {
-		return session.getSessionIdentifier().toString();
-	}
-
 	default void prepare(MappingModelCreationProcess mappingModelCreationProcess, JdbcConnectionAccess connectionAccess, CompletableFuture<Void> tableCreatedStage) {
 		if ( isPrepared() ) {
 			return;
@@ -63,13 +60,13 @@ public interface ReactivePersistentTableStrategy {
 				.getCreationContext().getBootstrapContext()
 				.getServiceRegistry().getService( ConfigurationService.class );
 		boolean createIdTables = configService
-				.getSetting( PersistentTableStrategy.CREATE_ID_TABLES, StandardConverters.BOOLEAN, true );
+				.getSetting( GlobalTemporaryTableStrategy.CREATE_ID_TABLES, StandardConverters.BOOLEAN, true );
 
 		if ( !createIdTables ) {
 			tableCreatedStage.complete( null );
 		}
 
-		LOG.debugf( "Creating persistent ID table : %s", getTemporaryTable().getTableExpression() );
+		LOG.debugf( "Creating global-temp ID table : %s", getTemporaryTable().getTableExpression() );
 
 		connectionStage()
 				.thenCompose( this::createTable )
@@ -126,7 +123,7 @@ public interface ReactivePersistentTableStrategy {
 
 	private void setDropIdTables(ConfigurationService configService) {
 		setDropIdTables( configService.getSetting(
-				PersistentTableStrategy.DROP_ID_TABLES,
+				GlobalTemporaryTableStrategy.DROP_ID_TABLES,
 				StandardConverters.BOOLEAN,
 				false
 		) );
@@ -154,7 +151,7 @@ public interface ReactivePersistentTableStrategy {
 		setDropIdTables( false );
 
 		final TemporaryTable temporaryTable = getTemporaryTable();
-		LOG.debugf( "Dropping persistent ID table : %s", temporaryTable.getTableExpression() );
+		LOG.debugf( "Dropping global-tempk ID table : %s", temporaryTable.getTableExpression() );
 
 		connectionStage()
 				.thenCompose( this::dropTable )
