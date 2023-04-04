@@ -12,6 +12,7 @@ import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MySQLDialect;
+import org.hibernate.dialect.Oracle12cDialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
@@ -97,6 +98,24 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 			// ORM query: select id from new table ( insert into IntegerTypeEntity values ( ))
 			// Correct  : select id from new table ( insert into LongTypeEntity (id) values (default))
 			return insertStatementDetails.getSqlString().replace( " values ( ))", " (" + identifierColumnName + ") values (default))" );
+		}
+		if( dialect instanceof Oracle12cDialect ) {
+			final String valuesStr = " values ( )";
+			String sql = insertStatementDetails.getSqlString();
+			int index = sql.lastIndexOf( sqlEnd );
+			// remove "returning id" since it's added via
+			if ( index > -1 ) {
+				sql = sql.substring( 0, index );
+			}
+
+			// Oracle is expecting values (default)
+			if ( sql.endsWith( valuesStr ) ) {
+				index = sql.lastIndexOf( valuesStr );
+				sql = sql.substring( 0, index );
+				sql = sql + " values (default)";
+			}
+
+			return sql;
 		}
 		return insertStatementDetails.getSqlString();
 	}

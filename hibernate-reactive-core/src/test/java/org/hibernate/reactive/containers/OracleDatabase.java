@@ -22,6 +22,11 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 
+
+import org.hibernate.type.NumericBooleanConverter;
+import org.hibernate.type.TrueFalseConverter;
+import org.hibernate.type.YesNoConverter;
+
 import org.testcontainers.containers.OracleContainer;
 
 import static org.hibernate.reactive.containers.DockerImage.imageName;
@@ -43,10 +48,10 @@ class OracleDatabase implements TestableDatabase {
 			expectedDBTypeForClass.put( Boolean.class, "NUMBER" );
 
 			// FIXME: [ORM-6] Check if we need alternatives
-			// expectedDBTypeForClass.put( NumericBooleanType.class, "NUMBER" );
-			// expectedDBTypeForClass.put( TrueFalseType.class, "CHAR" );
-			// expectedDBTypeForClass.put( YesNoType.class, "CHAR" );
-			// expectedDBTypeForClass.put( PrimitiveByteArrayTypeDescriptor.class, "BLOB" );
+			expectedDBTypeForClass.put( NumericBooleanConverter.class, "NUMBER" );
+			expectedDBTypeForClass.put( YesNoConverter.class, "CHAR" );
+			expectedDBTypeForClass.put( TrueFalseConverter.class, "CHAR" );
+			expectedDBTypeForClass.put( byte[].class, "RAW" );
 			// expectedDBTypeForClass.put( TextType.class, "VARCHAR2" );
 
 			expectedDBTypeForClass.put( int.class, "NUMBER" );
@@ -63,9 +68,9 @@ class OracleDatabase implements TestableDatabase {
 			expectedDBTypeForClass.put( TimeZone.class, "VARCHAR2" );
 			expectedDBTypeForClass.put( Date.class, "DATE" );
 			expectedDBTypeForClass.put( Timestamp.class, "TIMESTAMP(6)" );
-			expectedDBTypeForClass.put( Time.class, "DATE" );
+			expectedDBTypeForClass.put( Time.class, "TIMESTAMP(6)" );
 			expectedDBTypeForClass.put( LocalDate.class, "DATE" );
-			expectedDBTypeForClass.put( LocalTime.class, "TIMESTAMP(6)" );
+			expectedDBTypeForClass.put( LocalTime.class, "DATE" );
 			expectedDBTypeForClass.put( LocalDateTime.class, "TIMESTAMP(6)" );
 			expectedDBTypeForClass.put( BigInteger.class, "NUMBER" );
 			expectedDBTypeForClass.put( BigDecimal.class, "NUMBER" );

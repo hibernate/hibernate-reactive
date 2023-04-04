@@ -16,7 +16,7 @@ import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MariaDBDialect;
 import org.hibernate.dialect.MySQLDialect;
-import org.hibernate.dialect.OracleDialect;
+import org.hibernate.dialect.Oracle12cDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
@@ -144,7 +144,7 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator {
 			return SQLServerDialect.class;
 		}
 		if ( url.startsWith( "oracle:" ) ) {
-			return OracleDialect.class;
+			return Oracle12cDialect.class;
 		}
 
 		return null;
