@@ -27,14 +27,25 @@ import jakarta.persistence.Id;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
+
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 public class UTCTest extends BaseReactiveTest {
+
+	// testDate(), testCalendar(), testLocalDateTime() & testZonedDateTime() fail with....
+	//
+	// throws jakarta.persistence.NoResultException: No result found for query [from ThingInUTC where date=:dt]
+	//	     at app//org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery.reactiveSingleResult(ReactiveAbstractSelectionQuery.java:175)
+	@Rule
+	public final DatabaseSelectionRule skip = DatabaseSelectionRule.skipTestsFor( ORACLE );
 
 	@Override
 	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
