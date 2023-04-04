@@ -16,15 +16,19 @@ import jakarta.persistence.Table;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.hibernate.reactive.testing.SqlStatementTracker;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
 
 /**
  * Test {@code hibernate.order_updates} and {@code hibernate.order_inserts} configurations.
@@ -33,6 +37,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see  Settings#ORDER_UPDATES
  */
 public abstract class OrderQueriesTestBase extends BaseReactiveTest {
+
+	//Db2: java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0. In JDBC we would normally block
+	@Rule
+	public final DatabaseSelectionRule skip = skipTestsFor( DB2 );
 
 	public static class OrderUpdatesTest extends OrderQueriesTestBase {
 

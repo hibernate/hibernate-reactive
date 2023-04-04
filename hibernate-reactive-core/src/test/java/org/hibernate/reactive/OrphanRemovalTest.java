@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Set;
 
 
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -24,14 +27,18 @@ import jakarta.persistence.Table;
 import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.CascadeType.REMOVE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
 
 public class OrphanRemovalTest extends BaseReactiveTest {
 
+	//Db2: java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0. In JDBC we would normally block
+	@Rule
+	public final DatabaseSelectionRule skip = skipTestsFor( DB2 );
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Shop.class, Version.class, Product.class );
 	}
-
 	@Test
 	public void testOrphan(TestContext context) {
 		Shop shop = new Shop( "shop" );

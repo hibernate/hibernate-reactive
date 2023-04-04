@@ -9,8 +9,10 @@ import io.vertx.ext.unit.TestContext;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import jakarta.persistence.CascadeType;
@@ -25,10 +27,17 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
+
 /**
  * @see EagerUniqueKeyTest
  */
 public class LazyUniqueKeyTest extends BaseReactiveTest {
+
+	// Db2: java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0. In JDBC we would normally block here
+	@Rule
+	public DatabaseSelectionRule skip = skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
