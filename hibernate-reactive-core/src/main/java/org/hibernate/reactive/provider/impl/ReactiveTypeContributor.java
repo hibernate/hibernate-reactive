@@ -18,6 +18,7 @@ import java.util.TimeZone;
 
 import org.hibernate.boot.model.TypeContributions;
 import org.hibernate.boot.model.TypeContributor;
+import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
@@ -76,7 +77,7 @@ public class ReactiveTypeContributor implements TypeContributor {
 		JavaTypeRegistry javaTypeRegistry = typeConfiguration.getJavaTypeRegistry();
 		javaTypeRegistry.addDescriptor( JsonObjectJavaType.INSTANCE );
 
-		if ( dialect instanceof MySQLDialect ) {
+		if ( dialect instanceof MySQLDialect || dialect instanceof DB2Dialect ) {
 			JdbcTypeRegistry jdbcTypeRegistry = typeConfiguration.getJdbcTypeRegistry();
 			jdbcTypeRegistry.addDescriptor( TimestampAsLocalDateTimeJdbcType.INSTANCE );
 			jdbcTypeRegistry.addDescriptor( TimestampUtcAsLocalDateTimeJdbcType.INSTANCE );
