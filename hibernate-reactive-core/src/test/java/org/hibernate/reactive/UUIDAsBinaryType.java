@@ -22,12 +22,17 @@ import org.junit.Test;
 import io.vertx.ext.unit.TestContext;
 
 import static java.util.Arrays.asList;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
 import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
 
 public abstract class UUIDAsBinaryType extends BaseReactiveTest {
+
+	//Db2: testUUIDType throws NoStackTraceThrowable: parameter of type BufferImpl cannot be coerced to ByteBuf
+	@Rule
+	public final DatabaseSelectionRule skip = DatabaseSelectionRule.skipTestsFor( DB2 );
 
 	public static class ForMySQLandMariaDBTest extends UUIDAsBinaryType {
 		// There's an issue querying for Binary types if the size of the column is different from

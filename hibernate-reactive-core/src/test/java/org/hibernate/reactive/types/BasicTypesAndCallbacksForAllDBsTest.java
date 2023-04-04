@@ -29,8 +29,10 @@ import java.util.function.Consumer;
 
 import org.hibernate.annotations.Type;
 import org.hibernate.reactive.BaseReactiveTest;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -59,10 +61,16 @@ import jakarta.persistence.TemporalType;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+
 /**
  * Test all the types and lifecycle callbacks that we expect to work on all supported DBs
  */
 public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
+
+	//Db2: testUUIDType throws NoStackTraceThrowable: parameter of type BufferImpl cannot be coerced to ByteBuf
+	@Rule
+	public final DatabaseSelectionRule skip = DatabaseSelectionRule.skipTestsFor( DB2 );
 
 	@Override
 	protected Set<Class<?>> annotatedEntities() {
