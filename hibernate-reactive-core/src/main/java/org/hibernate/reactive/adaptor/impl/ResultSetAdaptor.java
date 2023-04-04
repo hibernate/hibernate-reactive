@@ -83,9 +83,23 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public boolean getBoolean(int columnIndex) {
-		Boolean bool = row.getBoolean( columnIndex - 1 );
-		wasNull = bool == null;
-		return !wasNull && bool;
+		try {
+			Boolean bool = row.getBoolean( columnIndex - 1 );
+			wasNull = bool == null;
+			return !wasNull && bool;
+		}
+		catch (ClassCastException cce) {
+			// Oracle doesn't support an actual boolean/Boolean datatype.
+			// Oracle8iDialect in ORM registers the BOOLEAN type as a 'number( 1, 0 )'
+			// so we need to convert the int to a boolean
+			try {
+				return getInt( columnIndex ) != 0;
+			}
+			catch (Exception e) {
+				// ignore second exception and throw first cce
+				throw cce;
+			}
+		}
 	}
 
 	@Override
