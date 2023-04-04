@@ -9,6 +9,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.dialect.CockroachDialect;
+import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.SQLServerDialect;
@@ -91,6 +92,11 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 				sql = sql.replace( ") values (", ") output inserted." + identifierColumnName + " values (" );
 			}
 			return sql;
+		}
+		if ( dialect instanceof DB2Dialect ) {
+			// ORM query: select id from new table ( insert into IntegerTypeEntity values ( ))
+			// Correct  : select id from new table ( insert into LongTypeEntity (id) values (default))
+			return insertStatementDetails.getSqlString().replace( " values ( ))", " (" + identifierColumnName + ") values (default))" );
 		}
 		return insertStatementDetails.getSqlString();
 	}
