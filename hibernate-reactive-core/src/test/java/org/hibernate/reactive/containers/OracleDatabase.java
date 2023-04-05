@@ -84,12 +84,15 @@ class OracleDatabase implements TestableDatabase {
 		}
 	}
 
-	public static final OracleContainer oracle = new OracleContainer( imageName( "gvenzl/oracle-xe", "21-slim-faststart" ) )
+	public static final OracleContainer oracle = new OracleContainer(
+				imageName( "gvenzl/oracle-free", "23.2.0-faststart" )
+					.asCompatibleSubstituteFor( "gvenzl/oracle-xe" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
-			.withLogConsumer( of -> System.out.println( of.getUtf8String() ) )
+			.withLogConsumer( of -> logContainerOutput( of.getUtf8String() ) )
 			.withReuse( true )
+			.withStartupAttempts( 1 )
 
 			// We need to limit the maximum amount of CPUs being used by the container;
 			// otherwise the hardcoded memory configuration of the DB might not be enough to successfully boot it.
@@ -97,6 +100,16 @@ class OracleDatabase implements TestableDatabase {
 			// I choose to limit it to "2 cpus": should be more than enough for any local testing needs,
 			// and keeps things simple.
 			.withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withCpuCount( 2L ) );
+	;
+
+	private static void logContainerOutput(String line) {
+		System.out.print( line );
+	}
+
+	//Start the container only - useful for testing and CLI
+	public static void main(String[] args) {
+		oracle.start();
+	}
 
 	@Override
 	public String getJdbcUrl() {
