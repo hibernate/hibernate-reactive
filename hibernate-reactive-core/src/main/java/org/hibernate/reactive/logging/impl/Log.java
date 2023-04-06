@@ -47,8 +47,8 @@ public interface Log extends BasicLogger {
 	void sqlClientUrl(String url);
 
 	@LogMessage(level = INFO)
-	@Message(id = 13, value = "Detected driver [%1$s]")
-	void detectedDriver(String driverName);
+	@Message(id = 13, value = "Detected driver [%1$s] %2$s")
+	void detectedDriver(String driverName, String checkmark);
 
 	@LogMessage(level = INFO)
 	@Message(id = 14, value = "Prepared statement cache disabled")

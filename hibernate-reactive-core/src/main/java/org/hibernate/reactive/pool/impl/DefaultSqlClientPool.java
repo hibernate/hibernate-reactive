@@ -7,6 +7,8 @@ package org.hibernate.reactive.pool.impl;
 
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
@@ -37,6 +39,7 @@ import io.vertx.sqlclient.SqlConnectOptions;
 import io.vertx.sqlclient.spi.Driver;
 
 import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
@@ -227,14 +230,27 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 */
 	private Driver findDriver(URI uri, ServiceConfigurationError originalError) {
 		String scheme = scheme( uri );
+		List<Driver> selected = new ArrayList<>();
 		for ( Driver d : ServiceLoader.load( Driver.class ) ) {
 			String driverName = d.getClass().getCanonicalName();
-			LOG.detectedDriver( driverName );
 			if ( matchesScheme( driverName, scheme ) ) {
-				return d;
+				LOG.detectedDriver( driverName, "✓" );
+				selected.add( d );
+			}
+			else {
+				LOG.detectedDriver( driverName, "" );
 			}
 		}
-		throw new ConfigurationException( "No suitable drivers found for URI scheme: " + scheme, originalError );
+		if ( selected.isEmpty() ) {
+			throw new ConfigurationException( "No suitable drivers found for URI scheme: " + scheme, originalError );
+		}
+		if ( selected.size() > 1 ) {
+			List<String> driverClasses = selected.stream()
+					.map( driver -> driver.getClass().getCanonicalName() )
+					.collect( toList() );
+			throw new ConfigurationException( "Multiple drivers found matching for URI scheme \"" + scheme + "\". Please, pick one: " + driverClasses, originalError );
+		}
+		return selected.get( 0 );
 	}
 
 	private String scheme(URI uri) {
