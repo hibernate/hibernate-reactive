@@ -234,11 +234,11 @@ public class DefaultSqlClientPool extends SqlClientPool
 		for ( Driver d : ServiceLoader.load( Driver.class ) ) {
 			String driverName = d.getClass().getCanonicalName();
 			if ( matchesScheme( driverName, scheme ) ) {
-				LOG.detectedDriver( driverName, "✓" );
+				LOG.selectedDriver( driverName );
 				selected.add( d );
 			}
 			else {
-				LOG.detectedDriver( driverName, " " );
+				LOG.detectedDriver( driverName );
 			}
 		}
 		if ( selected.isEmpty() ) {
