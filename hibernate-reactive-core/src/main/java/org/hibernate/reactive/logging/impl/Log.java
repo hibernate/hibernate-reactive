@@ -47,7 +47,7 @@ public interface Log extends BasicLogger {
 	void sqlClientUrl(String url);
 
 	@LogMessage(level = INFO)
-	@Message(id = 13, value = "Detected driver [%1$s] %2$s")
+	@Message(id = 13, value = "Detected driver %2$s[%1$s]")
 	void detectedDriver(String driverName, String checkmark);
 
 	@LogMessage(level = INFO)

@@ -238,7 +238,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 				selected.add( d );
 			}
 			else {
-				LOG.detectedDriver( driverName, "" );
+				LOG.detectedDriver( driverName, " " );
 			}
 		}
 		if ( selected.isEmpty() ) {
