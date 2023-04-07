@@ -12,6 +12,7 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -54,8 +55,9 @@ public class NativeParametersHandling implements StandardServiceInitiator<Parame
 		if ( realDialect instanceof PostgreSQLDialect ) {
 			return new PostgreSQLNativeParameterMarkers();
 		}
-		//TBD : Implementations for other DBs
-
+		if ( realDialect instanceof SQLServerDialect ) {
+			return new SqlServerNativeParameterMarkers();
+		}
 		return realDialect.getNativeParameterMarkerStrategy() == null
 				? ParameterMarkerStrategyStandard.INSTANCE
 				: realDialect.getNativeParameterMarkerStrategy();
@@ -70,6 +72,13 @@ public class NativeParametersHandling implements StandardServiceInitiator<Parame
 		@Override
 		public String createMarker(int position, JdbcType jdbcType) {
 			return "$" + position;
+		}
+	}
+
+	private static class SqlServerNativeParameterMarkers implements ParameterMarkerStrategy {
+		@Override
+		public String createMarker(int position, JdbcType jdbcType) {
+			return "@P" + position;
 		}
 	}
 
