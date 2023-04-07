@@ -27,7 +27,6 @@ import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.function.Function;
@@ -291,38 +290,18 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel) {
-		Object rawValue = row.getValue( columnLabel );
-		return ( wasNull = rawValue == null ) ? null : Timestamp.valueOf( toLocalDateTime( rawValue ) );
+		LocalDateTime rawValue = row.getLocalDateTime( columnLabel );
+		return ( wasNull = rawValue == null ) ? null : Timestamp.valueOf( rawValue );
 	}
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel, Calendar cal) {
-		Object rawValue = row.getValue( columnLabel );
-		return ( wasNull = rawValue == null ) ? null : Timestamp.from( toOffsetDateTime( rawValue, cal ).toInstant() );
+		LocalDateTime localDateTime = row.getLocalDateTime( columnLabel );
+		return ( wasNull = localDateTime == null ) ? null : toTimestamp( localDateTime, cal );
 	}
 
-	private static LocalDateTime toLocalDateTime(Object rawValue) {
-		if ( rawValue instanceof OffsetDateTime ) {
-			return LocalDateTime.from( (OffsetDateTime) rawValue );
-		}
-		else if ( rawValue instanceof LocalDateTime ) {
-			return (LocalDateTime) rawValue;
-		}
-		else {
-			throw new IllegalArgumentException( "Unexpected type: " + rawValue.getClass() );
-		}
-	}
-
-	private static OffsetDateTime toOffsetDateTime(Object rawValue, Calendar cal) {
-		if ( rawValue instanceof OffsetDateTime ) {
-			return (OffsetDateTime) rawValue;
-		}
-		else if ( rawValue instanceof LocalDateTime ) {
-			return ( (LocalDateTime) rawValue ).atZone( cal.getTimeZone().toZoneId() ).toOffsetDateTime();
-		}
-		else {
-			throw new IllegalArgumentException( "Unexpected type: " + rawValue.getClass() );
-		}
+	private static Timestamp toTimestamp(LocalDateTime localDateTime, Calendar cal) {
+		return Timestamp.from( localDateTime.atZone( cal.getTimeZone().toZoneId() ).toInstant() );
 	}
 
 	@Override
@@ -800,8 +779,8 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex, Calendar cal) {
-		Object rawValue = row.getValue( columnIndex - 1 );
-		return ( wasNull = rawValue == null ) ? null : Timestamp.from( toOffsetDateTime( rawValue, cal ).toInstant() );
+		LocalDateTime localDateTime = row.getLocalDateTime( columnIndex - 1 );
+		return ( wasNull = localDateTime == null ) ? null : toTimestamp( localDateTime, cal );
 	}
 
 	@Override
