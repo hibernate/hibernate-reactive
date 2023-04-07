@@ -198,13 +198,13 @@ podman exec -it HibernateTestingMSSQL /opt/mssql-tools/bin/sqlcmd -S localhost -
 
 [sqlcmd-cli]:https://docs.microsoft.com/en-us/sql/tools/sqlcmd-utility?view=sql-server-ver15
 
-## Oracle
+## Oracle Database
 
-Use the following command to start a [Oracle XE][oracle] database with the required credentials
-and schema to run the tests:
+Use the following command to start an [Oracle Database 23c Free—Developer Release][oracle] with the required
+credentials and schema to run the tests:
 
-[oracle]:https://www.oracle.com/database/technologies/appdev/xe.html
+[oracle]:https://www.oracle.com/database/free/
 
 ```
-podman run --rm --name HibernateTestingOracle -e ORACLE_PASSWORD=hreact -e APP_USER=hreact -e APP_USER_PASSWORD=hreact -e ORACLE_DATABASE=hreact -p 1521:1521 docker.io/gvenzl/oracle-free:23.2.0-faststart
+podman run --rm --name HibernateTestingOracle -e ORACLE_PASSWORD=hreact -e APP_USER=hreact -e APP_USER_PASSWORD=hreact -e ORACLE_DATABASE=hreact -p 1521:1521 docker.io/gvenzl/oracle-free:23-slim-faststart
 ```
