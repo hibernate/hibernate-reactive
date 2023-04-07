@@ -12,7 +12,7 @@ import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MySQLDialect;
-import org.hibernate.dialect.Oracle12cDialect;
+import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
@@ -99,7 +99,7 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 			// Correct  : select id from new table ( insert into LongTypeEntity (id) values (default))
 			return insertStatementDetails.getSqlString().replace( " values ( ))", " (" + identifierColumnName + ") values (default))" );
 		}
-		if( dialect instanceof Oracle12cDialect ) {
+		if ( dialect instanceof OracleDialect ) {
 			final String valuesStr = " values ( )";
 			String sql = insertStatementDetails.getSqlString();
 			int index = sql.lastIndexOf( sqlEnd );

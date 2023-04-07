@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 
+import io.vertx.sqlclient.spi.DatabaseMetadata;
+
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -41,6 +43,11 @@ public class BatchingConnection implements ReactiveConnection {
 	public BatchingConnection(ReactiveConnection delegate, int batchSize) {
 		this.delegate = delegate;
 		this.batchSize = batchSize;
+	}
+
+	@Override
+	public DatabaseMetadata getDatabaseMetadata() {
+		return delegate.getDatabaseMetadata();
 	}
 
 	@Override

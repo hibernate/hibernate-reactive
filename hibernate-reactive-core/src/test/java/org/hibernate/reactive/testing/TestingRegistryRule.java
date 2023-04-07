@@ -18,6 +18,7 @@ import org.hibernate.engine.jdbc.env.spi.LobCreatorBuilder;
 import org.hibernate.engine.jdbc.env.spi.NameQualifierSupport;
 import org.hibernate.engine.jdbc.env.spi.QualifiedObjectNameFormatter;
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
+import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.reactive.vertx.impl.ProvidedVertxInstance;
 import org.hibernate.service.Service;
@@ -63,6 +64,7 @@ public class TestingRegistryRule extends ExternalResource {
 		private final Map<Class<?>, Object> services = new HashMap<>();
 
 		public Registry(Vertx vertx) {
+			add( SqlStatementLogger.class, new SqlStatementLogger() );
 			add( VertxInstance.class, new ProvidedVertxInstance( vertx ) );
 			add( JdbcEnvironment.class, new JdbcEnvironment() {
 
@@ -158,7 +160,7 @@ public class TestingRegistryRule extends ExternalResource {
 
 		@Override
 		public <T extends Service> T fromRegistryOrChildren(Class<T> serviceRole) {
-			throw new UnsupportedOperationException("I don't think we need this for our tests");
+			throw new UnsupportedOperationException( "I don't think we need this for our tests" );
 		}
 	}
 }
