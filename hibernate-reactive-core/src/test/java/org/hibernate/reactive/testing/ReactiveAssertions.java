@@ -5,12 +5,18 @@
  */
 package org.hibernate.reactive.testing;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import io.smallrye.mutiny.Uni;
+import org.assertj.core.api.AbstractInstantAssert;
+
+import static java.time.temporal.ChronoUnit.MILLIS;
+import static java.util.Comparator.comparing;
+import static org.assertj.core.api.Assertions.assertThat;
+
 
 /**
  * Utility to handle verifying the information about an expected {@link Throwable}
@@ -30,6 +36,19 @@ public class ReactiveAssertions {
 					assertThat( e ).isInstanceOf( expectedException );
 					return (T) e;
 				} );
+	}
+
+	public static AbstractInstantAssert<?> assertWithTruncationThat(Instant instant) {
+		return javaVersion() < 15
+				? assertThat( instant )
+				// Since java 15, the precision of the equals has changed.
+				// It won't work unless we truncate the value to the millis
+				: assertThat( instant ).usingComparator( comparing( o -> o.truncatedTo( MILLIS ) ) );
+	}
+
+	private static Integer javaVersion() {
+		String version = System.getProperty( "java.version" );
+		return Integer.valueOf( version.substring( 0, 2 ) );
 	}
 
 	/**
