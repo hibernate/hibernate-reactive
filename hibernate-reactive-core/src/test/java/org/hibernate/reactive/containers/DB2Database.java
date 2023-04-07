@@ -37,13 +37,13 @@ class DB2Database implements TestableDatabase {
 	public static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
 
 	static {{
-		expectedDBTypeForClass.put( boolean.class, "SMALLINT" );
-		expectedDBTypeForClass.put( Boolean.class, "SMALLINT" );
+		expectedDBTypeForClass.put( boolean.class, "BOOLEAN" );
+		expectedDBTypeForClass.put( Boolean.class, "BOOLEAN" );
 
 		expectedDBTypeForClass.put( NumericBooleanConverter.class, "INTEGER" );
 		expectedDBTypeForClass.put( YesNoConverter.class, "CHARACTER" );
 		expectedDBTypeForClass.put( TrueFalseConverter.class, "CHARACTER" );
-		expectedDBTypeForClass.put( byte[].class, "VARCHAR" );
+		expectedDBTypeForClass.put( byte[].class, "VARBINARY" );
 		// expectedDBTypeForClass.put( TextType.class, "VARCHAR" );
 
 		expectedDBTypeForClass.put( int.class, "INTEGER" );
@@ -66,7 +66,7 @@ class DB2Database implements TestableDatabase {
 		expectedDBTypeForClass.put( LocalDateTime.class, "TIMESTAMP" );
 		expectedDBTypeForClass.put( BigInteger.class, "DECIMAL" );
 		expectedDBTypeForClass.put( BigDecimal.class, "DECIMAL" );
-		expectedDBTypeForClass.put( Serializable.class, "VARCHAR" );
+		expectedDBTypeForClass.put( Serializable.class, "VARBINARY" );
 		expectedDBTypeForClass.put( UUID.class, "VARCHAR" );
 		expectedDBTypeForClass.put( Instant.class, "TIMESTAMP" );
 		expectedDBTypeForClass.put( Duration.class, "BIGINT" );
