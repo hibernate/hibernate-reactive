@@ -16,7 +16,9 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -350,6 +352,13 @@ public abstract class BaseReactiveTest {
 
 	protected static Stage.SessionFactory getSessionFactory() {
 		return factoryManager.getHibernateSessionFactory().unwrap( Stage.SessionFactory.class );
+	}
+
+	protected static Dialect getDialect() {
+		return factoryManager.getHibernateSessionFactory()
+				.unwrap( SessionFactoryImplementor.class )
+				.getJdbcServices()
+				.getDialect();
 	}
 
 	/**
