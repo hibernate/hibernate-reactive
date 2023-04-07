@@ -74,6 +74,9 @@ public interface Log extends BasicLogger {
 	@Message(id = 18, value = "Instantiating reactive pool: %1$s")
 	void instantiatingReactivePool(@FormatWith(ClassFormatter.class) Class<?> implClass);
 
+	@Message(id = 19, value = "database username not specified (set the property 'jakarta.persistence.jdbc.user', or include it as a parameter in the connection URL)")
+	HibernateException databaseUsernameNotSpecified();
+
 	@LogMessage(level = WARN)
 	@Message(id = 21, value = "DDL command failed [%1$s]")
 	void ddlCommandFailed(String message);
@@ -247,6 +250,9 @@ public interface Log extends BasicLogger {
 
 	@Message(id = 78, value = "Unable to bind parameters for post-insert id selection query: %1$s")
 	HibernateException bindParametersForPostInsertIdSelectQueryError(String selectSQL, @Cause Throwable e);
+
+	@Message(id = 79, value = "The configuration property '%1$s' was not provided, or is in invalid format. This is required when using the default DefaultSqlClientPool: either provide the configuration setting or integrate with a different SqlClientPool implementation")
+	HibernateException blankConnectionString(String property);
 
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)

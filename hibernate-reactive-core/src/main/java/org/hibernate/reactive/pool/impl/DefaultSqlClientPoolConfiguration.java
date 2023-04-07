@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.hibernate.HibernateError;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.provider.Settings;
@@ -185,8 +184,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 		}
 
 		if ( username == null ) {
-			throw new HibernateError(
-					"database username not specified (set the property 'jakarta.persistence.jdbc.user', or include it as a parameter in the connection URL)" );
+			throw LOG.databaseUsernameNotSpecified();
 		}
 
 		SqlConnectOptions connectOptions = new SqlConnectOptions()

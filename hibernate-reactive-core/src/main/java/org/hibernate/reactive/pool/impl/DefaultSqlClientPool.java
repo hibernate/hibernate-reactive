@@ -14,10 +14,6 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.HibernateError;
-import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
-import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.internal.util.config.ConfigurationException;
 import org.hibernate.internal.util.config.ConfigurationHelper;
@@ -115,7 +111,6 @@ public class DefaultSqlClientPool extends SqlClientPool
 	private SqlStatementLogger sqlStatementLogger;
 	private URI uri;
 	private ServiceRegistryImplementor serviceRegistry;
-	private Parameters parameters;
 
 	//Asynchronous shutdown promise: we can't return it from #close as we implement a
 	//blocking interface.
@@ -126,9 +121,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 	@Override
 	public void injectServices(ServiceRegistryImplementor serviceRegistry) {
 		this.serviceRegistry = serviceRegistry;
-		this.sqlStatementLogger = serviceRegistry.getService(JdbcServices.class).getSqlStatementLogger();
-		final Dialect dialect = serviceRegistry.getService( JdbcEnvironment.class ).getDialect();
-		parameters = Parameters.instance( dialect );
+		this.sqlStatementLogger = serviceRegistry.getService( SqlStatementLogger.class );
 	}
 
 	@Override
@@ -154,11 +147,6 @@ public class DefaultSqlClientPool extends SqlClientPool
 	}
 
 	@Override
-	protected Parameters getParameters() {
-		return parameters;
-	}
-
-	@Override
 	protected SqlStatementLogger getSqlStatementLogger() {
 		return sqlStatementLogger;
 	}
@@ -174,8 +162,8 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 * @return the new {@link Pool}
 	 */
 	protected Pool createPool(URI uri) {
-		SqlClientPoolConfiguration configuration = serviceRegistry.getService(SqlClientPoolConfiguration.class);
-		VertxInstance vertx = serviceRegistry.getService(VertxInstance.class);
+		SqlClientPoolConfiguration configuration = serviceRegistry.getService( SqlClientPoolConfiguration.class );
+		VertxInstance vertx = serviceRegistry.getService( VertxInstance.class );
 		return createPool( uri, configuration.connectOptions( uri ), configuration.poolOptions(), vertx.getVertx() );
 	}
 
@@ -273,10 +261,8 @@ public class DefaultSqlClientPool extends SqlClientPool
 	}
 
 	public static URI parse(String url) {
-
-		if ( url == null || url.trim().isEmpty() ) {
-			throw new HibernateError( "The configuration property '" + Settings.URL + "' was not provided, or is in invalid format. This is required when using the default DefaultSqlClientPool: " +
-											  "either provide the configuration setting or integrate with a different SqlClientPool implementation" );
+		if ( url == null || url.isBlank() ) {
+			throw LOG.blankConnectionString( Settings.URL );
 		}
 
 		if ( url.startsWith( "jdbc:" ) ) {

@@ -12,6 +12,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.Incubating;
+
+import io.vertx.sqlclient.spi.DatabaseMetadata;
+
 /**
  * Abstracts over reactive database connections, defining
  * operations that allow queries to be executed asynchronously
@@ -33,6 +37,8 @@ public interface ReactiveConnection {
 	interface Expectation {
 		void verifyOutcome(int rowCount, int batchPosition, String sql);
 	}
+
+	DatabaseMetadata getDatabaseMetadata();
 
 	CompletionStage<Void> execute(String sql);
 

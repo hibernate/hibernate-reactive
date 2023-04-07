@@ -19,6 +19,7 @@ import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.dialect.internal.DialectFactoryInitiator;
 import org.hibernate.engine.jdbc.dialect.internal.DialectResolverInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
+import org.hibernate.engine.jdbc.internal.SqlStatementLoggerInitiator;
 import org.hibernate.engine.jndi.internal.JndiServiceInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
@@ -156,6 +157,9 @@ public final class ReactiveServiceInitiators {
 
 		// Custom for Hibernate Reactive: NativeParametersHandling
 		serviceInitiators.add( NativeParametersHandling.INSTANCE );
+
+		// [standard] SqlStatementLogger
+		serviceInitiators.add( SqlStatementLoggerInitiator.INSTANCE );
 
 		// --- end of services defined by Hibernate ORM
 

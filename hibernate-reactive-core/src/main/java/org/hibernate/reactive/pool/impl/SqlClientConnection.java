@@ -31,11 +31,11 @@ import io.vertx.sqlclient.PropertyKind;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowIterator;
 import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.SqlClient;
 import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.SqlResult;
 import io.vertx.sqlclient.Transaction;
 import io.vertx.sqlclient.Tuple;
+import io.vertx.sqlclient.spi.DatabaseMetadata;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -56,16 +56,17 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	private final Pool pool;
 	private final SqlConnection connection;
-	private final Parameters sqlCleaner;
 	private Transaction transaction;
 
-	SqlClientConnection(SqlConnection connection, Pool pool, SqlStatementLogger sqlStatementLogger,
-						Parameters parameters) {
+	SqlClientConnection(SqlConnection connection, Pool pool, SqlStatementLogger sqlStatementLogger) {
 		this.pool = pool;
 		this.sqlStatementLogger = sqlStatementLogger;
 		this.connection = connection;
-		this.sqlCleaner = parameters;
 		LOG.tracef( "Connection created: %s", connection );
+	}
+
+	public DatabaseMetadata getDatabaseMetadata() {
+		return client().databaseMetadata();
 	}
 
 	@Override
@@ -86,20 +87,18 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> update(String sql, Object[] paramValues, boolean allowBatching, Expectation expectation) {
-		final String readySql = sqlCleaner.process( sql );
-		return update( readySql, paramValues )
-				.thenAccept( rowCount -> expectation.verifyOutcome( rowCount,-1, readySql ) );
+		return update( sql, paramValues )
+				.thenAccept( rowCount -> expectation.verifyOutcome( rowCount, -1, sql ) );
 	}
 
 	@Override
 	public <T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
-		final String readySql = sqlCleaner.process( sql );
 		translateNulls( paramValues );
-		return preparedQuery( readySql, Tuple.wrap( paramValues ) )
-				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) )
+		return preparedQuery( sql, Tuple.wrap( paramValues ) )
+				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) )
 				.thenApply( rowSet -> {
-					for (Row row: rowSet) {
-						return row.get(idClass, 0);
+					for ( Row row : rowSet ) {
+						return row.get( idClass, 0 );
 					}
 					return null;
 				} );
@@ -139,10 +138,9 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> executeUnprepared(String sql) {
-		final String readySql = sqlCleaner.process( sql );
-		feedback( readySql );
-		return client().query( readySql ).execute().toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) )
+		feedback( sql );
+		return client().query( sql ).execute().toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) )
 				.thenCompose( CompletionStages::voidFuture );
 	}
 
@@ -167,13 +165,13 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	public CompletionStage<Integer> update(String sql, Tuple parameters) {
-		return preparedQuery( sql, parameters ).thenApply(SqlResult::rowCount);
+		return preparedQuery( sql, parameters ).thenApply( SqlResult::rowCount );
 	}
 
 	public CompletionStage<int[]> updateBatch(String sql, List<Tuple> parametersBatch) {
-		return preparedQueryBatch( sql, parametersBatch ).thenApply(result -> {
+		return preparedQueryBatch( sql, parametersBatch ).thenApply( result -> {
 
-			final int[] updateCounts = new int[ parametersBatch.size() ];
+			final int[] updateCounts = new int[parametersBatch.size()];
 
 			int i = 0;
 			RowSet<Row> resultNext = result;
@@ -198,7 +196,7 @@ public class SqlClientConnection implements ReactiveConnection {
 			}
 
 			return updateCounts;
-		});
+		} );
 	}
 
 	@Override
@@ -222,58 +220,51 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters) {
-		final String readySql = sqlCleaner.process( sql );
-		feedback( readySql );
-		return client().preparedQuery( readySql ).execute( parameters ).toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) );
+		feedback( sql );
+		return client().preparedQuery( sql ).execute( parameters ).toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters, PrepareOptions options) {
-		final String readySql = sqlCleaner.process( sql );
-		feedback( readySql );
-		return client().preparedQuery( readySql, options ).execute( parameters ).toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) );
+		feedback( sql );
+		return client().preparedQuery( sql, options ).execute( parameters ).toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQueryBatch(String sql, List<Tuple> parameters) {
-		final String readySql = sqlCleaner.process( sql );
-		feedback( readySql );
-		return client().preparedQuery( readySql ).executeBatch( parameters ).toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) );
+		feedback( sql );
+		return client().preparedQuery( sql ).executeBatch( parameters ).toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql) {
-		final String readySql = sqlCleaner.process( sql );
-		feedback( readySql );
-		return client().preparedQuery( readySql ).execute().toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) );
+		feedback( sql );
+		return client().preparedQuery( sql ).execute().toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQueryOutsideTransaction(String sql) {
-		final String readySql = sqlCleaner.process( sql );
-		feedback( readySql );
-		return pool.preparedQuery( readySql ).execute().toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) );
+		feedback( sql );
+		return pool.preparedQuery( sql ).execute().toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQueryOutsideTransaction(String sql, Tuple parameters) {
-		final String readySql = sqlCleaner.process( sql );
-		feedback( readySql );
-		return pool.preparedQuery( readySql ).execute( parameters ).toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, readySql, throwable ) );
+		feedback( sql );
+		return pool.preparedQuery( sql ).execute( parameters ).toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
 	}
 
 	private void feedback(String sql) {
 		Objects.requireNonNull( sql, "SQL query cannot be null" );
 		// DDL already gets formatted by the client, so don't reformat it
-		FormatStyle formatStyle =
-				sqlStatementLogger.isFormat() && !sql.contains( System.lineSeparator() )
-						? FormatStyle.BASIC
-						: FormatStyle.NONE;
+		FormatStyle formatStyle = sqlStatementLogger.isFormat() && !sql.contains( System.lineSeparator() )
+				? FormatStyle.BASIC
+				: FormatStyle.NONE;
 		sqlStatementLogger.logStatement( sql, formatStyle.getFormatter() );
 	}
 
-	private SqlClient client() {
+	private SqlConnection client() {
 		return connection;
 	}
 
@@ -282,7 +273,7 @@ public class SqlClientConnection implements ReactiveConnection {
 		return connection.begin()
 				.onSuccess( tx -> LOG.tracef( "Transaction started: %s", tx ) )
 				.toCompletionStage()
-				.thenAccept( tx -> transaction = tx );
+				.thenAccept( this::setTransaction );
 	}
 
 	@Override
@@ -290,7 +281,7 @@ public class SqlClientConnection implements ReactiveConnection {
 		return transaction.commit()
 				.onSuccess( v -> LOG.tracef( "Transaction committed: %s", transaction ) )
 				.toCompletionStage()
-				.whenComplete( (v, x) -> transaction = null );
+				.whenComplete( this::clearTransaction );
 	}
 
 	@Override
@@ -298,7 +289,7 @@ public class SqlClientConnection implements ReactiveConnection {
 		return transaction.rollback()
 				.onSuccess( v -> LOG.tracef( "Transaction rolled back: %s", transaction ) )
 				.toCompletionStage()
-				.whenComplete( (v, x) -> transaction = null );
+				.whenComplete( this::clearTransaction );
 	}
 
 	@Override
@@ -325,6 +316,14 @@ public class SqlClientConnection implements ReactiveConnection {
 			return oracleKeys.get( idClass, idColumnName );
 		}
 		return null;
+	}
+
+	private void setTransaction(Transaction tx) {
+		transaction = tx;
+	}
+
+	private void clearTransaction(Void v, Throwable x) {
+		transaction = null;
 	}
 
 	private static class RowSetResult implements Result {
@@ -361,7 +360,7 @@ public class SqlClientConnection implements ReactiveConnection {
 	public ReactiveConnection withBatchSize(int batchSize) {
 		return batchSize <= 1
 				? this
-				: new BatchingConnection(this, batchSize);
+				: new BatchingConnection( this, batchSize );
 	}
 
 	@Override
@@ -370,10 +369,10 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	private static void translateNulls(Object[] paramValues) {
-		for (int i = 0; i < paramValues.length; i++) {
+		for ( int i = 0; i < paramValues.length; i++ ) {
 			Object arg = paramValues[i];
-			if (arg instanceof JdbcNull) {
-				paramValues[i] = ((JdbcNull) arg).toNullValue();
+			if ( arg instanceof JdbcNull ) {
+				paramValues[i] = ( (JdbcNull) arg ).toNullValue();
 			}
 		}
 	}
