@@ -12,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.hibernate.HibernateError;
+import org.hibernate.HibernateException;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 
@@ -22,10 +22,10 @@ import org.junit.Test;
 import io.vertx.sqlclient.SqlConnectOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.hibernate.cfg.AvailableSettings.URL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.createJdbcUrl;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
-import static org.junit.Assert.assertThrows;
 
 /**
  * Test the correct creation of the {@link SqlConnectOptions}
@@ -74,21 +74,20 @@ public class JdbcUrlParserTest {
 
 	@Test
 	public void exceptionWhenNull() {
-		final HibernateError error = assertThrows( HibernateError.class, () -> {
-			DefaultSqlClientPool.parse( null );
-			fail( "Null should be an illegal argument" );
-		} );
-		assertThat( error.getMessage() ).contains( "was not provided" );
+		assertThatExceptionOfType( HibernateException.class )
+				.isThrownBy( () -> DefaultSqlClientPool.parse( null ) )
+				.withMessageStartingWith( "HR000079: The configuration property '" + URL + "' was not provided" );
 	}
 
 	@Test
 	public void missingUser() {
-		final HibernateError error = assertThrows( HibernateError.class, () -> {
-			String url = createJdbcUrl( "localhost", dbType().getDefaultPort(), DEFAULT_DB, Map.of() );
-			URI uri = DefaultSqlClientPool.parse( url );
-			new DefaultSqlClientPoolConfiguration().connectOptions( uri );
-		} );
-		assertThat( error.getMessage() ).contains( "database username not specified" );
+		assertThatExceptionOfType( HibernateException.class )
+				.isThrownBy( () -> {
+					String url = createJdbcUrl( "localhost", dbType().getDefaultPort(), DEFAULT_DB, Map.of() );
+					URI uri = DefaultSqlClientPool.parse( url );
+					new DefaultSqlClientPoolConfiguration().connectOptions( uri );
+				} )
+				.withMessageStartingWith( "HR000019: database username not specified" );
 	}
 
 	@Test

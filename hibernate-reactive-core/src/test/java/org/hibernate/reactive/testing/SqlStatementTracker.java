@@ -14,8 +14,6 @@ import java.util.function.Predicate;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.engine.jdbc.internal.Formatter;
-import org.hibernate.engine.jdbc.internal.JdbcServicesImpl;
-import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
@@ -88,7 +86,7 @@ public class SqlStatementTracker extends SqlStatementLogger {
 		builder.addInitiator( initiator );
 	}
 
-	private static class Initiator implements StandardServiceInitiator<JdbcServices> {
+	private static class Initiator implements StandardServiceInitiator<SqlStatementLogger> {
 		private final SqlStatementTracker sqlStatementTracker;
 
 		public Initiator(SqlStatementTracker sqlStatementTracker) {
@@ -96,26 +94,13 @@ public class SqlStatementTracker extends SqlStatementLogger {
 		}
 
 		@Override
-		public JdbcServices initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-			return new JdbcServicesLogger( sqlStatementTracker );
+		public SqlStatementLogger initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
+			return sqlStatementTracker;
 		}
 
 		@Override
-		public Class<JdbcServices> getServiceInitiated() {
-			return JdbcServices.class;
-		}
-	}
-
-	private static class JdbcServicesLogger extends JdbcServicesImpl {
-		private final SqlStatementTracker tracker;
-
-		public JdbcServicesLogger(SqlStatementTracker tracker) {
-			this.tracker = tracker;
-		}
-
-		@Override
-		public SqlStatementLogger getSqlStatementLogger() {
-			return tracker;
+		public Class<SqlStatementLogger> getServiceInitiated() {
+			return SqlStatementLogger.class;
 		}
 	}
 }
