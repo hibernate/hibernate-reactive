@@ -17,13 +17,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import java.util.function.Function;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
@@ -31,21 +26,16 @@ import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 
-
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class UTCTest extends BaseReactiveTest {
 
-	@Override
-	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
-		return getSessionFactory()
-				.withTransaction( s -> loop( entities, entityClass -> s
-						.createQuery( "from ThingInUTC", entityClass )
-						.getResultList()
-						.thenCompose( list -> loop( list, entity -> s.remove( entity ) ) ) ) );
-	}
-
+	// Keeps tract of the values we have saved
 	final Thing thing = new Thing();
 
 	@Override
@@ -62,64 +52,42 @@ public class UTCTest extends BaseReactiveTest {
 
 	@Test
 	public void testDate(TestContext context) {
-		thing.date = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) )
-				.getTime();
-
+		thing.date = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ).getTime();
 		testField(
 				context,
 				"date",
-				thing::getDate,
-				entity -> context.assertEquals( thing.date, entity.date )
+				Thing::getDate,
+				entity -> assertThat( entity.getDate().toInstant() ).isEqualTo( thing.getDate().toInstant() )
 		);
 	}
 
 	@Test
 	public void testCalendar(TestContext context) {
 		thing.calendar = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
-
 		testField(
 				context,
 				"calendar",
-				thing::getCalendar,
-				entity -> context.assertEquals( thing.calendar.toInstant(), entity.calendar.toInstant() )
+				Thing::getCalendar,
+				entity -> assertThat( entity.getCalendar().toInstant() ).isEqualTo( thing.getCalendar().toInstant() )
 		);
 	}
 
 	@Test
 	public void testLocalDate(TestContext context) {
 		thing.localDate = LocalDate.now();
-
-		testField(
-				context,
-				"localDate",
-				thing::getLocalDate,
-				entity -> context.assertEquals( thing.localDate, entity.localDate )
-		);
+		testField( context, "localDate", Thing::getLocalDate );
 	}
 
 	@Test
 	public void testLocalTime(TestContext context) {
 		thing.localTime = LocalTime.MAX.truncatedTo( ChronoUnit.SECONDS );
-
-		testField(
-				context,
-				"localTime",
-				thing::getLocalTime,
-				entity -> context.assertEquals( thing.localTime, entity.localTime )
-		);
+		testField( context, "localTime", Thing::getLocalTime );
 	}
 
 	@Test
 	public void testLocalDateTime(TestContext context) {
-		thing.localDateTime = LocalDateTime.now()
-				.truncatedTo( ChronoUnit.MILLIS );
-
-		testField(
-				context,
-				"localDateTime",
-				thing::getLocalDateTime,
-				entity -> context.assertEquals( thing.localDateTime, entity.localDateTime )
-		);
+		thing.localDateTime = LocalDateTime.now().truncatedTo( ChronoUnit.MILLIS );
+		testField( context, "localDateTime", Thing::getLocalDateTime );
 	}
 
 	@Test
@@ -131,46 +99,53 @@ public class UTCTest extends BaseReactiveTest {
 		testField(
 				context,
 				"offsetDateTime",
-				thing::getOffsetDateTime,
-				entity -> {
-					context.assertEquals( thing.offsetDateTime,
-							entity.offsetDateTime.toInstant().atZone( zoneOffset ).toOffsetDateTime() );
-				}
+				Thing::getOffsetDateTime,
+				// The value is stored as UTC, so we need to convert it back the original time zone
+				entity -> assertThat( entity.getOffsetDateTime().atZoneSameInstant( zoneOffset ).toOffsetDateTime() )
+						.isEqualTo( thing.offsetDateTime )
 		);
 	}
 
 	@Test
 	public void testZonedDateTime(TestContext context) {
 		final ZoneOffset zoneOffset = ZoneOffset.ofHours( 7 );
-		thing.zonedDateTime = ZonedDateTime.now( zoneOffset );
-
+		thing.zonedDateTime = ZonedDateTime.now( zoneOffset ).truncatedTo( ChronoUnit.MILLIS );
 		testField(
 				context,
 				"zonedDateTime",
-				thing::getZonedDateTime,
-				// The equals fails on JDK 15+ without the truncated
-				entity -> context.assertEquals(
-						thing.zonedDateTime.truncatedTo( ChronoUnit.MILLIS ),
-						entity.zonedDateTime.withZoneSameInstant( zoneOffset ).truncatedTo( ChronoUnit.MILLIS ) )
+				Thing::getZonedDateTime,
+				// The value is stored as UTC, so we need to convert it back the original time zone
+				entity -> assertThat( entity.getZonedDateTime().withZoneSameInstant( zoneOffset ) ).isEqualTo( thing.zonedDateTime )
 		);
 	}
 
-	private void testField(TestContext context, String columnName, Supplier<?> fieldValue, Consumer<Thing> assertion) {
+	private void testField(TestContext context, String columnName, Function<Thing, Object> getFieldValue) {
+		testField( context, columnName, getFieldValue, entity -> assertThat( getFieldValue.apply( entity ) ).isEqualTo( getFieldValue.apply( thing ) ) );
+	}
+
+	private void testField(TestContext context, String columnName, Function<Thing, ?> fieldValue, Consumer<Thing> assertion) {
 		test( context, getMutinySessionFactory()
 				.withTransaction( session -> session.persist( thing ) )
 				.chain( () -> getMutinySessionFactory()
 						.withSession( session -> session.find( Thing.class, thing.id ) )
 						.invoke( t -> {
-							context.assertNotNull( t );
+							assertThat( t )
+									.as( "Entity not found when using id " + thing.id )
+									.isNotNull();
 							assertion.accept( t );
 						} )
 				)
 				.chain( () -> getMutinySessionFactory()
 						.withSession( session -> session
 								.createQuery( "from ThingInUTC where " + columnName + "=:dt", Thing.class )
-								.setParameter( "dt", fieldValue.get() )
-								.getSingleResult() )
-						.invoke( assertion )
+								.setParameter( "dt", fieldValue.apply( thing ) )
+								.getSingleResultOrNull() )
+						.invoke( result -> {
+							assertThat( result )
+									.as( "No result when querying using filter: " + columnName + " = " + fieldValue.apply( thing ) )
+									.isNotNull();
+							assertion.accept( result );
+						} )
 				)
 		);
 	}
