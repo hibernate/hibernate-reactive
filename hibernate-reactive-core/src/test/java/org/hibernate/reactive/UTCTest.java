@@ -17,13 +17,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
@@ -31,20 +26,14 @@ import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 
-
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class UTCTest extends BaseReactiveTest {
-
-	@Override
-	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
-		return getSessionFactory()
-				.withTransaction( s -> loop( entities, entityClass -> s
-						.createQuery( "from ThingInUTC", entityClass )
-						.getResultList()
-						.thenCompose( list -> loop( list, entity -> s.remove( entity ) ) ) ) );
-	}
 
 	final Thing thing = new Thing();
 
@@ -132,26 +121,26 @@ public class UTCTest extends BaseReactiveTest {
 				context,
 				"offsetDateTime",
 				thing::getOffsetDateTime,
-				entity -> {
-					context.assertEquals( thing.offsetDateTime,
-							entity.offsetDateTime.toInstant().atZone( zoneOffset ).toOffsetDateTime() );
-				}
+				entity -> context.assertEquals(
+						thing.offsetDateTime,
+						entity.offsetDateTime.toInstant().atZone( zoneOffset ).toOffsetDateTime() )
 		);
 	}
 
 	@Test
 	public void testZonedDateTime(TestContext context) {
 		final ZoneOffset zoneOffset = ZoneOffset.ofHours( 7 );
-		thing.zonedDateTime = ZonedDateTime.now( zoneOffset );
+		// The equals fails on JDK 15+ without the truncated
+		thing.zonedDateTime = ZonedDateTime.now( zoneOffset ).truncatedTo( ChronoUnit.MILLIS );
 
 		testField(
 				context,
 				"zonedDateTime",
 				thing::getZonedDateTime,
-				// The equals fails on JDK 15+ without the truncated
 				entity -> context.assertEquals(
-						thing.zonedDateTime.truncatedTo( ChronoUnit.MILLIS ),
-						entity.zonedDateTime.withZoneSameInstant( zoneOffset ).truncatedTo( ChronoUnit.MILLIS ) )
+						thing.zonedDateTime,
+						// We don't save the timezone or the offset on the database
+						entity.zonedDateTime.toInstant().atZone( zoneOffset ) )
 		);
 	}
 
@@ -161,7 +150,9 @@ public class UTCTest extends BaseReactiveTest {
 				.chain( () -> getMutinySessionFactory()
 						.withSession( session -> session.find( Thing.class, thing.id ) )
 						.invoke( t -> {
-							context.assertNotNull( t );
+							assertThat( t )
+									.as( "Entity not found when using id " + thing.id )
+									.isNotNull();
 							assertion.accept( t );
 						} )
 				)
@@ -169,8 +160,13 @@ public class UTCTest extends BaseReactiveTest {
 						.withSession( session -> session
 								.createQuery( "from ThingInUTC where " + columnName + "=:dt", Thing.class )
 								.setParameter( "dt", fieldValue.get() )
-								.getSingleResult() )
-						.invoke( assertion )
+								.getSingleResultOrNull() )
+						.invoke( result -> {
+							assertThat( result )
+									.as( "No result when querying using filter: " + columnName + " = " + fieldValue.get() )
+									.isNotNull();
+							assertion.accept( result );
+						} )
 				)
 		);
 	}
