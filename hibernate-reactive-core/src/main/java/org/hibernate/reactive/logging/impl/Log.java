@@ -43,11 +43,11 @@ public interface Log extends BasicLogger {
 	void vertxInstanceStopped();
 
 	@LogMessage(level = INFO)
-	@Message(id = 11, value = "SQL Client URL [%1$s]")
+	@Message(id = 11, value = "SQL Client URL [\u001b[34m%1$s\u001b[0m]")
 	void sqlClientUrl(String url);
 
 	@LogMessage(level = INFO)
-	@Message(id = 12, value = "Selected driver (\u001b[32m✔\u001b[0m) [%1$s]")
+	@Message(id = 12, value = "Selected driver (\u001b[32m✔\u001b[0m) [\u001b[34m%1$s\u001b[0m]")
 	void selectedDriver(String driverName);
 
 	@LogMessage(level = INFO)
