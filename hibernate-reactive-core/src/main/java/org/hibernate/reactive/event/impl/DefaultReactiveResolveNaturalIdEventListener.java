@@ -55,17 +55,23 @@ public class DefaultReactiveResolveNaturalIdEventListener extends AbstractLockUp
 	 * @return The loaded entity, or null.
 	 */
 	protected CompletionStage<Object> resolveNaturalId(ResolveNaturalIdEvent event) {
-		EntityPersister persister = event.getEntityPersister();
+		final EntityPersister persister = event.getEntityPersister();
 
 		if ( LOG.isTraceEnabled() ) {
-			LOG.tracev( "Attempting to resolve: {0}#{1}", infoString( persister ), event.getNaturalIdValues()
+			LOG.tracev(
+					"Attempting to resolve: {0}#{1}",
+					infoString( persister ),
+					event.getNaturalIdValues()
 			);
 		}
 
-		Object entityId = resolveFromCache( event );
+		final Object entityId = resolveFromCache( event );
 		if ( entityId != null ) {
 			if ( LOG.isTraceEnabled() ) {
-				LOG.tracev( "Resolved object in cache: {0}#{1}", infoString( persister ), event.getNaturalIdValues() );
+				LOG.tracev(
+						"Resolved object in cache: {0}#{1}",
+						infoString( persister ),
+						event.getNaturalIdValues() );
 			}
 			return completedFuture( entityId );
 		}
@@ -100,25 +106,25 @@ public class DefaultReactiveResolveNaturalIdEventListener extends AbstractLockUp
 	 *
 	 * @return The object loaded from the datasource, or null if not found.
 	 */
-	protected CompletionStage<Object> loadFromDatasource(final ResolveNaturalIdEvent event) {
-		EventSource session = event.getSession();
-		StatisticsImplementor statistics = session.getFactory().getStatistics();
-		boolean statisticsEnabled = statistics.isStatisticsEnabled();
-		long startTime = statisticsEnabled ? System.nanoTime() : 0;
+	protected CompletionStage<Object> loadFromDatasource(ResolveNaturalIdEvent event) {
+		final EventSource session = event.getSession();
+		final EntityPersister entityPersister = event.getEntityPersister();
+		final StatisticsImplementor statistics = session.getFactory().getStatistics();
+		final boolean statisticsEnabled = statistics.isStatisticsEnabled();
+		final long startTime = statisticsEnabled ? System.nanoTime() : 0;
 
-		EntityPersister entityPersister = event.getEntityPersister();
 		return ( (ReactiveEntityPersister) entityPersister)
 				.reactiveLoadEntityIdByNaturalId( event.getOrderedNaturalIdValues(), event.getLockOptions(), session )
 				.thenApply( pk -> {
-					if (statisticsEnabled) {
+					if ( statisticsEnabled ) {
 						long milliseconds = MILLISECONDS.convert( System.nanoTime() - startTime, NANOSECONDS );
 						statistics.naturalIdQueryExecuted( entityPersister.getRootEntityName(), milliseconds );
 					}
 
 					//PK can be null if the entity doesn't exist
-					if (pk != null) {
+					if ( pk != null ) {
 						getNaturalIdResolutions( event )
-								.cacheResolutionFromLoad( pk, event.getOrderedNaturalIdValues(), event.getEntityPersister() );
+								.cacheResolutionFromLoad( pk, event.getOrderedNaturalIdValues(), entityPersister );
 					}
 
 					return pk;

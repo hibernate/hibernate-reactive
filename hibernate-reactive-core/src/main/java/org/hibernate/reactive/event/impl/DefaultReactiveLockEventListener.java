@@ -25,6 +25,7 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LockEvent;
 import org.hibernate.event.spi.LockEventListener;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingActions;
 import org.hibernate.reactive.engine.impl.ForeignKeys;
@@ -59,7 +60,7 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 			LOG.explicitSkipLockedLockCombo();
 		}
 
-		EventSource source = event.getSession();
+		final EventSource source = event.getSession();
 
 		boolean detached = event.getEntityName() != null
 				? !source.contains( event.getEntityName(), event.getObject() )
@@ -80,35 +81,35 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 
 	private CompletionStage<Void> reactiveOnLock(LockEvent event, Object entity) {
 
-		SessionImplementor source = event.getSession();
-		PersistenceContext persistenceContext = source.getPersistenceContextInternal();
+		final SessionImplementor source = event.getSession();
+		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 
-		EntityEntry entry = persistenceContext.getEntry(entity);
-		CompletionStage<EntityEntry> stage;
-		if (entry==null) {
-			final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity);
-			final Object id = persister.getIdentifier(entity, source);
-			stage = ForeignKeys.isNotTransient( event.getEntityName(), entity, Boolean.FALSE, source).thenApply(
-					trans -> {
-						if (!trans) {
-							throw new TransientObjectException(
-									"cannot lock an unsaved transient instance: " +
-											persister.getEntityName()
-							);
-						}
+		final EntityEntry entry = persistenceContext.getEntry(entity);
+		final CompletionStage<EntityEntry> stage;
+		if ( entry==null ) {
+			final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
+			final Object id = persister.getIdentifier( entity, source );
+			stage = ForeignKeys.isNotTransient( event.getEntityName(), entity, Boolean.FALSE, source)
+					.thenApply( trans -> {
+								if (!trans) {
+									throw new TransientObjectException(
+											"cannot lock an unsaved transient instance: " +
+													persister.getEntityName()
+									);
+								}
 
-						EntityEntry e = reassociate(event, entity, id, persister);
-						cascadeOnLock(event, persister, entity);
-						return e;
-					}
-			);
+								final EntityEntry e = reassociate( event, entity, id, persister );
+								cascadeOnLock( event, persister, entity );
+								return e;
+							}
+					);
 
 		}
 		else {
 			stage = completedFuture( entry );
 		}
 
-		return stage.thenCompose( e -> upgradeLock(entity, e, event.getLockOptions(), event.getSession() ) );
+		return stage.thenCompose( e -> upgradeLock( entity, e, event.getLockOptions(), event.getSession() ) );
 	}
 
 	private void cascadeOnLock(LockEvent event, EntityPersister persister, Object entity) {
@@ -138,11 +139,12 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 	 * @param lockOptions contains the requested lock mode.
 	 * @param source The session which is the source of the event being processed.
 	 */
-	protected CompletionStage<Void> upgradeLock(Object object, EntityEntry entry,
-												LockOptions lockOptions,
-												EventSource source) {
-
-		LockMode requestedLockMode = lockOptions.getLockMode();
+	protected CompletionStage<Void> upgradeLock(
+			Object object,
+			EntityEntry entry,
+			LockOptions lockOptions,
+			EventSource source) {
+		final LockMode requestedLockMode = lockOptions.getLockMode();
 		if ( requestedLockMode.greaterThan( entry.getLockMode() ) ) {
 			// The user requested a "greater" (i.e. more restrictive) form of
 			// pessimistic lock
@@ -163,15 +165,14 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 				);
 			}
 
-			switch (requestedLockMode) {
+			final ReactiveActionQueue actionQueue = ((ReactiveSession) source).getReactiveActionQueue();
+			switch ( requestedLockMode ) {
 				case OPTIMISTIC:
-					( (ReactiveSession) source ).getReactiveActionQueue()
-							.registerProcess( new ReactiveEntityVerifyVersionProcess(object) );
+					actionQueue.registerProcess( new ReactiveEntityVerifyVersionProcess( object ) );
 					entry.setLockMode( requestedLockMode );
 					return voidFuture();
 				case OPTIMISTIC_FORCE_INCREMENT:
-					( (ReactiveSession) source ).getReactiveActionQueue()
-							.registerProcess( new ReactiveEntityIncrementVersionProcess(object) );
+					actionQueue.registerProcess( new ReactiveEntityIncrementVersionProcess( object ) );
 					entry.setLockMode( requestedLockMode );
 					return voidFuture();
 				default:

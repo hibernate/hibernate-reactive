@@ -14,7 +14,6 @@ import org.hibernate.NonUniqueObjectException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.action.internal.EntityIdentityInsertAction;
 import org.hibernate.engine.internal.CascadePoint;
-import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityEntryExtraState;
 import org.hibernate.engine.spi.EntityKey;
@@ -30,6 +29,7 @@ import org.hibernate.id.IdentifierGenerationException;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.Cascade;
 import org.hibernate.reactive.engine.impl.CascadingAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityIdentityInsertAction;
@@ -43,6 +43,8 @@ import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.processIfSelfDirtinessTracker;
+import static org.hibernate.engine.internal.Versioning.getVersion;
+import static org.hibernate.engine.internal.Versioning.seedVersion;
 import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.id.IdentifierGeneratorHelper.SHORT_CIRCUIT_INDICATOR;
 import static org.hibernate.pretty.MessageHelper.infoString;
@@ -124,7 +126,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		processIfSelfDirtinessTracker( entity, SelfDirtinessTracker::$$_hibernate_clearDirtyAttributes );
 
 		final EntityPersister persister = source.getEntityPersister( entityName, entity );
-		Generator generator = persister.getGenerator();
+		final Generator generator = persister.getGenerator();
 		if ( !generator.generatedOnExecution() ) {
 			if ( generator instanceof ReactiveIdentifierGenerator ) {
 				return ( (ReactiveIdentifierGenerator<?>) generator )
@@ -135,8 +137,9 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			final Object generatedId = ( (BeforeExecutionGenerator) generator ).generate( source, entity, null, INSERT );
 			return performSaveWithId( entity, context, source, persister, generator, generatedId );
 		}
-
-		return reactivePerformSave( entity, null, persister, true, context, source, requiresImmediateIdAccess );
+		else {
+			return reactivePerformSave( entity, null, persister, true, context, source, requiresImmediateIdAccess );
+		}
 	}
 
 	private CompletionStage<Void> performSaveWithId(
@@ -207,31 +210,32 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 	}
 
 	private CompletionStage<EntityKey> entityKey(Object entity, Object id, EntityPersister persister, boolean useIdentityColumn, EventSource source) {
-		if ( useIdentityColumn ) {
-			return nullFuture();
-		}
-		return generateEntityKey( id, persister, source )
-				.thenApply( generatedKey -> {
-					persister.setIdentifier( entity, id, source );
-					return generatedKey;
-				} );
+		return useIdentityColumn
+				? nullFuture()
+				: generateEntityKey( id, persister, source )
+						.thenApply( generatedKey -> {
+							persister.setIdentifier( entity, id, source );
+							return generatedKey;
+						} );
 	}
 
 	private CompletionStage<EntityKey> generateEntityKey(Object id, EntityPersister persister, EventSource source) {
 		final EntityKey key = source.generateEntityKey( id, persister );
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
-		Object old = persistenceContext.getEntity( key );
+		final Object old = persistenceContext.getEntity( key );
 		if ( old != null ) {
 			if ( persistenceContext.getEntry( old ).getStatus() == Status.DELETED ) {
 				return source.unwrap( ReactiveSession.class )
 						.reactiveForceFlush( persistenceContext.getEntry( old ) )
 						.thenApply( v -> key );
 			}
-
-			return failedFuture( new NonUniqueObjectException( id, persister.getEntityName() ) );
+			else {
+				return failedFuture( new NonUniqueObjectException( id, persister.getEntityName() ) );
+			}
 		}
-
-		return completedFuture( key );
+		else {
+			return completedFuture( key );
+		}
 	}
 
 	/**
@@ -259,16 +263,16 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			EventSource source,
 			boolean requiresImmediateIdAccess) {
 
-		Object id = key == null ? null : key.getIdentifier();
+		final Object id = key == null ? null : key.getIdentifier();
 
-		boolean inTransaction = source.isTransactionInProgress();
-		boolean shouldDelayIdentityInserts = !inTransaction && !requiresImmediateIdAccess;
+		final boolean inTransaction = source.isTransactionInProgress();
+		final boolean shouldDelayIdentityInserts = !inTransaction && !requiresImmediateIdAccess;
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 
 		// Put a placeholder in entries, so we don't recurse back and try to save() the
 		// same object again. QUESTION: should this be done before onSave() is called?
 		// likewise, should it be done before onUpdate()?
-		EntityEntry original = persistenceContext.addEntry(
+		final EntityEntry original = persistenceContext.addEntry(
 				entity,
 				Status.SAVING,
 				null,
@@ -297,10 +301,9 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 				.thenCompose( insert -> cascadeAfterSave( source, persister, entity, context )
 					.thenAccept( unused -> {
 						final Object finalId = handleGeneratedId( useIdentityColumn, id, insert );
-						EntityEntry newEntry = persistenceContext.getEntry( entity );
-
+						final EntityEntry newEntry = persistenceContext.getEntry( entity );
 						if ( newEntry != original ) {
-							EntityEntryExtraState extraState = newEntry.getExtraState( EntityEntryExtraState.class );
+							final EntityEntryExtraState extraState = newEntry.getExtraState( EntityEntryExtraState.class );
 							if ( extraState == null ) {
 								newEntry.addExtraState( original.getExtraState( EntityEntryExtraState.class ) );
 							}
@@ -312,7 +315,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 	private static Object handleGeneratedId(boolean useIdentityColumn, Object id, AbstractEntityInsertAction insert) {
 		if ( useIdentityColumn && insert.isEarlyInsert() ) {
 			if ( insert instanceof EntityIdentityInsertAction ) {
-				Object generatedId = ( (EntityIdentityInsertAction) insert ).getGeneratedId();
+				final Object generatedId = ( (EntityIdentityInsertAction) insert ).getGeneratedId();
 				insert.handleNaturalIdPostSaveNotifications( generatedId );
 				return generatedId;
 			}
@@ -320,13 +323,14 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 					"Insert should be using an identity column, but action is of unexpected type: " + insert.getClass()
 							.getName() );
 		}
-
-		return id;
+		else {
+			return id;
+		}
 	}
 
 	private Object[] cloneAndSubstituteValues(Object entity, EntityPersister persister, C context, EventSource source, Object id) {
-		Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap(context), source );
-		Type[] types = persister.getPropertyTypes();
+		final Object[] values = persister.getPropertyValuesToInsert( entity, getMergeMap( context ), source );
+		final Type[] types = persister.getPropertyTypes();
 
 		boolean substitute = substituteValuesIfNecessary( entity, id, values, persister, source );
 		if ( persister.hasCollections() ) {
@@ -359,31 +363,25 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			boolean useIdentityColumn,
 			EventSource source,
 			boolean shouldDelayIdentityInserts) {
+		final ReactiveActionQueue actionQueue = source.unwrap(ReactiveSession.class).getReactiveActionQueue();
 		if ( useIdentityColumn ) {
-			ReactiveEntityIdentityInsertAction insert = new ReactiveEntityIdentityInsertAction(
+			final ReactiveEntityIdentityInsertAction insert = new ReactiveEntityIdentityInsertAction(
 					values, entity, persister, false, source, shouldDelayIdentityInserts
 			);
-			return source.unwrap(ReactiveSession.class)
-					.getReactiveActionQueue()
-					.addAction( insert )
-					.thenApply( v -> insert );
+			return actionQueue.addAction( insert ).thenApply( v -> insert );
 		}
 		else {
-			Object version = Versioning.getVersion( values, persister );
-			ReactiveEntityRegularInsertAction insert = new ReactiveEntityRegularInsertAction(
-					id, values, entity, version, persister, false, source
+			final ReactiveEntityRegularInsertAction insert = new ReactiveEntityRegularInsertAction(
+					id, values, entity, getVersion( values, persister ), persister, false, source
 			);
-			return source.unwrap(ReactiveSession.class)
-					.getReactiveActionQueue()
-					.addAction( insert )
-					.thenApply( v -> insert );
+			return actionQueue.addAction( insert ).thenApply( v -> insert );
 		}
 	}
 
 	/**
 	 * Handles the calls needed to perform pre-save cascades for the given entity.
 	 *
-	 * @param source The session from whcih the save event originated.
+	 * @param source The session from which the save event originated.
 	 * @param persister The entity's persister instance.
 	 * @param entity The entity to be saved.
 	 * @param context Generally cascade-specific data
@@ -453,12 +451,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 
 		//keep the existing version number in the case of replicate!
 		if ( persister.isVersioned() ) {
-			substitute = Versioning.seedVersion(
-					values,
-					persister.getVersionProperty(),
-					persister.getVersionMapping(),
-					source
-			) || substitute;
+			substitute = seedVersion( entity, values, persister, source ) || substitute;
 		}
 		return substitute;
 	}
@@ -469,8 +462,8 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			Object[] values,
 			Type[] types,
 			EventSource source) {
-		WrapVisitor visitor = new WrapVisitor( entity, id, source );
-		// substitutes into values by side-effect
+		final WrapVisitor visitor = new WrapVisitor( entity, id, source );
+		// substitutes into values by side effect
 		visitor.processEntityPropertyValues( values, types );
 		return visitor.isSubstitutionRequired();
 	}

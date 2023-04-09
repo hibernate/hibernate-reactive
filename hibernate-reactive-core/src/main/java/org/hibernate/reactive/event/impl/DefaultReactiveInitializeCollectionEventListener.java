@@ -42,9 +42,10 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 	 * called by a collection that wants to initialize itself
 	 */
 	public CompletionStage<Void> onReactiveInitializeCollection(InitializeCollectionEvent event) throws HibernateException {
-		PersistentCollection collection = event.getCollection();
-		SessionImplementor source = event.getSession();
-		CollectionEntry ce = source.getPersistenceContextInternal().getCollectionEntry( collection );
+		final PersistentCollection<?> collection = event.getCollection();
+		final SessionImplementor source = event.getSession();
+
+		final CollectionEntry ce = source.getPersistenceContextInternal().getCollectionEntry( collection );
 		if ( ce == null ) {
 			throw LOG.collectionWasEvicted();
 		}
@@ -55,50 +56,55 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 		}
 
 		final CollectionPersister loadedPersister = ce.getLoadedPersister();
+		final Object loadedKey = ce.getLoadedKey();
 		if ( LOG.isTraceEnabled() ) {
-			LOG.tracev( "Initializing collection {0}", collectionInfoString( loadedPersister, collection, ce.getLoadedKey(), source ) );
+			LOG.tracev(
+					"Initializing collection {0}",
+					collectionInfoString( loadedPersister, collection, loadedKey, source )
+			);
 			LOG.trace( "Checking second-level cache" );
 		}
 
-		final boolean foundInCache = initializeCollectionFromCache( ce.getLoadedKey(), loadedPersister, collection, source );
+		final boolean foundInCache = initializeCollectionFromCache( loadedKey, loadedPersister, collection, source );
 		if ( foundInCache ) {
 			if ( LOG.isTraceEnabled() ) {
 				LOG.trace( "Collection initialized from cache" );
 			}
 			return voidFuture();
 		}
+		else {
+			if ( LOG.isTraceEnabled() ) {
+				LOG.trace( "Collection not cached" );
+			}
+			return ( (ReactiveCollectionPersister) loadedPersister )
+					.reactiveInitialize( loadedKey, source )
+					.thenApply( list -> {
+						handlePotentiallyEmptyCollection( collection, source, ce, loadedPersister );
+						return list;
+					} )
+					.thenAccept( list -> {
+						if ( LOG.isTraceEnabled() ) {
+							LOG.trace( "Collection initialized" );
+						}
 
-		if ( LOG.isTraceEnabled() ) {
-			LOG.trace( "Collection not cached" );
+						final StatisticsImplementor statistics = source.getFactory().getStatistics();
+						if ( statistics.isStatisticsEnabled() ) {
+							statistics.fetchCollection( loadedPersister.getRole() );
+						}
+					} );
 		}
-		return ( (ReactiveCollectionPersister) loadedPersister )
-				.reactiveInitialize( ce.getLoadedKey(), source )
-				.thenApply( list -> {
-					handlePotentiallyEmptyCollection( collection, source, ce, ce.getLoadedPersister() );
-					return list;
-				} )
-				.thenAccept( list -> {
-					if ( LOG.isTraceEnabled() ) {
-						LOG.trace( "Collection initialized" );
-					}
-
-					final StatisticsImplementor statistics = source.getFactory().getStatistics();
-					if ( statistics.isStatisticsEnabled() ) {
-						statistics.fetchCollection( loadedPersister.getRole() );
-					}
-				} );
 	}
 
 	private void handlePotentiallyEmptyCollection(
 			PersistentCollection<?> collection,
 			SessionImplementor source,
 			CollectionEntry ce,
-			CollectionPersister ceLoadedPersister) {
+			CollectionPersister loadedPersister) {
 		if ( !collection.wasInitialized() ) {
-			collection.initializeEmptyCollection( ceLoadedPersister );
+			collection.initializeEmptyCollection( loadedPersister );
 			ResultsHelper.finalizeCollectionLoading(
 					source.getPersistenceContext(),
-					ceLoadedPersister,
+					loadedPersister,
 					collection,
 					ce.getLoadedKey(),
 					true
@@ -120,10 +126,11 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 	private boolean initializeCollectionFromCache(
 			Object id,
 			CollectionPersister persister,
-			PersistentCollection collection,
+			PersistentCollection<?> collection,
 			SessionImplementor source) {
 
-		if ( source.getLoadQueryInfluencers().hasEnabledFilters() && persister.isAffectedByEnabledFilters( source ) ) {
+		if ( source.getLoadQueryInfluencers().hasEnabledFilters()
+				&& persister.isAffectedByEnabledFilters( source ) ) {
 			LOG.trace( "Disregarding cached version (if any) of collection due to enabled filters" );
 			return false;
 		}
@@ -153,7 +160,8 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 			return false;
 		}
 
-		CollectionCacheEntry cacheEntry = (CollectionCacheEntry) persister.getCacheEntryStructure().destructure( ce, factory );
+		final CollectionCacheEntry cacheEntry = (CollectionCacheEntry)
+				persister.getCacheEntryStructure().destructure( ce, factory );
 
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		cacheEntry.assemble( collection, persister, persistenceContext.getCollectionOwner( id, persister ) );

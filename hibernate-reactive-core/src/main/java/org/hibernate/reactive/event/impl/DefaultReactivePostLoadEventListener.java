@@ -6,20 +6,21 @@
 package org.hibernate.reactive.event.impl;
 
 import org.hibernate.AssertionFailure;
-import org.hibernate.LockMode;
 import org.hibernate.classic.Lifecycle;
 import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PostLoadEvent;
 import org.hibernate.event.spi.PostLoadEventListener;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
+import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.ReactiveEntityIncrementVersionProcess;
 import org.hibernate.reactive.engine.impl.ReactiveEntityVerifyVersionProcess;
 import org.hibernate.reactive.session.ReactiveSession;
 
 /**
- * We do 2 things here:<ul>
+ * We do two things here:
+ * <ul>
  * <li>Call {@link Lifecycle} interface if necessary</li>
  * <li>Perform needed {@link EntityEntry#getLockMode()} related processing</li>
  * </ul>
@@ -41,20 +42,23 @@ public class DefaultReactivePostLoadEventListener implements PostLoadEventListen
 
 		callbackRegistry.postLoad( entity );
 
-		final SessionImplementor session = event.getSession();
+		final EventSource session = event.getSession();
 		final EntityEntry entry = session.getPersistenceContextInternal().getEntry( entity );
 		if ( entry == null ) {
 			throw new AssertionFailure( "possible non-threadsafe access to the session" );
 		}
 
-		LockMode lockMode = entry.getLockMode();
-		if ( LockMode.OPTIMISTIC_FORCE_INCREMENT.equals( lockMode ) ) {
-			((ReactiveSession) session).getReactiveActionQueue()
-					.registerProcess( new ReactiveEntityIncrementVersionProcess( entity ) );
-		}
-		else if ( LockMode.OPTIMISTIC.equals( lockMode ) ) {
-			((ReactiveSession) session).getReactiveActionQueue()
-					.registerProcess( new ReactiveEntityVerifyVersionProcess( entity ) );
+		final ReactiveActionQueue actionQueue = ((ReactiveSession) session).getReactiveActionQueue();
+		switch ( entry.getLockMode() ) {
+//			case PESSIMISTIC_FORCE_INCREMENT:
+			// This case is handled by DefaultReactiveLoadEventListener
+			case OPTIMISTIC_FORCE_INCREMENT:
+				actionQueue.registerProcess( new ReactiveEntityIncrementVersionProcess( entity ) );
+				break;
+			case OPTIMISTIC:
+				actionQueue.registerProcess( new ReactiveEntityVerifyVersionProcess( entity ) );
+				break;
 		}
 	}
+
 }
