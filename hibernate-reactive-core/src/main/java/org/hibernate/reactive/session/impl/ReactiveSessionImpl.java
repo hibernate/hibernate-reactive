@@ -582,7 +582,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate updateQuery) {
 		checkOpen();
 		try {
-			return new ReactiveQuerySqmImpl<R>( (SqmUpdateStatement<R>) updateQuery, null, this );
+			return new ReactiveQuerySqmImpl<>( (SqmUpdateStatement<R>) updateQuery, null, this );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );
@@ -593,7 +593,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete deleteQuery) {
 		checkOpen();
 		try {
-			return new ReactiveQuerySqmImpl<R>( (SqmDeleteStatement<R>) deleteQuery, null, this );
+			return new ReactiveQuerySqmImpl<>( (SqmDeleteStatement<R>) deleteQuery, null, this );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );

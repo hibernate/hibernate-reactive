@@ -49,6 +49,23 @@ public class ReactiveCollectionRemoveAction extends CollectionAction implements 
 		this.affectedOwner = session.getPersistenceContextInternal().getLoadedCollectionOwnerOrNull( collection );
 	}
 
+	/**
+	 * Removes a persistent collection for an unloaded proxy.
+	 *
+	 * Use this constructor when the owning entity is has not been loaded.
+	 * @param persister The collection's persister
+	 * @param id The collection key
+	 * @param session The session
+	 */
+	public ReactiveCollectionRemoveAction(
+			final CollectionPersister persister,
+			final Object id,
+			final EventSource session) {
+		super( persister, null, id, session );
+		emptySnapshot = false;
+		affectedOwner = null;
+	}
+
 	@Override
 	public CompletionStage<Void> reactiveExecute() {
 		final Object key = getKey();

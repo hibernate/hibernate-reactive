@@ -27,13 +27,11 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SelfDirtinessTracker;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.internal.EntityState;
 import org.hibernate.event.internal.EventUtil;
 import org.hibernate.event.internal.WrapVisitor;
 import org.hibernate.event.spi.EntityCopyObserver;
-import org.hibernate.event.spi.EntityCopyObserverFactory;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.MergeContext;
 import org.hibernate.event.spi.MergeEvent;
@@ -57,9 +55,10 @@ import org.hibernate.type.TypeHelper;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asSelfDirtinessTracker;
+import static org.hibernate.engine.internal.ManagedTypeHelper.isHibernateProxy;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isSelfDirtinessTracker;
-import static org.hibernate.event.internal.EntityState.DETACHED;
+import static org.hibernate.event.internal.EntityState.getEntityState;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.type.ForeignKeyDirection.FROM_PARENT;
@@ -95,20 +94,19 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	 */
 	@Override
 	public CompletionStage<Void> reactiveOnMerge(MergeEvent event) throws HibernateException {
-		final EntityCopyObserver entityCopyObserver = createEntityCopyObserver( event.getSession().getFactory() );
-		final MergeContext mergeContext = new MergeContext( event.getSession(), entityCopyObserver );
+		final EventSource session = event.getSession();
+		final EntityCopyObserver entityCopyObserver = createEntityCopyObserver( session );
+		final MergeContext mergeContext = new MergeContext( session, entityCopyObserver );
 		return reactiveOnMerge( event, mergeContext )
-				.thenAccept( v -> entityCopyObserver.topLevelMergeComplete( event.getSession() ) )
+				.thenAccept( v -> entityCopyObserver.topLevelMergeComplete( session ) )
 				.whenComplete( (v, e) -> {
 					entityCopyObserver.clear();
 					mergeContext.clear();
 				} );
 	}
 
-	private EntityCopyObserver createEntityCopyObserver(SessionFactoryImplementor sessionFactory) {
-		return sessionFactory.getServiceRegistry()
-				.getService( EntityCopyObserverFactory.class )
-				.createEntityCopyObserver();
+	private EntityCopyObserver createEntityCopyObserver(final EventSource session) {
+		return session.getFactory().getFastSessionServices().entityCopyObserverFactory.createEntityCopyObserver();
 	}
 
 	/**
@@ -119,23 +117,20 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	@Override
 	public CompletionStage<Void> reactiveOnMerge(MergeEvent event, MergeContext copiedAlready) throws HibernateException {
 
-		final EventSource source = event.getSession();
 		final Object original = event.getOriginal();
-
 		// NOTE : `original` is the value being merged
-
 		if ( original != null ) {
+			final EventSource source = event.getSession();
 			final Object entity;
-			if ( original instanceof HibernateProxy ) {
-				LazyInitializer li = ( (HibernateProxy) original ).getHibernateLazyInitializer();
-				if ( li.isUninitialized() ) {
+			final LazyInitializer lazyInitializer = HibernateProxy.extractLazyInitializer( original );
+			if ( lazyInitializer != null ) {
+				if ( lazyInitializer.isUninitialized() ) {
 					LOG.trace( "Ignoring uninitialized proxy" );
-					event.setResult( source.load( li.getEntityName(), li.getIdentifier() ) );
-					//EARLY EXIT!
+					event.setResult( source.load( lazyInitializer.getEntityName(), lazyInitializer.getInternalIdentifier() ) );
 					return voidFuture();
 				}
 				else {
-					entity = li.getImplementation();
+					entity = lazyInitializer.getImplementation();
 				}
 			}
 			else if ( isPersistentAttributeInterceptable( original ) ) {
@@ -157,76 +152,78 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 				entity = original;
 			}
 
-			if ( copiedAlready.containsKey( entity ) && ( copiedAlready.isOperatedOn( entity ) ) ) {
-				LOG.trace( "Already in merge process" );
-				event.setResult( entity );
-			}
-			else {
-				if ( copiedAlready.containsKey( entity ) ) {
-					LOG.trace( "Already in copyCache; setting in merge process" );
-					copiedAlready.setOperatedOn( entity, true );
-				}
-				event.setEntity( entity );
-				EntityState entityState = null;
-
-				// Check the persistence context for an entry relating to this
-				// entity to be merged...
-				final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
-				EntityEntry entry = persistenceContext.getEntry( entity );
-				if ( entry == null ) {
-					EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
-					Object id = persister.getIdentifier( entity, source );
-					if ( id != null ) {
-						final EntityKey key = source.generateEntityKey( id, persister );
-						final Object managedEntity = persistenceContext.getEntity( key );
-						entry = persistenceContext.getEntry( managedEntity );
-						if ( entry != null ) {
-							// we have specialized case of a detached entity from the
-							// perspective of the merge operation.  Specifically, we
-							// have an incoming entity instance which has a corresponding
-							// entry in the current persistence context, but registered
-							// under a different entity instance
-							entityState = DETACHED;
-						}
-					}
-				}
-
-				if ( entityState == null ) {
-					entityState = EntityState.getEntityState( entity, event.getEntityName(), entry, source, false );
-				}
-
-				switch ( entityState ) {
-					case DETACHED:
-						return entityIsDetached( event, copiedAlready );
-					case TRANSIENT:
-						return entityIsTransient( event, copiedAlready );
-					case PERSISTENT:
-						return entityIsPersistent( event, copiedAlready );
-					default: //DELETED
-						throw new ObjectDeletedException(
-								"deleted instance passed to merge",
-								null,
-								EventUtil.getLoggableName( event.getEntityName(), entity )
-						);
-				}
-			}
+			return doMerge( event, copiedAlready, entity );
 
 		}
 
 		return voidFuture();
 	}
 
+	private CompletionStage<Void> doMerge(MergeEvent event, MergeContext copiedAlready, Object entity) {
+		if ( copiedAlready.containsKey( entity ) && ( copiedAlready.isOperatedOn( entity ) ) ) {
+			LOG.trace( "Already in merge process" );
+			event.setResult( entity );
+			return voidFuture();
+		}
+		else {
+			if ( copiedAlready.containsKey( entity ) ) {
+				LOG.trace( "Already in copyCache; setting in merge process" );
+				copiedAlready.setOperatedOn( entity, true );
+			}
+			event.setEntity( entity );
+			return merge( event, copiedAlready, entity );
+		}
+	}
+
+	private CompletionStage<Void> merge(MergeEvent event, MergeContext copiedAlready, Object entity) {
+		switch ( entityState( event, entity ) ) {
+			case DETACHED:
+				return entityIsDetached( event, copiedAlready );
+			case TRANSIENT:
+				return entityIsTransient( event, copiedAlready );
+			case PERSISTENT:
+				return entityIsPersistent( event, copiedAlready );
+			default: //DELETED
+				throw new ObjectDeletedException(
+						"deleted instance passed to merge",
+						null,
+						EventUtil.getLoggableName( event.getEntityName(), entity)
+				);
+		}
+	}
+
+	private static EntityState entityState(MergeEvent event, Object entity) {
+		final EventSource source = event.getSession();
+		// Check the persistence context for an entry relating to this
+		// entity to be merged...
+		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
+		EntityEntry entry = persistenceContext.getEntry( entity );
+		if ( entry == null ) {
+			EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
+			Object id = persister.getIdentifier( entity, source );
+			if ( id != null ) {
+				final Object managedEntity = persistenceContext.getEntity( source.generateEntityKey( id, persister ) );
+				entry = persistenceContext.getEntry( managedEntity );
+				if ( entry != null ) {
+					// we have a special case of a detached entity from the
+					// perspective of the merge operation. Specifically, we have
+					// an incoming entity instance which has a corresponding
+					// entry in the current persistence context, but registered
+					// under a different entity instance
+					return EntityState.DETACHED;
+				}
+			}
+		}
+		return getEntityState( entity, event.getEntityName(), entry, source, false );
+	}
+
 	protected CompletionStage<Void> entityIsPersistent(MergeEvent event, MergeContext copyCache) {
 		LOG.trace( "Ignoring persistent instance" );
-
 		//TODO: check that entry.getIdentifier().equals(requestedId)
-
 		final Object entity = event.getEntity();
 		final EventSource source = event.getSession();
 		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
-
 		copyCache.put( entity, entity, true );  //before cascade!
-
 		return cascadeOnMerge( source, persister, entity, copyCache )
 				.thenCompose( v -> fetchAndCopyValues( persister, entity, entity, source, copyCache ) )
 				.thenAccept( v -> event.setResult( entity ) );
@@ -330,14 +327,10 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		final Object entity = event.getEntity();
 		final EventSource source = event.getSession();
 		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
-		final String entityName = persister.getEntityName();
 
-		Object requestedId = event.getRequestedId();
 		Object id = getDetachedEntityId( event, entity, persister );
-
 		// we must clone embedded composite identifiers, or we will get back the same instance that we pass in
 		final Object clonedIdentifier = persister.getIdentifierType().deepCopy( id, source.getFactory() );
-
 		return source.getLoadQueryInfluencers()
 				.fromInternalFetchProfile( CascadingFetchProfile.MERGE, () -> source.unwrap( ReactiveSession.class )
 						.reactiveGet( (Class<?>) persister.getMappedClass(), clonedIdentifier )
@@ -353,20 +346,21 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 						// really persistent
 						return entityIsTransient( event, copyCache );
 					}
-
-					// before cascade!
-					copyCache.put( entity, result, true );
-					final Object target = targetEntity( event, entity, persister, id, result );
-					// cascade first, so that all unsaved objects get their
-					// copy created before we actually copy
-					return cascadeOnMerge( source, persister, entity, copyCache )
-							.thenCompose( v -> fetchAndCopyValues( persister, entity, target, source, copyCache ) )
-							.thenAccept( v -> {
-								// copyValues() (called by fetchAndCopyValues) works by reflection,
-								// so explicitly mark the entity instance dirty
-								markInterceptorDirty( entity, target );
-								event.setResult( result );
-							} );
+					else {
+						// before cascade!
+						copyCache.put( entity, result, true );
+						final Object target = targetEntity( event, entity, persister, id, result );
+						// cascade first, so that all unsaved objects get their
+						// copy created before we actually copy
+						return cascadeOnMerge( source, persister, entity, copyCache )
+								.thenCompose( v -> fetchAndCopyValues( persister, entity, target, source, copyCache ) )
+								.thenAccept( v -> {
+									// copyValues() (called by fetchAndCopyValues) works by reflection,
+									// so explicitly mark the entity instance dirty
+									markInterceptorDirty( entity, target );
+									event.setResult( result );
+								} );
+					}
 				} );
 	}
 
@@ -399,18 +393,17 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	private static Object getDetachedEntityId(MergeEvent event, Object entity, EntityPersister persister) {
 		final EventSource source = event.getSession();
 		final Object id = event.getRequestedId();
-
 		if ( id == null ) {
 			return persister.getIdentifier( entity, source );
 		}
-
-		// check that entity id = requestedId
-		Object entityId = persister.getIdentifier( entity, source );
-		if ( !persister.getIdentifierType().isEqual( id, entityId, source.getFactory() ) ) {
-			throw LOG.mergeRequestedIdNotMatchingIdOfPassedEntity();
+		else {
+			// check that entity id = requestedId
+			final Object entityId = persister.getIdentifier( entity, source );
+			if ( !persister.getIdentifierType().isEqual( id, entityId, source.getFactory() ) ) {
+				throw LOG.mergeRequestedIdNotMatchingIdOfPassedEntity();
+			}
+			return id;
 		}
-
-		return id;
 	}
 
 	private static Object unproxyManagedForDetachedMerging(
@@ -418,15 +411,17 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			Object managed,
 			EntityPersister persister,
 			EventSource source) {
-		if ( managed instanceof HibernateProxy ) {
+		if ( isHibernateProxy( managed ) ) {
 			return source.getPersistenceContextInternal().unproxy( managed );
 		}
 
 		if ( isPersistentAttributeInterceptable( incoming )
 				&& persister.getBytecodeEnhancementMetadata().isEnhancedForLazyLoading() ) {
 
-			final PersistentAttributeInterceptor incomingInterceptor = asPersistentAttributeInterceptable( incoming ).$$_hibernate_getInterceptor();
-			final PersistentAttributeInterceptor managedInterceptor = asPersistentAttributeInterceptable( managed ).$$_hibernate_getInterceptor();
+			final PersistentAttributeInterceptor incomingInterceptor =
+					asPersistentAttributeInterceptable( incoming ).$$_hibernate_getInterceptor();
+			final PersistentAttributeInterceptor managedInterceptor =
+					asPersistentAttributeInterceptable( managed ).$$_hibernate_getInterceptor();
 
 			// todo - do we need to specially handle the case where both `incoming` and `managed` are initialized, but
 			//		with different attributes initialized?
@@ -463,27 +458,29 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	}
 
 	private static boolean isVersionChanged(Object entity, EventSource source, EntityPersister persister, Object target) {
-		if ( !persister.isVersioned() ) {
+		if ( persister.isVersioned() ) {
+			// for merging of versioned entities, we consider the version having
+			// been changed only when:
+			// 1) the two version values are different;
+			//      *AND*
+			// 2) The target actually represents database state!
+			//
+			// This second condition is a special case which allows
+			// an entity to be merged during the same transaction
+			// (though during a seperate operation) in which it was
+			// originally persisted/saved
+			boolean changed = !persister.getVersionType().isSame(
+					persister.getVersion( target ),
+					persister.getVersion( entity )
+			);
+
+			// TODO : perhaps we should additionally require that the incoming entity
+			// version be equivalent to the defined unsaved-value?
+			return changed && existsInDatabase( target, source, persister );
+		}
+		else {
 			return false;
 		}
-		// for merging of versioned entities, we consider the version having
-		// been changed only when:
-		// 1) the two version values are different;
-		//      *AND*
-		// 2) The target actually represents database state!
-		//
-		// This second condition is a special case which allows
-		// an entity to be merged during the same transaction
-		// (though during a seperate operation) in which it was
-		// originally persisted/saved
-		boolean changed = !persister.getVersionType().isSame(
-				persister.getVersion( target ),
-				persister.getVersion( entity )
-		);
-
-		// TODO : perhaps we should additionally require that the incoming entity
-		// version be equivalent to the defined unsaved-value?
-		return changed && existsInDatabase( target, source, persister );
 	}
 
 	private static boolean existsInDatabase(Object entity, EventSource source, EntityPersister persister) {

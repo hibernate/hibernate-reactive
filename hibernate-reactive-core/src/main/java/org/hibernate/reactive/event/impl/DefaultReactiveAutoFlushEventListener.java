@@ -81,7 +81,7 @@ public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlush
 
 	private boolean flushIsReallyNeeded(AutoFlushEvent event, final EventSource source) {
 		return source.getHibernateFlushMode() == FlushMode.ALWAYS
-				|| reactiveActionQueue( source ).areTablesToBeUpdated( event.getQuerySpaces() );
+			|| reactiveActionQueue( source ).areTablesToBeUpdated( event.getQuerySpaces() );
 	}
 
 	private ReactiveActionQueue reactiveActionQueue(EventSource source) {

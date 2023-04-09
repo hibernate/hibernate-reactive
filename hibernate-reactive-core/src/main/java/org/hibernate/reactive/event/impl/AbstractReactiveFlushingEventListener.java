@@ -6,7 +6,6 @@
 package org.hibernate.reactive.event.impl;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
@@ -26,6 +25,7 @@ import org.hibernate.event.spi.FlushEntityEvent;
 import org.hibernate.event.spi.FlushEntityEventListener;
 import org.hibernate.event.spi.FlushEvent;
 import org.hibernate.event.spi.PersistContext;
+import org.hibernate.internal.util.EntityPrinter;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.Cascade;
@@ -54,15 +54,13 @@ public abstract class AbstractReactiveFlushingEventListener {
 		//		during-flush callbacks more leniency in regards to initializing proxies and
 		//		lazy collections during their processing.
 		// For more information, see HHH-2763
-		return voidFuture()
-				.thenCompose( v -> {
-					session.getJdbcCoordinator().flushBeginning();
-					session.getPersistenceContext().setFlushing( true );
-					// we need to lock the collection caches before executing entity inserts/updates in order to
-					// account for bi-directional associations
-					actionQueue( session ).prepareActions();
-					return actionQueue( session ).executeActions();
-				} )
+		session.getJdbcCoordinator().flushBeginning();
+		session.getPersistenceContext().setFlushing( true );
+		// we need to lock the collection caches before executing entity inserts/updates
+		// in order to account for bidirectional associations
+		final ReactiveActionQueue actionQueue = actionQueue(session);
+		actionQueue.prepareActions();
+		return actionQueue.executeActions()
 				.whenComplete( (v, x) -> {
 					session.getPersistenceContext().setFlushing( false );
 					session.getJdbcCoordinator().flushEnding();
@@ -85,12 +83,12 @@ public abstract class AbstractReactiveFlushingEventListener {
 
 		LOG.trace( "Flushing session" );
 
-		EventSource session = event.getSession();
+		final EventSource session = event.getSession();
 
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 		session.getInterceptor().preFlush( persistenceContext.managedEntitiesIterator() );
 
-		return prepareEntityFlushes(session, persistenceContext)
+		return prepareEntityFlushes( session, persistenceContext )
 				.thenAccept( v -> {
 					// we could move this inside if we wanted to
 					// tolerate collection initializations during
@@ -99,21 +97,46 @@ public abstract class AbstractReactiveFlushingEventListener {
 					// now, any collections that are initialized
 					// inside this block do not get updated - they
 					// are ignored until the next flush
-					persistenceContext.setFlushing(true);
+					persistenceContext.setFlushing( true );
 					try {
-						int entityCount = flushEntities(event, persistenceContext);
-						int collectionCount = flushCollections(session, persistenceContext);
+						int entityCount = flushEntities( event, persistenceContext );
+						int collectionCount = flushCollections( session, persistenceContext );
 
 						event.setNumberOfEntitiesProcessed(entityCount);
 						event.setNumberOfCollectionsProcessed(collectionCount);
 					}
 					finally {
-						persistenceContext.setFlushing(false);
+						persistenceContext.setFlushing( false );
 					}
-				} );
 
-		//some statistics
-//		logFlushResults( event );
+					//some statistics
+					logFlushResults( event );
+				} );
+	}
+
+	protected void logFlushResults(FlushEvent event) {
+		if ( !LOG.isDebugEnabled() ) {
+			return;
+		}
+		final EventSource session = event.getSession();
+		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+		LOG.debugf(
+				"Flushed: %s insertions, %s updates, %s deletions to %s objects",
+				session.getActionQueue().numberOfInsertions(),
+				session.getActionQueue().numberOfUpdates(),
+				session.getActionQueue().numberOfDeletions(),
+				persistenceContext.getNumberOfManagedEntities()
+		);
+		LOG.debugf(
+				"Flushed: %s (re)creations, %s updates, %s removals to %s collections",
+				session.getActionQueue().numberOfCollectionCreations(),
+				session.getActionQueue().numberOfCollectionUpdates(),
+				session.getActionQueue().numberOfCollectionRemovals(),
+				persistenceContext.getCollectionEntriesSize()
+		);
+		new EntityPrinter( session.getFactory() ).toString(
+				persistenceContext.getEntitiesByKey().entrySet()
+		);
 	}
 
 	/**
@@ -125,9 +148,9 @@ public abstract class AbstractReactiveFlushingEventListener {
 
 		LOG.debug( "Processing flush-time cascades" );
 
-		PersistContext context = PersistContext.create();
+		final PersistContext context = PersistContext.create();
 		//safe from concurrent modification because of how concurrentEntries() is implemented on IdentityMap
-		Map.Entry<Object, EntityEntry>[] entries = persistenceContext.reentrantSafeEntityEntries();
+		final Map.Entry<Object, EntityEntry>[] entries = persistenceContext.reentrantSafeEntityEntries();
 		return loop(
 				entries,
 				index -> flushable( entries[index].getValue() ),
@@ -135,7 +158,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 	}
 
 	private static boolean flushable(EntityEntry entry) {
-		Status status = entry.getStatus();
+		final Status status = entry.getStatus();
 		return status == Status.MANAGED
 			|| status == Status.SAVING
 			|| status == Status.READ_ONLY;
@@ -183,8 +206,8 @@ public abstract class AbstractReactiveFlushingEventListener {
 
 			// Update the status of the object and if necessary, schedule an update
 
-			EntityEntry entry = me.getValue();
-			Status status = entry.getStatus();
+			final EntityEntry entry = me.getValue();
+			final Status status = entry.getStatus();
 
 			if ( status != Status.LOADING && status != Status.GONE ) {
 				final FlushEntityEvent entityEvent = new FlushEntityEvent( source, me.getKey(), entry );
@@ -316,7 +339,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 					}
 					else {
 						//otherwise recreate the mapping between the collection and its key
-						CollectionKey collectionKey = new CollectionKey(
+						final CollectionKey collectionKey = new CollectionKey(
 								collectionEntry.getLoadedPersister(),
 								collectionEntry.getLoadedKey()
 						);
