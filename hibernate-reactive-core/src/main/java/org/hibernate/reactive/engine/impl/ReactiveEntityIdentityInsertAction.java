@@ -47,8 +47,7 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 
 	@Override
 	public CompletionStage<Void> reactiveExecute() throws HibernateException {
-
-		CompletionStage<Void> stage = reactiveNullifyTransientReferencesIfNotAlready();
+		final CompletionStage<Void> stage = reactiveNullifyTransientReferencesIfNotAlready();
 
 		final EntityPersister persister = getPersister();
 		final SharedSessionContractImplementor session = getSession();
@@ -60,12 +59,12 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 		// else inserted the same pk first, the insert would fail
 
 		if ( !isVeto() ) {
-			ReactiveEntityPersister reactivePersister = (ReactiveEntityPersister) persister;
+			final ReactiveEntityPersister reactivePersister = (ReactiveEntityPersister) persister;
 			return stage
 					.thenCompose( v -> reactivePersister.insertReactive( getState(), instance, session ) )
 					.thenCompose( generatedId -> {
 						setGeneratedId( generatedId );
-						return processInsertGenerated( reactivePersister, generatedId, instance, session )
+						return processInsertGeneratedProperties( reactivePersister, generatedId, instance, session )
 								.thenApply( v -> generatedId );
 					} )
 					.thenAccept( generatedId -> {
@@ -74,7 +73,7 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 						persister.setIdentifier( instance, generatedId, session );
 						final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 						persistenceContext.registerInsertedKey( getPersister(), generatedId );
-						EntityKey entityKey = session.generateEntityKey( generatedId, persister );
+						final EntityKey entityKey = session.generateEntityKey( generatedId, persister );
 						setEntityKey( entityKey );
 						persistenceContext.checkUniqueness( entityKey, getInstance() );
 
@@ -95,13 +94,13 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 		}
 	}
 
-	private CompletionStage<Void> processInsertGenerated(
-			ReactiveEntityPersister reactivePersister,
+	private CompletionStage<Void> processInsertGeneratedProperties(
+			ReactiveEntityPersister persister,
 			Object generatedId,
 			Object instance,
 			SharedSessionContractImplementor session) {
-		return reactivePersister.hasInsertGeneratedProperties()
-				? reactivePersister.reactiveProcessInsertGenerated( generatedId, instance, getState(), session )
+		return persister.hasInsertGeneratedProperties()
+				? persister.reactiveProcessInsertGenerated( generatedId, instance, getState(), session )
 				: voidFuture();
 	}
 

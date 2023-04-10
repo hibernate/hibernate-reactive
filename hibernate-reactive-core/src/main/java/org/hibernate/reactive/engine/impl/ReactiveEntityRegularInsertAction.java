@@ -14,11 +14,14 @@ import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.entry.CacheEntry;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.stat.internal.StatsHelper;
+import org.hibernate.stat.spi.StatisticsImplementor;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -50,74 +53,76 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 
 	@Override
 	public CompletionStage<Void> reactiveExecute() throws HibernateException {
+		final CompletionStage<Void> stage = reactiveNullifyTransientReferencesIfNotAlready();
 
-		return reactiveNullifyTransientReferencesIfNotAlready().thenCompose( v-> {
+		final EntityPersister persister = getPersister();
+		final SharedSessionContractImplementor session = getSession();
+		final Object instance = getInstance();
+		final Object id = getId();
 
-			EntityPersister persister = getPersister();
-			final SharedSessionContractImplementor session = getSession();
-			final Object instance = getInstance();
-			final Object id = getId();
+		// FIXME: It needs to become async
+		final boolean veto = preInsert();
 
-			// FIXME: It needs to become async
-			final boolean veto = preInsert();
+		// Don't need to lock the cache here, since if someone
+		// else inserted the same pk first, the insert would fail
+		if ( !veto ) {
+			final ReactiveEntityPersister reactivePersister = (ReactiveEntityPersister) persister;
+			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+			return stage
+					.thenCompose( v -> reactivePersister.insertReactive( id, getState(), instance, session ) )
+					.thenApply( res -> {
+						final EntityEntry entry = persistenceContext.getEntry( instance );
+						if ( entry == null ) {
+							throw new AssertionFailure( "possible non-threadsafe access to session" );
+						}
+						entry.postInsert( getState() );
+						return entry;
+					} )
+					.thenCompose( entry -> processInsertGeneratedProperties( reactivePersister, session, instance, id, entry ) )
+					.thenAccept( vv -> {
+						persistenceContext.registerInsertedKey( persister, getId() );
+						addCollectionsByKeyToPersistenceContext( persistenceContext, getState() );
+						putCacheIfNecessary();
+						handleNaturalIdPostSaveNotifications( id );
+						postInsert();
 
-			// Don't need to lock the cache here, since if someone
-			// else inserted the same pk first, the insert would fail
-			CompletionStage<Void> insertStage;
-			if ( !veto ) {
-				ReactiveEntityPersister reactivePersister = (ReactiveEntityPersister) persister;
-				insertStage = reactivePersister.insertReactive( id, getState(), instance, session )
-						.thenApply( res -> {
-							EntityEntry entry = session.getPersistenceContext().getEntry( instance );
-							if ( entry == null ) {
-								throw new AssertionFailure( "possible non-threadsafe access to session" );
-							}
-							entry.postInsert( getState() );
-							return entry;
-						} )
-						.thenCompose( entry -> processInsertGeneratedProperties( reactivePersister, session, instance, id, entry )
-								.thenAccept( vv -> session.getPersistenceContext().registerInsertedKey( persister, getId() ) ) );
+						final StatisticsImplementor statistics = session.getFactory().getStatistics();
+						if ( statistics.isStatisticsEnabled() && !veto ) {
+							statistics.insertEntity( getPersister().getEntityName() );
+						}
+
+						markExecuted();
+					} );
+		}
+		else {
+			putCacheIfNecessary();
+			handleNaturalIdPostSaveNotifications( id );
+			postInsert();
+			markExecuted();
+			return stage;
+		}
+	}
+
+	//TODO: copy/paste from superclass (make it protected)
+	private void putCacheIfNecessary() {
+		final EntityPersister persister = getPersister();
+		final SharedSessionContractImplementor session = getSession();
+		if ( isCachePutEnabled( persister, session ) ) {
+			final SessionFactoryImplementor factory = session.getFactory();
+			final CacheEntry ce = persister.buildCacheEntry( getInstance(), getState(), getVersion(), session );
+			setCacheEntry( persister.getCacheEntryStructure().structure( ce ) );
+			final EntityDataAccess cache = persister.getCacheAccessStrategy();
+			final Object ck = cache.generateCacheKey( getId(), persister, factory, session.getTenantIdentifier() );
+			final boolean put = cacheInsert( persister, ck );
+
+			final StatisticsImplementor statistics = factory.getStatistics();
+			if ( put && statistics.isStatisticsEnabled() ) {
+				statistics.entityCachePut(
+						StatsHelper.INSTANCE.getRootEntityRole( persister ),
+						cache.getRegion().getName()
+				);
 			}
-			else {
-				insertStage = voidFuture();
-			}
-
-			return insertStage.thenApply( res -> {
-				final SessionFactoryImplementor factory = session.getFactory();
-
-				if ( isCachePutEnabled( persister, session ) ) {
-					final CacheEntry ce = persister.buildCacheEntry(
-							instance,
-							getState(),
-							getVersion(),
-							session
-					);
-					setCacheEntry( persister.getCacheEntryStructure().structure( ce ) );
-					final EntityDataAccess cache = persister.getCacheAccessStrategy();
-					final Object ck = cache.generateCacheKey( id, persister, factory, session.getTenantIdentifier() );
-
-					final boolean put = cacheInsert( persister, ck );
-
-					if ( put && factory.getStatistics().isStatisticsEnabled() ) {
-						factory.getStatistics().entityCachePut(
-								persister.getNavigableRole(),
-								persister.getCacheAccessStrategy().getRegion().getName()
-						);
-					}
-				}
-
-				handleNaturalIdPostSaveNotifications( id );
-
-				postInsert();
-
-				if ( factory.getStatistics().isStatisticsEnabled() && !veto ) {
-					factory.getStatistics().insertEntity( getEntityName() );
-				}
-
-				markExecuted();
-				return null;
-			} );
-		} );
+		}
 	}
 
 	private CompletionStage<Void> processInsertGeneratedProperties(
@@ -135,7 +140,9 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 					.thenAccept( v -> entry.postUpdate( instance, getState(), getVersion() ) );
 
 		}
-		return voidFuture();
+		else {
+			return voidFuture();
+		}
 	}
 
 	@Override
