@@ -562,7 +562,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 
 	private static Object createProxy(LoadEvent event, EntityPersister persister, EntityKey keyToLoad) {
 		// return new uninitialized proxy
-		Object proxy = persister.createProxy( event.getEntityId(), event.getSession() );
+		final Object proxy = persister.createProxy( event.getEntityId(), event.getSession() );
 		PersistenceContext persistenceContext = event.getSession().getPersistenceContextInternal();
 		persistenceContext.getBatchFetchQueue().addBatchLoadableEntityKey( keyToLoad );
 		persistenceContext.addProxy( keyToLoad, proxy );
@@ -588,11 +588,11 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			LoadType options,
 			SessionImplementor source) {
 
-		final boolean canWriteToCache = persister.canWriteToCache();
 		final SoftLock lock;
 		final Object cacheKey;
+		final boolean canWriteToCache = persister.canWriteToCache();
 		if ( canWriteToCache ) {
-			EntityDataAccess cache = persister.getCacheAccessStrategy();
+			final EntityDataAccess cache = persister.getCacheAccessStrategy();
 			cacheKey = cache.generateCacheKey(
 					event.getEntityId(),
 					persister,

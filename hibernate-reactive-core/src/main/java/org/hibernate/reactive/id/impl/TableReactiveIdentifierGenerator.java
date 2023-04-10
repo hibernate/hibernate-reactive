@@ -77,7 +77,7 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 		// and update it by the specified increment, but we
 		// need to do it atomically, and without depending on
 		// transaction rollback.
-		ReactiveConnection connection = session.getReactiveConnection();
+		final ReactiveConnection connection = session.getReactiveConnection();
 		// 1) select the current hi value
 		return connection
 				.selectIdentifier( selectQuery, selectParameters(), Long.class )

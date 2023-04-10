@@ -15,7 +15,6 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.EntityState;
-import org.hibernate.event.internal.EventUtil;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PersistContext;
 import org.hibernate.event.spi.PersistEvent;
@@ -32,6 +31,7 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 
 import static org.hibernate.event.internal.EntityState.getEntityState;
+import static org.hibernate.event.internal.EventUtil.getLoggableName;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -100,13 +100,13 @@ public class DefaultReactivePersistEventListener
 		switch ( entityState( event, entity, entityName, entityEntry ) ) {
 			case DETACHED:
 				return failedFuture( new PersistentObjectException(
-						"detached entity passed to persist: " +
-								EventUtil.getLoggableName(event.getEntityName(), entity)
+						"detached entity passed to persist: "
+								+ getLoggableName( event.getEntityName(), entity )
 				) );
 			case PERSISTENT:
-				return entityIsPersistent(event, createCache);
+				return entityIsPersistent( event, createCache );
 			case TRANSIENT:
-				return entityIsTransient(event, createCache);
+				return entityIsTransient( event, createCache );
 			case DELETED:
 				entityEntry.setStatus( Status.MANAGED );
 				entityEntry.setDeletedState( null );
@@ -116,7 +116,7 @@ public class DefaultReactivePersistEventListener
 				return failedFuture( new ObjectDeletedException(
 						"deleted entity passed to persist",
 						null,
-						EventUtil.getLoggableName( event.getEntityName(), entity )
+						getLoggableName( event.getEntityName(), entity )
 				) );
 		}
 	}
@@ -135,7 +135,7 @@ public class DefaultReactivePersistEventListener
 
 			// NOTE: entityEntry must be null to get here, so we cannot use any of its values
 			final EntityPersister persister = source.getFactory().getMappingMetamodel()
-					.getEntityDescriptor(entityName);
+					.getEntityDescriptor( entityName );
 			if ( persister.getGenerator() instanceof ForeignGenerator ) {
 				if ( LOG.isDebugEnabled() && persister.getIdentifier( entity, source ) != null ) {
 					LOG.debug( "Resetting entity id attribute to null for foreign generator" );
