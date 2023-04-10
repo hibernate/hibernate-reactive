@@ -27,7 +27,6 @@ import org.hibernate.LockOptions;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.spi.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
-import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -69,6 +68,8 @@ import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.Metamodel;
 import jakarta.persistence.metamodel.SingularAttribute;
 
+import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
+import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.internal.util.LockModeConverter.convertToLockMode;
 import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheMode;
 import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheRetrieveMode;
@@ -2801,15 +2802,15 @@ public interface Stage {
 			return CompletionStages.nullFuture();
 		}
 
-		SharedSessionContractImplementor session;
+		final SharedSessionContractImplementor session;
 		if ( association instanceof HibernateProxy) {
 			session = ( (HibernateProxy) association ).getHibernateLazyInitializer().getSession();
 		}
 		else if ( association instanceof PersistentCollection) {
-			session = ( (AbstractPersistentCollection) association ).getSession();
+			session = ( (AbstractPersistentCollection<?>) association ).getSession();
 		}
-		else if ( ManagedTypeHelper.isPersistentAttributeInterceptable( association ) ) {
-			final PersistentAttributeInterceptable interceptable = ManagedTypeHelper.asPersistentAttributeInterceptable( association );
+		else if ( isPersistentAttributeInterceptable( association ) ) {
+			final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( association );
 			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
 			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor) {
 				session = ( (EnhancementAsProxyLazinessInterceptor) interceptor ).getLinkedSession();
