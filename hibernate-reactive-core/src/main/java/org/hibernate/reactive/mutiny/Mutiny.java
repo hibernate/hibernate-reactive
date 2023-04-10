@@ -28,7 +28,6 @@ import org.hibernate.NonUniqueResultException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.spi.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
-import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -39,7 +38,6 @@ import org.hibernate.metamodel.model.domain.BasicDomainType;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.CommonQueryContract;
-import org.hibernate.query.NativeQuery;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
@@ -70,6 +68,8 @@ import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.Metamodel;
 import jakarta.persistence.metamodel.SingularAttribute;
 
+import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
+import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.internal.util.LockModeConverter.convertToLockMode;
 import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheMode;
 import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheRetrieveMode;
@@ -2751,17 +2751,16 @@ public interface Mutiny {
 			return Uni.createFrom().nullItem();
 		}
 
-		SharedSessionContractImplementor session;
+		final SharedSessionContractImplementor session;
 		if ( association instanceof HibernateProxy ) {
 			session = ( (HibernateProxy) association ).getHibernateLazyInitializer().getSession();
 		}
 		else if ( association instanceof PersistentCollection ) {
 			//this unfortunately doesn't work for stateless session because the session ref gets set to null
-			session = ( (AbstractPersistentCollection<T>) association ).getSession();
+			session = ( (AbstractPersistentCollection<?>) association ).getSession();
 		}
-		else if ( ManagedTypeHelper.isPersistentAttributeInterceptable( association ) ) {
-			final PersistentAttributeInterceptable interceptable = ManagedTypeHelper.asPersistentAttributeInterceptable(
-					association );
+		else if ( isPersistentAttributeInterceptable( association ) ) {
+			final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( association );
 			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
 			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
 				session = ( (EnhancementAsProxyLazinessInterceptor) interceptor ).getLinkedSession();

@@ -15,18 +15,20 @@ import org.hibernate.NonUniqueObjectException;
 import org.hibernate.PersistentObjectException;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.action.internal.DelayedPostInsertIdentifier;
+import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.SoftLock;
-import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
+import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.engine.spi.Status;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
-import org.hibernate.event.spi.LoadEventListener;import org.hibernate.event.spi.LoadEventListener.LoadType;
+import org.hibernate.event.spi.LoadEventListener;
 import org.hibernate.loader.ast.internal.CacheEntityLoaderHelper;
+import org.hibernate.loader.ast.internal.CacheEntityLoaderHelper.PersistenceContextEntry;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.AttributeMappingsList;
 import org.hibernate.metamodel.mapping.CompositeIdentifierMapping;
@@ -42,8 +44,11 @@ import org.hibernate.reactive.loader.entity.ReactiveCacheEntityLoaderHelper;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
+import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
+import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.session.impl.SessionUtil.throwEntityNotFound;
@@ -91,7 +96,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		// Since this method is not reactive, we're not expecting to hit the
 		// database here (if we do, it's a bug) and so we can assume the
 		// returned CompletionStage is already completed
-		CompletionStage<Void> checkId = checkId( event, loadType, persister );
+		final CompletionStage<Void> checkId = checkId( event, loadType, persister );
 		if ( !checkId.toCompletableFuture().isDone() ) {
 			// This only happens if the object is loaded from the db
 			throw new UnexpectedAccessToTheDatabase();
@@ -101,7 +106,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			// Since this method is not reactive, we're not expecting to hit the
 			// database here (if we do, it's a bug) and so we can assume the
 			// returned CompletionStage is already completed (a proxy, perhaps)
-			CompletionStage<Object> loaded = doOnLoad( persister, event, loadType );
+			final CompletionStage<Object> loaded = doOnLoad( persister, event, loadType );
 			if ( !loaded.toCompletableFuture().isDone() ) {
 				// This only happens if the object is loaded from the db
 				throw new UnexpectedAccessToTheDatabase();
@@ -244,7 +249,8 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 				}
 			}
 		}
-		throw new TypeMismatchException( "Provided id of the wrong type for class " + persister.getEntityName() + ". Expected: " + idClass + ", got " + event.getEntityId().getClass() );
+		throw new TypeMismatchException( "Provided id of the wrong type for class " + persister.getEntityName()
+				+ ". Expected: " + idClass + ", got " + event.getEntityId().getClass() );
 	}
 
 	/*
@@ -338,8 +344,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	}
 
 	private static boolean wasDeleted(PersistenceContext persistenceContext, Object existing) {
-		final Status status = persistenceContext.getEntry( existing ).getStatus();
-		return status == Status.DELETED || status == Status.GONE;
+		return persistenceContext.getEntry( existing ).getStatus().isDeletedOrGone();
 	}
 
 	private CompletionStage<Object> loadWithBytecodeProxy(LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
@@ -372,12 +377,12 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		final Object proxy = event.getSession().getPersistenceContextInternal().getProxy( keyToLoad );
 		if ( proxy != null ) {
 			// narrow the existing proxy to the type we're looking for
-			return returnNarrowedProxy( event, persister, keyToLoad, options, proxy );
+			return narrowedProxy( event, persister, keyToLoad, options, proxy );
 		}
 		else if ( options.isAllowProxyCreation() ) {
 			// return a new proxy
 			// ORM calls DefaultLoadEventListener#proxyOrCache
-			return completedFuture( createProxyIfNecessary( event, persister, keyToLoad, options ) );
+			return completedFuture( proxyOrCached( event, persister, keyToLoad, options ) );
 		}
 		else {
 			return load( event, persister, keyToLoad, options );
@@ -404,9 +409,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		}
 		else if ( persister.hasSubclasses() ) {
 			// specialized handling for entities with subclasses with a HibernateProxy factory
-			// entities with subclasses that define a ProxyFactory can create a HibernateProxy
-			// Maybe we can get it from the cache: Check DefaultLoadEventListener#proxyOrCache
-			return completedFuture( createProxy( event, persister, keyToLoad ) );
+			return completedFuture( proxyOrCached( event, persister, keyToLoad ) );
 		}
 		else {
 			// no existing proxy, and no subclasses
@@ -427,22 +430,40 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		return persister.getBytecodeEnhancementMetadata().createEnhancedProxy( keyToLoad, true, session );
 	}
 
-	private CompletionStage<Object> proxyImplementation(LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
-		return load( event, persister, keyToLoad, options )
-				.thenApply( optional -> {
-					if (optional != null ) {
-						return optional;
-					}
-					if ( options != LoadEventListener.INTERNAL_LOAD_NULLABLE ) {
-						// throw an appropriate exception
-						event.getSession().getFactory().getEntityNotFoundDelegate()
-								.handleEntityNotFound( persister.getEntityName(), keyToLoad.getIdentifier() );
-					}
-					// Otherwise, if it's INTERNAL_LOAD_NULLABLE, the proxy is
-					// for a non-existing association mapped as @NotFound.
-					// Don't throw an exception; just return null.
-					return null;
-				} );
+	private static Object proxyOrCached(LoadEvent event, EntityPersister persister, EntityKey keyToLoad) {
+		final Object cachedEntity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache(
+				event.getSession(),
+				null,
+				LockMode.NONE,
+				persister,
+				keyToLoad
+		);
+		if ( cachedEntity != null ) {
+			return cachedEntity;
+		}
+		// entities with subclasses that define a ProxyFactory can create a HibernateProxy
+		return createProxy( event, persister, keyToLoad );
+	}
+
+	private static Object proxyOrCached(LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
+		final PersistenceContext persistenceContext = event.getSession().getPersistenceContext();
+		final Object existing = persistenceContext.getEntity( keyToLoad );
+		if ( existing != null ) {
+			return options.isCheckDeleted() && wasDeleted( persistenceContext, existing ) ? null : existing;
+		}
+		if ( persister.hasSubclasses() ) {
+			final Object cachedEntity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache(
+					event.getSession(),
+					null,
+					LockMode.NONE,
+					persister,
+					keyToLoad
+			);
+			if ( cachedEntity != null ) {
+				return cachedEntity;
+			}
+		}
+		return createProxyIfNecessary( event, persister, keyToLoad, options );
 	}
 
 	/**
@@ -457,7 +478,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 *
 	 * @return The created/existing proxy
 	 */
-	private CompletionStage<Object> returnNarrowedProxy(
+	private CompletionStage<Object> narrowedProxy(
 			LoadEvent event,
 			EntityPersister persister,
 			EntityKey keyToLoad,
@@ -468,21 +489,41 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		}
 
 		LazyInitializer li = ( (HibernateProxy) proxy ).getHibernateLazyInitializer();
-
 		if ( li.isUnwrap() ) {
 			return completedFuture( li.getImplementation() );
 		}
-
-		final PersistenceContext persistenceContext = event.getSession().getPersistenceContextInternal();
-		if ( options.isAllowProxyCreation() ) {
-			return completedFuture( persistenceContext.narrowProxy( proxy, persister, keyToLoad, null ) );
-		}
 		else {
-			return proxyImplementation( event, persister, keyToLoad, options )
-					.thenApply( impl -> impl == null
-							? null
-							: persistenceContext.narrowProxy( proxy, persister, keyToLoad, impl ) );
+			final PersistenceContext persistenceContext = event.getSession().getPersistenceContextInternal();
+			if ( options.isAllowProxyCreation() ) {
+				return completedFuture( persistenceContext.narrowProxy( proxy, persister, keyToLoad, null ) );
+			}
+			else {
+				return proxyImplementation( event, persister, keyToLoad, options )
+						.thenApply( impl -> impl == null
+								? null
+								: persistenceContext.narrowProxy( proxy, persister, keyToLoad, impl ) );
+			}
 		}
+	}
+
+	private CompletionStage<Object> proxyImplementation(LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
+		return load( event, persister, keyToLoad, options )
+				.thenApply( optional -> {
+					if ( optional != null ) {
+						return optional;
+					}
+					else {
+						if ( options != LoadEventListener.INTERNAL_LOAD_NULLABLE ) {
+							// throw an appropriate exception
+							event.getSession().getFactory().getEntityNotFoundDelegate()
+									.handleEntityNotFound( persister.getEntityName(), keyToLoad.getIdentifier() );
+						}
+						// Otherwise, if it's INTERNAL_LOAD_NULLABLE, the proxy is
+						// for a non-existing association mapped as @NotFound.
+						// Don't throw an exception; just return null.
+						return null;
+					}
+				} );
 	}
 
 	/**
@@ -497,38 +538,29 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 *
 	 * @return The created/existing proxy
 	 */
-	private Object createProxyIfNecessary(
+	private static Object createProxyIfNecessary(
 			LoadEvent event,
 			EntityPersister persister,
 			EntityKey keyToLoad,
 			LoadType options) {
 		final PersistenceContext persistenceContext = event.getSession().getPersistenceContextInternal();
 		final Object existing = persistenceContext.getEntity( keyToLoad );
-		final boolean traceEnabled = LOG.isTraceEnabled();
 		if ( existing != null ) {
 			// return existing object or initialized proxy (unless deleted)
-			if ( traceEnabled ) {
+			if ( LOG.isTraceEnabled() ) {
 				LOG.trace( "Entity found in session cache" );
 			}
-			if ( options.isCheckDeleted() ) {
-				EntityEntry entry = persistenceContext.getEntry( existing );
-				Status status = entry.getStatus();
-				if ( status == Status.DELETED || status == Status.GONE ) {
-					return null;
-				}
+			return options.isCheckDeleted() && wasDeleted( persistenceContext, existing ) ? null : existing;
+		}
+		else {
+			if ( LOG.isTraceEnabled() ) {
+				LOG.trace( "Creating new proxy for entity" );
 			}
-			return existing;
+			return createProxy( event, persister, keyToLoad );
 		}
-		if ( traceEnabled ) {
-			LOG.trace( "Creating new proxy for entity" );
-		}
-		return createProxy( event, persister, keyToLoad );
 	}
 
-	private static Object createProxy(
-			LoadEvent event,
-			EntityPersister persister,
-			EntityKey keyToLoad) {
+	private static Object createProxy(LoadEvent event, EntityPersister persister, EntityKey keyToLoad) {
 		// return new uninitialized proxy
 		Object proxy = persister.createProxy( event.getEntityId(), event.getSession() );
 		PersistenceContext persistenceContext = event.getSession().getPersistenceContextInternal();
@@ -611,28 +643,59 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			EntityPersister persister,
 			EntityKey keyToLoad,
 			LoadType options) {
-
-		final EventSource session = event.getSession();
-		final boolean traceEnabled = LOG.isTraceEnabled();
-		if ( traceEnabled ) {
+		if ( LOG.isTraceEnabled() ) {
 			LOG.tracev(
 					"Attempting to resolve: {0}",
-					infoString( persister, event.getEntityId(), session.getFactory() )
+					infoString( persister, event.getEntityId(), event.getSession().getFactory() )
 			);
 		}
 
-		final CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry =
-				ReactiveCacheEntityLoaderHelper.INSTANCE.loadFromSessionCache( event, keyToLoad, options );
-		Object entity = persistenceContextEntry.getEntity();
-		if ( entity != null ) {
-			return persistenceContextEntry.isManaged()
-					? completedFuture( entity )
-					: nullFuture();
+		if ( event.getSession().getPersistenceContextInternal().containsDeletedUnloadedEntityKey( keyToLoad ) ) {
+			return nullFuture();
 		}
+		else {
+			final PersistenceContextEntry persistenceContextEntry =
+					ReactiveCacheEntityLoaderHelper.INSTANCE.loadFromSessionCache( event, keyToLoad, options );
+			final Object entity = persistenceContextEntry.getEntity();
+			if ( entity != null ) {
+				return persistenceContextEntry.isManaged() ? initializeIfNecessary( entity ) : nullFuture();
+			}
+			else {
+				return loadFromCacheOrDatasource( event, persister, keyToLoad );
+			}
+		}
+	}
 
-		entity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache( event, persister, keyToLoad );
+	private static CompletionStage<Object> initializeIfNecessary(Object entity) {
+		if ( isPersistentAttributeInterceptable( entity ) ) {
+			final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( entity );
+			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor) {
+				final EnhancementAsProxyLazinessInterceptor lazinessInterceptor =
+						(EnhancementAsProxyLazinessInterceptor) interceptor;
+				final SharedSessionContractImplementor session = lazinessInterceptor.getLinkedSession();
+				if ( session == null ) {
+					throw LOG.sessionClosedLazyInitializationException();
+				}
+				return ReactiveQueryExecutorLookup.extract( session ).reactiveFetch( entity, false );
+			}
+			else {
+				return completedFuture( entity );
+			}
+		}
+		else {
+			return completedFuture( entity );
+		}
+	}
+
+	private CompletionStage<Object> loadFromCacheOrDatasource(
+			LoadEvent event,
+			EntityPersister persister,
+			EntityKey keyToLoad) {
+		final EventSource session = event.getSession();
+		final Object entity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache(event, persister, keyToLoad);
 		if ( entity != null ) {
-			if ( traceEnabled ) {
+			if ( LOG.isTraceEnabled() ) {
 				LOG.tracev(
 						"Resolved object in second-level cache: {0}",
 						infoString( persister, event.getEntityId(), session.getFactory() )
@@ -642,7 +705,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			return completedFuture( entity );
 		}
 		else {
-			if ( traceEnabled ) {
+			if ( LOG.isTraceEnabled() ) {
 				LOG.tracev(
 						"Object not resolved in any cache: {0}",
 						infoString( persister, event.getEntityId(), session.getFactory() )
@@ -650,7 +713,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			}
 			return loadFromDatasource( event, persister )
 					.thenApply( optional -> {
-						if ( optional!=null ) {
+						if ( optional != null ) {
 							cacheNaturalId( event, persister, session, optional );
 						}
 						return optional;
@@ -661,9 +724,10 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	private void cacheNaturalId(LoadEvent event, EntityPersister persister, EventSource session, Object entity) {
 		if ( entity != null && persister.hasNaturalIdentifier() ) {
 			session.getPersistenceContextInternal().getNaturalIdResolutions()
-					.cacheResolutionFromLoad( event.getEntityId(),
-											  persister.getNaturalIdMapping().extractNaturalIdFromEntity( entity ),
-											  persister
+					.cacheResolutionFromLoad(
+							event.getEntityId(),
+							persister.getNaturalIdMapping().extractNaturalIdFromEntity( entity ),
+							persister
 					);
 		}
 	}
@@ -692,8 +756,9 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 					//		persister/loader/initializer sensitive to this fact - possibly
 					//		passing LoadType along
 
-					if ( entity instanceof HibernateProxy ) {
-						entity = ( (HibernateProxy) entity ).getHibernateLazyInitializer().getImplementation();
+					final LazyInitializer lazyInitializer = HibernateProxy.extractLazyInitializer( entity );
+					if ( lazyInitializer != null ) {
+						entity = lazyInitializer.getImplementation();
 					}
 
 					final StatisticsImplementor statistics = event.getSession().getFactory().getStatistics();
