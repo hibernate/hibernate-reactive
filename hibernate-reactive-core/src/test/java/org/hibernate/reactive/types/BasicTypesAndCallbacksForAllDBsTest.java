@@ -62,6 +62,7 @@ import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
 
 /**
  * Test all the types and lifecycle callbacks that we expect to work on all supported DBs
@@ -417,9 +418,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 		testField( context, basic, found -> {
 			context.assertNotNull( found.instant );
-			// Without the truncated it fails with JDK 15+
-			context.assertEquals( basic.instant.truncatedTo( ChronoUnit.MILLIS ),
-								  found.instant.truncatedTo( ChronoUnit.MILLIS ) );
+			assertWithTruncationThat( found.instant ).isEqualTo( basic.instant );
 		} );
 	}
 
