@@ -8,13 +8,8 @@ package org.hibernate.reactive.engine.impl;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityDeleteAction;
-import org.hibernate.cache.spi.access.EntityDataAccess;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.persister.entity.EntityPersister;
@@ -88,75 +83,5 @@ public class ReactiveEntityDeleteAction extends EntityDeleteAction implements Re
 				statistics.deleteEntity( getPersister().getEntityName() );
 			}
 		} );
-	}
-
-	//TODO: copy/paste from superclass (make it protected!)
-	private Object getCurrentVersion() {
-		return getPersister().isVersionPropertyGenerated()
-						// skip if we're deleting an unloaded proxy, no need for the version
-						&& isInstanceLoaded()
-				// we need to grab the version value from the entity, otherwise
-				// we have issues with generated-version entities that may have
-				// multiple actions queued during the same flush
-				? getPersister().getVersion( getInstance() )
-				: getVersion();
-	}
-
-	//TODO: copy/paste of postDeleteLoaded() from superclass (make it protected!)
-	private void postDeleteLoaded(
-			Object id,
-			EntityPersister persister,
-			SharedSessionContractImplementor session,
-			Object instance,
-			Object ck) {
-		// After actually deleting a row, record the fact that the instance no longer
-		// exists on the database (needed for identity-column key generation), and
-		// remove it from the session cache
-		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-		final EntityEntry entry = persistenceContext.removeEntry(instance);
-		if ( entry == null ) {
-			throw new AssertionFailure( "possible non-threadsafe access to session" );
-		}
-		entry.postDelete();
-		final EntityKey key = entry.getEntityKey();
-		persistenceContext.removeEntity( key );
-		persistenceContext.removeProxy( key );
-		removeCacheItem( ck );
-		persistenceContext.getNaturalIdResolutions().removeSharedResolution( id, getNaturalIdValues(), persister );
-		postDelete();
-	}
-
-	//TODO: copy/paste of postDeleteUnloaded() from superclass (make it protected!)
-	private void postDeleteUnloaded(Object id, EntityPersister persister, SharedSessionContractImplementor session, Object ck) {
-		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-		final EntityKey key = session.generateEntityKey( id, persister );
-		if ( !persistenceContext.containsDeletedUnloadedEntityKey( key ) ) {
-			throw new AssertionFailure( "deleted proxy should be for an unloaded entity: " + key );
-		}
-		persistenceContext.removeProxy( key );
-		removeCacheItem( ck );
-	}
-
-	//TODO: copy/paste from superclass (make it protected!)
-	private Object lockCacheItem() {
-		final EntityPersister persister = getPersister();
-		if ( persister.canWriteToCache() ) {
-			final EntityDataAccess cache = persister.getCacheAccessStrategy();
-			final SharedSessionContractImplementor session = getSession();
-			final Object ck = cache.generateCacheKey( getId(), persister, session.getFactory(), session.getTenantIdentifier() );
-			setLock( cache.lockItem( session, ck, getCurrentVersion() ) );
-			return ck;
-		}
-		else {
-			return null;
-		}
-	}
-
-	//TODO: copy/paste from superclass (make it protected!)
-	private void removeCacheItem(Object ck) {
-		final EntityPersister persister = getPersister();
-		if ( persister.canWriteToCache() ) {
-			persister.getCacheAccessStrategy().remove( getSession(), ck);
-		}
 	}
 }
