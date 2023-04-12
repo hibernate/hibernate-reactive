@@ -86,6 +86,8 @@ public interface ReactiveNativeQuery<R> extends ReactiveQuery<R> {
 
 	ReactiveNativeQuery<R> addJoin(String tableAlias, String path, LockMode lockMode);
 
+	void addResultTypeClass(Class<?> resultClass);
+
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// covariant overrides - Query
 

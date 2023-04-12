@@ -218,6 +218,11 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
+	public void addResultTypeClass(Class<?> resultClass) {
+		super.addResultTypeClass(resultClass);
+	}
+
+	@Override
 	public ReactiveNativeQueryImpl<R> addScalar(String columnAlias) {
 		super.addScalar( columnAlias );
 		return this;
