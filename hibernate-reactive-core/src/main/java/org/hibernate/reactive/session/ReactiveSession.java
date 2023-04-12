@@ -86,7 +86,7 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 
 	CompletionStage<Object> reactiveImmediateLoad(String entityName, Object id);
 
-	CompletionStage<Void> reactiveInitializeCollection(PersistentCollection collection, boolean writing);
+	CompletionStage<Void> reactiveInitializeCollection(PersistentCollection<?> collection, boolean writing);
 
 	CompletionStage<Void> reactiveRemoveOrphanBeforeUpdates(String entityName, Object child);
 
