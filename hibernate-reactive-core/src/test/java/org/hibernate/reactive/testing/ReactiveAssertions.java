@@ -6,7 +6,6 @@
 package org.hibernate.reactive.testing;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 

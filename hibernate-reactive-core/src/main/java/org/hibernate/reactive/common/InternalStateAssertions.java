@@ -41,15 +41,4 @@ public final class InternalStateAssertions {
 		}
 	}
 
-	public static void assertCurrentThreadMatches(Thread expectedThread) {
-		if ( ENFORCE && ( Thread.currentThread() != expectedThread ) ) {
-			throw LOG.detectedUsedOfTheSessionOnTheWrongThread(
-					expectedThread.getId(),
-					expectedThread.getName(),
-					Thread.currentThread().getId(),
-					Thread.currentThread().getName()
-			);
-		}
-	}
-
 }

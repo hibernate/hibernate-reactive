@@ -157,7 +157,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	private transient final ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
 	private ReactiveConnection reactiveConnection;
-	private final Thread associatedWorkThread;
 
 	//Lazily initialized
 	private transient ExceptionConverter exceptionConverter;
@@ -167,7 +166,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			ReactiveConnection connection) {
 		super( delegate, options );
 		InternalStateAssertions.assertUseOnEventLoop();
-		this.associatedWorkThread = Thread.currentThread();
 		//matches configuration property "hibernate.jdbc.batch_size" :
 		Integer batchSize = getConfiguredJdbcBatchSize();
 		reactiveConnection = batchSize == null || batchSize < 2
@@ -182,12 +180,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public Dialect getDialect() {
-		threadCheck();
 		return getJdbcServices().getDialect();
-	}
-
-	private void threadCheck() {
-		InternalStateAssertions.assertCurrentThreadMatches( associatedWorkThread );
 	}
 
 	@Override
@@ -197,7 +190,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public ReactiveActionQueue getReactiveActionQueue() {
-		threadCheck();
 		return reactiveActionQueue;
 	}
 
@@ -217,7 +209,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 //			EntityPersister persister = getFactory().getMetamodel().entityPersister( entityName );
 //			log.debugf( "Initializing proxy: %s", MessageHelper.infoString( persister, id, getFactory() ) );
 //		}
-		threadCheck();
 		LoadEvent event = new LoadEvent(
 				id, entityName, true, this,
 				getReadOnlyFromLoadQueryInfluencers()
@@ -251,7 +242,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					: LoadEventListener.INTERNAL_LOAD_LAZY;
 		}
 
-		threadCheck();
 		LoadEvent event = new LoadEvent( id, entityName, true, this, getReadOnlyFromLoadQueryInfluencers() );
 		return fireLoadNoChecks( event, type )
 				.thenApply( v -> {
@@ -1776,15 +1766,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			return getEntityPersister( null, entity )
 					.getIdentifier( entity, this );
 		}
-	}
-
-	@Override
-	public void checkOpen() {
-		//The checkOpen check is invoked on all most used public API, making it an
-		//excellent hook to also check for the right thread to be used
-		//(which is an assertion so costs us nothing in terms of performance, after inlining).
-		threadCheck();
-		super.checkOpen();
 	}
 
 	@Override
