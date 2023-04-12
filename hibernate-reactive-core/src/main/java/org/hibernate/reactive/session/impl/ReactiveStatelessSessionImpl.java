@@ -870,7 +870,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaQuery<R> criteria) {
 		SqmUtil.verifyIsSelectStatement( (SqmStatement<R>) criteria, null );
-		return new ReactiveSqmSelectionQueryImpl<R>( (SqmSelectStatement<R>) criteria, criteria.getResultType(), this );
+		return new ReactiveSqmSelectionQueryImpl<>( (SqmSelectStatement<R>) criteria, criteria.getResultType(), this );
 	}
 
 	@Override
@@ -878,7 +878,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		final QueryImplementor<?> query = createQuery( hqlString );
 		final SqmStatement<R> sqmStatement = ( (SqmQueryImplementor<R>) query ).getSqmStatement();
 		checkMutationQuery( hqlString, sqmStatement );
-		return new ReactiveQuerySqmImpl<R>( sqmStatement, null, this );
+		return new ReactiveQuerySqmImpl<>( sqmStatement, null, this );
 	}
 
 	// Change visibility in ORM
@@ -892,7 +892,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate updateQuery) {
 		checkOpen();
 		try {
-			return new ReactiveQuerySqmImpl<R>( (SqmUpdateStatement<R>) updateQuery, null, this );
+			return new ReactiveQuerySqmImpl<>( (SqmUpdateStatement<R>) updateQuery, null, this );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );
@@ -903,7 +903,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete deleteQuery) {
 		checkOpen();
 		try {
-			return new ReactiveQuerySqmImpl<R>( (SqmDeleteStatement<R>) deleteQuery, null, this );
+			return new ReactiveQuerySqmImpl<>( (SqmDeleteStatement<R>) deleteQuery, null, this );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );

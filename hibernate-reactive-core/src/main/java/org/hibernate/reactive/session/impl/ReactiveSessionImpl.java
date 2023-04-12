@@ -359,7 +359,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				}
 			}
 
-			return new ReactiveQuerySqmImpl<R>( selectStatement, criteriaQuery.getResultType(), this );
+			return createCriteriaQuery( selectStatement, criteriaQuery.getResultType() );
 		}
 		catch (RuntimeException e) {
 			if ( getSessionFactory().getJpaMetamodel().getJpaCompliance().isJpaTransactionComplianceEnabled() ) {
@@ -367,6 +367,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			}
 			throw getExceptionConverter().convert( e );
 		}
+	}
+
+	private <T> ReactiveQueryImplementor<T> createCriteriaQuery(SqmStatement<T> criteria, Class<T> resultType) {
+		final ReactiveQuerySqmImpl<T> query = new ReactiveQuerySqmImpl<>( criteria, resultType, this );
+		applyQuerySettingsAndHints( query );
+		return query;
 	}
 
 	@Override
@@ -580,7 +586,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate updateQuery) {
 		checkOpen();
 		try {
-			return new ReactiveQuerySqmImpl<>( (SqmUpdateStatement<R>) updateQuery, null, this );
+			return createCriteriaQuery( (SqmUpdateStatement<R>) updateQuery, null );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );
@@ -591,7 +597,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete deleteQuery) {
 		checkOpen();
 		try {
-			return new ReactiveQuerySqmImpl<>( (SqmDeleteStatement<R>) deleteQuery, null, this );
+			return createCriteriaQuery( (SqmDeleteStatement<R>) deleteQuery, null );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );
@@ -602,7 +608,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect insertSelect) {
 		checkOpen();
 		try {
-			return new ReactiveQuerySqmImpl<>( (SqmInsertSelectStatement<R>) insertSelect, null, this );
+			return createCriteriaQuery( (SqmInsertSelectStatement<R>) insertSelect, null );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );
@@ -792,11 +798,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	 */
 	@Deprecated
 	@Override
-	public void initializeCollection(PersistentCollection collection, boolean writing) {
+	public void initializeCollection(PersistentCollection<?> collection, boolean writing) {
 		throw LOG.collectionCannotBeInitializedlazyInitializationException( collectionRoleLogMessage( collection ) );
 	}
 
-	private static String collectionRoleLogMessage(PersistentCollection collection) {
+	private static String collectionRoleLogMessage(PersistentCollection<?> collection) {
 		if ( collection == null ) {
 			return "collection is null";
 		}
@@ -804,7 +810,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInitializeCollection(PersistentCollection collection, boolean writing) {
+	public CompletionStage<Void> reactiveInitializeCollection(PersistentCollection<?> collection, boolean writing) {
 		checkOpenOrWaitingForAutoClose();
 		pulseTransactionCoordinator();
 		InitializeCollectionEvent event = new InitializeCollectionEvent( collection, this );
