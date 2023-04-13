@@ -313,7 +313,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 
 	@Override
 	public Object loadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
-		throw LOG.notYetImplemented();
+		throw LOG.nonReactiveMethodCall( "loadEntityIdByNaturalId" );
 	}
 
 	@Override

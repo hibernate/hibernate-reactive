@@ -312,7 +312,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 
 	@Override
 	public Object loadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException("not yet implemented");
+		throw LOG.nonReactiveMethodCall( "loadEntityIdByNaturalId" );
 	}
 
 	@Override

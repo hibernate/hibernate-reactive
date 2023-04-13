@@ -121,10 +121,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <R> Mutiny.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new MutinyQueryImpl<>(
-				(ReactiveQuerySqmImpl<R>) delegate.createReactiveQuery( criteriaQuery ),
-				factory
-		);
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ), factory );
 	}
 
 	@Override

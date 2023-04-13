@@ -77,11 +77,11 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(String hqlString);
 
-	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate updateQuery);
+	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate<R> updateQuery);
 
-	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete deleteQuery);
+	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete<R> deleteQuery);
 
-	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect insertSelect);
+	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect<R> insertSelect);
 
 	<R> ReactiveMutationQuery<R> createNativeReactiveMutationQuery(String sqlString);
 
@@ -91,25 +91,13 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name);
 
-	@Deprecated(since = "6.0")
-	@SuppressWarnings("rawtypes")
-	<R> ReactiveQuery getNamedReactiveQuery(String queryName);
+	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String queryString, AffectedEntities affectedEntities);
 
-	@Deprecated(since = "6.0")
-	@SuppressWarnings("rawtypes")
-	<R> ReactiveNativeQuery getNamedReactiveNativeQuery(String name);
+	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities);
 
-	@Deprecated(since = "6.0")
-	@SuppressWarnings("rawtypes")
-	ReactiveNativeQuery getNamedReactiveNativeQuery(String name, String resultSetMapping);
+	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
 
-	<R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, AffectedEntities affectedEntities);
-
-	<R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities);
-
-	<R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
-
-	<R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities);
+	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities);
 
 	<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
 }

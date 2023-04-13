@@ -113,7 +113,7 @@ public class DefaultReactiveResolveNaturalIdEventListener extends AbstractLockUp
 		final boolean statisticsEnabled = statistics.isStatisticsEnabled();
 		final long startTime = statisticsEnabled ? System.nanoTime() : 0;
 
-		return ( (ReactiveEntityPersister) entityPersister)
+		return ( (ReactiveEntityPersister) entityPersister )
 				.reactiveLoadEntityIdByNaturalId( event.getOrderedNaturalIdValues(), event.getLockOptions(), session )
 				.thenApply( pk -> {
 					if ( statisticsEnabled ) {
