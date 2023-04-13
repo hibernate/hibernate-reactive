@@ -12,21 +12,17 @@ import org.hibernate.HibernateException;
 import org.hibernate.action.internal.CollectionAction;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.event.service.spi.EventListenerGroup;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.event.spi.PostCollectionRecreateEvent;
-import org.hibernate.event.spi.PostCollectionRecreateEventListener;
 import org.hibernate.event.spi.PostCollectionRemoveEvent;
 import org.hibernate.event.spi.PostCollectionRemoveEventListener;
-import org.hibernate.event.spi.PreCollectionRecreateEvent;
-import org.hibernate.event.spi.PreCollectionRecreateEventListener;
 import org.hibernate.event.spi.PreCollectionRemoveEvent;
 import org.hibernate.event.spi.PreCollectionRemoveEventListener;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class ReactiveCollectionRemoveAction extends CollectionAction implements ReactiveExecutable {
 	private final Object affectedOwner;
@@ -68,47 +64,33 @@ public class ReactiveCollectionRemoveAction extends CollectionAction implements 
 
 	@Override
 	public CompletionStage<Void> reactiveExecute() {
-		final Object key = getKey();
+		preRemove();
+
 		final SharedSessionContractImplementor session = getSession();
-		final ReactiveCollectionPersister reactivePersister = (ReactiveCollectionPersister) getPersister();
-		final CollectionPersister corePersister = getPersister();
-		final PersistentCollection collection = getCollection();
-		final StatisticsImplementor statistics = session.getFactory().getStatistics();
-
-		CompletionStage<Void> removeStage = CompletionStages.voidFuture();
-
-		if ( !emptySnapshot ) {
+		CompletionStage<Void> removeStage;
+		if ( emptySnapshot ) {
+			removeStage = voidFuture();
+		}
+		else {
+			final ReactiveCollectionPersister reactivePersister = (ReactiveCollectionPersister) getPersister();
 			// an existing collection that was either non-empty or uninitialized
 			// is replaced by null or a different collection
 			// (if the collection is uninitialized, hibernate has no way of
 			// knowing if the collection is actually empty without querying the db)
-			removeStage = removeStage.thenAccept( v -> preRemove() )
-					.thenCompose( v -> reactivePersister
-							.reactiveRemove( key, session )
-							.thenAccept( ignore -> {
-								evict();
-								postRemove();
-							})
-					);
+			removeStage = reactivePersister.reactiveRemove( getKey(), session );
 		}
-		if( collection != null ) {
-			return removeStage.thenAccept(v -> {
+		return removeStage.thenAccept( v -> {
+			final PersistentCollection<?> collection = getCollection();
+			if ( collection != null ) {
 				session.getPersistenceContextInternal().getCollectionEntry( collection ).afterAction( collection );
-				evict();
-				postRemove();
-				if ( statistics.isStatisticsEnabled() ) {
-					statistics.updateCollection( corePersister.getRole() );
-				}
-			} );
-		}
-		return removeStage.thenAccept(v -> {
+			}
 			evict();
 			postRemove();
+			final StatisticsImplementor statistics = session.getFactory().getStatistics();
 			if ( statistics.isStatisticsEnabled() ) {
-				statistics.updateCollection( corePersister.getRole() );
+				statistics.updateCollection( getPersister().getRole() );
 			}
 		} );
-
 	}
 
 	@Override
@@ -118,57 +100,32 @@ public class ReactiveCollectionRemoveAction extends CollectionAction implements 
 	}
 
 	private void preRemove() {
-		final EventListenerGroup<PreCollectionRemoveEventListener> listenerGroup = getFastSessionServices().eventListenerGroup_PRE_COLLECTION_REMOVE;
-		if ( listenerGroup.isEmpty() ) {
-			return;
-		}
-		final PreCollectionRemoveEvent event = new PreCollectionRemoveEvent(
+		getFastSessionServices().eventListenerGroup_PRE_COLLECTION_REMOVE
+				.fireLazyEventOnEachListener( this::newPreCollectionRemoveEvent,
+						PreCollectionRemoveEventListener::onPreRemoveCollection );
+	}
+
+	private PreCollectionRemoveEvent newPreCollectionRemoveEvent() {
+		return new PreCollectionRemoveEvent(
 				getPersister(),
 				getCollection(),
 				eventSource(),
 				affectedOwner
 		);
-		for ( PreCollectionRemoveEventListener listener : listenerGroup.listeners() ) {
-			listener.onPreRemoveCollection( event );
-		}
 	}
 
 	private void postRemove() {
-		final EventListenerGroup<PostCollectionRemoveEventListener> listenerGroup = getFastSessionServices().eventListenerGroup_POST_COLLECTION_REMOVE;
-		if ( listenerGroup.isEmpty() ) {
-			return;
-		}
-		final PostCollectionRemoveEvent event = new PostCollectionRemoveEvent(
+		getFastSessionServices().eventListenerGroup_POST_COLLECTION_REMOVE
+				.fireLazyEventOnEachListener( this::newPostCollectionRemoveEvent,
+						PostCollectionRemoveEventListener::onPostRemoveCollection );
+	}
+
+	private PostCollectionRemoveEvent newPostCollectionRemoveEvent() {
+		return new PostCollectionRemoveEvent(
 				getPersister(),
 				getCollection(),
 				eventSource(),
 				affectedOwner
 		);
-		for ( PostCollectionRemoveEventListener listener : listenerGroup.listeners() ) {
-			listener.onPostRemoveCollection( event );
-		}
 	}
-
-	private void preRecreate() {
-		final EventListenerGroup<PreCollectionRecreateEventListener> listenerGroup = getFastSessionServices().eventListenerGroup_PRE_COLLECTION_RECREATE;
-		if ( listenerGroup.isEmpty() ) {
-			return;
-		}
-		final PreCollectionRecreateEvent event = new PreCollectionRecreateEvent( getPersister(), getCollection(), eventSource() );
-		for ( PreCollectionRecreateEventListener listener : listenerGroup.listeners() ) {
-			listener.onPreRecreateCollection( event );
-		}
-	}
-
-	private void postRecreate() {
-		final EventListenerGroup<PostCollectionRecreateEventListener> listenerGroup = getFastSessionServices().eventListenerGroup_POST_COLLECTION_RECREATE;
-		if ( listenerGroup.isEmpty() ) {
-			return;
-		}
-		final PostCollectionRecreateEvent event = new PostCollectionRecreateEvent( getPersister(), getCollection(), eventSource() );
-		for ( PostCollectionRecreateEventListener listener : listenerGroup.listeners() ) {
-			listener.onPostRecreateCollection( event );
-		}
-	}
-
 }

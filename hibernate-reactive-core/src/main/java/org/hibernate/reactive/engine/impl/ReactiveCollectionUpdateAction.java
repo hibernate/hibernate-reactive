@@ -13,14 +13,9 @@ import org.hibernate.HibernateException;
 import org.hibernate.action.internal.CollectionAction;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.event.service.spi.EventListenerGroup;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.event.spi.PostCollectionRecreateEvent;
-import org.hibernate.event.spi.PostCollectionRecreateEventListener;
 import org.hibernate.event.spi.PostCollectionUpdateEvent;
 import org.hibernate.event.spi.PostCollectionUpdateEventListener;
-import org.hibernate.event.spi.PreCollectionRecreateEvent;
-import org.hibernate.event.spi.PreCollectionRecreateEventListener;
 import org.hibernate.event.spi.PreCollectionUpdateEvent;
 import org.hibernate.event.spi.PreCollectionUpdateEventListener;
 import org.hibernate.persister.collection.CollectionPersister;
@@ -28,10 +23,10 @@ import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 
 /**
@@ -59,15 +54,13 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 		final Object key = getKey();
 		final SharedSessionContractImplementor session = getSession();
 		final ReactiveCollectionPersister reactivePersister = (ReactiveCollectionPersister) getPersister();
-		final CollectionPersister corePersister = getPersister();
+		final CollectionPersister persister = getPersister();
 		final PersistentCollection collection = getCollection();
-		final boolean affectedByFilters = corePersister.isAffectedByEnabledFilters( session );
+		final boolean affectedByFilters = persister.isAffectedByEnabledFilters( session );
 
 		preUpdate();
 
-		CompletionStage<Void> updateStage = CompletionStages.voidFuture();
-
-		// And then make sure that each operations is executed in its own stage maintaining the same order as in ORM
+		final CompletionStage<Void> updateStage;
 		if ( !collection.wasInitialized() ) {
 			// If there were queued operations, they would have been processed
 			// and cleared by now.
@@ -76,53 +69,35 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 				throw new AssertionFailure( "collection is not dirty" );
 			}
 			//do nothing - we only need to notify the cache...
+			updateStage = voidFuture();
 		}
 		else if ( !affectedByFilters && collection.empty() ) {
-			if ( !emptySnapshot ) {
-				updateStage = updateStage
-						.thenCompose( v -> reactivePersister.reactiveRemove( key, session ) )
-						.thenAccept( count -> { /* We don't care, maybe we can log it as debug */} );
-			}
+			updateStage = emptySnapshot ? voidFuture() : reactivePersister.reactiveRemove( key, session );
 		}
-		else if ( collection.needsRecreate( corePersister ) ) {
+		else if ( collection.needsRecreate( persister ) ) {
 			if ( affectedByFilters ) {
-				throw LOG.cannotRecreateCollectionWhileFilterIsEnabled( collectionInfoString( corePersister, collection, key, session ) );
+				throw LOG.cannotRecreateCollectionWhileFilterIsEnabled( collectionInfoString( persister, collection, key, session ) );
 			}
-			if ( !emptySnapshot ) {
-				updateStage = updateStage
-						.thenCompose( v -> reactivePersister.reactiveRemove( key, session ) )
-						.thenAccept( count -> { /* We don't care, maybe we can log it as debug */} );
-			}
-
-			return updateStage
-					.thenCompose( v -> reactivePersister
-							.reactiveRecreate( collection, key, session )
-							.thenAccept( ignore -> {
-								session.getPersistenceContextInternal().getCollectionEntry( collection ).afterAction( collection );
-								evict();
-								postUpdate();
-								final StatisticsImplementor statistics = session.getFactory().getStatistics();
-								if ( statistics.isStatisticsEnabled() ) {
-									statistics.updateCollection( corePersister.getRole() );
-								}
-							})
-					);
+			updateStage = emptySnapshot
+					? reactivePersister.reactiveRecreate( collection, key, session )
+					: reactivePersister.reactiveRemove( key, session )
+							.thenCompose( v -> reactivePersister.reactiveRecreate( collection, key, session ) );
 		}
 		else {
-			updateStage = updateStage
+			updateStage = voidFuture()
 					.thenCompose( v -> reactivePersister.reactiveDeleteRows( collection, key, session ) )
 					.thenCompose( v -> reactivePersister.reactiveUpdateRows( collection, key, session ) )
 					.thenCompose( v -> reactivePersister.reactiveInsertRows( collection, key, session ) );
 		}
 
-		return updateStage.thenAccept(v -> {
+		return updateStage.thenAccept( v -> {
 			session.getPersistenceContextInternal().getCollectionEntry( collection ).afterAction( collection );
 			evict();
 			postUpdate();
 
 			final StatisticsImplementor statistics = session.getFactory().getStatistics();
 			if ( statistics.isStatisticsEnabled() ) {
-				statistics.updateCollection( corePersister.getRole() );
+				statistics.updateCollection( persister.getRole() );
 			}
 		} );
 	}
@@ -134,54 +109,31 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 	}
 
 	private void preUpdate() {
-		final EventListenerGroup<PreCollectionUpdateEventListener> listenerGroup = getFastSessionServices().eventListenerGroup_PRE_COLLECTION_UPDATE;
-		if ( listenerGroup.isEmpty() ) {
-			return;
-		}
-		final PreCollectionUpdateEvent event = new PreCollectionUpdateEvent(
+		getFastSessionServices().eventListenerGroup_PRE_COLLECTION_UPDATE
+				.fireLazyEventOnEachListener( this::newPreCollectionUpdateEvent,
+						PreCollectionUpdateEventListener::onPreUpdateCollection );
+	}
+
+	private PreCollectionUpdateEvent newPreCollectionUpdateEvent() {
+		return new PreCollectionUpdateEvent(
 				getPersister(),
 				getCollection(),
 				eventSource()
 		);
-		for ( PreCollectionUpdateEventListener listener : listenerGroup.listeners() ) {
-			listener.onPreUpdateCollection( event );
-		}
 	}
 
 	private void postUpdate() {
-		final EventListenerGroup<PostCollectionUpdateEventListener> listenerGroup = getFastSessionServices().eventListenerGroup_POST_COLLECTION_UPDATE;
-		if ( listenerGroup.isEmpty() ) {
-			return;
-		}
-		final PostCollectionUpdateEvent event = new PostCollectionUpdateEvent(
+		getFastSessionServices().eventListenerGroup_POST_COLLECTION_UPDATE
+				.fireLazyEventOnEachListener( this::newPostCollectionUpdateEvent,
+						PostCollectionUpdateEventListener::onPostUpdateCollection );
+	}
+
+	private PostCollectionUpdateEvent newPostCollectionUpdateEvent() {
+		return new PostCollectionUpdateEvent(
 				getPersister(),
 				getCollection(),
 				eventSource()
 		);
-		for ( PostCollectionUpdateEventListener listener : listenerGroup.listeners() ) {
-			listener.onPostUpdateCollection( event );
-		}
 	}
 
-	private void preRecreate() {
-		final EventListenerGroup<PreCollectionRecreateEventListener> listenerGroup = getFastSessionServices().eventListenerGroup_PRE_COLLECTION_RECREATE;
-		if ( listenerGroup.isEmpty() ) {
-			return;
-		}
-		final PreCollectionRecreateEvent event = new PreCollectionRecreateEvent( getPersister(), getCollection(), eventSource() );
-		for ( PreCollectionRecreateEventListener listener : listenerGroup.listeners() ) {
-			listener.onPreRecreateCollection( event );
-		}
-	}
-
-	private void postRecreate() {
-		final EventListenerGroup<PostCollectionRecreateEventListener> listenerGroup = getFastSessionServices().eventListenerGroup_POST_COLLECTION_RECREATE;
-		if ( listenerGroup.isEmpty() ) {
-			return;
-		}
-		final PostCollectionRecreateEvent event = new PostCollectionRecreateEvent( getPersister(), getCollection(), eventSource() );
-		for ( PostCollectionRecreateEventListener listener : listenerGroup.listeners() ) {
-			listener.onPostRecreateCollection( event );
-		}
-	}
 }

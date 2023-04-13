@@ -29,16 +29,14 @@ public class ReactiveCollectionRecreateAction extends CollectionAction implement
 
 	@Override
 	public CompletionStage<Void> reactiveExecute() {
-		final ReactiveCollectionPersister persister = (ReactiveCollectionPersister) getPersister();
-		final SharedSessionContractImplementor session = getSession();
-		final Object key = getKey();
-
+		// this method is called when a new non-null collection is persisted
+		// or when an existing (non-null) collection is moved to a new owner
 		final PersistentCollection<?> collection = getCollection();
-
 		preRecreate();
-
+		final SharedSessionContractImplementor session = getSession();
+		final ReactiveCollectionPersister persister = (ReactiveCollectionPersister) getPersister();
 		return persister
-				.reactiveRecreate( collection, key, session )
+				.reactiveRecreate( collection, getKey(), session )
 				.thenAccept( v -> {
 					// FIXME: I think we could move everything in a method reference call
 					session.getPersistenceContextInternal().getCollectionEntry( collection ).afterAction( collection );
