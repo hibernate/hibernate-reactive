@@ -43,8 +43,11 @@ public class CachedQueryResultsGenerateStatisticsTest extends BaseReactiveTest {
 		);
 	}
 
-	private static Uni<Mutiny.Query<CachedQueryResultsTest.Fruit>> createFindAllWithNamedQuery() {
-		return getMutinySessionFactory().withSession(s -> Uni.createFrom().item(s.createNamedQuery( CachedQueryResultsTest.Fruit.FIND_ALL, CachedQueryResultsTest.Fruit.class ) ));
+	private static Uni<Mutiny.SelectionQuery<CachedQueryResultsTest.Fruit>> createFindAllWithNamedQuery() {
+		return getMutinySessionFactory()
+				.withSession( s -> Uni.createFrom().item(
+						s.createNamedQuery( CachedQueryResultsTest.Fruit.FIND_ALL, CachedQueryResultsTest.Fruit.class )
+				) );
 	}
 
 }

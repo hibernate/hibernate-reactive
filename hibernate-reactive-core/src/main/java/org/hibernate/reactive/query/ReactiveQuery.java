@@ -37,14 +37,17 @@ import jakarta.persistence.TemporalType;
 public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMutationQuery<R> {
 	String getQueryString();
 
-	ReactiveQuery<R> applyGraph(@SuppressWarnings("rawtypes") RootGraph graph, GraphSemantic semantic);
+	@Override
+	ReactiveQuery<R> applyGraph(RootGraph<?> graph, GraphSemantic semantic);
 
-	default ReactiveQuery<R> applyFetchGraph(@SuppressWarnings("rawtypes") RootGraph graph) {
+	@Override
+	default ReactiveQuery<R> applyFetchGraph(RootGraph<?> graph) {
 		return applyGraph( graph, GraphSemantic.FETCH );
 	}
 
+	@Override
 	@SuppressWarnings("UnusedDeclaration")
-	default ReactiveQuery<R> applyLoadGraph(@SuppressWarnings("rawtypes") RootGraph graph) {
+	default ReactiveQuery<R> applyLoadGraph(RootGraph<?> graph) {
 		return applyGraph( graph, GraphSemantic.LOAD );
 	}
 

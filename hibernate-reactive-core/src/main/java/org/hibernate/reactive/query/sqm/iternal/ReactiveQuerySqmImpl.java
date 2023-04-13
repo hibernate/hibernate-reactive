@@ -750,7 +750,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
-	public ReactiveQuerySqmImpl<R> setParameterList(int position, @SuppressWarnings("rawtypes") Collection values) {
+	public ReactiveQuerySqmImpl<R> setParameterList(int position, Collection values) {
 		super.setParameterList( position, values );
 		return this;
 	}

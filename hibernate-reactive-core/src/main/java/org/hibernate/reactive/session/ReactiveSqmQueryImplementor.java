@@ -60,16 +60,16 @@ public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor
 	ReactiveSqmQueryImplementor<R> setReadOnly(boolean readOnly);
 
 	@Override
-	ReactiveSqmQueryImplementor<R> applyGraph(RootGraph graph, GraphSemantic semantic);
+	ReactiveSqmQueryImplementor<R> applyGraph(RootGraph<?> graph, GraphSemantic semantic);
 
 	@Override
-	default ReactiveSqmQueryImplementor<R> applyFetchGraph(RootGraph graph) {
+	default ReactiveSqmQueryImplementor<R> applyFetchGraph(RootGraph<?> graph) {
 		ReactiveQueryImplementor.super.applyFetchGraph( graph );
 		return this;
 	}
 
 	@Override
-	default ReactiveSqmQueryImplementor<R> applyLoadGraph(RootGraph graph) {
+	default ReactiveSqmQueryImplementor<R> applyLoadGraph(RootGraph<?> graph) {
 		ReactiveQueryImplementor.super.applyLoadGraph( graph );
 		return this;
 	}

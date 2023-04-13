@@ -5,12 +5,16 @@
  */
 package org.hibernate.reactive.mutiny.impl;
 
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
+import io.smallrye.mutiny.Uni;
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.Attribute;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -23,20 +27,18 @@ import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.mutiny.Mutiny.MutationQuery;
+import org.hibernate.reactive.mutiny.Mutiny.Query;
+import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.query.sqm.iternal.ReactiveQuerySqmImpl;
 import org.hibernate.reactive.session.ReactiveSession;
 
-import io.smallrye.mutiny.Uni;
-import jakarta.persistence.CacheRetrieveMode;
-import jakarta.persistence.CacheStoreMode;
-import jakarta.persistence.EntityGraph;
-import jakarta.persistence.FlushModeType;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.criteria.CriteriaDelete;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.CriteriaUpdate;
-import jakarta.persistence.metamodel.Attribute;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
 
@@ -110,74 +112,84 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createQuery(String queryString) {
+	public <R> SelectionQuery<R> createSelectionQuery(String queryString) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
+	}
+
+	@Override
+	public MutationQuery createMutationQuery(String queryString) {
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
+	}
+
+	@Override
+	public <R> Query<R> createQuery(String queryString) {
 		return new MutinyQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createQuery(String queryString, Class<R> resultType) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ), factory );
+	public <R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ), factory );
+	public <R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.MutationQuery<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
-		return new MutinyQueryImpl<>(
+	public <R> MutationQuery createQuery(CriteriaUpdate<R> criteriaUpdate) {
+		return new MutinyMutationQueryImpl<>(
 				(ReactiveQuerySqmImpl<R>) delegate.createReactiveMutationQuery( criteriaUpdate ),
 				factory
 		);
 	}
 
 	@Override
-	public <R> Mutiny.MutationQuery<R> createQuery(CriteriaDelete<R> criteriaDelete) {
-		return new MutinyQueryImpl<>(
+	public <R> MutationQuery createQuery(CriteriaDelete<R> criteriaDelete) {
+		return new MutinyMutationQueryImpl<>(
 				(ReactiveQuerySqmImpl<R>) delegate.createReactiveMutationQuery( criteriaDelete ),
 				factory
 		);
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNamedQuery(String queryName) {
+	public <R> Query<R> createNamedQuery(String queryName) {
 		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( queryName, null ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNamedQuery(String queryName, Class<R> resultType) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( queryName, resultType ), factory );
+	public <R> SelectionQuery<R> createNamedQuery(String queryName, Class<R> resultType) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveNamedQuery( queryName, resultType ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.NativeQuery<R> createNativeQuery(String queryString) {
-		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString ), factory );
+	public <R> Query<R> createNativeQuery(String queryString) {
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( queryString ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.NativeQuery<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
-		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, affectedEntities ), factory );
+	public <R> Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( queryString, affectedEntities ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.NativeQuery<R> createNativeQuery(String queryString, Class<R> resultType) {
-		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ), factory );
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.NativeQuery<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
-		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType, affectedEntities ), factory );
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType, affectedEntities ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.NativeQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
-		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping ), factory );
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.NativeQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
-		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping, affectedEntities ), factory );
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping, affectedEntities ), factory );
 	}
 
 	@Override
@@ -447,15 +459,15 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 		/**
 		 * Run the code assuming that a transaction has already started so that we can
-		 * differentiate an error starting a transaction (and therefore doesn't need to rollback)
-		 * and an error thrown by the work.
+		 * differentiate an error starting a transaction (and therefore doesn't need to
+		 * roll back) and an error thrown by the work.
 		 */
 		Uni<T> executeInTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
 			return work.apply( this )
 					// only flush() if the work completed with no exception
 					.call( this::flush ).call( this::beforeCompletion )
 					// in the case of an exception or cancellation
-					// we need to rollback the transaction
+					// we need to roll back the transaction
 					.onFailure().call( this::rollback ).onCancellation().call( this::rollback )
 					// finally, when there was no exception,
 					// commit or rollback the transaction

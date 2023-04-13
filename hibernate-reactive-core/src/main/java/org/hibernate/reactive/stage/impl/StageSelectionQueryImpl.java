@@ -5,58 +5,60 @@
  */
 package org.hibernate.reactive.stage.impl;
 
-import java.time.Instant;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-
-import org.hibernate.CacheMode;
-import org.hibernate.FlushMode;
-import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
-import org.hibernate.query.BindableType;
-import org.hibernate.query.CommonQueryContract;
-import org.hibernate.query.QueryParameter;
-import org.hibernate.reactive.query.ReactiveSelectionQuery;
-import org.hibernate.reactive.stage.Stage;
-
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
+import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
-import jakarta.persistence.TemporalType;
+import org.hibernate.CacheMode;
+import org.hibernate.FlushMode;
+import org.hibernate.LockMode;
+import org.hibernate.graph.RootGraph;
+import org.hibernate.reactive.query.ReactiveSelectionQuery;
+import org.hibernate.reactive.stage.Stage.SelectionQuery;
 
-public class StageSelectionQueryImpl<T> implements Stage.SelectionQuery<T> {
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
+public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 	private final ReactiveSelectionQuery<T> delegate;
 
 	public StageSelectionQueryImpl(ReactiveSelectionQuery<T> delegate) {
 		this.delegate = delegate;
 	}
 
-	public String getQueryString() {
-		return delegate.getQueryString();
-	}
-
-	public CompletionStage<List<T>> getReactiveResultList() {
-		return delegate.getReactiveResultList();
-	}
-
-	public CompletionStage<T> reactiveUnique() {
-		return delegate.reactiveUnique();
-	}
-
-	public CompletionStage<Optional<T>> reactiveUniqueResultOptional() {
-		return delegate.reactiveUniqueResultOptional();
+	@Override
+	public int getMaxResults() {
+		return delegate.getMaxResults();
 	}
 
 	@Override
-	public CompletionStage<List<T>> list() {
-		return delegate.reactiveList();
+	public CompletionStage<List<T>> getResultList() {
+		return delegate.getReactiveResultList();
+	}
+
+	@Override
+	public FlushMode getFlushMode() {
+		return delegate.getHibernateFlushMode();
+	}
+
+	@Override
+	public SelectionQuery<T> setFlushMode(FlushMode flushMode) {
+		delegate.setHibernateFlushMode( flushMode );
+		return this;
+	}
+
+	@Override
+	public SelectionQuery<T> setLockMode(LockMode lockMode) {
+		delegate.setHibernateLockMode( lockMode );
+		return this;
+	}
+
+	@Override
+	public SelectionQuery<T> setPlan(EntityGraph<T> entityGraph) {
+		delegate.applyFetchGraph( (RootGraph<?>) entityGraph );
+		return this;
 	}
 
 	@Override
@@ -70,47 +72,8 @@ public class StageSelectionQueryImpl<T> implements Stage.SelectionQuery<T> {
 	}
 
 	@Override
-	public CompletionStage<T> uniqueResult() {
-		return delegate.reactiveUnique();
-	}
-
-	@Override
-	public CompletionStage<Optional<T>> uniqueResultOptional() {
-		return delegate.reactiveUniqueResultOptional();
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setHint(String hintName, Object value) {
-		delegate.setHint( hintName, value );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setFlushMode(FlushModeType flushMode) {
+	public SelectionQuery<T> setFlushMode(FlushModeType flushMode) {
 		delegate.setFlushMode( flushMode );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setHibernateFlushMode(FlushMode flushMode) {
-		delegate.setHibernateFlushMode( flushMode );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setTimeout(int timeout) {
-		delegate.setTimeout( timeout );
-		return this;
-	}
-
-	@Override
-	public Integer getFetchSize() {
-		return delegate.getFetchSize();
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setFetchSize(int fetchSize) {
-		delegate.setFetchSize( fetchSize );
 		return this;
 	}
 
@@ -120,13 +83,13 @@ public class StageSelectionQueryImpl<T> implements Stage.SelectionQuery<T> {
 	}
 
 	@Override
-	public Stage.SelectionQuery<T> setReadOnly(boolean readOnly) {
+	public SelectionQuery<T> setReadOnly(boolean readOnly) {
 		delegate.setReadOnly( readOnly );
 		return this;
 	}
 
 	@Override
-	public Stage.SelectionQuery<T> setMaxResults(int maxResult) {
+	public SelectionQuery<T> setMaxResults(int maxResult) {
 		delegate.setMaxResults( maxResult );
 		return this;
 	}
@@ -137,7 +100,7 @@ public class StageSelectionQueryImpl<T> implements Stage.SelectionQuery<T> {
 	}
 
 	@Override
-	public Stage.SelectionQuery<T> setFirstResult(int startPosition) {
+	public SelectionQuery<T> setFirstResult(int startPosition) {
 		delegate.setFirstResult( startPosition );
 		return this;
 	}
@@ -158,19 +121,19 @@ public class StageSelectionQueryImpl<T> implements Stage.SelectionQuery<T> {
 	}
 
 	@Override
-	public Stage.SelectionQuery<T> setCacheMode(CacheMode cacheMode) {
+	public SelectionQuery<T> setCacheMode(CacheMode cacheMode) {
 		delegate.setCacheMode( cacheMode );
 		return this;
 	}
 
 	@Override
-	public Stage.SelectionQuery<T> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
+	public SelectionQuery<T> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
 		delegate.setCacheStoreMode( cacheStoreMode );
 		return this;
 	}
 
 	@Override
-	public Stage.SelectionQuery<T> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+	public SelectionQuery<T> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
 		delegate.setCacheRetrieveMode( cacheRetrieveMode );
 		return this;
 	}
@@ -181,7 +144,7 @@ public class StageSelectionQueryImpl<T> implements Stage.SelectionQuery<T> {
 	}
 
 	@Override
-	public Stage.SelectionQuery<T> setCacheable(boolean cacheable) {
+	public SelectionQuery<T> setCacheable(boolean cacheable) {
 		delegate.setCacheable( cacheable );
 		return this;
 	}
@@ -192,321 +155,39 @@ public class StageSelectionQueryImpl<T> implements Stage.SelectionQuery<T> {
 	}
 
 	@Override
-	public Stage.SelectionQuery<T> setCacheRegion(String cacheRegion) {
+	public SelectionQuery<T> setCacheRegion(String cacheRegion) {
 		delegate.setCacheRegion( cacheRegion );
 		return this;
 	}
 
 	@Override
-	public LockOptions getLockOptions() {
-		return delegate.getLockOptions();
-	}
-
-	@Override
-	public LockModeType getLockMode() {
-		return delegate.getLockMode();
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setLockMode(LockModeType lockMode) {
+	public SelectionQuery<T> setLockMode(LockModeType lockMode) {
 		delegate.setLockMode( lockMode );
 		return this;
 	}
 
 	@Override
-	public LockMode getHibernateLockMode() {
-		return delegate.getHibernateLockMode();
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setHibernateLockMode(LockMode lockMode) {
-		delegate.setHibernateLockMode( lockMode );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setLockMode(String alias, LockMode lockMode) {
+	public SelectionQuery<T> setLockMode(String alias, LockMode lockMode) {
 		delegate.setLockMode( alias, lockMode );
 		return this;
 	}
 
 	@Override
-	public Stage.SelectionQuery<T> setAliasSpecificLockMode(String alias, LockMode lockMode) {
-		delegate.setAliasSpecificLockMode( alias, lockMode );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setFollowOnLocking(boolean enable) {
-		delegate.setFollowOnLocking( enable );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameter(String name, Object value) {
+	public SelectionQuery<T> setParameter(String name, Object value) {
 		delegate.setParameter( name, value );
 		return this;
 	}
 
 	@Override
-	public <P> Stage.SelectionQuery<T> setParameter(String name, P value, Class<P> type) {
-		delegate.setParameter( name, value, type );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameter(String name, P value, BindableType<P> type) {
-		delegate.setParameter( name, value, type );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameter(String name, Instant value, TemporalType temporalType) {
-		delegate.setParameter( name, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameter(String name, Calendar value, TemporalType temporalType) {
-		delegate.setParameter( name, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameter(String name, Date value, TemporalType temporalType) {
-		delegate.setParameter( name, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameter(int position, Object value) {
+	public SelectionQuery<T> setParameter(int position, Object value) {
 		delegate.setParameter( position, value );
 		return this;
 	}
 
 	@Override
-	public <P> Stage.SelectionQuery<T> setParameter(int position, P value, Class<P> type) {
-		delegate.setParameter( position, value, type );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameter(int position, P value, BindableType<P> type) {
-		delegate.setParameter( position, value, type );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameter(int position, Instant value, TemporalType temporalType) {
-		delegate.setParameter( position, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameter(int position, Date value, TemporalType temporalType) {
-		delegate.setParameter( position, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameter(int position, Calendar value, TemporalType temporalType) {
-		delegate.setParameter( position, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public <T1> Stage.SelectionQuery<T> setParameter(QueryParameter<T1> parameter, T1 value) {
-		delegate.setParameter( parameter, value );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameter(QueryParameter<P> parameter, P value, Class<P> type) {
-		delegate.setParameter( parameter, value, type );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameter(QueryParameter<P> parameter, P val, BindableType<P> type) {
-		delegate.setParameter( parameter, val, type );
-		return this;
-	}
-
-	@Override
-	public <T1> Stage.SelectionQuery<T> setParameter(Parameter<T1> param, T1 value) {
+	public <T1> SelectionQuery<T> setParameter(Parameter<T1> param, T1 value) {
 		delegate.setParameter( param, value );
 		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameter(
-			Parameter<Calendar> param,
-			Calendar value,
-			TemporalType temporalType) {
-		delegate.setParameter( param, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameter(Parameter<Date> param, Date value, TemporalType temporalType) {
-		delegate.setParameter( param, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameterList(String name, Collection values) {
-		delegate.setParameterList( name, values );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(
-			String name,
-			Collection<? extends P> values,
-			Class<P> javaType) {
-		delegate.setParameterList( name, values, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(
-			String name,
-			Collection<? extends P> values,
-			BindableType<P> type) {
-		delegate.setParameterList( name, values, type );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameterList(String name, Object[] values) {
-		delegate.setParameterList( name, values );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(String name, P[] values, Class<P> javaType) {
-		delegate.setParameterList( name, values, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(String name, P[] values, BindableType<P> type) {
-		delegate.setParameterList( name, values, type );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameterList(int position, Collection values) {
-		delegate.setParameterList( position, values );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(
-			int position,
-			Collection<? extends P> values,
-			Class<P> javaType) {
-		delegate.setParameterList( position, values, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(
-			int position,
-			Collection<? extends P> values,
-			BindableType<P> type) {
-		delegate.setParameterList( position, values, type );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setParameterList(int position, Object[] values) {
-		delegate.setParameterList( position, values );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(int position, P[] values, Class<P> javaType) {
-		delegate.setParameterList( position, values, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(int position, P[] values, BindableType<P> type) {
-		delegate.setParameterList( position, values, type );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values) {
-		delegate.setParameterList( parameter, values );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(
-			QueryParameter<P> parameter,
-			Collection<? extends P> values,
-			Class<P> javaType) {
-		delegate.setParameterList( parameter, values, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(
-			QueryParameter<P> parameter,
-			Collection<? extends P> values,
-			BindableType<P> type) {
-		delegate.setParameterList( parameter, values, type );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(QueryParameter<P> parameter, P[] values) {
-		delegate.setParameterList( parameter, values );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType) {
-		delegate.setParameterList( parameter, values, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> Stage.SelectionQuery<T> setParameterList(
-			QueryParameter<P> parameter,
-			P[] values,
-			BindableType<P> type) {
-		delegate.setParameterList( parameter, values, type );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setProperties(Object bean) {
-		delegate.setProperties( bean );
-		return this;
-	}
-
-	@Override
-	public Stage.SelectionQuery<T> setProperties(Map bean) {
-		delegate.setProperties( bean );
-		return this;
-	}
-
-	@Override
-	public FlushModeType getFlushMode() {
-		return delegate.getFlushMode();
-	}
-
-	@Override
-	public FlushMode getHibernateFlushMode() {
-		return delegate.getHibernateFlushMode();
-	}
-
-	@Override
-	public Integer getTimeout() {
-		return delegate.getTimeout();
 	}
 
 	@Override
@@ -515,7 +196,8 @@ public class StageSelectionQueryImpl<T> implements Stage.SelectionQuery<T> {
 	}
 
 	@Override
-	public CommonQueryContract setComment(String comment) {
-		return delegate.setComment( comment );
+	public SelectionQuery<T> setComment(String comment) {
+		delegate.setComment( comment );
+		return this;
 	}
 }

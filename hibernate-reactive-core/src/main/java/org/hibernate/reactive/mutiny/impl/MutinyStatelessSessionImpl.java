@@ -5,21 +5,22 @@
  */
 package org.hibernate.reactive.mutiny.impl;
 
+import io.smallrye.mutiny.Uni;
+import jakarta.persistence.EntityGraph;
 import jakarta.persistence.criteria.CriteriaQuery;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.mutiny.Mutiny.Query;
+import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 
-import io.smallrye.mutiny.Uni;
-import jakarta.persistence.EntityGraph;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 
 /**
@@ -63,43 +64,43 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createQuery(String queryString) {
+	public <R> Query<R> createQuery(String queryString) {
 		return new MutinyQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createQuery(String queryString, Class<R> resultType) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ), factory );
+	public <R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNamedQuery(String queryName) {
+	public <R> Query<R> createNamedQuery(String queryName) {
 		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( queryName, null ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNamedQuery(String queryName, Class<R> resultType) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( queryName, resultType ), factory );
+	public <R> SelectionQuery<R> createNamedQuery(String queryName, Class<R> resultType) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveNamedQuery( queryName, resultType ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String queryString) {
-		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString ), factory );
+	public <R> Query<R> createNativeQuery(String queryString) {
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( queryString ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String queryString, Class<R> resultType) {
-		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ), factory );
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
-		return new MutinyNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping ), factory );
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping ), factory );
 	}
 
 	@Override
-	public <R> Mutiny.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new MutinyQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ), factory );
+	public <R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ), factory );
 	}
 
 	@Override
