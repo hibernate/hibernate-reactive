@@ -302,20 +302,27 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	default <E, T> CompletionStage<T> reactiveInitializeLazyProperty(Attribute<E, T> field, E entity, SharedSessionContractImplementor session) {
-		String fieldName = field.getName();
-		Object result = initializeLazyProperty( fieldName, entity, session );
-		if (result instanceof CompletionStage) {
+	default <E, T> CompletionStage<T> reactiveInitializeLazyProperty(
+			Attribute<E, T> field, E entity,
+			SharedSessionContractImplementor session) {
+		return reactiveInitializeLazyProperty( field.getName(), entity, session );
+	}
+
+	default <E, T> CompletionStage<T> reactiveInitializeLazyProperty(
+			String field,
+			E entity,
+			SharedSessionContractImplementor session) {
+		final Object result = initializeLazyProperty( field, entity, session );
+		if ( result instanceof CompletionStage ) {
 			return (CompletionStage<T>) result;
 		}
-		else if (result instanceof PersistentCollection) {
+		else if ( result instanceof PersistentCollection ) {
 			// Hibernate core doesn't set the field when it's a
 			// collection. That's inconsistent with what happens
 			// for other lazy fields, so let's set the field here
-			String[] propertyNames = getPropertyNames();
-			for (int index=0; index<propertyNames.length; index++) {
-				if ( propertyNames[index].equals(fieldName) ) {
+			final String[] propertyNames = getPropertyNames();
+			for ( int index=0; index<propertyNames.length; index++ ) {
+				if ( propertyNames[index].equals( field ) ) {
 					setPropertyValue( entity, index, result );
 					break;
 				}
@@ -326,7 +333,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			// is transparent there. That's too painful in our
 			// case, since it would make the user have to call
 			// fetch() twice, so fetch it here.
-			PersistentCollection collection = (PersistentCollection) result;
+			final PersistentCollection<?> collection = (PersistentCollection<?>) result;
 			return collection.wasInitialized()
 					? completedFuture( (T) collection )
 					: ((ReactiveSession) session).reactiveInitializeCollection( collection, false )
