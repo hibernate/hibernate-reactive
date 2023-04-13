@@ -5,21 +5,23 @@
  */
 package org.hibernate.reactive.stage.impl;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.stage.Stage.MutationQuery;
+import org.hibernate.reactive.stage.Stage.Query;
+import org.hibernate.reactive.stage.Stage.SelectionQuery;
 
-import jakarta.persistence.EntityGraph;
-import jakarta.persistence.criteria.CriteriaDelete;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.CriteriaUpdate;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
 
@@ -219,47 +221,47 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
-	public <R> Stage.Query<R> createQuery(String queryString) {
+	public <R> Query<R> createQuery(String queryString) {
 		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString ) );
 	}
 
 	@Override
-	public <R> Stage.Query<R> createQuery(String queryString, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ) );
+	public <R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ) );
 	}
 
 	@Override
-	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString) {
-		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString ) );
+	public <R> Query<R> createNativeQuery(String queryString) {
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString ) );
 	}
 
 	@Override
-	public <R> Stage.Query<R> createNamedQuery(String queryName) {
+	public <R> Query<R> createNamedQuery(String queryName) {
 		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( queryName, null ) );
 	}
 
 	@Override
-	public <R> Stage.Query<R> createNamedQuery(String queryName, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( queryName, resultType ) );
+	public <R> SelectionQuery<R> createNamedQuery(String queryName, Class<R> resultType) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveNamedQuery( queryName, resultType ) );
 	}
 
 	@Override
-	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString, Class<R> resultType) {
-		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ) );
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ) );
 	}
 
 	@Override
-	public <R> Stage.Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ) );
+	public <R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ) );
 	}
 
 	@Override
-	public <R> Stage.MutationQuery<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
+	public <R> MutationQuery createQuery(CriteriaUpdate<R> criteriaUpdate) {
 		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( criteriaUpdate ) );
 	}
 
 	@Override
-	public <R> Stage.MutationQuery<R> createQuery(CriteriaDelete<R> criteriaDelete) {
+	public <R> MutationQuery createQuery(CriteriaDelete<R> criteriaDelete) {
 		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( criteriaDelete ) );
 	}
 

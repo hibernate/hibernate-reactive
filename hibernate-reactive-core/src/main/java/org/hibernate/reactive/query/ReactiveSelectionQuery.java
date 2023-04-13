@@ -18,6 +18,8 @@ import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.RootGraph;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.CommonQueryContract;
 import org.hibernate.query.QueryParameter;
@@ -74,6 +76,8 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	int getFirstResult();
 
+	int getMaxResults();
+
 	ReactiveSelectionQuery<R> setFirstResult(int startPosition);
 
 	CacheMode getCacheMode();
@@ -114,6 +118,17 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	ReactiveSelectionQuery<R> setAliasSpecificLockMode(String alias, LockMode lockMode);
 
 	ReactiveSelectionQuery<R> setFollowOnLocking(boolean enable);
+
+	ReactiveSelectionQuery<R> applyGraph(RootGraph<?> graph, GraphSemantic semantic);
+
+	default ReactiveSelectionQuery<R> applyFetchGraph(RootGraph<?> graph) {
+		return applyGraph( graph, GraphSemantic.FETCH );
+	}
+
+	@SuppressWarnings("UnusedDeclaration")
+	default ReactiveSelectionQuery<R> applyLoadGraph(RootGraph<?> graph) {
+		return applyGraph( graph, GraphSemantic.LOAD );
+	}
 
 	@Override
 	ReactiveSelectionQuery<R> setParameter(String name, Object value);
@@ -170,7 +185,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	ReactiveSelectionQuery<R> setParameter(Parameter<Date> param, Date value, TemporalType temporalType);
 
 	@Override
-	ReactiveSelectionQuery<R> setParameterList(String name, @SuppressWarnings("rawtypes") Collection values);
+	ReactiveSelectionQuery<R> setParameterList(String name, Collection values);
 
 	@Override
 	<P> ReactiveSelectionQuery<R> setParameterList(String name, Collection<? extends P> values, Class<P> javaType);
@@ -227,5 +242,5 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	ReactiveSelectionQuery<R> setProperties(Object bean);
 
 	@Override
-	ReactiveSelectionQuery<R> setProperties(@SuppressWarnings("rawtypes") Map bean);
+	ReactiveSelectionQuery<R> setProperties(Map bean);
 }

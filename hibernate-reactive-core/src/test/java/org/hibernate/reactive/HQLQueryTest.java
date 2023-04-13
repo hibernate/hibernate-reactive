@@ -77,7 +77,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	@Test
 	public void testSelectScalarCount(TestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-			Stage.Query<Long> qr = s.createQuery( "SELECT count(*) FROM Flour", Long.class );
+			Stage.SelectionQuery<Long> qr = s.createQuery( "SELECT count(*) FROM Flour", Long.class );
 			context.assertNotNull( qr );
 			return qr.getSingleResult();
 		} ).thenAccept( found -> context.assertEquals( 3L, found ) ) );

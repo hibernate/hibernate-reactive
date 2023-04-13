@@ -5,44 +5,33 @@
  */
 package org.hibernate.reactive.mutiny;
 
+import io.smallrye.mutiny.Uni;
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.Parameter;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
-import java.lang.invoke.MethodHandles;
-import java.time.Instant;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
+import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.Metamodel;
 import org.hibernate.Cache;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
-import org.hibernate.NonUniqueResultException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.spi.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.graph.GraphSemantic;
-import org.hibernate.graph.RootGraph;
 import org.hibernate.jpa.internal.util.FlushModeTypeHelper;
-import org.hibernate.metamodel.model.domain.BasicDomainType;
 import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.query.BindableType;
-import org.hibernate.query.CommonQueryContract;
-import org.hibernate.query.ParameterMetadata;
-import org.hibernate.query.QueryParameter;
-import org.hibernate.query.ResultListTransformer;
-import org.hibernate.query.TupleTransformer;
-import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
@@ -50,23 +39,11 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.stat.Statistics;
-import org.hibernate.type.BasicTypeReference;
 
-import io.smallrye.mutiny.Uni;
-import jakarta.persistence.AttributeConverter;
-import jakarta.persistence.CacheRetrieveMode;
-import jakarta.persistence.CacheStoreMode;
-import jakarta.persistence.EntityGraph;
-import jakarta.persistence.FlushModeType;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.Parameter;
-import jakarta.persistence.TemporalType;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaDelete;
-import jakarta.persistence.criteria.CriteriaUpdate;
-import jakarta.persistence.metamodel.Attribute;
-import jakarta.persistence.metamodel.Metamodel;
-import jakarta.persistence.metamodel.SingularAttribute;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
@@ -84,1019 +61,403 @@ import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheStor
  * the similarly-named interfaces in Hibernate ORM.
  */
 public interface Mutiny {
-	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	interface NativeQuery<R> extends Query<R> {
-
-		NativeQuery<R>  addScalar(String columnAlias);
-
-		NativeQuery<R>  addScalar(String columnAlias, @SuppressWarnings("rawtypes") BasicTypeReference type);
-
-		NativeQuery<R>  addScalar(String columnAlias, @SuppressWarnings("rawtypes") BasicDomainType type);
-
-		NativeQuery<R>  addScalar(String columnAlias, @SuppressWarnings("rawtypes") Class javaType);
-
-		<C> NativeQuery<R>  addScalar(String columnAlias, Class<C> relationalJavaType, AttributeConverter<?,C> converter);
-
-		<O,T> NativeQuery<R>  addScalar(String columnAlias, Class<O> domainJavaType, Class<T> jdbcJavaType, AttributeConverter<O,T> converter);
-
-		<C> NativeQuery<R>  addScalar(String columnAlias, Class<C> relationalJavaType, Class<? extends AttributeConverter<?,C>> converter);
-
-		<O,T> NativeQuery<R>  addScalar(String columnAlias, Class<O> domainJavaType, Class<T> jdbcJavaType, Class<? extends AttributeConverter<O,T>> converter);
-
-		<J> org.hibernate.query.NativeQuery.InstantiationResultNode<J> addInstantiation(Class<J> targetJavaType);
-
-		NativeQuery<R>  addAttributeResult(String columnAlias, @SuppressWarnings("rawtypes") Class entityJavaType, String attributePath);
-
-		NativeQuery<R>  addAttributeResult(String columnAlias, String entityName, String attributePath);
-
-		NativeQuery<R>  addAttributeResult(String columnAlias, @SuppressWarnings("rawtypes") SingularAttribute attribute);
-
-		org.hibernate.query.NativeQuery.RootReturn addRoot(String tableAlias, String entityName);
-
-		org.hibernate.query.NativeQuery.RootReturn addRoot(String tableAlias, @SuppressWarnings("rawtypes") Class entityType);
-
-		NativeQuery<R>  addEntity(String entityName);
-		NativeQuery<R>  addEntity(String tableAlias, String entityName);
-
-		NativeQuery<R>  addEntity(String tableAlias, String entityName, LockMode lockMode);
-		NativeQuery<R>  addEntity(@SuppressWarnings("rawtypes") Class entityType);
-
-		NativeQuery<R>  addEntity(String tableAlias, @SuppressWarnings("rawtypes") Class entityType);
-
-		NativeQuery<R>  addEntity(String tableAlias, @SuppressWarnings("rawtypes") Class entityClass, LockMode lockMode);
-
-		org.hibernate.query.NativeQuery.FetchReturn addFetch(String tableAlias, String ownerTableAlias, String joinPropertyName);
-
-		NativeQuery<R>  addJoin(String tableAlias, String path);
-
-		NativeQuery<R>  addJoin(String tableAlias, String ownerTableAlias, String joinPropertyName);
-
-		NativeQuery<R>  addJoin(String tableAlias, String path, LockMode lockMode);
-
-		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		// covariant overrides - Query
-
-		@Override
-		NativeQuery<R>  setHibernateFlushMode(FlushMode flushMode);
-
-		@Override
-		NativeQuery<R>  setFlushMode(FlushModeType flushMode);
-
-		@Override
-		NativeQuery<R>  setCacheMode(CacheMode cacheMode);
-
-		@Override
-		NativeQuery<R>  setCacheStoreMode(CacheStoreMode cacheStoreMode);
-
-		@Override
-		NativeQuery<R>  setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode);
-
-		@Override
-		NativeQuery<R>  setCacheable(boolean cacheable);
-
-		@Override
-		NativeQuery<R>  setCacheRegion(String cacheRegion);
-
-		@Override
-		NativeQuery<R>  setTimeout(int timeout);
-
-		@Override
-		NativeQuery<R>  setFetchSize(int fetchSize);
-
-		@Override
-		NativeQuery<R>  setReadOnly(boolean readOnly);
+	/**
+	 * A non-blocking counterpart to the Hibernate
+	 * {@link org.hibernate.query.Query} interface, allowing reactive
+	 * execution of HQL and JPQL queries.
+	 * <p>
+	 * The semantics of operations on this interface are identical to the
+	 * semantics of the similarly-named operations of {@code Query}, except
+	 * that the operations are performed asynchronously, returning a
+	 * {@link Uni} without blocking the calling thread.
+	 * <p>
+	 * Note that {@link jakarta.persistence.TemporalType} is not supported
+	 * as an argument for parameter bindings, and so parameters of type
+	 * {@link java.util.Date} or {@link java.util.Calendar} should not be
+	 * used. Instead, datetime types from {@code java.time} should be used
+	 * as parameters.
+	 *
+	 * @see jakarta.persistence.Query
+	 */
+	interface AbstractQuery {
 
 		/**
-		 * @inheritDoc
+		 * Set the value of an ordinal parameter. Ordinal parameters
+		 * are numbered from 1, and are specified in the query using
+		 * placeholder tokens of form {@code ?1}, {@code ?2}, etc.
 		 *
-		 * This operation is supported even for native queries.
-		 * Note that specifying an explicit lock mode might
-		 * result in changes to the native SQL query that is
-		 * actually executed.
+		 * @param parameter an integer identifying the ordinal parameter
+		 * @param argument the argument to set
 		 */
-		@Override
-		LockOptions getLockOptions();
+		AbstractQuery setParameter(int parameter, Object argument);
 
 		/**
-		 * @inheritDoc
+		 * Set the value of a named parameter. Named parameters are
+		 * specified in the query using placeholder tokens of form
+		 * {@code :name}.
 		 *
-		 * This operation is supported even for native queries.
-		 * Note that specifying an explicit lock mode might
-		 * result in changes to the native SQL query that is
-		 * actually executed.
+		 * @param parameter the name of the parameter
+		 * @param argument the argument to set
 		 */
-		@Override
-		NativeQuery<R>  setLockOptions(LockOptions lockOptions);
+		AbstractQuery setParameter(String parameter, Object argument);
 
 		/**
-		 * Not applicable to native SQL queries.
+		 * Set the value of a typed parameter. Typed parameters are
+		 * obtained from the JPA {@link CriteriaBuilder}, which may
+		 * itself be obtained by calling
+		 * {@link SessionFactory#getCriteriaBuilder()}.
 		 *
-		 * @throws IllegalStateException for consistency with JPA
+		 * @param parameter the parameter
+		 * @param argument the argument to set
+		 *
+		 * @see CriteriaBuilder#parameter(Class)
 		 */
-		@Override
-		NativeQuery<R>  setLockMode(String alias, LockMode lockMode);
-
-		@Override
-		NativeQuery<R>  setComment(String comment);
-
-		@Override
-		NativeQuery<R>  addQueryHint(String hint);
-
-		@Override
-		NativeQuery<R>  setMaxResults(int maxResult);
-
-		@Override
-		NativeQuery<R>  setFirstResult(int startPosition);
-
-		@Override
-		NativeQuery<R>  setHint(String hintName, Object value);
+		<T> AbstractQuery setParameter(Parameter<T> parameter, T argument);
 
 		/**
-		 * Not applicable to native SQL queries, due to an unfortunate
-		 * requirement of the JPA specification.
-		 * <p>
-		 * Use {@link #setHibernateLockMode(LockMode)} or the hint named
-		 * {@value org.hibernate.jpa.HibernateHints#HINT_NATIVE_LOCK_MODE}
-		 * to set the lock mode.
+		 * Set the comment for this query. This comment will be prepended
+		 * to the SQL query sent to the database.
 		 *
-		 * @throws IllegalStateException as required by JPA
+		 * @param comment The human-readable comment
 		 */
-		@Override
-		NativeQuery<R>  setLockMode(LockModeType lockMode);
+		AbstractQuery setComment(String comment);
 
-		/**
-		 * @inheritDoc
-		 *
-		 * This operation is supported even for native queries.
-		 * Note that specifying an explicit lock mode might
-		 * result in changes to the native SQL query that is
-		 * actually executed.
-		 */
-		@Override
-		NativeQuery<R>  setHibernateLockMode(LockMode lockMode);
-
-		@Override
-		<T> NativeQuery<T> setTupleTransformer(TupleTransformer<T> transformer);
-
-		@Override
-		NativeQuery<R> setResultListTransformer(ResultListTransformer<R> transformer);
-
-		@Override
-		NativeQuery<R>  setParameter(String name, Object value);
-
-		@Override
-		<P> NativeQuery<R>  setParameter(String name, P val, Class<P> type);
-
-		@Override
-		<P> NativeQuery<R>  setParameter(String name, P val, BindableType<P> type);
-
-		@Override
-		NativeQuery<R>  setParameter(String name, Instant value, TemporalType temporalType);
-
-		@Override
-		NativeQuery<R>  setParameter(String name, Calendar value, TemporalType temporalType);
-
-		@Override
-		NativeQuery<R>  setParameter(String name, Date value, TemporalType temporalType);
-
-		@Override
-		NativeQuery<R>  setParameter(int position, Object value);
-
-		@Override
-		<P> NativeQuery<R>  setParameter(int position, P val, Class<P> type);
-
-		@Override
-		<P> NativeQuery<R>  setParameter(int position, P val, BindableType<P> type);
-
-		@Override
-		NativeQuery<R>  setParameter(int position, Instant value, TemporalType temporalType);
-
-		@Override
-		NativeQuery<R>  setParameter(int position, Calendar value, TemporalType temporalType);
-
-		@Override
-		NativeQuery<R>  setParameter(int position, Date value, TemporalType temporalType);
-
-		@Override
-		<P> NativeQuery<R>  setParameter(QueryParameter<P> parameter, P val);
-
-		@Override
-		<P> NativeQuery<R>  setParameter(QueryParameter<P> parameter, P val, Class<P> type);
-
-		@Override
-		<P> NativeQuery<R>  setParameter(QueryParameter<P> parameter, P val, BindableType<P> type);
-
-		@Override
-		<P> NativeQuery<R>  setParameter(Parameter<P> param, P value);
-
-		@Override
-		NativeQuery<R>  setParameter(Parameter<Calendar> param, Calendar value, TemporalType temporalType);
-
-		@Override
-		NativeQuery<R>  setParameter(Parameter<Date> param, Date value, TemporalType temporalType);
-
-		@Override
-		NativeQuery<R>  setParameterList(String name, @SuppressWarnings("rawtypes") Collection values);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(String name, Collection<? extends P> values, Class<P> type);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(String name, Collection<? extends P> values, BindableType<P> type);
-
-		@Override
-		NativeQuery<R>  setParameterList(String name, Object[] values);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(String name, P[] values, Class<P> type);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(String name, P[] values, BindableType<P> type);
-
-		@Override
-		NativeQuery<R>  setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(int position, Collection<? extends P> values, Class<P> type);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(int position, Collection<? extends P> values, BindableType<P> javaType);
-
-		@Override
-		NativeQuery<R>  setParameterList(int position, Object[] values);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(int position, P[] values, Class<P> javaType);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(int position, P[] values, BindableType<P> javaType);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(QueryParameter<P> parameter, Collection<? extends P> values);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(QueryParameter<P> parameter, P[] values);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType);
-
-		@Override
-		<P> NativeQuery<R>  setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type);
-
-		@Override
-		NativeQuery<R>  setProperties(Object bean);
-
-		@Override
-		NativeQuery<R>  setProperties(@SuppressWarnings("rawtypes") Map bean);
+		String getComment();
 	}
 
-	interface MutationQuery<R> extends CommonQueryContract {
-		Uni<Integer> executeUpdate();
+	interface SelectionQuery<R> extends AbstractQuery {
 
-		@Override
-		Mutiny.MutationQuery<R> setParameter(String name, Object value);
+		/**
+		 * Set the maximum number of results that may be returned by this
+		 * query when executed.
+		 */
+		SelectionQuery<R> setMaxResults(int maxResults);
 
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameter(String name, P value, Class<P> type);
+		/**
+		 * Set the position of the first result that may be returned by
+		 * this query when executed, where the results are numbered from
+		 * 0.
+		 */
+		SelectionQuery<R> setFirstResult(int firstResult);
 
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameter(String name, P value, BindableType<P> type);
+		/**
+		 * @return the maximum number results, or {@link Integer#MAX_VALUE}
+		 *          if not set
+		 */
+		int getMaxResults();
 
-		@Override
-		Mutiny.MutationQuery<R> setParameter(String name, Instant value, TemporalType temporalType);
+		/**
+		 * @return the first result, or 0 if not set
+		 */
+		int getFirstResult();
 
-		@Override
-		Mutiny.MutationQuery<R> setParameter(String name, Calendar value, TemporalType temporalType);
-
-		@Override
-		Mutiny.MutationQuery<R> setParameter(String name, Date value, TemporalType temporalType);
-
-		@Override
-		Mutiny.MutationQuery<R> setParameter(int position, Object value);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameter(int position, P value, Class<P> type);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameter(int position, P value, BindableType<P> type);
-
-		@Override
-		Mutiny.MutationQuery<R> setParameter(int position, Instant value, TemporalType temporalType);
-
-		@Override
-		Mutiny.MutationQuery<R> setParameter(int position, Date value, TemporalType temporalType);
-
-		@Override
-		Mutiny.MutationQuery<R> setParameter(int position, Calendar value, TemporalType temporalType);
-
-		@Override
-		<T> Mutiny.MutationQuery<R> setParameter(QueryParameter<T> parameter, T value);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameter(QueryParameter<P> parameter, P value, Class<P> type);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameter(QueryParameter<P> parameter, P val, BindableType<P> type);
-
-		@Override
-		<T> Mutiny.MutationQuery<R> setParameter(Parameter<T> param, T value);
-
-		@Override
-		Mutiny.MutationQuery<R> setParameter(Parameter<Calendar> param, Calendar value, TemporalType temporalType);
-
-		@Override
-		Mutiny.MutationQuery<R> setParameter(Parameter<Date> param, Date value, TemporalType temporalType);
-
-		@Override
-		Mutiny.MutationQuery<R> setParameterList(String name, @SuppressWarnings("rawtypes") Collection values);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(String name, Collection<? extends P> values, Class<P> javaType);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(String name, Collection<? extends P> values, BindableType<P> type);
-
-		@Override
-		Mutiny.MutationQuery<R> setParameterList(String name, Object[] values);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(String name, P[] values, Class<P> javaType);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(String name, P[] values, BindableType<P> type);
-
-		@Override
-		Mutiny.MutationQuery<R> setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(int position, Collection<? extends P> values, Class<P> javaType);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(int position, Collection<? extends P> values, BindableType<P> type);
-
-		@Override
-		Mutiny.MutationQuery<R> setParameterList(int position, Object[] values);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(int position, P[] values, Class<P> javaType);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(int position, P[] values, BindableType<P> type);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(QueryParameter<P> parameter, P[] values);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType);
-
-		@Override
-		<P> Mutiny.MutationQuery<R> setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type);
-
-		@Override
-		Mutiny.MutationQuery<R> setProperties(Object bean);
-
-		@Override
-		Mutiny.MutationQuery<R> setProperties(@SuppressWarnings("rawtypes") Map bean);
-
-		@Override
-		Mutiny.MutationQuery<R> setHibernateFlushMode(FlushMode flushMode);
-	}
-
-	interface SelectionQuery<R> extends CommonQueryContract {
-		Uni<List<R>> list();
-
-		default Uni<List<R>> getResultList() {
-			return list();
-		}
-
+		/**
+		 * Asynchronously execute this query, returning a single row that
+		 * matches the query, throwing an exception if the query returns
+		 * zero rows or more than one matching row. If the query has multiple
+		 * results per row, the results are returned in an instance of
+		 * {@code Object[]}.
+		 *
+		 * @return the single resulting row
+		 * @throws jakarta.persistence.NoResultException if there is no result
+		 * @throws jakarta.persistence.NonUniqueResultException if there are multiple results
+		 *
+		 * @see jakarta.persistence.Query#getSingleResult()
+		 */
 		Uni<R> getSingleResult();
 
+		/**
+		 * Asynchronously execute this query, returning a single row that
+		 * matches the query, or {@code null} if the query returns no results,
+		 * throwing an exception if the query returns more than one matching
+		 * row. If the query has multiple results per row, the results are
+		 * returned in an instance of {@code Object[]}.
+		 *
+		 * @return the single resulting row or {@code null}
+		 * @throws jakarta.persistence.NonUniqueResultException if there are multiple results
+		 *
+		 * @see #getSingleResult()
+		 */
 		Uni<R> getSingleResultOrNull();
 
 		/**
-		 * Execute the query and return, the single result of the query as a {@link Uni}.
-		 * The {@code Uni} will emit the result of the query, or {@code null}, if the query
-		 * had no results.
-		 * <p>
-		 *     If there is more than one result, the uni will fail with {@link NonUniqueResultException}
-		 * </p>
+		 * Asynchronously execute this query, returning the query results
+		 * as a {@link List}, via a {@link Uni}. If the query
+		 * has multiple results per row, the results are returned in an
+		 * instance of {@code Object[]}.
 		 *
-		 * @return a {@link Uni} that emits the result of the query or {@code null}
+		 * @return the resulting rows as a {@link List}
+		 *
+		 * @see jakarta.persistence.Query#getResultList()
 		 */
-		Uni<R> uniqueResult();
+		Uni<List<R>> getResultList();
 
-		Uni<Optional<R>> uniqueResultOptional();
+		/**
+		 * Set the read-only/modifiable mode for entities and proxies
+		 * loaded by this Query. This setting overrides the default setting
+		 * for the persistence context.
+		 *
+		 * @see Session#setDefaultReadOnly(boolean)
+		 */
+		SelectionQuery<R> setReadOnly(boolean readOnly);
 
-		Mutiny.SelectionQuery<R> setHint(String hintName, Object value);
-
-		@Override
-		Mutiny.SelectionQuery<R> setFlushMode(FlushModeType flushMode);
-
-		@Override
-		Mutiny.SelectionQuery<R> setHibernateFlushMode(FlushMode flushMode);
-
-		@Override
-		Mutiny.SelectionQuery<R> setTimeout(int timeout);;
-
-		Integer getFetchSize();
-
-		Mutiny.SelectionQuery<R> setFetchSize(int fetchSize);
-
+		/**
+		 * @return the read-only/modifiable mode
+		 *
+		 * @see Session#isDefaultReadOnly()
+		 */
 		boolean isReadOnly();
 
-		Mutiny.SelectionQuery<R> setReadOnly(boolean readOnly);
+		/**
+		 * Enable or disable caching of this query result set in the
+		 * second-level query cache.
+		 *
+		 * @param cacheable {@code true} if this query is cacheable
+		 */
+		SelectionQuery<R> setCacheable(boolean cacheable);
 
-		Mutiny.SelectionQuery<R> setMaxResults(int maxResult);
+		/**
+		 * @return {@code true} if this query is cacheable
+		 *
+		 * @see #setCacheable(boolean)
+		 */
+		boolean isCacheable();
 
-		int getFirstResult();
+		/**
+		 * Set the name of the cache region in which to store this
+		 * query result set if {@link #setCacheable(boolean)
+		 * caching is enabled}.
+		 *
+		 * @param cacheRegion the name of the cache region
+		 */
+		SelectionQuery<R> setCacheRegion(String cacheRegion);
 
-		Mutiny.SelectionQuery<R> setFirstResult(int startPosition);
+		/**
+		 * @return the name of the cache region
+		 *
+		 * @see #setCacheRegion(String)
+		 */
+		String getCacheRegion();
 
-		CacheMode getCacheMode();
+		/**
+		 * Set the current {@link CacheMode} in effect while this query
+		 * is being executed.
+		 */
+		SelectionQuery<R> setCacheMode(CacheMode cacheMode);
+
+		/**
+		 * Set the current {@link CacheStoreMode} in effect while this query
+		 * is being executed.
+		 */
+		default SelectionQuery<R> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
+			return setCacheMode( interpretCacheMode( cacheStoreMode, interpretCacheRetrieveMode( getCacheMode() ) ) );
+		}
+
+		/**
+		 * Set the current {@link CacheRetrieveMode} in effect while this query
+		 * is being executed.
+		 */
+		default SelectionQuery<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+			return setCacheMode( interpretCacheMode( interpretCacheStoreMode( getCacheMode() ), cacheRetrieveMode ) );
+		}
 
 		CacheStoreMode getCacheStoreMode();
 
 		CacheRetrieveMode getCacheRetrieveMode();
 
-		Mutiny.SelectionQuery<R> setCacheMode(CacheMode cacheMode);
-
-		Mutiny.SelectionQuery<R> setCacheStoreMode(CacheStoreMode cacheStoreMode);
+		/**
+		 * Obtain the {@link CacheMode} in effect for this query. By default,
+		 * the query inherits the {@code CacheMode} of the {@link Session}
+		 * from which is originates.
+		 *
+		 * @see Session#getCacheMode()
+		 */
+		CacheMode getCacheMode();
 
 		/**
-		 * @see #setCacheMode(CacheMode)
+		 * Set the current {@link FlushMode} in effect while this query is
+		 * being executed.
 		 */
-		Mutiny.SelectionQuery<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode);
+		SelectionQuery<R> setFlushMode(FlushMode flushMode);
 
-		boolean isCacheable();
-
-		Mutiny.SelectionQuery<R> setCacheable(boolean cacheable);
-
-		String getCacheRegion();
-
-		Mutiny.SelectionQuery<R> setCacheRegion(String cacheRegion);
-
-		LockOptions getLockOptions();
-
-		LockModeType getLockMode();
-
-		Mutiny.SelectionQuery<R> setLockMode(LockModeType lockMode);
-
-		LockMode getHibernateLockMode();
-
-		Mutiny.SelectionQuery<R> setHibernateLockMode(LockMode lockMode);
-
-		Mutiny.SelectionQuery<R> setLockMode(String alias, LockMode lockMode);
-
-		Mutiny.SelectionQuery<R> setAliasSpecificLockMode(String alias, LockMode lockMode);
-
-		Mutiny.SelectionQuery<R> setFollowOnLocking(boolean enable);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameter(String name, Object value);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameter(String name, P value, Class<P> type);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameter(String name, P value, BindableType<P> type);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameter(String name, Instant value, TemporalType temporalType);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameter(String name, Calendar value, TemporalType temporalType);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameter(String name, Date value, TemporalType temporalType);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameter(int position, Object value);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameter(int position, P value, Class<P> type);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameter(int position, P value, BindableType<P> type);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameter(int position, Instant value, TemporalType temporalType);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameter(int position, Date value, TemporalType temporalType);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameter(int position, Calendar value, TemporalType temporalType);
-
-		@Override
-		<T> Mutiny.SelectionQuery<R> setParameter(QueryParameter<T> parameter, T value);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameter(QueryParameter<P> parameter, P value, Class<P> type);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameter(QueryParameter<P> parameter, P val, BindableType<P> type);
-
-		@Override
-		<T> Mutiny.SelectionQuery<R> setParameter(Parameter<T> param, T value);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameter(Parameter<Calendar> param, Calendar value, TemporalType temporalType);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameter(Parameter<Date> param, Date value, TemporalType temporalType);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameterList(String name, @SuppressWarnings("rawtypes") Collection values);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(String name, Collection<? extends P> values, Class<P> javaType);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(String name, Collection<? extends P> values, BindableType<P> type);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameterList(String name, Object[] values);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(String name, P[] values, Class<P> javaType);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(String name, P[] values, BindableType<P> type);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(int position, Collection<? extends P> values, Class<P> javaType);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(int position, Collection<? extends P> values, BindableType<P> type);
-
-		@Override
-		Mutiny.SelectionQuery<R> setParameterList(int position, Object[] values);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(int position, P[] values, Class<P> javaType);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(int position, P[] values, BindableType<P> type);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(QueryParameter<P> parameter, P[] values);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType);
-
-		@Override
-		<P> Mutiny.SelectionQuery<R> setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type);
-
-		@Override
-		Mutiny.SelectionQuery<R> setProperties(Object bean);
-
-		@Override
-		Mutiny.SelectionQuery<R> setProperties(@SuppressWarnings("rawtypes") Map bean);
-	}
-
-	interface Query<R> extends Mutiny.SelectionQuery<R>, Mutiny.MutationQuery<R> {
-
-		String getQueryString();
-
-		Mutiny.Query<R> applyGraph(@SuppressWarnings("rawtypes") RootGraph graph, GraphSemantic semantic);
-
-		default Mutiny.Query<R> applyFetchGraph(@SuppressWarnings("rawtypes") RootGraph graph) {
-			return applyGraph( graph, GraphSemantic.FETCH );
+		/**
+		 * Set the current {@link FlushModeType} in effect while this query is
+		 * being executed.
+		 */
+		default SelectionQuery<R> setFlushMode(FlushModeType flushModeType) {
+			return setFlushMode( FlushModeTypeHelper.getFlushMode(flushModeType) );
 		}
 
-		@SuppressWarnings("UnusedDeclaration")
-		default Mutiny.Query<R> applyLoadGraph(@SuppressWarnings("rawtypes") RootGraph graph) {
-			return applyGraph( graph, GraphSemantic.LOAD );
+		/**
+		 * Obtain the {@link FlushMode} in effect for this query. By default,
+		 * the query inherits the {@code FlushMode} of the {@link Session}
+		 * from which is originates.
+		 *
+		 * @see Session#getFlushMode()
+		 */
+		FlushMode getFlushMode();
+
+		/**
+		 * Set the {@link LockMode} to use for the whole query.
+		 */
+		SelectionQuery<R> setLockMode(LockMode lockMode);
+
+		/**
+		 * Set the {@link LockModeType} to use for the whole query.
+		 */
+		default SelectionQuery<R> setLockMode(LockModeType lockModeType) {
+			return setLockMode( convertToLockMode(lockModeType) );
 		}
 
-		String getComment();
-
-		Mutiny.Query<R> setComment(String comment);
-
-		Mutiny.Query<R> addQueryHint(String hint);
-
-		@Override
-		LockOptions getLockOptions();
-
-		Mutiny.Query<R> setLockOptions(LockOptions lockOptions);
-
-		@Override
-		Mutiny.Query<R> setLockMode(String alias, LockMode lockMode);
-
-		<T> Mutiny.Query<T> setTupleTransformer(TupleTransformer<T> transformer);
-
-		Mutiny.Query<R> setResultListTransformer(ResultListTransformer<R> transformer);
-
-		QueryOptions getQueryOptions();
-
-		ParameterMetadata getParameterMetadata();
-
-		@Override
-		Mutiny.Query<R> setParameter(String parameter, Object argument);
-
-		@Override
-		<P> Mutiny.Query<R> setParameter(String parameter, P argument, Class<P> type);
-
-		@Override
-		<P> Mutiny.Query<R> setParameter(String parameter, P argument, BindableType<P> type);
+		/**
+		 * Set the {@link LockMode} to use for specified alias (as defined in
+		 * the query's {@code from} clause).
+		 *
+		 * @param alias the from clause alias
+		 * @param lockMode the requested {@link LockMode}
+		 *
+		 * @see org.hibernate.query.Query#setLockMode(String,LockMode)
+		 */
+		SelectionQuery<R> setLockMode(String alias, LockMode lockMode);
 
 		/**
-		 * Bind an {@link Instant} value to the named query parameter using
-		 * just the portion indicated by the given {@link TemporalType}.
+		 * Set the {@link LockModeType} to use for specified alias (as defined in
+		 * the query's {@code from} clause).
+		 *
+		 * @param alias the from clause alias
+		 * @param lockModeType the requested {@link LockModeType}
+		 *
+		 * @see org.hibernate.query.Query#setLockMode(String,LockMode)
 		 */
-		Mutiny.Query<R> setParameter(String parameter, Instant argument, TemporalType temporalType);
+		default SelectionQuery<R> setLockMode(String alias, LockModeType lockModeType) {
+			return setLockMode( alias, convertToLockMode(lockModeType) );
+		}
+
+//		/**
+//		 * Set the {@link LockOptions} to use for the whole query.
+//		 *
+//		 * @see org.hibernate.query.Query#setLockOptions(LockOptions)
+//		 */
+//		Query<R> setLockOptions(LockOptions lockOptions);
+
+		/**
+		 * Set the {@link EntityGraph} that will be used as a fetch plan for
+		 * the root entity returned by this query.
+		 */
+		SelectionQuery<R> setPlan(EntityGraph<R> entityGraph);
 
 		@Override
-		Mutiny.Query<R> setParameter(String parameter, Calendar argument, TemporalType temporalType);
+		SelectionQuery<R> setParameter(int parameter, Object argument);
 
 		@Override
-		Mutiny.Query<R> setParameter(String parameter, Date argument, TemporalType temporalType);
-
-		/**
-		 * Bind the given argument to an ordinal query parameter.
-		 * <p>
-		 * If the type of the parameter cannot be inferred from the context in
-		 * which it occurs, use one of the forms which accepts a "type".
-		 *
-		 * @see #setParameter(int, Object, Class)
-		 * @see #setParameter(int, Object, BindableType)
-		 */
-		@Override
-		Mutiny.Query<R> setParameter(int parameter, Object argument);
-
-		/**
-		 * Bind the given argument to an ordinal query parameter using the given
-		 * Class reference to attempt to determine the {@link BindableType}
-		 * to use.  If unable to determine an appropriate {@link BindableType},
-		 * {@link #setParameter(int, Object)} is used.
-		 *
-		 * @see #setParameter(int, Object, BindableType)
-		 */
-		<P> Mutiny.Query<R> setParameter(int parameter, P argument, Class<P> type);
-
-		/**
-		 * Bind the given argument to an ordinal query parameter using the given
-		 * {@link BindableType}.
-		 */
-		<P> Mutiny.Query<R> setParameter(int parameter, P argument, BindableType<P> type);
-
-		/**
-		 * Bind an {@link Instant} value to the ordinal query parameter using
-		 * just the portion indicated by the given {@link TemporalType}.
-		 */
-		Mutiny.Query<R> setParameter(int parameter, Instant argument, TemporalType temporalType);
-
-		/**
-		 * {@link jakarta.persistence.Query} override
-		 */
-		@Override
-		Mutiny.Query<R> setParameter(int parameter, Date argument, TemporalType temporalType);
-
-		/**
-		 * {@link jakarta.persistence.Query} override
-		 */
-		@Override
-		Mutiny.Query<R> setParameter(int parameter, Calendar argument, TemporalType temporalType);
-
-		<T> Mutiny.Query<R> setParameter(QueryParameter<T> parameter, T argument);
-
-		<P> Mutiny.Query<R> setParameter(QueryParameter<P> parameter, P argument, Class<P> type);
-
-		<P> Mutiny.Query<R> setParameter(QueryParameter<P> parameter, P argument, BindableType<P> type);
+		SelectionQuery<R> setParameter(String parameter, Object argument);
 
 		@Override
-		<T> Mutiny.Query<R> setParameter(Parameter<T> parameter, T argument);
+		<T> SelectionQuery<R> setParameter(Parameter<T> parameter, T argument);
 
 		@Override
-		Mutiny.Query<R> setParameter(Parameter<Calendar> parameter, Calendar argument, TemporalType temporalType);
-
-		@Override
-		Mutiny.Query<R> setParameter(Parameter<Date> parameter, Date argument, TemporalType temporalType);
-
-		Mutiny.Query<R> setParameterList(String parameter, @SuppressWarnings("rawtypes") Collection arguments);
-
-		<P> Mutiny.Query<R> setParameterList(String parameter, Collection<? extends P> arguments, Class<P> javaType);
-
-		/**
-		 * Bind multiple arguments to a named query parameter using the given
-		 * {@link BindableType}.
-		 *
-		 * @apiNote This is used for binding a list of values to an expression
-		 * such as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		<P> Mutiny.Query<R> setParameterList(String parameter, Collection<? extends P> arguments, BindableType<P> type);
-
-
-		/**
-		 * Bind multiple arguments to a named query parameter.
-		 * <p/>
-		 * The "type mapping" for the binding is inferred from the type of
-		 * the first collection element.
-		 *
-		 * @apiNote This is used for binding a list of values to an expression s
-		 * uch as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		Mutiny.Query<R> setParameterList(String parameter, Object[] values);
-
-		/**
-		 * Bind multiple arguments to a named query parameter using the given
-		 * Class reference to attempt to determine the {@link BindableType}
-		 * to use.  If unable to determine an appropriate {@link BindableType},
-		 * {@link #setParameterList(String, Collection)} is used.
-		 *
-		 * @see #setParameterList(java.lang.String, Object[], BindableType)
-		 *
-		 * @apiNote This is used for binding a list of values to an expression
-		 * such as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		<P> Mutiny.Query<R> setParameterList(String parameter, P[] arguments, Class<P> javaType);
-
-
-		/**
-		 * Bind multiple arguments to a named query parameter using the given
-		 * {@link BindableType}.
-		 *
-		 * @apiNote This is used for binding a list of values to an expression
-		 * such as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		<P> Mutiny.Query<R> setParameterList(String parameter, P[] arguments, BindableType<P> type);
-
-		/**
-		 * Bind multiple arguments to an ordinal query parameter.
-		 * <p/>
-		 * The "type mapping" for the binding is inferred from the type of
-		 * the first collection element.
-		 *
-		 * @apiNote This is used for binding a list of values to an expression
-		 * such as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		Mutiny.Query<R> setParameterList(int parameter, @SuppressWarnings("rawtypes") Collection arguments);
-
-		/**
-		 * Bind multiple arguments to an ordinal query parameter using the given
-		 * Class reference to attempt to determine the {@link BindableType}
-		 * to use.  If unable to determine an appropriate {@link BindableType},
-		 * {@link #setParameterList(String, Collection)} is used.
-		 *
-		 * @see #setParameterList(int, Collection, BindableType)
-		 *
-		 * @apiNote This is used for binding a list of values to an expression
-		 * such as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		<P> Mutiny.Query<R> setParameterList(int parameter, Collection<? extends P> arguments, Class<P> javaType);
-
-		/**
-		 * Bind multiple arguments to an ordinal query parameter using the given
-		 * {@link BindableType}.
-		 *
-		 * @apiNote This is used for binding a list of values to an expression
-		 * such as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		<P> Mutiny.Query<R> setParameterList(int parameter, Collection<? extends P> arguments, BindableType<P> type);
-
-		/**
-		 * Bind multiple arguments to an ordinal query parameter.
-		 * <p>
-		 * The "type mapping" for the binding is inferred from the type of the
-		 * first collection element.
-		 *
-		 * @apiNote This is used for binding a list of values to an expression
-		 * such as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		Mutiny.Query<R> setParameterList(int parameter, Object[] arguments);
-
-		/**
-		 * Bind multiple arguments to an ordinal query parameter using the given
-		 * {@link Class} reference to attempt to determine the {@link BindableType}
-		 * to use. If unable to determine an appropriate {@link BindableType},
-		 * {@link #setParameterList(String, Collection)} is used.
-		 *
-		 * @see #setParameterList(int, Object[], BindableType)
-		 *
-		 * @apiNote This is used for binding a list of values to an expression
-		 * such as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		<P> Mutiny.Query<R> setParameterList(int parameter, P[] arguments, Class<P> javaType);
-
-		/**
-		 * Bind multiple arguments to an ordinal query parameter using the given
-		 * {@link BindableType}.
-		 *
-		 * @apiNote This is used for binding a list of values to an expression
-		 * such as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		<P> Mutiny.Query<R> setParameterList(int parameter, P[] arguments, BindableType<P> type);
-
-		/**
-		 * Bind multiple arguments to the query parameter represented by the given
-		 * {@link QueryParameter}.
-		 * <p>
-		 * The type of the parameter is inferred from the context in which it occurs,
-		 * and from the type of the first given argument.
-		 *
-		 * @param parameter the parameter memento
-		 * @param arguments a collection of arguments
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		<P> Mutiny.Query<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> arguments);
-
-		/**
-		 * Bind multiple arguments to the query parameter represented by the given
-		 * {@link QueryParameter} using the given Class reference to attempt to
-		 * determine the {@link BindableType} to use. If unable to determine an
-		 * appropriate {@link BindableType}, {@link #setParameterList(String, Collection)}
-		 * is used.
-		 *
-		 * @see #setParameterList(QueryParameter, java.util.Collection, BindableType)
-		 *
-		 * @apiNote This is used for binding a list of values to an expression such
-		 * as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		<P> Mutiny.Query<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> arguments, Class<P> javaType);
-
-		/**
-		 * Bind multiple arguments to the query parameter represented by the given
-		 * {@link QueryParameter}, inferring the {@link BindableType}.
-		 * <p>
-		 * The "type mapping" for the binding is inferred from the type of the first
-		 * collection element.
-		 *
-		 * @apiNote This is used for binding a list of values to an expression such
-		 * as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		<P> Mutiny.Query<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> arguments, BindableType<P> type);
-
-		/**
-		 * Bind multiple arguments to the query parameter represented by the
-		 * given {@link QueryParameter}
-		 * <p>
-		 * The type of the parameter is inferred between the context in which it
-		 * occurs, the type associated with the QueryParameter and the type of
-		 * the first given argument.
-		 *
-		 * @param parameter the parameter memento
-		 * @param arguments a collection of arguments
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		<P> Mutiny.Query<R> setParameterList(QueryParameter<P> parameter, P[] arguments);
-
-		/**
-		 * Bind multiple arguments to the query parameter represented by the
-		 * given {@link QueryParameter} using the given Class reference to attempt
-		 * to determine the {@link BindableType} to use.  If unable to
-		 * determine an appropriate {@link BindableType},
-		 * {@link #setParameterList(String, Collection)} is used
-		 *
-		 * @see #setParameterList(QueryParameter, Object[], BindableType)
-		 *
-		 * @apiNote This is used for binding a list of values to an expression such
-		 * as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		<P> Mutiny.Query<R> setParameterList(QueryParameter<P> parameter, P[] arguments, Class<P> javaType);
-
-		/**
-		 * Bind multiple arguments to the query parameter represented by the
-		 * given {@link QueryParameter}, inferring the {@link BindableType}.
-		 * <p>
-		 * The "type mapping" for the binding is inferred from the type of
-		 * the first collection element
-		 *
-		 * @apiNote This is used for binding a list of values to an expression such
-		 * as {@code entity.field in (:values)}.
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		<P> Mutiny.Query<R> setParameterList(QueryParameter<P> parameter, P[] arguments, BindableType<P> type);
-
-		/**
-		 * Bind the property values of the given bean to named parameters of the query,
-		 * matching property names with parameter names and mapping property types to
-		 * Hibernate types using heuristics.
-		 *
-		 * @param bean any JavaBean or POJO
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		Mutiny.Query<R> setProperties(Object bean);
-
-		/**
-		 * Bind the values of the given Map for each named parameters of the query,
-		 * matching key names with parameter names and mapping value types to
-		 * Hibernate types using heuristics.
-		 *
-		 * @param bean a {@link Map} of names to arguments
-		 *
-		 * @return {@code this}, for method chaining
-		 */
-		Mutiny.Query<R> setProperties(@SuppressWarnings("rawtypes") Map bean);
-
-
-		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		// covariant overrides - CommonQueryContract
-
-		@Override
-		Mutiny.Query<R> setHibernateFlushMode(FlushMode flushMode);
-
-		@Override
-		Mutiny.Query<R> setCacheable(boolean cacheable);
-
-		@Override
-		Mutiny.Query<R> setCacheRegion(String cacheRegion);
-
-		@Override
-		Mutiny.Query<R> setCacheMode(CacheMode cacheMode);
-
-		@Override
-		Mutiny.Query<R> setCacheStoreMode(CacheStoreMode cacheStoreMode);
-
-		@Override
-		Mutiny.Query<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode);
-
-		@Override
-		Mutiny.Query<R> setTimeout(int timeout);
-
-		@Override
-		Mutiny.Query<R> setFetchSize(int fetchSize);
-
-		@Override
-		Mutiny.Query<R> setReadOnly(boolean readOnly);
-
-
-		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		// covariant overrides - jakarta.persistence.Query/TypedQuery
-
-		@Override
-		Mutiny.Query<R> setMaxResults(int maxResult);
-
-		@Override
-		Mutiny.Query<R> setFirstResult(int startPosition);
-
-		@Override
-		Mutiny.Query<R> setHint(String hintName, Object value);
-
-		@Override
-		Mutiny.Query<R> setFlushMode(FlushModeType flushMode);
-
-		@Override
-		Mutiny.Query<R> setLockMode(LockModeType lockMode);
-
+		SelectionQuery<R> setComment(String comment);
 	}
+
+	interface MutationQuery extends AbstractQuery {
+		/**
+		 * Asynchronously execute this delete, update, or insert query,
+		 * returning the updated row count.
+		 *
+		 * @return the row count as an integer
+		 *
+		 * @see jakarta.persistence.Query#executeUpdate()
+		 */
+		Uni<Integer> executeUpdate();
+
+		@Override
+		MutationQuery setParameter(int parameter, Object argument);
+
+		@Override
+		MutationQuery setParameter(String parameter, Object argument);
+
+		@Override
+		<T> MutationQuery setParameter(Parameter<T> parameter, T argument);
+
+		@Override
+		MutationQuery setComment(String comment);
+	}
+
+	interface Query<R> extends SelectionQuery<R>, MutationQuery {
+		@Override
+		Query<R> setMaxResults(int maxResults);
+
+		@Override
+		Query<R> setFirstResult(int firstResult);
+
+		@Override
+		Query<R> setReadOnly(boolean readOnly);
+
+		@Override
+		Query<R> setCacheable(boolean cacheable);
+
+		@Override
+		Query<R> setCacheRegion(String cacheRegion);
+
+		@Override
+		Query<R> setCacheMode(CacheMode cacheMode);
+
+		@Override
+		default Query<R> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
+			SelectionQuery.super.setCacheStoreMode( cacheStoreMode );
+			return this;
+		}
+
+		@Override
+		default Query<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+			SelectionQuery.super.setCacheRetrieveMode( cacheRetrieveMode );
+			return this;
+		}
+
+		@Override
+		Query<R> setFlushMode(FlushMode flushMode);
+
+		@Override
+		default Query<R> setFlushMode(FlushModeType flushModeType) {
+			SelectionQuery.super.setFlushMode( flushModeType );
+			return this;
+		}
+
+		@Override
+		Query<R> setLockMode(LockMode lockMode);
+
+		@Override
+		default Query<R> setLockMode(LockModeType lockModeType) {
+			SelectionQuery.super.setLockMode( lockModeType );
+			return this;
+		}
+
+		@Override
+		Query<R> setLockMode(String alias, LockMode lockMode);
+
+		@Override
+		default Query<R> setLockMode(String alias, LockModeType lockModeType) {
+			SelectionQuery.super.setLockMode( alias, lockModeType );
+			return this;
+		}
+
+		@Override
+		Query<R> setPlan(EntityGraph<R> entityGraph);
+
+		@Override
+		Query<R> setParameter(int parameter, Object argument);
+
+		@Override
+		Query<R> setParameter(String parameter, Object argument);
+
+		@Override
+		<T> Query<R> setParameter(Parameter<T> parameter, T argument);
+
+		@Override
+		Query<R> setComment(String comment);
+	}
+
 
 	/**
 	 * A non-blocking counterpart to the Hibernate {@link org.hibernate.Session}
@@ -1493,6 +854,30 @@ public interface Mutiny {
 		boolean contains(Object entity);
 
 		/**
+		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
+		 * query string.
+		 *
+		 * @param queryString The HQL/JPQL query
+		 *
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
+		 */
+		<R> SelectionQuery<R> createSelectionQuery(String queryString);
+
+		/**
+		 * Create an instance of {@link MutationQuery} for the given HQL/JPQL
+		 * update or delete statement.
+		 *
+		 * @param queryString The HQL/JPQL query, update or delete statement
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
+		 */
+		MutationQuery createMutationQuery(String queryString);
+
+		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query
 		 * string or HQL/JPQL update or delete statement. In the case of an
 		 * update or delete, the returned {@link Query} must be executed using
@@ -1507,46 +892,47 @@ public interface Mutiny {
 		<R> Query<R> createQuery(String queryString);
 
 		/**
-		 * Create an instance of {@link Query} for the given HQL/JPQL query
-		 * string.
+		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
+		 * query string and query result type.
 		 *
 		 * @param queryString The HQL/JPQL query
 		 * @param resultType the Java type returned in each row of query results
 		 *
-		 * @return The {@link Query} instance for manipulation and execution
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
 		 *
 		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
 		 */
-		<R> Query<R> createQuery(String queryString, Class<R> resultType);
+		<R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType);
 
 		/**
-		 * Create an instance of {@link Mutiny.Query} for the given criteria query.
+		 * Create an instance of {@link SelectionQuery} for the given criteria
+		 * query.
 		 *
 		 * @param criteriaQuery The {@link CriteriaQuery}
 		 *
-		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
 		 *
 		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
-		<R> Mutiny.Query<R> createQuery(CriteriaQuery<R> criteriaQuery);
+		<R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery);
 
 		/**
-		 * Create an instance of {@link Mutiny.Query} for the given criteria update.
+		 * Create an instance of {@link MutationQuery} for the given criteria update.
 		 *
 		 * @param criteriaUpdate The {@link CriteriaUpdate}
 		 *
-		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 * @return The {@link MutationQuery} instance for manipulation and execution
 		 */
-		<R> Mutiny.MutationQuery<R> createQuery(CriteriaUpdate<R> criteriaUpdate);
+		<R> MutationQuery createQuery(CriteriaUpdate<R> criteriaUpdate);
 
 		/**
-		 * Create an instance of {@link Mutiny.Query} for the given criteria delete.
+		 * Create an instance of {@link MutationQuery} for the given criteria delete.
 		 *
 		 * @param criteriaDelete The {@link CriteriaDelete}
 		 *
-		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 * @return The {@link MutationQuery} instance for manipulation and execution
 		 */
-		<R> Mutiny.MutationQuery<R> createQuery(CriteriaDelete<R> criteriaDelete);
+		<R> MutationQuery createQuery(CriteriaDelete<R> criteriaDelete);
 
 		/**
 		 * Create an instance of {@link Query} for the named query.
@@ -1560,16 +946,16 @@ public interface Mutiny {
 		<R> Query<R> createNamedQuery(String queryName);
 
 		/**
-		 * Create an instance of {@link Query} for the named query.
+		 * Create an instance of {@link SelectionQuery} for the named query.
 		 *
 		 * @param queryName The name of the query
 		 * @param resultType the Java type returned in each row of query results
 		 *
-		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
 		 *
 		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
 		 */
-		<R> Query<R> createNamedQuery(String queryName, Class<R> resultType);
+		<R> SelectionQuery<R> createNamedQuery(String queryName, Class<R> resultType);
 
 		/**
 		 * Create an instance of {@link Query} for the given SQL query string,
@@ -1612,7 +998,7 @@ public interface Mutiny {
 		<R> Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities);
 
 		/**
-		 * Create an instance of {@link Query} for the given SQL query
+		 * Create an instance of {@link SelectionQuery} for the given SQL query
 		 * string, using the given {@code resultType} to interpret the results.
 		 *
 		 * <ul>
@@ -1629,14 +1015,14 @@ public interface Mutiny {
 		 * @param queryString The SQL query
 		 * @param resultType the Java type returned in each row of query results
 		 *
-		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
 		 *
 		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, Class)
 		 */
-		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType);
+		<R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType);
 
 		/**
-		 * Create an instance of {@link Query} for the given SQL query
+		 * Create an instance of {@link SelectionQuery} for the given SQL query
 		 * string, using the given {@code resultType} to interpret the results.
 		 *
 		 * <ul>
@@ -1657,31 +1043,33 @@ public interface Mutiny {
 		 * @param resultType the Java type returned in each row of query results
 		 * @param affectedEntities The entities which are affected by the query
 		 *
-		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 * @return The {@link Query} instance for manipulation and execution
 		 *
 		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, Class)
 		 */
-		<R> Query<R> createNativeQuery(
+		<R> SelectionQuery<R> createNativeQuery(
 				String queryString, Class<R> resultType,
 				AffectedEntities affectedEntities);
 
 		/**
-		 * Create an instance of {@link Mutiny.Query} for the given SQL query string,
-		 * using the given {@link ResultSetMapping} to interpret the result set.
+		 * Create an instance of {@link SelectionQuery} for the given SQL query
+		 * string, using the given {@link ResultSetMapping} to interpret the
+		 * result set.
 		 *
 		 * @param queryString The SQL query
 		 * @param resultSetMapping the result set mapping
 		 *
-		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 * @return The {@link Query} instance for manipulation and execution
 		 *
 		 * @see #getResultSetMapping(Class, String)
 		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, String)
 		 */
-		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
+		<R> SelectionQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
 
 		/**
-		 * Create an instance of {@link Mutiny.Query} for the given SQL query string,
-		 * using the given {@link ResultSetMapping} to interpret the result set.
+		 * Create an instance of {@link SelectionQuery} for the given SQL query
+		 * string, using the given {@link ResultSetMapping} to interpret the
+		 * result set.
 		 * <p>
 		 * Any {@link AffectedEntities affected entities} are synchronized with the
 		 * database before execution of the query.
@@ -1690,12 +1078,12 @@ public interface Mutiny {
 		 * @param resultSetMapping the result set mapping
 		 * @param affectedEntities The entities which are affected by the query
 		 *
-		 * @return The {@link Mutiny.Query} instance for manipulation and execution
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
 		 *
 		 * @see #getResultSetMapping(Class, String)
 		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, String)
 		 */
-		<R> Query<R> createNativeQuery(
+		<R> SelectionQuery<R> createNativeQuery(
 				String queryString,
 				ResultSetMapping<R> resultSetMapping,
 				AffectedEntities affectedEntities);
@@ -2064,8 +1452,8 @@ public interface Mutiny {
 		<R> Query<R> createQuery(String queryString);
 
 		/**
-		 * Create an instance of {@link Query} for the given HQL/JPQL query
-		 * string.
+		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
+		 * query string and query result type.
 		 *
 		 * @param queryString The HQL/JPQL query
 		 * @param resultType the Java type returned in each row of query results
@@ -2074,7 +1462,7 @@ public interface Mutiny {
 		 *
 		 * @see Session#createQuery(String, Class)
 		 */
-		<R> Query<R> createQuery(String queryString, Class<R> resultType);
+		<R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType);
 
 		/**
 		 * Create an instance of {@link Query} for the named query.
@@ -2088,16 +1476,16 @@ public interface Mutiny {
 		<R> Query<R> createNamedQuery(String queryName);
 
 		/**
-		 * Create an instance of {@link Query} for the named query.
+		 * Create an instance of {@link SelectionQuery} for the named query.
 		 *
 		 * @param queryName The name of the query
 		 * @param resultType the Java type returned in each row of query results
 		 *
-		 * @return The {@link Query} instance for manipulation and execution
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
 		 *
 		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
 		 */
-		<R> Query<R> createNamedQuery(String queryName, Class<R> resultType);
+		<R> SelectionQuery<R> createNamedQuery(String queryName, Class<R> resultType);
 
 		/**
 		 * Create an instance of {@link Query} for the given SQL query string,
@@ -2112,8 +1500,8 @@ public interface Mutiny {
 		<R> Query<R> createNativeQuery(String queryString);
 
 		/**
-		 * Create an instance of {@link Query} for the given SQL query string,
-		 * using the given {@code resultType} to interpret the results.
+		 * Create an instance of {@link SelectionQuery} for the given SQL query
+		 * string, using the given {@code resultType} to interpret the results.
 		 *
 		 * @param queryString The SQL query
 		 * @param resultType the Java type returned in each row of query results
@@ -2122,11 +1510,12 @@ public interface Mutiny {
 		 *
 		 * @see Session#createNativeQuery(String, Class)
 		 */
-		<R> Query<R> createNativeQuery(String queryString, Class<R> resultType);
+		<R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType);
 
 		/**
-		 * Create an instance of {@link Query} for the given SQL query string,
-		 * using the given {@link ResultSetMapping} to interpret the result set.
+		 * Create an instance of {@link SelectionQuery} for the given SQL query
+		 * string, using the given {@link ResultSetMapping} to interpret the
+		 * result set.
 		 *
 		 * @param queryString The SQL query
 		 * @param resultSetMapping the result set mapping
@@ -2135,18 +1524,19 @@ public interface Mutiny {
 		 *
 		 * @see Session#createNativeQuery(String, ResultSetMapping)
 		 */
-		<R> Query<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
+		<R> SelectionQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
 
 		/**
-		 * Create an instance of {@link Query} for the given criteria query.
+		 * Create an instance of {@link SelectionQuery} for the given criteria
+		 * query.
 		 *
 		 * @param criteriaQuery The {@link CriteriaQuery}
 		 *
-		 * @return The {@link Query} instance for manipulation and execution
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
 		 *
 		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
-		<R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery);
+		<R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery);
 
 		/**
 		 * Insert a row.
@@ -2773,7 +2163,7 @@ public interface Mutiny {
 			return Uni.createFrom().item( association );
 		}
 		if ( session == null ) {
-			throw LOG.sessionClosedLazyInitializationException();
+			throw LoggerFactory.make( Log.class, MethodHandles.lookup() ).sessionClosedLazyInitializationException();
 		}
 		return Uni.createFrom().completionStage(
 				ReactiveQueryExecutorLookup.extract( session ).reactiveFetch( association, false )

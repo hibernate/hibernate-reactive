@@ -5,11 +5,15 @@
  */
 package org.hibernate.reactive.stage.impl;
 
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.Attribute;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -26,17 +30,14 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.stage.Stage.MutationQuery;
 import org.hibernate.reactive.stage.Stage.Query;
+import org.hibernate.reactive.stage.Stage.SelectionQuery;
 
-import jakarta.persistence.CacheRetrieveMode;
-import jakarta.persistence.CacheStoreMode;
-import jakarta.persistence.EntityGraph;
-import jakarta.persistence.FlushModeType;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.criteria.CriteriaDelete;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.CriteriaUpdate;
-import jakarta.persistence.metamodel.Attribute;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
@@ -103,13 +104,13 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <R> Stage.SelectionQuery<R> createSelectionQuery(String queryString) {
+	public <R> SelectionQuery<R> createSelectionQuery(String queryString) {
 		return new StageSelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString ) );
 	}
 
 	@Override
-	public <R> Stage.SelectionQuery<R> createSelectionQuery(String queryString, Class<R> resultType ) {
-		return new StageSelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString, resultType ) );
+	public MutationQuery createMutationQuery(String queryString) {
+		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( queryString ) );
 	}
 
 	@Override
@@ -382,8 +383,8 @@ public class StageSessionImpl implements Stage.Session {
 
 		/**
 		 * Run the code assuming that a transaction has already started so that we can
-		 * differentiate an error starting a transaction (and therefore doesn't need to rollback)
-		 * and an error thrown by the work.
+		 * differentiate an error starting a transaction (and therefore doesn't need to
+		 * roll back) and an error thrown by the work.
 		 */
 		CompletionStage<T> executeInTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
 			return work.apply( this )
@@ -393,7 +394,7 @@ public class StageSessionImpl implements Stage.Session {
 					// since we can't just return a CompletionStage that
 					// rolls back the transaction from the handle() function
 					.handle( this::processError )
-					// finally, commit or rollback the transaction, and
+					// finally, commit or roll back the transaction, and
 					// then rethrow the caught error if necessary
 					.thenCompose( result -> end()
 							// make sure that if rollback() throws,
@@ -481,22 +482,22 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <R> Query<R> createQuery(String queryString, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ) );
+	public <R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ) );
 	}
 
 	@Override
-	public <R> Stage.MutationQuery<R> createQuery(CriteriaUpdate<R> criteriaUpdate) {
+	public <R> MutationQuery createQuery(CriteriaUpdate<R> criteriaUpdate) {
 		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( criteriaUpdate ) );
 	}
 
 	@Override
-	public <R> Query<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new StageQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ) );
+	public <R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ) );
 	}
 
 	@Override
-	public <R> Stage.MutationQuery<R> createQuery(CriteriaDelete<R> criteriaDelete) {
+	public <R> MutationQuery createQuery(CriteriaDelete<R> criteriaDelete) {
 		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( criteriaDelete ) );
 	}
 
@@ -506,37 +507,37 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <R> Query<R> createNamedQuery(String queryName, Class<R> resultType) {
-		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( queryName, resultType ) );
+	public <R> SelectionQuery<R> createNamedQuery(String queryName, Class<R> resultType) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveNamedQuery( queryName, resultType ) );
 	}
 
 	@Override
-	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString, Class<R> resultType) {
-		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ) );
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ) );
 	}
 
 	@Override
-	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
-		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType, affectedEntities ) );
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType, affectedEntities ) );
 	}
 
 	@Override
-	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
-		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping ) );
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping ) );
 	}
 
 	@Override
-	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
-		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping, affectedEntities ) );
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping, affectedEntities ) );
 	}
 
 	@Override
-	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString) {
-		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString ) );
+	public <R> Query<R> createNativeQuery(String queryString) {
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString ) );
 	}
 
 	@Override
-	public <R> Stage.NativeQuery<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
-		return new StageNativeQueryImpl<>( delegate.createReactiveNativeQuery( queryString, affectedEntities ) );
+	public <R> Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
+		return new StageQueryImpl<>( delegate.createReactiveNativeQuery( queryString, affectedEntities ) );
 	}
 }

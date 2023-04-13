@@ -5,15 +5,8 @@
  */
 package org.hibernate.reactive.stage.impl;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Objects;
-import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
-
 import org.hibernate.Cache;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
@@ -30,6 +23,13 @@ import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.stat.Statistics;
+
+import java.lang.invoke.MethodHandles;
+import java.util.Objects;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;

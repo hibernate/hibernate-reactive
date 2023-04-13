@@ -857,7 +857,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		test( context, openSession()
 				.thenCompose( s -> s.withTransaction( t -> s.persist( aloiPig, bloiPig ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
+						.thenCompose( session -> session.createQuery( "from GuineaPig", GuineaPig.class )
 								.getResultList()
 								.thenAccept( resultList -> assertThat( resultList ).containsExactlyInAnyOrder( aloiPig, bloiPig ) )
 						)
@@ -876,7 +876,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				.thenCompose( s -> s
 						.withTransaction( t -> s.persist( new GuineaPig( 10, "Aloi" ) ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
+						.thenCompose( session -> session.createQuery( "from GuineaPig", GuineaPig.class )
 								.getSingleResult()
 								.thenAccept( actualPig -> assertThatPigsAreEqual( context, expectedPig, actualPig ) ) )
 						.thenCompose( v -> openSession() )
@@ -890,7 +890,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	@Test
 	public void testCreateSelectionQueryNull(TestContext context) {
 		test( context, openSession()
-				.thenCompose( session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
+				.thenCompose( session -> session.createQuery( "from GuineaPig", GuineaPig.class )
 						.getSingleResultOrNull()
 						.thenAccept( context::assertNull ) )
 				.thenCompose( v -> openSession() )

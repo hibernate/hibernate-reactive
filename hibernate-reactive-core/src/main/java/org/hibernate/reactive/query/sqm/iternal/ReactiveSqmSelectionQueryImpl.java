@@ -22,6 +22,9 @@ import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.RootGraph;
+import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.QueryLogging;
@@ -36,6 +39,7 @@ import org.hibernate.query.spi.MutableQueryOptions;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.sqm.internal.SqmSelectionQueryImpl;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
+import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery;
 import org.hibernate.reactive.query.sqm.ReactiveSqmSelectionQuery;
 
@@ -597,6 +601,12 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	@Override
 	public ReactiveSqmSelectionQueryImpl<R> setProperties(Object bean) {
 		super.setProperties( bean );
+		return this;
+	}
+
+	@Override
+	public ReactiveSelectionQuery<R> applyGraph(RootGraph<?> graph, GraphSemantic semantic) {
+		getQueryOptions().applyGraph( (RootGraphImplementor<?>) graph, semantic );
 		return this;
 	}
 }
