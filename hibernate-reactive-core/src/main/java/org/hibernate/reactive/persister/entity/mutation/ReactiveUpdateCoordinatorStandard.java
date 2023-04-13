@@ -89,8 +89,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 		}
 
 		CompletionStage<Void> s = voidFuture();
-		return s.thenCompose(v -> reactivePreUpdateInMemoryValueGeneration(entity, values, session))
-				.thenCompose(preUpdateGeneratedAttributeIndexes -> {
+		return s.thenCompose( v -> reactivePreUpdateInMemoryValueGeneration(entity, values, session) )
+				.thenCompose( preUpdateGeneratedAttributeIndexes -> {
 					final int[] dirtyAttributeIndexes = dirtyAttributeIndexes( incomingDirtyAttributeIndexes, preUpdateGeneratedAttributeIndexes );
 
 					final boolean[] attributeUpdateability;
@@ -172,8 +172,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 						&& !generator.generatedOnExecution()
 						&& generator.generatesOnUpdate() ) {
 					final Object currentValue = currentValues[i];
-					result = result.thenCompose( v -> generateValue( session, entity, currentValue,
-							(BeforeExecutionGenerator) generator, INSERT)
+					final BeforeExecutionGenerator beforeGenerator = (BeforeExecutionGenerator) generator;
+					result = result.thenCompose( v -> generateValue( session, entity, currentValue, beforeGenerator, INSERT )
 							.thenAccept( generatedValue -> {
 								currentValues[index] = generatedValue;
 								entityPersister().setPropertyValue( entity, index, generatedValue );
@@ -261,9 +261,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 		final MutationExecutorService mutationExecutorService = session.getSessionFactory()
 				.getServiceRegistry()
 				.getService( MutationExecutorService.class );
-
-		return (ReactiveMutationExecutor) mutationExecutorService
-				.createExecutor( this::getBatchKey, operationGroup, session );
+		return (ReactiveMutationExecutor) mutationExecutorService.createExecutor( this::getBatchKey, operationGroup, session );
 	}
 
 	@Override
@@ -286,11 +284,6 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				session
 		);
 
-		// and then execute them
-		final MutationExecutorService mutationExecutorService = session.getSessionFactory()
-				.getServiceRegistry()
-				.getService( MutationExecutorService.class );
-
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, dynamicUpdateGroup );
 
 		decomposeForUpdate(
@@ -300,7 +293,9 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				valuesAnalysis,
 				mutationExecutor,
 				dynamicUpdateGroup,
-				(attributeIndex, attribute) -> dirtinessChecker.include( attributeIndex, (SingularAttributeMapping) attribute ) ? AttributeAnalysis.DirtynessStatus.CONSIDER_LIKE_DIRTY : AttributeAnalysis.DirtynessStatus.NOT_DIRTY,
+				(attributeIndex, attribute) -> dirtinessChecker.include( attributeIndex, (SingularAttributeMapping) attribute )
+						? AttributeAnalysis.DirtynessStatus.CONSIDER_LIKE_DIRTY
+						: AttributeAnalysis.DirtynessStatus.NOT_DIRTY,
 				session
 		);
 		bindPartitionColumnValueBindings( oldValues, session, mutationExecutor.getJdbcValueBindings() );
@@ -367,7 +362,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 						entity,
 						valuesAnalysis,
 						valuesAnalysis.getTablesNeedingUpdate()::contains,
-						(statementDetails, affectedRowCount, batchPosition) -> identifiedResultsCheck( statementDetails, affectedRowCount, batchPosition, entityPersister(), id, factory() ),
+						(statementDetails, affectedRowCount, batchPosition)
+								-> identifiedResultsCheck( statementDetails, affectedRowCount, batchPosition, entityPersister(), id, factory() ),
 						session
 				)
 				.whenComplete( (o, throwable) -> mutationExecutor.release() )

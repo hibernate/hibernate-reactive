@@ -18,7 +18,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.Generator;
 import org.hibernate.metamodel.mapping.AttributeMapping;
-import org.hibernate.metamodel.mapping.AttributeMappingsList;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.persister.entity.mutation.InsertCoordinator;
@@ -47,7 +46,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 	}
 
 	public CompletionStage<Object> coordinateReactiveInsert(Object id, Object[] currentValues, Object entity, SharedSessionContractImplementor session) {
-		return reactivePreInsertInMemoryValueGeneration(currentValues, entity, session)
+		return reactivePreInsertInMemoryValueGeneration( currentValues, entity, session )
 				.thenCompose( v -> entityPersister().getEntityMetamodel().isDynamicInsert()
 						? doDynamicInserts( id, currentValues, entity, session )
 						: doStaticInserts( id, currentValues, entity, session )
@@ -67,8 +66,8 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 						&& !generator.generatedOnExecution()
 						&& generator.generatesOnInsert() ) {
 					final Object currentValue = currentValues[i];
-					stage = stage.thenCompose( v -> generateValue( session, entity, currentValue,
-							(BeforeExecutionGenerator) generator, INSERT)
+					final BeforeExecutionGenerator beforeGenerator = (BeforeExecutionGenerator) generator;
+					stage = stage.thenCompose( v -> generateValue( session, entity, currentValue, beforeGenerator, INSERT )
 							.thenAccept( generatedValue -> {
 								currentValues[index] = generatedValue;
 								entityPersister().setPropertyValue( entity, index, generatedValue );
@@ -101,7 +100,6 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 			TableInclusionChecker tableInclusionChecker,
 			SharedSessionContractImplementor session) {
 		final JdbcValueBindings jdbcValueBindings = mutationExecutor.getJdbcValueBindings();
-		final AttributeMappingsList attributeMappings = entityPersister().getAttributeMappings();
 		mutationGroup.forEachOperation( (position, operation) -> {
 			final EntityTableMapping tableDetails = (EntityTableMapping) operation.getTableDetails();
 			if ( tableInclusionChecker.include( tableDetails ) ) {
@@ -181,9 +179,6 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 				.getFactory()
 				.getServiceRegistry()
 				.getService( MutationExecutorService.class );
-
-		MutationExecutor executor = mutationExecutorService
-				.createExecutor( this::getInsertBatchKey, operationGroup, session );
-		return  (ReactiveMutationExecutor) executor;
+		return (ReactiveMutationExecutor) mutationExecutorService.createExecutor( this::getInsertBatchKey, operationGroup, session );
 	}
 }

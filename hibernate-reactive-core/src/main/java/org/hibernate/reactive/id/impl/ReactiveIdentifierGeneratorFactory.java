@@ -48,72 +48,54 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 	public Generator createIdentifierGenerator(String strategy, Type type, Properties config) {
 		Object generator;
 		try {
-			generator = super.createIdentifierGenerator(strategy, type, config);
-		} catch (MappingException ignored) {
-			generator = fallbackCreateIdentifierGenerator( strategy, type, config );
+			generator = super.createIdentifierGenerator( strategy, type, config );
+		}
+		catch ( MappingException ignored ) {
+			try {
+				final Class<?> clazz = generatorClassForName( strategy );
+				generator = clazz.getConstructor().newInstance();
+				if ( generator instanceof Configurable ) {
+					( (Configurable) generator ).configure( type, config, serviceRegistry );
+				}
+			}
+			catch ( Exception e ) {
+				final String entityName = config.getProperty( IdentifierGenerator.ENTITY_NAME );
+				throw new MappingException( String.format( "Could not instantiate id generator [entity-name=%s]", entityName ), e );
+			}
 		}
 
 		//FIXME: Not sure why we need all these instanceof
 		if ( generator instanceof BeforeExecutionGenerator ) {
-			return augmentWithReactiveGenerator( (BeforeExecutionGenerator)generator, type, config );
+			return augmentWithReactiveGenerator( (BeforeExecutionGenerator) generator, type, config );
 		}
 
 		if ( generator instanceof OnExecutionGenerator ) {
-			return augmentWithReactiveGenerator( (OnExecutionGenerator)generator, type, config );
+			return augmentWithReactiveGenerator( (OnExecutionGenerator) generator, type, config );
 		}
 
 		if ( generator instanceof ReactiveIdentifierGenerator ) {
-			return new ReactiveGeneratorWrapper( (ReactiveIdentifierGenerator) generator, type.getReturnedClass() );
+			return new ReactiveGeneratorWrapper( (ReactiveIdentifierGenerator<?>) generator );
 		}
 
 		final String entityName = config.getProperty( IdentifierGenerator.ENTITY_NAME );
 		throw new MappingException( String.format( "Not an id generator [entity-name=%s]", entityName ) );
 	}
 
-	//TODO this was copied from StandardIdentifierGeneratorFactory#createIdentifierGenerator
-	// in order to avoid the !Generator.class.isAssignableFrom( clazz ) check in getIdentifierGeneratorClass
-	// This is suboptimal not only because we are duplicating code, but because this piece cannot access
-	// the private fields of the super method
-	private Object fallbackCreateIdentifierGenerator(String strategy, Type type, Properties parameters) {
-		try {
-			final Class<?> clazz = fallbackGetIdentifierGeneratorClass( strategy );
-			Object result = clazz.getConstructor().newInstance();
-
-			if ( result instanceof Configurable ) {
-				( (Configurable) result ).configure( type, parameters, serviceRegistry );
-			}
-			return result;
-		}
-		catch ( Exception e ) {
-			final String entityName = parameters.getProperty( IdentifierGenerator.ENTITY_NAME );
-			throw new MappingException( String.format( "Could not instantiate id generator [entity-name=%s]", entityName ), e );
-		}
-	}
-
+	//TODO: deleteme, after update to ORM
 	@Override
 	public Class<? extends Generator> getIdentifierGeneratorClass(String strategy) {
 		try {
-			return super.getIdentifierGeneratorClass(strategy);
-		} catch (MappingException ignored) {
-			return fallbackGetIdentifierGeneratorClass(strategy);
+			return super.getIdentifierGeneratorClass( strategy );
+		}
+		catch ( MappingException ignored ) {
+			// happens because the class does not implement Generator
+			return generatorClassForName( strategy );
 		}
 	}
 
-	//TODO this was copied from StandardIdentifierGeneratorFactory#createIdentifierGenerator
-	// in order to avoid the !Generator.class.isAssignableFrom( clazz ) check in getIdentifierGeneratorClass
-	// This is suboptimal not only because we are duplicating code, but because this piece cannot access
-	// the private fields of the super method
-	public Class<? extends Generator> fallbackGetIdentifierGeneratorClass(String strategy) {
-		if ( "hilo".equals( strategy ) ) {
-			throw new UnsupportedOperationException( "Support for 'hilo' generator has been removed" );
-		}
-		final String resolvedStrategy = "native".equals( strategy )
-				? getDialect().getNativeIdentifierGeneratorStrategy()
-				: strategy;
-
+	protected Class<? extends Generator> generatorClassForName(String strategy) {
 		try {
-			return serviceRegistry.getService( ClassLoaderService.class )
-					.classForName( resolvedStrategy );
+			return serviceRegistry.getService( ClassLoaderService.class ).classForName( strategy );
 		}
 		catch ( ClassLoadingException e ) {
 			throw new MappingException( String.format( "Could not interpret id generator strategy [%s]", strategy ) );
@@ -125,9 +107,9 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 	}
 
 	public static Generator augmentWithReactiveGenerator(ServiceRegistry serviceRegistry, Generator generator, Type type, Properties params) {
-		ReactiveIdentifierGenerator<?> reactiveGenerator;
+		final ReactiveIdentifierGenerator<?> reactiveGenerator;
 		if ( generator instanceof SequenceStyleGenerator ) {
-			DatabaseStructure structure = ( (SequenceStyleGenerator) generator ).getDatabaseStructure();
+			final DatabaseStructure structure = ( (SequenceStyleGenerator) generator ).getDatabaseStructure();
 			if ( structure instanceof TableStructure ) {
 				reactiveGenerator = new EmulatedSequenceReactiveIdentifierGenerator();
 			}
@@ -151,22 +133,22 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 
 		//this is not the way ORM does this: instead it passes a
 		//SqlStringGenerationContext to IdentifierGenerator.initialize()
-		ConfigurationService cs = serviceRegistry.getService( ConfigurationService.class );
+		final ConfigurationService cs = serviceRegistry.getService( ConfigurationService.class );
 		if ( !params.containsKey( PersistentIdentifierGenerator.SCHEMA ) ) {
-			String schema = cs.getSetting( Settings.DEFAULT_SCHEMA, StandardConverters.STRING );
+			final String schema = cs.getSetting( Settings.DEFAULT_SCHEMA, StandardConverters.STRING );
 			if ( schema != null ) {
 				params.put( PersistentIdentifierGenerator.SCHEMA, schema );
 			}
 		}
 		if ( !params.containsKey( PersistentIdentifierGenerator.CATALOG ) ) {
-			String catalog = cs.getSetting( Settings.DEFAULT_CATALOG, StandardConverters.STRING );
+			final String catalog = cs.getSetting( Settings.DEFAULT_CATALOG, StandardConverters.STRING );
 			if ( catalog != null ) {
 				params.put( PersistentIdentifierGenerator.CATALOG, catalog );
 			}
 		}
 
 		( (Configurable) reactiveGenerator ).configure( type, params, serviceRegistry );
-		return new ReactiveGeneratorWrapper( reactiveGenerator, (IdentifierGenerator) generator, type.getReturnedClass() );
+		return new ReactiveGeneratorWrapper( reactiveGenerator, (IdentifierGenerator) generator );
 	}
 
 }
