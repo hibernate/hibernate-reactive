@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.FlushMode;
@@ -16,8 +15,6 @@ import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.query.named.NamedQueryMemento;
 import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 
 import jakarta.persistence.Parameter;
 
