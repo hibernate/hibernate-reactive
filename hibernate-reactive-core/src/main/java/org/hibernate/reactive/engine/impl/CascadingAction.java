@@ -88,5 +88,5 @@ public interface CascadingAction<C> {
 	 */
 	boolean performOnLazyProperty();
 
-	org.hibernate.engine.spi.CascadingAction delegate();
+	org.hibernate.engine.spi.CascadingAction<C> delegate();
 }
