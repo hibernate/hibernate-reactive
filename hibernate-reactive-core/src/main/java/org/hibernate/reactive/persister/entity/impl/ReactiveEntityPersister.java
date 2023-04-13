@@ -170,11 +170,9 @@ public interface ReactiveEntityPersister extends EntityPersister {
 				attributeName
 		);
 
-		ReactiveEntityPersister persister = (ReactiveEntityPersister) session
-				.getFactory()
-				.getRuntimeMetamodels()
-				.getMappingMetamodel()
-				.getEntityDescriptor( entityName );
+		final ReactiveEntityPersister persister = (ReactiveEntityPersister)
+				session.getFactory().getMappingMetamodel()
+						.getEntityDescriptor( entityName );
 		return persister.reactiveInitializeEnhancedEntityUsedAsProxy( target, attributeName, session );
 	}
 

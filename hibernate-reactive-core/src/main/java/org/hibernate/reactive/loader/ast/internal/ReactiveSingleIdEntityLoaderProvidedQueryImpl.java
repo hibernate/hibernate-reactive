@@ -28,7 +28,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  * provided the select load query
  */
 public class ReactiveSingleIdEntityLoaderProvidedQueryImpl<T> implements ReactiveSingleIdEntityLoader<T> {
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private static final CompletionStage<Object[]> EMPTY_ARRAY_STAGE = completedFuture( ArrayHelper.EMPTY_OBJECT_ARRAY );
 
@@ -66,7 +65,7 @@ public class ReactiveSingleIdEntityLoaderProvidedQueryImpl<T> implements Reactiv
 			Boolean readOnly,
 			SharedSessionContractImplementor session) {
 		if ( entityInstance != null ) {
-			throw LOG.notYetImplemented();
+			throw new UnsupportedOperationException("null entity instance");
 		}
 		return load( pkValue, lockOptions, readOnly, session );
 	}

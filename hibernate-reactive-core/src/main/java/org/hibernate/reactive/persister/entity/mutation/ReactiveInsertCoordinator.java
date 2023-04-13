@@ -48,11 +48,10 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 
 	public CompletionStage<Object> coordinateReactiveInsert(Object id, Object[] currentValues, Object entity, SharedSessionContractImplementor session) {
 		return reactivePreInsertInMemoryValueGeneration(currentValues, entity, session)
-				.thenCompose( v -> {
-					return entityPersister().getEntityMetamodel().isDynamicInsert()
-				? doDynamicInserts( id, currentValues, entity, session )
-				: doStaticInserts( id, currentValues, entity, session );
-				});
+				.thenCompose( v -> entityPersister().getEntityMetamodel().isDynamicInsert()
+						? doDynamicInserts( id, currentValues, entity, session )
+						: doStaticInserts( id, currentValues, entity, session )
+				);
 	}
 
 	private CompletionStage<Void> reactivePreInsertInMemoryValueGeneration(Object[] currentValues, Object entity, SharedSessionContractImplementor session) {

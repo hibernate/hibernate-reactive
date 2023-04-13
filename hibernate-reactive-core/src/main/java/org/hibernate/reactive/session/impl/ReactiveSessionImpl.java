@@ -583,7 +583,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate updateQuery) {
+	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate<R> updateQuery) {
 		checkOpen();
 		try {
 			return createCriteriaQuery( (SqmUpdateStatement<R>) updateQuery, null );
@@ -594,7 +594,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete deleteQuery) {
+	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete<R> deleteQuery) {
 		checkOpen();
 		try {
 			return createCriteriaQuery( (SqmDeleteStatement<R>) deleteQuery, null );
@@ -605,7 +605,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect insertSelect) {
+	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect<R> insertSelect) {
 		checkOpen();
 		try {
 			return createCriteriaQuery( (SqmInsertSelectStatement<R>) insertSelect, null );
@@ -682,28 +682,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <R> ReactiveQueryImplementor getNamedReactiveQuery(String queryName) {
-		return (ReactiveQueryImplementor) buildNamedQuery( queryName, null );
-	}
-
-	@Override
-	public <R> ReactiveNativeQuery getNamedReactiveNativeQuery(String name) {
-		return (ReactiveNativeQuery) getNamedNativeQuery( name );
-	}
-
-	@Override
-	public ReactiveNativeQuery getNamedReactiveNativeQuery(String name, String resultSetMapping) {
-		return (ReactiveNativeQuery) getNamedNativeQuery( name, resultSetMapping );
-	}
-
-	@Override
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String queryString, AffectedEntities affectedEntities) {
 		checkOpen();
 		pulseTransactionCoordinator();
 		delayedAfterCompletion();
 
 		try {
-			ReactiveNativeQueryImpl<R> query = new ReactiveNativeQueryImpl<>( queryString, this );
+			final ReactiveNativeQueryImpl<R> query = new ReactiveNativeQueryImpl<>( queryString, this );
 			addAffectedEntities( affectedEntities, query );
 			if ( isEmpty( query.getComment() ) ) {
 				query.setComment( "dynamic native SQL query" );
@@ -717,8 +702,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	private void addAffectedEntities(AffectedEntities affectedEntities, NativeQueryImplementor<?> query) {
-		String[] spaces = affectedEntities.getAffectedSpaces( getFactory() );
-		for ( String space : spaces ) {
+		for ( String space : affectedEntities.getAffectedSpaces( getFactory() ) ) {
 			query.addSynchronizedQuerySpace( space );
 		}
 	}
@@ -749,8 +733,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <R> ReactiveNativeQuery createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
-		ReactiveNativeQueryImpl nativeQuery = createReactiveNativeQuery( queryString, resultSetMapping );
+	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(
+			String queryString,
+			ResultSetMapping<R> resultSetMapping,
+			AffectedEntities affectedEntities) {
+		final ReactiveNativeQueryImpl<R> nativeQuery = createReactiveNativeQuery( queryString, resultSetMapping );
 		addAffectedEntities( affectedEntities, nativeQuery );
 		return nativeQuery;
 	}
@@ -770,7 +757,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 //			}
 //		}
 
-		return new ResultSetMapping<T>() {
+		return new ResultSetMapping<>() {
 			@Override
 			public String getName() {
 				return mappingName;
@@ -780,7 +767,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				return resultType;
 			}
 		};
-
 	}
 
 	//TODO: deleteme, call superclass method
@@ -1293,7 +1279,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Map<String, Object> ids) {
-		EntityPersister persister = getFactory().getMetamodel().locateEntityPersister( entityClass );
+		final EntityPersister persister = getFactory().getMetamodel().locateEntityPersister( entityClass );
 		return new NaturalIdLoadAccessImpl<T>( persister ).resolveNaturalId( ids )
 				.thenCompose( id -> reactiveFind( entityClass, id, null, null ) );
 	}
