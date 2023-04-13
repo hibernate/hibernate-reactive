@@ -10,19 +10,23 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.TransientObjectException;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
-import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
 import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
 
+import static org.hibernate.engine.internal.ManagedTypeHelper.isHibernateProxy;
+import static org.hibernate.engine.internal.ManagedTypeHelper.processIfSelfDirtinessTracker;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -111,48 +115,60 @@ public final class ForeignKeys {
 				else {
 					// if we're dealing with a lazy property, it may need to be
 					// initialized to determine if the value is nullifiable
-					if ( isDelete
-							&& value == LazyPropertyInitializer.UNFETCHED_PROPERTY
-							&& !session.getPersistenceContextInternal().isNullifiableEntityKeysEmpty() ) {
-						throw new UnsupportedOperationException( "lazy property initialization not supported" );
+					if ( needToInitialize( value, entityType ) ) {
+						returnedStage = ( (ReactiveEntityPersister) persister )
+								.reactiveInitializeLazyProperty( propertyName, self, session )
+								.thenCompose( possiblyInitializedValue -> {
+									if ( possiblyInitializedValue == null ) {
+										// The uninitialized value was initialized to null
+										return nullFuture();
+									}
+									else {
+										// If the value is not nullifiable, make sure that the
+										// possibly initialized value is returned.
+										return isNullifiable( entityType.getAssociatedEntityName(), value )
+												.thenApply( trans -> trans ? null : value );
+									} }
+								);
+					}
+					else {
+						returnedStage = isNullifiable( entityType.getAssociatedEntityName(), value )
+								.thenApply( trans -> trans ? null : value );
 					}
 
-					// If the value is not nullifiable, make sure that the
-					// possibly initialized value is returned.
-					returnedStage = isNullifiable( entityType.getAssociatedEntityName(), value )
-							.thenApply( trans -> trans ? null : value );
 				}
 			}
 			else if ( type.isAnyType() ) {
-				returnedStage = isNullifiable( null, value ).thenApply( trans -> trans  ? null : value );
+				returnedStage = isNullifiable( null, value ).thenApply( trans -> trans ? null : value );
 			}
 			else if ( type.isComponentType() ) {
-				final CompositeType actype = (CompositeType) type;
-				final Object[] subValues = actype.getPropertyValues( value, session );
-				final Type[] subtypes = actype.getSubtypes();
-				final String[] subPropertyNames = actype.getPropertyNames();
+				final CompositeType compositeType = (CompositeType) type;
+				final Object[] subValues = compositeType.getPropertyValues( value, session );
+				final Type[] subtypes = compositeType.getSubtypes();
+				final String[] subPropertyNames = compositeType.getPropertyNames();
 				CompletionStage<Boolean> loop = falseFuture();
 				for ( int i = 0; i < subValues.length; i++ ) {
 					final int index = i;
-					loop = loop
-							.thenCompose( substitute -> nullifyTransientReferences(
-												  subValues[index],
-												  StringHelper.qualify( propertyName, subPropertyNames[index] ),
-												  subtypes[index]
-										  )
-									.thenApply( replacement -> {
-										if ( replacement != subValues[index] ) {
-											subValues[index] = replacement;
-											return Boolean.TRUE;
-										}
-										return substitute;
-									} )
-							);
+					loop = loop.thenCompose( substitute -> nullifyTransientReferences(
+									subValues[index],
+									StringHelper.qualify( propertyName, subPropertyNames[index] ),
+									subtypes[index]
+							)
+							.thenApply( replacement -> {
+								if ( replacement != subValues[index] ) {
+									subValues[index] = replacement;
+									return true;
+								}
+								else {
+									return substitute;
+								}
+							} )
+					);
 				}
 				returnedStage = loop.thenApply( substitute -> {
 					if ( substitute ) {
 						// todo : need to account for entity mode on the CompositeType interface :(
-						actype.setPropertyValues( value, subValues );
+						compositeType.setPropertyValues( value, subValues );
 					}
 					return value;
 				} );
@@ -162,21 +178,23 @@ public final class ForeignKeys {
 			}
 
 			return returnedStage.thenApply( returnedValue -> {
-				trackDirt( value, propertyName, returnedValue );
+				// value != returnedValue if either:
+				// 1) returnedValue was nullified (set to null);
+				// or 2) returnedValue was initialized, but not nullified.
+				// When bytecode-enhancement is used for dirty-checking, the change should
+				// only be tracked when returnedValue was nullified (1)).
+				if ( value != returnedValue && returnedValue == null ) {
+					processIfSelfDirtinessTracker( self, SelfDirtinessTracker::$$_hibernate_trackChange, propertyName );
+				}
 				return returnedValue;
 			} );
 		}
 
-		private void trackDirt(Object value, String propertyName, Object returnedValue) {
-			// value != returnedValue if either:
-			// 1) returnedValue was nullified (set to null);
-			// or 2) returnedValue was initialized, but not nullified.
-			// When bytecode-enhancement is used for dirty-checking, the change should
-			// only be tracked when returnedValue was nullified (1)).
-			if ( value != returnedValue && returnedValue == null
-					&& ManagedTypeHelper.isSelfDirtinessTracker( self ) ) {
-				ManagedTypeHelper.asSelfDirtinessTracker( self ).$$_hibernate_trackChange( propertyName );
-			}
+		private boolean needToInitialize(Object value, Type type) {
+			return isDelete
+				&& value == LazyPropertyInitializer.UNFETCHED_PROPERTY
+				&& type.isEntityType()
+				&& !session.getPersistenceContextInternal().isNullifiableEntityKeysEmpty();
 		}
 
 		/**
@@ -192,17 +210,29 @@ public final class ForeignKeys {
 				return falseFuture();
 			}
 
-			if ( object instanceof HibernateProxy ) {
-				// if its an uninitialized proxy it can't be transient
-				final LazyInitializer li = ( (HibernateProxy) object ).getHibernateLazyInitializer();
-				if ( li.getImplementation( session ) == null ) {
-					return falseFuture();
-					// ie. we never have to null out a reference to
-					// an uninitialized proxy
+			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+
+			final LazyInitializer lazyInitializer = HibernateProxy.extractLazyInitializer( object );
+			if ( lazyInitializer != null ) {
+				// if it's an uninitialized proxy it can only be
+				// transient if we did an unloaded-delete on the
+				// proxy itself, in which case there is no entry
+				// for it, but its key has already been registered
+				// as nullifiable
+				Object entity = lazyInitializer.getImplementation( session );
+				if ( entity == null ) {
+					// an unloaded proxy might be scheduled for deletion
+					completedFuture( persistenceContext.containsDeletedUnloadedEntityKey(
+							session.generateEntityKey(
+									lazyInitializer.getIdentifier(),
+									session.getFactory().getMappingMetamodel()
+											.getEntityDescriptor( lazyInitializer.getEntityName() )
+							)
+					) );
 				}
 				else {
 					//unwrap it
-					object = li.getImplementation( session );
+					object = entity;
 				}
 			}
 
@@ -210,7 +240,8 @@ public final class ForeignKeys {
 			// unless we are using native id generation, in which
 			// case we definitely need to nullify
 			if ( object == self ) {
-				 return completedFuture( isEarlyInsert || ( isDelete && session.getJdbcServices().getDialect().hasSelfReferentialForeignKeyBug() ) );
+				 return completedFuture( isEarlyInsert
+						 || isDelete && session.getJdbcServices().getDialect().hasSelfReferentialForeignKeyBug() );
 			}
 
 			// See if the entity is already bound to this session, if not look at the
@@ -218,13 +249,10 @@ public final class ForeignKeys {
 			// id is not "unsaved" (that is, we rely on foreign keys to keep
 			// database integrity)
 
-			final EntityEntry entityEntry = session.getPersistenceContextInternal().getEntry( object );
-			if ( entityEntry == null ) {
-				return isTransient( entityName, object, null, session );
-			}
-			else {
-				return completedFuture( entityEntry.isNullifiable( isEarlyInsert, session ) );
-			}
+			final EntityEntry entityEntry = persistenceContext.getEntry( object );
+			return entityEntry == null
+					? isTransient( entityName, object, null, session )
+					: completedFuture( entityEntry.isNullifiable( isEarlyInsert, session ) );
 		}
 	}
 
@@ -242,7 +270,7 @@ public final class ForeignKeys {
 	 * @return {@code true} if the given entity is not transient (meaning it is either detached/persistent)
 	 */
 	public static CompletionStage<Boolean> isNotTransient(String entityName, Object entity, Boolean assumed, SessionImplementor session) {
-		if ( entity instanceof HibernateProxy ) {
+		if ( isHibernateProxy( entity ) ) {
 			return trueFuture();
 		}
 
@@ -251,7 +279,6 @@ public final class ForeignKeys {
 		}
 
 		// todo : shouldn't assumed be revered here?
-
 		return isTransient( entityName, entity, assumed, session )
 				.thenApply( trans -> !trans );
 	}
@@ -296,7 +323,8 @@ public final class ForeignKeys {
 		}
 
 		// hit the database, after checking the session cache for a snapshot
-		ReactivePersistenceContextAdapter persistenceContext = (ReactivePersistenceContextAdapter) session.getPersistenceContextInternal();
+		ReactivePersistenceContextAdapter persistenceContext =
+				(ReactivePersistenceContextAdapter) session.getPersistenceContextInternal();
 		Object id = persister.getIdentifier( entity, session );
 		return persistenceContext.reactiveGetDatabaseSnapshot( id, persister ).thenApply( Objects::isNull );
 	}
@@ -394,8 +422,8 @@ public final class ForeignKeys {
 			if ( !isNullable && !entityType.isOneToOne() ) {
 				return nullifier
 						.isNullifiable( entityType.getAssociatedEntityName(), value )
-						.thenAccept( isNullifiable -> {
-							if ( isNullifiable ) {
+						.thenAccept( nullifiable -> {
+							if ( nullifiable ) {
 								nonNullableTransientEntities.add( propertyName, value );
 							}
 						} );
@@ -405,20 +433,20 @@ public final class ForeignKeys {
 			if ( !isNullable ) {
 				return nullifier
 						.isNullifiable( null, value )
-						.thenAccept( isNullifiable -> {
-							if ( isNullifiable ) {
+						.thenAccept( nullifiable -> {
+							if ( nullifiable ) {
 								nonNullableTransientEntities.add( propertyName, value );
 							}
 						} );
 			}
 		}
 		else if ( type.isComponentType() ) {
-			final CompositeType actype = (CompositeType) type;
-			final boolean[] subValueNullability = actype.getPropertyNullability();
+			final CompositeType compositeType = (CompositeType) type;
+			final boolean[] subValueNullability = compositeType.getPropertyNullability();
 			if ( subValueNullability != null ) {
-				final String[] subPropertyNames = actype.getPropertyNames();
-				final Object[] subvalues = actype.getPropertyValues( value, session );
-				final Type[] subtypes = actype.getSubtypes();
+				final String[] subPropertyNames = compositeType.getPropertyNames();
+				final Object[] subvalues = compositeType.getPropertyValues( value, session );
+				final Type[] subtypes = compositeType.getSubtypes();
 				return loop( 0, subtypes.length,
 						i -> collectNonNullableTransientEntities(
 								nullifier,

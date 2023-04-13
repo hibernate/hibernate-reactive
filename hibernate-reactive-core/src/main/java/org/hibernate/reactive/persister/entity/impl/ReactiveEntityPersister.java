@@ -18,7 +18,6 @@ import org.hibernate.persister.entity.EntityPersister;
 
 import jakarta.persistence.metamodel.Attribute;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 
 /**
  * A reactive {@link EntityPersister}. Supports non-blocking insert/update/delete operations.
@@ -141,12 +140,15 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	 */
 	CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Object id, SharedSessionContractImplementor session);
 
-	default <E, T> CompletionStage<T> reactiveInitializeLazyProperty(
+	<E, T> CompletionStage<T> reactiveInitializeLazyProperty(
 			Attribute<E, T> field,
 			E entity,
-			SharedSessionContractImplementor session) {
-		return nullFuture();
-	}
+			SharedSessionContractImplementor session);
+
+	<E, T> CompletionStage<T> reactiveInitializeLazyProperty(
+			String field,
+			E entity,
+			SharedSessionContractImplementor session);
 
 	CompletionStage<Object> reactiveInitializeEnhancedEntityUsedAsProxy(
 			Object entity,
