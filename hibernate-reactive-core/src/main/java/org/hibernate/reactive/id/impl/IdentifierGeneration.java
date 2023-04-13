@@ -49,12 +49,19 @@ public class IdentifierGeneration {
 			return longId.toString();
 		}
 
-		throw LOG.cannotGenerateIdentifiersOfType( identifierType.getJavaType().getTypeName(), persister.getEntityName() );
+		throw LOG.cannotGenerateIdentifiersOfType(
+				identifierType.getJavaType().getTypeName(),
+				persister.getEntityName()
+		);
 	}
 
 	private static void validateMaxValue(EntityPersister persister, Long id, int maxValue) {
 		if ( id > maxValue ) {
-			throw LOG.generatedIdentifierTooBigForTheField(persister.getEntityName(), persister.getIdentifierType().getReturnedClass().getSimpleName(), id );
+			throw LOG.generatedIdentifierTooBigForTheField(
+					persister.getEntityName(),
+					persister.getIdentifierType().getReturnedClass().getSimpleName(),
+					id
+			);
 		}
 	}
 }

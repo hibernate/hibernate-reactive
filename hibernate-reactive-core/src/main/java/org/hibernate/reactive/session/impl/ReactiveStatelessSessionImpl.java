@@ -100,6 +100,7 @@ import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.internal.util.StringHelper.isEmpty;
 import static org.hibernate.internal.util.StringHelper.isNotEmpty;
 import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
+import static org.hibernate.reactive.id.impl.IdentifierGeneration.castToIdentifierType;
 import static org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister.forceInitialize;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
@@ -249,7 +250,8 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		final Generator generator = persister.getGenerator();
 		if ( !generator.generatedOnExecution() ) {
 			return generateId( entity, generator )
-					.thenCompose( id -> {
+					.thenCompose( generatedId -> {
+						final Object id = castToIdentifierType( generatedId, persister );
 						if ( persister.isVersioned() ) {
 							if ( seedVersion( entity, state, persister, this ) ) {
 								persister.setValues( entity, state );

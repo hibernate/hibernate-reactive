@@ -48,6 +48,7 @@ import static org.hibernate.engine.internal.Versioning.seedVersion;
 import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.id.IdentifierGeneratorHelper.SHORT_CIRCUIT_INDICATOR;
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.id.impl.IdentifierGeneration.castToIdentifierType;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
@@ -131,11 +132,13 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			if ( generator instanceof ReactiveIdentifierGenerator ) {
 				return ( (ReactiveIdentifierGenerator<?>) generator )
 						.generate( ( ReactiveConnectionSupplier ) source, entity )
+						.thenApply( id -> castToIdentifierType( id, persister ) )
 						.thenCompose( generatedId -> performSaveWithId( entity, context, source, persister, generator, generatedId ) );
 			}
 
 			final Object generatedId = ( (BeforeExecutionGenerator) generator ).generate( source, entity, null, INSERT );
-			return performSaveWithId( entity, context, source, persister, generator, generatedId );
+			final Object id =  castToIdentifierType( generatedId, persister );
+			return performSaveWithId( entity, context, source, persister, generator, id );
 		}
 		else {
 			return reactivePerformSave( entity, null, persister, true, context, source, requiresImmediateIdAccess );
