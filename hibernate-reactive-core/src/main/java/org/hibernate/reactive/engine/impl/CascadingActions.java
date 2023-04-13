@@ -13,7 +13,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
 import org.hibernate.TransientPropertyValueException;
 import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.Status;
 
 import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.EventSource;
@@ -21,7 +20,6 @@ import org.hibernate.event.spi.MergeContext;
 import org.hibernate.event.spi.PersistContext;
 import org.hibernate.event.spi.RefreshContext;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -30,6 +28,7 @@ import org.hibernate.type.CollectionType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
 
+import static org.hibernate.engine.internal.ManagedTypeHelper.isHibernateProxy;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -58,9 +57,11 @@ public class CascadingActions {
 				DeleteContext context,
 				boolean isCascadeDeleteEnabled) {
 			LOG.tracev( "Cascading to delete: {0}", entityName );
-			return session.unwrap( ReactiveSession.class ).reactiveFetch( child, true )
-					.thenCompose( c -> session.unwrap( ReactiveSession.class )
-							.reactiveRemove( entityName, c, isCascadeDeleteEnabled, context ) );
+			final ReactiveSession reactiveSession = session.unwrap( ReactiveSession.class );
+			//TODO: force-fetching it here circumvents the unloaded-delete optimization
+			//      so we don't actually want to do this
+			return reactiveSession.reactiveFetch( child, true )
+					.thenCompose( c -> reactiveSession.reactiveRemove( entityName, c, isCascadeDeleteEnabled, context ) );
 		}
 	};
 
@@ -101,10 +102,19 @@ public class CascadingActions {
 
 		private boolean isInManagedState(Object child, EventSource session) {
 			EntityEntry entry = session.getPersistenceContextInternal().getEntry( child );
-			return entry != null &&
-					( entry.getStatus() == Status.MANAGED
-							|| entry.getStatus() == Status.READ_ONLY
-							|| entry.getStatus() == Status.SAVING );
+			if ( entry == null ) {
+				return false;
+			}
+			else {
+				switch ( entry.getStatus() ) {
+					case MANAGED:
+					case READ_ONLY:
+					case SAVING:
+						return true;
+					default:
+						return false;
+				}
+			}
 		}
 
 		@Override
@@ -115,12 +125,12 @@ public class CascadingActions {
 				Type propertyType,
 				int propertyIndex) {
 			if ( propertyType.isEntityType() ) {
-				Object child = persister.getPropertyValue( parent, propertyIndex );
+				final Object child = persister.getValue( parent, propertyIndex );
 				if ( child != null
 						&& !isInManagedState( child, session )
-						&& !( child instanceof HibernateProxy ) ) { //a proxy cannot be transient and it breaks ForeignKeys.isTransient
-					final String childEntityName = ( (EntityType) propertyType ).getAssociatedEntityName(
-							session.getFactory() );
+						&& !isHibernateProxy( child ) ) { //a proxy cannot be transient and it breaks ForeignKeys.isTransient
+					final String childEntityName =
+							( (EntityType) propertyType ).getAssociatedEntityName( session.getFactory() );
 					return ForeignKeys.isTransient( childEntityName, child, null, session )
 							.thenAccept( isTrans -> {
 								if ( isTrans ) {
@@ -144,7 +154,7 @@ public class CascadingActions {
 	 * @see org.hibernate.Session#merge(Object)
 	 */
 	public static final CascadingAction<MergeContext> MERGE =
-			new BaseCascadingAction<MergeContext>( org.hibernate.engine.spi.CascadingActions.MERGE ) {
+			new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.MERGE ) {
 				@Override
 				public CompletionStage<Void> cascade(
 						EventSource session,
@@ -211,7 +221,7 @@ public class CascadingActions {
 		}
 
 		@Override
-		public org.hibernate.engine.spi.CascadingAction delegate() {
+		public org.hibernate.engine.spi.CascadingAction<C> delegate() {
 			return delegate;
 		}
 
