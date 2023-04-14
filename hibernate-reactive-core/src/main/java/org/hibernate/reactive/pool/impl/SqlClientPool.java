@@ -104,15 +104,4 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	private SqlClientConnection newConnection(SqlConnection connection, SqlExceptionHelper sqlExceptionHelper) {
 		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger(), sqlExceptionHelper );
 	}
-
-	@Override
-	public ReactiveConnection getProxyConnection() {
-		return new ProxyConnection( this );
-	}
-
-	@Override
-	public ReactiveConnection getProxyConnection(String tenantId) {
-		return new ProxyConnection( this, tenantId );
-	}
-
 }

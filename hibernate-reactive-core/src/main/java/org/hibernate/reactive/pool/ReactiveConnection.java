@@ -25,8 +25,7 @@ import io.vertx.sqlclient.spi.DatabaseMetadata;
  * with a single {@code ReactiveConnection}. Instead, the second
  * operation must be chained on completion of the first operation.
  * This restriction might be relaxed in future, and is due to the
- * implementation of the {@code ProxyConnection} returned by
- * {@link org.hibernate.reactive.pool.impl.DefaultSqlClientPool#getProxyConnection()}.
+ * implementation of the {@code ProxyConnection}.
  *
  * @see ReactiveConnectionPool
  */
