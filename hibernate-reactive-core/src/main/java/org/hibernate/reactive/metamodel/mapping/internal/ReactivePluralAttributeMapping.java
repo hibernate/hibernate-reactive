@@ -38,7 +38,7 @@ public class ReactivePluralAttributeMapping extends PluralAttributeMappingImpl i
 		// which will cause bidirectional to-one associations to be treated as such and avoid a join
 		creationState.registerVisitedAssociationKey( getKeyDescriptor().getAssociationKey() );
 
-		return new ReactiveCollectionDomainResult<>( navigablePath, this, resultVariable, tableGroup, creationState );
+		return new ReactiveCollectionDomainResult( navigablePath, this, resultVariable, tableGroup, creationState );
 	}
 
 	@Override

@@ -16,7 +16,7 @@ import org.hibernate.sql.results.graph.Fetchable;
 import org.hibernate.sql.results.graph.collection.internal.CollectionDomainResult;
 import org.hibernate.sql.results.graph.entity.internal.EntityFetchJoinedImpl;
 
-public class ReactiveCollectionDomainResult<T> extends CollectionDomainResult {
+public class ReactiveCollectionDomainResult extends CollectionDomainResult {
 
 	public ReactiveCollectionDomainResult(
 			NavigablePath loadingPath,
