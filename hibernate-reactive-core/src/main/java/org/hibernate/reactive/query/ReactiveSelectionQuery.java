@@ -19,7 +19,7 @@ import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.graph.GraphSemantic;
-import org.hibernate.graph.RootGraph;
+import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.CommonQueryContract;
 import org.hibernate.query.QueryParameter;
@@ -119,16 +119,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	ReactiveSelectionQuery<R> setFollowOnLocking(boolean enable);
 
-	ReactiveSelectionQuery<R> applyGraph(RootGraph<?> graph, GraphSemantic semantic);
-
-	default ReactiveSelectionQuery<R> applyFetchGraph(RootGraph<?> graph) {
-		return applyGraph( graph, GraphSemantic.FETCH );
-	}
-
-	@SuppressWarnings("UnusedDeclaration")
-	default ReactiveSelectionQuery<R> applyLoadGraph(RootGraph<?> graph) {
-		return applyGraph( graph, GraphSemantic.LOAD );
-	}
+	void applyGraph(RootGraphImplementor<?> graph, GraphSemantic semantic);
 
 	@Override
 	ReactiveSelectionQuery<R> setParameter(String name, Object value);

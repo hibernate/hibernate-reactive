@@ -14,7 +14,8 @@ import jakarta.persistence.Parameter;
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
-import org.hibernate.graph.RootGraph;
+import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.stage.Stage.Query;
 
@@ -57,7 +58,7 @@ public class StageQueryImpl<R> implements Query<R> {
 
 	@Override
 	public Query<R> setPlan(EntityGraph<R> entityGraph) {
-		delegate.applyFetchGraph( (RootGraph<?>) entityGraph );
+		delegate.applyGraph( (RootGraphImplementor<?>) entityGraph, GraphSemantic.FETCH );
 		return this;
 	}
 

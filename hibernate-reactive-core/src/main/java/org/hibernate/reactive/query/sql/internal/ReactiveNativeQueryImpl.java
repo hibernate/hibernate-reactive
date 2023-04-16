@@ -25,6 +25,7 @@ import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
+import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.AbstractSharedSessionContract;
 import org.hibernate.metamodel.model.domain.BasicDomainType;
 import org.hibernate.query.BindableType;
@@ -229,13 +230,13 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addScalar(String columnAlias, @SuppressWarnings("rawtypes") BasicDomainType type) {
+	public ReactiveNativeQueryImpl<R> addScalar(String columnAlias, BasicDomainType type) {
 		super.addScalar( columnAlias, type );
 		return this;
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addScalar(String columnAlias, @SuppressWarnings("rawtypes") Class javaType) {
+	public ReactiveNativeQueryImpl<R> addScalar(String columnAlias, Class javaType) {
 		super.addScalar( columnAlias, javaType );
 		return this;
 	}
@@ -277,7 +278,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addAttributeResult(String columnAlias, @SuppressWarnings("rawtypes") Class entityJavaType, String attributePath) {
+	public ReactiveNativeQueryImpl<R> addAttributeResult(String columnAlias, Class entityJavaType, String attributePath) {
 		super.addAttributeResult( columnAlias, entityJavaType, attributePath );
 		return this;
 	}
@@ -289,7 +290,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addAttributeResult(String columnAlias, @SuppressWarnings("rawtypes") SingularAttribute attribute) {
+	public ReactiveNativeQueryImpl<R> addAttributeResult(String columnAlias, SingularAttribute attribute) {
 		super.addAttributeResult( columnAlias, attribute );
 		return this;
 	}
@@ -312,19 +313,19 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 		return this;
 	}
 	@Override
-	public ReactiveNativeQueryImpl<R> addEntity(@SuppressWarnings("rawtypes") Class entityType) {
+	public ReactiveNativeQueryImpl<R> addEntity(Class entityType) {
 		super.addEntity( entityType );
 		return this;
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addEntity(String tableAlias, @SuppressWarnings("rawtypes") Class entityType) {
+	public ReactiveNativeQueryImpl<R> addEntity(String tableAlias, Class entityType) {
 		super.addEntity( tableAlias, entityType );
 		return this;
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addEntity(String tableAlias, @SuppressWarnings("rawtypes") Class entityClass, LockMode lockMode) {
+	public ReactiveNativeQueryImpl<R> addEntity(String tableAlias, Class entityClass, LockMode lockMode) {
 		super.addEntity( tableAlias, entityClass, lockMode );
 		return this;
 	}
@@ -360,7 +361,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addSynchronizedEntityClass(@SuppressWarnings("rawtypes") Class entityClass) {
+	public ReactiveNativeQueryImpl<R> addSynchronizedEntityClass(Class entityClass) {
 		super.addSynchronizedEntityClass( entityClass );
 		return this;
 	}
@@ -375,7 +376,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 		return this;
 	}
 
-	@Override
+	@Override @Deprecated
 	public ReactiveNativeQueryImpl<R> setAliasSpecificLockMode(String alias, LockMode lockMode) {
 		super.setAliasSpecificLockMode( alias, lockMode );
 		return this;
@@ -622,7 +623,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> setParameterList(String name, @SuppressWarnings("rawtypes") Collection values) {
+	public ReactiveNativeQueryImpl<R> setParameterList(String name, Collection values) {
 		super.setParameterList( name, values );
 		return this;
 	}
@@ -658,7 +659,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> setParameterList(int position, @SuppressWarnings("rawtypes") Collection values) {
+	public ReactiveNativeQueryImpl<R> setParameterList(int position, Collection values) {
 		super.setParameterList( position, values );
 		return this;
 	}
@@ -736,8 +737,13 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> setProperties(@SuppressWarnings("rawtypes") Map bean) {
+	public ReactiveNativeQueryImpl<R> setProperties(Map bean) {
 		super.setProperties( bean );
 		return this;
+	}
+
+	@Override
+	public void applyGraph(RootGraphImplementor<?> graph, GraphSemantic semantic) {
+		super.applyGraph( graph, semantic );
 	}
 }

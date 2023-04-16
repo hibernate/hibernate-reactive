@@ -16,8 +16,6 @@ import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.graph.GraphSemantic;
-import org.hibernate.graph.RootGraph;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
@@ -60,21 +58,6 @@ public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor
 	ReactiveSqmQueryImplementor<R> setReadOnly(boolean readOnly);
 
 	@Override
-	ReactiveSqmQueryImplementor<R> applyGraph(RootGraph<?> graph, GraphSemantic semantic);
-
-	@Override
-	default ReactiveSqmQueryImplementor<R> applyFetchGraph(RootGraph<?> graph) {
-		ReactiveQueryImplementor.super.applyFetchGraph( graph );
-		return this;
-	}
-
-	@Override
-	default ReactiveSqmQueryImplementor<R> applyLoadGraph(RootGraph<?> graph) {
-		ReactiveQueryImplementor.super.applyLoadGraph( graph );
-		return this;
-	}
-
-	@Override
 	ReactiveSqmQueryImplementor<R> setComment(String comment);
 
 	@Override
@@ -90,7 +73,7 @@ public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor
 	<T> ReactiveSqmQueryImplementor<T> setTupleTransformer(TupleTransformer<T> transformer);
 
 	@Override
-	ReactiveSqmQueryImplementor<R> setResultListTransformer(ResultListTransformer transformer);
+	ReactiveSqmQueryImplementor<R> setResultListTransformer(ResultListTransformer<R> transformer);
 
 
 	@Override
