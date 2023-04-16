@@ -15,8 +15,6 @@ import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.graph.GraphSemantic;
-import org.hibernate.graph.RootGraph;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.QueryParameter;
@@ -36,20 +34,6 @@ import jakarta.persistence.TemporalType;
  */
 public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMutationQuery<R> {
 	String getQueryString();
-
-	@Override
-	ReactiveQuery<R> applyGraph(RootGraph<?> graph, GraphSemantic semantic);
-
-	@Override
-	default ReactiveQuery<R> applyFetchGraph(RootGraph<?> graph) {
-		return applyGraph( graph, GraphSemantic.FETCH );
-	}
-
-	@Override
-	@SuppressWarnings("UnusedDeclaration")
-	default ReactiveQuery<R> applyLoadGraph(RootGraph<?> graph) {
-		return applyGraph( graph, GraphSemantic.LOAD );
-	}
 
 	String getComment();
 

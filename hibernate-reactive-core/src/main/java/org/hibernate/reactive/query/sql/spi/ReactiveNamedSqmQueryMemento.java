@@ -44,21 +44,27 @@ public class ReactiveNamedSqmQueryMemento implements NamedSqmQueryMemento {
 	public <T> SqmQueryImplementor<T> toQuery(SharedSessionContractImplementor session, Class<T> resultType) {
 		// A bit of a hack, I'm sure that if we have a better look at this we can avoid the instanceof
 		if ( delegate instanceof NamedHqlQueryMementoImpl ) {
-			return new ReactiveQuerySqmImpl<T>( (NamedHqlQueryMementoImpl) delegate, resultType, session );
+			return new ReactiveQuerySqmImpl<>( (NamedHqlQueryMementoImpl) delegate, resultType, session );
 		}
-		if ( delegate instanceof NamedHqlQueryMementoImpl ) {
-			return new ReactiveQuerySqmImpl<T>( (NamedCriteriaQueryMementoImpl) delegate, resultType, session );
+		if ( delegate instanceof NamedCriteriaQueryMementoImpl ) {
+			return new ReactiveQuerySqmImpl<>( (NamedCriteriaQueryMementoImpl) delegate, resultType, session );
 		}
-
-		throw new UnsupportedOperationException( "NamedSqmQueryMemento not recognized: " + delegate.getClass() );
+		else {
+			throw new UnsupportedOperationException( "NamedSqmQueryMemento not recognized: " + delegate.getClass() );
+		}
 	}
 
 	@Override
 	public <T> SqmSelectionQuery<T> toSelectionQuery(Class<T> resultType, SharedSessionContractImplementor session) {
-		SqmSelectionQuery<T> selectionQuery = delegate.toSelectionQuery( resultType, session );
-		return selectionQuery == null
-				? null
-				: new ReactiveSqmSelectionQueryImpl<>( (SqmSelectStatement) selectionQuery.getSqmStatement(), resultType, session );
+		final SqmSelectionQuery<T> selectionQuery = delegate.toSelectionQuery( resultType, session );
+		if ( selectionQuery == null ) {
+			return null;
+		}
+		else {
+			@SuppressWarnings("unchecked")
+			final SqmSelectStatement<T> statement = (SqmSelectStatement<T>) selectionQuery.getSqmStatement();
+			return new ReactiveSqmSelectionQueryImpl<>( statement, resultType, session );
+		}
 	}
 
 	@Override
@@ -67,7 +73,7 @@ public class ReactiveNamedSqmQueryMemento implements NamedSqmQueryMemento {
 	}
 
 	@Override
-	public SqmStatement getSqmStatement() {
+	public SqmStatement<?> getSqmStatement() {
 		return delegate.getSqmStatement();
 	}
 

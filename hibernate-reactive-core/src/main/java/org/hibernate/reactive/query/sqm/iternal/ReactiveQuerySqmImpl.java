@@ -25,6 +25,7 @@ import org.hibernate.TypeMismatchException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
+import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.OptimizableGenerator;
@@ -234,8 +235,8 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	private ReactiveSelectQueryPlan<R> buildSelectQueryPlan() {
-		final SqmSelectStatement<R>[] concreteSqmStatements = QuerySplitter
-				.split( (SqmSelectStatement<R>) getSqmStatement(), getSession().getFactory() );
+		final SqmSelectStatement<R>[] concreteSqmStatements =
+				QuerySplitter.split( (SqmSelectStatement<R>) getSqmStatement(), getSession().getFactory() );
 
 		return concreteSqmStatements.length > 1
 			? buildAggregatedSelectQueryPlan( concreteSqmStatements )
@@ -243,7 +244,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	private ReactiveSelectQueryPlan<R> buildAggregatedSelectQueryPlan(SqmSelectStatement<?>[] concreteSqmStatements) {
-		//noinspection unchecked
+		@SuppressWarnings("unchecked")
 		final ReactiveSelectQueryPlan<R>[] aggregatedQueryPlans = new ReactiveSelectQueryPlan[ concreteSqmStatements.length ];
 
 		// todo (6.0) : we want to make sure that certain thing (ResultListTransformer, etc) only get applied at the aggregator-level
@@ -470,7 +471,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		return this;
 	}
 
-	@Override
+	@Override @Deprecated
 	public <T> ReactiveQuerySqmImpl<T> setResultTransformer(ResultTransformer<T> transformer) {
 		throw new UnsupportedOperationException();
 	}
@@ -509,7 +510,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	// covariance
 
 
-	@Override
+	@Override @Deprecated
 	public ReactiveQuerySqmImpl<R> setAliasSpecificLockMode(String alias, LockMode lockMode) {
 		super.setAliasSpecificLockMode( alias, lockMode );
 		return this;
@@ -825,5 +826,10 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	public ReactiveQuerySqmImpl<R> setFollowOnLocking(boolean enable) {
 		super.setFollowOnLocking( enable );
 		return this;
+	}
+
+	@Override
+	public void applyGraph(RootGraphImplementor<?> graph, GraphSemantic semantic) {
+		super.applyGraph( graph, semantic );
 	}
 }
