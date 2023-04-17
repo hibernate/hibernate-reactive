@@ -7,19 +7,6 @@ package org.hibernate.reactive.schema;
 
 import java.io.Serializable;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ForeignKey;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinColumns;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
@@ -32,6 +19,18 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinColumns;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
@@ -57,18 +56,13 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	/**
 	 * Test INDIVIDUALLY option when we set the catalog name to the default name
 	 */
-	public static class IndividuallySchemaUpdateWithCatalogTest extends SchemaUpdateSqlServerTestBase {
+	public static class IndividuallySchemaUpdateWithCatalogTest extends IndividuallySchemaUpdateSqlServerTest {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
 			final Configuration configuration = super.constructConfiguration( hbm2DdlOption );
 			configuration.setProperty( Settings.DEFAULT_CATALOG, DEFAULT_CATALOG_NAME );
 			return configuration;
-		}
-
-		@Override
-		public String addCatalog(String name) {
-			return DEFAULT_CATALOG_NAME + "." + name;
 		}
 	}
 
@@ -88,18 +82,13 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	/**
 	 * Test GROUPED option when we set the catalog name to default name
 	 */
-	public static class GroupedSchemaUpdateWithCatalogNameTest extends SchemaUpdateSqlServerTestBase {
+	public static class GroupedSchemaUpdateWithCatalogNameTest extends GroupedSchemaUpdateSqlServerTest {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
 			final Configuration configuration = super.constructConfiguration( hbm2DdlOption );
 			configuration.setProperty( Settings.DEFAULT_CATALOG, DEFAULT_CATALOG_NAME );
 			return configuration;
-		}
-
-		@Override
-		public String addCatalog(String name) {
-			return DEFAULT_CATALOG_NAME + "." + name;
 		}
 	}
 
@@ -113,10 +102,6 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	@Rule
 	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( SQLSERVER );
 
-	public String addCatalog(String name) {
-		return name;
-	}
-
 	@Before
 	@Override
 	public void before(TestContext context) {
@@ -124,25 +109,8 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 		createHbm2ddlConf.addAnnotatedClass( ASimpleFirst.class );
 		createHbm2ddlConf.addAnnotatedClass( AOther.class );
 
-		test( context, dropSequenceIfExists( createHbm2ddlConf )
-				.thenCompose( ignore -> setupSessionFactory( createHbm2ddlConf )
-				.thenCompose( v -> factoryManager.stop() ) ) );
-	}
-
-	// See HHH-14835: Vert.x throws an exception when the catalog is specified.
-	// Because it happens during schema creation, the error is ignored and the build won't fail
-	// if one of the previous tests has already created the sequence.
-	// This method makes sure that the sequence is deleted if it exists, so that these tests
-	// fail consistently when the wrong ORM version is used.
-	private CompletionStage<Void> dropSequenceIfExists(Configuration createHbm2ddlConf) {
-		return setupSessionFactory( createHbm2ddlConf )
-				.thenCompose( v -> getSessionFactory()
-						.withTransaction( (session, transaction) -> session
-								// No need to add the catalog name because MSSQL doesn't support it
-								.createNativeQuery( "drop sequence if exists dbo.hibernate_sequence" )
-								.executeUpdate() ) )
-				.handle( (res, err) -> null )
-				.thenCompose( v -> factoryManager.stop() );
+		test( context, setupSessionFactory( createHbm2ddlConf )
+				.thenCompose( v -> factoryManager.stop() ) );
 	}
 
 	@After
