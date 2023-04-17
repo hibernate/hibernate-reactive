@@ -14,6 +14,7 @@ import jakarta.persistence.PersistenceException;
 import org.hibernate.HibernateException;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.cache.CacheException;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.id.IdentifierGenerationException;
 
 import org.jboss.logging.BasicLogger;
@@ -283,6 +284,10 @@ public interface Log extends BasicLogger {
 	@LogMessage(level = ERROR)
 	@Message(id = 353, value = "Could not release a cache lock : %s" )
 	void unableToReleaseCacheLock(CacheException ce);
+
+	@LogMessage(level = WARN)
+	@Message(id = 400, value= "Changing dialect '%1$s' to '%2$s'")
+	void replacingDialect(Dialect from, Dialect to);
 
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
