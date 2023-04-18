@@ -22,6 +22,7 @@ import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
@@ -145,7 +146,10 @@ public class ReactiveTemporaryTableHelper {
 			TemporaryTableExporter exporter,
 			Function<SharedSessionContractImplementor, String> sessionUidAccess,
 			SharedSessionContractImplementor session) {
-		final String sql = exporter.getSqlTruncateCommand( temporaryTable, sessionUidAccess, session );
+		// Workaround for https://hibernate.atlassian.net/browse/HHH-16486
+		final String sql = Parameters.instance( temporaryTable.getDialect() )
+				.process( exporter.getSqlTruncateCommand( temporaryTable, sessionUidAccess, session ) );
+
 		Object[] params = PreparedStatementAdaptor.bind( ps -> {
 			if ( temporaryTable.getSessionUidColumn() != null ) {
 				final String sessionUid = sessionUidAccess.apply( session );
