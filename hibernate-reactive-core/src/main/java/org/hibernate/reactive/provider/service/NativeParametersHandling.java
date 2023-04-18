@@ -9,6 +9,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
+import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.dialect.PostgreSQLDialect;
@@ -52,7 +53,7 @@ public class NativeParametersHandling implements StandardServiceInitiator<Parame
 	 * @return the selected strategy for the dialect, never null
 	 */
 	private ParameterMarkerStrategy recommendRendered(Dialect realDialect) {
-		if ( realDialect instanceof PostgreSQLDialect ) {
+		if ( realDialect instanceof PostgreSQLDialect || realDialect instanceof CockroachDialect ) {
 			return new PostgreSQLNativeParameterMarkers();
 		}
 		if ( realDialect instanceof SQLServerDialect ) {

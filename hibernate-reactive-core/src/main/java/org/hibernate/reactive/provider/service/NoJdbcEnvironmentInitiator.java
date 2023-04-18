@@ -28,6 +28,7 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import io.vertx.sqlclient.spi.DatabaseMetadata;
 
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 
 /**
@@ -35,10 +36,10 @@ import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
  * provides an implementation of {@link JdbcEnvironment} that infers
  * the Hibernate {@link org.hibernate.dialect.Dialect} from the JDBC URL.
  */
-public class NoJdbcEnvironmentInitiator  implements StandardServiceInitiator<JdbcEnvironment> {
+public class NoJdbcEnvironmentInitiator implements StandardServiceInitiator<JdbcEnvironment> {
 
 	/**
-	 * I'm using the same logger category used in {@link org.hibernate.engine.jdbc.dialect.internal.DialectFactoryImpl}
+	 * I'm using the same logger category used in {@link org.hibernate.engine.jdbc.dialect.internal.DialectFactoryImpl}.
 	 */
 	private static final Log LOG = make( Log.class, new LogCategory( "SQL dialect" ) );
 
@@ -74,8 +75,7 @@ public class NoJdbcEnvironmentInitiator  implements StandardServiceInitiator<Jdb
 		public Dialect build() {
 			DialectFactory dialectFactory = registry.getService( DialectFactory.class );
 			Dialect dialect = dialectFactory.buildDialect( configurationValues, this::dialectResolutionInfo );
-			dialect = checkDialect( dialect );
-			return dialect;
+			return checkDialect( dialect );
 		}
 
 		/**
@@ -102,8 +102,9 @@ public class NoJdbcEnvironmentInitiator  implements StandardServiceInitiator<Jdb
 
 		private static CompletionStage<ReactiveDialectResolutionInfo> buildResolutionInfo(ReactiveConnection connection) {
 			try {
-				ReactiveDialectResolutionInfo info = new ReactiveDialectResolutionInfo( connection.getDatabaseMetadata() );
-				return connection.close().thenApply( v -> info );
+				final DatabaseMetadata databaseMetadata = connection.getDatabaseMetadata();
+				return resolutionInfoStage( connection, databaseMetadata )
+						.thenCompose( info -> connection.close().thenApply( v -> info ) );
 			}
 			catch (Throwable t) {
 				try {
@@ -116,6 +117,60 @@ public class NoJdbcEnvironmentInitiator  implements StandardServiceInitiator<Jdb
 					return failedFuture( t );
 				}
 			}
+		}
+
+		private static CompletionStage<ReactiveDialectResolutionInfo> resolutionInfoStage(ReactiveConnection connection, DatabaseMetadata databaseMetadata) {
+			if ( databaseMetadata.productName().equalsIgnoreCase( "PostgreSQL" ) ) {
+				// We need to check if the database is PostgreSQL or CockroachDB
+				// Hibernate ORM does it using a query, so we need to check in advance
+				// See org.hibernate.dialect.Database.POSTGRESQL#createDialect
+				return connection.select( "select version()" )
+						.thenApply( DialectBuilder::readFullVersion )
+						.thenApply( fullversion -> {
+							if ( fullversion.startsWith( "Cockroach" ) ) {
+								return new CockroachDatabaseMetadata( fullversion );
+							}
+							return databaseMetadata;
+						} )
+						.thenApply( ReactiveDialectResolutionInfo::new );
+			}
+
+			return completedFuture( new ReactiveDialectResolutionInfo( databaseMetadata ) );
+		}
+
+		private static String readFullVersion(ReactiveConnection.Result result) {
+			return result.hasNext()
+					? (String) result.next()[0]
+					: "";
+		}
+	}
+
+	private static class CockroachDatabaseMetadata implements DatabaseMetadata {
+
+		private final String fullversion;
+
+		public CockroachDatabaseMetadata(String fullversion) {
+			this.fullversion = fullversion;
+		}
+
+		@Override
+		public String productName() {
+			return "CockroachDb";
+		}
+
+		@Override
+		public String fullVersion() {
+			return fullversion;
+		}
+
+		@Override
+		public int majorVersion() {
+			return 0;
+		}
+
+		@Override
+		public int minorVersion() {
+			return 0;
 		}
 	}
 

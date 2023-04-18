@@ -18,6 +18,7 @@ import java.util.TimeZone;
 
 import org.hibernate.boot.model.TypeContributions;
 import org.hibernate.boot.model.TypeContributor;
+import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MySQLDialect;
@@ -272,7 +273,7 @@ public class ReactiveTypeContributor implements TypeContributor {
 		private final int defaultSqlTypeCode;
 
 		public ReactiveClobJdbcType(Dialect dialect) {
-			defaultSqlTypeCode = dialect instanceof PostgreSQLDialect
+			defaultSqlTypeCode = dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect
 					? Types.LONGVARCHAR
 					: Types.CLOB;
 		}
