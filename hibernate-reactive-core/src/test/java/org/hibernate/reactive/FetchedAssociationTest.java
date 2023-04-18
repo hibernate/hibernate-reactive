@@ -8,6 +8,16 @@ package org.hibernate.reactive;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.SqlStatementTracker;
+
+import org.junit.Rule;
+import org.junit.Test;
+
+import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -17,17 +27,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.hibernate.reactive.testing.SqlStatementTracker;
-
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
@@ -52,13 +51,6 @@ public class FetchedAssociationTest extends BaseReactiveTest {
 		Configuration configuration = super.constructConfiguration();
 		sqlTracker = new SqlStatementTracker( FetchedAssociationTest::isSelectOrInsertQuery, configuration.getProperties() );
 		return configuration;
-	}
-
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, getSessionFactory()
-				.withTransaction( s -> s.createQuery( "delete from Child" ).executeUpdate()
-						.thenCompose( v -> s.createQuery( "delete from Parent" ).executeUpdate() ) ) );
 	}
 
 	private static boolean isSelectOrInsertQuery(String s) {
@@ -100,6 +92,7 @@ public class FetchedAssociationTest extends BaseReactiveTest {
 	// We don't expect a select from CHILD
 	private String[] getExpectedNativeQueries() {
 		return new String[] {
+				"select version()",
 				"select nextval('PARENT_SEQ')",
 				"insert into PARENT (name,id) values ($1,$2)",
 				"select p1_0.id,p1_0.name from PARENT p1_0",
