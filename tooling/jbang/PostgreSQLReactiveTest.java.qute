@@ -67,7 +67,7 @@ public class {baseName} {
 	}
 
     @ClassRule
-    public final static PostgreSQLContainer database = new PostgreSQLContainer( imageName( "docker.io", "postgres", "15.0" ) );
+    public final static PostgreSQLContainer database = new PostgreSQLContainer( imageName( "docker.io", "postgres", "15.2" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 

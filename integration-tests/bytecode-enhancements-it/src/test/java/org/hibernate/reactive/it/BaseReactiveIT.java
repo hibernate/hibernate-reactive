@@ -38,6 +38,7 @@ import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -52,7 +53,10 @@ public abstract class BaseReactiveIT {
 	// These properties are in DatabaseConfiguration in core
 	public static final boolean USE_DOCKER = Boolean.getBoolean( "docker" );
 
-	public static final String IMAGE_NAME = "postgres:15.0";
+	public static final DockerImageName IMAGE_NAME = DockerImageName
+			.parse( "docker.io/postgres:15.2" )
+			.asCompatibleSubstituteFor( "postgres" );
+
 	public static final String USERNAME = "hreact";
 	public static final String PASSWORD = "hreact";
 	public static final String DB_NAME = "hreact";
@@ -64,11 +68,11 @@ public abstract class BaseReactiveIT {
 			.withReuse( true );
 
 	@ClassRule
-	public static Timeout rule = Timeout.seconds( 10 * 60 );
+	public static final Timeout rule = Timeout.seconds( 10 * 60 );
 
 	private static SessionFactory ormSessionFactory;
 	@ClassRule
-	public static RunTestOnContext vertxContextRule = new RunTestOnContext( () -> {
+	public static final RunTestOnContext vertxContextRule = new RunTestOnContext( () -> {
 		VertxOptions options = new VertxOptions();
 		options.setBlockedThreadCheckInterval( 5 );
 		options.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
