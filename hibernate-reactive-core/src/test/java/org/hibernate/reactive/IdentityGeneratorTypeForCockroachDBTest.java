@@ -10,8 +10,6 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COC
 import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
-import java.util.Collection;
-import java.util.List;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
@@ -19,6 +17,7 @@ import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -57,11 +56,6 @@ public class IdentityGeneratorTypeForCockroachDBTest extends BaseReactiveTest {
 	}
 
 	@Override
-	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( IntegerTypeEntity.class, LongTypeEntity.class, ShortTypeEntity.class );
-	}
-
-	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		// It's the default, but I want to highlight what we are testing
@@ -69,44 +63,65 @@ public class IdentityGeneratorTypeForCockroachDBTest extends BaseReactiveTest {
 		return configuration;
 	}
 
+	@Override
+	public void before(TestContext context) {
+		// Do nothing
+	}
+
+	@Override
+	public void after(TestContext context) {
+		super.after( context );
+		closeFactory( context );
+	}
+
 	@Test
 	public void longIdentityType(TestContext context) {
+		Configuration configuration = constructConfiguration();
+		configuration.addAnnotatedClass( LongTypeEntity.class );
+
 		LongTypeEntity entity = new LongTypeEntity();
 
-		test( context, getMutinySessionFactory()
-				.withTransaction( s -> s.persist( entity ) )
-				.invoke( () -> {
-					context.assertNotNull( entity );
-					context.assertTrue( entity.id > 0 );
-				} )
+		test( context, Uni.createFrom()
+				.completionStage( setupSessionFactory( configuration ) )
+				.chain( () -> getMutinySessionFactory().withTransaction( s -> s.persist( entity ) ) )
+				.invoke( () -> assertThat( entity )
+						.isNotNull()
+						.satisfies( it -> assertThat( it.id ).isGreaterThan( 0 ) )
+				)
 		);
 	}
 
 	@Test
 	public void integerIdentityType(TestContext context) {
-		test( context, assertThrown( PersistenceException.class, getMutinySessionFactory()
-				.withTransaction( s -> s.persist( new IntegerTypeEntity() )  ) )
+		Configuration configuration = constructConfiguration();
+		configuration.addAnnotatedClass( IntegerTypeEntity.class );
+
+		test( context, assertThrown( PersistenceException.class, Uni.createFrom()
+				.completionStage( setupSessionFactory( configuration ) )
+				.chain( () -> getMutinySessionFactory().withTransaction( s -> s.persist( new IntegerTypeEntity() ) ) ) )
 				.invoke( exception -> validateErrorMessage( Integer.class, IntegerTypeEntity.class, exception ) )
 		);
-
 	}
 
 	@Test
 	public void shortIdentityType(TestContext context) {
-		test( context, assertThrown( PersistenceException.class, getMutinySessionFactory()
-				.withTransaction( s -> s.persist( new ShortTypeEntity() )  ) )
-				.invoke( exception -> validateErrorMessage( Short.class, ShortTypeEntity.class, exception ) )
+		Configuration configuration = constructConfiguration();
+		configuration.addAnnotatedClass( ShortTypeEntity.class );
+
+		test( context, assertThrown( PersistenceException.class, Uni.createFrom()
+					  .completionStage( setupSessionFactory( configuration ) )
+					  .chain( () -> getMutinySessionFactory().withTransaction( s -> s.persist( new ShortTypeEntity() ) ) ) )
+					  .invoke( exception -> validateErrorMessage( Short.class, ShortTypeEntity.class, exception ) )
 		);
 	}
 
-
-	private void validateErrorMessage(Class<?> idType, Class<?> entityTYpe, PersistenceException exception) {
+	private void validateErrorMessage(Class<?> idType, Class<?> entityType, PersistenceException exception) {
 		assertThat( exception.getMessage() )
 				.as( "Unexpected error code - this should be a CockroachDB specific issue" )
 				.contains( "HR000073" );
 		assertThat( exception.getMessage() )
 				.as( "Error message should contain the entity name" )
-				.contains( entityTYpe.getName() );
+				.contains( entityType.getName() );
 		assertThat( exception.getMessage() )
 				.as( "Error message should contain the invalid type" )
 				.contains( idType.getName() );
