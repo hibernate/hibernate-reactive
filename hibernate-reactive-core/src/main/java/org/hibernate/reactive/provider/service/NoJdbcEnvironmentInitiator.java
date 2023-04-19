@@ -226,5 +226,10 @@ public class NoJdbcEnvironmentInitiator implements StandardServiceInitiator<Jdbc
 		public String getSQLKeywords() {
 			return null;
 		}
+
+		@Override
+		public String toString() {
+			return getDatabaseMajorVersion() + "." + getDatabaseMinorVersion();
+		}
 	}
 }
