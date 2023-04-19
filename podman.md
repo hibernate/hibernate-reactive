@@ -38,7 +38,7 @@ required credentials and schema to run the tests:
 ```
 podman run --rm --name HibernateTestingPGSQL \
     -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact \
-    -p 5432:5432 postgres:15.2
+    -p 5432:5432 docker.io/postgres:15.2
 ```
 
 When the database has started, you can run the tests on PostgreSQL with:
@@ -66,7 +66,7 @@ and schema to run the tests:
 ```
 podman run --rm --name HibernateTestingMariaDB \
     -e MYSQL_ROOT_PASSWORD=hreact -e MYSQL_DATABASE=hreact -e MYSQL_USER=hreact -e MYSQL_PASSWORD=hreact \
-    -p 3306:3306 mariadb:10.11.2
+    -p 3306:3306 docker.io/mariadb:10.11.2
 ```
 
 When the database has started, you can run the tests on MariaDB with:
@@ -93,7 +93,7 @@ and schema to run the tests:
 ```
 podman run --rm --name HibernateTestingMySQL \
     -e MYSQL_ROOT_PASSWORD=hreact -e MYSQL_DATABASE=hreact -e MYSQL_USER=hreact -e MYSQL_PASSWORD=hreact \
-    -p 3306:3306 mysql:8.0.32
+    -p 3306:3306 docker.io/mysql:8.0.32
 ```
 
 When the database has started, you can run the tests on MySQL with:
@@ -120,7 +120,7 @@ configured to run the tests:
 ```
 podman run --rm --name=HibernateTestingCockroachDB \
     --hostname=roachrr1 -p 26257:26257 -p 8080:8080 \
-    cockroachdb/cockroach:v22.1.9 start-single-node --insecure
+    docker.io/cockroachdb/cockroach:v22.1.9 start-single-node --insecure
 ```
 
 Some of tests needs temporary tables and because this is an experimental feature in
