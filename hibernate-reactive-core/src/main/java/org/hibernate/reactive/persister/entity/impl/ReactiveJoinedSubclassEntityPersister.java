@@ -41,6 +41,7 @@ import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
+import org.hibernate.reactive.sql.results.internal.ReactiveEntityResultJoinedSubclassImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.tree.from.TableGroup;
@@ -163,7 +164,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 			String resultVariable,
 			DomainResultCreationState creationState) {
 		if ( hasSubclasses() ) {
-			final EntityResultJoinedSubclassImpl entityResultJoinedSubclass = new EntityResultJoinedSubclassImpl(
+			final EntityResultJoinedSubclassImpl entityResultJoinedSubclass = new ReactiveEntityResultJoinedSubclassImpl(
 					navigablePath,
 					this,
 					tableGroup,
