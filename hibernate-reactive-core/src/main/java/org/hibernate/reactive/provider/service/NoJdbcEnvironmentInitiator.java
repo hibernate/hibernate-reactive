@@ -29,7 +29,6 @@ import io.vertx.sqlclient.spi.DatabaseMetadata;
 
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 
 /**
  * A Hibernate {@link StandardServiceInitiator service initiator} that
@@ -101,22 +100,22 @@ public class NoJdbcEnvironmentInitiator implements StandardServiceInitiator<Jdbc
 		}
 
 		private static CompletionStage<ReactiveDialectResolutionInfo> buildResolutionInfo(ReactiveConnection connection) {
-			try {
-				final DatabaseMetadata databaseMetadata = connection.getDatabaseMetadata();
-				return resolutionInfoStage( connection, databaseMetadata )
-						.thenCompose( info -> connection.close().thenApply( v -> info ) );
-			}
-			catch (Throwable t) {
-				try {
-					return connection.close()
-							.handle( CompletionStages::handle )
-							// Ignore errors when closing the connection
-							.thenCompose( handled -> failedFuture( t ) );
-				}
-				catch (Throwable onClose) {
-					return failedFuture( t );
-				}
-			}
+			final DatabaseMetadata databaseMetadata = connection.getDatabaseMetadata();
+			return resolutionInfoStage( connection, databaseMetadata )
+					.handle( CompletionStages::handle )
+					.thenCompose( handled -> {
+						if ( handled.hasFailed() ) {
+							// Something has already gone wrong: try to close the connection
+							// and returns the original failure
+							return connection.close()
+									.handle( (unused, throwable) -> handled.getResultAsCompletionStage() )
+									.thenCompose( identity() );
+						}
+						else {
+							return connection.close()
+									.thenCompose( v -> handled.getResultAsCompletionStage() );
+						}
+					} );
 		}
 
 		private static CompletionStage<ReactiveDialectResolutionInfo> resolutionInfoStage(ReactiveConnection connection, DatabaseMetadata databaseMetadata) {
