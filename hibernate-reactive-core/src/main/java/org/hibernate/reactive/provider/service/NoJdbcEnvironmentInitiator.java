@@ -98,7 +98,7 @@ public class NoJdbcEnvironmentInitiator implements StandardServiceInitiator<Jdbc
 		private DialectResolutionInfo dialectResolutionInfo() {
 			ReactiveConnectionPool connectionPool = registry.getService( ReactiveConnectionPool.class );
 			return connectionPool
-					// The default SqlExceptionHelper in ORM requires the dialect, but we haven't create a dialect yet
+					// The default SqlExceptionHelper in ORM requires the dialect, but we haven't created a dialect yet,
 					// so we need to override it at this stage, or we will have an exception.
 					.getConnection( new SqlExceptionHelper( true ) )
 					.thenCompose( DialectBuilder::buildResolutionInfo )
