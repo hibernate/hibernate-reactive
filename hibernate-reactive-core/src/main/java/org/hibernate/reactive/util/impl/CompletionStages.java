@@ -243,6 +243,14 @@ public class  CompletionStages {
 			this.throwable = throwable;
 		}
 
+		public boolean hasFailed() {
+			return throwable != null;
+		}
+
+		public T getThrowable() {
+			return throwable;
+		}
+
 		public R getResult() throws T {
 			if ( throwable == null ) {
 				return result;
