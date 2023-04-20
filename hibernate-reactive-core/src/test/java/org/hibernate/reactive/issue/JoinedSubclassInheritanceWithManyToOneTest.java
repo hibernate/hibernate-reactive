@@ -11,7 +11,6 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.junit.Test;
 
