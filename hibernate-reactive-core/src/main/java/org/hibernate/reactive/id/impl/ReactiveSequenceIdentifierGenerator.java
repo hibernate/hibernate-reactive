@@ -59,8 +59,7 @@ public class ReactiveSequenceIdentifierGenerator extends BlockingIdentifierGener
 	@Override
 	protected CompletionStage<Long> nextHiValue(ReactiveConnectionSupplier session) {
 		return session.getReactiveConnection()
-				.selectIdentifier( sql, NO_PARAMS, Long.class )
-				.thenApply( this::next );
+				.selectIdentifier( sql, NO_PARAMS, Long.class );
 	}
 
 	// First one to get called during initialization
