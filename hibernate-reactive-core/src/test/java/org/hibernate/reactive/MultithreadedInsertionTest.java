@@ -5,7 +5,30 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.core.*;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import org.hibernate.SessionFactory;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
+import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.vertx.VertxInstance;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -14,27 +37,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import org.hibernate.SessionFactory;
-import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
-import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.hibernate.reactive.util.impl.CompletionStages;
-import org.hibernate.reactive.vertx.VertxInstance;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
+import static org.hibernate.cfg.AvailableSettings.SHOW_SQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 /**
  * This is a multi-threaded stress test, intentionally consuming some time.
@@ -75,7 +80,14 @@ public class MultithreadedInsertionTest {
 	//Should finish much sooner, but generating this amount of IDs could be slow on some CIs
 	private static final int TIMEOUT_MINUTES = 10;
 
+	// Keeping this disabled because it generates a lot of queries
 	private static final boolean LOG_SQL = false;
+
+	/**
+	 * If true, it will print info about the threads
+	 */
+	private static final boolean THREAD_PRETTY_MSG = false;
+
 	private static final Latch startLatch = new Latch( "start", N_THREADS );
 	private static final Latch endLatch = new Latch( "end", N_THREADS );
 
@@ -97,7 +109,7 @@ public class MultithreadedInsertionTest {
 		Configuration configuration = new Configuration();
 		configuration.addAnnotatedClass( EntityWithGeneratedId.class );
 		BaseReactiveTest.setDefaultProperties( configuration );
-		configuration.setProperty( Settings.SHOW_SQL, String.valueOf( LOG_SQL ) );
+		configuration.setProperty( SHOW_SQL, String.valueOf( LOG_SQL ) );
 		StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() )
 				//Inject our custom vert.x instance:
@@ -112,7 +124,7 @@ public class MultithreadedInsertionTest {
 		stageSessionFactory.close();
 	}
 
-	@Test(timeout = ( 1000 * 60 * 10 ))//10 minutes timeout
+	@Test(timeout = ( 1000 * 60 * TIMEOUT_MINUTES ))
 	public void testIdentityGenerator(TestContext context) {
 		final Async async = context.async();
 
@@ -141,9 +153,8 @@ public class MultithreadedInsertionTest {
 			startLatch.reached();
 			startLatch.waitForEveryone();//Not essential, but to ensure a good level of parallelism
 			final String initialThreadName = Thread.currentThread().getName();
-			stageSessionFactory.withSession(
-							s -> storeMultipleEntities( s )
-					)
+			stageSessionFactory
+					.withSession( this::storeMultipleEntities )
 					.whenComplete( (o, throwable) -> {
 						endLatch.reached();
 						if ( throwable != null ) {
@@ -161,7 +172,7 @@ public class MultithreadedInsertionTest {
 		}
 
 		private CompletionStage<Void> storeMultipleEntities( Stage.Session s) {
-			return CompletionStages.loop( 0, ENTITIES_STORED_PER_THREAD, index -> storeEntity( s ) );
+			return loop( 0, ENTITIES_STORED_PER_THREAD, index -> storeEntity( s ) );
 		}
 
 		private CompletionStage<Void> storeEntity(Stage.Session s) {
@@ -233,14 +244,16 @@ public class MultithreadedInsertionTest {
 	}
 
 	private static void prettyOut(final String message) {
-		final String threadName = Thread.currentThread().getName();
-		final long l = System.currentTimeMillis();
-		final long seconds = ( l / 1000 ) - initialSecond;
-		//We prefix log messages by seconds since bootstrap; I'm preferring this over millisecond precision
-		//as it's not very relevant to see exactly how long each stage took (it's actually distracting)
-		//but it's more useful to group things coarsely when some lock or timeout introduces a significant
-		//divide between some operations (when a starvation or timeout happens it takes some seconds).
-		System.out.println( seconds + " - " + threadName + ": " + message );
+		if ( THREAD_PRETTY_MSG ) {
+			final String threadName = Thread.currentThread().getName();
+			final long l = System.currentTimeMillis();
+			final long seconds = ( l / 1000 ) - initialSecond;
+			//We prefix log messages by seconds since bootstrap; I'm preferring this over millisecond precision
+			//as it's not very relevant to see exactly how long each stage took (it's actually distracting)
+			//but it's more useful to group things coarsely when some lock or timeout introduces a significant
+			//divide between some operations (when a starvation or timeout happens it takes some seconds).
+			System.out.println( seconds + " - " + threadName + ": " + message );
+		}
 	}
 
 	private static final long initialSecond = ( System.currentTimeMillis() / 1000 );
