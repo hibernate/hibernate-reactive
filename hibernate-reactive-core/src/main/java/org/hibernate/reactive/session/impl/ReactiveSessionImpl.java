@@ -1294,8 +1294,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireLoadNoChecks(LoadEvent event, LoadEventListener.LoadType loadType) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_LOAD.fireEventOnEachListener( event, loadType,
-																					(ReactiveLoadEventListener l) -> l::reactiveOnLoad
+		return fastSessionServices.eventListenerGroup_LOAD
+				.fireEventOnEachListener( event, loadType,(ReactiveLoadEventListener l) -> l::reactiveOnLoad
 		);
 	}
 
@@ -1721,7 +1721,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public void close() throws HibernateException {
-		throw new UnsupportedOperationException( "Non-reactive 'close()' method called. Use 'reactiveClose()' instead." );
+		throw LOG.nonReactiveMethodCall( "reactiveClose()" );
 	}
 
 	@Override

@@ -9,6 +9,10 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.spi.SingleIdEntityLoader;
+import org.hibernate.reactive.logging.impl.Log;
+
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 
 /**
  * Reactive version of {@link SingleIdEntityLoader}.
@@ -22,7 +26,7 @@ public interface ReactiveSingleIdEntityLoader<T> extends SingleIdEntityLoader<Co
 	@Deprecated
 	@Override
 	default Object[] loadDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException("Use the reactive method: loadDatabaseSnapshot(Object, SharedSessionContractImplementor)");
+		throw make( Log.class, lookup() ).nonReactiveMethodCall( "reactiveLoadDatabaseSnapshot" );
 	}
 
 	CompletionStage<Object[]> reactiveLoadDatabaseSnapshot(Object id, SharedSessionContractImplementor session);
