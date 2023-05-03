@@ -5,18 +5,14 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -24,7 +20,6 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.id.impl.ReactiveGeneratorWrapper;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
-import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.impl.ReactiveSessionFactoryImpl;
 import org.hibernate.reactive.stage.Stage;
@@ -39,15 +34,20 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
+import static org.hibernate.cfg.AvailableSettings.SHOW_SQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 
 /**
@@ -71,7 +71,14 @@ public class MultithreadedIdentityGenerationTest {
 	//Should finish much sooner, but generating this amount of IDs could be slow on some CIs
 	private static final int TIMEOUT_MINUTES = 10;
 
+	// Keeping this disabled because it generates a lot of queries
 	private static final boolean LOG_SQL = false;
+
+	/**
+	 * If true, it will print info about the threads
+	 */
+	private static final boolean THREAD_PRETTY_MSG = false;
+
 	private static final Latch startLatch = new Latch( "start", N_THREADS );
 	private static final Latch endLatch = new Latch( "end", N_THREADS );
 
@@ -96,7 +103,8 @@ public class MultithreadedIdentityGenerationTest {
 		Configuration configuration = new Configuration();
 		configuration.addAnnotatedClass( EntityWithGeneratedId.class );
 		BaseReactiveTest.setDefaultProperties( configuration );
-		configuration.setProperty( Settings.SHOW_SQL, String.valueOf( LOG_SQL ) );
+		configuration.setProperty( SHOW_SQL, String.valueOf( LOG_SQL ) );
+		BaseReactiveTest.setDefaultProperties( configuration );
 		StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() )
 				//Inject our custom vert.x instance:
@@ -141,7 +149,7 @@ public class MultithreadedIdentityGenerationTest {
 					}
 				} )
 				.onFailure( context::fail )
-				.eventually( unused -> vertx.close() );
+				.eventually( v -> vertx.close() );
 	}
 
 	private boolean allResultsAreUnique(ResultsCollector allResults) {
@@ -289,14 +297,16 @@ public class MultithreadedIdentityGenerationTest {
 	}
 
 	private static void prettyOut(final String message) {
-		final String threadName = Thread.currentThread().getName();
-		final long l = System.currentTimeMillis();
-		final long seconds = ( l / 1000 ) - initialSecond;
-		//We prefix log messages by seconds since bootstrap; I'm preferring this over millisecond precision
-		//as it's not very relevant to see exactly how long each stage took (it's actually distracting)
-		//but it's more useful to group things coarsely when some lock or timeout introduces a significant
-		//divide between some operations (when a starvation or timeout happens it takes some seconds).
-		System.out.println( seconds + " - " + threadName + ": " + message );
+		if ( THREAD_PRETTY_MSG ) {
+			final String threadName = Thread.currentThread().getName();
+			final long l = System.currentTimeMillis();
+			final long seconds = ( l / 1000 ) - initialSecond;
+			//We prefix log messages by seconds since bootstrap; I'm preferring this over millisecond precision
+			//as it's not very relevant to see exactly how long each stage took (it's actually distracting)
+			//but it's more useful to group things coarsely when some lock or timeout introduces a significant
+			//divide between some operations (when a starvation or timeout happens it takes some seconds).
+			System.out.println( seconds + " - " + threadName + ": " + message );
+		}
 	}
 
 	private static final long initialSecond = ( System.currentTimeMillis() / 1000 );
