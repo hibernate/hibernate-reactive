@@ -27,6 +27,7 @@ import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInit
 import org.hibernate.reactive.context.impl.VertxContextInitiator;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorServiceInitiator;
 import org.hibernate.reactive.id.factory.spi.ReactiveIdentifierGeneratorFactoryInitiator;
+import org.hibernate.reactive.loader.ast.internal.ReactiveBatchLoaderFactoryInitiator;
 import org.hibernate.reactive.pool.impl.ReactiveConnectionPoolInitiator;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfigurationInitiator;
 import org.hibernate.reactive.provider.service.NativeParametersHandling;
@@ -160,6 +161,9 @@ public final class ReactiveServiceInitiators {
 
 		// [standard] SqlStatementLogger
 		serviceInitiators.add( SqlStatementLoggerInitiator.INSTANCE );
+
+		// Custom for Hibernate Reactive: BatchLoaderFactory
+		serviceInitiators.add( ReactiveBatchLoaderFactoryInitiator.INSTANCE );
 
 		// --- end of services defined by Hibernate ORM
 

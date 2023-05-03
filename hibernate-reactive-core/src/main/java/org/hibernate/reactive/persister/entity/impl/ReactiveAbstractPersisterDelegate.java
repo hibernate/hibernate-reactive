@@ -20,6 +20,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
 import org.hibernate.id.IdentityGenerator;
+import org.hibernate.loader.ast.spi.BatchLoaderFactory;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
@@ -37,8 +38,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.query.named.NamedQueryMemento;
-import org.hibernate.reactive.loader.ast.internal.ReactiveMultiIdLoaderStandard;
-import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderDynamicBatch;
+import org.hibernate.reactive.loader.ast.internal.ReactiveMultiIdEntityLoaderStandard;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderProvidedQueryImpl;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderStandardImpl;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleUniqueKeyEntityLoaderStandard;
@@ -59,7 +59,9 @@ import org.hibernate.type.EntityType;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
 
-
+/**
+ * @see org.hibernate.persister.entity.AbstractEntityPersister
+ */
 public class ReactiveAbstractPersisterDelegate {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
@@ -83,7 +85,7 @@ public class ReactiveAbstractPersisterDelegate {
 				factory,
 				entityPersister.getEntityName()
 		);
-		multiIdEntityLoader = new ReactiveMultiIdLoaderStandard<>( entityPersister, persistentClass, factory );
+		multiIdEntityLoader = new ReactiveMultiIdEntityLoaderStandard<>( entityPersister, persistentClass, factory );
 		entityDescriptor = entityPersister;
 	}
 
@@ -98,16 +100,15 @@ public class ReactiveAbstractPersisterDelegate {
 			TableGroup tableGroup,
 			String resultVariable,
 			DomainResultCreationState creationState) {
-		final ReactiveEntityResultImpl entityResult = new ReactiveEntityResultImpl( navigablePath,
-																					assemblerCreationState,
-																					tableGroup,
-																					resultVariable
-		);
+		final ReactiveEntityResultImpl entityResult = new ReactiveEntityResultImpl( navigablePath, assemblerCreationState, tableGroup, resultVariable );
 		entityResult.afterInitialize( entityResult, creationState );
 		//noinspection unchecked
 		return entityResult;
 	}
 
+	/**
+	 * @see org.hibernate.persister.entity.AbstractEntityPersister#multiLoad(Object[], EventSource, MultiIdLoadOptions)`
+	 */
 	public <K> CompletionStage<? extends List<?>> multiLoad(
 			K[] ids,
 			EventSource session,
@@ -136,10 +137,19 @@ public class ReactiveAbstractPersisterDelegate {
 		}
 
 		if ( batchSize > 1 ) {
-			return new ReactiveSingleIdEntityLoaderDynamicBatch<>( entityDescriptor, batchSize, factory );
+			return createBatchingIdEntityLoader( entityDescriptor, batchSize, factory );
 		}
 
 		return new ReactiveSingleIdEntityLoaderStandardImpl<>( entityDescriptor, factory );
+	}
+
+	private static ReactiveSingleIdEntityLoader<Object> createBatchingIdEntityLoader(
+			EntityMappingType entityDescriptor,
+			int domainBatchSize,
+			SessionFactoryImplementor factory) {
+		return (ReactiveSingleIdEntityLoader) factory.getServiceRegistry()
+				.getService( BatchLoaderFactory.class )
+				.createEntityBatchLoader( domainBatchSize, entityDescriptor, factory );
 	}
 
 	private static int batchSize(PersistentClass bootDescriptor, SessionFactoryImplementor factory) {
@@ -221,9 +231,9 @@ public class ReactiveAbstractPersisterDelegate {
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracev( "Fetching entity: {0}", MessageHelper.infoString( persister, id, persister.getFactory() ) );
 		}
-		return optionalObject == null ?
-				singleIdEntityLoader.load( id, lockOptions, readOnly, session ) :
-				singleIdEntityLoader.load( id, optionalObject, lockOptions, readOnly, session );
+		return optionalObject == null
+				? singleIdEntityLoader.load( id, lockOptions, readOnly, session )
+				: singleIdEntityLoader.load( id, optionalObject, lockOptions, readOnly, session );
 	}
 
 	public Generator reactive(Generator generator) {

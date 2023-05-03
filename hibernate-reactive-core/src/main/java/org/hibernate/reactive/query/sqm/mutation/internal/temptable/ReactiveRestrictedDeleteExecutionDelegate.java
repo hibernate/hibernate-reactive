@@ -332,7 +332,6 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 							final NamedTableReference tableReference = (NamedTableReference) tableGroup.getTableReference(
 									tableGroup.getNavigablePath(),
 									tableExpression,
-									true,
 									true
 							);
 							final QuerySpec idMatchingSubQuerySpec;

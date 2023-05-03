@@ -14,6 +14,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.UnknownEntityTypeException;
+import org.hibernate.UnknownProfileException;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
@@ -21,6 +22,7 @@ import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
@@ -116,6 +118,22 @@ import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
  */
 public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implements ReactiveStatelessSession {
 
+	private static final LoadQueryInfluencers NO_INFLUENCERS = new LoadQueryInfluencers() {
+		@Override
+		public String getInternalFetchProfile() {
+			return null;
+		}
+
+		@Override
+		public void setInternalFetchProfile(String internalFetchProfile) {
+		}
+
+		@Override
+		public boolean isFetchProfileEnabled(String name) throws UnknownProfileException {
+			return false;
+		}
+	};
+
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveConnection reactiveConnection;
@@ -208,6 +226,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	@Override
 	public <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
 		return reactiveGet( entityClass.getName(), id, LockMode.NONE, fetchGraph );
+	}
+
+	@Override
+	public LoadQueryInfluencers getLoadQueryInfluencers() {
+		return NO_INFLUENCERS;
 	}
 
 	@Override
