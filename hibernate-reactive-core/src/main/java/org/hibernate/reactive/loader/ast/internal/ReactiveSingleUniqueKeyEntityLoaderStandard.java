@@ -38,8 +38,6 @@ import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
-import static java.util.Collections.emptyList;
-
 /**
  *
  * @param <T>
@@ -75,10 +73,9 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 		final List<JdbcParameter> jdbcParameters = new ArrayList<>();
 		final SelectStatement sqlAst = LoaderSelectBuilder.createSelectByUniqueKey(
 				entityDescriptor,
-				emptyList(),
+				Collections.emptyList(),
 				uniqueKeyAttribute,
 				null,
-				1,
 				LoadQueryInfluencers.NONE,
 				LockOptions.NONE,
 				jdbcParameters::add,
@@ -134,7 +131,6 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 				Collections.singletonList( entityDescriptor.getIdentifierMapping() ),
 				uniqueKeyAttribute,
 				null,
-				1,
 				LoadQueryInfluencers.NONE,
 				LockOptions.NONE,
 				jdbcParameters::add,

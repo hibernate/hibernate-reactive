@@ -158,7 +158,6 @@ public class ReactiveUpdateExcutionDelegate extends UpdateExecutionDelegate impl
 		final TableReference updatingTableReference = getUpdatingTableGroup().getTableReference(
 				getUpdatingTableGroup().getNavigablePath(),
 				tableExpression,
-				true,
 				true
 		);
 

@@ -30,13 +30,12 @@ import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
 import org.hibernate.internal.util.collections.CollectionHelper;
 import org.hibernate.loader.ast.internal.CacheEntityLoaderHelper;
+import org.hibernate.loader.ast.internal.LoaderHelper;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.mapping.PersistentClass;
-import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.reactive.loader.ast.spi.ReactiveMultiIdEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
@@ -57,81 +56,70 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.whileLoop;
 
 /**
- * @see org.hibernate.loader.ast.internal.MultiIdLoaderStandard
+ * @see org.hibernate.loader.ast.internal.MultiIdEntityLoaderStandard
  */
-public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLoader<T> {
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMultiIdEntityLoader<T> {
 
-	private final EntityPersister entityDescriptor;
-	private final SessionFactoryImplementor sessionFactory;
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final int idJdbcTypeCount;
 
-	public ReactiveMultiIdLoaderStandard(
+	public ReactiveMultiIdEntityLoaderStandard(
 			EntityPersister entityDescriptor,
 			PersistentClass bootDescriptor,
 			SessionFactoryImplementor sessionFactory) {
-		this.entityDescriptor = entityDescriptor;
+		super( entityDescriptor, sessionFactory );
 		this.idJdbcTypeCount = bootDescriptor.getIdentifier().getColumnSpan();
-		this.sessionFactory = sessionFactory;
 		assert idJdbcTypeCount > 0;
 	}
 
 	@Override
-	public EntityMappingType getLoadable() {
-		return entityDescriptor;
-	}
-
-	@Override
-	public <K> CompletionStage<List<T>> load(K[] ids, MultiIdLoadOptions loadOptions, EventSource session) {
-		assert ids != null;
-		return loadOptions.isOrderReturnEnabled()
-				? performOrderedMultiLoad( ids, session, loadOptions )
-				: performUnorderedMultiLoad( ids, session, loadOptions );
-	}
-
-	private CompletionStage<List<T>>  performOrderedMultiLoad(Object[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
+	protected CompletionStage<List<T>> performOrderedMultiLoad(
+			Object[] ids,
+			MultiIdLoadOptions loadOptions,
+			EventSource session) {
 		if ( LOG.isTraceEnabled() ) {
-			LOG.tracef( "#performOrderedMultiLoad(`%s`, ..)", entityDescriptor.getEntityName() );
+			LOG.tracef( "#performOrderedMultiLoad(`%s`, ..)", getEntityDescriptor().getEntityName() );
 		}
 
 		assert loadOptions.isOrderReturnEnabled();
 
-		final JdbcEnvironment jdbcEnvironment = sessionFactory.getJdbcServices().getJdbcEnvironment();
+		final JdbcEnvironment jdbcEnvironment = getSessionFactory().getJdbcServices().getJdbcEnvironment();
 		final Dialect dialect = jdbcEnvironment.getDialect();
 
 		final List<Object> result = CollectionHelper.arrayList( ids.length );
 
-		final LockOptions lockOptions = (loadOptions.getLockOptions() == null)
+		final LockOptions lockOptions = ( loadOptions.getLockOptions() == null )
 				? new LockOptions( LockMode.NONE )
 				: loadOptions.getLockOptions();
 
 		final int maxBatchSize = loadOptions.getBatchSize() != null && loadOptions.getBatchSize() > 0
 				? loadOptions.getBatchSize()
 				: dialect
-				.getDefaultBatchLoadSizingStrategy()
+				.getBatchLoadSizingStrategy()
 				.determineOptimalBatchLoadSize(
 						idJdbcTypeCount,
 						ids.length,
-						sessionFactory.getSessionFactoryOptions().inClauseParameterPaddingEnabled()
+						getSessionFactory().getSessionFactoryOptions().inClauseParameterPaddingEnabled()
 				);
 
 		final List<Object> idsInBatch = new ArrayList<>();
 		final List<Integer> elementPositionsLoadedByBatch = new ArrayList<>();
 
-		final boolean coerce = !sessionFactory.getJpaMetamodel().getJpaCompliance().isLoadByIdComplianceEnabled();
+		final boolean coerce = !getSessionFactory().getJpaMetamodel().getJpaCompliance().isLoadByIdComplianceEnabled();
 		return loop( 0, ids.length, i -> {
-			final Object id = coerce ?
-					entityDescriptor.getIdentifierMapping().getJavaType().coerce( ids[i], session ) :
-					ids[i];
+			final Object id = coerce
+					? getEntityDescriptor().getIdentifierMapping().getJavaType().coerce( ids[i], session )
+					: ids[i];
 
-			final EntityKey entityKey = new EntityKey( id, entityDescriptor );
+			final EntityKey entityKey = new EntityKey( id, getLoadable().getEntityPersister() );
 			if ( loadOptions.isSessionCheckingEnabled() || loadOptions.isSecondLevelCacheCheckingEnabled() ) {
-				LoadEvent loadEvent = new LoadEvent( id,
-													 entityDescriptor.getMappedClass().getName(),
-													 lockOptions,
-													 session,
-													 getReadOnlyFromLoadQueryInfluencers( session )
+				LoadEvent loadEvent = new LoadEvent(
+						id,
+						getLoadable().getJavaType().getJavaTypeClass().getName(),
+						lockOptions,
+						session,
+						LoaderHelper.getReadOnlyFromLoadQueryInfluencers( session )
 				);
 
 				Object managedEntity = null;
@@ -156,7 +144,7 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 					// look for it in the SessionFactory
 					managedEntity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache(
 							loadEvent,
-							entityDescriptor,
+							getLoadable().getEntityPersister(),
 							entityKey
 					);
 				}
@@ -174,7 +162,8 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 			CompletionStage<Void> loopResult = voidFuture();
 			if ( idsInBatch.size() >= maxBatchSize ) {
 				// we've hit the allotted max-batch-size, perform an "intermediate load"
-				loopResult = loadEntitiesById( idsInBatch, lockOptions, session ).thenAccept( v -> idsInBatch.clear() );
+				loopResult = loadEntitiesById( idsInBatch, lockOptions, session )
+						.thenAccept( v -> idsInBatch.clear() );
 
 			}
 
@@ -188,12 +177,12 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 			if ( !idsInBatch.isEmpty() ) {
 				// we still have ids to load from the processing above since the last max-batch-size trigger,
 				// perform a load for them
-				return loadEntitiesById( idsInBatch, lockOptions, session ).thenCompose( CompletionStages::voidFuture );
+				return loadEntitiesById( idsInBatch, lockOptions, session )
+						.thenCompose( CompletionStages::voidFuture );
 			}
 			return voidFuture();
 		} ).thenApply( v -> {
-			// todo (6.0) : can't we just walk all elements of the results looking for EntityKey and replacing here?
-			//		can't imagine
+			// for each result where we set the EntityKey earlier, replace them
 			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 			for ( Integer position : elementPositionsLoadedByBatch ) {
 				// the element value at this position in the result List should be
@@ -216,7 +205,10 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 		} );
 	}
 
-	private CompletionStage<List<T>> loadEntitiesById(List<Object> idsInBatch, LockOptions lockOptions, SharedSessionContractImplementor session) {
+	private CompletionStage<List<T>> loadEntitiesById(
+			List<Object> idsInBatch,
+			LockOptions lockOptions,
+			SharedSessionContractImplementor session) {
 		assert idsInBatch != null;
 		assert !idsInBatch.isEmpty();
 
@@ -226,10 +218,10 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 		}
 
 		if ( LOG.isTraceEnabled() ) {
-			LOG.tracef( "#loadEntitiesById(`%s`, `%s`, ..)", entityDescriptor.getEntityName(), numberOfIdsInBatch );
+			LOG.tracef( "#loadEntitiesById(`%s`, `%s`, ..)", getEntityDescriptor().getEntityName(), numberOfIdsInBatch );
 		}
 
-		final List<JdbcParameter> jdbcParameters = new ArrayList<>( numberOfIdsInBatch * idJdbcTypeCount);
+		final List<JdbcParameter> jdbcParameters = new ArrayList<>( numberOfIdsInBatch * idJdbcTypeCount );
 
 		final SelectStatement sqlAst = LoaderSelectBuilder.createSelect(
 				getLoadable(),
@@ -241,10 +233,10 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 				session.getLoadQueryInfluencers(),
 				lockOptions,
 				jdbcParameters::add,
-				sessionFactory
+				getSessionFactory()
 		);
 
-		final JdbcServices jdbcServices = sessionFactory.getJdbcServices();
+		final JdbcServices jdbcServices = getSessionFactory().getJdbcServices();
 		final JdbcEnvironment jdbcEnvironment = jdbcServices.getJdbcEnvironment();
 		final SqlAstTranslatorFactory sqlAstTranslatorFactory = jdbcEnvironment.getSqlAstTranslatorFactory();
 
@@ -257,7 +249,7 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 			offset += jdbcParameterBindings.registerParametersForEachJdbcValue(
 					id,
 					offset,
-					entityDescriptor.getIdentifierMapping(),
+					getEntityDescriptor().getIdentifierMapping(),
 					jdbcParameters,
 					session
 			);
@@ -265,11 +257,12 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 
 		// we should have used all the JdbcParameter references (created bindings for all)
 		assert offset == jdbcParameters.size();
-		final JdbcOperationQuerySelect jdbcSelect = sqlAstTranslatorFactory.buildSelectTranslator( sessionFactory, sqlAst )
+		final JdbcOperationQuerySelect jdbcSelect = sqlAstTranslatorFactory
+				.buildSelectTranslator( getSessionFactory(), sqlAst )
 				.translate( jdbcParameterBindings, QueryOptions.NONE );
 
 		final SubselectFetch.RegistrationHandler subSelectFetchableKeysHandler;
-		if ( entityDescriptor.hasSubselectLoadableCollections() ) {
+		if ( getLoadable().getEntityPersister().hasSubselectLoadableCollections() ) {
 			subSelectFetchableKeysHandler = SubselectFetch.createRegistrationHandler(
 					session.getPersistenceContext().getBatchFetchQueue(),
 					sqlAst,
@@ -290,22 +283,29 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 		);
 	}
 
-	private CompletionStage<List<T>> performSingleMultiLoad(Object id, LockOptions lockOptions, SharedSessionContractImplementor session) {
-		return ( (ReactiveEntityPersister) entityDescriptor )
+	private CompletionStage<List<T>> performSingleMultiLoad(
+			Object id,
+			LockOptions lockOptions,
+			SharedSessionContractImplementor session) {
+		return ( (ReactiveEntityPersister) getEntityDescriptor() )
 				.reactiveLoad( id, null, lockOptions, session )
-				.thenApply( ReactiveMultiIdLoaderStandard::singletonList );
+				.thenApply( ReactiveMultiIdEntityLoaderStandard::singletonList );
 	}
 
 	private static <T> List<T> singletonList(Object loaded) {
 		return Collections.singletonList( (T) loaded );
 	}
 
-	private CompletionStage<List<T>> performUnorderedMultiLoad(Object[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
+	@Override
+	protected CompletionStage<List<T>> performUnorderedMultiLoad(
+			Object[] ids,
+			MultiIdLoadOptions loadOptions,
+			EventSource session) {
 		assert !loadOptions.isOrderReturnEnabled();
 		assert ids != null;
 
 		if ( LOG.isTraceEnabled() ) {
-			LOG.tracef( "#performUnorderedMultiLoad(`%s`, ..)", entityDescriptor.getEntityName() );
+			LOG.tracef( "#performUnorderedMultiLoad(`%s`, ..)", getEntityDescriptor().getEntityName() );
 		}
 
 		final List<T> result = CollectionHelper.arrayList( ids.length );
@@ -323,17 +323,17 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 			boolean foundAnyManagedEntities = false;
 			final List<Object> nonManagedIds = new ArrayList<>();
 
-			final boolean coerce = !sessionFactory.getJpaMetamodel().getJpaCompliance().isLoadByIdComplianceEnabled();
+			final boolean coerce = !getSessionFactory().getJpaMetamodel().getJpaCompliance().isLoadByIdComplianceEnabled();
 			for ( int i = 0; i < ids.length; i++ ) {
 				final Object id = coerce
-						? entityDescriptor.getIdentifierMapping().getJavaType().coerce( ids[i], session )
+						? getEntityDescriptor().getIdentifierMapping().getJavaType().coerce( ids[i], session )
 						: ids[i];
 
-				final EntityKey entityKey = new EntityKey( id, entityDescriptor );
+				final EntityKey entityKey = new EntityKey( id, getLoadable().getEntityPersister() );
 
 				LoadEvent loadEvent = new LoadEvent(
 						id,
-						entityDescriptor.getMappedClass().getName(),
+						getLoadable().getJavaType().getJavaTypeClass().getName(),
 						lockOptions,
 						session,
 						getReadOnlyFromLoadQueryInfluencers( session )
@@ -363,7 +363,7 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 				if ( managedEntity == null && loadOptions.isSecondLevelCacheCheckingEnabled() ) {
 					managedEntity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache(
 							loadEvent,
-							entityDescriptor,
+							getLoadable().getEntityPersister(),
 							entityKey
 					);
 				}
@@ -403,11 +403,11 @@ public class ReactiveMultiIdLoaderStandard<T> implements ReactiveMultiIdEntityLo
 				: session.getJdbcServices()
 				.getJdbcEnvironment()
 				.getDialect()
-				.getDefaultBatchLoadSizingStrategy()
+				.getBatchLoadSizingStrategy()
 				.determineOptimalBatchLoadSize(
-						entityDescriptor.getIdentifierType().getColumnSpan( session.getFactory() ),
+						getIdentifierMapping().getJdbcTypeCount(),
 						numberOfIdsLeft[0],
-						sessionFactory.getSessionFactoryOptions().inClauseParameterPaddingEnabled()
+						getSessionFactory().getSessionFactoryOptions().inClauseParameterPaddingEnabled()
 				);
 
 		int[] idPosition = { 0 };

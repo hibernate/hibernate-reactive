@@ -33,7 +33,6 @@ import org.hibernate.reactive.persister.collection.mutation.ReactiveRemoveCoordi
 import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCoordinator;
 import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCoordinatorNoOp;
 import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCoordinatorStandard;
-import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
@@ -49,9 +48,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	private final ReactiveDeleteRowsCoordinator deleteRowsCoordinator;
 	private final ReactiveRemoveCoordinator removeCoordinator;
 
-	private Parameters parameters() {
-		return Parameters.instance( getFactory().getJdbcServices().getDialect() );
-	}
+	private CollectionLoader reusableCollectionLoader;
 
 	public ReactiveBasicCollectionPersister(
 			Collection collectionBinding,
@@ -65,6 +62,19 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		this.removeCoordinator = buildDeleteAllCoordinator();
 	}
 
+	@Override
+	protected CollectionLoader createCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
+		if ( isCollectionLoaderReusable( loadQueryInfluencers ) ) {
+			if ( reusableCollectionLoader == null ) {
+				reusableCollectionLoader = ReactiveAbstractCollectionPersister.super
+						.generateCollectionLoader( LoadQueryInfluencers.NONE );
+			}
+			return reusableCollectionLoader;
+		}
+
+		// create a one-off
+		return ReactiveAbstractCollectionPersister.super.generateCollectionLoader( loadQueryInfluencers );
+	}
 
 	private ReactiveUpdateRowsCoordinator buildUpdateRowCoordinator() {
 		final boolean performUpdates = getCollectionSemantics().getCollectionClassification().isRowUpdatePossible()
@@ -112,11 +122,6 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		}
 
 		return new ReactiveRemoveCoordinatorStandard( this, this::buildDeleteAllOperation );
-	}
-
-	@Override
-	protected CollectionLoader createCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
-		return createReactiveCollectionLoader( loadQueryInfluencers );
 	}
 
 	@Override
@@ -170,11 +175,6 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	@Override
 	public boolean isRowInsertEnabled() {
 		return super.isRowInsertEnabled();
-	}
-
-	@Override
-	public boolean indexContainsFormula() {
-		return super.indexContainsFormula;
 	}
 
 	@Override

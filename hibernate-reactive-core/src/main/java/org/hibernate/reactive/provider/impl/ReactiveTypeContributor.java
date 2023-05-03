@@ -26,6 +26,7 @@ import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.type.descriptor.jdbc.ReactiveArrayJdbcType;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.AbstractSingleColumnStandardBasicType;
 import org.hibernate.type.BasicTypeRegistry;
@@ -79,8 +80,10 @@ public class ReactiveTypeContributor implements TypeContributor {
 		JavaTypeRegistry javaTypeRegistry = typeConfiguration.getJavaTypeRegistry();
 		javaTypeRegistry.addDescriptor( JsonObjectJavaType.INSTANCE );
 
+		JdbcTypeRegistry jdbcTypeRegistry = typeConfiguration.getJdbcTypeRegistry();
+		jdbcTypeRegistry.addDescriptor( ReactiveArrayJdbcType.INSTANCE );
+
 		if ( dialect instanceof MySQLDialect || dialect instanceof DB2Dialect || dialect instanceof OracleDialect ) {
-			JdbcTypeRegistry jdbcTypeRegistry = typeConfiguration.getJdbcTypeRegistry();
 			jdbcTypeRegistry.addDescriptor( TimestampAsLocalDateTimeJdbcType.INSTANCE );
 			jdbcTypeRegistry.addDescriptor( TimestampUtcAsLocalDateTimeJdbcType.INSTANCE );
 		}

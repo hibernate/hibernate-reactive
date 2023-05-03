@@ -41,7 +41,6 @@ import org.hibernate.reactive.persister.collection.mutation.ReactiveRemoveCoordi
 import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCoordinator;
 import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCoordinatorNoOp;
 import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCoordinatorOneToMany;
-import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.model.MutationType;
 import org.hibernate.sql.model.internal.MutationOperationGroupSingle;
@@ -62,6 +61,8 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	private final ReactiveUpdateRowsCoordinator updateRowsCoordinator;
 	private final ReactiveDeleteRowsCoordinator deleteRowsCoordinator;
 	private final ReactiveRemoveCoordinator removeCoordinator;
+
+	private CollectionLoader reusableCollectionLoader;
 
 	public ReactiveOneToManyPersister(
 			Collection collectionBinding,
@@ -136,13 +137,26 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 		return new ReactiveRemoveCoordinatorStandard( this, this::buildDeleteAllOperation );
 	}
 
-	private Parameters parameters() {
-		return Parameters.instance( getFactory().getJdbcServices().getDialect() );
+	@Override
+	protected CollectionLoader createCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
+		if ( isCollectionLoaderReusable( loadQueryInfluencers ) ) {
+			if ( reusableCollectionLoader == null ) {
+				reusableCollectionLoader = ReactiveAbstractCollectionPersister.super
+						.generateCollectionLoader( LoadQueryInfluencers.NONE );
+			}
+			return reusableCollectionLoader;
+		}
+
+		// create a one-off
+		return ReactiveAbstractCollectionPersister.super.generateCollectionLoader( loadQueryInfluencers );
 	}
 
 	@Override
-	protected CollectionLoader createCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
-		return createReactiveCollectionLoader( loadQueryInfluencers );
+	public boolean isAffectedByEnabledFetchProfiles(LoadQueryInfluencers influencers) {
+		if ( influencers == LoadQueryInfluencers.NONE ) {
+			return false;
+		}
+		return super.isAffectedByEnabledFetchProfiles( influencers );
 	}
 
 	@Override
@@ -165,11 +179,6 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	@Override
 	public boolean isRowInsertEnabled() {
 		return super.isRowInsertEnabled();
-	}
-
-	@Override
-	public boolean indexContainsFormula() {
-		return super.indexContainsFormula;
 	}
 
 	private CompletionStage<Void> writeIndex(
