@@ -13,14 +13,13 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 
 /**
  * A reactive {@link CollectionPersister}
  */
 public interface ReactiveCollectionPersister extends CollectionPersister {
-
-	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	/**
 	 * Reactive version of {@link CollectionPersister#recreate(PersistentCollection, Object, SharedSessionContractImplementor)}
@@ -29,7 +28,7 @@ public interface ReactiveCollectionPersister extends CollectionPersister {
 
 	@Override
 	default void remove(Object id, SharedSessionContractImplementor session) {
-		throw LOG.nonReactiveMethodCall( "reactiveRemove" );
+		throw make( Log.class, MethodHandles.lookup() ).nonReactiveMethodCall( "reactiveRemove" );
 	}
 
 	/**
@@ -39,7 +38,7 @@ public interface ReactiveCollectionPersister extends CollectionPersister {
 
 	@Override
 	default void deleteRows(PersistentCollection<?> collection, Object key, SharedSessionContractImplementor session) {
-		throw LOG.nonReactiveMethodCall( "reactiveDeleteRows" );
+		throw make( Log.class, MethodHandles.lookup() ).nonReactiveMethodCall( "reactiveDeleteRows" );
 	}
 
 	/**
@@ -49,7 +48,7 @@ public interface ReactiveCollectionPersister extends CollectionPersister {
 
 	@Override
 	default void insertRows(PersistentCollection<?> collection, Object key, SharedSessionContractImplementor session) {
-		throw LOG.nonReactiveMethodCall( "reactiveInsertRows" );
+		throw make( Log.class, MethodHandles.lookup() ).nonReactiveMethodCall( "reactiveInsertRows" );
 	}
 
 	/**
@@ -59,7 +58,7 @@ public interface ReactiveCollectionPersister extends CollectionPersister {
 
 	@Override
 	default void updateRows(PersistentCollection<?> collection, Object key, SharedSessionContractImplementor session) {
-		throw LOG.nonReactiveMethodCall( "reactiveUpdateRows" );
+		throw make( Log.class, MethodHandles.lookup() ).nonReactiveMethodCall( "reactiveUpdateRows" );
 	}
 
 	/**
@@ -69,7 +68,7 @@ public interface ReactiveCollectionPersister extends CollectionPersister {
 
 	@Override
 	default void initialize(Object key, SharedSessionContractImplementor session) throws HibernateException {
-		throw LOG.nonReactiveMethodCall( "reactiveInitialize" );
+		throw make( Log.class, MethodHandles.lookup() ).nonReactiveMethodCall( "reactiveInitialize" );
 	}
 
 	/**

@@ -13,18 +13,17 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.spi.CollectionLoader;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 
 public interface ReactiveCollectionLoader extends CollectionLoader {
-
-	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	@Override
 	PluralAttributeMapping getLoadable();
 
 	@Override
 	default PersistentCollection<?> load(Object key, SharedSessionContractImplementor session) {
-		throw LOG.nonReactiveMethodCall( "reactiveLoad(Object, SharedSessionContractImplementor)" );
+		throw make( Log.class, MethodHandles.lookup() ).nonReactiveMethodCall( "reactiveLoad(Object, SharedSessionContractImplementor)" );
 	}
 
 	/**

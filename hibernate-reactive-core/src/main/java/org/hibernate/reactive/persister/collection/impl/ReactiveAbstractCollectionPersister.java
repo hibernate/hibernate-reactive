@@ -22,8 +22,6 @@ import org.hibernate.reactive.session.ReactiveConnectionSupplier;
  */
 public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionPersister {
 
-    Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-
     default ReactiveConnection getReactiveConnection(SharedSessionContractImplementor session) {
         return ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
     }
