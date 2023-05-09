@@ -47,7 +47,7 @@ dependencies {
     testRuntimeOnly "org.mariadb.jdbc:mariadb-java-client:3.0.7";
 
     // JDBC driver for Testcontainers with MYSQL Server
-    testRuntimeOnly "com.mysql:mysql-connector-j:8.0.32";
+    testRuntimeOnly "com.mysql:mysql-connector-j:8.0.33";
 
     // JDBC driver for Db2 server, for testing
     testRuntimeOnly "com.ibm.db2:jcc:11.5.8.0"
