@@ -44,7 +44,7 @@ dependencies {
     testRuntimeOnly "com.microsoft.sqlserver:mssql-jdbc:12.2.0.jre11"
 
     // JDBC driver for Testcontainers with MariaDB Server
-    testRuntimeOnly "org.mariadb.jdbc:mariadb-java-client:3.0.7";
+    testRuntimeOnly "org.mariadb.jdbc:mariadb-java-client:3.1.4";
 
     // JDBC driver for Testcontainers with MYSQL Server
     testRuntimeOnly "com.mysql:mysql-connector-j:8.0.33";
