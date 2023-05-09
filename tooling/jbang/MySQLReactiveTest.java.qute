@@ -15,7 +15,7 @@
 
 //// Testcontainer needs the JDBC drivers to start the container
 //// Hibernate Reactive doesn't need it
-//DEPS com.mysql:mysql-connector-j:8.0.32
+//DEPS com.mysql:mysql-connector-j:8.0.33
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -72,7 +72,7 @@ public class {baseName} {
 	}
 
     @ClassRule
-    public final static MySQLContainer<?> database = new MySQLContainer<>( imageName( "docker.io", "mysql", "8.0.32" ) );
+    public final static MySQLContainer<?> database = new MySQLContainer<>( imageName( "docker.io", "mysql", "8.0.33" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 

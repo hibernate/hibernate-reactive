@@ -82,7 +82,7 @@ class MySQLDatabase implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final MySQLContainer<?> mysql = new MySQLContainer<>( imageName( "mysql", "8.0.32") )
+	public static final MySQLContainer<?> mysql = new MySQLContainer<>( imageName( "mysql", "8.0.33") )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
