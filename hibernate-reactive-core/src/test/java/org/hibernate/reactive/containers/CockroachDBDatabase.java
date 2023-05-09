@@ -25,7 +25,7 @@ class CockroachDBDatabase extends PostgreSQLDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final CockroachContainer cockroachDb = new CockroachContainer( imageName( "cockroachdb/cockroach", "v22.1.9" ) )
+	public static final CockroachContainer cockroachDb = new CockroachContainer( imageName( "cockroachdb/cockroach", "v22.2.9" ) )
 			// Username, password and database are not supported by test container at the moment
 			// Testcontainers will use a database named 'postgres' and the 'root' user
 			.withReuse( true );
