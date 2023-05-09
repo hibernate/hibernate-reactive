@@ -69,7 +69,7 @@ public class MultithreadedIdentityGenerationTest {
 	private static final int IDS_GENERATED_PER_THREAD = 10000;
 
 	//Should finish much sooner, but generating this amount of IDs could be slow on some CIs
-	private static final int TIMEOUT_MINUTES = 10;
+	private static final int TIMEOUT_MINUTES = 20;
 
 	// Keeping this disabled because it generates a lot of queries
 	private static final boolean LOG_SQL = false;

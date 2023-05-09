@@ -78,7 +78,7 @@ public class MultithreadedInsertionTest {
 	private static final int ENTITIES_STORED_PER_THREAD = 2000;
 
 	//Should finish much sooner, but generating this amount of IDs could be slow on some CIs
-	private static final int TIMEOUT_MINUTES = 10;
+	private static final int TIMEOUT_MINUTES = 20;
 
 	// Keeping this disabled because it generates a lot of queries
 	private static final boolean LOG_SQL = false;
