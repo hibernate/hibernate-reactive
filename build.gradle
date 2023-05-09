@@ -86,7 +86,7 @@ ext {
         vertxVersion = '4.4.1'
     }
 
-    testcontainersVersion = '1.17.5'
+    testcontainersVersion = '1.18.0'
 
     logger.lifecycle "Hibernate ORM Version: " + project.hibernateOrmVersion
     logger.lifecycle "Hibernate ORM Gradle plugin Version: " + project.hibernateOrmGradlePluginVersion
