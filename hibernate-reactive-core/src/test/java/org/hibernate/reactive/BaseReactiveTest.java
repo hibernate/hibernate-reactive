@@ -30,22 +30,20 @@ import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.SessionFactoryManager;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.RunTestOnContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import jakarta.persistence.Table;
+import io.vertx.junit5.RunTestOnContext;
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.criteria.CriteriaQuery;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
@@ -65,8 +63,21 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  *     using Vert.x unit.
  * </p>
  */
-@RunWith(VertxUnitRunner.class)
+@ExtendWith(VertxExtension.class)
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
+@Timeout(value = 600, timeUnit = TimeUnit.SECONDS)
 public abstract class BaseReactiveTest {
+	/**
+	 * Configure Vertx JUnit5 test context
+	 */
+	@RegisterExtension
+	static RunTestOnContext testOnContext = new RunTestOnContext( vertxOptions() );
+
+	private static VertxOptions vertxOptions() {
+		return new VertxOptions()
+				.setBlockedThreadCheckInterval( 5 )
+				.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
+	}
 
 	/**
 	 * Configure properties defined in {@link Settings}.
@@ -92,27 +103,12 @@ public abstract class BaseReactiveTest {
 		configuration.setProperty( Settings.HIGHLIGHT_SQL, System.getProperty( Settings.HIGHLIGHT_SQL, "true" ) );
 	}
 
-	public static SessionFactoryManager factoryManager = new SessionFactoryManager();
-
-	@ClassRule
-	public static Timeout rule = Timeout.seconds( 10 * 60 );
-
-	@ClassRule
-	public static RunTestOnContext vertxContextRule = new RunTestOnContext( () -> {
-		VertxOptions options = new VertxOptions();
-		options.setBlockedThreadCheckInterval( 5 );
-		options.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
-		return Vertx.vertx( options );
-	} );
+	public static final SessionFactoryManager factoryManager = new SessionFactoryManager();
 
 	private Object session;
 	private Object statelessSession;
 
 	private ReactiveConnection connection;
-
-	protected static void test(TestContext context, CompletionStage<?> work) {
-		test( context.async(), context, work );
-	}
 
 	/**
 	 * These entities will be added to the configuration of the factory and
@@ -132,29 +128,19 @@ public abstract class BaseReactiveTest {
 		return List.of();
 	}
 
-	/**
-	 * For when we need to create the {@link Async} in advance
-	 */
-	protected static void test(Async async, TestContext context, CompletionStage<?> work) {
+	public static void test(VertxTestContext context, CompletionStage<?> work) {
 		work.whenComplete( (res, err) -> {
 			if ( err != null ) {
-				context.fail( err );
+				context.failNow( err );
 			}
 			else {
-				async.complete();
+				context.completeNow();
 			}
 		} );
 	}
 
-	protected static void test(TestContext context, Uni<?> uni) {
-		test( context.async(), context, uni );
-	}
-
-	/**
-	 * For when we need to create the {@link Async} in advance
-	 */
-	public static void test(Async async, TestContext context, Uni<?> uni) {
-		uni.subscribe().with( res -> async.complete(), context::fail );
+	public static void test(VertxTestContext context, Uni<?> uni) {
+		uni.subscribe().with( res -> context.completeNow(), context::failNow );
 	}
 
 	private static boolean doneTablespace;
@@ -167,10 +153,10 @@ public abstract class BaseReactiveTest {
 	}
 
 	protected void addEntities(Configuration configuration) {
-		for ( Class<?> entity: annotatedEntities() ) {
+		for ( Class<?> entity : annotatedEntities() ) {
 			configuration.addAnnotatedClass( entity );
 		}
-		for ( String mapping: mappings() ) {
+		for ( String mapping : mappings() ) {
 			configuration.addResource( mapping );
 		}
 	}
@@ -192,13 +178,8 @@ public abstract class BaseReactiveTest {
 		return query;
 	}
 
-	protected String entityTable(Class<?> entityClass) {
-		Table annotation = entityClass.getAnnotation( Table.class );
-		return annotation == null ? entityClass.getSimpleName() : annotation.name();
-	}
-
-	@Before
-	public void before(TestContext context) {
+	@BeforeEach
+	public void before(VertxTestContext context) {
 		test( context, setupSessionFactory( this::constructConfiguration ) );
 	}
 
@@ -213,11 +194,12 @@ public abstract class BaseReactiveTest {
 	 * Set up the session factory but create the configuration only if necessary.
 	 *
 	 * @param confSupplier supplies the configuration for the factory
+	 *
 	 * @return a {@link CompletionStage} void that succeeds when the factory is ready.
 	 */
 	protected CompletionStage<Void> setupSessionFactory(Supplier<Configuration> confSupplier) {
 		CompletableFuture<Void> future = new CompletableFuture<>();
-		vertxContextRule.vertx()
+		testOnContext.vertx()
 				.executeBlocking(
 						// schema generation is a blocking operation and so it causes an
 						// exception when run on the Vert.x event loop. So call it using
@@ -235,7 +217,7 @@ public abstract class BaseReactiveTest {
 		return future;
 	}
 
-	private void startFactoryManager(Promise<Object> p, Supplier<Configuration> confSupplier ) {
+	private void startFactoryManager(Promise<Object> p, Supplier<Configuration> confSupplier) {
 		try {
 			factoryManager.start( () -> createHibernateSessionFactory( confSupplier.get() ) );
 			p.complete();
@@ -254,7 +236,8 @@ public abstract class BaseReactiveTest {
 		return configuration.buildSessionFactory( registry );
 	}
 
-	protected void addServices(StandardServiceRegistryBuilder builder) {}
+	protected void addServices(StandardServiceRegistryBuilder builder) {
+	}
 
 	/*
 	 * MySQL doesn't implement 'drop table cascade constraints'.
@@ -283,8 +266,8 @@ public abstract class BaseReactiveTest {
 		}
 	}
 
-	@After
-	public void after(TestContext context) {
+	@AfterEach
+	public void after(VertxTestContext context) {
 		test( context, closeSession( session )
 				.thenAccept( v -> session = null )
 				.thenCompose( v -> closeSession( statelessSession ) )
@@ -345,8 +328,8 @@ public abstract class BaseReactiveTest {
 		return voidFuture();
 	}
 
-	@AfterClass
-	public static void closeFactory(TestContext context) {
+	@AfterAll
+	public static void closeFactory(VertxTestContext context) {
 		test( context, factoryManager.stop() );
 	}
 
