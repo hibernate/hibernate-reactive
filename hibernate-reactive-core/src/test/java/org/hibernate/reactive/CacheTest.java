@@ -215,7 +215,7 @@ public class CacheTest extends BaseReactiveTest {
 	@Entity(name = "Named")
 	@Table(name = "named_thing")
 	@Cacheable
-	@Cache(region = "reg.named", usage = NONSTRICT_READ_WRITE)
+	@Cache(region = "named", usage = NONSTRICT_READ_WRITE)
 	static class Named {
 		@Id
 		@GeneratedValue
