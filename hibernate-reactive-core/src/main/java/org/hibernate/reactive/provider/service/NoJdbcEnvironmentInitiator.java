@@ -9,16 +9,12 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
-import org.hibernate.dialect.DatabaseVersion;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveJdbcEnvironment;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LogCategory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.provider.Settings;
@@ -29,7 +25,6 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import io.vertx.sqlclient.spi.DatabaseMetadata;
 
 import static java.util.function.Function.identity;
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
@@ -38,11 +33,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  * the Hibernate {@link org.hibernate.dialect.Dialect} from the JDBC URL.
  */
 public class NoJdbcEnvironmentInitiator implements StandardServiceInitiator<JdbcEnvironment> {
-
-	/**
-	 * I'm using the same logger category used in {@link org.hibernate.engine.jdbc.dialect.internal.DialectFactoryImpl}.
-	 */
-	private static final Log LOG = make( Log.class, new LogCategory( "SQL dialect" ) );
 
 	public static final NoJdbcEnvironmentInitiator INSTANCE = new NoJdbcEnvironmentInitiator();
 
@@ -75,24 +65,7 @@ public class NoJdbcEnvironmentInitiator implements StandardServiceInitiator<Jdbc
 
 		public Dialect build() {
 			DialectFactory dialectFactory = registry.getService( DialectFactory.class );
-			Dialect dialect = dialectFactory.buildDialect( configurationValues, this::dialectResolutionInfo );
-			return checkDialect( dialect );
-		}
-
-		/**
-		 * Workaround for <a href="https://github.com/eclipse-vertx/vertx-sql-client/issues/1312">vertx-sql-client#1312</a>
-		 * <p>
-		 * For extracting the information about sequences, the Sql Server dialect 11+ uses the following query:
-		 * <pre>{@code select * from INFORMATION_SCHEMA.SEQUENCES}</pre>
-		 * But, the Vert.x MSSQL client throws an exception when running it.
-		 */
-		private static Dialect checkDialect(Dialect dialect) {
-			if ( dialect instanceof SQLServerDialect && dialect.getVersion().isSameOrAfter( 11 ) ) {
-				SQLServerDialect sqlServerDialect = new SQLServerDialect( DatabaseVersion.make( 10 ) );
-				LOG.replacingDialect( dialect, sqlServerDialect );
-				return sqlServerDialect;
-			}
-			return dialect;
+			return dialectFactory.buildDialect( configurationValues, this::dialectResolutionInfo );
 		}
 
 		private DialectResolutionInfo dialectResolutionInfo() {

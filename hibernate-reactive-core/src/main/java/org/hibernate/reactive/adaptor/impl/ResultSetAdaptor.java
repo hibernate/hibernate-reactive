@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 import org.hibernate.engine.jdbc.BlobProxy;
@@ -191,8 +192,19 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public String getString(String columnLabel) {
-		String string = row.getString( columnLabel );
-		return ( wasNull = string == null ) ? null : string;
+		String result = caseInsensitiveGet( columnLabel, row::getString );
+		wasNull = result == null;
+		return result;
+	}
+
+	private <T> T caseInsensitiveGet(String columnLabel, Function<String, T> produce) {
+		for ( String columnName : rows.columnsNames() ) {
+			if ( columnName.equalsIgnoreCase( columnLabel ) ) {
+				return produce.apply( columnName );
+			}
+		}
+		// Same error thrown by io.vertx.sqlclient.Row when it doesn't find the label
+		throw new NoSuchElementException( "Column " + columnLabel + " does not exist" );
 	}
 
 	@Override
@@ -239,7 +251,7 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public long getLong(String columnLabel) {
-		Long aLong = row.getLong( columnLabel );
+		Long aLong = caseInsensitiveGet( columnLabel, row::getLong );
 		wasNull = aLong == null;
 		return wasNull ? 0 : aLong;
 	}
