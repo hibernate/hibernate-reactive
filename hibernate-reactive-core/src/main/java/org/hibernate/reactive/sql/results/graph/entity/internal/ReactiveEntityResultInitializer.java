@@ -14,6 +14,7 @@ import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.Fetch;
 import org.hibernate.sql.results.graph.basic.BasicFetch;
 import org.hibernate.sql.results.graph.entity.EntityResultGraphNode;
+import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 
 /**
  * @see org.hibernate.sql.results.graph.entity.internal.EntityResultInitializer
@@ -53,5 +54,12 @@ public class ReactiveEntityResultInitializer extends ReactiveAbstractEntityIniti
 	@Override
 	public String toString() {
 		return CONCRETE_NAME + "(" + getNavigablePath() + ")";
+	}
+
+	@Override
+	protected void registerLoadingEntityInstanceFromExecutionContext(
+			RowProcessingState rowProcessingState,
+			Object instance) {
+		registerLoadingEntity( rowProcessingState, instance );
 	}
 }

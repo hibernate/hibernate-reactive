@@ -176,10 +176,8 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 
 					final JdbcValuesSourceProcessingStateStandardImpl valuesProcessingState = new JdbcValuesSourceProcessingStateStandardImpl(
 							executionContext,
-							processingOptions,
-							executionContext::registerLoadingEntityEntry
+							processingOptions
 					);
-
 
 					final ReactiveRowReader<R> rowReader = ReactiveResultsHelper.createRowReader(
 							executionContext,
