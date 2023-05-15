@@ -10,9 +10,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-
-import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
@@ -22,12 +19,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 
 public class UUIDAsBinaryTypeTest extends BaseReactiveTest {
-
-	@Rule
-	public final DatabaseSelectionRule skip = DatabaseSelectionRule.skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
