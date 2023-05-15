@@ -73,6 +73,10 @@ public class ReactiveEntityJoinedFetchInitializer extends ReactiveAbstractEntity
 		}
 	}
 
+	@Override
+	protected void registerLoadingEntityInstanceFromExecutionContext(RowProcessingState rowProcessingState, Object instance) {
+		// we want the EntityResultInitializer to take care of the instance
+	}
 
 	@Override
 	public void resolveKey(RowProcessingState rowProcessingState) {
