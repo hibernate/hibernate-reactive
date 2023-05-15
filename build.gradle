@@ -83,7 +83,7 @@ ext {
     // Example:
     // ./gradlew build -PvertxVersion=4.0.0-SNAPSHOT
     if ( !project.hasProperty('vertxVersion') ) {
-        vertxVersion = '4.4.1'
+        vertxVersion = '4.4.2'
     }
 
     testcontainersVersion = '1.18.0'
