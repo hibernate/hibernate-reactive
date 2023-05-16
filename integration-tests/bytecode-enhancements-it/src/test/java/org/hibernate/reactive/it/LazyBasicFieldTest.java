@@ -8,9 +8,9 @@ package org.hibernate.reactive.it;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,7 +25,7 @@ public class LazyBasicFieldTest extends BaseReactiveIT {
 	}
 
 	@Test
-	public void testFetchBasicField(TestContext context) {
+	public void testFetchBasicField(VertxTestContext context) {
 		final Crew emily = new Crew();
 		emily.setId( 21L );
 		emily.setName( "Emily Jackson" );

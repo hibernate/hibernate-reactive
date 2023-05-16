@@ -12,9 +12,9 @@ import org.hibernate.reactive.it.lazytoone.Captain;
 import org.hibernate.reactive.it.lazytoone.Ship;
 import org.hibernate.reactive.mutiny.Mutiny;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.metamodel.Attribute;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +30,7 @@ public class LazyOneToOneBETest extends BaseReactiveIT {
 	}
 
 	@Test
-	public void testCascadeDelete(TestContext context) {
+	public void testCascadeDelete(VertxTestContext context) {
 		Captain robert = new Captain( "Robert Witterel" );
 		Ship obraDinn = new Ship( "Obra Dinn" );
 		obraDinn.setCaptain( robert );
@@ -46,16 +46,16 @@ public class LazyOneToOneBETest extends BaseReactiveIT {
 				.chain( () -> getMutinySessionFactory()
 						.withSession( session -> session
 								.find( Ship.class, obraDinn.getId() )
-								.invoke( context::assertNull )
+								.invoke( ship -> assertThat( ship ).isNull())
 								.chain( () -> session.find( Captain.class, robert.getId() ) )
-								.invoke( context::assertNull )
+								.invoke( captain -> assertThat( captain ).isNull())
 						)
 				)
 		);
 	}
 
 	@Test
-	public void testFetchOnChildSide(TestContext context) {
+	public void testFetchOnChildSide(VertxTestContext context) {
 		Captain robert = new Captain( "Robert Witterel" );
 		Ship obraDinn = new Ship( "Obra Dinn" );
 		obraDinn.setCaptain( robert );
@@ -80,7 +80,7 @@ public class LazyOneToOneBETest extends BaseReactiveIT {
 	}
 
 	@Test
-	public void testFetchOnParentSide(TestContext context) {
+	public void testFetchOnParentSide(VertxTestContext context) {
 		Captain robert = new Captain( "Robert Witterel" );
 		Ship obraDinn = new Ship( "Obra Dinn" );
 		obraDinn.setCaptain( robert );
