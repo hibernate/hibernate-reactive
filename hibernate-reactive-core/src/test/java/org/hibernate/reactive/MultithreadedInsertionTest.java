@@ -14,22 +14,24 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
+import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.vertx.VertxInstance;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -63,7 +65,9 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
  * specifically want to test for the case in which the single ID source is being
  * shared across multiple threads and also multiple eventloops.
  */
-@RunWith(VertxUnitRunner.class)
+@ExtendWith(VertxExtension.class)
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
+@Timeout(value = 10, timeUnit = TimeUnit.MINUTES)
 public class MultithreadedInsertionTest {
 
 	/**
@@ -74,7 +78,9 @@ public class MultithreadedInsertionTest {
 	private static final int ENTITIES_STORED_PER_THREAD = 2000;
 
 	//Should finish much sooner, but generating this amount of IDs could be slow on some CIs
-	private static final int TIMEOUT_MINUTES = 10;
+	private static final int THREAD_TIMEOUT_MINUTES = 10;
+
+	private static final int POOL_TIMEOUT_MILLISECONDS = 444000;
 
 	// Keeping this disabled because it generates a lot of queries
 	private static final boolean LOG_SQL = false;
@@ -91,7 +97,7 @@ public class MultithreadedInsertionTest {
 	private static Vertx vertx;
 	private static SessionFactory sessionFactory;
 
-	@BeforeClass
+	@BeforeAll
 	public static void setupSessionFactory() {
 		final VertxOptions vertxOptions = new VertxOptions();
 		vertxOptions.setEventLoopPoolSize( N_THREADS );
@@ -99,7 +105,7 @@ public class MultithreadedInsertionTest {
 		//intentionally for the purpose of the test; functionally this isn't required
 		//but it's useful as self-test in the design of this, to ensure that the way
 		//things are setup are indeed being run in multiple, separate threads.
-		vertxOptions.setBlockedThreadCheckInterval( TIMEOUT_MINUTES );
+		vertxOptions.setBlockedThreadCheckInterval( THREAD_TIMEOUT_MINUTES );
 		vertxOptions.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
 		vertx = Vertx.vertx( vertxOptions );
 		Configuration configuration = new Configuration();
@@ -116,25 +122,24 @@ public class MultithreadedInsertionTest {
 		stageSessionFactory = sessionFactory.unwrap( Stage.SessionFactory.class );
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void closeSessionFactory() {
 		stageSessionFactory.close();
 	}
 
-	@Test(timeout = ( 1000 * 60 * TIMEOUT_MINUTES ))
-	public void testIdentityGenerator(TestContext context) {
-		final Async async = context.async();
-
+	@Test
+	@Timeout(value = 20, timeUnit = TimeUnit.MINUTES)
+	public void testIdentityGenerator(VertxTestContext context) {
 		final DeploymentOptions deploymentOptions = new DeploymentOptions();
 		deploymentOptions.setInstances( N_THREADS );
 
 		vertx
-				.deployVerticle( () -> new InsertEntitiesVerticle(), deploymentOptions )
+				.deployVerticle( InsertEntitiesVerticle::new, deploymentOptions )
 				.onSuccess( res -> {
 					endLatch.waitForEveryone();
-					async.complete();
+					context.completeNow();
 				} )
-				.onFailure( context::fail )
+				.onFailure( context::failNow )
 				.eventually( unused -> vertx.close() );
 	}
 
@@ -231,7 +236,7 @@ public class MultithreadedInsertionTest {
 
 		public void waitForEveryone() {
 			try {
-				countDownLatch.await( TIMEOUT_MINUTES, TimeUnit.MINUTES );
+				countDownLatch.await( THREAD_TIMEOUT_MINUTES, TimeUnit.MINUTES );
 				prettyOut( "Everyone has now breached '" + label + "'" );
 			}
 			catch ( InterruptedException e ) {

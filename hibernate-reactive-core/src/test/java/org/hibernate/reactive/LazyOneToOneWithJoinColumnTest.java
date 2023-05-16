@@ -10,9 +10,9 @@ import java.util.List;
 
 import org.hibernate.Hibernate;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -22,6 +22,10 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
@@ -32,7 +36,7 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLoad(TestContext context) {
+	public void testLoad(VertxTestContext context) {
 		final Endpoint endpoint = new Endpoint();
 		final EndpointWebhook webhook = new EndpointWebhook();
 		endpoint.setWebhook( webhook );
@@ -46,25 +50,25 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 				.chain( session -> session
 						.find( Endpoint.class, endpoint.getId() )
 						.invoke( optionalAnEntity -> {
-							context.assertNotNull( optionalAnEntity );
-							context.assertNotNull( optionalAnEntity.getWebhook() );
+							assertNotNull( optionalAnEntity );
+							assertNotNull( optionalAnEntity.getWebhook() );
 							// This is eager because the other table contains the reference
-							context.assertTrue( Hibernate.isInitialized( optionalAnEntity.getWebhook() ) );
+							assertTrue( Hibernate.isInitialized( optionalAnEntity.getWebhook() ) );
 						} ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session
 						.find( EndpointWebhook.class, webhook.getId() )
 						.invoke( optionalAnEntity -> {
-							context.assertNotNull( optionalAnEntity );
-							context.assertNotNull( optionalAnEntity.getEndpoint() );
+							assertNotNull( optionalAnEntity );
+							assertNotNull( optionalAnEntity.getEndpoint() );
 							// This is actually lazy
-							context.assertFalse( Hibernate.isInitialized( optionalAnEntity.getEndpoint() ) );
+							assertFalse( Hibernate.isInitialized( optionalAnEntity.getEndpoint() ) );
 						} ) )
 		);
 	}
 
 	@Test
-	public void testQuery(TestContext context) {
+	public void testQuery(VertxTestContext context) {
 		final Endpoint endpoint = new Endpoint();
 		endpoint.setAccountId( "XYZ_123"  );
 		final EndpointWebhook webhook = new EndpointWebhook();
@@ -83,10 +87,10 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 						.setParameter( "accountId", endpoint.getAccountId() )
 						.getSingleResultOrNull()
 						.invoke( result -> {
-							context.assertNotNull( result );
-							context.assertTrue( Hibernate.isInitialized( result.getWebhook() ) );
-							context.assertEquals( endpoint.getId(), result.getId() );
-							context.assertEquals( webhook.getId(), result.getWebhook().getId() );
+							assertNotNull( result );
+							assertTrue( Hibernate.isInitialized( result.getWebhook() ) );
+							assertEquals( endpoint.getId(), result.getId() );
+							assertEquals( webhook.getId(), result.getWebhook().getId() );
 						} ) )
 		);
 	}

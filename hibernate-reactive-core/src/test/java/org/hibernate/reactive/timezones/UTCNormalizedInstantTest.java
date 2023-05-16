@@ -13,9 +13,9 @@ import java.util.TimeZone;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.reactive.BaseReactiveTest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -33,7 +33,7 @@ public class UTCNormalizedInstantTest extends BaseReactiveTest {
 	final Instant instant = Instant.now();
 
 	@Test
-	public void test(TestContext scope) {
+	public void test(VertxTestContext scope) {
 		test( scope, getMutinySessionFactory()
 				.withTransaction( s -> {
 					Zoned z = new Zoned();
@@ -49,7 +49,7 @@ public class UTCNormalizedInstantTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testWithSystemTimeZone(TestContext scope) {
+	public void testWithSystemTimeZone(VertxTestContext scope) {
 		TimeZone.setDefault( TimeZone.getTimeZone( "CET" ) );
 		test( scope, getMutinySessionFactory()
 				.withTransaction( s -> {

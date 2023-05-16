@@ -9,14 +9,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.TableGenerator;
 import jakarta.persistence.Version;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 public class TableGeneratorTest extends BaseReactiveTest {
@@ -27,7 +30,7 @@ public class TableGeneratorTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testTableGenerator(TestContext context) {
+	public void testTableGenerator(VertxTestContext context) {
 
 		TableId b = new TableId();
 		b.string = "Hello World";
@@ -40,23 +43,23 @@ public class TableGeneratorTest extends BaseReactiveTest {
 						.thenCompose( s2 ->
 											  s2.find( TableId.class, b.getId() )
 													  .thenAccept( bb -> {
-														  context.assertNotNull( bb );
-														  context.assertEquals( bb.id, 6 );
-														  context.assertEquals( bb.string, b.string );
-														  context.assertEquals( bb.version, 0 );
+														  assertNotNull( bb );
+														  assertEquals( bb.id, 6 );
+														  assertEquals( bb.string, b.string );
+														  assertEquals( bb.version, 0 );
 
 														  bb.string = "Goodbye";
 													  } )
 													  .thenCompose( vv -> s2.flush() )
 													  .thenCompose( vv -> s2.find( TableId.class, b.getId() ) )
 													  .thenAccept( bt -> {
-														  context.assertEquals( bt.version, 1 );
+														  assertEquals( bt.version, 1 );
 													  } ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s3 -> s3.find( TableId.class, b.getId() ) )
 						.thenAccept( bb -> {
-							context.assertEquals( bb.version, 1 );
-							context.assertEquals( bb.string, "Goodbye" );
+							assertEquals( bb.version, 1 );
+							assertEquals( bb.string, "Goodbye" );
 						} )
 		);
 	}

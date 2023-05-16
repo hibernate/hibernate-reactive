@@ -11,13 +11,16 @@ import java.util.List;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.reactive.mutiny.Mutiny;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class MutinyExceptionsTest extends BaseReactiveTest {
 
@@ -31,15 +34,15 @@ public class MutinyExceptionsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testDuplicateKeyException(TestContext context) {
+	public void testDuplicateKeyException(VertxTestContext context) {
 		test( context, openMutinySession()
 				.call( session -> session.persist( new Person( "testFLush1", "unique" ) ) )
 				.call( Mutiny.Session::flush )
 				.call( session -> session.persist( new Person( "testFlush2", "unique" ) ) )
 				.call( Mutiny.Session::flush )
-				.invoke( ignore -> context.fail( "Expected exception not thrown" ) )
+				.invoke( ignore -> fail( "Expected exception not thrown" ) )
 				.onFailure().recoverWithItem( err -> {
-					context.assertEquals( getExpectedException(), err.getClass() );
+					assertEquals( getExpectedException(), err.getClass() );
 					return null;
 				} )
 		);

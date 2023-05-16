@@ -11,9 +11,10 @@ import java.util.Objects;
 
 import org.hibernate.annotations.NaturalId;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -30,7 +31,7 @@ public class NaturalIdTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testSimpleNaturalIdSingleLoad(TestContext context) {
+	public void testSimpleNaturalIdSingleLoad(VertxTestContext context) {
 		SimpleThing thing1 = new SimpleThing();
 		thing1.naturalKey = "abc123";
 		SimpleThing thing2 = new SimpleThing();
@@ -46,12 +47,12 @@ public class NaturalIdTest extends BaseReactiveTest {
 						.thenCompose( v -> getSessionFactory().withSession(
 								session -> session.find( SimpleThing.class, id( SimpleThing.class, "naturalKey", "not an id" ) )
 						) )
-						.thenAccept( context::assertNull )
+						.thenAccept( Assertions::assertNull )
 		);
 	}
 
 	@Test
-	public void testCompoundNaturalIdSingleLoad(TestContext context) {
+	public void testCompoundNaturalIdSingleLoad(VertxTestContext context) {
 		CompoundThing thing1 = new CompoundThing();
 		thing1.naturalKey = "xyz666";
 		thing1.version = 1;
@@ -76,7 +77,7 @@ public class NaturalIdTest extends BaseReactiveTest {
 										id( CompoundThing.class, "version", 3 )
 								) )
 						) )
-						.thenAccept( context::assertNull )
+						.thenAccept( Assertions::assertNull )
 		);
 	}
 

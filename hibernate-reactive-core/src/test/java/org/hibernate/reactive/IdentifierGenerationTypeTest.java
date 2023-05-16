@@ -9,21 +9,23 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+
+import org.hibernate.reactive.testing.DBSelectionExtension;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
-
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-
-import org.junit.Rule;
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
-
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
+import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Check that the generated id can be of a specific type
@@ -33,9 +35,9 @@ import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
 public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 
 	// Vertx DB2 client is throwing "java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0."
-	// TODO:  remove rule when https://github.com/eclipse-vertx/vertx-sql-client/issues/1208 is resolved
-	@Rule
-	public DatabaseSelectionRule skip = skipTestsFor( DB2 );
+	// TODO:  remove db extension when https://github.com/eclipse-vertx/vertx-sql-client/issues/1208 is resolved
+	@RegisterExtension
+	public DBSelectionExtension skip = skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -47,7 +49,7 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 	 */
 
 	@Test
-	public void integerIdentifierWithStageAPI(TestContext context) {
+	public void integerIdentifierWithStageAPI(VertxTestContext context) {
 		IntegerEntity entityA = new IntegerEntity( "Integer A" );
 		IntegerEntity entityB = new IntegerEntity( "Integer B" );
 
@@ -55,18 +57,18 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 				.thenCompose( session -> session
 						.persist( entityA, entityB )
 						.thenCompose( v -> session.flush() ) )
-				.thenAccept( v -> context.assertNotEquals( entityA.id, entityB.id ) )
+				.thenAccept( v -> assertNotEquals( entityA.id, entityB.id ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( IntegerEntity.class, entityA.id, entityB.id ) )
 				.thenAccept( list -> {
-					context.assertEquals( list.size(), 2 );
-					context.assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
+					assertEquals( list.size(), 2 );
+					assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
 				} )
 		);
 	}
 
 	@Test
-	public void longIdentifierWithStageAPI(TestContext context) {
+	public void longIdentifierWithStageAPI(VertxTestContext context) {
 		LongEntity entityA = new LongEntity( "Long A" );
 		LongEntity entityB = new LongEntity( "Long B" );
 
@@ -74,18 +76,18 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 				.thenCompose( session -> session
 						.persist( entityA, entityB )
 						.thenCompose( v -> session.flush() ) )
-				.thenAccept( v -> context.assertNotEquals( entityA.id, entityB.id ) )
+				.thenAccept( v -> assertNotEquals( entityA.id, entityB.id ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( LongEntity.class, entityA.id, entityB.id ) )
 				.thenAccept( list -> {
-					context.assertEquals( list.size(), 2 );
-					context.assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
+					assertEquals( list.size(), 2 );
+					assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
 				} )
 		);
 	}
 
 	@Test
-	public void shortIdentifierWithStageAPI(TestContext context) {
+	public void shortIdentifierWithStageAPI(VertxTestContext context) {
 		ShortEntity entityA = new ShortEntity( "Short A" );
 		ShortEntity entityB = new ShortEntity( "Short B" );
 
@@ -93,12 +95,12 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 				.thenCompose( session -> session
 						.persist( entityA, entityB )
 						.thenCompose( v -> session.flush() ) )
-				.thenAccept( v -> context.assertNotEquals( entityA.id, entityB.id ) )
+				.thenAccept( v -> assertNotEquals( entityA.id, entityB.id ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( ShortEntity.class, entityA.id, entityB.id ) )
 				.thenAccept( list -> {
-					context.assertEquals( list.size(), 2 );
-					context.assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
+					assertEquals( list.size(), 2 );
+					assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
 				} )
 		);
 	}
@@ -108,7 +110,7 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 	 */
 
 	@Test
-	public void integerIdentifierWithMutinyAPI(TestContext context) {
+	public void integerIdentifierWithMutinyAPI(VertxTestContext context) {
 		IntegerEntity entityA = new IntegerEntity( "Integer A" );
 		IntegerEntity entityB = new IntegerEntity( "Integer B" );
 
@@ -116,18 +118,18 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 				.chain( session -> session
 						.persistAll( entityA, entityB )
 						.call( session::flush ) )
-				.invoke( () -> context.assertNotEquals( entityA.id, entityB.id ) )
+				.invoke( () -> assertNotEquals( entityA.id, entityB.id ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( IntegerEntity.class, entityA.id, entityB.id ) )
 				.invoke( list -> {
-					context.assertEquals( list.size(), 2 );
-					context.assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
+					assertEquals( list.size(), 2 );
+					assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
 				} )
 		);
 	}
 
 	@Test
-	public void longIdentifierWithMutinyAPI(TestContext context) {
+	public void longIdentifierWithMutinyAPI(VertxTestContext context) {
 		LongEntity entityA = new LongEntity( "Long A" );
 		LongEntity entityB = new LongEntity( "Long B" );
 
@@ -135,18 +137,18 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 				.chain( session -> session
 						.persistAll( entityA, entityB )
 				.call( session::flush ) )
-				.invoke( () -> context.assertNotEquals( entityA.id, entityB.id ) )
+				.invoke( () -> assertNotEquals( entityA.id, entityB.id ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( LongEntity.class, entityA.id, entityB.id ) )
 				.invoke( list -> {
-					context.assertEquals( list.size(), 2 );
-					context.assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
+					assertEquals( list.size(), 2 );
+					assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
 				} )
 		);
 	}
 
 	@Test
-	public void shortIdentifierWithMutinyAPI(TestContext context) {
+	public void shortIdentifierWithMutinyAPI(VertxTestContext context) {
 		ShortEntity entityA = new ShortEntity( "Short A" );
 		ShortEntity entityB = new ShortEntity( "Short B" );
 
@@ -154,12 +156,12 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 				.chain( session -> session
 						.persistAll( entityA, entityB )
 						.call( session::flush ) )
-				.invoke( () -> context.assertNotEquals( entityA.id, entityB.id ) )
+				.invoke( () -> assertNotEquals( entityA.id, entityB.id ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( ShortEntity.class, entityA.id, entityB.id ) )
 				.invoke( list -> {
-					context.assertEquals( list.size(), 2 );
-					context.assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
+					assertEquals( list.size(), 2 );
+					assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
 				} )
 		);
 	}

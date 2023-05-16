@@ -20,20 +20,22 @@ import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 
 import org.hibernate.Hibernate;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import org.junit.Rule;
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import org.assertj.core.api.Assertions;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 
-	@Rule // This exposes a strange bug in the DB2 client
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( DB2 );
+	@RegisterExtension // This exposes a strange bug in the DB2 client
+	public DBSelectionExtension dbRule = DBSelectionExtension.skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -41,7 +43,7 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void test(TestContext context) {
+	public void test(VertxTestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Author author = new Author( "Iain M Banks" );
@@ -54,9 +56,9 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 						.withTransaction( (session, transaction) -> session.persistAll( author ) )
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
+										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
 										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> context.assertEquals( 2, books.size() ) )
+										.invoke( books -> assertEquals( 2, books.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -65,8 +67,8 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 																  Author.class
 														  )
 														  .getSingleResult()
-														  .invoke( a -> context.assertTrue( Hibernate.isInitialized( a.books ) ) )
-														  .invoke( a -> context.assertEquals( 2, a.books.size() ) )
+														  .invoke( a -> assertTrue( Hibernate.isInitialized( a.books ) ) )
+														  .invoke( a -> assertEquals( 2, a.books.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -79,8 +81,8 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
 										.chain( a -> session.fetch( a.books ) )
 										.invoke( books -> {
-											context.assertEquals( 1, books.size() );
-											context.assertEquals( book2.title, books.get( 0 ).title );
+											assertEquals( 1, books.size() );
+											assertEquals( book2.title, books.get( 0 ).title );
 										} )
 								)
 						)
@@ -92,9 +94,9 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 						)
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
+										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
 										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> context.assertEquals( 2, books.size() ) )
+										.invoke( books -> assertEquals( 2, books.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -107,8 +109,8 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
 										.chain( a -> session.fetch( a.books ) )
 										.invoke( books -> {
-											context.assertEquals( 1, books.size() );
-											context.assertEquals( book2.title, books.get( 0 ).title );
+											assertEquals( 1, books.size() );
+											assertEquals( book2.title, books.get( 0 ).title );
 										} )
 								)
 						)
@@ -120,9 +122,9 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 						)
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
+										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
 										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> context.assertEquals( 2, books.size() ) )
+										.invoke( books -> assertEquals( 2, books.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -133,9 +135,9 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 						)
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
+										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
 										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> context.assertEquals( 2, books.size() ) )
+										.invoke( books -> assertEquals( 2, books.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -146,14 +148,14 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
 										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> context.assertTrue( books.isEmpty() ) )
+										.invoke( books -> assertTrue( books.isEmpty() ) )
 								)
 						)
 		);
 	}
 
 	@Test
-	public void testMultipleRemovesFromCollection(TestContext context) {
+	public void testMultipleRemovesFromCollection(VertxTestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Book book3 = new Book( "Third Book" );
@@ -172,9 +174,9 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 						.withTransaction( (session, transaction) -> session.persistAll( author ) )
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
+										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
 										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> context.assertEquals( 5, books.size() ) )
+										.invoke( books -> assertEquals( 5, books.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -183,8 +185,8 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 																  Author.class
 														  )
 														  .getSingleResult()
-														  .invoke( a -> context.assertTrue( Hibernate.isInitialized( a.books ) ) )
-														  .invoke( a -> context.assertEquals( 5, a.books.size() ) )
+														  .invoke( a -> assertTrue( Hibernate.isInitialized( a.books ) ) )
+														  .invoke( a -> assertEquals( 5, a.books.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -200,8 +202,8 @@ public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
 										.chain( a -> session.fetch( a.books ) )
 										.invoke( books -> {
-											context.assertEquals( 3, books.size() );
-											context.assertEquals( book4.title, books.get( 1 ).title );
+											assertEquals( 3, books.size() );
+											assertEquals( book4.title, books.get( 1 ).title );
 											Assertions.assertThat( books ).containsExactly( book1, book4, book5 );
 										} )
 								)

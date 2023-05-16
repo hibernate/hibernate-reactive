@@ -10,10 +10,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -23,7 +23,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
-@Ignore // This also fails in 1.1, see issue https://github.com/hibernate/hibernate-reactive/issues/1384
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@Disabled // This also fails in 1.1, see issue https://github.com/hibernate/hibernate-reactive/issues/1384
 public class CompositeIdManyToOneTest extends BaseReactiveTest {
 
     @Override
@@ -32,7 +34,7 @@ public class CompositeIdManyToOneTest extends BaseReactiveTest {
     }
 
     @Test
-    public void reactivePersist(TestContext context) {
+    public void reactivePersist(VertxTestContext context) {
 
         GroceryList gl = new GroceryList();
         gl.id = 4L;
@@ -52,7 +54,7 @@ public class CompositeIdManyToOneTest extends BaseReactiveTest {
                         .thenCompose( s -> s.createQuery("from ShoppingItem si where si.groceryList.id = :gl")
                                 .setParameter("gl", gl.id)
                                 .getResultList() )
-                        .thenAccept( list -> context.assertEquals( 1, list.size() ) )
+                        .thenAccept( list -> assertEquals( 1, list.size() ) )
         );
     }
 

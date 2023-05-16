@@ -11,9 +11,9 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.exception.ConstraintViolationException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -34,7 +34,7 @@ public class ReactiveConstraintViolationTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void reactiveConstraintViolation(TestContext context) {
+	public void reactiveConstraintViolation(VertxTestContext context) {
 		test( context, assertThrown(
 					  ConstraintViolationException.class,
 					  populateDB()

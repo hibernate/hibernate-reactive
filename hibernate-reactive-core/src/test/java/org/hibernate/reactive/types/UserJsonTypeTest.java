@@ -10,6 +10,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+
+import org.hibernate.annotations.Type;
+import org.hibernate.reactive.BaseReactiveTest;
+import org.hibernate.reactive.testing.DBSelectionExtension;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.vertx.core.json.JsonObject;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -17,28 +27,20 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
-import org.hibernate.annotations.Type;
-import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-
-import org.junit.Rule;
-import org.junit.Test;
-
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.TestContext;
-
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test types that we expect to work only on selected DBs.
  */
 public class UserJsonTypeTest extends BaseReactiveTest {
 
-	@Rule
-	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.skipTestsFor( DB2, SQLSERVER, ORACLE );
+	@RegisterExtension
+	public DBSelectionExtension selectionRule = DBSelectionExtension.skipTestsFor( DB2, SQLSERVER, ORACLE );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -55,33 +57,33 @@ public class UserJsonTypeTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testJsonType(TestContext context) {
+	public void testJsonType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.jsonObj = new JsonObject().put( "int", 123 ).put( "str", "hello" );
 
-		testField( context, basic, found -> context.assertEquals( basic.jsonObj, found.jsonObj ) );
+		testField( context, basic, found -> assertEquals( basic.jsonObj, found.jsonObj ) );
 	}
 
 	@Test
-	public void testNullJsonType(TestContext context) {
+	public void testNullJsonType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.jsonObj = null;
 
-		testField( context, basic, found -> context.assertEquals( basic.jsonObj, found.jsonObj ) );
+		testField( context, basic, found -> assertEquals( basic.jsonObj, found.jsonObj ) );
 	}
 
 	/**
 	 * Persist the entity, find it and execute the assertions
 	 */
-	private void testField(TestContext context, Basic original, Consumer<Basic> consumer) {
+	private void testField(VertxTestContext context, Basic original, Consumer<Basic> consumer) {
 		test(
 				context,
 				getSessionFactory().withTransaction( (s, t) -> s.persist( original ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s2 -> s2.find( Basic.class, original.id )
 								.thenAccept( found -> {
-									context.assertNotNull( found );
-									context.assertEquals( original, found );
+									assertNotNull( found );
+									assertEquals( original, found );
 									consumer.accept( found );
 								} ) ) );
 	}
@@ -97,7 +99,7 @@ public class UserJsonTypeTest extends BaseReactiveTest {
 		Integer version;
 		String string;
 
-		@Type(org.hibernate.reactive.types.Json.class)
+		@Type(Json.class)
 		@Column(columnDefinition = "json")
 		private JsonObject jsonObj;
 

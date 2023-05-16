@@ -12,9 +12,10 @@ import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.OptimisticLocking;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,6 +24,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static org.hibernate.annotations.OptimisticLockType.DIRTY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class DynamicUpdateTest extends BaseReactiveTest {
 
@@ -32,7 +35,7 @@ public class DynamicUpdateTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void test(TestContext context) {
+	public void test(VertxTestContext context) {
 		Record record = new Record();
 		record.text = "initial text";
 		test(
@@ -46,8 +49,8 @@ public class DynamicUpdateTest extends BaseReactiveTest {
 						.chain( () -> getMutinySessionFactory()
 								.withSession( session -> session.find( Record.class, record.id )
 										.invoke( (result) -> {
-											context.assertNotNull( result );
-											context.assertEquals( "edited text", result.text );
+											assertNotNull( result );
+											assertEquals( "edited text", result.text );
 										} )
 										.chain( session::remove )
 										.chain( session::flush )
@@ -55,7 +58,7 @@ public class DynamicUpdateTest extends BaseReactiveTest {
 						.chain( () -> getMutinySessionFactory()
 								.withSession( session -> session
 										.find( Record.class, record.id )
-										.invoke( context::assertNull )
+										.invoke( Assertions::assertNull )
 								) )
 		);
 	}

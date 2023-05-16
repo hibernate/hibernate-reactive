@@ -13,10 +13,10 @@ import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.stage.Stage;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -29,6 +29,9 @@ import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.OneToMany;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * This test uses a complicated model that requires Hibernate to delay
@@ -104,7 +107,7 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testPersist(TestContext context) {
+	public void testPersist(VertxTestContext context) {
 		test(
 				context,
 				openSession()
@@ -114,7 +117,7 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testMergeTransient(TestContext context) {
+	public void testMergeTransient(VertxTestContext context) {
 		test(
 				context,
 				openSession()
@@ -124,7 +127,7 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testMergeDetached(TestContext context) {
+	public void testMergeDetached(VertxTestContext context) {
 		test(
 				context,
 				openSession()
@@ -138,7 +141,7 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 
 
 	@Test
-	public void testRemove(TestContext context) {
+	public void testRemove(VertxTestContext context) {
 
 		test(
 				context,
@@ -211,71 +214,72 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 		g.fCollection.remove(f);
 	}
 
-	private CompletionStage<Object> check(CompletionStage<Stage.Session> sessionStage, TestContext context) {
+	private CompletionStage<Object> check(CompletionStage<Stage.Session> sessionStage, VertxTestContext context) {
 		return  sessionStage.thenCompose(sCheck -> sCheck.find(B.class, bId)
 				.thenApply(bCheck -> {
-					context.assertEquals(b, bCheck);
-					context.assertTrue(Hibernate.isInitialized(bCheck.c));
-					context.assertEquals(c, bCheck.c);
-					context.assertTrue(Hibernate.isInitialized(bCheck.d));
-					context.assertEquals(d, bCheck.d);
-					context.assertTrue(bCheck.c == bCheck.d.c);
-					context.assertEquals(e, bCheck.d.e);
-					context.assertFalse(Hibernate.isInitialized(bCheck.gCollection));
+					assertEquals(b, bCheck);
+					assertTrue(Hibernate.isInitialized(bCheck.c));
+					assertEquals(c, bCheck.c);
+					assertTrue(Hibernate.isInitialized(bCheck.d));
+					assertEquals(d, bCheck.d);
+					assertTrue(bCheck.c == bCheck.d.c);
+					assertEquals(e, bCheck.d.e);
+					assertFalse(Hibernate.isInitialized(bCheck.gCollection));
 					return bCheck;
 				})
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.gCollection)
 						.thenApply(gCollectionCheck -> {
 								final G gElement = gCollectionCheck.iterator().next();
-								context.assertEquals(g, gElement);
-								context.assertTrue(bCheck.d.e.f.g == gElement);
-								context.assertTrue(bCheck == gElement.b);
+								assertEquals(g, gElement);
+								assertTrue(bCheck.d.e.f.g == gElement);
+								assertTrue(bCheck == gElement.b);
 								return bCheck;
 							}
 						)
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.c.bCollection)
-						.thenApply(bCollectionCheck ->
-								context.assertTrue(bCheck == bCollectionCheck.iterator().next()))
-						.thenApply(v -> bCheck)
+						.thenApply(bCollectionCheck -> {
+							assertTrue(bCheck == bCollectionCheck.iterator().next());
+							return bCheck;
+						})
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.c.dCollection)
 						.thenApply(dCollectionCheck -> {
-							context.assertTrue(bCheck.d == dCollectionCheck.iterator().next());
+							assertTrue(bCheck.d == dCollectionCheck.iterator().next());
 							return bCheck;
 						})
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.d.bCollection)
 						.thenApply(bCollectionCheck -> {
-							context.assertTrue(bCheck == bCollectionCheck.iterator().next());
+							assertTrue(bCheck == bCollectionCheck.iterator().next());
 							return bCheck;
 						})
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.d.fCollection)
 						.thenApply(fCollectionCheck -> {
 							final F fElement = fCollectionCheck.iterator().next();
-							context.assertEquals(f, fElement);
-							context.assertTrue(bCheck.d.e.f == fElement);
-							context.assertTrue(bCheck.d == fElement.d);
+							assertEquals(f, fElement);
+							assertTrue(bCheck.d.e.f == fElement);
+							assertTrue(bCheck.d == fElement.d);
 							return bCheck;
 						})
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.d.e.dCollection)
 						.thenApply(dCollectionCheck -> {
-							context.assertTrue(bCheck.d == dCollectionCheck.iterator().next());
+							assertTrue(bCheck.d == dCollectionCheck.iterator().next());
 							return bCheck;
 						})
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.d.e.f.eCollection)
 						.thenApply(eCollectionCheck -> {
-							context.assertTrue(bCheck.d.e == eCollectionCheck.iterator().next());
+							assertTrue(bCheck.d.e == eCollectionCheck.iterator().next());
 							return bCheck;
 						})
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.d.e.f.g.fCollection)
 						.thenApply(fCollectionCheck -> {
 							final F fElement = fCollectionCheck.iterator().next();
-							context.assertTrue(bCheck.d.e.f == fElement);
+							assertTrue(bCheck.d.e.f == fElement);
 							return bCheck;
 						})
 				)
@@ -283,8 +287,8 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 	}
 
 	@Override
-	@Before
-	public void before(TestContext context) {
+	@BeforeEach
+	public void before(VertxTestContext context) {
 		super.before(context);
 
 		bId = null;
@@ -362,7 +366,7 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 		@OneToMany(cascade =  {
 				CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}
 				, mappedBy = "b")
-		private java.util.Set<G> gCollection = new java.util.HashSet<>();
+		private Set<G> gCollection = new java.util.HashSet<>();
 
 
 		@ManyToOne(cascade =  {
@@ -400,7 +404,7 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 		private Long id;
 
 		@OneToMany(mappedBy = "d")
-		private java.util.Set<B> bCollection = new java.util.HashSet<>();
+		private Set<B> bCollection = new java.util.HashSet<>();
 
 		@ManyToOne(optional = false)
 		private C c;
@@ -412,7 +416,7 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 				CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
 				mappedBy = "d"
 		)
-		private java.util.Set<F> fCollection = new java.util.HashSet<>();
+		private Set<F> fCollection = new java.util.HashSet<>();
 	}
 
 	@Entity(name = "E")
@@ -423,7 +427,7 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 		private Long id;
 
 		@OneToMany(mappedBy = "e")
-		private java.util.Set<D> dCollection = new java.util.HashSet<>();
+		private Set<D> dCollection = new java.util.HashSet<>();
 
 		@ManyToOne(optional = true)
 		private F f;
@@ -439,7 +443,7 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 		@OneToMany(cascade =  {
 				CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}
 				, mappedBy = "f")
-		private java.util.Set<E> eCollection = new java.util.HashSet<>();
+		private Set<E> eCollection = new java.util.HashSet<>();
 
 		@ManyToOne(optional = false)
 		private D d;
@@ -459,6 +463,6 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 		private B b;
 
 		@OneToMany(mappedBy = "g")
-		private java.util.Set<F> fCollection = new java.util.HashSet<>();
+		private Set<F> fCollection = new java.util.HashSet<>();
 	}
 }

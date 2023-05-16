@@ -8,16 +8,20 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 
-import org.junit.After;
-import org.junit.Test;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
-import io.vertx.ext.unit.TestContext;
+import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 
@@ -26,15 +30,16 @@ public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 		return List.of( PersonDetails.class, Person.class );
 	}
 
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, getSessionFactory()
+	@Override
+	public CompletionStage<Void> cleanDb() {
+		return getSessionFactory()
 				.withTransaction( s -> s.createQuery( "delete from PersonDetails" ).executeUpdate()
-						.thenCompose( v -> s.createQuery( "delete from Person" ).executeUpdate() ) ) );
+						.thenCompose( v -> s.createQuery( "delete from Person" ).executeUpdate() )
+						.thenCompose( CompletionStages::voidFuture ) );
 	}
 
 	@Test
-	public void verifyParentKeyIsSet(TestContext context) {
+	public void verifyParentKeyIsSet(VertxTestContext context) {
 		Person person = new Person( "Joshua", 1 );
 		PersonDetails personDetails = new PersonDetails( "Josh", person );
 
@@ -44,7 +49,7 @@ public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( PersonDetails.class, 1 ) )
-				.thenAccept( details -> context.assertEquals( personDetails, details ) )
+				.thenAccept( details -> assertEquals( personDetails, details ) )
 		);
 	}
 

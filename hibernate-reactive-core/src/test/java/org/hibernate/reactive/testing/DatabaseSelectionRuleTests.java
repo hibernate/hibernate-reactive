@@ -6,19 +6,20 @@
 package org.hibernate.reactive.testing;
 
 
+
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.assertj.core.api.Assertions;
 
 public class DatabaseSelectionRuleTests {
 
 	public static class SkipDBTest {
-		@Rule
-		public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( DBType.POSTGRESQL );
+		@RegisterExtension
+		public DBSelectionExtension dbSelection = DBSelectionExtension.skipTestsFor( DBType.POSTGRESQL );
 
 		@Test
 		public void shouldSkipPostgres() {
@@ -27,33 +28,86 @@ public class DatabaseSelectionRuleTests {
 	}
 
 	public static class SkipMultipleDBsTest {
-		@Rule
-		public DatabaseSelectionRule rule = DatabaseSelectionRule.skipTestsFor( DBType.POSTGRESQL, DBType.MYSQL, DBType.MARIA );
+		@RegisterExtension
+		public DBSelectionExtension dbSelection = DBSelectionExtension.skipTestsFor( DBType.POSTGRESQL, DBType.MYSQL, DBType.MARIA );
 
 		@Test
-		public void shouldSkipPostgresAndMySQL() {
-			Assertions.assertThat( DatabaseConfiguration.dbType() )
-					.isNotIn( DBType.POSTGRESQL, DBType.MYSQL, DBType.MARIA );
+		public void shouldSkipMultipleDBs() {
+			switch ( DatabaseConfiguration.dbType() ) {
+				case MARIA:
+				case MYSQL:
+				case POSTGRESQL: {
+					Assertions.assertThat( dbSelection.evaluateExecutionCondition( null ).isDisabled() ).isTrue();
+				}
+				break;
+				default: {
+					Assertions.assertThat( dbSelection.evaluateExecutionCondition( null ).isDisabled() ).isFalse();
+				}
+				break;
+
+			}
 		}
 	}
 
 	public static class RunOnlyOnDBTest {
-		@Rule
-		public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( DBType.POSTGRESQL );
+		@RegisterExtension
+		public DBSelectionExtension dbSelection = DBSelectionExtension.runOnlyFor( DBType.POSTGRESQL );
 
 		@Test
 		public void shouldOnlyRunForPostgres() {
-			Assertions.assertThat( DatabaseConfiguration.dbType() ).isEqualTo( DBType.POSTGRESQL );
+			switch ( DatabaseConfiguration.dbType() ) {
+				case POSTGRESQL: {
+					Assertions.assertThat( dbSelection.evaluateExecutionCondition( null ).isDisabled() ).isFalse();
+				}
+				break;
+				default: {
+					Assertions.assertThat( dbSelection.evaluateExecutionCondition( null ).isDisabled() ).isTrue();
+				}
+				break;
+
+			}
+		}
+	}
+
+	public static class shouldSkipRunningPostgreSQLTest {
+		@RegisterExtension
+		public DBSelectionExtension dbSelection = DBSelectionExtension.skipTestsFor( DBType.POSTGRESQL );
+
+		@Test
+		public void shouldSkipOnlyPostgres() {
+			switch ( DatabaseConfiguration.dbType() ) {
+				case POSTGRESQL: {
+					Assertions.assertThat( dbSelection.evaluateExecutionCondition( null ).isDisabled() ).isTrue();
+				}
+				break;
+				default: {
+					Assertions.assertThat( dbSelection.evaluateExecutionCondition( null ).isDisabled() ).isFalse();
+				}
+				break;
+
+			}
 		}
 	}
 
 	public static class RunOnlyOnDMultipleDBsTest {
-		@Rule
-		public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( DBType.POSTGRESQL, DBType.MYSQL, DBType.MARIA );
+		@RegisterExtension
+		public DBSelectionExtension dbSelection = DBSelectionExtension.runOnlyFor( DBType.POSTGRESQL, DBType.MYSQL, DBType.MARIA );
 
 		@Test
-		public void shouldOnlyRunForPostgresOrMySql() {
-			Assertions.assertThat( DatabaseConfiguration.dbType() ).isIn( DBType.POSTGRESQL, DBType.MYSQL, DBType.MARIA );
+		public void shouldRunOnlyForMultipleDBs() {
+			switch ( DatabaseConfiguration.dbType() ) {
+				case MARIA:
+				case MYSQL:
+				case POSTGRESQL: {
+					Assertions.assertThat( dbSelection.evaluateExecutionCondition( null ).isDisabled() ).isFalse();
+				}
+				break;
+				default: {
+					Assertions.assertThat( dbSelection.evaluateExecutionCondition( null ).isDisabled() ).isTrue();
+				}
+				break;
+
+			}
 		}
 	}
 }

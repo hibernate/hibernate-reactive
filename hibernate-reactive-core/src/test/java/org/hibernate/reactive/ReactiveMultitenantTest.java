@@ -11,12 +11,12 @@ import org.hibernate.LockMode;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -26,6 +26,10 @@ import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DE
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_1;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * This class creates multiple additional databases so that we can check that queries run
@@ -36,8 +40,8 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 	private static final MyCurrentTenantIdentifierResolver TENANT_RESOLVER = new MyCurrentTenantIdentifierResolver();
 
 	// To check if we are using the right database we run native queries for PostgreSQL
-	@Rule
-	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
+	@RegisterExtension
+	public DBSelectionExtension selectionRule = DBSelectionExtension.runOnlyFor( POSTGRESQL );
 
 	@Override
 	protected Configuration constructConfiguration() {
@@ -55,7 +59,7 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void reactivePersistFindDelete(TestContext context) {
+	public void reactivePersistFindDelete(VertxTestContext context) {
 		TENANT_RESOLVER.setTenantIdentifier( DEFAULT );
 		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
 		test(
@@ -64,15 +68,15 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 						.persist( guineaPig )
 						.thenCompose( v -> session.flush() )
 						.thenAccept( v -> session.detach( guineaPig ) )
-						.thenAccept( v -> context.assertFalse( session.contains( guineaPig ) ) )
+						.thenAccept( v -> assertFalse( session.contains( guineaPig ) ) )
 						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
 						.thenAccept( actualPig -> {
 							assertThatPigsAreEqual( context, guineaPig, actualPig );
-							context.assertTrue( session.contains( actualPig ) );
-							context.assertFalse( session.contains( guineaPig ) );
-							context.assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
+							assertTrue( session.contains( actualPig ) );
+							assertFalse( session.contains( guineaPig ) );
+							assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
 							session.detach( actualPig );
-							context.assertFalse( session.contains( actualPig ) );
+							assertFalse( session.contains( actualPig ) );
 						} )
 						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
 						.thenCompose( session::remove )
@@ -81,62 +85,62 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testTenantSelection(TestContext context) {
+	public void testTenantSelection(VertxTestContext context) {
 		TENANT_RESOLVER.setTenantIdentifier( TENANT_1 );
 		test( context, openSession()
 				.thenCompose( session -> session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
-						.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) ) )
+						.thenAccept( result -> assertEquals( TENANT_1.getDbName(), result ) ) )
 				.thenAccept( unused -> TENANT_RESOLVER.setTenantIdentifier( TENANT_2 ) )
 				.thenCompose( unused -> openSession() )
 				.thenCompose( session -> session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
-						.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) )
+						.thenAccept( result -> assertEquals( TENANT_2.getDbName(), result ) ) )
 		);
 	}
 
 	@Test
-	public void testTenantSelectionStatelessSession(TestContext context) {
+	public void testTenantSelectionStatelessSession(VertxTestContext context) {
 		TENANT_RESOLVER.setTenantIdentifier( TENANT_1 );
 		test( context, getSessionFactory().openStatelessSession()
 				.thenCompose( t1Session -> t1Session
 					.createNativeQuery( "select current_database()" )
 					.getSingleResult()
-					.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
+					.thenAccept( result -> assertEquals( TENANT_1.getDbName(), result ) )
 					.thenCompose( unused -> t1Session.close() ) )
 				.thenAccept( unused -> TENANT_RESOLVER.setTenantIdentifier( TENANT_2 ) )
 				.thenCompose( v -> getSessionFactory().openStatelessSession() )
 				.thenCompose( t2Session -> t2Session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
-						.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) )
+						.thenAccept( result -> assertEquals( TENANT_2.getDbName(), result ) )
 						.thenCompose( v -> t2Session.close() ) )
 		);
 	}
 
 	@Test
-	public void testTenantSelectionStatelessSessionMutiny(TestContext context) {
+	public void testTenantSelectionStatelessSessionMutiny(VertxTestContext context) {
 		TENANT_RESOLVER.setTenantIdentifier( TENANT_1 );
 		test( context, getMutinySessionFactory().withStatelessSession( t1Session ->
 				t1Session
 				.createNativeQuery( "select current_database()" )
 				.getSingleResult()
-				.invoke( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
+				.invoke( result -> assertEquals( TENANT_1.getDbName(), result ) )
 			  )
 				.invoke( result -> TENANT_RESOLVER.setTenantIdentifier( TENANT_2 ) )
 				.chain( () -> getMutinySessionFactory().withStatelessSession( t2Session -> t2Session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
-						.invoke( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) ) )
+						.invoke( result -> assertEquals( TENANT_2.getDbName(), result ) ) ) )
 		);
 	}
 
-	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
-		context.assertNotNull( actual );
-		context.assertEquals( expected.getId(), actual.getId() );
-		context.assertEquals( expected.getName(), actual.getName() );
+	private void assertThatPigsAreEqual(VertxTestContext context, GuineaPig expected, GuineaPig actual) {
+		assertNotNull( actual );
+		assertEquals( expected.getId(), actual.getId() );
+		assertEquals( expected.getName(), actual.getName() );
 	}
 
 	@Entity(name = "GuineaPig")

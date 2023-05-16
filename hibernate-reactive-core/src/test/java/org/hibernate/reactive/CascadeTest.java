@@ -12,9 +12,10 @@ import java.util.Objects;
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -33,6 +34,11 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class CascadeTest extends BaseReactiveTest {
 
@@ -45,7 +51,7 @@ public class CascadeTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testQuery(TestContext context) {
+	public void testQuery(VertxTestContext context) {
 
 		Node basik = new Node("Child");
 		basik.parent = new Node("Parent");
@@ -58,21 +64,21 @@ public class CascadeTest extends BaseReactiveTest {
 						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.createQuery("select distinct n from Node n left join fetch n.elements").getResultList())
-						.thenAccept( list -> context.assertEquals( list.size(), 2 ) )
+						.thenAccept( list -> assertEquals( list.size(), 2 ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.createQuery("select distinct n, e from Node n join n.elements e").getResultList())
-						.thenAccept( list -> context.assertEquals( list.size(), 3 ) )
+						.thenAccept( list -> assertEquals( list.size(), 3 ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.createQuery("select distinct n.id, e.id from Node n join n.elements e").getResultList())
-						.thenAccept( list -> context.assertEquals( list.size(), 3 ) )
+						.thenAccept( list -> assertEquals( list.size(), 3 ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.createQuery("select max(e.id), min(e.id), sum(e.id) from Node n join n.elements e group by n.id order by n.id").getResultList())
-						.thenAccept( list -> context.assertEquals( list.size(), 1 ) )
+						.thenAccept( list -> assertEquals( list.size(), 1 ) )
 		);
 	}
 
 	@Test
-	public void testCascade(TestContext context) {
+	public void testCascade(VertxTestContext context) {
 
 		Node basik = new Node("Child");
 		basik.parent = new Node("Parent");
@@ -83,76 +89,76 @@ public class CascadeTest extends BaseReactiveTest {
 		test( context,
 				openSession()
 						.thenCompose(s -> s.persist(basik)
-								.thenApply(v -> { context.assertTrue(basik.prePersisted && !basik.postPersisted); return s; } )
-								.thenApply(v -> { context.assertTrue(basik.parent.prePersisted && !basik.parent.postPersisted); return s; } )
+								.thenApply(v -> { assertTrue(basik.prePersisted && !basik.postPersisted); return s; } )
+								.thenApply(v -> { assertTrue(basik.parent.prePersisted && !basik.parent.postPersisted); return s; } )
 								.thenCompose(v -> s.flush())
-								.thenApply(v -> { context.assertTrue(basik.prePersisted && basik.postPersisted); return s; } )
-								.thenApply(v -> { context.assertTrue(basik.parent.prePersisted && basik.parent.postPersisted); return s; } )
+								.thenApply(v -> { assertTrue(basik.prePersisted && basik.postPersisted); return s; } )
+								.thenApply(v -> { assertTrue(basik.parent.prePersisted && basik.parent.postPersisted); return s; } )
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose(s2 -> s2.find( Node.class, basik.getId() )
 								.thenCompose( node -> {
-									context.assertNotNull( node );
-									context.assertTrue( node.loaded );
-									context.assertEquals( node.string, basik.string);
-									context.assertEquals( node.version, 0 );
-									context.assertEquals( node.elements.size(), basik.elements.size() );
+									assertNotNull( node );
+									assertTrue( node.loaded );
+									assertEquals( node.string, basik.string);
+									assertEquals( node.version, 0 );
+									assertEquals( node.elements.size(), basik.elements.size() );
 
 									node.string = "Adopted";
 									node.parent = new Node("New Parent");
 									return s2.flush()
 											.thenAccept(v -> {
-												context.assertNotNull( node );
-												context.assertTrue( node.postUpdated && node.preUpdated );
-												context.assertFalse( node.postPersisted && node.prePersisted );
-												context.assertTrue( node.parent.postPersisted && node.parent.prePersisted );
-												context.assertEquals( node.version, 1 );
+												assertNotNull( node );
+												assertTrue( node.postUpdated && node.preUpdated );
+												assertFalse( node.postPersisted && node.prePersisted );
+												assertTrue( node.parent.postPersisted && node.parent.prePersisted );
+												assertEquals( node.version, 1 );
 											});
 								}))
 						.thenCompose( v -> openSession() )
 						.thenCompose(s2 -> s2.find( Node.class, basik.getId() )
 								.thenCompose( node -> {
-									context.assertNotNull( node );
-									context.assertEquals( node.version, 1 );
-									context.assertEquals( node.string, "Adopted");
-									context.assertTrue(Hibernate.isInitialized(node.elements));
-									context.assertFalse(Hibernate.isInitialized(node.parent));
+									assertNotNull( node );
+									assertEquals( node.version, 1 );
+									assertEquals( node.string, "Adopted");
+									assertTrue(Hibernate.isInitialized(node.elements));
+									assertFalse(Hibernate.isInitialized(node.parent));
 									return s2.fetch( node.parent )
 											.thenCompose( parent -> {
-												context.assertNotNull( parent );
+												assertNotNull( parent );
 												return s2.createQuery("update Node set string = upper(string)").executeUpdate()
 														.thenCompose(v -> s2.refresh(node))
 														.thenAccept(v -> {
-															context.assertEquals( node.getString(), "ADOPTED" );
-															context.assertEquals( parent.getString(), "NEW PARENT" );
-															context.assertTrue( Hibernate.isInitialized( node.elements ) );
-															context.assertTrue( Hibernate.isInitialized( parent.elements ) );
+															assertEquals( node.getString(), "ADOPTED" );
+															assertEquals( parent.getString(), "NEW PARENT" );
+															assertTrue( Hibernate.isInitialized( node.elements ) );
+															assertTrue( Hibernate.isInitialized( parent.elements ) );
 														});
 											});
 								}))
 						.thenCompose( v -> openSession() )
 						.thenCompose(s3 -> s3.find( Node.class, basik.getId() )
 								.thenCompose( node -> {
-									context.assertFalse( node.postUpdated && node.preUpdated );
-									context.assertFalse( node.postPersisted && node.prePersisted );
-									context.assertEquals( node.version, 1 );
-									context.assertEquals( node.string, "ADOPTED");
+									assertFalse( node.postUpdated && node.preUpdated );
+									assertFalse( node.postPersisted && node.prePersisted );
+									assertEquals( node.version, 1 );
+									assertEquals( node.string, "ADOPTED");
 									basik.version = node.version;
 									basik.string = "Hello World!";
 									basik.parent.string = "Goodbye World!";
 									return s3.merge(basik)
 											.thenAccept( b -> {
-												context.assertEquals( b.string, "Hello World!");
-												context.assertEquals( b.parent.string, "Goodbye World!");
+												assertEquals( b.string, "Hello World!");
+												assertEquals( b.parent.string, "Goodbye World!");
 											})
 											.thenCompose(v -> s3.remove(node))
-											.thenAccept(v -> context.assertTrue( !node.postRemoved && node.preRemoved ) )
+											.thenAccept(v -> assertTrue( !node.postRemoved && node.preRemoved ) )
 											.thenCompose(v -> s3.flush())
-											.thenAccept(v -> context.assertTrue( node.postRemoved && node.preRemoved ) );
+											.thenAccept(v -> assertTrue( node.postRemoved && node.preRemoved ) );
 								}))
 						.thenCompose( v -> openSession() )
 						.thenCompose(s4 -> s4.find( Node.class, basik.getId() )
-								.thenAccept(context::assertNull))
+								.thenAccept( Assertions::assertNull))
 		);
 	}
 

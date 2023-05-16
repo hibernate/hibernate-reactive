@@ -8,11 +8,9 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 
-import io.vertx.ext.unit.TestContext;
+import org.junit.jupiter.api.Test;
 
-
-import org.junit.Test;
-
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -28,7 +26,7 @@ public class JoinedSubclassIdentityTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testParent(TestContext context) {
+	public void testParent(VertxTestContext context) {
 		test( context, getMutinySessionFactory().withSession(
 				s -> s.persist( new GeneratedWithIdentityParent() )
 						.chain( s::flush )
@@ -36,7 +34,7 @@ public class JoinedSubclassIdentityTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testChild(TestContext context) {
+	public void testChild(VertxTestContext context) {
 		test( context, getMutinySessionFactory().withSession(
 				s -> s.persist( new GeneratedWithIdentity() )
 						.chain( s::flush )

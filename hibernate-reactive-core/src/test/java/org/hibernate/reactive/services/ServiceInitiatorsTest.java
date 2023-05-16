@@ -18,7 +18,7 @@ import org.hibernate.reactive.provider.impl.ReactiveServiceInitiators;
 import org.hibernate.service.StandardServiceInitiators;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Useful to spot inconsistencies in the default ServiceInitiator lists

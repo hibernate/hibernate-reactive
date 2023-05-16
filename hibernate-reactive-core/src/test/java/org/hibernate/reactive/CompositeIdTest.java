@@ -5,22 +5,28 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
 
-import org.hibernate.reactive.stage.Stage;
-
-import org.junit.Test;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
-import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.util.impl.CompletionStages;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.VertxTestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Table;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class CompositeIdTest extends BaseReactiveTest {
 
@@ -78,7 +84,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void reactiveFind(TestContext context) {
+	public void reactiveFind(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -90,7 +96,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void reactivePersist(TestContext context) {
+	public void reactivePersist(VertxTestContext context) {
 		test(
 				context,
 				openSession()
@@ -98,30 +104,35 @@ public class CompositeIdTest extends BaseReactiveTest {
 								.thenCompose( v -> s.flush() )
 						)
 						.thenCompose( v -> selectNameFromId( 10 ) )
-						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
+						.thenAccept( selectRes -> assertEquals( "Tulip", selectRes ) )
 		);
 	}
 
 	@Test
-	public void reactiveRemoveTransientEntity(TestContext context) {
+	public void reactiveRemoveTransientEntity(VertxTestContext context) {
 		test(
 				context,
 				populateDB()
 						.thenCompose( v -> selectNameFromId( 5 ) )
-						.thenAccept( context::assertNotNull )
+						.thenAccept( Assertions::assertNotNull )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.remove( new GuineaPig( 5, "Aloi" ) )
 								.thenCompose( v -> session.flush() )
 								.thenCompose( v -> session.close() )
 						)
 						.thenCompose( v -> selectNameFromId( 5 ) )
-						.thenAccept( context::assertNull )
-						.handle((r, e) -> context.assertNotNull(e))
+						.thenAccept( Assertions::assertNull )
+						.handle((r, e) -> {
+							Object exception = e;
+							Assertions.assertNotNull( exception );
+							return CompletionStages.voidFuture();
+						} ) //NotNull( e ) )
+//						.handle((r, e) -> Assertions.assertTrue( e != null))
 		);
 	}
 
 	@Test
-	public void reactiveRemoveManagedEntity(TestContext context) {
+	public void reactiveRemoveManagedEntity(VertxTestContext context) {
 		test(
 				context,
 				populateDB()
@@ -131,13 +142,13 @@ public class CompositeIdTest extends BaseReactiveTest {
 								.thenCompose( session::remove )
 								.thenCompose( v -> session.flush() )
 								.thenCompose( v -> selectNameFromId( session,5 ) )
-								.thenAccept( context::assertNull )
+								.thenAccept( Assertions::assertNull )
 						)
 		);
 	}
 
 	@Test
-	public void reactiveUpdate(TestContext context) {
+	public void reactiveUpdate(VertxTestContext context) {
 		final double NEW_WEIGHT = 200.0;
 		test(
 				context,
@@ -146,23 +157,23 @@ public class CompositeIdTest extends BaseReactiveTest {
 						.thenCompose( session ->
 							session.find( GuineaPig.class, new Pig(5, "Aloi") )
 								.thenAccept( pig -> {
-									context.assertNotNull( pig );
+									assertNotNull( pig );
 									// Checking we are actually changing the name
-									context.assertNotEquals( pig.getWeight(), NEW_WEIGHT );
+									assertNotEquals( pig.getWeight(), NEW_WEIGHT );
 									pig.setWeight( NEW_WEIGHT );
 								} )
 								.thenCompose( v -> session.flush() )
 								.thenCompose( v -> session.close() )
 								.thenCompose( v -> selectWeightFromId( 5 ) )
-								.thenAccept( w -> context.assertEquals( NEW_WEIGHT, w ) ) )
+								.thenAccept( w -> assertEquals( NEW_WEIGHT, w ) ) )
 		);
 	}
 
-	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
-		context.assertNotNull( actual );
-		context.assertEquals( expected.getId(), actual.getId() );
-		context.assertEquals( expected.getName(), actual.getName() );
-		context.assertEquals( expected.getWeight(), actual.getWeight() );
+	private void assertThatPigsAreEqual(VertxTestContext context, GuineaPig expected, GuineaPig actual) {
+		assertNotNull( actual );
+		assertEquals( expected.getId(), actual.getId() );
+		assertEquals( expected.getName(), actual.getName() );
+		assertEquals( expected.getWeight(), actual.getWeight() );
 	}
 
 	static final class Pig implements Serializable {

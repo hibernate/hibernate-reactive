@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -28,14 +28,14 @@ public class UUIDAsBinaryTypeTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void uuidIdentifierWithMutinyAPI(TestContext context) {
+	public void uuidIdentifierWithMutinyAPI(VertxTestContext context) {
 		UUIDEntity entityA = new UUIDEntity( "UUID A" );
 		UUIDEntity entityB = new UUIDEntity( "UUID B" );
 
 		test( context, openMutinySession().chain( session -> session
 						.persistAll( entityA, entityB )
 						.call( session::flush ) )
-				.invoke( () -> context.assertNotEquals( entityA.id, entityB.id ) )
+				.invoke( () -> assertThat( entityA.id ).isNotEqualTo( entityB.id ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( UUIDEntity.class, entityA.id, entityB.id ) )
 				.invoke( list ->  assertThat( list ).containsExactlyInAnyOrder( entityA, entityB ) )
@@ -81,5 +81,4 @@ public class UUIDAsBinaryTypeTest extends BaseReactiveTest {
 			return id + ":" + name;
 		}
 	}
-
 }

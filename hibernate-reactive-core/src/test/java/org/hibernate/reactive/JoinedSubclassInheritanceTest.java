@@ -10,9 +10,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
@@ -25,15 +26,21 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
+
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Author.class, SpellBook.class, Book.class );
 	}
 
 	@Test
-	public void testRootClassViaAssociation(TestContext context) {
+	public void testRootClassViaAssociation(VertxTestContext context) {
 		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse", new Date());
 		final Author author = new Author( "Charlie Mackesy", book );
 
@@ -46,16 +53,16 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 								.thenCompose( v -> openSession() )
 								.thenCompose( s2 -> s2.find( Author.class, author.getId() ) )
 								.thenAccept( auth -> {
-									context.assertNotNull( auth );
-									context.assertEquals( author, auth );
-									context.assertEquals( book.getTitle(), auth.getBook().getTitle()  );
+									assertNotNull( auth );
+									assertEquals( author, auth );
+									assertEquals( book.getTitle(), auth.getBook().getTitle()  );
 								} )
 				)
 		);
 	}
 
 	@Test
-	public void testSubclassViaAssociation(TestContext context) {
+	public void testSubclassViaAssociation(VertxTestContext context) {
 		final SpellBook book = new SpellBook( 6, "Necronomicon", true, new Date());
 		final Author author = new Author( "Abdul Alhazred", book );
 
@@ -67,16 +74,16 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 								.thenCompose( v -> s.flush() )
 								.thenCompose( v -> s.find( Author.class, author.getId() ) )
 								.thenAccept( auth -> {
-									context.assertNotNull( auth );
-									context.assertEquals( author, auth );
-									context.assertEquals( book.getTitle(), auth.getBook().getTitle()  );
+									assertNotNull( auth );
+									assertEquals( author, auth );
+									assertEquals( book.getTitle(), auth.getBook().getTitle()  );
 								} )
 				)
 		);
 	}
 
 	@Test
-	public void testRootClassViaFind(TestContext context) {
+	public void testRootClassViaFind(VertxTestContext context) {
 
 		final Book novel = new Book( 6, "The Boy, The Mole, The Fox and The Horse", new Date());
 		final Author author = new Author( "Charlie Mackesy", novel );
@@ -89,14 +96,14 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> s.find(Book.class, 6) ) )
 						.thenAccept(book -> {
-							context.assertNotNull(book);
-							context.assertFalse(book instanceof SpellBook);
-							context.assertEquals(book.getTitle(), "The Boy, The Mole, The Fox and The Horse");
+							assertNotNull(book);
+							assertFalse(book instanceof SpellBook);
+							assertEquals(book.getTitle(), "The Boy, The Mole, The Fox and The Horse");
 						}));
 	}
 
 	@Test
-	public void testSubclassViaFind(TestContext context) {
+	public void testSubclassViaFind(VertxTestContext context) {
 		final SpellBook spells = new SpellBook( 6, "Necronomicon", true, new Date());
 		final Author author = new Author( "Abdul Alhazred", spells );
 
@@ -107,14 +114,14 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 								.thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession().thenCompose( s -> s.find(Book.class, 6) ) )
 						.thenAccept(book -> {
-							context.assertNotNull(book);
-							context.assertTrue(book instanceof SpellBook);
-							context.assertEquals(book.getTitle(), "Necronomicon");
+							assertNotNull(book);
+							assertTrue(book instanceof SpellBook);
+							assertEquals(book.getTitle(), "Necronomicon");
 						}));
 	}
 
 	@Test
-	public void testQueryUpdate(TestContext context) {
+	public void testQueryUpdate(VertxTestContext context) {
 		final SpellBook spells = new SpellBook( 6, "Necronomicon", true, new Date() );
 //		final Author author = new Author( "Abdul Alhazred", spells );
 
@@ -127,22 +134,22 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 										.thenCompose( v -> s.withTransaction( t -> s.createQuery("update Book set title=title||' II' where title='Necronomicon'").executeUpdate() ) )
 										.thenCompose( v -> s.find(Book.class, 6) )
 										.thenAccept( book -> {
-											context.assertNotNull(book);
-											context.assertTrue(book instanceof SpellBook);
-											context.assertEquals(book.getTitle(), "Necronomicon II");
+											assertNotNull(book);
+											assertTrue(book instanceof SpellBook);
+											assertEquals(book.getTitle(), "Necronomicon II");
 										} )
 						) )
 						.thenCompose( vv -> openSession()
 								.thenCompose( s -> s.withTransaction( t -> s.createQuery("delete Book where title='Necronomicon II'").executeUpdate() ) )
 								.thenCompose( v -> openSession() )
 								.thenCompose( s -> s.find(Book.class, 6) )
-								.thenAccept( context::assertNull )
+								.thenAccept( Assertions::assertNull )
 						)
 		);
 	}
 
 	@Test
-	public void testQueryUpdateWithParameters(TestContext context) {
+	public void testQueryUpdateWithParameters(VertxTestContext context) {
 		final SpellBook spells = new SpellBook( 6, "Necronomicon", true, new Date() );
 //		final Author author = new Author( "Abdul Alhazred", spells );
 
@@ -164,9 +171,9 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> s.find( Book.class, 6) )
 								.thenAccept( book -> {
-											context.assertNotNull(book);
-											context.assertTrue(book instanceof SpellBook);
-											context.assertEquals(book.getTitle(), "Necronomicon II");
+											assertNotNull(book);
+											assertTrue(book instanceof SpellBook);
+											assertEquals(book.getTitle(), "Necronomicon II");
 										}
 								)
 						)
@@ -176,7 +183,7 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 										.executeUpdate() )
 						) )
 						.thenCompose( v -> openSession().thenCompose( s -> s.find(Book.class, 6) ) )
-						.thenAccept( context::assertNull )
+						.thenAccept( Assertions::assertNull )
 		);
 	}
 

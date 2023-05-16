@@ -8,17 +8,18 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 
+import org.hibernate.LockMode;
+
+import org.junit.jupiter.api.Test;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import org.hibernate.LockMode;
-
-import org.junit.Test;
-
-import io.smallrye.mutiny.Uni;
-import io.vertx.ext.unit.TestContext;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Barry LaFond
@@ -31,7 +32,7 @@ public class LockOnUpdateTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLockDuringUpdate(TestContext context) {
+	public void testLockDuringUpdate(VertxTestContext context) {
 		Record secondRecord = new Record( "FIRST" );
 		secondRecord.text = "I'm the first record";
 		test(
@@ -42,15 +43,16 @@ public class LockOnUpdateTest extends BaseReactiveTest {
 								.chain( () -> this.updateRecord( "FIRST", true ) )
 						)
 						.chain( () -> getMutinySessionFactory()
-								.withSession( session -> session.find( Record.class,
+								.withSession( session -> session.find(
+										Record.class,
 										secondRecord.name
 								) ) )
-						.invoke( (record) -> context.assertTrue( record.text.contains( "updated" ) ) )
+						.invoke( (record) -> assertTrue( record.text.contains( "updated" ) ) )
 		);
 	}
 
 	@Test
-	public void testLockBeforeUpdate(TestContext context) {
+	public void testLockBeforeUpdate(VertxTestContext context) {
 		Record secondRecord = new Record( "SECOND" );
 		secondRecord.text = "I'm the second record";
 		test(
@@ -62,10 +64,11 @@ public class LockOnUpdateTest extends BaseReactiveTest {
 								.chain( () -> this.updateRecord( "SECOND", false ) )
 						)
 						.chain( () -> getMutinySessionFactory()
-								.withSession( session -> session.find( Record.class,
+								.withSession( session -> session.find(
+										Record.class,
 										secondRecord.name
 								) ) )
-						.invoke( (record) -> context.assertTrue( record.text.contains( "updated" ) ) )
+						.invoke( (record) -> assertTrue( record.text.contains( "updated" ) ) )
 		);
 	}
 
@@ -73,7 +76,7 @@ public class LockOnUpdateTest extends BaseReactiveTest {
 		if ( doLock ) {
 			return getMutinySessionFactory()
 					.withTransaction( session -> session.find( Record.class, name,
-							LockMode.PESSIMISTIC_WRITE
+															   LockMode.PESSIMISTIC_WRITE
 					) )
 					.map( entity -> entity.setText( "I'm an updated record" ) );
 		}

@@ -9,9 +9,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -27,7 +28,7 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testPersist(TestContext context) {
+	public void testPersist(VertxTestContext context) {
 		final Book mostPopularBook = new Book( 5, "The Boy, The Mole, The Fox and The Horse" );
 		final Author author = new Author( 3, "Charlie Mackesy" );
 		mostPopularBook.setAuthor( author );
@@ -42,7 +43,7 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, 5 ) )
-						.thenAccept(context::assertNotNull)
+						.thenAccept( Assertions::assertNotNull)
 		);
 	}
 

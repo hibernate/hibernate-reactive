@@ -12,9 +12,10 @@ import java.util.Objects;
 
 import org.hibernate.Hibernate;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -23,6 +24,9 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class OneToManyTest extends BaseReactiveTest {
 
@@ -32,18 +36,21 @@ public class OneToManyTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testPersistAll(TestContext context) {
+	public void testPersistAll(VertxTestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Author author = new Author( "Iain M Banks" );
 		author.books.add( book1 );
 		author.books.add( book2 );
+		final Book[] bookArray = new Book[2];
+		bookArray[0] = book1;
+		bookArray[1] = book2;
 
 		test( context, getMutinySessionFactory()
 				.withTransaction( session -> session.persistAll( book1, book2, author ) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.find( Author.class, author.id )
-						.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.getBooks() ) ) )
+						.invoke( a -> assertFalse( Hibernate.isInitialized( a.getBooks() ) ) )
 						.chain( a -> session.fetch( a.getBooks() ) )
 						.invoke( books -> assertThat( books ).containsExactlyInAnyOrder( book1, book2 ) )
 				) )
@@ -51,26 +58,29 @@ public class OneToManyTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testFetchJoinQueryGetSingleResult(TestContext context) {
+	public void testFetchJoinQueryGetSingleResult(VertxTestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Author author = new Author( "Iain M Banks" );
 		author.books.add( book1 );
 		author.books.add( book2 );
+		final Book[] bookArray = new Book[2];
+		bookArray[0] = book1;
+		bookArray[1] = book2;
 
 		test( context, getMutinySessionFactory()
 				.withTransaction( session -> session.persistAll( book1, book2, author ) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.createQuery( "select distinct a from Author a left join fetch a.books", Author.class )
 						.getSingleResult()
-						.invoke( a -> context.assertTrue( Hibernate.isInitialized( a.getBooks() ) ) )
+						.invoke( a -> assertTrue( Hibernate.isInitialized( a.getBooks() ) ) )
 						.invoke( a -> assertThat( a.getBooks() ).containsExactlyInAnyOrder( book1, book2 ) )
 				) )
 		);
 	}
 
 	@Test
-	public void testFetchJoinQueryGetSingleResultOrNull(TestContext context) {
+	public void testFetchJoinQueryGetSingleResultOrNull(VertxTestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Author author = new Author( "Iain M Banks" );
@@ -82,14 +92,14 @@ public class OneToManyTest extends BaseReactiveTest {
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.createQuery( "select distinct a from Author a left join fetch a.books", Author.class )
 						.getSingleResultOrNull()
-						.invoke( a -> context.assertTrue( Hibernate.isInitialized( a.getBooks() ) ) )
+						.invoke( a -> assertTrue( Hibernate.isInitialized( a.getBooks() ) ) )
 						.invoke( a -> assertThat( a.getBooks() ).containsExactlyInAnyOrder( book1, book2 ) )
 				) )
 		);
 	}
 
 	@Test
-	public void testFetchJoinQueryWithNull(TestContext context) {
+	public void testFetchJoinQueryWithNull(VertxTestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Author author = new Author( "Iain M Banks" );
@@ -101,13 +111,13 @@ public class OneToManyTest extends BaseReactiveTest {
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.createQuery( "select a from Author a left join fetch a.books where 1=0", Author.class )
 						.getSingleResultOrNull()
-						.invoke( context::assertNull )
+						.invoke( Assertions::assertNull )
 				) )
 		);
 	}
 
 	@Test
-	public void testFetchAndRemove(TestContext context) {
+	public void testFetchAndRemove(VertxTestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Author author = new Author( "Iain M Banks" );
@@ -132,7 +142,7 @@ public class OneToManyTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testFetchAndAdd(TestContext context) {
+	public void testFetchAndAdd(VertxTestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Author author = new Author( "Iain M Banks" );
@@ -149,7 +159,7 @@ public class OneToManyTest extends BaseReactiveTest {
 				) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
 						.find( Author.class, author.id )
-						.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.getBooks() ) ) )
+						.invoke( a -> assertFalse( Hibernate.isInitialized( a.getBooks() ) ) )
 						.chain( a -> session.fetch( a.getBooks() ) )
 						.invoke( books -> assertThat( books ).containsExactlyInAnyOrder( book1, book2 ) )
 				) )
@@ -157,7 +167,7 @@ public class OneToManyTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testSetNullAndFetch(TestContext context) {
+	public void testSetNullAndFetch(VertxTestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Author author = new Author( "Iain M Banks" );
@@ -179,7 +189,7 @@ public class OneToManyTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testFetchAndClear(TestContext context) {
+	public void testFetchAndClear(VertxTestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Author author = new Author( "Iain M Banks" );

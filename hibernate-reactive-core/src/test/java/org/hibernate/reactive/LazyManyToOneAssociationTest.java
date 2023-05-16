@@ -8,6 +8,13 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+
+import org.hibernate.annotations.FetchMode;
+import org.hibernate.annotations.FetchProfile;
+
+import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityGraph;
@@ -18,14 +25,12 @@ import jakarta.persistence.NamedAttributeNode;
 import jakarta.persistence.NamedEntityGraph;
 import jakarta.persistence.Table;
 
-import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.FetchProfile;
-
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
-
 import static org.hibernate.Hibernate.isInitialized;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 
@@ -35,119 +40,131 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void fetchProfileWithOneAuthor(TestContext context) {
+	public void fetchProfileWithOneAuthor(VertxTestContext context) {
 		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse" );
 		final Author author = new Author( 5, "Charlie Mackesy", book );
 
 		test(
 				context,
 				openSession()
-						.thenCompose( s -> s.persist( book ).thenCompose( v -> s.persist( author ) ).thenCompose( v -> s.flush() ) )
+						.thenCompose( s -> s.persist( book )
+								.thenCompose( v -> s.persist( author ) )
+								.thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession()
-								.thenCompose( s -> s.enableFetchProfile("withBook").find( Author.class, author.getId() ) ) )
+								.thenCompose( s -> s.enableFetchProfile( "withBook" )
+										.find( Author.class, author.getId() ) ) )
 						.thenAccept( optionalAuthor -> {
-							context.assertNotNull( optionalAuthor );
-							context.assertEquals( author, optionalAuthor );
-							context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
-							context.assertEquals( book, optionalAuthor.getBook() );
+							assertNotNull( optionalAuthor );
+							assertEquals( author, optionalAuthor );
+							assertTrue( isInitialized( optionalAuthor.getBook() ) );
+							assertEquals( book, optionalAuthor.getBook() );
 						} )
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> s.find( Book.class, book.getId() ) ) )
 						.thenAccept( optionalBook -> {
-							context.assertNotNull( optionalBook );
-							context.assertEquals( book, optionalBook );
+							assertNotNull( optionalBook );
+							assertEquals( book, optionalBook );
 						} )
 		);
 	}
 
 	@Test
-	public void namedEntityGraphWithOneAuthor(TestContext context) {
+	public void namedEntityGraphWithOneAuthor(VertxTestContext context) {
 		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse" );
 		final Author author = new Author( 5, "Charlie Mackesy", book );
 
 		test(
 				context,
 				openSession()
-						.thenCompose( s -> s.persist( book ).thenCompose( v -> s.persist( author ) ).thenCompose( v -> s.flush() ) )
+						.thenCompose( s -> s.persist( book )
+								.thenCompose( v -> s.persist( author ) )
+								.thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession()
-								.thenCompose( s -> s.find( s.getEntityGraph(Author.class, "withBook"), author.getId() ) ) )
+								.thenCompose( s -> s.find(
+										s.getEntityGraph( Author.class, "withBook" ),
+										author.getId()
+								) ) )
 						.thenAccept( optionalAuthor -> {
-							context.assertNotNull( optionalAuthor );
-							context.assertEquals( author, optionalAuthor );
-							context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
-							context.assertEquals( book, optionalAuthor.getBook() );
+							assertNotNull( optionalAuthor );
+							assertEquals( author, optionalAuthor );
+							assertTrue( isInitialized( optionalAuthor.getBook() ) );
+							assertEquals( book, optionalAuthor.getBook() );
 						} )
-						.thenCompose( v -> openSession().thenCompose(  s -> s.find( Book.class, book.getId() ) ) )
+						.thenCompose( v -> openSession().thenCompose( s -> s.find( Book.class, book.getId() ) ) )
 						.thenAccept( optionalBook -> {
-							context.assertNotNull( optionalBook );
-							context.assertEquals( book, optionalBook );
+							assertNotNull( optionalBook );
+							assertEquals( book, optionalBook );
 						} )
 		);
 	}
 
 	@Test
-	public void newEntityGraphWithOneAuthor(TestContext context) {
+	public void newEntityGraphWithOneAuthor(VertxTestContext context) {
 		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse" );
 		final Author author = new Author( 5, "Charlie Mackesy", book );
 
 		test(
 				context,
 				openSession()
-						.thenCompose( s -> s.persist( book ).thenCompose( v -> s.persist( author ) ).thenCompose( v -> s.flush() ) )
+						.thenCompose( s -> s.persist( book )
+								.thenCompose( v -> s.persist( author ) )
+								.thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession().thenCompose( s -> {
-							EntityGraph<Author> graph = s.createEntityGraph(Author.class);
-							graph.addAttributeNodes("book");
+							EntityGraph<Author> graph = s.createEntityGraph( Author.class );
+							graph.addAttributeNodes( "book" );
 							return s.find( graph, author.getId() )
 									.thenAccept( optionalAuthor -> {
-										context.assertNotNull( optionalAuthor );
-										context.assertEquals( author, optionalAuthor );
-										context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
-										context.assertEquals( book, optionalAuthor.getBook() );
-									});
+										assertNotNull( optionalAuthor );
+										assertEquals( author, optionalAuthor );
+										assertTrue( isInitialized( optionalAuthor.getBook() ) );
+										assertEquals( book, optionalAuthor.getBook() );
+									} );
 						} ) )
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> s.find( Book.class, book.getId() ) ) )
 						.thenAccept( optionalBook -> {
-							context.assertNotNull( optionalBook );
-							context.assertEquals( book, optionalBook );
+							assertNotNull( optionalBook );
+							assertEquals( book, optionalBook );
 						} )
 		);
 	}
 
 	@Test
-	public void fetchWithOneAuthor(TestContext context) {
+	public void fetchWithOneAuthor(VertxTestContext context) {
 		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse" );
 		final Author author = new Author( 5, "Charlie Mackesy", book );
 
 		test(
 				context,
 				openSession()
-						.thenCompose( s -> s.persist( book ).thenCompose( v -> s.persist( author ) ).thenCompose( v -> s.flush() ) )
+						.thenCompose( s -> s.persist( book )
+								.thenCompose( v -> s.persist( author ) )
+								.thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> s.find( Author.class, author.getId() )
-								.thenCompose( optionalAuthor -> {
-									context.assertNotNull( optionalAuthor );
-									context.assertEquals( author, optionalAuthor );
-									context.assertFalse( isInitialized( optionalAuthor.getBook() ) );
-									return s.fetch( optionalAuthor.getBook() ).thenAccept(
-											fetchedBook -> {
-												context.assertNotNull( fetchedBook );
-												context.assertEquals( book, fetchedBook );
-												context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
-											} );
-								} )
-						) )
-						.thenCompose(  v -> openSession()
+										.thenCompose( optionalAuthor -> {
+											assertNotNull( optionalAuthor );
+											assertEquals( author, optionalAuthor );
+											assertFalse( isInitialized( optionalAuthor.getBook() ) );
+											return s.fetch( optionalAuthor.getBook() ).thenAccept(
+													fetchedBook -> {
+														assertNotNull( fetchedBook );
+														assertEquals( book, fetchedBook );
+														assertTrue( isInitialized( optionalAuthor.getBook() ) );
+													} );
+										} )
+								) )
+						.thenCompose( v -> openSession()
 								.thenCompose( s -> s.find( Book.class, book.getId() ) ) )
 						.thenAccept( optionalBook -> {
-							context.assertNotNull( optionalBook );
-							context.assertEquals( book, optionalBook );
+							assertNotNull( optionalBook );
+							assertEquals( book, optionalBook );
 						} )
 		);
 	}
 
 	@Test
-	public void fetchWithTwoAuthors(TestContext context) {
+	public void fetchWithTwoAuthors(VertxTestContext context) {
 		final Book goodOmens = new Book( 72433, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 		final Author neilGaiman = new Author( 21421, "Neil Gaiman", goodOmens );
 		final Author terryPratchett = new Author( 2111, "Terry Pratchett", goodOmens );
@@ -156,28 +173,28 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 				context,
 				openSession()
 						.thenCompose( s -> s.persist( goodOmens )
-						.thenCompose( v -> s.persist( terryPratchett ) )
-						.thenCompose( v -> s.persist( neilGaiman ) )
-						.thenCompose( v -> s.flush() ) )
+								.thenCompose( v -> s.persist( terryPratchett ) )
+								.thenCompose( v -> s.persist( neilGaiman ) )
+								.thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> s.find( Author.class, neilGaiman.getId() )
 										.thenCompose( optionalAuthor -> {
-											context.assertNotNull( optionalAuthor );
-											context.assertEquals( neilGaiman, optionalAuthor );
-											context.assertFalse( isInitialized( optionalAuthor.getBook() ) );
+											assertNotNull( optionalAuthor );
+											assertEquals( neilGaiman, optionalAuthor );
+											assertFalse( isInitialized( optionalAuthor.getBook() ) );
 											return s.fetch( optionalAuthor.getBook() ).thenAccept(
 													fetchedBook -> {
-														context.assertNotNull( fetchedBook );
-														context.assertEquals( goodOmens, fetchedBook );
-														context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
+														assertNotNull( fetchedBook );
+														assertEquals( goodOmens, fetchedBook );
+														assertTrue( isInitialized( optionalAuthor.getBook() ) );
 													} );
 										} )
-						) )
+								) )
 		);
 	}
 
 	@Test
-	public void fetchWithTwoAuthorsStateless(TestContext context) {
+	public void fetchWithTwoAuthorsStateless(VertxTestContext context) {
 		final Book goodOmens = new Book( 72433, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 		final Author neilGaiman = new Author( 21421, "Neil Gaiman", goodOmens );
 		final Author terryPratchett = new Author( 2111, "Terry Pratchett", goodOmens );
@@ -192,14 +209,14 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 						.thenCompose( v -> getSessionFactory().openStatelessSession()
 								.thenCompose( s -> s.get( Author.class, neilGaiman.getId() )
 										.thenCompose( optionalAuthor -> {
-											context.assertNotNull( optionalAuthor );
-											context.assertEquals( neilGaiman, optionalAuthor );
-											context.assertFalse( isInitialized( optionalAuthor.getBook() ) );
+											assertNotNull( optionalAuthor );
+											assertEquals( neilGaiman, optionalAuthor );
+											assertFalse( isInitialized( optionalAuthor.getBook() ) );
 											return s.fetch( optionalAuthor.getBook() ).thenAccept(
 													fetchedBook -> {
-														context.assertNotNull( fetchedBook );
-														context.assertEquals( goodOmens, fetchedBook );
-														context.assertTrue( isInitialized( optionalAuthor.getBook() ) );
+														assertNotNull( fetchedBook );
+														assertEquals( goodOmens, fetchedBook );
+														assertTrue( isInitialized( optionalAuthor.getBook() ) );
 													} );
 										} )
 										.thenCompose( vv -> s.close() )
@@ -208,19 +225,19 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void manyToOneIsNull(TestContext context) {
+	public void manyToOneIsNull(VertxTestContext context) {
 		final Author author = new Author( 5, "Charlie Mackesy", null );
 
 		test(
 				context,
 				openSession()
-						.thenCompose( s -> s.persist( author ).thenCompose(v-> s.flush()))
+						.thenCompose( s -> s.persist( author ).thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Author.class, author.getId() ) )
 						.thenAccept( optionalAuthor -> {
-							context.assertNotNull( optionalAuthor );
-							context.assertEquals( author, optionalAuthor );
-							context.assertNull( author.book, "Book must be null");
+							assertNotNull( optionalAuthor );
+							assertEquals( author, optionalAuthor );
+							assertNull( author.book, "Book must be null" );
 						} )
 		);
 	}
@@ -235,7 +252,8 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 		private Integer id;
 		private String title;
 
-		public Book() {}
+		public Book() {
+		}
 
 		public Book(Integer id, String title) {
 			this.id = id;
@@ -263,7 +281,7 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 			if ( this == o ) {
 				return true;
 			}
-			if ( !(o instanceof Book) ) {
+			if ( !( o instanceof Book ) ) {
 				return false;
 			}
 			Book book = (Book) o;
@@ -281,7 +299,7 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 					entity = Author.class, association = "book",
 					mode = FetchMode.JOIN))
 
-	@NamedEntityGraph(name="withBook",
+	@NamedEntityGraph(name = "withBook",
 			attributeNodes = @NamedAttributeNode("book")
 	)
 
@@ -298,7 +316,8 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 		@ManyToOne(fetch = FetchType.LAZY)
 		private Book book;
 
-		public Author() {}
+		public Author() {
+		}
 
 		public Author(Integer id, String name, Book book) {
 			this.id = id;
@@ -335,7 +354,7 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 			if ( this == o ) {
 				return true;
 			}
-			if ( !(o instanceof Author) ) {
+			if ( !( o instanceof Author ) ) {
 				return false;
 			}
 			Author author = (Author) o;

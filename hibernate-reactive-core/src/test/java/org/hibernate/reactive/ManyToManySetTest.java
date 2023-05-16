@@ -12,15 +12,19 @@ import java.util.Set;
 
 import org.hibernate.Hibernate;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ManyToManySetTest extends BaseReactiveTest {
 
@@ -30,7 +34,7 @@ public class ManyToManySetTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void test(TestContext context) {
+	public void test(VertxTestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Author author = new Author( "Iain M Banks" );
@@ -45,16 +49,16 @@ public class ManyToManySetTest extends BaseReactiveTest {
 						.withTransaction( (session, transaction) -> session.persistAll( book1, book2, author ) )
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Book.class, book1.id )
-										.invoke( b -> context.assertFalse( Hibernate.isInitialized( b.authors ) ) )
+										.invoke( b -> assertFalse( Hibernate.isInitialized( b.authors ) ) )
 										.chain( b -> session.fetch( b.authors ) )
-										.invoke( authors -> context.assertEquals( 1, authors.size() ) )
+										.invoke( authors -> assertEquals( 1, authors.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
+										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
 										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> context.assertEquals( 2, books.size() ) )
+										.invoke( books -> assertEquals( 2, books.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -63,8 +67,8 @@ public class ManyToManySetTest extends BaseReactiveTest {
 																  Author.class
 														  )
 														  .getSingleResult()
-														  .invoke( a -> context.assertTrue( Hibernate.isInitialized( a.books ) ) )
-														  .invoke( a -> context.assertEquals( 2, a.books.size() ) )
+														  .invoke( a -> assertTrue( Hibernate.isInitialized( a.books ) ) )
+														  .invoke( a -> assertEquals( 2, a.books.size() ) )
 								)
 						)
 		);

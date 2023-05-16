@@ -8,15 +8,14 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Verifies that scheduled changes in the reactive session
@@ -27,17 +26,17 @@ public class PersistThenDeleteTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( PersistThenDeleteTest.Person.class );
+		return List.of( Person.class );
 	}
 
 	@Test
-	public void testPersistThenDelete(TestContext context) {
+	public void testPersistThenDelete(VertxTestContext context) {
 		test( context, getSessionFactory()
 				.withTransaction( s -> s
 						.persist( newPerson( "foo" ), newPerson( "bar" ), newPerson( "baz" ) ) )
 				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
 						.createQuery( "from Person" ).getResultList()
-						.thenAccept( l -> assertThat( l ).hasSize( 3 ) )
+						.thenAccept( l -> assertEquals( l.size(), 3) )
 				) )
 				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
 						.persist( newPerson( "critical" ) )
@@ -45,20 +44,20 @@ public class PersistThenDeleteTest extends BaseReactiveTest {
 				) )
 				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
 						.createQuery( "from Person" ).getResultList()
-						.thenAccept( l -> assertThat( l ).isEmpty() )
+						.thenAccept( l ->  assertEquals( l.size(), 0) )
 				) )
 		);
 	}
 
 	@Test
-	public void testDeleteThenPersist(TestContext context) {
+	public void testDeleteThenPersist(VertxTestContext context) {
 		test( context, getSessionFactory()
 				.withTransaction( s -> s
 						.persist( newPerson( "foo" ), newPerson( "bar" ), newPerson( "baz" ) ) )
 				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
 						.createQuery( "from Person" )
 						.getResultList()
-						.thenAccept( l -> assertThat( l ).hasSize( 3 ) )
+						.thenAccept( l -> assertEquals( l.size(), 3) )
 				) )
 				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
 						.createQuery( "delete from Person" )
@@ -68,7 +67,7 @@ public class PersistThenDeleteTest extends BaseReactiveTest {
 				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
 						.createQuery( "from Person" )
 						.getResultList()
-						.thenAccept( l -> assertThat( l ).hasSize( 1 ) )
+						.thenAccept( l -> assertEquals( l.size(), 1) )
 				) )
 		);
 	}

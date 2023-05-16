@@ -9,13 +9,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test a find after a flush and before closing the session
@@ -28,42 +30,42 @@ public class FindAfterFlushTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void findAfterFlushWithStages(TestContext context) {
+	public void findAfterFlushWithStages(VertxTestContext context) {
 		final Webcomic wc = new Webcomic( "Girls With Slingshots ", "Danielle Corsetto" );
 		test( context, getSessionFactory().withSession( s -> s
 				.persist( wc )
 				.thenCompose( $ -> s.flush() )
 				.thenCompose( $ -> s.find( Webcomic.class, wc.getId() ) )
-				.thenAccept( found -> context.assertEquals( wc, found ) )
+				.thenAccept( found -> assertEquals( wc, found ) )
 		) );
 	}
 
 	@Test
-	public void findAfterFlushWithMutiny(TestContext context) {
+	public void findAfterFlushWithMutiny(VertxTestContext context) {
 		final Webcomic wc = new Webcomic( "Saturday Morning Breakfast Cereal ", "Zach Weinersmith" );
 		test( context, getMutinySessionFactory().withSession( s -> s
 				.persist( wc )
 				.call( s::flush )
 				.chain( () -> s.find( Webcomic.class, wc.getId() ) )
-				.invoke( found -> context.assertEquals( wc, found ) )
+				.invoke( found -> assertEquals( wc, found ) )
 		) );
 	}
 
 	@Test
-	public void withTransactionFindAfterFlushWithStages(TestContext context) {
+	public void withTransactionFindAfterFlushWithStages(VertxTestContext context) {
 		final Webcomic wc = new Webcomic( "Something Positive", "R. K. Milholland" );
 		test( context, getSessionFactory()
 				.withTransaction( (s, tx) -> s
 						.persist( wc )
 						.thenCompose( $ -> s.flush() )
 						.thenCompose( $ -> s.find( Webcomic.class, wc.getId() ) )
-						.thenAccept( found -> context.assertEquals( wc, found ) )
+						.thenAccept( found -> assertEquals( wc, found ) )
 				)
 		);
 	}
 
 	@Test
-	public void withTransactionFindAfterFlushWithMutiny(TestContext context) {
+	public void withTransactionFindAfterFlushWithMutiny(VertxTestContext context) {
 		final Webcomic wc = new Webcomic( "Questionable Content", "Jeph Jacques" );
 		test( context, getMutinySessionFactory()
 				.withTransaction( (s, tx) -> s
@@ -71,7 +73,7 @@ public class FindAfterFlushTest extends BaseReactiveTest {
 						.call( s::flush )
 					  	.chain( () -> s.find( Webcomic.class, wc.getId() ) )
 					  	.invoke( found -> {
-							context.assertEquals( wc, found );
+							assertEquals( wc, found );
 						} )
 				)
 		);

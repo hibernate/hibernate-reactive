@@ -8,12 +8,12 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.OptimisticLocking;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -21,6 +21,7 @@ import jakarta.persistence.Id;
 
 import static org.hibernate.annotations.OptimisticLockType.ALL;
 import static org.hibernate.annotations.OptimisticLockType.DIRTY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class OptimisticLockingTest extends BaseReactiveTest {
 
@@ -30,7 +31,7 @@ public class OptimisticLockingTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void test1(TestContext context) {
+	public void test1(VertxTestContext context) {
 		Mergeable1 m = new Mergeable1();
 		m.name = "Gavin";
 		m.count = 69;
@@ -45,13 +46,13 @@ public class OptimisticLockingTest extends BaseReactiveTest {
 						} )
 						.chain( v -> getMutinySessionFactory()
 								.withSession( s -> s.find( Mergeable1.class, m.id ) )
-								.invoke( mm -> context.assertEquals( mm.name, m.name ) )
+								.invoke( mm -> assertEquals( mm.name, m.name ) )
 						)
 		);
 	}
 
 	@Test
-	public void test2(TestContext context) {
+	public void test2(VertxTestContext context) {
 		Mergeable2 m = new Mergeable2();
 		m.name = "Gavin";
 		m.count = 69;
@@ -66,7 +67,7 @@ public class OptimisticLockingTest extends BaseReactiveTest {
 						} )
 						.chain( v -> getMutinySessionFactory()
 								.withSession( s -> s.find( Mergeable2.class, m.id ) )
-								.invoke( mm -> context.assertEquals( mm.name, m.name ) )
+								.invoke( mm -> assertEquals( mm.name, m.name ) )
 						)
 		);
 

@@ -8,14 +8,17 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+
+;
 
 public class OneToOneMapsIdTest extends BaseReactiveTest {
 
@@ -25,7 +28,7 @@ public class OneToOneMapsIdTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void verifyParentIdIsSet(TestContext context) {
+	public void verifyParentIdIsSet(VertxTestContext context) {
 		Person person = new Person( "Joshua", 1 );
 		PersonDetails personDetails = new PersonDetails( "Josh", person );
 
@@ -33,7 +36,7 @@ public class OneToOneMapsIdTest extends BaseReactiveTest {
 				.withTransaction( s -> s.persist( person, personDetails ) )
 				.thenCompose( v -> getSessionFactory()
 						.withSession( s -> s.find( PersonDetails.class, 1 ) ) )
-				.thenAccept( context::assertNotNull )
+				.thenAccept( Assertions::assertNotNull )
 		);
 	}
 
