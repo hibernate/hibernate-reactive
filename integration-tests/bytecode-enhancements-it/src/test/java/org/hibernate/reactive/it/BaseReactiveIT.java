@@ -11,6 +11,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.criteria.CriteriaQuery;
 
 import org.hibernate.SessionFactory;
@@ -22,21 +24,19 @@ import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.RunTestOnContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.junit5.RunTestOnContext;
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxExtension;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -47,7 +47,9 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * Similar to BaseReactiveTest in the hibernate-reactive-core.
  * Hopefully, one day we will reorganize the code better.
  */
-@RunWith(VertxUnitRunner.class)
+@ExtendWith(VertxExtension.class)
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
+@Timeout(value = 600, timeUnit = TimeUnit.SECONDS)
 public abstract class BaseReactiveIT {
 
 	// These properties are in DatabaseConfiguration in core
@@ -67,17 +69,20 @@ public abstract class BaseReactiveIT {
 			.withDatabaseName( DB_NAME )
 			.withReuse( true );
 
-	@ClassRule
-	public static final Timeout rule = Timeout.seconds( 10 * 60 );
 
 	private static SessionFactory ormSessionFactory;
-	@ClassRule
-	public static final RunTestOnContext vertxContextRule = new RunTestOnContext( () -> {
-		VertxOptions options = new VertxOptions();
-		options.setBlockedThreadCheckInterval( 5 );
-		options.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
-		return Vertx.vertx( options );
-	} );
+
+	/**
+	 * Configure Vertx JUnit5 test context
+	 */
+	@RegisterExtension
+	static RunTestOnContext testOnContext = new RunTestOnContext( vertxOptions() );
+
+	private static VertxOptions vertxOptions() {
+		return new VertxOptions()
+				.setBlockedThreadCheckInterval( 5 )
+				.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
+	}
 
 	/**
 	 * Configure properties defined in {@link Settings}.
@@ -113,10 +118,6 @@ public abstract class BaseReactiveIT {
 		return "postgres://localhost:5432/" + DB_NAME;
 	}
 
-	protected static void test(TestContext context, CompletionStage<?> work) {
-		test( context.async(), context, work );
-	}
-
 	/**
 	 * These entities will be added to the configuration of the factory and
 	 * the rows in the mapping tables deleted after each test.
@@ -135,29 +136,19 @@ public abstract class BaseReactiveIT {
 		return List.of();
 	}
 
-	/**
-	 * For when we need to create the {@link Async} in advance
-	 */
-	protected static void test(Async async, TestContext context, CompletionStage<?> work) {
+	public static void test(VertxTestContext context, CompletionStage<?> work) {
 		work.whenComplete( (res, err) -> {
 			if ( err != null ) {
-				context.fail( err );
+				context.failNow( err );
 			}
 			else {
-				async.complete();
+				context.completeNow();
 			}
 		} );
 	}
 
-	protected static void test(TestContext context, Uni<?> uni) {
-		test( context.async(), context, uni );
-	}
-
-	/**
-	 * For when we need to create the {@link Async} in advance
-	 */
-	public static void test(Async async, TestContext context, Uni<?> uni) {
-		uni.subscribe().with( res -> async.complete(), context::fail );
+	public static void test(VertxTestContext context, Uni<?> uni) {
+		uni.subscribe().with( res -> context.completeNow(), context::failNow );
 	}
 
 	protected Configuration constructConfiguration() {
@@ -193,8 +184,8 @@ public abstract class BaseReactiveIT {
 		return query;
 	}
 
-	@Before
-	public void before(TestContext context) {
+	@BeforeEach
+	public void before(VertxTestContext context) {
 		test( context, setupSessionFactory( this::constructConfiguration ) );
 	}
 
@@ -212,9 +203,9 @@ public abstract class BaseReactiveIT {
 	 * @param confSupplier supplies the configuration for the factory
 	 * @return a {@link CompletionStage} void that succeeds when the factory is ready.
 	 */
-	protected CompletionStage<Void> setupSessionFactory(Supplier<Configuration> confSupplier) {
+	protected static CompletionStage<Void> setupSessionFactory(Supplier<Configuration> confSupplier) {
 		CompletableFuture<Void> future = new CompletableFuture<>();
-		vertxContextRule.vertx()
+		testOnContext.vertx()
 				.executeBlocking(
 						// schema generation is a blocking operation and so it causes an
 						// exception when run on the Vert.x event loop. So call it using
@@ -232,7 +223,7 @@ public abstract class BaseReactiveIT {
 		return future;
 	}
 
-	private void startFactoryManager(Promise<Object> p, Supplier<Configuration> confSupplier ) {
+	private static void startFactoryManager(Promise<Object> p, Supplier<Configuration> confSupplier ) {
 		try {
 			ormSessionFactory = createHibernateSessionFactory( confSupplier.get() );
 			p.complete();
@@ -242,7 +233,7 @@ public abstract class BaseReactiveIT {
 		}
 	}
 
-	private SessionFactory createHibernateSessionFactory(Configuration configuration) {
+	private static SessionFactory createHibernateSessionFactory(Configuration configuration) {
 		StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() );
 		addServices( builder );
@@ -251,13 +242,13 @@ public abstract class BaseReactiveIT {
 		return configuration.buildSessionFactory( registry );
 	}
 
-	protected void addServices(StandardServiceRegistryBuilder builder) {}
+	protected static void addServices(StandardServiceRegistryBuilder builder) {}
 
-	protected void configureServices(StandardServiceRegistry registry) {
+	protected static void configureServices(StandardServiceRegistry registry) {
 	}
 
-	@After
-	public void after(TestContext context) {
+	@AfterEach
+	public void after(VertxTestContext context) {
 		test( context, cleanDb() );
 	}
 
@@ -271,8 +262,8 @@ public abstract class BaseReactiveIT {
 				: deleteEntities( classes.toArray( new Class<?>[0] ) );
 	}
 
-	@AfterClass
-	public static void closeFactory(TestContext context) {
+	@AfterAll
+	public static void closeFactory() {
 		if ( ormSessionFactory != null && ormSessionFactory.isOpen() ) {
 			ormSessionFactory.close();
 		}
